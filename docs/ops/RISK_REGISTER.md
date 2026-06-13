@@ -171,6 +171,18 @@
 - **Status:** Open
 - **Related Tasks:** SEC-003, SEC-005
 
+### R-0015: Test DB not migrated after schema changes
+
+- **Risk:** Schema changes applied to dev DB but not to `haastores_test`, causing test failures
+- **Area:** Quality / Testing
+- **Impact:** False test failures, wasted debugging time
+- **Likelihood:** 3
+- **Severity:** 4
+- **Mitigation:** `pnpm db:test:setup` script documents required step; CURRENT_STATE.md includes note
+- **Owner:** All agents
+- **Status:** Mitigated
+- **Related Tasks:** TASK-0009
+
 ### R-0014: Support ticket accessToken in URL
 
 - **Risk:** `accessToken` used as query parameter for support ticket auth

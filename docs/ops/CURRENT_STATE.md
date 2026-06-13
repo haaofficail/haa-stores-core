@@ -15,9 +15,8 @@
   - Dynamic Error Capture ✅
   - Security Baseline & RBAC Audit ✅
   - Restore Local App Runtime ✅
+  - Theme Stabilization: isolation + hydration flicker fix + test DB isolation ✅
   - Fix P1 security findings (customers permission, RBAC data model) (next)
-  - Ensure theme isolation between storefront and merchant dashboard
-  - Complete visual QA pass across all storefront pages
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done
@@ -26,9 +25,12 @@
   - TASK-0005 (Security Baseline & RBAC Audit) — Done
   - TASK-0006 (Restore Local App Runtime) — Done
   - TASK-0007 (Theme Isolation) — Done
+  - TASK-0008 (Theme Hydration Flicker) — Done
+  - TASK-0009 (Test DB Isolation) — Done
 - **Known Broken Areas:**
   - Storefront root `/` hardcoded to `/s/haa-demo` redirect — works after seed ✅
   - Registration creates stores as `draft` (intentional — merchant must publish from settings)
+  - All 1340 tests pass against isolated test DB — 0 pre-existing failures
 - **Known Risks:**
   - Duplicate project folders on Desktop causing path confusion ⚠️
   - No automated CI/CD
@@ -36,6 +38,7 @@
   - Customer route uses read permission for write operations (R-0011) 🚨
   - No RBAC data model or employee permissions (R-0012, R-0013)
   - Support ticket accessToken in URL query (R-0014)
+  - Test DB `haastores_test` must be migrated/seed after schema changes via `pnpm db:test:setup`
 - **Recently Completed:**
   - Development Operating System: AGENTS.md + 15 docs/ops/ files + preflight script ✅
   - Git repository initialized (commit 076bc40, 370168d) ✅
@@ -47,6 +50,10 @@
   - System Map: SYSTEM_MAP.md (10 sections, all critical paths) + ERROR_FLOW_MAP.md (12 sections, full lifecycle) ✅
   - Security Baseline & RBAC Audit: 5 security docs, 4 new risks, 14 backlog items ✅
   - Restore Local App Runtime: seed fix (publishStatus), DB update, all tests pass, all 3 apps serve correctly ✅
+  - Theme Isolation: prevent storefront theme leakage to dashboards (TASK-0007) ✅
+  - Theme Hydration Flicker: zero-flash theme loading guard (TASK-0008) ✅
+  - Test DB Isolation: separate haastores_test DB for vitest, all 1340 tests pass (TASK-0009) ✅
+  - Theme Stabilization Verification Gate: 0 failed tests, haa-demo published, all checks pass ✅
 - **Security Findings Summary:**
   - **P0:** None
   - **P1:** 3 findings — customers permission downgrade, missing customer audit logging, no frontend role filtering
@@ -58,6 +65,7 @@
   - Payment gateway credentials
   - Database production seeds
 - **Next Recommended Tasks:**
+  - Employee permissions / RBAC implementation (SEC-001, SEC-004, SEC-005)
   - Fix customers.ts permission downgrade (SEC-001)
   - Implement RBAC data model (SEC-004)
   - Add employee permission management UI (SEC-005)
@@ -69,10 +77,14 @@
   - Run `pnpm setup` for initial local environment
   - Three terminals: `pnpm dev:api`, `pnpm dev:dashboard`, `pnpm dev:storefront`
   - First commit: `076bc40` — "chore: add development operating system"
-  - Branch: `chore/security-baseline-rbac-audit`
+  - Branch: `fix/theme-stabilization-pass-1`
+  - Latest commit: `c985e6d` — fix: apply footer follow-up lint and monitoring updates
   - preflight is now a hardened Node script (`scripts/preflight.mjs`) that fails with exit code 1 from wrong directory
   - System Map is at `docs/system-map/SYSTEM_MAP.md` and `docs/system-map/ERROR_FLOW_MAP.md`
   - Security docs are at `docs/security/`
+  - Tests run against isolated `haastores_test` DB — run `pnpm db:test:setup` after schema changes
+  - Test DB setup script: `scripts/db-test-setup.sh`
+  - Test env override: `tests/setup.ts` overrides DATABASE_URL automatically
 - **Important Decisions:**
   - NO_DEPLOY_POLICY active — local development only until owner GO
   - Short requests must be expanded before execution (DECISION-0001)

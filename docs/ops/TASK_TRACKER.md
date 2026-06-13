@@ -119,6 +119,56 @@
 
 ---
 
+### TASK-0009: Isolate Vitest Tests from Development Database
+
+- **Type:** Fix
+- **Priority:** P0 Critical
+- **Status:** Done
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** Prevent `compliance-regression-gate.test.ts` from resetting haa-demo publish_status to restricted
+- **Expanded Requirement:** Isolate all vitest tests from the development database so that test side effects never modify haa-demo or any dev data
+- **Problem:** `tests/compliance-regression-gate.test.ts` calls `PublishGateService.publish(1, 1, ...)` which runs compliance checks against the real haastores DB. The demo store lacks KYC, payment methods, returnWindowDays — so compliance fails and sets publish_status to `restricted`, breaking the storefront.
+- **Goal:** Tests run against an isolated database; dev database never modified by tests
+- **Scope:**
+  - Create `tests/setup.ts` to override DATABASE_URL to `haastores_test`
+  - Create `scripts/db-test-setup.sh` to create, migrate, and seed test DB
+  - Update `vitest.config.ts` with setupFiles
+  - Update `package.json` with db:test:setup script
+  - Update `.env.example` with TEST_DATABASE_URL
+  - Grant CREATEDB permission to haa Postgres user
+  - Verify all 67 test files pass against test DB
+- **Out of Scope:**
+  - Changes to publish gate logic or seed data
+  - Mocking database calls
+  - Changes to merchant publish flow
+- **Affected Areas:** tests/, scripts/, vitest.config.ts, package.json, .env.example
+- **Files Changed:** `tests/setup.ts` (new), `scripts/db-test-setup.sh` (new), `vitest.config.ts` (added setupFiles), `package.json` (added db:test:setup script), `.env.example` (documented TEST_DATABASE_URL)
+- **Acceptance Criteria:**
+  - Tests run against haastores_test, not haastores
+  - haa-demo publish_status remains `published` in dev DB after test run
+  - All 1340 tests pass
+  - pnpm typecheck passes
+  - pnpm preflight passes
+  - pnpm ops:monitor passes
+- **Test Plan:** pnpm test, pnpm typecheck, pnpm preflight, pnpm ops:monitor, verify haa-demo published
+- **Test Results:**
+  - ✅ pnpm test: 67 files, 1340 tests passed
+  - ✅ pnpm typecheck: 21/21 packages pass
+  - ✅ pnpm preflight: PASSED
+  - ✅ pnpm ops:monitor: all checks pass
+  - ✅ haa-demo publish_status: `published`
+- **Risks:** Schema drift between migrations and actual schema may require manual column additions to test DB; documented in db-test-setup.sh
+- **Related Issues:** None
+- **Status History:**
+  - Requested: 2026-06-13
+  - Implemented: 2026-06-13
+  - Verified: 2026-06-13
+  - Done: 2026-06-13
+- **Final Notes:** CREATEDB permission required for haa Postgres user. Schema had drifted — migration did not include city/district/street/postalCode/latitude/longitude on stores table, requiring manual column creation in db-test-setup.sh.
+
+---
+
 ## Active Tasks
 
 ### TASK-0004: Local Dynamic Error Capture
