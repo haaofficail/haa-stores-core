@@ -42,8 +42,8 @@
 | Total roles | **8** (owner, admin, manager, products_manager, orders_manager, accountant, support, viewer) |
 | Owner covers all | ✅ |
 | Viewer restricted to read-only | ✅ |
-| RBAC boundary tests | **16** (10 catalog + 6 dashboard guards) |
-| Total test suite | **1356 tests** across **69 test files** |
+| RBAC boundary tests | **41** (10 catalog + 6 dashboard guards + 25 employee management) |
+| Total test suite | **1381 tests** across **70 test files** |
 
 ---
 
@@ -56,11 +56,30 @@
 | Dashboard navigation filtering | ✅ | Sidebar filters items via `usePermissions().can()`; hides empty groups |
 | Route-level permission guarding (frontend) | ✅ | `PermissionRoute` guard wraps all dashboard routes in `App.tsx` |
 | Action button hiding | ✅ | `PermissionGate` wrappers on all CRUD buttons across 20+ pages |
-| Employee management UI | ❌ | No page for managing employees/roles (deferred to Pass 3) |
-| Employee invite flow | ❌ | No invite system (deferred to Pass 3) |
-| Role ↔ Permission DB schema | ❌ | Currently uses in-memory map only (deferred to Pass 3) |
-| Permission seed data | ❌ | No DB seeds for roles/permissions (deferred to Pass 3) |
-| Branch/location scope | ❌ | Not implemented (deferred to Pass 3+) |
+| Employee management UI | ✅ | **Pass 3** — UI skeleton with list, form, permission matrix |
+| Employee invite flow | ❌ | No invite system (requires API) |
+| Role ↔ Permission DB schema | ❌ | Currently uses in-memory map only (requires DB migration) |
+| Permission seed data | ❌ | No DB seeds for roles/permissions |
+| Branch/location scope | ❌ | Not implemented |
+
+## RBAC Pass 3 — Employee Management UI ✅
+
+**Closed: 2026-06-13**
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Employees page | ✅ | `apps/merchant-dashboard/src/pages/Employees.tsx` |
+| Employee list table | ✅ | Mock data with name, email, role, status, last login, permissions count |
+| Add employee button | ✅ | Protected by `employees:invite` PermissionGate |
+| Edit employee button | ✅ | Protected by `employees:update` PermissionGate |
+| Delete employee button | ✅ | Protected by `employees:delete` PermissionGate |
+| PermissionCheckboxMatrix | ✅ | Built from PERMISSION_CATALOG, grouped by category |
+| Role presets | ✅ | Fills checkboxes from ROLE_PERMISSIONS |
+| High-risk permission indicators | ✅ | Marks sensitive perms with warning badge |
+| Last owner protection | ✅ | UI shows "آخر مالك" and disables actions on last owner |
+| API contract doc | ✅ | `docs/security/EMPLOYEE_MANAGEMENT_API_CONTRACT.md` |
+| Custom permissions warning | ✅ | Banner: custom perms not supported in DB |
+| Save button disabled | ✅ | Disabled with "غير متاح" label — needs API |
 
 ---
 
@@ -119,6 +138,7 @@
 |------|----------|--------|
 | `tests/rbac-permission-catalog.test.ts` | (1) Catalog field completeness, (2) no duplicates, (3) ROLE_PERMISSIONS ↔ Catalog match, (4) no role-internal duplicates, (5) `getPermissionsForRole` correctness, (6) unknown role handling, (7) owner covers all catalog, (8) viewer no high-risk perms, (9) category coverage, (10) riskLevel validity | ✅ 10/10 passing |
 | `tests/dashboard-rbac-guards.test.ts` | (1) Sidebar has permission metadata on all items, (2) all sidebar perms in catalog, (3) GuardedRoute on protected routes, (4) all route perms in catalog, (5) PermissionRoute uses UnauthorizedState, (6) 15+ pages have PermissionGate import | ✅ 6/6 passing |
+| `tests/employee-management.test.ts` | (1) Employees route & sidebar, (2) page uses PermissionGate, (3) employees:* perms used, (4) matrix imports catalog + roles, (5) no hardcoded perms outside catalog, (6) high-risk perms set, (7) role presets, (8-12) all employee perms in catalog, (13-15) owner/admin/viewer role mappings, (16) dialog uses matrix, (17) save disabled, (18-20) API contract doc | ✅ 25/25 passing |
 
 ---
 
@@ -139,10 +159,11 @@ The RBAC design follows defense-in-depth:
 
 ---
 
-## Required Tasks Before RBAC Pass 3
+## Required Tasks Before RBAC Pass 4
 
 | Task | Description |
 |------|-------------|
 | TASK-RBAC-06 | Add permission-based route filtering in frontend ✅ (Pass 2) |
 | TASK-RBAC-07 | Add UI action hiding based on permissions ✅ (Pass 2) |
-| TASK-RBAC-03 | Create employee permission management page in dashboard — pending |
+| TASK-RBAC-03 | Create employee permission management page in dashboard ✅ (Pass 3 — UI skeleton) |
+| TASK-RBAC-08 | Build employee management API endpoints — pending (API contract exists) |

@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
 import { usePermissions } from '@/lib/permissions';
 import {
-  LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, BookOpen,
+  LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, BookOpen, UserCog,
 } from 'lucide-react';
 
 interface NavItem {
@@ -79,6 +79,7 @@ const navGroups: Array<{
     titleKey: 'sidebar.settings',
     title: 'الإعدادات',
     items: [
+      { to: '/employees', icon: UserCog, label: 'nav.employees', fallback: 'الموظفين', permission: 'employees:view' },
       { to: '/compliance', icon: Shield, label: 'nav.compliance', fallback: 'التحقق والامتثال', permission: 'compliance:read' },
       { to: '/audit-logs', icon: History, label: 'nav.auditLogs', fallback: 'سجل التغييرات', permission: 'stores:read' },
       { to: '/subscriptions', icon: Crown, label: 'nav.subscriptions', fallback: 'الاشتراكات', permission: 'subscriptions:view' },

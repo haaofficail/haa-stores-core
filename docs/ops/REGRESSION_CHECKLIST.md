@@ -67,7 +67,23 @@
 - [ ] All CRUD/action buttons guarded by PermissionGate across 20+ pages
 - [ ] All sidebar & route permission strings exist in PERMISSION_CATALOG
 - [ ] Dashboard RBAC boundary tests (tests/dashboard-rbac-guards.test.ts) pass
-- [ ] All 1356 tests pass across 69 test files
+
+### Employee Management UI (Pass 3)
+
+- [ ] Employees page exists at /employees and guarded by employees:view
+- [ ] Sidebar shows employees nav item in settings group
+- [ ] Add button guarded by employees:invite
+- [ ] Edit button guarded by employees:update
+- [ ] Delete button guarded by employees:delete
+- [ ] PermissionCheckboxMatrix built from PERMISSION_CATALOG (no hardcoded strings)
+- [ ] Role presets fill checkboxes from ROLE_PERMISSIONS
+- [ ] High-risk permissions marked with warning
+- [ ] Last owner protected — actions disabled
+- [ ] Save button disabled until API exists
+- [ ] Custom permissions warning banner displayed
+- [ ] Employee management tests (tests/employee-management.test.ts) pass
+- [ ] API contract doc exists at docs/security/EMPLOYEE_MANAGEMENT_API_CONTRACT.md
+- [ ] All 1381 tests pass across 70 test files
 - [ ] pnpm typecheck passes with no RBAC-related errors
 - [ ] pnpm ops:monitor: all RBAC-related checks pass
 

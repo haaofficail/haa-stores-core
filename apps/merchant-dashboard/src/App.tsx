@@ -46,6 +46,7 @@ const SettlementOverview = lazy(() => import('@/pages/SettlementOverview'));
 const SupportTickets = lazy(() => import('@/pages/SupportTickets'));
 const SupportTicketDetail = lazy(() => import('@/pages/SupportTicketDetail'));
 const SupportKb = lazy(() => import('@/pages/SupportKb'));
+const Employees = lazy(() => import('@/pages/Employees'));
 
 function Lazy({ children }: { children: ReactNode }) {
   return <Suspense fallback={<LoadingSkeleton />}>{children}</Suspense>;
@@ -113,6 +114,7 @@ export default function App() {
               <Route path="/settings" element={<GuardedRoute permission="settings:read"><Settings /></GuardedRoute>} />
               <Route path="/theme" element={<GuardedRoute permission="theme:view"><ThemeEditor /></GuardedRoute>} />
               <Route path="/theme-store" element={<GuardedRoute permission="theme:view"><ThemeStore /></GuardedRoute>} />
+              <Route path="/employees" element={<GuardedRoute permission="employees:view"><Employees /></GuardedRoute>} />
               <Route path="/compliance" element={<GuardedRoute permission="compliance:read"><Compliance /></GuardedRoute>} />
               <Route path="/subscriptions" element={<GuardedRoute permission="subscriptions:view"><Subscriptions /></GuardedRoute>} />
               <Route path="/notifications" element={<GuardedRoute permission="notifications:view"><Notifications /></GuardedRoute>} />

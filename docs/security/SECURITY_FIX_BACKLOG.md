@@ -41,6 +41,21 @@
   - Action button guarding via `PermissionGate` across 20+ page files
   - Boundary test: `tests/dashboard-rbac-guards.test.ts` (6/6 passing)
 
+## P1 — High — Completed in RBAC Pass 3
+
+### SEC-005: Add employee permission management UI ✅
+
+- **Status:** ✅ **Closed** — UI skeleton implemented in RBAC Pass 3
+- **Verified in:**
+  - `apps/merchant-dashboard/src/pages/Employees.tsx` — employee list with mock data
+  - `apps/merchant-dashboard/src/components/employees/PermissionCheckboxMatrix.tsx` — permission matrix built from PERMISSION_CATALOG + ROLE_PERMISSIONS
+  - `apps/merchant-dashboard/src/components/employees/EmployeeFormDialog.tsx` — add/edit dialog (save disabled)
+  - `apps/merchant-dashboard/src/App.tsx` — `/employees` route with `employees:view` guard
+  - `apps/merchant-dashboard/src/components/layout/Sidebar.tsx` — employees nav item
+  - `docs/security/EMPLOYEE_MANAGEMENT_API_CONTRACT.md` — API contract for future endpoints
+  - Boundary test: `tests/employee-management.test.ts` (25/25 passing)
+- **Remaining:** API endpoints not yet built (contract exists)
+
 ## P1 — High — Pending
 
 ### SEC-002: Add audit logging to customer mutations
@@ -55,17 +70,20 @@
 - **Test Plan:** Create/update customer → check `audit_logs` table for matching entry
 - **Status:** Pending — deferred from Pass 1
 
-### SEC-005: Add employee permission management UI
+### SEC-015: Build Employee Management API Endpoints
 
-- **Area:** Dashboard / Frontend
-- **Risk:** No way to manage employee permissions
-- **Recommended Fix:** Create employee management page with role assignment
+- **Area:** API / Backend
+- **Risk:** Employee management UI cannot save or load real data
+- **Recommended Fix:** Implement endpoints per API contract at `docs/security/EMPLOYEE_MANAGEMENT_API_CONTRACT.md`
 - **Acceptance Criteria:**
-  - Merchant can invite employee with role selection
-  - Employee permissions are derived from role
-  - UI shows only actions the employee can perform
-- **Test Plan:** Assign `viewer` role → employee sees read-only UI
-- **Status:** Pending — RBAC Pass 3
+  - GET /stores/:storeId/employees returns employee list
+  - POST /stores/:storeId/employees/invite creates employee
+  - PATCH /stores/:storeId/employees/:employeeId updates role/status
+  - DELETE /stores/:storeId/employees/:employeeId removes employee
+  - All endpoints enforce employee:* permissions
+  - Safety rules (last owner, self-downgrade, permission grant limits) enforced
+- **Test Plan:** Run CRUD operations against test DB, verify permission enforcement
+- **Status:** Pending — RBAC Pass 4
 
 ---
 

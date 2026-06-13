@@ -596,6 +596,66 @@
 
 ---
 
+### TASK-0012: RBAC Pass 3 — Employee Management UI
+
+- **Type:** Feature / Security / UI
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** P1 — Employee Management UI: employee list, create/edit dialog, permission checkbox matrix, role presets, safety rules
+- **Expanded Requirement:** Build a complete Employee Management UI within the merchant dashboard, sourced from PERMISSION_CATALOG and ROLE_PERMISSIONS, with proper PermissionGate guarding, role-based permission presets, and documented safety rules.
+- **Problem:** No UI existed for managing employees (SEC-005). Employee permissions could only be set via DB directly.
+- **Goal:** Merchants can view employees, preview their permissions via the PermissionCheckboxMatrix, and see the intended employee management workflow even though API endpoints are not yet built.
+- **Scope:**
+  - Create `/employees` route in App.tsx guarded by `employees:view`
+  - Add employees nav item in Sidebar.tsx settings group
+  - Create Employees page with employee list table (mock data)
+  - Create PermissionCheckboxMatrix component grouped by category from PERMISSION_CATALOG
+  - Create EmployeeFormDialog (add/edit) with disabled save (no API yet)
+  - Create API contract doc at docs/security/EMPLOYEE_MANAGEMENT_API_CONTRACT.md
+  - Add safety rules: last owner protection, viewer restriction, grant-permission limits
+  - Add high-risk permission indicators
+  - Add boundary tests (25 tests)
+- **Out of Scope:**
+  - Employee management API endpoints (Pass 4)
+  - Email invite flow (Pass 4+)
+  - Custom permissions DB storage (requires DB migration)
+  - Branch/location scope
+- **Affected Areas:** apps/merchant-dashboard/src/pages, apps/merchant-dashboard/src/components/employees, apps/merchant-dashboard/src/App.tsx, apps/merchant-dashboard/src/components/layout, tests/, docs/security/
+- **Files Changed:**
+  - `apps/merchant-dashboard/src/pages/Employees.tsx` — new
+  - `apps/merchant-dashboard/src/components/employees/PermissionCheckboxMatrix.tsx` — new
+  - `apps/merchant-dashboard/src/components/employees/EmployeeFormDialog.tsx` — new
+  - `apps/merchant-dashboard/src/App.tsx` — added `/employees` route
+  - `apps/merchant-dashboard/src/components/layout/Sidebar.tsx` — added employees nav item
+  - `docs/security/EMPLOYEE_MANAGEMENT_API_CONTRACT.md` — new
+  - `tests/employee-management.test.ts` — new (25 tests)
+- **Acceptance Criteria:**
+  - `/employees` route exists and guarded by `employees:view`
+  - Sidebar shows employees nav item for those with permission
+  - Employee list shows name, email, role, status, last login, permissions count
+  - Add/edit/delete buttons guarded by employees:* permissions
+  - PermissionCheckboxMatrix built from PERMISSION_CATALOG grouped by category
+  - Role presets fill checkboxes from ROLE_PERMISSIONS
+  - High-risk permissions marked with warning badge
+  - Last owner protected (actions disabled)
+  - Save button disabled with "غير متاح" label
+  - Custom permissions warning banner shown
+  - 25 boundary tests pass
+  - API contract doc documents all required endpoints and safety rules
+- **Test Plan:** pnpm typecheck, pnpm test
+- **Test Results:**
+  - ✅ pnpm typecheck: all packages pass
+  - ✅ pnpm test: employee-management.test.ts 25/25 passing
+- **Risks:** None — UI skeleton only; no data mutations without API
+- **Related Issues:** SEC-005
+- **Related Decisions:** None
+- **Status History:**
+  - Requested: 2026-06-13
+  - Done: 2026-06-13
+- **Final Notes:** RBAC Pass 3 completes the Employee Management UI skeleton. All components reference PERMISSION_CATALOG and ROLE_PERMISSIONS — no hardcoded permission strings. API endpoints are documented in the API contract and required for Pass 4.
+
 ### TASK-0011: RBAC Pass 2 — Dashboard Frontend Guards
 
 - **Type:** Feature / Security
@@ -650,4 +710,4 @@
 - **Status History:**
   - Requested: 2026-06-13
   - Done: 2026-06-13
-- **Final Notes:** RBAC Pass 2 covers all frontend guard surfaces (sidebar, routes, action buttons) for the merchant dashboard. Pass 3 will add employee management UI, role assignment page, and DB-backed role-permission storage.
+- **Final Notes:** RBAC Pass 2 covers all frontend guard surfaces (sidebar, routes, action buttons) for the merchant dashboard. Pass 3 (completed) added employee management UI. Pass 4 will add employee management API endpoints.
