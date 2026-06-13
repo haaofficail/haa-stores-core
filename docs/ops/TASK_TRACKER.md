@@ -116,7 +116,49 @@
 
 ---
 
+### TASK-0005: Security Baseline & RBAC Audit
 
+- **Type:** Security / RBAC / Audit
+- **Priority:** P1 High
+- **Status:** In Progress
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** Security Baseline & RBAC Audit — inspect and document security posture without modifying application code or database
+- **Expanded Requirement:** Audit API authorization, dashboard protection, storefront exposure, RBAC state, error capture security, logging privacy; create 5 security docs; update risk register and task tracker
+- **Problem:** Security posture was undocumented; RBAC data model missing; permission consistency gaps known but untracked
+- **Goal:** Documented security baseline with prioritized fix backlog for future implementation
+- **Scope:**
+  - Inspect API routes for auth/permission enforcement (auth, admin, dashboard, settings, products, customers, orders, storefront)
+  - Inspect dashboard AuthGuard, useAuth hook, App.tsx route structure
+  - Inspect auth-core middleware (requireAuth, requireStoreAccess, requirePermission)
+  - Inspect error capture sanitization and endpoint guards
+  - Inspect logging and privacy (structured-logger, NDJSON, .gitignore)
+  - Create SECURITY_BASELINE.md, RBAC_AUDIT.md, DATA_ISOLATION_AUDIT.md, LOGGING_PRIVACY_AUDIT.md, SECURITY_FIX_BACKLOG.md
+  - Update RISK_REGISTER, TASK_TRACKER, CURRENT_STATE, CHANGELOG_INTERNAL, REGRESSION_CHECKLIST
+- **Out of Scope:**
+  - Code changes (no fixes, no features, no refactoring)
+  - Database changes
+  - Payment/shipping/order logic
+  - Theme changes
+  - Production deployment or remote services
+- **Affected Areas:** docs/security/ (5 new files), docs/ops/ (5 updated files)
+- **Files Changed:** SECURITY_BASELINE.md, RBAC_AUDIT.md, DATA_ISOLATION_AUDIT.md, LOGGING_PRIVACY_AUDIT.md, SECURITY_FIX_BACKLOG.md, RISK_REGISTER.md, TASK_TRACKER.md, CURRENT_STATE.md, CHANGELOG_INTERNAL.md, REGRESSION_CHECKLIST.md
+- **Acceptance Criteria:**
+  - SECURITY_BASELINE.md created with findings summary, severity breakdown, immediate risks
+  - RBAC_AUDIT.md created with current status, missing pieces, design direction
+  - DATA_ISOLATION_AUDIT.md created with tenant/store/branch/customer/order isolation assessment
+  - LOGGING_PRIVACY_AUDIT.md created with sanitization review, NDJSON risks, production requirements
+  - SECURITY_FIX_BACKLOG.md created with P1-P3 prioritized tasks
+  - RISK_REGISTER updated with 4 new risks (R-0011 to R-0014)
+  - TASK_TRACKER updated with TASK-0005
+  - CURRENT_STATE updated with new phase and security findings summary
+  - CHANGELOG_INTERNAL updated with security audit entry
+  - pnpm preflight passes, pnpm typecheck passes (no code changes)
+- **Test Plan:** pnpm preflight, pnpm typecheck, pnpm ops:monitor, pnpm ops:errors
+- **Test Results:** Pending
+- **Risks:** None — audit only, no code changes
+
+---
 
 ### TASK-0003: Harden System Health Root Guard and Health Endpoint
 

@@ -134,3 +134,51 @@
 - **Mitigation:** DEFINITION_OF_DONE requires documentation updates; Final Report Rule requires doc update verification
 - **Owner:** All agents
 - **Status:** Open
+
+### R-0011: Customer write permission misconfiguration
+
+- **Risk:** `customers.ts` uses `customers:read` permission for create/update operations
+- **Area:** Security / RBAC
+- **Impact:** Users with read-only access can create and modify customer records
+- **Likelihood:** 3
+- **Severity:** 3
+- **Mitigation:** Not mitigated yet — fix proposed in SEC-001
+- **Owner:** TBD
+- **Status:** Open
+- **Related Tasks:** SEC-001
+
+### R-0012: Missing RBAC data model
+
+- **Risk:** No roles, permissions, or employee management system exists
+- **Area:** Security / RBAC
+- **Impact:** All authenticated users have equal access to dashboard features
+- **Likelihood:** 4
+- **Severity:** 4
+- **Mitigation:** API enforcement exists per-route; UI has no role filtering
+- **Owner:** TBD
+- **Status:** Open
+- **Related Tasks:** SEC-004, SEC-005
+
+### R-0013: No employee permission management
+
+- **Risk:** Merchants cannot restrict employee access to functions
+- **Area:** Security / RBAC
+- **Impact:** Employees can access all dashboard features (API enforcement only)
+- **Likelihood:** 4
+- **Severity:** 3
+- **Mitigation:** API blocks unauthorized actions; UI does not
+- **Owner:** TBD
+- **Status:** Open
+- **Related Tasks:** SEC-003, SEC-005
+
+### R-0014: Support ticket accessToken in URL
+
+- **Risk:** `accessToken` used as query parameter for support ticket auth
+- **Area:** Security / Logging
+- **Impact:** Token can leak via server logs, referrer headers, browser history
+- **Likelihood:** 2
+- **Severity:** 3
+- **Mitigation:** Local development only — no production exposure
+- **Owner:** TBD
+- **Status:** Open
+- **Related Tasks:** SEC-006

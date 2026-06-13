@@ -5,7 +5,7 @@
 ---
 
 - **Last Updated:** 2026-06-13
-- **Current Phase:** Local MVP — Local Dynamic Error Capture
+- **Current Phase:** Local MVP — Security Baseline & RBAC Audit
 - **Project Summary:** Multi-tenant Saudi e-commerce SaaS platform. Local-only. All 10 phases complete. Deployment gated by owner GO.
 - **Active Priorities:**
   - Establish development operating system and process discipline ✅
@@ -13,38 +13,49 @@
   - System Health Hardening ✅
   - Build System Map (architecture documentation) ✅
   - Dynamic Error Capture ✅
-  - Security OS (RBAC audit, data leakage checks, permission boundaries) (next)
+  - Security Baseline & RBAC Audit ✅
+  - Fix P1 security findings (customers permission, RBAC data model) (next)
   - Ensure theme isolation between storefront and merchant dashboard
   - Complete visual QA pass across all storefront pages
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done
   - TASK-0003 (System Health Hardening) — Done
-  - TASK-0004 (Dynamic Error Capture) — In Progress
+  - TASK-0004 (Dynamic Error Capture) — Done
+  - TASK-0005 (Security Baseline & RBAC Audit) — In Progress
 - **Known Broken Areas:**
   - (to be documented as discovered)
 - **Known Risks:**
   - Duplicate project folders on Desktop causing path confusion ⚠️
   - No automated CI/CD
   - Dev servers must be running for HTTP-level synthetic checks
+  - Customer route uses read permission for write operations (R-0011) 🚨
+  - No RBAC data model or employee permissions (R-0012, R-0013)
+  - Support ticket accessToken in URL query (R-0014)
 - **Recently Completed:**
   - Development Operating System: AGENTS.md + 15 docs/ops/ files + preflight script ✅
   - Git repository initialized (commit 076bc40, 370168d) ✅
   - System Health Operating System: monitor-health, synthetic-checks, error analysis, report generation, tail commands ✅
   - System Health Hardening: Root Guard fails on wrong path, health endpoint fixed ✅
-  - Monitoring playbook, health checks, synthetic checks, alert rules, incidents documentation
-  - Support error catalog, taxonomy, escalation guide, support playbook
   - Phase 1–10: All gates passed
   - LC6 — Local Full Product Gate: PASS
   - Dynamic Error Capture: 14 error codes, NDJSON logger, ErrorBoundary reporting, POST endpoint, simulate/analyze scripts ✅
   - System Map: SYSTEM_MAP.md (10 sections, all critical paths) + ERROR_FLOW_MAP.md (12 sections, full lifecycle) ✅
+  - Security Baseline & RBAC Audit: 5 security docs, 4 new risks, 14 backlog items ✅
+- **Security Findings Summary:**
+  - **P0:** None
+  - **P1:** 3 findings — customers permission downgrade, missing customer audit logging, no frontend role filtering
+  - **P2:** 2 findings — theme config publicly exposed, accessToken in URL
+  - **P3:** 3 findings — no refresh token, localStorage JWT, no session polling
+  - **Backlog:** 14 tasks (SEC-001 to SEC-014)
 - **Do Not Touch:**
   - Production deployment configuration (requires owner GO)
   - Payment gateway credentials
   - Database production seeds
 - **Next Recommended Tasks:**
-  - Merge `chore/local-dynamic-error-capture` → `main`
-  - Security OS (RBAC audit, data leakage checks, permission boundary enforcement)
+  - Fix customers.ts permission downgrade (SEC-001)
+  - Implement RBAC data model (SEC-004)
+  - Add employee permission management UI (SEC-005)
   - Remove or rename duplicate `haa-stores-core-spec.md` folder
   - Add all existing project files to git tracking
   - Run `pnpm ops:monitor` as routine pre-dev check
@@ -53,9 +64,10 @@
   - Run `pnpm setup` for initial local environment
   - Three terminals: `pnpm dev:api`, `pnpm dev:dashboard`, `pnpm dev:storefront`
   - First commit: `076bc40` — "chore: add development operating system"
-  - Branch: `chore/local-dynamic-error-capture`
+  - Branch: `chore/security-baseline-rbac-audit`
   - preflight is now a hardened Node script (`scripts/preflight.mjs`) that fails with exit code 1 from wrong directory
   - System Map is at `docs/system-map/SYSTEM_MAP.md` and `docs/system-map/ERROR_FLOW_MAP.md`
+  - Security docs are at `docs/security/`
 - **Important Decisions:**
   - NO_DEPLOY_POLICY active — local development only until owner GO
   - Short requests must be expanded before execution (DECISION-0001)

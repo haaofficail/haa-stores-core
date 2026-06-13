@@ -83,6 +83,20 @@
 - [ ] Error codes map to entries in ERROR_CATALOG.md
 - [ ] New error codes added to ERROR_CODE_TAXONOMY.md
 
+## Security Baseline
+
+- [ ] `requireStoreAccess()` is applied on all merchant routes that use `:storeId`
+- [ ] `requirePermission()` uses correct permission string (not `read` for write operations)
+- [ ] Customer mutations have audit logging (create, update, delete)
+- [ ] AuthGuard in dashboard checks user exists (basic auth)
+- [ ] API enforcement exists independently of UI hiding
+- [ ] Support ticket auth uses header, not query param
+- [ ] Error capture sanitization covers all sensitive field patterns
+- [ ] `.env` is gitignored
+- [ ] Stack traces are stripped in production responses
+- [ ] `POST /internal/support-errors/report` is 404 in production
+- [ ] No secrets in NDJSON logs
+
 ## Previous Issue Checks
 
 *(Add specific checks here as issues are resolved)*

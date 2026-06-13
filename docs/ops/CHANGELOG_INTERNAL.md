@@ -133,3 +133,31 @@
 
 - `AGENTS.md`: added system map read to Mandatory Start Rule; fixed step numbering (was 11 with duplicate 5, now 12)
 - `CURRENT_STATE.md`: updated phase, priorities, recent completions, local dev notes to reference system map
+
+## 2026-06-13 (Security Baseline & RBAC Audit)
+
+### Added
+
+- Created `docs/security/SECURITY_BASELINE.md` — 6-section security assessment covering auth, API authorization, dashboard protection, storefront exposure, error capture security, logging/privacy; 0 P0, 3 P1, 2 P2, 3 P3 findings
+- Created `docs/security/RBAC_AUDIT.md` — comprehensive RBAC assessment: existing requirePermission middleware documented, all missing pieces identified (permission definitions, roles, mapping, UI, seeds, branches), 9 recommended tasks before implementation
+- Created `docs/security/DATA_ISOLATION_AUDIT.md` — tenant/store/branch/customer/order isolation assessment; all areas rated Low risk except branch/location (not implemented)
+- Created `docs/security/LOGGING_PRIVACY_AUDIT.md` — audit of structured-logger redaction, support-error-log sanitization, NDJSON risks, .env/.gitignore coverage, production-later requirements
+- Created `docs/security/SECURITY_FIX_BACKLOG.md` — 14 prioritized fix items (5 P1, 4 P2, 5 P3) with acceptance criteria and test plans
+
+### Changed
+
+- `docs/ops/RISK_REGISTER.md`: added 4 new risks (R-0011 customer permission, R-0012 missing RBAC, R-0013 no employee management, R-0014 accessToken in URL)
+- `docs/ops/TASK_TRACKER.md`: added TASK-0005 (Security Baseline & RBAC Audit) with full scope, acceptance criteria, test plan
+- `docs/ops/CURRENT_STATE.md`: updated phase to Security Baseline & RBAC Audit; added security findings summary, known risks, recommended next tasks; TASK-0004 status to Done
+- `docs/ops/CHANGELOG_INTERNAL.md`: this entry
+- `docs/ops/REGRESSION_CHECKLIST.md`: added security section with audit checks
+- `AGENTS.md`: added System Map reference to Mandatory Start Rule (already done in previous update)
+
+### Notes
+
+- Total of 5 security doc files created, 4 ops files updated
+- No code changes, no database changes — pure documentation and risk tracking
+- Key finding: customers.ts uses read permission for write operations (SEC-001)
+- Key finding: no RBAC data model exists — permissions are hardcoded strings (SEC-004)
+- Error capture sanitization reviewed and confirmed adequate
+- Branch: chore/security-baseline-rbac-audit
