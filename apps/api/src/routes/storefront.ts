@@ -671,7 +671,7 @@ storefrontRouter.get('/:slug/support/tickets/:ticketId', async (c) => {
   const ticketId = Number(c.req.param('ticketId'));
   const accessToken = c.req.query('accessToken') as string | undefined;
   if (!accessToken) return c.json({ success: false, error: { code: 'BAD_REQUEST', message: 'رمز الدخول مطلوب.' } }, 400);
-  let ticket = await new SupportService().getTicketByAccessToken(accessToken);
+  const ticket = await new SupportService().getTicketByAccessToken(accessToken);
   if (!ticket || ticket.id !== ticketId || ticket.storeId !== store.id) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'التذكرة غير موجودة.' } }, 404);
   }
@@ -685,7 +685,7 @@ storefrontRouter.post('/:slug/support/tickets/:ticketId/reply', async (c) => {
   const ticketId = Number(c.req.param('ticketId'));
   const { message, accessToken } = await c.req.json();
   if (!message || !accessToken) return c.json({ success: false, error: { code: 'BAD_REQUEST', message: 'الرسالة ورمز الدخول مطلوبان.' } }, 400);
-  let ticket = await new SupportService().getTicketByAccessToken(accessToken);
+  const ticket = await new SupportService().getTicketByAccessToken(accessToken);
   if (!ticket || ticket.id !== ticketId || ticket.storeId !== store.id) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'التذكرة غير موجودة.' } }, 404);
   }

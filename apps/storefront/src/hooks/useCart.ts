@@ -43,7 +43,7 @@ export function useCart(slug: string | undefined) {
     if (!slug) return;
     setLoading(true);
     try {
-      let cartId = loadCartId(slug);
+      const cartId = loadCartId(slug);
       if (cartId) {
         try {
           const existing = await cartApi.get(slug, cartId);
