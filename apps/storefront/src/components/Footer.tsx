@@ -66,51 +66,51 @@ export default function Footer() {
     <>
       {showPaymentLogos && (
         <div className="bg-surface-1">
-          <div className="container-store py-3">
-            <div className="flex items-center justify-center gap-x-4 gap-y-1.5 overflow-x-auto">
+          <div className="container-store py-2">
+            <div className="flex items-center justify-center gap-x-3 gap-y-1 overflow-x-auto">
               {getPaymentLogosByCategory('LOCAL_PAYMENT_METHOD').map(logo => (
-                <PaymentLogoImg key={logo.id} logo={logo} size="h-3" />
+                <PaymentLogoImg key={logo.id} logo={logo} size="h-2.5" />
               ))}
               {getPaymentLogosByCategory('CARD_NETWORK').map(logo => (
-                <PaymentLogoImg key={logo.id} logo={logo} size="h-3" />
+                <PaymentLogoImg key={logo.id} logo={logo} size="h-2.5" />
               ))}
               {getPaymentLogosByCategory('DIGITAL_WALLET').map(logo => (
-                <PaymentLogoImg key={logo.id} logo={logo} size="h-3" />
+                <PaymentLogoImg key={logo.id} logo={logo} size="h-2.5" />
               ))}
               {getPaymentLogosByCategory('BNPL_PROVIDER').map(logo => (
-                <PaymentLogoImg key={logo.id} logo={logo} size="h-3" />
+                <PaymentLogoImg key={logo.id} logo={logo} size="h-2.5" />
               ))}
             </div>
           </div>
         </div>
       )}
       <footer className="bg-surface-1 mt-auto">
-      <div className="container-store py-4 sm:py-5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8">
+      <div className="container-store py-3 sm:py-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-6">
 
           {/* Col 1: Logo + About + Newsletter — 5 cols on lg */}
-          <div className="lg:col-span-5 space-y-4">
+          <div className="lg:col-span-5 space-y-3">
             <div className="flex items-center gap-2">
               {store.logoUrl ? (
-                <img src={store.logoUrl} alt={store.name} className="h-8 w-8 rounded-lg object-cover" />
+                <img src={store.logoUrl} alt={store.name} className="h-7 w-7 rounded-lg object-cover" />
               ) : (
-                <div className="h-8 w-8 rounded-lg bg-primary-500 flex items-center justify-center text-white font-bold text-sm">
+                <div className="h-7 w-7 rounded-lg bg-primary-500 flex items-center justify-center text-white font-bold text-xs">
                   {store.name.charAt(0)}
                 </div>
               )}
-              <span className="font-bold text-base text-text-primary">{store.name}</span>
+              <span className="font-bold text-sm text-text-primary">{store.name}</span>
             </div>
             {companyDescription && (
-              <p className="text-sm text-text-secondary leading-relaxed">{companyDescription}</p>
+              <p className="text-sm text-text-secondary leading-relaxed line-clamp-2">{companyDescription}</p>
             )}
             {showNewsletter && (
-              <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
+              <form className="flex gap-1.5" onSubmit={(e) => e.preventDefault()}>
                 <input
                   type="email"
-                  className="min-h-[40px] flex-1 rounded-lg border border-border bg-surface-1 px-3 text-sm outline-none focus:border-primary-500"
+                  className="min-h-[36px] flex-1 rounded-lg border border-border bg-surface-1 px-3 text-sm outline-none focus:border-primary-500"
                   placeholder={t('footer.emailPlaceholder', 'البريد الإلكتروني')}
                 />
-                <button type="submit" className="min-h-[40px] rounded-lg bg-primary-500 px-4 text-sm font-semibold text-white hover:bg-primary-600 shrink-0">
+                <button type="submit" className="min-h-[36px] rounded-lg bg-primary-500 px-3 text-sm font-semibold text-white hover:bg-primary-600 shrink-0">
                   {t('common.subscribe', 'اشتراك')}
                 </button>
               </form>
@@ -119,10 +119,10 @@ export default function Footer() {
 
           {/* Col 2: Links combined (Quick + Customer Service) — 3 cols on lg */}
           <div className="lg:col-span-3">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <h4 className="font-semibold text-text-primary mb-3 text-sm">{t('footer.quickLinks')}</h4>
-                <ul className="space-y-2">
+                <h4 className="font-semibold text-text-primary mb-2 text-sm">{t('footer.quickLinks')}</h4>
+                <ul className="space-y-1.5">
                   <li><Link to={`/s/${slug}`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors">{t('store.home')}</Link></li>
                   <li><Link to={`/s/${slug}/c/all`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors">{t('store.categories')}</Link></li>
                   <li><Link to={`/s/${slug}/about`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors">{t('store.about')}</Link></li>
@@ -130,8 +130,8 @@ export default function Footer() {
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold text-text-primary mb-3 text-sm">{t('footer.customerService')}</h4>
-                <ul className="space-y-2">
+                <h4 className="font-semibold text-text-primary mb-2 text-sm">{t('footer.customerService')}</h4>
+                <ul className="space-y-1.5">
                   <li><Link to={`/s/${slug}/track`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors">{t('store.trackOrder')}</Link></li>
                   <li><Link to={`/s/${slug}/policies/returns`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors">{t('footer.returnPolicy')}</Link></li>
                   <li><Link to={`/s/${slug}/policies/privacy`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors">{t('footer.privacyPolicy')}</Link></li>
@@ -142,32 +142,32 @@ export default function Footer() {
           </div>
 
           {/* Col 3: Contact + Social + Payments — 4 cols on lg */}
-          <div className="lg:col-span-4 space-y-4">
+          <div className="lg:col-span-4 space-y-3">
             <div>
-              <h4 className="font-semibold text-text-primary mb-3 text-sm">{t('store.contact')}</h4>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2.5">
+              <h4 className="font-semibold text-text-primary mb-2 text-sm">{t('store.contact')}</h4>
+              <ul className="space-y-1.5">
+                <li className="flex items-center gap-2">
                   <Icon icon={Mail} size="xs" className="text-text-tertiary" />
                   <a href={`mailto:${contactEmail}`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors" dir="ltr">{contactEmail}</a>
                 </li>
                 {store.phone && (
-                  <li className="flex items-center gap-2.5">
+                  <li className="flex items-center gap-2">
                     <Icon icon={Phone} size="xs" className="text-text-tertiary" />
                     <a href={`tel:${store.phone}`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors" dir="ltr">{store.phone}</a>
                   </li>
                 )}
                 {whatsappContact?.enabled && whatsappContact.waMeLink && (
-                  <li className="flex items-center gap-2.5">
+                  <li className="flex items-center gap-2">
                     <Icon icon={Phone} size="xs" className="text-text-tertiary" />
                     <a href={whatsappContact.waMeLink} target="_blank" rel="noreferrer" className="text-sm text-text-secondary hover:text-primary-600 transition-colors" dir="ltr">WhatsApp</a>
                   </li>
                 )}
               </ul>
               {showSocialLinks && visibleSocialLinks.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
+                <div className="flex flex-wrap gap-1.5 mt-2">
                   {visibleSocialLinks.map((link) => (
                     <a key={link.key} href={link.href} target="_blank" rel="noreferrer"
-                      className="text-xs px-2.5 py-1 rounded-full bg-surface-2 text-text-secondary hover:text-primary-600 transition-colors">
+                      className="text-xs px-2 py-0.5 rounded-full bg-surface-2 text-text-secondary hover:text-primary-600 transition-colors">
                       {link.label}
                     </a>
                   ))}
@@ -178,16 +178,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar: copyright + legal links */}
-        <div className="mt-4 pt-4 border-t border-border">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-2">
-            <Link to={`/s/${slug}/policies/terms`} className="text-xs text-text-tertiary hover:text-primary-600 transition-colors">شروط الاستخدام</Link>
-            <span className="hidden sm:inline text-text-tertiary">&middot;</span>
-            <Link to={`/s/${slug}/policies/privacy`} className="text-xs text-text-tertiary hover:text-primary-600 transition-colors">سياسة الخصوصية</Link>
-            <span className="hidden sm:inline text-text-tertiary">&middot;</span>
-            <Link to={`/s/${slug}/policies/shipping`} className="text-xs text-text-tertiary hover:text-primary-600 transition-colors">سياسة الشحن</Link>
-            <span className="hidden sm:inline text-text-tertiary">&middot;</span>
-            <Link to={`/s/${slug}/policies/returns`} className="text-xs text-text-tertiary hover:text-primary-600 transition-colors">سياسة الاسترجاع</Link>
-          </div>
+        <div className="mt-3 pt-3 border-t border-border">
           <p className="text-xs text-text-tertiary text-center">
             &copy; {new Date().getFullYear()} {store.name}. {t('footer.copyright')}
             <span className="mx-1.5">&middot;</span>
