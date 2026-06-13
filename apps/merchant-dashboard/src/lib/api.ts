@@ -683,6 +683,33 @@ export const aiApi = {
     request<any>(`/merchant/${storeId}/ai/chat`, { method: 'POST', body: JSON.stringify({ prompt, history }) }),
 };
 
+export interface Employee {
+  id: number;
+  userId: number;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+  permissions: string[];
+}
+
+export const employeesApi = {
+  // employeesApi.list
+  list: (storeId: number) =>
+    request<Employee[]>(`/merchant/${storeId}/employees`),
+  // employeesApi.invite
+  invite: (storeId: number, data: { name: string; email: string; password: string; role: string }) =>
+    request<Employee>(`/merchant/${storeId}/employees/invite`, { method: 'POST', body: JSON.stringify(data) }),
+  // employeesApi.update
+  update: (storeId: number, employeeId: number, data: { role?: string; isActive?: boolean }) =>
+    request<Employee>(`/merchant/${storeId}/employees/${employeeId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  // employeesApi.remove
+  remove: (storeId: number, employeeId: number) =>
+    request<{ success: true }>(`/merchant/${storeId}/employees/${employeeId}`, { method: 'DELETE' }),
+};
+
 export const onboardingApi = {
   generateProducts: (storeId: number, data: { category?: string; count?: number }) =>
     aiApi.generateProducts(storeId, data),

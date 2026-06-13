@@ -58,6 +58,7 @@ import { marketplacesRouter } from './routes/marketplaces.js';
 import { paymentSettingsRouter } from './routes/payment-settings.js';
 import { providerStatusRouter } from './routes/provider-status.js';
 import { supportRouter } from './routes/support.js';
+import { employeesRouter } from './routes/employees.js';
 import { auditRouter } from './routes/audit.js';
 import { healthRouter } from './routes/health.js';
 import { supportErrorsRouter } from './routes/support-errors.js';
@@ -243,6 +244,7 @@ app.route('/merchant/:storeId/feeds', feedsRouter);
 app.route('/merchant/:storeId/ai', aiRouter);
 app.route('/merchant/:storeId/marketplaces', marketplacesRouter);
 app.route('/merchant/:storeId/payment-providers', paymentSettingsRouter);
+app.route('/merchant/:storeId/employees', employeesRouter);
 app.route('/merchant/:storeId', supportRouter);
 app.route('/merchant/:storeId/audit', auditRouter);
 
