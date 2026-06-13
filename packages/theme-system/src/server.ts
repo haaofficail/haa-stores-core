@@ -1,3 +1,20 @@
+/**
+ * @haa/theme-system/server — DASHBOARD-SAFE EXPORTS
+ *
+ * ============================================================
+ * ✅ DASHBOARD-SAFE
+ * ============================================================
+ * This subpath exports only server-safe functions with ZERO
+ * DOM side effects. Safe for import by any app.
+ *
+ * CRITICAL: This file must NEVER export:
+ *   - applyStoreTheme / clearStoreTheme  (DOM mutation)
+ *   - applyTheme / clearTheme            (DOM mutation)
+ *   - useThemeConfig / fetchThemeConfig  (network + DOM)
+ *   - loadTheme / setThemeApiBase        (network + DOM)
+ * ============================================================
+ */
+
 export {
   getAllThemeManifests,
   getDefaultThemeKey,

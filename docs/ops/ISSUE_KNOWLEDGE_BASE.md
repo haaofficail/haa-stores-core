@@ -30,6 +30,33 @@
 
 ## Fixed Issues
 
+### ISSUE-0003: Storefront Theme Hydration Flicker (Flash of Wrong Theme)
+
+- **ID:** ISSUE-0003
+- **Date:** 2026-06-13
+- **Severity:** High
+- **Area:** Storefront / Theme loading
+- **Related Error Codes:** THEME-003
+- **Related Tasks:** TASK-0008
+- **Symptoms:** Opening a storefront shows base-elegant theme (or previous theme) for one frame, then switches to the correct theme (e.g., luxury-showcase). Visual flash on every navigation.
+- **Expected:** Storefront shows only the correct theme or a neutral skeleton while loading. Never shows a different theme momentarily.
+- **Actual:** `Layout.tsx` rendered themed content (Header/Footer/Outlet) immediately with `resolveStorefrontThemeKey(null)` → `'base-elegant'` before the async `useThemeConfig(slug)` resolved. After 1 frame, the real theme arrived, causing a swap → flash.
+- **Root Cause:** `Layout.tsx` called `resolveStorefrontThemeKey(null)` on first render (before API response), which returned `DEFAULT_STOREFRONT_THEME_KEY = 'base-elegant'`. Themed components rendered with the wrong key for one frame, then re-rendered with the correct key when `useThemeConfig` resolved.
+- **Fix:**
+  1. Added `useEffect` + state guard in `Layout.tsx`: do not render themed content until `themeConfig` is non-null
+  2. While loading, render a neutral `ThemeLoadingSkeleton` that uses only Tailwind built-in colors (`bg-gray-100`, `bg-gray-200`) — zero theme CSS variables
+  3. Added 8-second fallback timeout: if theme fails to load, render with default fallback (`resolveStorefrontThemeKey(null)`)
+  4. CSS vars are applied synchronously via `loadTheme()` → `applyStoreTheme()` before `setConfig()`, so by the time React re-renders, the correct colors are already in the DOM
+- **Prevention:**
+  - Storefront must NEVER render themed components before `themeConfig` is resolved
+  - `resolveStorefrontThemeKey(null)` is only safe for fallback after failure, not for initial render
+  - Any new page component added to storefront must be rendered inside `<Outlet />` (already inside Layout guard) or have its own loading guard
+- **Regression Checklist Update:**
+  - Added "No themed content rendered before themeConfig resolves"
+  - Added "Skeleton uses only neutral Tailwind colors (no theme CSS vars)"
+  - Added "Fallback timeout exists for theme loading failure"
+- **Status:** Fixed
+
 ### ISSUE-0001: Storefront Theme Leakage via @haa/theme-system Main Entry
 
 - **ID:** ISSUE-0001

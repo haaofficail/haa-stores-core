@@ -6,7 +6,11 @@
   "description": "HAA Storefront Themes — Customer-facing store themes. Replaces @haa/theme-system.",
   "main": "src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./server": {
+      "types": "./src/server.ts",
+      "import": "./src/server.ts"
+    }
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

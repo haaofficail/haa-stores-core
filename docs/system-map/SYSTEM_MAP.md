@@ -86,8 +86,8 @@
 This is the most important section. Violations cause data leakage, permission bypass, and runtime errors.
 
 ```
-admin-dashboard ──✗── storefront themes
-merchant-dashboard ──✗── storefront themes
+admin-dashboard ──✗── storefront themes (main entry)
+merchant-dashboard ──✗── storefront themes (main entry)
 storefront ──✗── merchant-dashboard components
 theme-* packages ──✗── dashboard apps
 api ──✗── any frontend app code
@@ -96,11 +96,28 @@ packages/shared ──✗── any app package
 
 | Violation | Risk |
 |-----------|------|
-| Dashboard imports storefront theme | CSS leakage, wrong UI |
+| Dashboard imports storefront theme main entry | DOM manipulation, CSS leakage, wrong UI |
+| Dashboard imports `@haa/theme-system` main entry | `applyTheme()` writes to `document.documentElement`, mutates CSS globally, injects GTM/GA/FB scripts |
 | API imports dashboard component | Runtime error, wrong dependency |
 | Storefront imports dashboard component | Cross-context confusion |
 | Theme imports dashboard logic | Security bypass |
 | shared imports anything from apps | Circular dependency, build breaks |
+
+### Allowed Import Map
+
+| App / Package | May Import From | Must NOT Import From |
+|--------------|----------------|---------------------|
+| `apps/storefront` | `@haa/storefront-themes` (full), `@haa/theme-system` (full), `@haa/ui`, `@haa/shared` | `apps/merchant-dashboard`, `apps/admin-dashboard` |
+| `apps/merchant-dashboard` | `@haa/ui`, `@haa/shared`, `@haa/system-theme`, `@haa/theme-react`, `@haa/theme-system/server`\*, `@haa/storefront-themes/server`\* | `@haa/theme-system` (main), `@haa/storefront-themes` (main), `apps/storefront`, `apps/admin-dashboard` |
+| `apps/admin-dashboard` | `@haa/ui`, `@haa/shared`, `@haa/system-theme`, `@haa/theme-react`, `@haa/theme-system/server`\*, `@haa/storefront-themes/server`\* | `@haa/theme-system` (main), `@haa/storefront-themes` (main), `apps/storefront`, `apps/merchant-dashboard` |
+| `apps/api` | `@haa/shared`, `@haa/db`, business logic packages, `@haa/theme-system/server`\* | Any frontend-only package (`@haa/ui`, `@haa/storefront-themes` main, `apps/*`) |
+| `packages/shared` | nothing workspace-internal | Everything else |
+| `packages/storefront-themes` | `@haa/theme-system` (full), `@haa/shared`, `react` | Dashboard apps, `@haa/system-theme` |
+| `packages/theme-system` | `@haa/shared` | Dashboard apps, `@haa/system-theme` |
+| `packages/system-theme` | `@haa/shared`, `@haa/ui` | `@haa/storefront-themes`, `@haa/theme-system` (main) |
+| `packages/theme-react` | `@haa/shared`, `@haa/theme-engine` | `@haa/storefront-themes`, `@haa/theme-system` (main) |
+
+> \* `@haa/theme-system/server` and `@haa/storefront-themes/server` are dashboard-safe subpaths that export only server-safe functions (registry reads, config resolution, validation). No DOM manipulation.
 
 ---
 

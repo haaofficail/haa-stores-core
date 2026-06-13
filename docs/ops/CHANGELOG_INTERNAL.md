@@ -162,6 +162,19 @@
 - Error capture sanitization reviewed and confirmed adequate
 - Branch: chore/security-baseline-rbac-audit
 
+## 2026-06-13 (Theme Hydration Flicker Fix)
+
+### Fixed
+
+- `apps/storefront/src/components/Layout.tsx`: prevented storefront theme hydration flicker by guarding themed content rendering until `useThemeConfig` resolves. Previously, `resolveStorefrontThemeKey(null)` returned `'base-elegant'` on first render before the async theme API call completed, causing a flash of wrong theme. Now renders a neutral `ThemeLoadingSkeleton` (using only Tailwind built-in colors, zero CSS vars) during loading, and only renders themed components after the correct theme config is available. Added 8-second fallback timeout for theme loading failure.
+
+### Notes
+
+- Root cause was a timing issue, not a design issue: `useThemeConfig` returns `null` on first render, but Layout rendered themed content anyway using the default fallback key.
+- `loadTheme()` → `applyStoreTheme()` runs synchronously before `setConfig()`, so CSS vars are in the DOM before the re-render — zero frame gap.
+- Merchant-dashboard imports audit confirmed: no storefront theme code leakage (see TASK-0008 audit report).
+- Branch: fix/theme-hydration-flicker (merged to main at 0f4f0c1)
+
 ## 2026-06-13 (Theme Isolation)
 
 ### Changed

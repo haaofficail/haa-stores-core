@@ -100,6 +100,10 @@
 ## Theme Isolation
 
 - [ ] Merchant-dashboard imports from `@haa/theme-system/server` only, never from `@haa/theme-system` or `@haa/storefront-themes` main entry
+- [ ] Admin-dashboard imports from `@haa/theme-system/server` only, never from `@haa/theme-system` or `@haa/storefront-themes` main entry
+- [ ] `@haa/storefront-themes/server` subpath is properly exported in `package.json`
+- [ ] `@haa/storefront-themes/server` does NOT re-export any DOM-dangerous functions (`applyStoreTheme`, `clearStoreTheme`, `applyTheme`, `clearTheme`, `useThemeConfig`, `fetchThemeConfig`, `loadTheme`, `setThemeApiBase`)
+- [ ] `@haa/theme-system/src/server.ts` has a CRITICAL comment block listing forbidden exports
 - [ ] No global `!important` body/html styles in any storefront theme component
 - [ ] No `#theme-scope` dead CSS in any file
 - [ ] Storefront theme registry loads both base-elegant and luxury-showcase correctly
@@ -109,6 +113,10 @@
 - [ ] No storefront-specific CSS files imported in dashboard apps
 - [ ] Admin-dashboard does not import from storefront, storefront-themes, or theme-* packages
 - [ ] Fallback theme renders if theme key is unregistered
+- [ ] No themed content rendered before themeConfig resolves (loading guard in Layout.tsx)
+- [ ] Skeleton uses only neutral Tailwind colors (no theme CSS vars) during theme loading
+- [ ] Fallback timeout exists for theme loading failure (8s default)
+- [ ] Storefront navigation between stores shows skeleton (not previous theme) during load
 - [ ] `pnpm preflight`, `pnpm typecheck`, `pnpm test` all pass after any theme change
 
 ## Previous Issue Checks

@@ -69,6 +69,58 @@
 
 ## Active Tasks
 
+### TASK-0008: Fix Storefront Theme Hydration Flicker
+
+- **Type:** Fix
+- **Priority:** P0 Critical
+- **Status:** Done
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** Fix flash of wrong theme (base-elegant → luxury-showcase) when opening storefront
+- **Expanded Requirement:** Prevent any themed content from rendering before the correct themeKey is resolved. Show only neutral skeleton or correct theme.
+- **Problem:** Flash of Wrong Theme (Theme hydration flicker) — base-elegant appears for 1 frame before the correct theme loads
+- **Goal:** Zero flash — user sees either a neutral skeleton or the correct theme immediately
+- **Scope:**
+  - Add theme loading guard in Layout.tsx
+  - Create neutral skeleton using only Tailwind built-in colors (no CSS vars)
+  - Handle theme loading failure with fallback timeout
+  - No changes to theme design, merchant dashboard, or CSS globals
+- **Out of Scope:**
+  - Theme design changes
+  - Merchant dashboard
+  - CSS globals
+  - Theme system packages
+- **Affected Areas:** apps/storefront/src/components/Layout.tsx
+- **Files Changed:** `apps/storefront/src/components/Layout.tsx` (+70 lines)
+- **Acceptance Criteria:**
+  - عند فتح المتجر لا يظهر الثيم السابق لحظة
+  - يظهر إما skeleton/loading محايد أو الثيم الصحيح مباشرة
+  - luxury-showcase يظهر بدون flicker
+  - base-elegant يظهر بدون flicker
+  - fallback يظهر فقط عند فشل تحميل الثيم
+  - pnpm preflight ينجح
+  - pnpm typecheck ينجح
+  - pnpm ops:monitor ينجح
+  - لا يوجد تأثير على merchant-dashboard
+- **Test Plan:** preflight, typecheck, ops:monitor, test
+- **Test Results:**
+  - ✅ pnpm preflight: PASSED
+  - ✅ pnpm typecheck: 21/21 packages pass
+  - ✅ pnpm ops:monitor: all checks pass
+  - ✅ pnpm test: 67 files, 1340 tests passed
+- **Risks:** None — single file change, no behavioral changes to themes
+- **Related Issues:** ISSUE-0003
+- **Related Decisions:** None
+- **Status History:**
+  - Requested: 2026-06-13
+  - In Progress: 2026-06-13
+  - Done: 2026-06-13
+- **Final Notes:** Root cause was Layout rendering `resolveStorefrontThemeKey(null)` before theme API resolved. Fixed by guarding themed content until `useThemeConfig` returns non-null. CSS vars are applied synchronously before state update, so no frame gap.
+
+---
+
+## Active Tasks
+
 ### TASK-0004: Local Dynamic Error Capture
 
 - **Type:** Monitoring, Ops, Documentation
