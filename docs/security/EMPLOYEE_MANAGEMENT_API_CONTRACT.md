@@ -1,7 +1,7 @@
 # Employee Management API Contract
 
 > Contract for the Employee Management endpoints required to power the dashboard UI.
-> **Status:** Draft — not implemented. UI skeleton exists using mock data.
+> **Status:** Implemented ✅ — RBAC Pass 4 complete. UI wired to API.
 
 ---
 
@@ -18,59 +18,58 @@
 
 ## Required Endpoints
 
-### GET /stores/:storeId/employees
+### GET /merchant/:storeId/employees
 
 List all employees of a store/tenant.
 
-- **Response:** `Employee[]`
+- **Response:** `Employee[]` (id is tenant_users.id, userId is users.id)
 - **Permission required:** `employees:view`
-- **Fields needed per employee:**
-  - `id` — user ID
-  - `name` — user name
-  - `email` — email address
-  - `role` — UserRole string
-  - `isActive` — boolean
-  - `lastLoginAt` — ISO timestamp or null
-  - `permissions` — string[] (derived from role)
+- **Implemented:** ✅
+- **Fields returned:** `id`, `userId`, `name`, `email`, `role`, `isActive`, `lastLoginAt`, `createdAt`, `permissions` (derived from role)
 
-### POST /stores/:storeId/employees/invite
+### POST /merchant/:storeId/employees/invite
 
 Invite a new employee (creates user + tenant_user).
 
-- **Body:** `{ name, email, role }`
+- **Body:** `{ name, email, password, role }`
 - **Permission required:** `employees:invite`
-- **Response:** `Employee` (the created user with tenant link)
-- **Notes:** This is an invite flow — sends email with set-password link.
+- **Response:** `Employee` (201)
+- **Implemented:** ✅
+- **Notes:** Accepts existing user (links to tenant) or creates new. Email invite not sent yet.
+- **Errors:** 409 CONFLICT (duplicate), 403 FORBIDDEN (non-owner assigning owner)
 
-### PATCH /stores/:storeId/employees/:employeeId
+### PATCH /merchant/:storeId/employees/:employeeId
 
 Update employee role/status.
 
 - **Body:** `{ role?, isActive? }`
 - **Permission required:** `employees:update`
 - **Response:** `Employee`
+- **Implemented:** ✅
 - **Notes:** Cannot change the last `owner`. Cannot downgrade self from `owner`.
+- **Errors:** 404 NOT_FOUND, 403 FORBIDDEN (last owner, self-downgrade, rank limit)
 
-### PATCH /stores/:storeId/employees/:employeeId/permissions
+### PATCH /merchant/:storeId/employees/:employeeId/permissions
 
 Update employee custom permissions (future).
 
-- **Body:** `{ permissions: string[] }` — only if custom permissions are supported
+- **Body:** `{ permissions: string[] }`
 - **Permission required:** `employees:manage_permissions`
-- **Response:** `Employee`
-- **Notes:** Currently NOT supported — permissions are role-derived only. This endpoint
-  would require a `permissions` column on `tenant_users` and changes to the JWT/permission
-  resolution logic.
+- **Response:** 501 NOT_IMPLEMENTED
+- **Implemented:** ✅ (returns 501)
+- **Notes:** Custom permissions not supported — permissions are role-derived only.
 
-### DELETE /stores/:storeId/employees/:employeeId
+### DELETE /merchant/:storeId/employees/:employeeId
 
-Remove employee from store (disable or hard-delete).
+Remove employee from store (soft-delete).
 
-- **Body:** (optional) `{ hardDelete?: boolean }`
+- **Body:** none
 - **Permission required:** `employees:delete`
 - **Response:** `{ success: true }`
-- **Notes:** Cannot delete the last `owner`. Hard-delete removes tenant_user record.
-  Soft-delete sets `users.isActive = false`.
+- **Implemented:** ✅
+- **Notes:** Deletes tenant_user record, sets users.isActive = false.
+  Cannot delete the last `owner`. Cannot delete self.
+- **Errors:** 404 NOT_FOUND, 403 FORBIDDEN (last owner, self-delete)
 
 ---
 
@@ -113,23 +112,32 @@ This requires changes in:
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Employee list UI | ✅ Built | Uses mock data; needs GET endpoint |
-| Add employee dialog | ✅ Built | Save disabled; needs POST endpoint |
-| Edit employee dialog | ✅ Built | Save disabled; needs PATCH endpoint |
-| PermissionCheckboxMatrix | ✅ Built | Reads from PERMISSION_CATALOG + ROLE_PERMISSIONS |
+| Employee list UI | ✅ Wired | Fetches from GET /merchant/:storeId/employees |
+| Add employee dialog | ✅ Wired | Calls POST /merchant/:storeId/employees/invite |
+| Edit employee dialog | ✅ Wired | Calls PATCH /merchant/:storeId/employees/:employeeId |
+| Delete employee | ✅ Wired | Calls DELETE /merchant/:storeId/employees/:employeeId with confirm |
+| PermissionCheckboxMatrix | ✅ Built | Reads from PERMISSION_CATALOG + ROLE_PERMISSIONS (read-only) |
 | Role presets | ✅ Built | Fills checkboxes from ROLE_PERMISSIONS |
+| Custom permissions warning | ✅ Shown | "التخصيص الفردي للصلاحيات غير مدعوم بعد" |
 | Safety rules display | ✅ Built | Last-owner guard shown in UI |
 | Action button guarding | ✅ Built | Uses PermissionGate with employees:* permissions |
+| Loading state | ✅ Built | "جاري تحميل الموظفين..." while fetching |
+| Empty state | ✅ Built | "لا يوجد موظفون بعد" when list is empty |
+| Error state | ✅ Built | Error message on API failure with retry |
 
 ---
 
-## Implementation Order
+## Implementation Status
 
-1. Add DB migration for custom permissions (if needed)
-2. Create GET /stores/:storeId/employees endpoint
-3. Create POST /stores/:storeId/employees/invite endpoint
-4. Create PATCH /stores/:storeId/employees/:employeeId endpoint
-5. Create PATCH /stores/:storeId/employees/:employeeId/permissions endpoint
-6. Create DELETE /stores/:storeId/employees/:employeeId endpoint
-7. Wire frontend to real endpoints
-8. Add safety rule enforcement to all endpoints
+| Step | Status |
+|------|--------|
+| 1. GET /merchant/:storeId/employees | ✅ Done |
+| 2. POST /merchant/:storeId/employees/invite | ✅ Done |
+| 3. PATCH /merchant/:storeId/employees/:employeeId | ✅ Done |
+| 4. DELETE /merchant/:storeId/employees/:employeeId | ✅ Done |
+| 5. PATCH /merchant/:storeId/employees/:employeeId/permissions | ✅ 501 Done |
+| 6. Wire UI to API | ✅ Done |
+| 7. Safety rule enforcement | ✅ Done |
+| 8. DB migration for custom permissions | ❌ Future |
+| 9. Real email invite flow | ❌ Future |
+| 10. Employee audit logs | ❌ Future |

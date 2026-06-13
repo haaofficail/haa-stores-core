@@ -68,7 +68,7 @@
 - [ ] All sidebar & route permission strings exist in PERMISSION_CATALOG
 - [ ] Dashboard RBAC boundary tests (tests/dashboard-rbac-guards.test.ts) pass
 
-### Employee Management UI (Pass 3)
+### Employee Management UI (Pass 3 + Pass 4)
 
 - [ ] Employees page exists at /employees and guarded by employees:view
 - [ ] Sidebar shows employees nav item in settings group
@@ -79,11 +79,25 @@
 - [ ] Role presets fill checkboxes from ROLE_PERMISSIONS
 - [ ] High-risk permissions marked with warning
 - [ ] Last owner protected — actions disabled
-- [ ] Save button disabled until API exists
+- [ ] Save button enabled and wired to API via onSave callback
 - [ ] Custom permissions warning banner displayed
 - [ ] Employee management tests (tests/employee-management.test.ts) pass
 - [ ] API contract doc exists at docs/security/EMPLOYEE_MANAGEMENT_API_CONTRACT.md
-- [ ] All 1381 tests pass across 70 test files
+- [ ] API boundary tests (tests/employee-management-api.test.ts) pass
+- [ ] UI wire tests (tests/employee-ui-api-wire.test.ts) pass
+- [ ] API endpoints: GET list, POST invite, PATCH update, DELETE remove, PATCH permissions (501)
+- [ ] API enforces employee:* permissions on all endpoints
+- [ ] API safety rules: last owner, self-downgrade, duplicate email, invalid role, self-delete
+- [ ] API custom permissions returns 501 NOT_IMPLEMENTED
+- [ ] Employees page fetches from API (no mock data)
+- [ ] Loading state shown while fetching
+- [ ] Empty state shown when no employees
+- [ ] Error state shown on API failure
+- [ ] Create/invite wired to employeesApi.invite
+- [ ] Update wired to employeesApi.update
+- [ ] Delete wired to employeesApi.remove with confirm dialog
+- [ ] Refetch after mutation
+- [ ] All 1409 tests pass across 71 test files
 - [ ] pnpm typecheck passes with no RBAC-related errors
 - [ ] pnpm ops:monitor: all RBAC-related checks pass
 

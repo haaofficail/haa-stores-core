@@ -156,9 +156,9 @@ describe('RBAC Pass 3 — Employee Management UI', () => {
       expect(dialog).toContain('PermissionCheckboxMatrix');
     });
 
-    it('marks save as disabled/unavailable', () => {
-      expect(dialog).toContain('disabled');
-      expect(dialog).toContain('غير متاح');
+    it('has onSave callback and save button', () => {
+      expect(dialog).toContain('onSave');
+      expect(dialog).toContain('handleSave');
     });
   });
 
@@ -171,10 +171,9 @@ describe('RBAC Pass 3 — Employee Management UI', () => {
     });
 
     it('documents required endpoints', () => {
-      expect(contract).toContain('GET /stores/:storeId/employees');
-      expect(contract).toContain('POST /stores/:storeId/employees/invite');
-      expect(contract).toContain('PATCH /stores/:storeId/employees/:employeeId');
-      expect(contract).toContain('DELETE /stores/:storeId/employees/:employeeId');
+      expect(contract).toContain('/merchant/:storeId/employees');
+      expect(contract).toContain('/invite');
+      expect(contract).toContain('/:employeeId');
     });
 
     it('documents safety rules', () => {

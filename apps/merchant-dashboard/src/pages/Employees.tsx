@@ -1,59 +1,12 @@
-import { useState } from 'react';
-import { PERMISSION_CATALOG } from '@haa/shared';
+import { useState, useEffect, useCallback } from 'react';
+import { PERMISSION_CATALOG, type Permission } from '@haa/shared';
 import { PermissionGate } from '@/lib/permissions';
 import { EmployeeFormDialog } from '@/components/employees/EmployeeFormDialog';
 import {
-  Plus, Pencil, UserX, Shield, ShieldAlert, Info, Clock,
+  Plus, Pencil, UserX, Shield, ShieldAlert, Clock, Loader2, AlertTriangle, RefreshCw, Users,
 } from 'lucide-react';
-
-interface Employee {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-  lastLoginAt: string | null;
-  permissionsCount: number;
-}
-
-const MOCK_EMPLOYEES: Employee[] = [
-  {
-    id: 1,
-    name: 'أحمد محمد',
-    email: 'ahmed@example.com',
-    role: 'owner',
-    isActive: true,
-    lastLoginAt: '2026-06-13T08:30:00Z',
-    permissionsCount: 84,
-  },
-  {
-    id: 2,
-    name: 'سارة علي',
-    email: 'sara@example.com',
-    role: 'admin',
-    isActive: true,
-    lastLoginAt: '2026-06-12T14:20:00Z',
-    permissionsCount: 65,
-  },
-  {
-    id: 3,
-    name: 'خالد عمر',
-    email: 'khalid@example.com',
-    role: 'manager',
-    isActive: true,
-    lastLoginAt: '2026-06-11T10:15:00Z',
-    permissionsCount: 32,
-  },
-  {
-    id: 4,
-    name: 'نورة عبدالله',
-    email: 'noura@example.com',
-    role: 'viewer',
-    isActive: false,
-    lastLoginAt: null,
-    permissionsCount: 8,
-  },
-];
+import { employeesApi } from '@/lib/api';
+import type { Employee } from '@/lib/api';
 
 const roleLabels: Record<string, string> = {
   owner: 'مالك',
@@ -115,8 +68,32 @@ function PermissionsPreview() {
 }
 
 export default function EmployeesPage() {
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+  const [editTarget, setEditTarget] = useState<Employee | null>(null);
+  const [deleting, setDeleting] = useState<number | null>(null);
+
+  const storeId = Number(localStorage.getItem('active_store_id'));
+
+  const fetchEmployees = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await employeesApi.list(storeId);
+      setEmployees(data);
+    } catch (err: any) {
+      setError(err?.message || 'فشل تحميل قائمة الموظفين');
+    } finally {
+      setLoading(false);
+    }
+  }, [storeId]);
+
+  useEffect(() => {
+    if (storeId) fetchEmployees();
+  }, [storeId, fetchEmployees]);
 
   function formatDate(iso: string | null): string {
     if (!iso) return '—';
@@ -125,16 +102,53 @@ export default function EmployeesPage() {
   }
 
   function openCreate() {
+    setEditTarget(null);
     setDialogMode('create');
     setDialogOpen(true);
   }
 
-  function openEdit() {
+  function openEdit(emp: Employee) {
+    setEditTarget(emp);
     setDialogMode('edit');
     setDialogOpen(true);
   }
 
-  const ownerCount = MOCK_EMPLOYEES.filter(e => e.role === 'owner').length;
+  async function handleSave(data: { name: string; email: string; role: string; permissions: string[]; isActive: boolean }) {
+    if (dialogMode === 'create') {
+      await employeesApi.invite(storeId, {
+        name: data.name,
+        email: data.email,
+        password: Math.random().toString(36).slice(2, 10),
+        role: data.role,
+      });
+    } else if (editTarget) {
+      await employeesApi.update(storeId, editTarget.id, {
+        role: data.role,
+        isActive: data.isActive,
+      });
+    }
+  }
+
+  async function handleDelete(emp: Employee) {
+    if (!window.confirm(`هل أنت متأكد من حذف ${emp.name}؟`)) return;
+    setDeleting(emp.id);
+    try {
+      await employeesApi.remove(storeId, emp.id);
+      await fetchEmployees();
+    } catch (err: any) {
+      alert(err?.message || 'فشل حذف الموظف');
+    } finally {
+      setDeleting(null);
+    }
+  }
+
+  function handleDialogClose() {
+    setDialogOpen(false);
+    setEditTarget(null);
+    fetchEmployees();
+  }
+
+  const ownerCount = employees.filter(e => e.role === 'owner').length;
 
   return (
     <div className="p-6 space-y-6" dir="rtl">
@@ -143,118 +157,154 @@ export default function EmployeesPage() {
           <h1 className="text-2xl font-bold text-neutral-900">الموظفين</h1>
           <p className="text-sm text-neutral-500 mt-1">إدارة موظفي المتجر والصلاحيات</p>
         </div>
-        <PermissionGate permission="employees:invite">
+        <div className="flex items-center gap-2">
           <button
-            onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/25"
+            onClick={fetchEmployees}
+            disabled={loading}
+            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors text-neutral-500 disabled:opacity-50"
+            title="تحديث"
           >
-            <Plus className="h-4 w-4" />
-            إضافة موظف
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-        </PermissionGate>
-      </div>
-
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
-        <Info className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-        <div className="text-xs text-amber-700">
-          هذه الواجهة للعرض التجريبي. قائمة الموظفين معبئة ببيانات نموذجية.
-          ربط الـ API الفعلي مطلوب لتشغيل الإجراءات كاملة.
+          <PermissionGate permission="employees:invite">
+            <button
+              onClick={openCreate}
+              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/25"
+            >
+              <Plus className="h-4 w-4" />
+              إضافة موظف
+            </button>
+          </PermissionGate>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-neutral-100 bg-neutral-50">
-                <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الاسم</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">البريد</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الدور</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الحالة</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">آخر نشاط</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الصلاحيات</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {MOCK_EMPLOYEES.map((emp) => (
-                <tr key={emp.id} className="border-b border-neutral-50 hover:bg-neutral-50/50 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
-                        {emp.name.charAt(0)}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+          <div className="text-xs text-red-700">{error}</div>
+        </div>
+      )}
+
+      {loading && (
+        <div className="bg-white rounded-xl border border-neutral-200 p-12 flex flex-col items-center justify-center gap-3">
+          <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
+          <p className="text-sm text-neutral-500">جاري تحميل الموظفين...</p>
+        </div>
+      )}
+
+      {!loading && !error && employees.length === 0 && (
+        <div className="bg-white rounded-xl border border-neutral-200 p-12 flex flex-col items-center justify-center gap-3">
+          <Users className="h-12 w-12 text-neutral-300" />
+          <p className="text-sm font-medium text-neutral-600">لا يوجد موظفون بعد</p>
+          <p className="text-xs text-neutral-400 text-center max-w-xs">لم تقم بإضافة أي موظف بعد. أضف أول موظف للبدء بإدارة الصلاحيات.</p>
+          <PermissionGate permission="employees:invite">
+            <button
+              onClick={openCreate}
+              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              إضافة موظف
+            </button>
+          </PermissionGate>
+        </div>
+      )}
+
+      {!loading && !error && employees.length > 0 && (
+        <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-neutral-100 bg-neutral-50">
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الاسم</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">البريد</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الدور</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الحالة</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">آخر نشاط</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الصلاحيات</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employees.map((emp) => (
+                  <tr key={emp.id} className="border-b border-neutral-50 hover:bg-neutral-50/50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                          {emp.name.charAt(0)}
+                        </div>
+                        <span className="text-sm font-medium text-neutral-800">{emp.name}</span>
                       </div>
-                      <span className="text-sm font-medium text-neutral-800">{emp.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-neutral-600">{emp.email}</td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                      <Shield className="h-3 w-3" />
-                      {roleLabels[emp.role] || emp.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {emp.isActive ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                        نشط
+                    </td>
+                    <td className="px-4 py-3 text-sm text-neutral-600">{emp.email}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                        <Shield className="h-3 w-3" />
+                        {roleLabels[emp.role] || emp.role}
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-neutral-100 text-neutral-500 border border-neutral-200">
-                        غير نشط
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-neutral-500">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {formatDate(emp.lastLoginAt)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-neutral-500">{emp.permissionsCount} صلاحية</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2 justify-end">
-                      {emp.role === 'owner' && ownerCount <= 1 ? (
-                        <span className="text-[10px] text-amber-500 flex items-center gap-1" title="لا يمكن تعديل أو حذف آخر مالك">
-                          <ShieldAlert className="h-3 w-3" />
-                          آخر مالك
+                    </td>
+                    <td className="px-4 py-3">
+                      {emp.isActive ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                          نشط
                         </span>
                       ) : (
-                        <>
-                          <PermissionGate permission="employees:update">
-                            <button
-                              onClick={openEdit}
-                              className="p-1.5 hover:bg-neutral-100 rounded-lg transition-colors text-neutral-500 hover:text-neutral-700"
-                              title="تعديل"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                          </PermissionGate>
-                          <PermissionGate permission="employees:delete">
-                            <button
-                              className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-neutral-500 hover:text-red-600"
-                              title="حذف"
-                            >
-                              <UserX className="h-4 w-4" />
-                            </button>
-                          </PermissionGate>
-                        </>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-neutral-100 text-neutral-500 border border-neutral-200">
+                          غير نشط
+                        </span>
                       )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-neutral-500">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {formatDate(emp.lastLoginAt)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-neutral-500">{emp.permissions.length} صلاحية</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 justify-end">
+                        {emp.role === 'owner' && ownerCount <= 1 ? (
+                          <span className="text-[10px] text-amber-500 flex items-center gap-1" title="لا يمكن تعديل أو حذف آخر مالك">
+                            <ShieldAlert className="h-3 w-3" />
+                            آخر مالك
+                          </span>
+                        ) : (
+                          <>
+                            <PermissionGate permission="employees:update">
+                              <button
+                                onClick={() => openEdit(emp)}
+                                className="p-1.5 hover:bg-neutral-100 rounded-lg transition-colors text-neutral-500 hover:text-neutral-700"
+                                title="تعديل"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                            </PermissionGate>
+                            <PermissionGate permission="employees:delete">
+                              <button
+                                onClick={() => handleDelete(emp)}
+                                disabled={deleting === emp.id}
+                                className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-neutral-500 hover:text-red-600 disabled:opacity-50"
+                                title="حذف"
+                              >
+                                {deleting === emp.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4" />}
+                              </button>
+                            </PermissionGate>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       <PermissionGate permission="employees:manage_permissions">
         <div className="bg-white rounded-xl border border-neutral-200 p-4">
           <h3 className="text-sm font-semibold text-neutral-700 mb-3">معاينة مصفوفة الصلاحيات</h3>
           <p className="text-xs text-neutral-500 mb-4">
             هذه معاينة لمصفوفة الصلاحيات المبنية على {PERMISSION_CATALOG.length} صلاحية في الكتالوج.
-            التعديلات هنا لا تُحفظ حاليًا.
+            الصلاحيات المخصصة لكل موظف مشتقة من دوره.
           </p>
           <PermissionsPreview />
         </div>
@@ -263,7 +313,15 @@ export default function EmployeesPage() {
       <EmployeeFormDialog
         mode={dialogMode}
         open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
+        onClose={handleDialogClose}
+        onSave={handleSave}
+        initialData={editTarget ? {
+          name: editTarget.name,
+          email: editTarget.email,
+          role: editTarget.role,
+          permissions: editTarget.permissions as Permission[],
+          isActive: editTarget.isActive,
+        } : undefined}
       />
     </div>
   );

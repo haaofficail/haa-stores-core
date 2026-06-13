@@ -5,7 +5,7 @@
 ---
 
 - **Last Updated:** 2026-06-13
-- **Current Phase:** Local MVP — RBAC Pass 3 ✅ Employee Management UI
+- **Current Phase:** Local MVP — RBAC Pass 4 ✅ Employee Management API + Wire UI to API
 - **Project Summary:** Multi-tenant Saudi e-commerce SaaS platform. Local-only. All 10 phases complete. Deployment gated by owner GO.
 - **Active Priorities:**
   - Establish development operating system and process discipline ✅
@@ -16,7 +16,7 @@
   - Security Baseline & RBAC Audit ✅
   - Restore Local App Runtime ✅
   - Theme Stabilization: isolation + hydration flicker fix + test DB isolation ✅
-  - Employee Permissions / RBAC implementation (Pass 1 ✅, Pass 2 ✅, Pass 3 ✅, Pass 4 planned)
+  - Employee Permissions / RBAC implementation (Pass 1 ✅, Pass 2 ✅, Pass 3 ✅, Pass 4 ✅)
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done
@@ -30,10 +30,11 @@
   - TASK-0010 (RBAC Pass 1 Implementation) — Done
   - TASK-0011 (RBAC Pass 2 — Dashboard Frontend Guards) — Done
   - TASK-0012 (RBAC Pass 3 — Employee Management UI) — Done
+  - TASK-0013 (RBAC Pass 4 — Employee Management API + Wire) — Done
 - **Known Broken Areas:**
   - Storefront root `/` hardcoded to `/s/haa-demo` redirect — works after seed ✅
   - Registration creates stores as `draft` (intentional — merchant must publish from settings)
-  - All 1381 tests pass against isolated test DB (70 test files) — 0 pre-existing failures
+  - All 1409 tests pass against isolated test DB (71 test files) — 0 pre-existing failures
 - **Known Risks:**
   - Duplicate project folders on Desktop causing path confusion ⚠️
   - No automated CI/CD
@@ -60,7 +61,9 @@
   - RBAC Pass 1: permission catalog with Arabic labels & risk levels, 8 roles, frontend guards (usePermissions + PermissionGate), backend enforcement, customer permission fix, subscription/dashboard route protection, 10 boundary tests, 1350 tests total across 68 files, all typechecks & ops checks passing ✅
   - Test DB Isolation committed: working tree clean, RBAC Pass 1 complete ✅
   - RBAC Pass 2 — Dashboard Frontend Guards: sidebar filtering, route-level PermissionRoute guards, action button PermissionGate wrappers, UnauthorizedState component, 6 boundary tests, 1356 total tests across 69 files, all typechecks & ops checks passing ✅
-  - RBAC Pass 3 — Employee Management UI: Employees page, PermissionCheckboxMatrix (from PERMISSION_CATALOG), EmployeeFormDialog, role presets (from ROLE_PERMISSIONS), last-owner safety, API contract doc, 25 boundary tests, 1381 total tests across 70 files, all typechecks & ops checks passing ✅
+     - RBAC Pass 3 — Employee Management UI: Employees page, PermissionCheckboxMatrix (from PERMISSION_CATALOG), EmployeeFormDialog, role presets (from ROLE_PERMISSIONS), last-owner safety, API contract doc, 25 boundary tests, 1381 total tests across 70 files, all typechecks & ops checks passing ✅
+   - RBAC Pass 4 — Employee Management API: employees.ts route with CRUD endpoints, all safety rules enforced (last owner, self-downgrade, duplicate email, invalid role, self-delete, permission grant limits), 501 for custom permissions, 28 boundary tests (employee-management-api.test.ts), all checks passing ✅
+   - Wire Employee UI to API: Employees page fetches from employeesApi.list with loading/error/empty states, create/invite/update/delete wired to actual API calls, EmployeeFormDialog save enabled with onSave callback, custom permissions warning preserved, refetch after mutation, 10 API-wire boundary tests (employee-ui-api-wire.test.ts), all checks passing ✅
 - **Security Findings Summary:**
   - **P0:** None
   - **P1:** 3 findings — customers permission downgrade, missing customer audit logging, no frontend role filtering
@@ -72,7 +75,9 @@
   - Payment gateway credentials
   - Database production seeds
 - **Next Recommended Tasks:**
-  - RBAC Pass 4 — Employee Management API endpoints (SEC-015)
+  - Employee Invite Flow — real email sending via notification-core
+  - Custom Permissions DB — add permissions column to tenant_users
+  - Audit Logs for employee mutations
   - Fix support ticket accessToken in URL query (R-0014)
   - Remove or rename duplicate `haa-stores-core-spec.md` folder
   - Add all existing project files to git tracking
@@ -87,7 +92,7 @@
   - preflight is now a hardened Node script (`scripts/preflight.mjs`) that fails with exit code 1 from wrong directory
   - System Map is at `docs/system-map/SYSTEM_MAP.md` and `docs/system-map/ERROR_FLOW_MAP.md`
   - Security docs are at `docs/security/`
-  - Tests run against isolated `haastores_test` DB (70 test files, 1381 tests) — run `pnpm db:test:setup` after schema changes
+  - Tests run against isolated `haastores_test` DB (71 test files, 1409 tests) — run `pnpm db:test:setup` after schema changes
   - Test DB setup script: `scripts/db-test-setup.sh`
   - Test env override: `tests/setup.ts` overrides DATABASE_URL automatically
 - **Important Decisions:**

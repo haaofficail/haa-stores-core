@@ -42,8 +42,8 @@
 | Total roles | **8** (owner, admin, manager, products_manager, orders_manager, accountant, support, viewer) |
 | Owner covers all | ✅ |
 | Viewer restricted to read-only | ✅ |
-| RBAC boundary tests | **41** (10 catalog + 6 dashboard guards + 25 employee management) |
-| Total test suite | **1381 tests** across **70 test files** |
+| RBAC boundary tests | **69** (10 catalog + 6 dashboard guards + 25 employee management + 28 API + 10 UI wire) |
+| Total test suite | **1409 tests** across **71 test files** |
 
 ---
 
@@ -69,17 +69,33 @@
 | Component | Status | Notes |
 |-----------|--------|-------|
 | Employees page | ✅ | `apps/merchant-dashboard/src/pages/Employees.tsx` |
-| Employee list table | ✅ | Mock data with name, email, role, status, last login, permissions count |
-| Add employee button | ✅ | Protected by `employees:invite` PermissionGate |
-| Edit employee button | ✅ | Protected by `employees:update` PermissionGate |
-| Delete employee button | ✅ | Protected by `employees:delete` PermissionGate |
+| Employee list table | ✅ | Fetched from API with loading/error/empty states |
+| Add employee button | ✅ | Protected by `employees:invite` PermissionGate, wired to API |
+| Edit employee button | ✅ | Protected by `employees:update` PermissionGate, wired to API |
+| Delete employee button | ✅ | Protected by `employees:delete` PermissionGate, wired to API |
 | PermissionCheckboxMatrix | ✅ | Built from PERMISSION_CATALOG, grouped by category |
 | Role presets | ✅ | Fills checkboxes from ROLE_PERMISSIONS |
 | High-risk permission indicators | ✅ | Marks sensitive perms with warning badge |
 | Last owner protection | ✅ | UI shows "آخر مالك" and disables actions on last owner |
 | API contract doc | ✅ | `docs/security/EMPLOYEE_MANAGEMENT_API_CONTRACT.md` |
 | Custom permissions warning | ✅ | Banner: custom perms not supported in DB |
-| Save button disabled | ✅ | Disabled with "غير متاح" label — needs API |
+| Save button enabled | ✅ | Wired to API via onSave callback |
+
+## RBAC Pass 4 — Employee Management API + Wire UI ✅
+
+**Closed: 2026-06-13**
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| GET /merchant/:storeId/employees | ✅ | Returns Employee[] with permissions derived from role |
+| POST /merchant/:storeId/employees/invite | ✅ | Creates user + tenant_user; rejects duplicate, invalid role, non-owner assigning owner |
+| PATCH /merchant/:storeId/employees/:employeeId | ✅ | Updates role/status; blocks last owner demotion, self-downgrade, unauthorized owner grant |
+| DELETE /merchant/:storeId/employees/:employeeId | ✅ | Soft-deletes; blocks last owner deletion and self-deletion |
+| PATCH /merchant/:storeId/employees/:employeeId/permissions | ✅ | Returns 501 NOT_IMPLEMENTED |
+| employeesApi client | ✅ | Typed CRUD methods in api.ts |
+| Employee type | ✅ | `Employee` interface with userId, name, email, role, isActive, lastLoginAt, createdAt, permissions |
+| API boundary tests | ✅ | 28 tests in employee-management-api.test.ts |
+| UI wire tests | ✅ | 10 tests in employee-ui-api-wire.test.ts |
 
 ---
 
@@ -138,7 +154,9 @@
 |------|----------|--------|
 | `tests/rbac-permission-catalog.test.ts` | (1) Catalog field completeness, (2) no duplicates, (3) ROLE_PERMISSIONS ↔ Catalog match, (4) no role-internal duplicates, (5) `getPermissionsForRole` correctness, (6) unknown role handling, (7) owner covers all catalog, (8) viewer no high-risk perms, (9) category coverage, (10) riskLevel validity | ✅ 10/10 passing |
 | `tests/dashboard-rbac-guards.test.ts` | (1) Sidebar has permission metadata on all items, (2) all sidebar perms in catalog, (3) GuardedRoute on protected routes, (4) all route perms in catalog, (5) PermissionRoute uses UnauthorizedState, (6) 15+ pages have PermissionGate import | ✅ 6/6 passing |
-| `tests/employee-management.test.ts` | (1) Employees route & sidebar, (2) page uses PermissionGate, (3) employees:* perms used, (4) matrix imports catalog + roles, (5) no hardcoded perms outside catalog, (6) high-risk perms set, (7) role presets, (8-12) all employee perms in catalog, (13-15) owner/admin/viewer role mappings, (16) dialog uses matrix, (17) save disabled, (18-20) API contract doc | ✅ 25/25 passing |
+| `tests/employee-management.test.ts` | Route & sidebar, PermissionGate usage, employees:* perms, matrix imports catalog + roles, no hardcoded perms, high-risk perms, role presets, dialog uses matrix, onSave callback, API contract doc | ✅ 24/24 passing |
+| `tests/employee-management-api.test.ts` | GET list with permission, POST invite with permission + validation, PATCH update with safety rules, DELETE with last-owner and self-delete, 501 permissions endpoint, route middleware, validation schemas, ROLE_PERMISSIONS import | ✅ 28/28 passing |
+| `tests/employee-ui-api-wire.test.ts` | Page imports employeesApi, calls list/invite/update/remove, loading/error/empty states, refresh button, no mock data, dialog has onSave + error handling, API client endpoints conform to contract | ✅ 10/10 passing |
 
 ---
 

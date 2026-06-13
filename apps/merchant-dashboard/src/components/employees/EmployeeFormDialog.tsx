@@ -19,7 +19,7 @@ interface EmployeeFormDialogProps {
   open: boolean;
   onClose: () => void;
   initialData?: EmployeeFormData;
-  onSave?: (data: EmployeeFormData) => void;
+  onSave?: (data: EmployeeFormData) => Promise<void>;
 }
 
 export function EmployeeFormDialog({
@@ -27,6 +27,7 @@ export function EmployeeFormDialog({
   open,
   onClose,
   initialData,
+  onSave,
 }: EmployeeFormDialogProps) {
   const { can, permissions: userPerms } = usePermissions();
   const isOwner = can('employees:delete') && can('employees:manage_permissions');
@@ -41,8 +42,24 @@ export function EmployeeFormDialog({
       isActive: true,
     }
   );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!open) return null;
+
+  async function handleSave() {
+    if (!onSave) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(form);
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || 'حدث خطأ أثناء الحفظ');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
@@ -61,6 +78,13 @@ export function EmployeeFormDialog({
         </div>
 
         <div className="px-6 py-4 space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+              <div className="text-xs text-red-700">{error}</div>
+            </div>
+          )}
+
           <div className="flex gap-4">
             <div className="flex-1 space-y-1.5">
               <label className="text-sm font-medium text-neutral-700">الاسم</label>
@@ -70,7 +94,6 @@ export function EmployeeFormDialog({
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm"
                 placeholder="الاسم الكامل"
-                disabled
               />
             </div>
             <div className="flex-1 space-y-1.5">
@@ -81,7 +104,6 @@ export function EmployeeFormDialog({
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm"
                 placeholder="email@example.com"
-                disabled
               />
             </div>
           </div>
@@ -92,16 +114,15 @@ export function EmployeeFormDialog({
               value={form.role}
               onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
               className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm"
-              disabled
             >
-              <option value="owner">owner</option>
-              <option value="admin">admin</option>
-              <option value="manager">manager</option>
-              <option value="products_manager">products_manager</option>
-              <option value="orders_manager">orders_manager</option>
-              <option value="accountant">accountant</option>
-              <option value="support">support</option>
-              <option value="viewer">viewer</option>
+              <option value="owner">مالك</option>
+              <option value="admin">مدير</option>
+              <option value="manager">مشرف</option>
+              <option value="products_manager">مدير منتجات</option>
+              <option value="orders_manager">مدير طلبات</option>
+              <option value="accountant">محاسب</option>
+              <option value="support">دعم</option>
+              <option value="viewer">مشاهد</option>
             </select>
           </div>
 
@@ -111,7 +132,6 @@ export function EmployeeFormDialog({
               checked={form.isActive}
               onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))}
               className="h-4 w-4 rounded border-neutral-300 text-blue-600"
-              disabled
             />
             <span className="text-sm text-neutral-700">الحساب نشط</span>
           </div>
@@ -130,9 +150,7 @@ export function EmployeeFormDialog({
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
             <div className="text-xs text-amber-700">
-              هذه الواجهة للعرض فقط.
-              {mode === 'create' ? ' إضافة الموظفين' : ' تعديل بيانات الموظفين'}
-              {' '}يتطلب واجهة برمجية (API) في الخلفية. سيتم تفعيل الحفظ عند توفر الـ API.
+              الصلاحيات مشتقة من الدور. التخصيص الفردي للصلاحيات غير مدعوم بعد.
             </div>
           </div>
         </div>
@@ -140,15 +158,17 @@ export function EmployeeFormDialog({
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-200">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-neutral-700 border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors"
+            disabled={saving}
+            className="px-4 py-2 text-sm font-medium text-neutral-700 border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors disabled:opacity-50"
           >
             إلغاء
           </button>
           <button
-            disabled
-            className="px-4 py-2 text-sm font-medium text-white bg-neutral-300 rounded-lg cursor-not-allowed"
+            onClick={handleSave}
+            disabled={saving || !onSave}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
           >
-            {mode === 'create' ? 'إضافة الموظف (غير متاح)' : 'حفظ التغييرات (غير متاح)'}
+            {saving ? 'جاري الحفظ...' : mode === 'create' ? 'إضافة الموظف' : 'حفظ التغييرات'}
           </button>
         </div>
       </div>

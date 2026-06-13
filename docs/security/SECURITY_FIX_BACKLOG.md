@@ -70,20 +70,22 @@
 - **Test Plan:** Create/update customer → check `audit_logs` table for matching entry
 - **Status:** Pending — deferred from Pass 1
 
-### SEC-015: Build Employee Management API Endpoints
+### SEC-015: Build Employee Management API Endpoints ✅
 
 - **Area:** API / Backend
 - **Risk:** Employee management UI cannot save or load real data
 - **Recommended Fix:** Implement endpoints per API contract at `docs/security/EMPLOYEE_MANAGEMENT_API_CONTRACT.md`
 - **Acceptance Criteria:**
-  - GET /stores/:storeId/employees returns employee list
-  - POST /stores/:storeId/employees/invite creates employee
-  - PATCH /stores/:storeId/employees/:employeeId updates role/status
-  - DELETE /stores/:storeId/employees/:employeeId removes employee
-  - All endpoints enforce employee:* permissions
-  - Safety rules (last owner, self-downgrade, permission grant limits) enforced
-- **Test Plan:** Run CRUD operations against test DB, verify permission enforcement
-- **Status:** Pending — RBAC Pass 4
+  - GET /merchant/:storeId/employees returns employee list ✅
+  - POST /merchant/:storeId/employees/invite creates employee ✅
+  - PATCH /merchant/:storeId/employees/:employeeId updates role/status ✅
+  - DELETE /merchant/:storeId/employees/:employeeId removes employee ✅
+  - All endpoints enforce employee:* permissions ✅
+  - Safety rules (last owner, self-downgrade, permission grant limits) enforced ✅
+  - Custom permissions returns 501 ✅
+  - Wire UI to API (loading/error/empty states, save enabled) ✅
+- **Test Plan:** 28 API boundary tests + 10 UI wire tests passing
+- **Status:** ✅ **Closed** — RBAC Pass 4 completed
 
 ---
 

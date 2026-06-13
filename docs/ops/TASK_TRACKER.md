@@ -710,4 +710,67 @@
 - **Status History:**
   - Requested: 2026-06-13
   - Done: 2026-06-13
-- **Final Notes:** RBAC Pass 2 covers all frontend guard surfaces (sidebar, routes, action buttons) for the merchant dashboard. Pass 3 (completed) added employee management UI. Pass 4 will add employee management API endpoints.
+- **Final Notes:** RBAC Pass 2 covers all frontend guard surfaces (sidebar, routes, action buttons) for the merchant dashboard. Pass 3 (completed) added employee management UI. Pass 4 (completed) added employee management API endpoints + wire UI to API.
+
+---
+
+### TASK-0013: RBAC Pass 4 — Employee Management API + Wire UI to API
+
+- **Type:** Feature / Security / Integration
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** Build Employee Management API endpoints and wire the dashboard UI to them
+- **Expanded Requirement:** Create full CRUD API for employee management with RBAC enforcement, safety rules, and connect the existing employee management UI to the API endpoints
+- **Problem:** Employee management UI used mock data; save buttons were disabled; no API existed
+- **Goal:** Employees page reads from API, mutations (create/invite/update/delete) work end-to-end
+- **Scope:**
+  - employees.ts route with GET /, POST /invite, PATCH /:employeeId, DELETE /:employeeId, PATCH /:employeeId/permissions (501)
+  - employeesApi client in api.ts
+  - Wire Employees.tsx to employeesApi with loading/error/empty states
+  - Enable save in EmployeeFormDialog with onSave callback
+  - Safety rules: last owner, self-downgrade, duplicate email, invalid role, self-delete, permission grant limits
+  - Boundary tests for API (28 tests) and UI wire (10 tests)
+- **Out of Scope:**
+  - Email invite flow (requires notification-core)
+  - Custom permissions DB storage (requires DB migration)
+  - Branch/location scope
+  - Audit logs for employee mutations
+- **Affected Areas:** apps/api/src/routes/, apps/merchant-dashboard/src/lib/, apps/merchant-dashboard/src/pages/, apps/merchant-dashboard/src/components/employees/, tests/, docs/
+- **Files Changed:**
+  - `apps/api/src/routes/employees.ts` — new (278 lines)
+  - `apps/api/src/index.ts` — registered employeesRouter
+  - `apps/merchant-dashboard/src/lib/api.ts` — added employeesApi, Employee type
+  - `apps/merchant-dashboard/src/pages/Employees.tsx` — wired to API with states
+  - `apps/merchant-dashboard/src/components/employees/EmployeeFormDialog.tsx` — enabled save with onSave
+  - `tests/employee-management-api.test.ts` — new (28 tests)
+  - `tests/employee-management.test.ts` — updated (removed disabled check)
+  - `tests/employee-ui-api-wire.test.ts` — new (10 tests)
+- **Acceptance Criteria:**
+  - All 5 API endpoints exist with correct permissions
+  - Safety rules enforced (last owner, self-change, duplicate, invalid role)
+  - Custom permissions returns 501
+  - Employees page loads from API with loading/error/empty states
+  - Create/invite/update/delete wired and functional
+  - Refetch after mutation
+  - Custom permissions warning displayed
+  - All tests pass (1409)
+  - pnpm preflight passes
+  - pnpm typecheck passes
+  - pnpm ops:monitor passes
+- **Test Plan:** pnpm test, pnpm typecheck, pnpm preflight, pnpm ops:monitor
+- **Test Results:**
+  - ✅ pnpm test: 71 files, 1409 tests passed
+  - ✅ pnpm typecheck: all packages pass
+  - ✅ pnpm preflight: PASSED
+  - ✅ pnpm ops:monitor: all checks pass
+  - ✅ API boundary tests: 28/28 passing
+  - ✅ UI wire tests: 10/10 passing
+- **Risks:** None — local-only, no production deployment
+- **Related Issues:** SEC-015
+- **Related Decisions:** None
+- **Status History:**
+  - Requested: 2026-06-13
+  - Done: 2026-06-13
+- **Final Notes:** RBAC Pass 4 completes the Employee Management API and wires the dashboard UI. Invite email flow and custom permissions DB remain as future work.
