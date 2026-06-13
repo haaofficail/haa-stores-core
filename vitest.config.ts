@@ -30,5 +30,6 @@ export default defineConfig({
     // Smoke test excluded from regular runs because it requires a running API server with seeded data.
     // Run manually with: pnpm smoke
     exclude: ['tests/smoke.test.ts'],
+    setupFiles: ['./tests/setup.ts'],
   },
 });

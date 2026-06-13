@@ -19,6 +19,7 @@
     "db:generate": "pnpm --filter @haa/db generate",
     "db:migrate": "pnpm --filter @haa/db migrate",
     "db:seed": "pnpm --filter @haa/db seed",
+    "db:test:setup": "bash scripts/db-test-setup.sh",
     "db:studio": "pnpm --filter @haa/db studio",
     "db:explain": "npx tsx scripts/db-explain.ts",
     "db:reset": "bash scripts/db-reset.sh",
