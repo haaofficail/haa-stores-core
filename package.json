@@ -1,0 +1,63 @@
+{
+  "name": "haa-stores-core",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Haa Stores Core - Local MVP e-commerce platform",
+  "scripts": {
+    "dev": "pnpm --filter @haa/api dev",
+    "dev:api": "pnpm --filter @haa/api dev",
+    "dev:dashboard": "pnpm --filter @haa/merchant-dashboard dev",
+    "dev:admin": "pnpm --filter @haa/admin-dashboard dev",
+    "dev:storefront": "pnpm --filter @haa/storefront dev",
+    "dev:all": "pnpm --filter @haa/api dev & pnpm --filter @haa/merchant-dashboard dev & pnpm --filter @haa/storefront dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "db:generate": "pnpm --filter @haa/db generate",
+    "db:migrate": "pnpm --filter @haa/db migrate",
+    "db:seed": "pnpm --filter @haa/db seed",
+    "db:studio": "pnpm --filter @haa/db studio",
+    "db:explain": "npx tsx scripts/db-explain.ts",
+    "db:reset": "bash scripts/db-reset.sh",
+    "db:backup": "bash scripts/db-backup.sh",
+    "db:restore": "bash scripts/db-restore.sh",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "env:check": "npx tsx scripts/env-check.ts",
+    "production:check": "npx tsx scripts/production-check.ts",
+    "load:test": "k6 run tests/load/scale-readiness.k6.js",
+    "worker:start": "pnpm --filter @haa/api worker:start",
+    "worker:dev": "pnpm --filter @haa/api worker:dev",
+    "oauth:test": "npx tsx scripts/test-marketplace-oauth.ts",
+    "smoke": "vitest run --config vitest.smoke.config.ts",
+    "preflight": "echo '=== Preflight Check ===' && echo '[1/4] Project Root:' && test -f package.json && test -f pnpm-workspace.yaml && echo '  ✅ Correct project root' || echo '  ❌ Wrong directory — expected /Users/thwany/Desktop/haa-stores-core' && echo '[2/4] Node Version:' && node --version && echo '[3/4] pnpm Version:' && pnpm --version && echo '[4/4] TypeCheck:' && pnpm run -r typecheck 2>&1 | tail -5",
+    "setup": "pnpm install && pnpm docker:up && pnpm db:migrate && pnpm db:seed"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.60.0",
+    "eslint": "^10.5.0",
+    "typescript-eslint": "^8.61.0",
+    "vitest": "4.1.8"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "18.3.31",
+      "@types/react-dom": "18.3.7",
+      "vite": "6.4.2",
+      "vitest": "4.1.8",
+      "postcss": "8.5.15"
+    },
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp"
+    ]
+  }
+}
