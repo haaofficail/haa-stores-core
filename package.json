@@ -34,6 +34,12 @@
     "oauth:test": "npx tsx scripts/test-marketplace-oauth.ts",
     "smoke": "vitest run --config vitest.smoke.config.ts",
     "preflight": "echo '=== Preflight Check ===' && echo '[1/4] Project Root:' && test -f package.json && test -f pnpm-workspace.yaml && echo '  ✅ Correct project root' || echo '  ❌ Wrong directory — expected /Users/thwany/Desktop/haa-stores-core' && echo '[2/4] Node Version:' && node --version && echo '[3/4] pnpm Version:' && pnpm --version && echo '[4/4] TypeCheck:' && pnpm run -r typecheck 2>&1 | tail -5",
+    "ops:health": "node scripts/monitor-health.mjs",
+    "ops:synthetic": "node scripts/synthetic-checks.mjs",
+    "ops:errors": "node scripts/analyze-support-errors.mjs",
+    "ops:monitor": "pnpm ops:health && pnpm ops:synthetic && pnpm ops:errors",
+    "ops:monitor:report": "node scripts/generate-monitoring-report.mjs",
+    "ops:monitor:tail": "node scripts/tail-monitoring-events.mjs",
     "setup": "pnpm install && pnpm docker:up && pnpm db:migrate && pnpm db:seed"
   },
   "engines": {

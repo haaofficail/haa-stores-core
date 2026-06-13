@@ -9,20 +9,25 @@
 - **Project Summary:** Multi-tenant Saudi e-commerce SaaS platform. Local-only. All 10 phases complete. Deployment gated by owner GO.
 - **Active Priorities:**
   - Establish development operating system and process discipline ✅
-  - System Health Operating System (next)
+  - System Health Operating System ✅
   - Ensure theme isolation between storefront and merchant dashboard
   - Complete visual QA pass across all storefront pages
 - **Open Tasks:**
   - TASK-0001 (Development OS) — In Verification
+  - TASK-0002 (System Health OS) — In Progress
 - **Known Broken Areas:**
   - (to be documented as discovered)
 - **Known Risks:**
   - Duplicate project folders on Desktop causing path confusion ⚠️
   - No automated CI/CD
   - `preflight` Root Guard does not fail if run from wrong directory ⚠️
+  - Dev servers must be running for HTTP-level synthetic checks
 - **Recently Completed:**
   - Development Operating System: AGENTS.md + 15 docs/ops/ files + preflight script
-  - Git repository initialized (commit 076bc40)
+  - Git repository initialized (commit 076bc40, 370168d)
+  - System Health Operating System: monitor-health, synthetic-checks, error analysis, report generation, tail commands
+  - Monitoring playbook, health checks, synthetic checks, alert rules, incidents documentation
+  - Support error catalog, taxonomy, escalation guide, support playbook
   - Phase 1–10: All gates passed
   - LC6 — Local Full Product Gate: PASS
 - **Do Not Touch:**
@@ -30,17 +35,25 @@
   - Payment gateway credentials
   - Database production seeds
 - **Next Recommended Tasks:**
-  - Build System Health Operating System
   - Fix `preflight` to fail hard when not in correct project root
   - Remove or rename duplicate `haa-stores-core-spec.md` folder
+  - Add all existing project files to git tracking
+  - Run `pnpm ops:monitor` as routine pre-dev check
 - **Local Development Notes:**
   - Requires Node >= 20, pnpm >= 9, PostgreSQL
   - Run `pnpm setup` for initial local environment
   - Three terminals: `pnpm dev:api`, `pnpm dev:dashboard`, `pnpm dev:storefront`
   - First commit: `076bc40` — "chore: add development operating system"
+  - Branch: `chore/system-health-operating-system`
 - **Important Decisions:**
   - NO_DEPLOY_POLICY active — local development only until owner GO
   - Short requests must be expanded before execution (DECISION-0001)
   - Development Operating System installed correctly in real project path (DECISION-0002)
+  - System Health rules integrated into AGENTS.md (Section 11)
 - **Monitoring Notes:**
-  - No monitoring active (local-only)
+  - Health checks: `pnpm ops:health` — checks project structure, apps, runtime
+  - Synthetic checks: `pnpm ops:synthetic` — HTTP checks on running servers
+  - Error analysis: `pnpm ops:errors` — pattern detection from events
+  - Report: `pnpm ops:monitor:report` — generates Markdown report
+  - Events stored in: `storage/monitoring-events.ndjson`
+  - Support events stored in: `storage/support-error-events.ndjson`

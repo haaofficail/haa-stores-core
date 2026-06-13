@@ -69,6 +69,66 @@
 
 ## Active Tasks
 
+### TASK-0002: Build System Health Operating System
+
+- **Type:** Ops, Monitoring, Documentation
+- **Priority:** P1 High
+- **Status:** In Progress
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** Build System Health Operating System — monitoring, health checks, synthetic checks, error analysis, alert rules, incident workflow
+- **Expanded Requirement:** Create a system that monitors project health, detects problems before merchants report them, and provides structured incident/task flow
+- **Problem:** No proactive monitoring; waiting for merchants to report issues; no structured alert-to-incident flow
+- **Goal:** Proactive health monitoring with clear severity levels, reporting, and escalation
+- **Scope:**
+  - scripts/monitor-health.mjs
+  - scripts/synthetic-checks.mjs
+  - scripts/analyze-support-errors.mjs
+  - scripts/generate-monitoring-report.mjs
+  - scripts/tail-monitoring-events.mjs
+  - storage/monitoring-events.ndjson, support-error-events.ndjson
+  - docs/ops/MONITORING_PLAYBOOK.md, HEALTH_CHECKS.md, SYNTHETIC_CHECKS.md, ALERT_RULES.md, INCIDENTS.md, LATEST_MONITORING_REPORT.md
+  - docs/support/ERROR_CATALOG.md, SUPPORT_PLAYBOOK.md, ESCALATION_GUIDE.md, ERROR_CODE_TAXONOMY.md
+  - package.json ops:* scripts
+  - AGENTS.md section 11 (System Health)
+- **Out of Scope:**
+  - Bug fixes
+  - Feature work
+  - Theme changes
+  - API changes
+  - Database changes
+  - Real payments/orders/shipping
+  - Refactoring
+- **Affected Areas:** scripts/, storage/, docs/ops/, docs/support/, AGENTS.md, package.json
+- **Files to Inspect:** Current AGENTS.md, package.json
+- **Files Changed:** 20+ files
+- **Acceptance Criteria:**
+  - All ops scripts created and functional
+  - Health checks run and produce ndjson events
+  - Synthetic checks run and produce ndjson events
+  - Error analysis reads events and produces analysis
+  - Monitoring report generates valid Markdown
+  - Tail shows last N events
+  - All Ops and Support docs created with correct content
+  - AGENTS.md updated with System Health section
+  - package.json has all ops:* scripts
+  - pnpm preflight passes
+  - pnpm typecheck passes
+  - All ops commands run without throwing
+- **Test Plan:** pnpm preflight, pnpm typecheck, pnpm ops:health, pnpm ops:synthetic, pnpm ops:errors, pnpm ops:monitor:report, pnpm ops:monitor:tail
+- **Test Results:** Pending
+- **Risks:** Synthetic checks will warn if dev servers are not running (expected — not a failure)
+- **Related Issues:** None
+- **Related Decisions:** (pending)
+- **Status History:**
+  - Requested: 2026-06-13
+  - Expanded: 2026-06-13
+  - Planned: 2026-06-13
+  - In Progress: 2026-06-13
+- **Final Notes:** Part of the ongoing Development Operating System rollout.
+
+---
+
 ### TASK-0001: Build Development Operating System
 
 - **Type:** Architecture, Documentation

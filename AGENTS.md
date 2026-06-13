@@ -215,3 +215,53 @@ After any task, update at minimum:
 - [ ] `docs/ops/REGRESSION_CHECKLIST.md` (if regression risk exists)
 - [ ] `docs/ops/CHANGELOG_INTERNAL.md` (if structural/behavioral change)
 - [ ] `docs/ops/DECISIONS.md` (if architectural/process decision made)
+
+---
+
+## 11. System Health Operating System Rule
+
+Before any significant development or bug fix:
+
+1. **Run:**
+   `pnpm ops:monitor`
+
+2. **Read:**
+   `docs/ops/LATEST_MONITORING_REPORT.md` if it exists
+
+3. **If P0 alert is active:**
+   - Stop all normal development
+   - Record an Incident in `docs/ops/INCIDENTS.md`
+   - Focus on restoring system health first
+
+4. **If P1 is repeated (≥3 times):**
+   - Create or update a Task in `docs/ops/TASK_TRACKER.md`
+
+5. **If a fingerprint is repeated (≥3 times):**
+   - Open a Root Cause Analysis in `docs/ops/ISSUE_KNOWLEDGE_BASE.md`
+
+6. **After any health-related fix:**
+   - Re-run `pnpm ops:monitor`
+   - Update `docs/ops/TASK_TRACKER.md`
+   - Update `docs/ops/INCIDENTS.md` if it was an incident
+   - Update `docs/ops/ISSUE_KNOWLEDGE_BASE.md` if root cause found
+   - Update `docs/ops/REGRESSION_CHECKLIST.md`
+   - Update `docs/ops/CURRENT_STATE.md`
+
+7. **Do not wait for the merchant to report a problem.** If monitoring detects it, act on it.
+
+---
+
+## 12. Available Commands
+
+| Command | Purpose |
+|---------|---------|
+| `pnpm preflight` | Verify project root, Node/pnpm, typecheck |
+| `pnpm ops:health` | Run health checks on project and apps |
+| `pnpm ops:synthetic` | Run synthetic HTTP checks on running servers |
+| `pnpm ops:errors` | Analyze recorded errors and suggest actions |
+| `pnpm ops:monitor` | Run health + synthetic + error analysis in sequence |
+| `pnpm ops:monitor:report` | Generate a Markdown monitoring report |
+| `pnpm ops:monitor:tail` | View recent monitoring events |
+| `pnpm typecheck` | TypeScript type checking |
+| `pnpm test` | Run vitest tests |
+| `pnpm lint` | Run ESLint |
