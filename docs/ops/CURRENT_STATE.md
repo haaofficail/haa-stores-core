@@ -5,7 +5,7 @@
 ---
 
 - **Last Updated:** 2026-06-13
-- **Current Phase:** Local MVP — Restore Local App Runtime ✅
+- **Current Phase:** Local MVP — Theme Stabilization & Test Baseline ✅
 - **Project Summary:** Multi-tenant Saudi e-commerce SaaS platform. Local-only. All 10 phases complete. Deployment gated by owner GO.
 - **Active Priorities:**
   - Establish development operating system and process discipline ✅
@@ -16,7 +16,7 @@
   - Security Baseline & RBAC Audit ✅
   - Restore Local App Runtime ✅
   - Theme Stabilization: isolation + hydration flicker fix + test DB isolation ✅
-  - Fix P1 security findings (customers permission, RBAC data model) (next)
+  - Employee Permissions / RBAC implementation (next)
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done
@@ -54,6 +54,7 @@
   - Theme Hydration Flicker: zero-flash theme loading guard (TASK-0008) ✅
   - Test DB Isolation: separate haastores_test DB for vitest, all 1340 tests pass (TASK-0009) ✅
   - Theme Stabilization Verification Gate: 0 failed tests, haa-demo published, all checks pass ✅
+  - Test DB Isolation committed: working tree clean, ready for RBAC ✅
 - **Security Findings Summary:**
   - **P0:** None
   - **P1:** 3 findings — customers permission downgrade, missing customer audit logging, no frontend role filtering
