@@ -5,7 +5,7 @@
 ---
 
 - **Last Updated:** 2026-06-13
-- **Current Phase:** Local MVP — Security Baseline & RBAC Audit
+- **Current Phase:** Local MVP — Restore Local App Runtime ✅
 - **Project Summary:** Multi-tenant Saudi e-commerce SaaS platform. Local-only. All 10 phases complete. Deployment gated by owner GO.
 - **Active Priorities:**
   - Establish development operating system and process discipline ✅
@@ -14,6 +14,7 @@
   - Build System Map (architecture documentation) ✅
   - Dynamic Error Capture ✅
   - Security Baseline & RBAC Audit ✅
+  - Restore Local App Runtime ✅
   - Fix P1 security findings (customers permission, RBAC data model) (next)
   - Ensure theme isolation between storefront and merchant dashboard
   - Complete visual QA pass across all storefront pages
@@ -22,9 +23,11 @@
   - TASK-0002 (System Health OS) — Done
   - TASK-0003 (System Health Hardening) — Done
   - TASK-0004 (Dynamic Error Capture) — Done
-  - TASK-0005 (Security Baseline & RBAC Audit) — In Progress
+  - TASK-0005 (Security Baseline & RBAC Audit) — Done
+  - TASK-0006 (Restore Local App Runtime) — Done
 - **Known Broken Areas:**
-  - (to be documented as discovered)
+  - Storefront root `/` hardcoded to `/s/haa-demo` redirect — works after seed ✅
+  - Registration creates stores as `draft` (intentional — merchant must publish from settings)
 - **Known Risks:**
   - Duplicate project folders on Desktop causing path confusion ⚠️
   - No automated CI/CD
@@ -42,6 +45,7 @@
   - Dynamic Error Capture: 14 error codes, NDJSON logger, ErrorBoundary reporting, POST endpoint, simulate/analyze scripts ✅
   - System Map: SYSTEM_MAP.md (10 sections, all critical paths) + ERROR_FLOW_MAP.md (12 sections, full lifecycle) ✅
   - Security Baseline & RBAC Audit: 5 security docs, 4 new risks, 14 backlog items ✅
+  - Restore Local App Runtime: seed fix (publishStatus), DB update, all tests pass, all 3 apps serve correctly ✅
 - **Security Findings Summary:**
   - **P0:** None
   - **P1:** 3 findings — customers permission downgrade, missing customer audit logging, no frontend role filtering

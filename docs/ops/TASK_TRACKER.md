@@ -316,6 +316,56 @@
 
 ---
 
-## Completed Tasks
+### TASK-0006: Restore Local App Runtime
 
-*(None yet)*
+- **Type:** Fix
+- **Priority:** P0 Critical
+- **Status:** Done
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** Diagnose and fix "Restore Local App Runtime" — ensure no white screens, no broken pages, no theme leakage
+- **Expanded Requirement:** Verify all 3 apps (API, merchant-dashboard, storefront) serve correctly without runtime errors
+- **Problem:** Storefront stores redirect to `/s/haa-demo` which did not exist; stores created by registration had `publishStatus='draft'` so storefront returned STORE_NOT_PUBLISHED
+- **Goal:** All apps load correctly with published storefront
+- **Scope:**
+  - Diagnose all 3 dev servers
+  - Fix store seed to set `publishStatus: 'published'`
+  - Update existing DB store record
+  - Run full test suite
+- **Out of Scope:**
+  - Registration publish flow (intentionally draft — merchant publishes from settings)
+  - New test files or refactoring
+  - DB schema changes
+- **Affected Areas:** `packages/db/src/seed/index.ts`
+- **Files Changed:** `packages/db/src/seed/index.ts` (added `publishStatus: 'published'` to haa-demo store creation)
+- **Acceptance Criteria:**
+  - API health returns 200
+  - Dashboard serves HTML
+  - Storefront serves HTML and renders published store
+  - No white screens or broken pages
+  - All tests pass
+- **Test Plan:**
+  - pnpm typecheck
+  - pnpm preflight
+  - pnpm test
+  - curl health endpoints
+  - curl storefront pages
+- **Test Results:**
+  - ✅ API health: `{"api":"ok","db":"connected"}`
+  - ✅ Dashboard HTML: served at localhost:5173
+  - ✅ Storefront HTML: served at localhost:5174
+  - ✅ Store API: `publishStatus:"published"` at `/s/haa-demo`
+  - ✅ Theme API: full config returned at `/s/haa-demo/theme`
+  - ✅ pnpm typecheck: 21/21 packages pass
+  - ✅ pnpm preflight: PASSED
+  - ✅ pnpm test: 67 files, 1340 tests passed
+- **Risks:** None
+- **Status History:**
+  - Requested: 2026-06-13
+  - Diagnosed: 2026-06-13
+  - Implemented: 2026-06-13
+  - Verified: 2026-06-13
+  - Done: 2026-06-13
+- **Final Notes:** Store published via seed fix + SQL UPDATE. Registration remains draft by design (merchant publishes via settings). Merged to main at f2765c6.
+
+---
