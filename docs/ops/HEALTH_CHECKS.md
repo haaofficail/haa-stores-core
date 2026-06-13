@@ -9,7 +9,8 @@
 | Field | Value |
 |-------|-------|
 | **Purpose** | Verify the API server is running and responding |
-| **Pass** | HTTP 200-399 from health endpoint |
+| **Endpoint** | `http://localhost:3000/health` (only — `/api/health` is NOT used) |
+| **Pass** | HTTP 200 from `/health` |
 | **Fail** | HTTP 500+ or no response |
 | **Severity** | P0 — API is the backbone of all apps |
 | **Error Code** | `SYS-003` |

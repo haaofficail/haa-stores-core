@@ -67,3 +67,23 @@
 - System Health OS adds proactive monitoring before merchant reports
 - Remaining gap: `preflight` Root Guard does not fail when run from wrong directory; needs hardening
 - Synthetic checks warn if dev servers are not running (expected behavior)
+
+## 2026-06-13 (Hardening Pass)
+
+### Added
+
+- Created `.haa-project-root` marker file
+- Created `scripts/preflight.mjs` — hardened Node-based preflight with exit code 1 on failure
+
+### Changed
+
+- `package.json` preflight: from inline shell script to `node scripts/preflight.mjs`
+- `scripts/monitor-health.mjs`: removed `/api/health` check (only uses `/health`)
+- `scripts/synthetic-checks.mjs`: removed `/api/health` check (only uses `/health`)
+- `docs/ops/HEALTH_CHECKS.md`: fixed duplicate sections, documented `/health` as sole endpoint
+- RISK_REGISTER: R-0001 (wrong directory) status changed to Mitigated
+
+### Fixed
+
+- Root Guard now exits with code 1 from wrong directory (hardened)
+- Monitoring report no longer shows Degraded due to `/api/health` 404

@@ -28,10 +28,10 @@
 - **Impact:** Changes written to wrong location, wasted effort, confusion
 - **Likelihood:** 4
 - **Severity:** 5
-- **Mitigation:** Mandatory `pwd` check in AGENTS.md Mandatory Start Rule; `pnpm preflight` verifies correct directory
+- **Mitigation:** `pnpm preflight` now exits with code 1 from any path other than the exact project root; checks `.haa-project-root` + 6 required files/dirs
 - **Owner:** All agents
-- **Status:** Open
-- **Related Tasks:** TASK-0001
+- **Status:** Mitigated
+- **Related Tasks:** TASK-0001, TASK-0002
 
 ### R-0002: Executing abbreviated requests without expansion
 

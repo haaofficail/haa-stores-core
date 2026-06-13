@@ -255,7 +255,7 @@ Before any significant development or bug fix:
 
 | Command | Purpose |
 |---------|---------|
-| `pnpm preflight` | Verify project root, Node/pnpm, typecheck |
+| `pnpm preflight` | **Hardened:** fails with exit code 1 if not in correct project root. Checks `.haa-project-root`, package.json, pnpm-workspace.yaml, apps/, packages/, AGENTS.md, docs/ops/ |
 | `pnpm ops:health` | Run health checks on project and apps |
 | `pnpm ops:synthetic` | Run synthetic HTTP checks on running servers |
 | `pnpm ops:errors` | Analyze recorded errors and suggest actions |

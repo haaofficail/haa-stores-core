@@ -69,11 +69,53 @@
 
 ## Active Tasks
 
+### TASK-0003: Harden System Health Root Guard and Health Endpoint
+
+- **Type:** Ops, Security, Documentation
+- **Priority:** P1 High
+- **Status:** In Progress
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** System Health Hardening Pass — fix Root Guard and health endpoint
+- **Expanded Requirement:** `pnpm preflight` must fail from wrong directory; monitoring must not show Degraded due to incorrect endpoint check
+- **Problem:**
+  1. preflight was a shell script that printed a message but exited with code 0 from wrong directory
+  2. Synthetic checks queried `/api/health` which returns 404, causing "Degraded" report
+- **Goal:**
+  1. preflight exits code 1 from wrong path; checks 7 required markers
+  2. Monitoring only checks `/health` (correct endpoint)
+- **Scope:**
+  - Rewrite preflight as Node script with exit code 1 on failure
+  - Create `.haa-project-root` marker
+  - Fix health endpoint in monitor-health.mjs and synthetic-checks.mjs
+  - Update HEALTH_CHECKS.md documentation
+  - Update AGENTS.md, CURRENT_STATE.md, CHANGELOG_INTERNAL.md, RISK_REGISTER.md
+- **Out of Scope:**
+  - New features
+  - Bug fixes
+  - Security OS
+  - CI/CD
+- **Affected Areas:** package.json, scripts/preflight.mjs, scripts/monitor-health.mjs, scripts/synthetic-checks.mjs, docs/ops/HEALTH_CHECKS.md, docs/ops/CURRENT_STATE.md, docs/ops/CHANGELOG_INTERNAL.md, docs/ops/RISK_REGISTER.md, AGENTS.md, .haa-project-root
+- **Files Changed:** 10 files
+- **Acceptance Criteria:**
+  - preflight fails with exit code 1 from wrong directory
+  - preflight passes from correct directory
+  - Monitoring does not show Degraded due to `/api/health`
+  - pnpm typecheck passes
+  - All ops commands run successfully
+- **Test Plan:** pnpm preflight (correct + wrong path), pnpm typecheck, pnpm ops:monitor, pnpm ops:monitor:report
+- **Test Results:** Pending
+- **Risks:** None
+- **Related Issues:** None
+- **Related Decisions:** DECISION-0001 (request expansion), DECISION-0002 (Dev OS)
+
+---
+
 ### TASK-0002: Build System Health Operating System
 
 - **Type:** Ops, Monitoring, Documentation
 - **Priority:** P1 High
-- **Status:** In Progress
+- **Status:** Done
 - **Created:** 2026-06-13
 - **Updated:** 2026-06-13
 - **Original Request:** Build System Health Operating System — monitoring, health checks, synthetic checks, error analysis, alert rules, incident workflow
@@ -116,16 +158,26 @@
   - pnpm typecheck passes
   - All ops commands run without throwing
 - **Test Plan:** pnpm preflight, pnpm typecheck, pnpm ops:health, pnpm ops:synthetic, pnpm ops:errors, pnpm ops:monitor:report, pnpm ops:monitor:tail
-- **Test Results:** Pending
+- **Test Results:**
+  - ✅ pnpm preflight: passed
+  - ✅ pnpm typecheck: all packages pass
+  - ✅ pnpm ops:health: 25/25 pass
+  - ✅ pnpm ops:synthetic: all checks run
+  - ✅ pnpm ops:errors: analysis completed
+  - ✅ pnpm ops:monitor:report: generated
+  - ✅ pnpm ops:monitor:tail: displayed
 - **Risks:** Synthetic checks will warn if dev servers are not running (expected — not a failure)
 - **Related Issues:** None
-- **Related Decisions:** (pending)
+- **Related Decisions:** DECISION-0001, DECISION-0002
 - **Status History:**
   - Requested: 2026-06-13
   - Expanded: 2026-06-13
   - Planned: 2026-06-13
   - In Progress: 2026-06-13
-- **Final Notes:** Part of the ongoing Development Operating System rollout.
+  - Implemented: 2026-06-13
+  - In Verification: 2026-06-13
+  - Done: 2026-06-13
+- **Final Notes:** Hardening pass (TASK-0003) completed: Root Guard hardened, health endpoint fixed.
 
 ---
 
@@ -133,7 +185,7 @@
 
 - **Type:** Architecture, Documentation
 - **Priority:** P1 High
-- **Status:** In Verification
+- **Status:** Done
 - **Created:** 2026-06-13
 - **Updated:** 2026-06-13
 - **Original Request:** Build a Development Operating System that forces disciplined professional workflow
@@ -168,7 +220,8 @@
   - In Progress: 2026-06-13
   - Implemented: 2026-06-13
   - In Verification: 2026-06-13
-- **Final Notes:** All files confirmed in correct project root. Git initialized (076bc40). Remaining gap: preflight Root Guard does not fail when run from wrong directory.
+  - Done: 2026-06-13
+- **Final Notes:** Root Guard hardening completed in TASK-0003. Dev OS fully operational.
 
 ---
 

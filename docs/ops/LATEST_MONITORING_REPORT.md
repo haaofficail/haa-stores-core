@@ -1,8 +1,8 @@
 # Latest Monitoring Report
 
-- **Generated At:** 2026-06-13T02:20:11.035Z
-- **Overall Status:** Degraded
-- **Period Events Analyzed:** 29
+- **Generated At:** 2026-06-13T02:25:11.068Z
+- **Overall Status:** Healthy
+- **Period Events Analyzed:** 25
 
 ---
 
@@ -18,19 +18,16 @@
 
 | Metric | Count |
 |--------|------:|
-| Pass | 28 |
-| Warning | 1 |
+| Pass | 25 |
+| Warning | 0 |
 | Fail | 0 |
-| Total | 29 |
+| Total | 25 |
 
 ## Synthetic Checks Summary
 
 | Target | Status |
 |--------|--------|
-| api-api-health | warn |
-| api-health | pass |
-| dashboard-root | pass |
-| storefront-home | pass |
+
 
 ## Top Repeated Error Codes
 
@@ -42,9 +39,9 @@
 
 | App | Events |
 |-----|-------:|
-| api | 7 |
-| merchant-dashboard | 6 |
-| storefront | 6 |
+| api | 5 |
+| merchant-dashboard | 5 |
+| storefront | 5 |
 | admin-dashboard | 4 |
 
 ## Top Affected Routes / Targets

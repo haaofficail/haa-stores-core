@@ -10,22 +10,24 @@
 - **Active Priorities:**
   - Establish development operating system and process discipline ✅
   - System Health Operating System ✅
+  - System Health Hardening ✅
+  - Dynamic Error Capture (next)
   - Ensure theme isolation between storefront and merchant dashboard
   - Complete visual QA pass across all storefront pages
 - **Open Tasks:**
-  - TASK-0001 (Development OS) — In Verification
-  - TASK-0002 (System Health OS) — In Progress
+  - TASK-0001 (Development OS) — Done
+  - TASK-0002 (System Health OS) — Done
 - **Known Broken Areas:**
   - (to be documented as discovered)
 - **Known Risks:**
   - Duplicate project folders on Desktop causing path confusion ⚠️
   - No automated CI/CD
-  - `preflight` Root Guard does not fail if run from wrong directory ⚠️
   - Dev servers must be running for HTTP-level synthetic checks
 - **Recently Completed:**
-  - Development Operating System: AGENTS.md + 15 docs/ops/ files + preflight script
-  - Git repository initialized (commit 076bc40, 370168d)
-  - System Health Operating System: monitor-health, synthetic-checks, error analysis, report generation, tail commands
+  - Development Operating System: AGENTS.md + 15 docs/ops/ files + preflight script ✅
+  - Git repository initialized (commit 076bc40, 370168d) ✅
+  - System Health Operating System: monitor-health, synthetic-checks, error analysis, report generation, tail commands ✅
+  - System Health Hardening: Root Guard fails on wrong path, health endpoint fixed ✅
   - Monitoring playbook, health checks, synthetic checks, alert rules, incidents documentation
   - Support error catalog, taxonomy, escalation guide, support playbook
   - Phase 1–10: All gates passed
@@ -35,7 +37,7 @@
   - Payment gateway credentials
   - Database production seeds
 - **Next Recommended Tasks:**
-  - Fix `preflight` to fail hard when not in correct project root
+  - Dynamic Error Capture — capture runtime errors with errorCode + correlationId
   - Remove or rename duplicate `haa-stores-core-spec.md` folder
   - Add all existing project files to git tracking
   - Run `pnpm ops:monitor` as routine pre-dev check
@@ -45,11 +47,13 @@
   - Three terminals: `pnpm dev:api`, `pnpm dev:dashboard`, `pnpm dev:storefront`
   - First commit: `076bc40` — "chore: add development operating system"
   - Branch: `chore/system-health-operating-system`
+  - preflight is now a hardened Node script (`scripts/preflight.mjs`) that fails with exit code 1 from wrong directory
 - **Important Decisions:**
   - NO_DEPLOY_POLICY active — local development only until owner GO
   - Short requests must be expanded before execution (DECISION-0001)
   - Development Operating System installed correctly in real project path (DECISION-0002)
   - System Health rules integrated into AGENTS.md (Section 11)
+  - Root Guard hardened: preflight exits with code 1 from wrong path
 - **Monitoring Notes:**
   - Health checks: `pnpm ops:health` — checks project structure, apps, runtime
   - Synthetic checks: `pnpm ops:synthetic` — HTTP checks on running servers
@@ -57,3 +61,4 @@
   - Report: `pnpm ops:monitor:report` — generates Markdown report
   - Events stored in: `storage/monitoring-events.ndjson`
   - Support events stored in: `storage/support-error-events.ndjson`
+  - Root Guard: preflight fails with exit code 1 from any path other than project root

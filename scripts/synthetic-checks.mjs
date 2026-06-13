@@ -129,8 +129,7 @@ console.log('\n=== Merchant Dashboard Synthetic Checks ===')
 httpCheck('http://localhost:5174', 'Merchant Dashboard root', { app: 'merchant-dashboard', target: 'dashboard-root' })
 
 console.log('\n=== API Synthetic Checks ===')
-httpCheck('http://localhost:3000/health', 'API health endpoint', { app: 'api', target: 'api-health' })
-httpCheck('http://localhost:3000/api/health', 'API /api/health endpoint', { app: 'api', target: 'api-api-health' })
+httpCheck('http://localhost:3000/health', 'API /health endpoint', { app: 'api', target: 'api-health' })
 
 console.log('\n---')
 console.log('Synthetic checks complete. Results recorded in storage/monitoring-events.ndjson')
