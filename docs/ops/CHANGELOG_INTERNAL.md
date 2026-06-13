@@ -32,7 +32,13 @@
 
 - AGENTS.md: from design-system-focused skill guide to full project constitution
 
+### Fixed
+
+- Git repository initialized (commit `076bc40` — "chore: add development operating system")
+- Path verification confirmed: all Dev OS files in correct project root only
+
 ### Notes
 
 - This is the foundational commit of the Development Operating System
 - All future work must follow the Mandatory Start Rule defined in AGENTS.md
+- Remaining gap: `preflight` Root Guard does not fail when run from wrong directory; needs hardening
