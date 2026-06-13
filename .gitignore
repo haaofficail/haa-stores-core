@@ -1,0 +1,9 @@
+node_modules
+dist
+.env
+*.tsbuildinfo
+.next
+coverage
+.turbo
+.vite
+storage

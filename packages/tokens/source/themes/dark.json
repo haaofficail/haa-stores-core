@@ -1,0 +1,44 @@
+{
+  "description": "Dark theme — Apple HIG exact colors",
+  "extends": "base",
+  "theme": {
+    "surface": {
+      "1": { "value": "#1c1c1e", "usage": "main background" },
+      "2": { "value": "#2c2c2e", "usage": "cards, sections" },
+      "3": { "value": "#3a3a3c", "usage": "hover states, input backgrounds" },
+      "inverse": { "value": "#f5f5f7", "usage": "inverse surface" }
+    },
+    "text": {
+      "primary":   { "value": "#f5f5f7", "contrast": "16.0:1" },
+      "secondary": { "value": "#a1a1a6", "contrast": "7.0:1" },
+      "tertiary":  { "value": "#636366", "contrast": "4.5:1" },
+      "disabled":  { "value": "#48484a", "contrast": "3.1:1" },
+      "inverse":   { "value": "#1d1d1f", "contrast": "16.0:1" },
+      "link":      { "value": "#0a84ff", "contrast": "6.5:1" },
+      "linkHover": { "value": "#409cff" }
+    },
+    "border": {
+      "default":  { "value": "#38383a", "usage": "default border" },
+      "hover":    { "value": "#48484a", "usage": "border on hover" },
+      "focus":    { "value": "#0a84ff", "usage": "focus ring" },
+      "disabled": { "value": "#2c2c2e", "usage": "disabled border" }
+    },
+    "divider": { "value": "#38383a" },
+    "shadow": {
+      "color":        { "value": "rgb(0 0 0 / 0.5)" },
+      "colorStrong":  { "value": "rgb(0 0 0 / 0.7)" }
+    },
+    "backdrop": {
+      "opacity": 0.6,
+      "blur": 20,
+      "color": { "value": "#000000" }
+    },
+    "selection": {
+      "background": { "value": "#003380" },
+      "text":       { "value": "#f5f5f7" }
+    },
+    "placeholder": {
+      "text": { "value": "#636366" }
+    }
+  }
+}

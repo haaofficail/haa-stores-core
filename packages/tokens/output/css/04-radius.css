@@ -1,0 +1,15 @@
+/* HAA — 04-radius */
+
+:root {
+  /* Corner Radii — Apple Values */
+  --radius-micro: 5.5px;
+  --radius-mac-btn: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-ios-btn: 14px;
+  --radius-lg: 20px;
+  --radius-ios-icon: 20.5px;
+  --radius-xl: 24px;
+  --radius-pill: 9999px;
+  --radius-vision-os: 28px;
+}

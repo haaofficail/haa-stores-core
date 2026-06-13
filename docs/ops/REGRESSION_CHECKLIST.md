@@ -97,6 +97,20 @@
 - [ ] `POST /internal/support-errors/report` is 404 in production
 - [ ] No secrets in NDJSON logs
 
+## Theme Isolation
+
+- [ ] Merchant-dashboard imports from `@haa/theme-system/server` only, never from `@haa/theme-system` or `@haa/storefront-themes` main entry
+- [ ] No global `!important` body/html styles in any storefront theme component
+- [ ] No `#theme-scope` dead CSS in any file
+- [ ] Storefront theme registry loads both base-elegant and luxury-showcase correctly
+- [ ] CSS variables from storefront themes are scoped to `#storefront-scope` only
+- [ ] `@haa/theme-react`'s `ThemeProvider` is used for light/dark mode only (design system, not storefront)
+- [ ] `@haa/system-theme` CSS uses `--haa-*` namespaced variables
+- [ ] No storefront-specific CSS files imported in dashboard apps
+- [ ] Admin-dashboard does not import from storefront, storefront-themes, or theme-* packages
+- [ ] Fallback theme renders if theme key is unregistered
+- [ ] `pnpm preflight`, `pnpm typecheck`, `pnpm test` all pass after any theme change
+
 ## Previous Issue Checks
 
 *(Add specific checks here as issues are resolved)*

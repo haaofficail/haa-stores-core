@@ -1,0 +1,133 @@
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/hooks/useAuth';
+import { customersApi, ApiClientError } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Plus, Edit, Search, Users } from 'lucide-react';
+import { toast } from 'sonner';
+
+export default function Customers() {
+  const { t } = useTranslation();
+  const { storeId } = useAuth();
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' });
+  const [saving, setSaving] = useState(false);
+  const limit = 20;
+
+  const load = () => {
+    if (!storeId) { setLoading(false); return; }
+    setLoading(true);
+    customersApi.list(storeId, { page, limit, search: search || undefined })
+      .then(r => { setCustomers(r.data); })
+      .catch(() => toast.error(t('common.error')))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, [storeId, page, search]);
+
+  const openCreate = () => {
+    setEditId(null); setForm({ name: '', phone: '', email: '', notes: '' }); setDialogOpen(true);
+  };
+
+  const openEdit = (c: any) => {
+    setEditId(c.id); setForm({ name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '', notes: c.notes ?? '' }); setDialogOpen(true);
+  };
+
+  const save = async () => {
+    if (!storeId) return;
+    if (!form.name.trim()) { toast.error(t('customers.nameRequired')); return; }
+    if (!form.phone.trim()) { toast.error(t('customers.phoneRequired')); return; }
+    setSaving(true);
+    try {
+      if (editId) { await customersApi.update(storeId, editId, form); toast.success(t('customers.updated')); }
+      else { await customersApi.create(storeId, form); toast.success(t('customers.created')); }
+      setDialogOpen(false); load();
+    } catch (err) { toast.error(err instanceof ApiClientError ? err.message : t('common.error')); } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-neutral-900">{t('customers.title')}</h1>
+        <Button onClick={openCreate} className="h-9 text-sm px-4"><Plus className="h-4 w-4 mr-2" />{t('customers.create')}</Button>
+      </div>
+
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
+        <div className="relative max-w-sm">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+          <Input placeholder={t('customers.search')} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pr-10 h-9 text-sm" />
+        </div>
+      </div>
+
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
+        {loading ? (
+          <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
+        ) : customers.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4">
+              <Users className="h-8 w-8 text-neutral-400" />
+            </div>
+            <p className="text-sm text-neutral-500">{t('customers.noCustomers')}</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="border-neutral-100 hover:bg-transparent">
+                <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('customers.name')}</TableHead>
+                <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('customers.phone')}</TableHead>
+                <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('customers.email')}</TableHead>
+                <TableHead className="w-16 h-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {customers.map((c) => (
+                <TableRow key={c.id} className="border-neutral-100 hover:bg-neutral-50 transition-colors">
+                  <TableCell className="text-sm font-medium text-neutral-900 p-3">{c.name}</TableCell>
+                  <TableCell className="text-sm text-neutral-900 p-3" dir="ltr">{c.phone}</TableCell>
+                  <TableCell className="text-sm text-neutral-400 p-3">{c.email || '-'}</TableCell>
+                  <TableCell className="p-3">
+                    <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => openEdit(c)} aria-label="تعديل بيانات العميل">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="bg-white/95 backdrop-blur-2xl border border-neutral-100 shadow-2xl rounded-3xl">
+          <DialogHeader><DialogTitle className="text-lg font-bold text-neutral-900">{editId ? t('customers.edit') : t('customers.create')}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            {[['name', t('customers.name')], ['phone', t('customers.phone')], ['email', t('customers.email')]].map(([field, label]) => (
+              <div key={field} className="space-y-1.5">
+                <Label className="text-sm text-neutral-500">{label}</Label>
+                <Input value={(form as any)[field]} onChange={(e) => setForm({ ...form, [field]: e.target.value })} dir={field === 'phone' || field === 'email' ? 'ltr' : 'rtl'} className="h-9 text-sm" />
+              </div>
+            ))}
+            <div className="space-y-1.5">
+              <Label className="text-sm text-neutral-500">{t('customers.notes')}</Label>
+              <textarea className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
+            <Button variant="outline" className="h-9 text-sm" onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button>
+            <Button className="h-9 text-sm" onClick={save} disabled={saving}>{saving ? t('common.loading') : t('common.save')}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: haa-postgres
+    environment:
+      POSTGRES_DB: haastores
+      POSTGRES_USER: haa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-haa_secret_2024}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+      LC_ALL: C.UTF-8
+      LANG: C.UTF-8
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - haa_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U haa -d haastores"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: haa-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-haaadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-haa_secret_2024}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - haa_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  haa_postgres_data:
+  haa_minio_data:

@@ -1,0 +1,80 @@
+/* CSS Reset — Apple-style */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background: var(--surface-1);
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+}
+
+input, button, textarea, select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--text-link-hover);
+  text-decoration: underline;
+}
+
+:focus-visible {
+  outline: 2px solid var(--border-focus, var(--color-primary-500));
+  outline-offset: 2px;
+  border-radius: var(--radius-md, 8px);
+}
+
+::selection {
+  background: var(--selection-bg, var(--color-primary-100));
+  color: var(--selection-text, inherit);
+}
+
+::placeholder {
+  color: var(--placeholder-text);
+}
+
+*, *::before, *::after {
+  transition:
+    background-color 0.3s var(--ease-spring-smooth, ease),
+    color 0.3s var(--ease-spring-smooth, ease),
+    border-color 0.3s var(--ease-spring-smooth, ease),
+    box-shadow 0.3s var(--ease-spring-smooth, ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+  }
+}

@@ -1,0 +1,96 @@
+
+> haa-stores-core@1.0.0 dev:dashboard /Users/thwany/Desktop/haa-stores-core
+> pnpm --filter @haa/merchant-dashboard dev
+
+
+> @haa/merchant-dashboard@0.1.0 dev /Users/thwany/Desktop/haa-stores-core/apps/merchant-dashboard
+> vite
+
+
+  VITE v5.4.21  ready in 255 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+5:35:34 AM [vite] hmr update /src/index.css, /src/hooks/useAuth.tsx, /src/pages/Categories.tsx, /src/pages/Promotions.tsx, /src/pages/Login.tsx, /src/pages/Wallet.tsx, /src/pages/DashboardHome.tsx, /src/pages/Customers.tsx, /src/pages/Orders.tsx, /src/pages/Products.tsx, /src/pages/Exports.tsx, /src/pages/AbandonedCarts.tsx, /src/pages/Policies.tsx, /src/pages/Imports.tsx, /src/pages/Notifications.tsx, /src/pages/Coupons.tsx, /src/pages/Reports.tsx, /src/pages/Shipping.tsx, /src/pages/Settings.tsx, /src/pages/MigrationHub.tsx, /src/pages/ApiKeys.tsx, /src/pages/Compliance.tsx, /src/pages/OnboardingSuccess.tsx, /src/pages/AiAssistant.tsx, /src/pages/OnboardingWizard.tsx, /src/pages/Subscriptions.tsx
+5:35:35 AM [vite] hmr invalidate /src/hooks/useAuth.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+5:35:35 AM [vite] hmr update /src/App.tsx, /src/index.css, /src/pages/Categories.tsx, /src/pages/Promotions.tsx, /src/pages/Login.tsx, /src/pages/Wallet.tsx, /src/pages/DashboardHome.tsx, /src/pages/Customers.tsx, /src/pages/Orders.tsx, /src/pages/Products.tsx, /src/pages/Exports.tsx, /src/pages/AbandonedCarts.tsx, /src/pages/Policies.tsx, /src/pages/Imports.tsx, /src/pages/Notifications.tsx, /src/pages/Coupons.tsx, /src/pages/Reports.tsx, /src/pages/Shipping.tsx, /src/pages/Settings.tsx, /src/pages/MigrationHub.tsx, /src/pages/ApiKeys.tsx, /src/pages/Compliance.tsx, /src/pages/OnboardingSuccess.tsx, /src/components/auth/AuthGuard.tsx, /src/pages/AiAssistant.tsx, /src/pages/OnboardingWizard.tsx, /src/pages/Subscriptions.tsx, /src/components/layout/Topbar.tsx
+5:35:39 AM [vite] hmr update /src/pages/AiAssistant.tsx, /src/index.css
+5:35:43 AM [vite] hmr update /src/pages/AiAssistant.tsx, /src/index.css
+5:35:46 AM [vite] hmr update /src/pages/AiAssistant.tsx, /src/index.css
+5:35:50 AM [vite] hmr update /src/pages/AiAssistant.tsx, /src/index.css
+5:36:28 AM [vite] page reload src/i18n/locales/ar.json
+5:53:37 AM [vite] hmr update /src/pages/AiAssistant.tsx, /src/index.css
+5:54:47 AM [vite] page reload tailwind.config.js
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+5:55:55 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:02:15 AM [vite] hmr update /src/index.css
+6:02:18 AM [vite] page reload src/main.tsx
+6:02:56 AM [vite] page reload tailwind.config.js
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:03:45 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:08:06 AM [vite] hmr update /src/components/layout/DashboardLayout.tsx, /src/index.css
+6:08:42 AM [vite] hmr update /src/components/layout/Sidebar.tsx, /src/index.css
+6:08:51 AM [vite] hmr update /src/components/layout/Topbar.tsx, /src/index.css
+6:10:41 AM [vite] hmr update /src/pages/DashboardHome.tsx, /src/index.css
+6:11:05 AM [vite] hmr update /src/components/ui/card.tsx, /src/index.css
+6:11:25 AM [vite] hmr update /src/components/ui/button.tsx, /src/index.css
+6:11:25 AM [vite] hmr invalidate /src/components/ui/button.tsx Could not Fast Refresh ("buttonVariants" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+6:11:25 AM [vite] hmr update /src/index.css, /src/pages/Categories.tsx, /src/pages/Promotions.tsx, /src/pages/Login.tsx, /src/pages/Wallet.tsx, /src/pages/DashboardHome.tsx, /src/pages/Customers.tsx, /src/pages/Orders.tsx, /src/pages/Products.tsx, /src/pages/Exports.tsx, /src/pages/AbandonedCarts.tsx, /src/pages/Policies.tsx, /src/pages/Imports.tsx, /src/pages/Notifications.tsx, /src/pages/Coupons.tsx, /src/pages/Reports.tsx, /src/pages/Shipping.tsx, /src/pages/Settings.tsx, /src/pages/MigrationHub.tsx, /src/pages/ApiKeys.tsx, /src/pages/Compliance.tsx, /src/pages/OnboardingSuccess.tsx, /src/pages/AiAssistant.tsx, /src/pages/OnboardingWizard.tsx, /src/pages/Subscriptions.tsx, /src/components/layout/Topbar.tsx
+6:11:28 AM [vite] hmr update /src/components/ui/badge.tsx, /src/index.css
+6:11:28 AM [vite] hmr invalidate /src/components/ui/badge.tsx Could not Fast Refresh ("badgeVariants" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+6:11:28 AM [vite] hmr update /src/index.css, /src/pages/Categories.tsx, /src/pages/Promotions.tsx, /src/pages/Wallet.tsx, /src/pages/DashboardHome.tsx, /src/pages/Orders.tsx, /src/pages/Products.tsx, /src/pages/Policies.tsx, /src/pages/Notifications.tsx, /src/pages/Coupons.tsx, /src/pages/Shipping.tsx, /src/pages/MigrationHub.tsx, /src/pages/ApiKeys.tsx, /src/pages/Compliance.tsx, /src/pages/OnboardingWizard.tsx, /src/pages/Subscriptions.tsx
+6:12:03 AM [vite] page reload src/i18n/locales/ar.json
+6:12:32 AM [vite] hmr update /src/components/layout/Topbar.tsx, /src/index.css
+6:12:39 AM [vite] hmr update /src/pages/DashboardHome.tsx, /src/index.css
+6:12:50 AM [vite] hmr update /src/pages/DashboardHome.tsx, /src/index.css
+6:13:55 AM [vite] hmr update /src/pages/AiAssistant.tsx, /src/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css
+6:25:41 AM [vite] hmr update /@fs/Users/thwany/Desktop/haa-stores-core/packages/tokens/output/css/index.css

@@ -369,3 +369,59 @@
 - **Final Notes:** Store published via seed fix + SQL UPDATE. Registration remains draft by design (merchant publishes via settings). Merged to main at f2765c6.
 
 ---
+
+### TASK-0007: Theme Isolation — Prevent Storefront Theme Leakage to Dashboards
+
+- **Type:** Architecture / Isolation / Audit
+- **Priority:** P0 Critical
+- **Status:** Done
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** P0 — Theme Isolation: منع تسريب ثيم المتجر العام إلى لوحة التاجر
+- **Expanded Requirement:** Ensure storefront theme CSS, components, or runtime never affect merchant-dashboard or admin-dashboard
+- **Problem:** Merchant-dashboard imported from `@haa/theme-system` (main entry) which bundles DOM-manipulation functions including `applyTheme()` (writes to `document.documentElement`), analytics script injection (GTM/GA/Facebook), and theme CSS variable mutation. Additionally, `luxury-showcase` theme had a hardcoded `!important` body style that bypassed scoping.
+- **Goal:** Zero theme leakage between storefront and dashboards
+- **Scope:**
+  - Fix merchant-dashboard imports to use server-safe subpath
+  - Fix package.json exports for server subpath
+  - Fix luxury-showcase global body style
+  - Remove dead #theme-scope CSS
+  - Add validateThemeConfig to server exports
+- **Out of Scope:**
+  - No redesign
+  - No new theme
+  - No employee permissions
+  - No payment/shipping/orders changes
+  - No general refactor
+- **Affected Areas:** packages/theme-system, apps/merchant-dashboard, apps/storefront
+- **Files Changed:**
+  - `packages/theme-system/src/server.ts` — added validateThemeConfig export
+  - `packages/theme-system/package.json` — fixed server export to use source
+  - `apps/merchant-dashboard/src/pages/ThemeStore.tsx` — changed to server import
+  - `apps/merchant-dashboard/src/pages/ThemeEditor.tsx` — changed to server import
+  - `apps/storefront/src/themes/luxury-showcase/Header.tsx` — removed !important body style
+  - `apps/storefront/src/index.css` — removed dead #theme-scope block
+- **Acceptance Criteria:**
+  - Storefront works
+  - Merchant-dashboard works
+  - Admin-dashboard unaffected
+  - No import from @haa/theme-system main entry in merchant-dashboard
+  - No !important global styles in storefront theme
+  - Dead CSS removed
+  - pnpm preflight passes
+  - pnpm typecheck passes
+  - pnpm test passes
+- **Test Plan:** preflight, typecheck, test, ops:monitor
+- **Test Results:**
+  - ✅ pnpm preflight: PASSED
+  - ✅ pnpm typecheck: 21/21 packages pass
+  - ✅ pnpm test: 67 files, 1340 tests passed
+  - ✅ pnpm ops:monitor: all checks pass, no P0/P1 alerts
+- **Risks:** None — minimal changes, no behavioral changes
+- **Status History:**
+  - Requested: 2026-06-13
+  - Expanded: 2026-06-13
+  - Planned: 2026-06-13
+  - In Progress: 2026-06-13
+  - Done: 2026-06-13
+- **Final Notes:** All 3 apps verified serving correctly. Theme registry works (base-elegant + luxury-showcase). Fallback works. Branch: fix/theme-isolation

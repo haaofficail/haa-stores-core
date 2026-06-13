@@ -1,0 +1,40 @@
+{
+  "name": "@haa/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./schema": {
+      "import": "./dist/schema/index.js",
+      "types": "./dist/schema/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate",
+    "seed": "tsx src/seed/index.ts",
+    "studio": "drizzle-kit studio",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@haa/auth-core": "workspace:*",
+    "@haa/shared": "workspace:*",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.16.5",
+    "typescript": "^5.5.4"
+  }
+}

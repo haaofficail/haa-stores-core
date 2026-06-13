@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HAA Design Tokens Schema",
+  "description": "Schema for validating haa-tokens/tokens.json",
+  "type": "object",
+  "required": ["version", "color", "typography", "spacing", "cornerRadius", "shadow", "zIndex"],
+  "properties": {
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "color": {
+      "type": "object",
+      "required": ["primary", "neutral", "semantic"],
+      "properties": {
+        "primary": { "$ref": "#/definitions/colorPalette" },
+        "neutral": { "$ref": "#/definitions/colorPalette" },
+        "semantic": {
+          "type": "object",
+          "required": ["success", "warning", "danger", "info"],
+          "additionalProperties": { "$ref": "#/definitions/semanticColor" }
+        }
+      }
+    },
+    "spacing": {
+      "type": "object",
+      "patternProperties": {
+        "^[0-9]+$": {
+          "type": "object",
+          "required": ["value"],
+          "properties": {
+            "value": { "type": "number", "multipleOf": 8 },
+            "rem": { "type": "string" },
+            "usage": { "type": "string" }
+          }
+        }
+      }
+    },
+    "cornerRadius": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["value"],
+        "properties": {
+          "value": { "type": "number" },
+          "usage": { "type": "string" },
+          "platform": { "type": "string" }
+        }
+      }
+    },
+    "zIndex": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["value", "usage"],
+        "properties": {
+          "value": { "type": "integer", "minimum": 0, "maximum": 9999 },
+          "usage": { "type": "string" }
+        }
+      }
+    },
+    "accessibility": { "$ref": "#/definitions/accessibility" }
+  },
+  "definitions": {
+    "colorPalette": {
+      "type": "object",
+      "patternProperties": {
+        "^(50|100|200|300|400|500|600|700|800|900|950)$": {
+          "type": "object",
+          "required": ["srgb"],
+          "properties": {
+            "srgb": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "p3": { "type": "string" },
+            "contrast": { "type": "string" }
+          }
+        }
+      }
+    },
+    "semanticColor": {
+      "type": "object",
+      "required": ["light", "dark"],
+      "properties": {
+        "light": { "$ref": "#/definitions/colorValue" },
+        "dark": { "$ref": "#/definitions/colorValue" },
+        "subtle": { "type": "object", "properties": { "light": { "type": "string" }, "dark": { "type": "string" } } }
+      }
+    },
+    "colorValue": {
+      "type": "object",
+      "required": ["srgb"],
+      "properties": {
+        "srgb": { "type": "string" },
+        "p3": { "type": "string" },
+        "contrast": { "type": "string" }
+      }
+    },
+    "accessibility": {
+      "type": "object",
+      "required": ["contrast", "dynamicType", "colorBlindness"],
+      "properties": {
+        "contrast": {
+          "type": "object",
+          "required": ["aa", "aaa", "ui"],
+          "properties": {
+            "aa": { "type": "number", "minimum": 4.5 },
+            "aaa": { "type": "number", "minimum": 7.0 },
+            "ui": { "type": "number", "minimum": 3.0 }
+          }
+        },
+        "dynamicType": {
+          "type": "object",
+          "required": ["xs", "s", "m", "l", "xl", "xxl", "xxxl"]
+        }
+      }
+    }
+  }
+}

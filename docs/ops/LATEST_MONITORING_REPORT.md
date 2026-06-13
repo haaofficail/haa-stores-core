@@ -1,8 +1,8 @@
 # Latest Monitoring Report
 
-- **Generated At:** 2026-06-13T02:25:11.068Z
+- **Generated At:** 2026-06-13T02:59:25.059Z
 - **Overall Status:** Healthy
-- **Period Events Analyzed:** 25
+- **Period Events Analyzed:** 29
 
 ---
 
@@ -18,31 +18,34 @@
 
 | Metric | Count |
 |--------|------:|
-| Pass | 25 |
+| Pass | 28 |
 | Warning | 0 |
 | Fail | 0 |
-| Total | 25 |
+| Total | 29 |
 
 ## Synthetic Checks Summary
 
 | Target | Status |
 |--------|--------|
-
+| api-health | pass |
+| dashboard-root | pass |
+| storefront-home | pass |
 
 ## Top Repeated Error Codes
 
 | Code | Count |
 |------|------:|
-
+| ORDER-001 | 1 |
 
 ## Top Affected Apps
 
 | App | Events |
 |-----|-------:|
-| api | 5 |
-| merchant-dashboard | 5 |
-| storefront | 5 |
+| api | 6 |
+| merchant-dashboard | 6 |
+| storefront | 6 |
 | admin-dashboard | 4 |
+| worker | 1 |
 
 ## Top Affected Routes / Targets
 
@@ -56,7 +59,7 @@
 
 ## Suspected Root Causes
 
-*None identified*
+- Fingerprint `ORDER-001::system::/dashboard/webhooks::simulated_ORDER-001_error` repeated 1 times
 
 ## Recommended Tasks
 

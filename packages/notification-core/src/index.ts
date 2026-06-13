@@ -1,0 +1,153 @@
+export const NOTIFICATION_CORE_VERSION = '0.2.0';
+
+export interface NotificationMessage {
+  recipient: string;
+  subject?: string;
+  body: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface NotificationProvider {
+  readonly channel: string;
+  readonly name: string;
+  readonly isAvailable: boolean;
+  send(message: NotificationMessage): Promise<{ success: boolean; messageId?: string; error?: string }>;
+}
+
+export class ConsoleNotificationProvider implements NotificationProvider {
+  readonly channel = 'email';
+  readonly name = 'Console (Mock)';
+  readonly isAvailable = false;
+
+  async send(message: NotificationMessage): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    console.log(`[NOTIFICATION] [${this.channel}] To: ${message.recipient} | Subject: ${message.subject || '-'} | Body: ${message.body.substring(0, 100)}...`);
+    return {
+      success: false,
+      error: 'Simulated: No real email/SMS/WhatsApp provider is configured. Notifications are console-only. Set up a provider in production.',
+    };
+  }
+}
+
+import { eq, desc, and } from 'drizzle-orm';
+import { createDbClient, DbClient } from '@haa/db';
+import * as s from '@haa/db/schema';
+
+export class NotificationService {
+  private providers: NotificationProvider[];
+
+  constructor(private db: DbClient = createDbClient()) {
+    this.providers = [new ConsoleNotificationProvider()];
+  }
+
+  addProvider(provider: NotificationProvider) {
+    this.providers.push(provider);
+  }
+
+  async send(storeId: number, templateCode: string, data: Record<string, string>, channel?: string) {
+    const [template] = await this.db.select().from(s.notificationTemplates)
+      .where(eq(s.notificationTemplates.code, templateCode)).limit(1);
+    if (!template || !template.isActive) return;
+
+    const [prefs] = await this.db.select().from(s.notificationPreferences)
+      .where(eq(s.notificationPreferences.storeId, storeId)).limit(1);
+
+    const channels = channel ? [channel] : ['email', 'sms', 'whatsapp'];
+    const results = [];
+
+    for (const ch of channels) {
+      if (!this.shouldSend(prefs, templateCode, ch)) continue;
+
+      const subject = this.fillTemplate(template.subjectTemplate || '', data);
+      const body = this.fillTemplate(template.bodyTemplate || '', data);
+      const recipient = this.getRecipient(prefs, ch);
+
+      if (!recipient) continue;
+
+      for (const provider of this.providers) {
+        if (provider.channel !== ch) continue;
+        const result = await provider.send({ recipient, subject, body, metadata: { templateCode, storeId } });
+
+        await this.db.insert(s.notificationLogs).values({
+          storeId,
+          channel: ch,
+          recipient,
+          subject,
+          body,
+          status: result.success ? 'sent' : 'failed',
+          templateCode,
+          errorMessage: result.error || null,
+        });
+
+        results.push(result);
+      }
+    }
+
+    return results;
+  }
+
+  async getPreferences(storeId: number) {
+    const [prefs] = await this.db.select().from(s.notificationPreferences)
+      .where(eq(s.notificationPreferences.storeId, storeId)).limit(1);
+    return prefs || null;
+  }
+
+  async updatePreferences(storeId: number, data: Partial<typeof s.notificationPreferences.$inferInsert>) {
+    const existing = await this.getPreferences(storeId);
+    if (existing) {
+      const [updated] = await this.db.update(s.notificationPreferences)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(s.notificationPreferences.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await this.db.insert(s.notificationPreferences)
+      .values({ storeId, ...data } as any).returning();
+    return created;
+  }
+
+  async getLogs(storeId: number, opts?: { limit?: number; channel?: string }) {
+    const conditions = [eq(s.notificationLogs.storeId, storeId)];
+    if (opts?.channel) conditions.push(eq(s.notificationLogs.channel, opts.channel));
+    return this.db.select().from(s.notificationLogs)
+      .where(and(...conditions))
+      .orderBy(desc(s.notificationLogs.sentAt))
+      .limit(opts?.limit ?? 50);
+  }
+
+  async getTemplates() {
+    return this.db.select().from(s.notificationTemplates)
+      .where(eq(s.notificationTemplates.isActive, true));
+  }
+
+  private fillTemplate(template: string, data: Record<string, string>): string {
+    return template.replace(/\{\{(\w+)\}\}/g, (_, key) => data[key] || `{{${key}}}`);
+  }
+
+  private shouldSend(prefs: any, templateCode: string, channel: string): boolean {
+    if (!prefs) return channel === 'email';
+    if (channel === 'email' && !prefs.emailEnabled) return false;
+    if (channel === 'sms' && !prefs.smsEnabled) return false;
+    if (channel === 'whatsapp' && !prefs.whatsappEnabled) return false;
+    const eventMap: Record<string, string> = {
+      'order_created': 'orderCreated',
+      'payment_success': 'paymentSuccess',
+      'payment_failed': 'paymentFailed',
+      'shipping_update': 'shippingUpdate',
+      'low_stock': 'lowStock',
+      'abandoned_cart': 'abandonedCart',
+      'order_ready_for_pickup': 'orderReadyForPickup',
+      'order_picked_up': 'orderPickedUp',
+    };
+    const prefKey = eventMap[templateCode];
+    if (prefKey && prefs[prefKey] === false) return false;
+    return true;
+  }
+
+  private getRecipient(prefs: any, channel: string): string {
+    if (!prefs) return '';
+    if (channel === 'email') return prefs.emailAddress || '';
+    if (channel === 'sms') return prefs.smsPhone || '';
+    if (channel === 'whatsapp') return prefs.whatsappPhone || '';
+    return '';
+  }
+}

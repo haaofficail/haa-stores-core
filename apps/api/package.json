@@ -1,0 +1,41 @@
+{
+  "name": "@haa/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "worker:start": "node dist/worker.js",
+    "worker:dev": "tsx watch src/worker.ts"
+  },
+  "dependencies": {
+    "@haa/auth-core": "workspace:*",
+    "@haa/commerce-core": "workspace:*",
+    "@haa/db": "workspace:*",
+    "@haa/integration-core": "workspace:*",
+    "@haa/marketplace-core": "workspace:*",
+    "@haa/notification-core": "workspace:*",
+    "@haa/shared": "workspace:*",
+    "@haa/shipping-core": "workspace:*",
+    "@haa/theme-system": "workspace:*",
+    "@haa/wallet-core": "workspace:*",
+    "@hono/node-server": "^1.12.0",
+    "@hono/zod-validator": "^0.3.0",
+    "bullmq": "^5.65.1",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.5.0",
+    "ioredis": "^5.11.1",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "tsx": "^4.16.5",
+    "typescript": "^5.5.4"
+  }
+}

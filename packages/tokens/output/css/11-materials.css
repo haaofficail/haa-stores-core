@@ -1,0 +1,63 @@
+/* HAA — 11-materials */
+
+/* Materials — Glass Levels */
+.material-ultra-thin {
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(80px);
+  -webkit-backdrop-filter: blur(80px);
+}
+
+[data-theme="dark"] .material-ultra-thin {
+  background: rgba(0,0,0,0.2);
+}
+
+.material-thin {
+  background: rgba(255,255,255,0.3);
+  backdrop-filter: blur(60px);
+  -webkit-backdrop-filter: blur(60px);
+}
+
+[data-theme="dark"] .material-thin {
+  background: rgba(0,0,0,0.3);
+}
+
+.material-regular {
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+}
+
+[data-theme="dark"] .material-regular {
+  background: rgba(0,0,0,0.5);
+}
+
+.material-thick {
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+[data-theme="dark"] .material-thick {
+  background: rgba(0,0,0,0.6);
+}
+
+.material-ultra-thick {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+[data-theme="dark"] .material-ultra-thick {
+  background: rgba(0,0,0,0.7);
+}
+
+.material-vision-os {
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+  backdrop-filter: blur(60px);
+  -webkit-backdrop-filter: blur(60px);
+  border: 0.5px solid rgba(255,255,255,0.2);
+}
+
+[data-theme="dark"] .material-vision-os {
+}
+

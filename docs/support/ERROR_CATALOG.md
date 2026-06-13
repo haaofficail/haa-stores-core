@@ -60,6 +60,7 @@
 - **Severity:** P2
 - **Source:** Storefront / Theme component
 - **First Checks:** Check browser console for errors, verify theme compatibility
+- **Related Issues:** ISSUE-0002 (global !important style injection), ISSUE-0001 (theme system import leakage)
 - **Escalation Criteria:** P1 if storefront is broken
 
 ## PAY-001: Payment Provider Error

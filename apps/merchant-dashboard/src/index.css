@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background: var(--haa-surface-1, #ffffff);
+    color: var(--haa-text-primary, #1d1d1f);
+    font-family: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  html,
+  body,
+  #root {
+    direction: rtl;
+  }
+
+  table,
+  th,
+  td {
+    text-align: right;
+  }
+
+  table {
+    direction: rtl;
+  }
+
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-neutral-300, #d4d4d4) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-neutral-300);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-neutral-400);
+  }
+}

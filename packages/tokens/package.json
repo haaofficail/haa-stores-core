@@ -1,0 +1,26 @@
+{
+  "name": "@haa/tokens",
+  "type": "module",
+  "version": "0.0.1",
+  "private": false,
+  "description": "HAA Design Tokens — Source of truth for the design system",
+  "main": "output/css/index.css",
+  "files": [
+    "output/css/*.css"
+  ],
+  "scripts": {
+    "build": "tsx scripts/build-css.ts",
+    "build:all": "npm run build && npm run build:figma && npm run build:native && npm run validate",
+    "validate": "tsx scripts/validate.ts",
+    "build:figma": "tsx scripts/build-figma.ts",
+    "build:native": "npm run build:swift && npm run build:kotlin",
+    "build:swift": "tsx scripts/build-swift.ts",
+    "build:kotlin": "tsx scripts/build-kotlin.ts",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0",
+    "@types/node": "^20.14.0"
+  }
+}

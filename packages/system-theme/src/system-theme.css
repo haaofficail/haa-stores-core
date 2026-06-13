@@ -1,0 +1,136 @@
+/* HAA — System Theme (Admin Dashboard Identity) */
+/* Namespace: --haa-* */
+/* This CSS is ONLY for merchant-dashboard and admin-dashboard. */
+/* It must NOT be loaded by the storefront. */
+/* It must NOT contain storefront theme variables. */
+
+/* ── Light Mode (Default) ── */
+.haa-system-theme {
+  /* Surfaces */
+  --haa-surface-1: #ffffff;
+  --haa-surface-2: #f5f5f7;
+  --haa-surface-3: #e8e8ed;
+  --haa-surface-inverse: #1d1d1f;
+
+  /* Text */
+  --haa-text-primary: #1d1d1f;
+  --haa-text-secondary: #86868b;
+  --haa-text-tertiary: #aeaeb2;
+  --haa-text-disabled: #c6c6c8;
+  --haa-text-inverse: #f5f5f7;
+  --haa-text-link: #007aff;
+  --haa-text-link-hover: #0066d6;
+
+  /* Borders */
+  --haa-border: #c6c6c8;
+  --haa-border-strong: #86868b;
+  --haa-border-focus: #007aff;
+  --haa-border-disabled: #e8e8ed;
+  --haa-divider: #d2d2d7;
+
+  /* Primary (Haa Blue) */
+  --haa-primary-50: #f2f5ff;
+  --haa-primary-100: #e0e8ff;
+  --haa-primary-500: #007aff;
+  --haa-primary-600: #0066d6;
+  --haa-primary-700: #0055b3;
+
+  /* Semantic */
+  --haa-success: #34c759;
+  --haa-warning: #ff9500;
+  --haa-danger: #ff3b30;
+  --haa-info: #007aff;
+
+  /* Radius */
+  --haa-radius-card: 12px;
+  --haa-radius-button: 14px;
+
+  /* Shadows */
+  --haa-shadow-card: 0 2px 12px var(--haa-shadow-color, rgb(0 0 0 / 0.08)), 0 1px 4px var(--haa-shadow-color-strong, rgb(0 0 0 / 0.16));
+
+  /* Backdrop */
+  --haa-backdrop-opacity: 0.4;
+  --haa-backdrop-blur: 20px;
+  --haa-backdrop-color: #000000;
+
+  /* Selection */
+  --haa-selection-bg: #cce4ff;
+  --haa-selection-text: #1d1d1f;
+
+  /* Placeholder */
+  --haa-placeholder-text: #aeaeb2;
+
+  /* Shadow colors */
+  --haa-shadow-color: rgb(0 0 0 / 0.08);
+  --haa-shadow-color-strong: rgb(0 0 0 / 0.16);
+}
+
+/* ── Dark Mode ── */
+.haa-system-theme[data-haa-theme="dark"] {
+  /* Surfaces */
+  --haa-surface-1: #1c1c1e;
+  --haa-surface-2: #2c2c2e;
+  --haa-surface-3: #3a3a3c;
+  --haa-surface-inverse: #f5f5f7;
+
+  /* Text */
+  --haa-text-primary: #f5f5f7;
+  --haa-text-secondary: #a1a1a6;
+  --haa-text-tertiary: #636366;
+  --haa-text-disabled: #48484a;
+  --haa-text-inverse: #1d1d1f;
+  --haa-text-link: #0a84ff;
+  --haa-text-link-hover: #409cff;
+
+  /* Borders */
+  --haa-border: #38383a;
+  --haa-border-strong: #48484a;
+  --haa-border-focus: #0a84ff;
+  --haa-border-disabled: #2c2c2e;
+  --haa-divider: #38383a;
+
+  /* Primary (Haa Blue Dark) */
+  --haa-primary-50: #002266;
+  --haa-primary-100: #003380;
+  --haa-primary-500: #0a84ff;
+  --haa-primary-600: #409cff;
+  --haa-primary-700: #66b3ff;
+
+  /* Semantic */
+  --haa-success: #30d158;
+  --haa-warning: #ffb340;
+  --haa-danger: #ff453a;
+  --haa-info: #0a84ff;
+
+  /* Shadows */
+  --haa-shadow-color: rgb(0 0 0 / 0.5);
+  --haa-shadow-color-strong: rgb(0 0 0 / 0.7);
+
+  /* Backdrop */
+  --haa-backdrop-opacity: 0.6;
+
+  /* Selection */
+  --haa-selection-bg: #003380;
+  --haa-selection-text: #f5f5f7;
+
+  /* Placeholder */
+  --haa-placeholder-text: #636366;
+}
+
+/* ── High Contrast ── */
+@media (prefers-contrast: more) {
+  .haa-system-theme {
+    --haa-surface-1: #ffffff;
+    --haa-surface-2: #e8e8ed;
+    --haa-surface-3: #d2d2d7;
+    --haa-text-primary: #000000;
+    --haa-text-secondary: #1d1d1f;
+    --haa-text-tertiary: #3a3a3c;
+    --haa-text-disabled: #86868b;
+    --haa-text-link: #0040dd;
+    --haa-border: #86868b;
+    --haa-border-strong: #636366;
+    --haa-border-focus: #0040dd;
+    --haa-divider: #86868b;
+  }
+}

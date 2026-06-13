@@ -1,0 +1,55 @@
+/* HAA — High Contrast */
+@media (prefers-contrast: more) {
+:root {
+  --surface-1: #ffffff;
+  --surface-2: #e8e8ed;
+  --surface-3: #d2d2d7;
+  --surface-inverse: #000000;
+  --text-primary: #000000;
+  --text-secondary: #1d1d1f;
+  --text-tertiary: #3a3a3c;
+  --text-disabled: #86868b;
+  --text-inverse: #ffffff;
+  --text-link: #0040dd;
+  --text-link-hover: #0030aa;
+  --border-default: #86868b;
+  --border-hover: #636366;
+  --border-focus: #0040dd;
+  --border-disabled: #aeaeb2;
+  --divider: #86868b;
+  --shadow-color: rgb(0 0 0 / 0.2);
+  --shadow-colorStrong: rgb(0 0 0 / 0.35);
+  --backdrop-opacity: 0.7;
+  --backdrop-blur: 4px;
+  --backdrop-color: #000000;
+  --selection-bg: #0066d6;
+  --selection-text: #ffffff;
+  --placeholder-text: #636366;
+}
+}
+[data-theme="high-contrast"] {
+  --surface-1: #ffffff;
+  --surface-2: #e8e8ed;
+  --surface-3: #d2d2d7;
+  --surface-inverse: #000000;
+  --text-primary: #000000;
+  --text-secondary: #1d1d1f;
+  --text-tertiary: #3a3a3c;
+  --text-disabled: #86868b;
+  --text-inverse: #ffffff;
+  --text-link: #0040dd;
+  --text-link-hover: #0030aa;
+  --border-default: #86868b;
+  --border-hover: #636366;
+  --border-focus: #0040dd;
+  --border-disabled: #aeaeb2;
+  --divider: #86868b;
+  --shadow-color: rgb(0 0 0 / 0.2);
+  --shadow-colorStrong: rgb(0 0 0 / 0.35);
+  --backdrop-opacity: 0.7;
+  --backdrop-blur: 4px;
+  --backdrop-color: #000000;
+  --selection-bg: #0066d6;
+  --selection-text: #ffffff;
+  --placeholder-text: #636366;
+}

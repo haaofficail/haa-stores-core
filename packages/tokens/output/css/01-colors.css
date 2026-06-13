@@ -1,0 +1,71 @@
+/* HAA — 01-colors */
+
+:root {
+  /* Primary Palette */
+  --color-primary-50: #f2f5ff;
+  --color-primary-100: #e0e8ff;
+  --color-primary-200: #b3c6ff;
+  --color-primary-300: #80a4ff;
+  --color-primary-400: #4082ff;
+  --color-primary-500: #007aff;
+  --color-primary-600: #0066d6;
+  --color-primary-700: #0055b3;
+  --color-primary-800: #004499;
+  --color-primary-900: #003380;
+  --color-primary-950: #002266;
+
+  /* Neutral Palette */
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+  --color-neutral-950: #0a0a0a;
+
+  /* Semantic Colors */
+  --color-success: #34c759;
+  --color-success-text: #ffffff;
+  --color-success-subtle: #e8f8ee;
+  --color-warning: #ff9500;
+  --color-warning-text: #1d1d1f;
+  --color-warning-subtle: #fff4e5;
+  --color-danger: #ff3b30;
+  --color-danger-text: #ffffff;
+  --color-danger-subtle: #ffebeb;
+  --color-info: #007aff;
+  --color-info-text: #ffffff;
+  --color-info-subtle: #e8f2ff;
+}
+
+[data-theme="dark"] {
+  /* Neutral Palette — inverted for dark mode */
+  --color-neutral-50: #0a0a0a;
+  --color-neutral-100: #171717;
+  --color-neutral-200: #262626;
+  --color-neutral-300: #404040;
+  --color-neutral-400: #525252;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #a3a3a3;
+  --color-neutral-700: #d4d4d4;
+  --color-neutral-800: #e5e5e5;
+  --color-neutral-900: #f5f5f5;
+  --color-neutral-950: #fafafa;
+
+  --color-success: #30d158;
+  --color-success-text: #1d1d1f;
+  --color-success-subtle: rgb(48 209 88 / 0.15);
+  --color-warning: #ff9f0a;
+  --color-warning-text: #1d1d1f;
+  --color-warning-subtle: rgb(255 159 10 / 0.15);
+  --color-danger: #ff453a;
+  --color-danger-text: #1d1d1f;
+  --color-danger-subtle: rgb(255 69 58 / 0.15);
+  --color-info: #0a84ff;
+  --color-info-text: #1d1d1f;
+  --color-info-subtle: rgb(10 132 255 / 0.15);
+}

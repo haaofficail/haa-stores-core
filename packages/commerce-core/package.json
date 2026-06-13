@@ -1,0 +1,41 @@
+{
+  "name": "@haa/commerce-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./redis": {
+      "import": "./dist/redis.js",
+      "types": "./dist/redis.d.ts"
+    },
+    "./encryption": {
+      "import": "./dist/encryption.js",
+      "types": "./dist/encryption.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@haa/db": "workspace:*",
+    "@haa/integration-core": "workspace:*",
+    "@haa/notification-core": "workspace:*",
+    "@haa/shared": "workspace:*",
+    "@haa/shipping-core": "workspace:*",
+    "@haa/wallet-core": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "ioredis": "^5.11.1",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

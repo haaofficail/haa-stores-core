@@ -1,0 +1,97 @@
+/* HAA — 14-storefront-tokens */
+/* Storefront-specific design tokens for Saudi e-commerce normalization */
+/* Spec: Saudi E-commerce Storefront Design System Normalization Skill */
+
+:root {
+  /* ── Spacing Scale (4px/8px mixed) ── */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ── Icon Sizes ── */
+  --icon-2xs: 12px;
+  --icon-xs: 16px;
+  --icon-sm: 18px;
+  --icon-md: 20px;
+  --icon-default: 24px;
+  --icon-lg: 32px;
+  --icon-xl: 48px;
+  --icon-2xl: 64px;
+
+  /* ── Button Heights ── */
+  --button-sm: 32px;
+  --button-md: 40px;
+  --button-lg: 48px;
+
+  /* ── Badge Tokens ── */
+  --badge-height: 20px;
+  --badge-padding-x: 8px;
+  --badge-padding-y: 2px;
+  --badge-font-size: 11px;
+  --badge-radius: 9999px;
+  --badge-icon-size: 12px;
+  --badge-compact-padding-x: 4px;
+  --badge-compact-padding-y: 1.5px;
+  --badge-compact-font-size: 10px;
+
+  /* ── Card Tokens ── */
+  --card-padding: 16px;
+  --card-radius: 16px;
+  --card-image-radius: 12px;
+  --card-gap: 12px;
+  --card-title-line-clamp: 2;
+  --card-action-min-height: 40px;
+  --card-price-height: 24px;
+  --card-badge-reserved: 20px;
+
+  /* ── Section & Container ── */
+  --section-gap: 48px;
+  --section-header-gap: 24px;
+  --container-max-width: 1280px;
+  --container-padding-sm: 16px;
+  --container-padding-md: 24px;
+  --container-padding-lg: 32px;
+
+  /* ── Product Image Aspect Ratios ── */
+  --product-image-square: 1 / 1;
+  --product-image-portrait: 3 / 4;
+  --product-image-landscape: 4 / 3;
+  --product-image-widescreen: 16 / 9;
+
+  /* ── Touch Targets ── */
+  --touch-target-default: 44px;
+  --touch-target-minimum: 24px;
+  --touch-target-compact: 32px;
+  --touch-target-icon: 40px;
+
+  /* ── Radii ── */
+  --radius-xs: 6px;
+  --radius-modal: 24px;
+
+  /* ── Shadows ── */
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-card: 0 2px 8px rgb(0 0 0 / 0.06);
+  --shadow-card-hover: 0 8px 24px rgb(0 0 0 / 0.08);
+  --shadow-popover: 0 4px 16px rgb(0 0 0 / 0.1);
+  --shadow-modal: 0 16px 48px rgb(0 0 0 / 0.15);
+
+  /* ── E-commerce Typography Scale ── */
+  --text-2xs: 10px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 15px;
+  --product-title-size: 14px;
+  --product-price-size: 16px;
+  --section-title-size: 18px;
+  --page-title-size: 24px;
+  --hero-title-size: 32px;
+}

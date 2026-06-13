@@ -1,0 +1,188 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1780769352612,
+      "tag": "0000_burly_albert_cleary",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780775665008,
+      "tag": "0001_modern_preak",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780792705679,
+      "tag": "0002_bright_luke_cage",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780792705680,
+      "tag": "0003_sparkling_gress",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1780794932427,
+      "tag": "0004_shocking_goblin_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780848201915,
+      "tag": "0005_brown_maggott",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780849798425,
+      "tag": "0006_crazy_songbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1780850762531,
+      "tag": "0007_tan_cassandra_nova",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780851401120,
+      "tag": "0008_handy_epoch",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1780851917931,
+      "tag": "0009_cultured_purifiers",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1780854696284,
+      "tag": "0010_public_metal_master",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1780883567578,
+      "tag": "0011_brave_blackheart",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1780906519595,
+      "tag": "0012_quick_doomsday",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1780908382995,
+      "tag": "0013_chubby_warbound",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1780911175795,
+      "tag": "0014_motionless_james_howlett",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1780970127075,
+      "tag": "0015_eminent_glorian",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1780986707932,
+      "tag": "0016_odd_black_crow",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1781000000000,
+      "tag": "0017_joyful_malcolm",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1781040069011,
+      "tag": "0018_graceful_sentry",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1781156431605,
+      "tag": "0019_redundant_paibok",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1781250000000,
+      "tag": "0020_proud_pickup_locations",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1781251000000,
+      "tag": "0021_shipping_config",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1781252000000,
+      "tag": "0022_sweet_gift_cart",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1781253000000,
+      "tag": "0023_add_phone_to_pickup_locations",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1781350000000,
+      "tag": "0024_product_variants_is_active",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1781197332920,
+      "tag": "0025_sudden_leech",
+      "breakpoints": true
+    }
+  ]
+}

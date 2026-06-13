@@ -1,0 +1,31 @@
+{
+  "name": "@haa/storefront-themes",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "HAA Storefront Themes — Customer-facing store themes. Replaces @haa/theme-system.",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "dependencies": {
+    "@haa/theme-system": "workspace:*",
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "jsdom": "^24.1.3",
+    "typescript": "^5.0.0",
+    "vite": "6.4.2",
+    "vitest": "4.1.8"
+  }
+}

@@ -25,6 +25,7 @@
   - TASK-0004 (Dynamic Error Capture) — Done
   - TASK-0005 (Security Baseline & RBAC Audit) — Done
   - TASK-0006 (Restore Local App Runtime) — Done
+  - TASK-0007 (Theme Isolation) — Done
 - **Known Broken Areas:**
   - Storefront root `/` hardcoded to `/s/haa-demo` redirect — works after seed ✅
   - Registration creates stores as `draft` (intentional — merchant must publish from settings)

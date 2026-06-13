@@ -1,0 +1,29 @@
+/* HAA — Dark Theme */
+
+/* Dark theme — Apple HIG exact colors */
+[data-theme="dark"] {
+  --surface-1: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --surface-3: #3a3a3c;
+  --surface-inverse: #f5f5f7;
+  --text-primary: #f5f5f7;
+  --text-secondary: #a1a1a6;
+  --text-tertiary: #636366;
+  --text-disabled: #48484a;
+  --text-inverse: #1d1d1f;
+  --text-link: #0a84ff;
+  --text-link-hover: #409cff;
+  --border-default: #38383a;
+  --border-hover: #48484a;
+  --border-focus: #0a84ff;
+  --border-disabled: #2c2c2e;
+  --divider: #38383a;
+  --shadow-color: rgb(0 0 0 / 0.5);
+  --shadow-colorStrong: rgb(0 0 0 / 0.7);
+  --backdrop-opacity: 0.6;
+  --backdrop-blur: 20px;
+  --backdrop-color: #000000;
+  --selection-bg: #003380;
+  --selection-text: #f5f5f7;
+  --placeholder-text: #636366;
+}

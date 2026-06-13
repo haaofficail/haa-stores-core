@@ -30,7 +30,42 @@
 
 ## Fixed Issues
 
-*(No issues recorded yet)*
+### ISSUE-0001: Storefront Theme Leakage via @haa/theme-system Main Entry
+
+- **ID:** ISSUE-0001
+- **Date:** 2026-06-13
+- **Severity:** High
+- **Area:** Theme isolation / Package boundaries
+- **Related Error Codes:** THEME-001, THEME-002
+- **Related Tasks:** TASK-0007
+- **Symptoms:** Merchant-dashboard imported from `@haa/theme-system` which bundles DOM-manipulation functions (`applyTheme`, `applyStoreTheme`, `clearTheme`, `loadTheme`) and analytics script injection (GTM, GA, Facebook Pixel). Any code path could accidentally call these and leak storefront theme CSS variables to the global scope.
+- **Expected:** Merchant-dashboard should only import server-safe functions (registry reads, validation, config resolution) without bundling DOM code.
+- **Actual:** Imports from `@haa/theme-system` (main entry) resolved to `src/index.ts` which exports all DOM functions.
+- **Root Cause:** `@haa/theme-system` package has a `/server` subpath export for server-safe functions, but:
+  1. The server export pointed to `dist/` (built output) instead of `src/` — no build existed, so TypeScript resolved to the `.d.ts` but failed on runtime
+  2. `validateThemeConfig` was missing from server exports
+  3. Merchant-dashboard was importing from the main entry instead of the server subpath
+- **Fix:**
+  1. Added `validateThemeConfig` and `ValidationResult` to `@haa/theme-system/src/server.ts`
+  2. Fixed `@haa/theme-system/package.json` server export to point to `src/server.ts`
+  3. Changed `ThemeStore.tsx` and `ThemeEditor.tsx` imports from `@haa/theme-system` to `@haa/theme-system/server`
+
+### ISSUE-0002: Luxury-Showcase Theme Injects Global !important Body Style
+
+- **ID:** ISSUE-0002
+- **Date:** 2026-06-13
+- **Severity:** Medium
+- **Area:** Storefront theme / CSS scoping
+- **Related Error Codes:** THEME-002
+- **Related Tasks:** TASK-0007
+- **Symptoms:** `luxury-showcase/Header.tsx` injected `<style>{'body, html { background-color: #faf8f6 !important; }'}</style>` which bypasses `#storefront-scope` and applies globally. If this theme is loaded in the same browser session, it could affect other pages.
+- **Expected:** Theme styles should be scoped to `#storefront-scope`. No `!important` on global selectors.
+- **Actual:** Hardcoded `!important` style on `body, html` with hex color, not CSS variable.
+- **Root Cause:** Developer convenience — the background color was set directly on body to prevent white flash, without considering scoping.
+- **Fix:** Removed the `<style>` block entirely. Background color is already inherited from `#storefront-scope` which has `background-color: var(--surface-1)` set via CSS variables from the theme config.
+- **Prevention:** Storefront theme components must never use `body, html, :root, *` selectors with `!important`. Use `#storefront-scope` or `data-storefront-theme` attribute for scoping.
+- **Regression Checklist Update:** Added "No global !important body/html styles in any storefront theme component"
+- **Status:** Fixed
 
 ## Prevention Notes
 

@@ -1,0 +1,429 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/hooks/useAuth';
+import { walletApi } from '@/lib/api';
+import { formatCurrency } from '@/lib/utils';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Link } from 'react-router-dom';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Wallet, DollarSign, CreditCard, ArrowUpCircle, ArrowDownCircle,
+  TrendingUp, Clock, CheckCircle2, AlertTriangle,
+  Search, RotateCcw, ChevronLeft, ChevronRight, Info, ExternalLink,
+  Banknote, Ship, RefreshCw, Loader2,
+} from 'lucide-react';
+
+const directionColors: Record<string, 'success' | 'destructive'> = {
+  credit: 'success',
+  debit: 'destructive',
+};
+
+const statusColors: Record<string, 'default' | 'success' | 'warning' | 'destructive' | 'secondary'> = {
+  pending: 'warning',
+  available: 'success',
+  settled: 'default',
+  cancelled: 'destructive',
+  disputed: 'destructive',
+};
+
+const typeIcons: Record<string, React.ReactNode> = {
+  sale: <DollarSign className="h-3.5 w-3.5" />,
+  platform_fee: <Banknote className="h-3.5 w-3.5" />,
+  payment_fee: <CreditCard className="h-3.5 w-3.5" />,
+  shipping_fee: <Ship className="h-3.5 w-3.5" />,
+  refund: <RefreshCw className="h-3.5 w-3.5" />,
+  payout: <ArrowDownCircle className="h-3.5 w-3.5" />,
+  adjustment: <TrendingUp className="h-3.5 w-3.5" />,
+};
+
+function SummaryCard({ title, value, icon, color, subtitle }: {
+  title: string; value: string; icon: React.ReactNode; color: string; subtitle?: string;
+}) {
+  return (
+    <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-4">
+      <div className="flex items-center justify-between">
+        <div className="min-w-0">
+          <p className="text-sm text-neutral-500 truncate">{title}</p>
+          <p className={`text-lg font-bold mt-0.5 ${color}`}>{value}</p>
+          {subtitle && <p className="text-xs text-neutral-500 mt-0.5">{subtitle}</p>}
+        </div>
+        <div className={`p-2.5 rounded-2xl shrink-0 ${color.replace('text-', 'bg-').replace('600', '50').replace('500', '50')}`}>
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function fmt(n: number | string | undefined): string {
+  return formatCurrency(n ?? 0);
+}
+
+export default function WalletPage() {
+  const { t } = useTranslation();
+  const { storeId } = useAuth();
+  const [summary, setSummary] = useState<any>(null);
+  const [entries, setEntries] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+  const [page, setPage] = useState(1);
+  const isFirstLoad = useRef(true);
+
+  const [typeFilter, setTypeFilter] = useState('');
+  const [directionFilter, setDirectionFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+
+  const limit = 20;
+
+  const load = useCallback(() => {
+    if (!storeId) { setLoading(false); return; }
+    if (isFirstLoad.current) {
+      setLoading(true);
+      isFirstLoad.current = false;
+    } else {
+      setTableLoading(true);
+    }
+    setFetchError(false);
+    Promise.all([
+      walletApi.summary(storeId).catch(() => null),
+      walletApi.entries(storeId, {
+        page, limit,
+        type: typeFilter || undefined,
+        direction: directionFilter || undefined,
+        status: statusFilter || undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+        search: search || undefined,
+      }).catch(() => { setFetchError(true); return null; }),
+    ]).then(([s, e]) => {
+      if (s) setSummary(s);
+      if (e) { setEntries(e.data ?? []); setTotal(e.total ?? 0); }
+    }).finally(() => {
+      setLoading(false);
+      setTableLoading(false);
+    });
+  }, [storeId, page, typeFilter, directionFilter, statusFilter, dateFrom, dateTo, search]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleSearch = () => { setSearch(searchInput); setPage(1); };
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => { if (e.key === 'Enter') handleSearch(); };
+
+  const resetFilters = () => {
+    setTypeFilter(''); setDirectionFilter(''); setStatusFilter('');
+    setDateFrom(''); setDateTo(''); setSearch(''); setSearchInput('');
+    setPage(1);
+  };
+
+  const hasActiveFilters = typeFilter || directionFilter || statusFilter || search || dateFrom || dateTo;
+  const totalPages = Math.ceil(total / limit);
+
+  if (loading && !summary) {
+    return (
+      <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
+        <h1 className="text-2xl font-bold text-neutral-900">{t('wallet.title')}</h1>
+        <div className="grid gap-3 md:grid-cols-5">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-24 rounded-3xl" />)}</div>
+        <Skeleton className="h-64 w-full rounded-3xl" />
+      </div>
+    );
+  }
+
+  return (
+    <TooltipProvider>
+      <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-neutral-900">{t('wallet.title')}</h1>
+          <Button variant="outline" className="h-9 text-sm gap-1.5" asChild>
+            <Link to="/wallet/settlements">{t('wallet.viewSettlements', 'التسويات')}</Link>
+          </Button>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+          <SummaryCard
+            title={t('wallet.totalSales')}
+            value={`${fmt(summary?.totalSales)} ${t('common.sar')}`}
+            icon={<TrendingUp className="h-4 w-4" />}
+            color="text-green-600"
+          />
+          <SummaryCard
+            title={t('wallet.platformFees')}
+            value={`${fmt(summary?.platformFees)} ${t('common.sar')}`}
+            icon={<Banknote className="h-4 w-4" />}
+            color="text-red-600"
+          />
+          <SummaryCard
+            title={t('wallet.paymentFees')}
+            value={`${fmt(summary?.paymentFees)} ${t('common.sar')}`}
+            icon={<CreditCard className="h-4 w-4" />}
+            color="text-orange-600"
+          />
+          <SummaryCard
+            title={t('wallet.shippingFees')}
+            value={`${fmt(summary?.shippingFees)} ${t('common.sar')}`}
+            icon={<Ship className="h-4 w-4" />}
+            color="text-purple-600"
+          />
+          <SummaryCard
+            title={t('wallet.netBalance')}
+            value={`${fmt(summary?.netBalance)} ${t('common.sar')}`}
+            icon={<Wallet className="h-4 w-4" />}
+            color={(summary?.netBalance ?? 0) >= 0 ? 'text-blue-600' : 'text-red-600'}
+          />
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-4">
+          <SummaryCard
+            title={t('wallet.available')}
+            value={`${fmt(summary?.availableBalance)} ${t('common.sar')}`}
+            icon={<CheckCircle2 className="h-4 w-4" />}
+            color="text-emerald-600"
+          />
+          <SummaryCard
+            title={t('wallet.pending')}
+            value={`${fmt(summary?.pendingBalance)} ${t('common.sar')}`}
+            icon={<Clock className="h-4 w-4" />}
+            color="text-amber-600"
+          />
+          <SummaryCard
+            title={t('wallet.totalPayouts')}
+            value={`${fmt(summary?.totalPayouts)} ${t('common.sar')}`}
+            icon={<ArrowDownCircle className="h-4 w-4" />}
+            color="text-neutral-600"
+          />
+          <SummaryCard
+            title={t('wallet.refunds')}
+            value={`${fmt(summary?.refunds)} ${t('common.sar')}`}
+            icon={<RefreshCw className="h-4 w-4" />}
+            color="text-rose-600"
+          />
+        </div>
+
+        <div className="bg-blue-50/50 border border-blue-200/50 rounded-3xl p-4">
+          <div className="flex items-start gap-3">
+            <Info className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
+            <div className="text-sm text-blue-800 space-y-1">
+              <p className="font-medium">{t('wallet.explanationTitle')}</p>
+              <ul className="list-disc list-inside space-y-0.5 text-xs">
+                <li><strong>{t('wallet.totalSales')}:</strong> {t('wallet.expSales')}</li>
+                <li><strong>{t('wallet.platformFees')}:</strong> {t('wallet.expPlatformFees')}</li>
+                <li><strong>{t('wallet.paymentFees')}:</strong> {t('wallet.expPaymentFees')}</li>
+                <li><strong>{t('wallet.shippingFees')}:</strong> {t('wallet.expShippingFees')}</li>
+                <li><strong>{t('wallet.netBalance')}:</strong> {t('wallet.expNetBalance')}</li>
+                <li><strong>{t('wallet.pending')}:</strong> {t('wallet.expPending')}</li>
+                <li><strong>{t('wallet.available')}:</strong> {t('wallet.expAvailable')}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6 space-y-3">
+          <div className="flex gap-3 items-center flex-wrap">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+              <Input
+                placeholder={t('wallet.searchPlaceholder')}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                className="pr-9 h-9 text-sm"
+              />
+            </div>
+            <Button variant="outline" className="h-9 text-sm" onClick={handleSearch}>{t('common.search')}</Button>
+            {hasActiveFilters && (
+              <Button variant="ghost" className="h-9 text-sm gap-1" onClick={resetFilters}>
+                <RotateCcw className="h-3.5 w-3.5" />
+                {t('orders.resetFilters')}
+              </Button>
+            )}
+          </div>
+
+          <div className="flex gap-3 flex-wrap">
+            <Select value={typeFilter || undefined} onValueChange={(v) => { setTypeFilter(v === 'all' ? '' : v); setPage(1); }}>
+              <SelectTrigger className="w-44 h-9 text-sm"><SelectValue placeholder={t('wallet.filterType')} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('orders.all')}</SelectItem>
+                <SelectItem value="sale">{t('wallet.sale')}</SelectItem>
+                <SelectItem value="platform_fee">{t('wallet.platform_fee')}</SelectItem>
+                <SelectItem value="payment_fee">{t('wallet.payment_fee')}</SelectItem>
+                <SelectItem value="shipping_fee">{t('wallet.shipping_fee')}</SelectItem>
+                <SelectItem value="refund">{t('wallet.refund')}</SelectItem>
+                <SelectItem value="payout">{t('wallet.payout')}</SelectItem>
+                <SelectItem value="adjustment">{t('wallet.adjustment')}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={directionFilter || undefined} onValueChange={(v) => { setDirectionFilter(v === 'all' ? '' : v); setPage(1); }}>
+              <SelectTrigger className="w-40 h-9 text-sm"><SelectValue placeholder={t('wallet.filterDirection')} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('orders.all')}</SelectItem>
+                <SelectItem value="credit">{t('wallet.credit')}</SelectItem>
+                <SelectItem value="debit">{t('wallet.debit')}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter || undefined} onValueChange={(v) => { setStatusFilter(v === 'all' ? '' : v); setPage(1); }}>
+              <SelectTrigger className="w-40 h-9 text-sm"><SelectValue placeholder={t('wallet.filterStatus')} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('orders.all')}</SelectItem>
+                <SelectItem value="pending">{t('wallet.status_pending')}</SelectItem>
+                <SelectItem value="available">{t('wallet.status_available')}</SelectItem>
+                <SelectItem value="settled">{t('wallet.status_settled')}</SelectItem>
+                <SelectItem value="cancelled">{t('wallet.status_cancelled')}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="flex items-center gap-2">
+              <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className="w-40 h-9 text-sm" />
+              <span className="text-neutral-400 text-sm">—</span>
+              <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className="w-40 h-9 text-sm" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden relative">
+          {loading ? (
+            <div className="p-6 space-y-3">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
+          ) : fetchError ? (
+            <div className="p-12 text-center">
+              <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4">
+                <AlertTriangle className="h-8 w-8 text-red-500" />
+              </div>
+              <p className="text-sm text-neutral-500 mb-3">{t('wallet.loadError')}</p>
+              <Button variant="outline" className="h-9 text-sm" onClick={load}>{t('common.retry')}</Button>
+            </div>
+          ) : entries.length === 0 ? (
+            <div className="p-12 text-center">
+              <div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4">
+                <Wallet className="h-8 w-8 text-neutral-400" />
+              </div>
+              <p className="text-sm text-neutral-500">{hasActiveFilters ? t('wallet.noMatch') : t('wallet.noEntries')}</p>
+              {hasActiveFilters && (
+                <Button variant="outline" className="h-9 text-sm mt-4" onClick={resetFilters}>{t('orders.resetFilters')}</Button>
+              )}
+            </div>
+          ) : (
+            <div className="relative">
+              {tableLoading && (
+                <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center rounded-b-3xl">
+                  <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                </div>
+              )}
+              <Table>
+              <TableHeader>
+                <TableRow className="border-neutral-100 hover:bg-transparent">
+                  <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('wallet.date')}</TableHead>
+                  <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('wallet.type')}</TableHead>
+                  <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('wallet.direction')}</TableHead>
+                  <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right">{t('wallet.amount')}</TableHead>
+                  <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('wallet.status')}</TableHead>
+                  <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('wallet.description')}</TableHead>
+                  <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('wallet.reference')}</TableHead>
+                  <TableHead className="h-10 text-sm text-neutral-500 font-medium w-12"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {entries.map((e: any) => (
+                  <TableRow key={e.id} className="border-neutral-100 hover:bg-neutral-50">
+                    <TableCell className="text-xs whitespace-nowrap text-neutral-400 p-3">
+                      {new Date(e.createdAt).toLocaleDateString('ar-SA')}
+                    </TableCell>
+                    <TableCell className="p-3">
+                      <Badge variant="outline" className="gap-1 font-normal text-xs px-2.5 py-0.5">
+                        {typeIcons[e.type] ?? null}
+                        {t(`wallet.${e.type}` as any)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="p-3">
+                      <Badge variant={directionColors[e.direction] ?? 'default'} className="gap-1 text-xs px-2.5 py-0.5">
+                        {e.direction === 'credit' ? <ArrowUpCircle className="h-3 w-3" /> : <ArrowDownCircle className="h-3 w-3" />}
+                        {t(`wallet.${e.direction}` as any)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className={`text-sm font-medium text-right tabular-nums p-3 ${e.direction === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                      {e.direction === 'credit' ? '+' : '-'}{fmt(e.amount)} {t('common.sar')}
+                    </TableCell>
+                    <TableCell className="p-3">
+                      <Badge variant={statusColors[e.status] ?? 'default'} className="text-xs px-2.5 py-0.5">
+                        {t(`wallet.status_${e.status}` as any)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-neutral-400 max-w-[200px] truncate p-3">{e.description ?? '-'}</TableCell>
+                    <TableCell className="text-xs text-neutral-400 font-mono p-3">
+                      {e.referenceType && e.referenceId ? `${e.referenceType}#${e.referenceId}` : '-'}
+                    </TableCell>
+                    <TableCell className="p-3">
+                      {e.referenceType === 'order' && e.referenceId && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                          <Link to={`/orders?id=${e.referenceId}`} title={t('wallet.viewOrder')}>
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </Link>
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            </div>
+          )}
+        </div>
+
+        {total > 0 && (
+          <div className="flex justify-between items-center text-sm text-neutral-500">
+            <span>{t('orders.showingResults', { from: (page - 1) * limit + 1, to: Math.min(page * limit, total), total })}</span>
+            <div className="flex gap-2 items-center">
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <span className="text-sm tabular-nums">{page} / {totalPages}</span>
+              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {summary && (
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card">
+            <div className="p-3 flex items-center justify-between text-xs text-neutral-500">
+              <span>{t('wallet.entryCount')}: {summary.entryCount}</span>
+              {summary.lastUpdated && (
+                <span>{t('wallet.lastUpdated')}: {new Date(summary.lastUpdated).toLocaleString('en-US')}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="bg-amber-50 border border-amber-200/50 rounded-3xl p-4">
+          <div className="flex items-center gap-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="p-2 rounded-2xl bg-amber-100 text-amber-600 cursor-default">
+                  <AlertTriangle className="h-4 w-4" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{t('wallet.withdrawDisabled')}</p>
+              </TooltipContent>
+            </Tooltip>
+            <div className="text-sm text-amber-800">
+              <p className="font-medium">{t('wallet.withdrawDisabled')}</p>
+              <p className="text-xs mt-0.5">{t('wallet.withdrawDisabledDetail')}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </TooltipProvider>
+  );
+}

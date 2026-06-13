@@ -161,3 +161,25 @@
 - Key finding: no RBAC data model exists — permissions are hardcoded strings (SEC-004)
 - Error capture sanitization reviewed and confirmed adequate
 - Branch: chore/security-baseline-rbac-audit
+
+## 2026-06-13 (Theme Isolation)
+
+### Changed
+
+- `packages/theme-system/src/server.ts`: added `validateThemeConfig` and `ValidationResult` exports so merchant-dashboard can import server-safe functions without pulling in DOM-manipulation code
+- `packages/theme-system/package.json`: fixed `./server` export path from `dist/` to `src/` (source-level resolution, no build required)
+- `apps/merchant-dashboard/src/pages/ThemeStore.tsx`: changed import from `@haa/theme-system` to `@haa/theme-system/server`
+- `apps/merchant-dashboard/src/pages/ThemeEditor.tsx`: changed import from `@haa/theme-system` to `@haa/theme-system/server`
+
+### Fixed
+
+- `apps/storefront/src/themes/luxury-showcase/Header.tsx`: removed `!important` global `body, html` style injection that bypassed scoping; background now inherits from `#storefront-scope` CSS variables
+- `apps/storefront/src/index.css`: removed dead `#theme-scope` CSS block (selector never rendered in DOM)
+
+### Notes
+
+- All storefront theme packages (`@haa/theme-system`, `@haa/storefront-themes`) have DOM-writing functions (`applyStoreTheme`, `applyTheme`, `loadTheme`, analytics script injection). Merchant-dashboard MUST import from `@haa/theme-system/server` only to avoid bundling this code.
+- `@haa/theme-system` is deprecated in favor of `@haa/storefront-themes`, which re-exports everything. Dashboard never imports either directly except through the `/server` subpath.
+- `@haa/theme-react`'s `ThemeProvider` is safe for dashboard — it controls light/dark mode via `data-theme` on `<html>`, which is the design system theme, not storefront theme.
+- `@haa/system-theme` is dashboard-safe — CSS is scoped to `.haa-system-theme` with `--haa-*` namespaced variables.
+- Branch: fix/theme-isolation
