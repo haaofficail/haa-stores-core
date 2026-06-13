@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Edit, Search, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { PermissionGate } from '@/lib/permissions';
 
 export default function Customers() {
   const { t } = useTranslation();
@@ -59,7 +60,7 @@ export default function Customers() {
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">{t('customers.title')}</h1>
-        <Button onClick={openCreate} className="h-9 text-sm px-4"><Plus className="h-4 w-4 mr-2" />{t('customers.create')}</Button>
+        <PermissionGate permission="customers:create" fallback={null}><Button onClick={openCreate} className="h-9 text-sm px-4"><Plus className="h-4 w-4 mr-2" />{t('customers.create')}</Button></PermissionGate>
       </div>
 
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
@@ -93,12 +94,14 @@ export default function Customers() {
               {customers.map((c) => (
                 <TableRow key={c.id} className="border-neutral-100 hover:bg-neutral-50 transition-colors">
                   <TableCell className="text-sm font-medium text-neutral-900 p-3">{c.name}</TableCell>
-                  <TableCell className="text-sm text-neutral-900 p-3" dir="ltr">{c.phone}</TableCell>
+                  <TableCell className="text-sm text-neutral-900 p-3" dir="ltr"><PermissionGate permission="customers:view_sensitive" fallback={null}>{c.phone}</PermissionGate></TableCell>
                   <TableCell className="text-sm text-neutral-400 p-3">{c.email || '-'}</TableCell>
                   <TableCell className="p-3">
-                    <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => openEdit(c)} aria-label="تعديل بيانات العميل">
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    <PermissionGate permission="customers:update" fallback={null}>
+                      <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => openEdit(c)} aria-label="تعديل بيانات العميل">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </PermissionGate>
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,8 +1,8 @@
 # Latest Monitoring Report
 
-- **Generated At:** 2026-06-13T02:59:25.059Z
+- **Generated At:** 2026-06-13T06:45:21.130Z
 - **Overall Status:** Healthy
-- **Period Events Analyzed:** 29
+- **Period Events Analyzed:** 617
 
 ---
 
@@ -18,10 +18,10 @@
 
 | Metric | Count |
 |--------|------:|
-| Pass | 28 |
+| Pass | 616 |
 | Warning | 0 |
 | Fail | 0 |
-| Total | 29 |
+| Total | 617 |
 
 ## Synthetic Checks Summary
 
@@ -30,6 +30,13 @@
 | api-health | pass |
 | dashboard-root | pass |
 | storefront-home | pass |
+| api-health | pass |
+| dashboard-root | pass |
+| storefront-home | pass |
+| api-health | pass |
+| dashboard-root | pass |
+| storefront-home | pass |
+| api-health | pass |
 
 ## Top Repeated Error Codes
 
@@ -41,21 +48,21 @@
 
 | App | Events |
 |-----|-------:|
-| api | 6 |
-| merchant-dashboard | 6 |
-| storefront | 6 |
-| admin-dashboard | 4 |
+| api | 132 |
+| merchant-dashboard | 132 |
+| storefront | 132 |
+| admin-dashboard | 88 |
 | worker | 1 |
 
 ## Top Affected Routes / Targets
 
 | Route | Events |
 |-------|-------:|
-| package.json exists | 1 |
-| pnpm-workspace.yaml exists | 1 |
-| apps directory exists | 1 |
-| packages directory exists | 1 |
-| AGENTS.md exists | 1 |
+| package.json exists | 22 |
+| pnpm-workspace.yaml exists | 22 |
+| apps directory exists | 22 |
+| packages directory exists | 22 |
+| AGENTS.md exists | 22 |
 
 ## Suspected Root Causes
 

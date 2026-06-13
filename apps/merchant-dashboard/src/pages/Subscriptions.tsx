@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Crown, Calendar, Package, Users, HardDrive, ShoppingCart, FileText, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { PermissionGate } from '@/lib/permissions';
 
 interface Plan {
   id: number;
@@ -315,18 +316,20 @@ export default function Subscriptions() {
                     </div>
                   </div>
                   {!isCurrent && currentPlan && (
-                    <Button
-                      variant={plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? 'default' : 'outline'}
-                      className="w-full h-9 text-sm"
-                      onClick={() => plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? handleUpgrade(plan.id) : handleDowngrade(plan.id)}
-                    >
-                      {plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? (
-                        <ArrowUpCircle className="h-4 w-4 mr-2" />
-                      ) : (
-                        <ArrowDownCircle className="h-4 w-4 mr-2" />
-                      )}
-                      {plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? t('subscriptions.upgrade') : t('subscriptions.downgrade')}
-                    </Button>
+                    <PermissionGate permission="subscriptions:manage">
+                      <Button
+                        variant={plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? 'default' : 'outline'}
+                        className="w-full h-9 text-sm"
+                        onClick={() => plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? handleUpgrade(plan.id) : handleDowngrade(plan.id)}
+                      >
+                        {plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? (
+                          <ArrowUpCircle className="h-4 w-4 mr-2" />
+                        ) : (
+                          <ArrowDownCircle className="h-4 w-4 mr-2" />
+                        )}
+                        {plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? t('subscriptions.upgrade') : t('subscriptions.downgrade')}
+                      </Button>
+                    </PermissionGate>
                   )}
                 </div>
               </div>

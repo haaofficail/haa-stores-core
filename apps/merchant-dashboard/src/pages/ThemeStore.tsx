@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Palette, Sparkles, Star } from 'lucide-react';
 import { toast } from 'sonner';
+import { PermissionGate } from '@/lib/permissions';
 
 // Show full runtime themes plus the platform default theme, even when the
 // default is still backed by a legacy config preset.
@@ -66,9 +67,11 @@ function ThemeCard({ theme, active, onApply }: { theme: ThemeManifest; active: b
             ))}
           </div>
         )}
-        <Button onClick={onApply} variant={active ? 'outline' : 'default'} className="w-full" disabled={active}>
-          {active ? 'مفعل ✓' : 'تطبيق الثيم'}
-        </Button>
+        <PermissionGate permission="theme:apply">
+          <Button onClick={onApply} variant={active ? 'outline' : 'default'} className="w-full" disabled={active}>
+            {active ? 'مفعل ✓' : 'تطبيق الثيم'}
+          </Button>
+        </PermissionGate>
       </div>
     </div>
   );

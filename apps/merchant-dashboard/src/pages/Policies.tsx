@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, Edit3, CheckCircle2, Loader2, AlertTriangle, Wand2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiClientError, policiesApi } from '@/lib/api';
+import { PermissionGate } from '@/lib/permissions';
 
 const POLICY_TYPES = ['privacy', 'terms', 'shipping', 'returns', 'about'] as const;
 
@@ -234,19 +235,23 @@ export default function Policies() {
                       <p className="text-sm text-neutral-400 italic mt-2">{t('policies.noContent')}</p>
                     )}
                     <div className="flex gap-2 mt-4">
-                      <Button variant="outline" className="h-9 text-sm" onClick={() => openEdit(type)}>
-                        <Edit3 className="h-4 w-4 mr-1" />
-                        {t('policies.edit', { type: t(`policies.type_${type}`) })}
-                      </Button>
-                      <Button
-                        variant={isPublished ? 'outline' : 'default'}
-                        className="h-9 text-sm"
-                        onClick={() => togglePublish(type, isPublished)}
-                        disabled={toggling === type}
-                      >
-                        {toggling === type && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                        {isPublished ? t('policies.unpublish') : t('policies.publish')}
-                      </Button>
+                      <PermissionGate permission="settings:update">
+                        <Button variant="outline" className="h-9 text-sm" onClick={() => openEdit(type)}>
+                          <Edit3 className="h-4 w-4 mr-1" />
+                          {t('policies.edit', { type: t(`policies.type_${type}`) })}
+                        </Button>
+                      </PermissionGate>
+                      <PermissionGate permission="settings:update">
+                        <Button
+                          variant={isPublished ? 'outline' : 'default'}
+                          className="h-9 text-sm"
+                          onClick={() => togglePublish(type, isPublished)}
+                          disabled={toggling === type}
+                        >
+                          {toggling === type && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                          {isPublished ? t('policies.unpublish') : t('policies.publish')}
+                        </Button>
+                      </PermissionGate>
                     </div>
                   </div>
                 </div>
@@ -275,10 +280,12 @@ export default function Policies() {
             </div>
             <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
               <Button variant="outline" className="h-9 text-sm" onClick={closeEdit}>{t('common.cancel')}</Button>
-              <Button className="h-9 text-sm px-4" onClick={save} disabled={saving}>
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                {saving ? t('policies.saving') : t('policies.save')}
-              </Button>
+              <PermissionGate permission="settings:update">
+                <Button className="h-9 text-sm px-4" onClick={save} disabled={saving}>
+                  {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {saving ? t('policies.saving') : t('policies.save')}
+                </Button>
+              </PermissionGate>
             </div>
           </div>
         </div>
@@ -474,14 +481,16 @@ export default function Policies() {
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
                   <Button variant="outline" className="h-9 text-sm" onClick={() => setPreviewResult(null)}>تعديل البيانات</Button>
-                  <Button
-                    className="h-9 text-sm px-4"
-                    onClick={handleApplyGenerated}
-                    disabled={applying || previewResult.errors.length > 0}
-                  >
-                    {applying && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    {applying ? 'جاري التطبيق...' : 'تطبيق'}
-                  </Button>
+                  <PermissionGate permission="settings:update">
+                    <Button
+                      className="h-9 text-sm px-4"
+                      onClick={handleApplyGenerated}
+                      disabled={applying || previewResult.errors.length > 0}
+                    >
+                      {applying && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      {applying ? 'جاري التطبيق...' : 'تطبيق'}
+                    </Button>
+                  </PermissionGate>
                 </div>
               </>
             )}

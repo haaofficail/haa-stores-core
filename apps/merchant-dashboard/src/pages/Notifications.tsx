@@ -11,6 +11,7 @@ import { Bell, Mail, MessageSquare, Smartphone, Save, Loader2, Clock } from 'luc
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api';
 import { useTranslation } from 'react-i18next';
+import { PermissionGate } from '@/lib/permissions';
 
 interface NotificationPreferences {
   id: number;
@@ -291,10 +292,12 @@ export default function Notifications() {
           </div>
 
           <div className="flex justify-end pt-4 border-t border-neutral-100">
-            <Button onClick={handleSave} disabled={saving} className="h-9 text-sm px-4 gap-2">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {t('notifications.save')}
-            </Button>
+            <PermissionGate permission="notifications:update">
+              <Button onClick={handleSave} disabled={saving} className="h-9 text-sm px-4 gap-2">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {t('notifications.save')}
+              </Button>
+            </PermissionGate>
           </div>
         </div>
       </div>

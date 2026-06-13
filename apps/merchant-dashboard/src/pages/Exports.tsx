@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Download, Loader2, Package, ShoppingCart, Users, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import { exportsApi } from '@/lib/api';
+import { PermissionGate } from '@/lib/permissions';
 
 const EXPORT_TYPES = ['products', 'orders', 'customers', 'wallet'] as const;
 
@@ -89,18 +90,20 @@ export default function Exports() {
                   <h3 className="text-lg font-bold text-neutral-900">{t(config.titleKey)}</h3>
                 </div>
                 <p className="text-sm text-neutral-500 mb-4">{t(config.descKey)}</p>
-                <Button
-                  onClick={() => handleDownload(type)}
-                  disabled={downloading === type}
-                  className="h-9 text-sm px-4"
-                >
-                  {downloading === type ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4 mr-2" />
-                  )}
-                  {downloading === type ? t('exports.downloading') : t('exports.download')}
-                </Button>
+                <PermissionGate permission="exports:create">
+                  <Button
+                    onClick={() => handleDownload(type)}
+                    disabled={downloading === type}
+                    className="h-9 text-sm px-4"
+                  >
+                    {downloading === type ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
+                    {downloading === type ? t('exports.downloading') : t('exports.download')}
+                  </Button>
+                </PermissionGate>
               </div>
             </div>
           );

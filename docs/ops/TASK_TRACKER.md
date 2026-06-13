@@ -592,4 +592,62 @@
 - **Status History:**
   - Requested: 2026-06-13
   - Done: 2026-06-13
-- **Final Notes:** RBAC Pass 1 covers all core permission infrastructure (typed catalog, role-permission mapping, frontend guards, backend enforcement, boundary tests). Pass 2 (planned) will add employee permission management UI, role assignment, and RBAC admin dashboard.
+- **Final Notes:** RBAC Pass 1 covers all core permission infrastructure (typed catalog, role-permission mapping, frontend guards, backend enforcement, boundary tests). Pass 2 (completed) added dashboard frontend guards (sidebar, routes, action buttons). Pass 3 (planned) will add employee permission management UI, role assignment, and RBAC admin dashboard.
+
+---
+
+### TASK-0011: RBAC Pass 2 — Dashboard Frontend Guards
+
+- **Type:** Feature / Security
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** Implement RBAC Pass 2 — Dashboard Frontend Guards: sidebar filtering, route-level permission guarding, action button hiding
+- **Expanded Requirement:** Apply permission-based guards to the merchant dashboard frontend so that unauthorized users never see navigation, routes, or buttons they cannot access
+- **Problem:** All sidebar items, dashboard routes, and action buttons were visible to every authenticated user regardless of their role/permissions (SEC-003)
+- **Goal:** Sidebar hides nav items the user lacks permission for; routes show UnauthorizedState instead of data; action buttons are hidden behind PermissionGate
+- **Scope:**
+  - Create `UnauthorizedState` component (access-denied placeholder)
+  - Create `PermissionRoute` guard (route-level permission wrapper)
+  - Update `Sidebar.tsx` with permission metadata and filtering logic
+  - Add `GuardedRoute` wrapper with `permission` prop to every dashboard route in `App.tsx`
+  - Add `PermissionGate` to action buttons across all page files (Products, Orders, Customers, Categories, Brands, Tags, Coupons, Promotions, Shipping, Settings, API Keys, Wallet, Compliance, Subscriptions, Notifications, Policies, Exports, Imports, ThemeEditor, ThemeStore)
+- **Out of Scope:**
+  - Employee management UI (Pass 3)
+  - Employee invite flow (Pass 3)
+  - Role ↔ Permission DB schema (Pass 3)
+  - Permission seed data (Pass 3)
+  - Branch/location scope (Pass 3+)
+  - General refactoring
+- **Affected Areas:** apps/merchant-dashboard/src/
+- **Files Changed:**
+  - `apps/merchant-dashboard/src/components/ui/UnauthorizedState.tsx` — new
+  - `apps/merchant-dashboard/src/components/auth/PermissionRoute.tsx` — new
+  - `apps/merchant-dashboard/src/components/layout/Sidebar.tsx` — updated with permission metadata + filtering
+  - `apps/merchant-dashboard/src/App.tsx` — all routes wrapped with GuardedRoute + permission prop
+  - 20+ page files — PermissionGate wrappers on CRUD/action buttons
+  - `tests/dashboard-rbac-guards.test.ts` — new boundary test (6 tests)
+- **Acceptance Criteria:**
+  - Sidebar shows only nav items the user has permission for; empty groups hidden
+  - 30+ dashboard routes wrapped with permission guard showing UnauthorizedState on denial
+  - All CRUD/action buttons guarded in 20+ pages
+  - All sidebar & route permission strings exist in PERMISSION_CATALOG
+  - 6 boundary tests pass (dashboard-rbac-guards.test.ts)
+  - All 1356 tests pass (69 test files)
+  - pnpm typecheck passes
+  - pnpm ops:monitor passes
+- **Test Plan:** pnpm typecheck, pnpm test, pnpm preflight, pnpm ops:monitor
+- **Test Results:**
+  - ✅ pnpm typecheck: all packages pass
+  - ✅ pnpm test: 69 files, 1356 tests passed
+  - ✅ pnpm preflight: PASSED
+  - ✅ pnpm ops:monitor: all checks pass
+  - ✅ Boundary tests (dashboard-rbac-guards.test.ts): 6/6 pass
+- **Risks:** None — frontend-only guards, API remains the enforcement point
+- **Related Issues:** SEC-003
+- **Related Decisions:** None
+- **Status History:**
+  - Requested: 2026-06-13
+  - Done: 2026-06-13
+- **Final Notes:** RBAC Pass 2 covers all frontend guard surfaces (sidebar, routes, action buttons) for the merchant dashboard. Pass 3 will add employee management UI, role assignment page, and DB-backed role-permission storage.

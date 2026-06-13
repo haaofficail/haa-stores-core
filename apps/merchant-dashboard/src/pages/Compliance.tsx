@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { PermissionGate } from '@/lib/permissions';
 
 
 
@@ -683,9 +684,11 @@ export default function CompliancePage() {
                     <Badge variant="outline" className={`text-xs px-2.5 py-0.5 ${docStatusColor(doc.status)}`}>
                       {docStatusLabel(doc.status)}
                     </Badge>
-                    <Button variant="ghost" size="sm" className="h-9 text-sm text-red-500 hover:text-red-700" onClick={() => handleDeleteDocument(doc.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <PermissionGate permission="compliance:documents">
+                      <Button variant="ghost" size="sm" className="h-9 text-sm text-red-500 hover:text-red-700" onClick={() => handleDeleteDocument(doc.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </PermissionGate>
                   </div>
                 </div>
               ))}
@@ -719,11 +722,13 @@ export default function CompliancePage() {
                   accept=".pdf,.jpg,.jpeg,.png"
                 />
               </div>
-              <Button onClick={handleUpload} disabled={uploading || !uploadType || !uploadFile} className="h-9 text-sm px-4 shrink-0">
-                {uploading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                <Upload className="h-4 w-4 mr-1" />
-                {t('compliance.documents.upload')}
-              </Button>
+              <PermissionGate permission="compliance:documents">
+                <Button onClick={handleUpload} disabled={uploading || !uploadType || !uploadFile} className="h-9 text-sm px-4 shrink-0">
+                  {uploading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  <Upload className="h-4 w-4 mr-1" />
+                  {t('compliance.documents.upload')}
+                </Button>
+              </PermissionGate>
             </div>
           </div>
 
@@ -813,28 +818,34 @@ export default function CompliancePage() {
           </div>
 
           <div className="flex justify-end gap-3 mt-6">
-            <Button variant="outline" className="h-9 text-sm" onClick={saveBankAccount} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {saving ? t('compliance.buttons.saving') : t('compliance.buttons.saveBankAccount')}
-            </Button>
+            <PermissionGate permission="compliance:write">
+              <Button variant="outline" className="h-9 text-sm" onClick={saveBankAccount} disabled={saving}>
+                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {saving ? t('compliance.buttons.saving') : t('compliance.buttons.saveBankAccount')}
+              </Button>
+            </PermissionGate>
           </div>
         </div>
       </div>
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-3 pb-6">
-        <Button variant="outline" className="h-9 text-sm" onClick={saveProfile} disabled={saving || submitting}>
-          {(saving || submitting) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {saving ? t('compliance.buttons.saving') : t('compliance.buttons.saveDraft')}
-        </Button>
-        <Button
-          onClick={submitForReview}
-          disabled={saving || submitting || !canSubmit}
-          className="h-9 text-sm px-4 bg-green-600 hover:bg-green-700 text-white"
-        >
-          {(saving || submitting) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          {submitting ? t('compliance.buttons.submitting') : t('compliance.buttons.submitForReview')}
-        </Button>
+        <PermissionGate permission="compliance:write">
+          <Button variant="outline" className="h-9 text-sm" onClick={saveProfile} disabled={saving || submitting}>
+            {(saving || submitting) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {saving ? t('compliance.buttons.saving') : t('compliance.buttons.saveDraft')}
+          </Button>
+        </PermissionGate>
+        <PermissionGate permission="compliance:submit">
+          <Button
+            onClick={submitForReview}
+            disabled={saving || submitting || !canSubmit}
+            className="h-9 text-sm px-4 bg-green-600 hover:bg-green-700 text-white"
+          >
+            {(saving || submitting) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {submitting ? t('compliance.buttons.submitting') : t('compliance.buttons.submitForReview')}
+          </Button>
+        </PermissionGate>
       </div>
     </div>
   );

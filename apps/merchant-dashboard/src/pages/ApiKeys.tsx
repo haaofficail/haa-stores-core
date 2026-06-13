@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api';
+import { PermissionGate } from '@/lib/permissions';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
@@ -140,10 +141,10 @@ export default function ApiKeysPage() {
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">{t('apikeys.title')}</h1>
-        <Button onClick={() => setShowDialog(true)} className="h-9 text-sm px-4">
+        <PermissionGate permission="api_keys:create"><Button onClick={() => setShowDialog(true)} className="h-9 text-sm px-4">
           <Plus className="h-4 w-4 mr-2" />
           {t('apikeys.create')}
-        </Button>
+        </Button></PermissionGate>
       </div>
 
       {newKey && (
@@ -223,9 +224,9 @@ export default function ApiKeysPage() {
                     </TableCell>
                     <TableCell className="p-3">
                       {k.isActive && (
-                        <Button variant="ghost" size="sm" className="h-9 text-sm" onClick={() => setRevokeConfirm(k.id)}>
+                        <PermissionGate permission="api_keys:revoke"><Button variant="ghost" size="sm" className="h-9 text-sm" onClick={() => setRevokeConfirm(k.id)}>
                           <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
+                        </Button></PermissionGate>
                       )}
                     </TableCell>
                   </TableRow>
@@ -326,9 +327,9 @@ export default function ApiKeysPage() {
           </div>
           <DialogFooter className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
             <Button variant="outline" className="h-9 text-sm" onClick={() => setShowDialog(false)}>{t('common.cancel')}</Button>
-            <Button className="h-9 text-sm px-4" onClick={createKey} disabled={creating}>
+            <PermissionGate permission="api_keys:create"><Button className="h-9 text-sm px-4" onClick={createKey} disabled={creating}>
               {creating ? t('common.loading') : t('apikeys.create')}
-            </Button>
+            </Button></PermissionGate>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -344,7 +345,7 @@ export default function ApiKeysPage() {
           <p className="text-sm text-neutral-500">{t('apikeys.revokeConfirm')}</p>
           <DialogFooter className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
             <Button variant="outline" className="h-9 text-sm" onClick={() => setRevokeConfirm(null)}>{t('common.cancel')}</Button>
-            <Button variant="destructive" className="h-9 text-sm" onClick={revokeKey}>{t('apikeys.confirmRevoke')}</Button>
+            <PermissionGate permission="api_keys:revoke"><Button variant="destructive" className="h-9 text-sm" onClick={revokeKey}>{t('apikeys.confirmRevoke')}</Button></PermissionGate>
           </DialogFooter>
         </DialogContent>
       </Dialog>

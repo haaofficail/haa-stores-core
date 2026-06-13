@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { importsApi, getToken } from '@/lib/api';
 import { ApiClientError } from '@/lib/api';
 import { Upload, Download, FileSpreadsheet, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
+import { PermissionGate } from '@/lib/permissions';
 
 export default function Imports() {
   const { t } = useTranslation();
@@ -95,10 +96,12 @@ export default function Imports() {
                 {previewLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-2" />}
                 {previewLoading ? t('imports.previewLoading') : t('imports.preview')}
               </Button>
-              <Button onClick={handleImport} disabled={!csvContent.trim() || importing} className="h-9 text-sm px-4 bg-green-600 hover:bg-green-700">
-                {importing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-                {importing ? t('imports.importLoading') : t('imports.import')}
-              </Button>
+              <PermissionGate permission="imports:create">
+                <Button onClick={handleImport} disabled={!csvContent.trim() || importing} className="h-9 text-sm px-4 bg-green-600 hover:bg-green-700">
+                  {importing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                  {importing ? t('imports.importLoading') : t('imports.import')}
+                </Button>
+              </PermissionGate>
             </div>
           </div>
         </div>

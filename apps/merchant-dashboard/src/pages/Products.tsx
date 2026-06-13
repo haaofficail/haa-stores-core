@@ -17,6 +17,7 @@ import { ProductListTable } from '@/components/products/ProductListTable';
 import { ProductGrid } from '@/components/products/ProductGrid';
 import { ProductFormDialog } from '@/components/products/ProductFormDialog';
 import { buildProductsCsv, downloadBlob } from '@/lib/products/csv';
+import { PermissionGate } from '@/lib/permissions';
 
 const PROVIDERS = [
   { code: 'salla', name: 'سلة', color: 'from-green-400 via-green-600 to-green-800' },
@@ -451,10 +452,10 @@ export default function Products() {
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">{t('products.title')}</h1>
-        <Button onClick={openCreate} className="h-9 text-sm px-4">
+        <PermissionGate permission="products:create" fallback={null}><Button onClick={openCreate} className="h-9 text-sm px-4">
           <Plus className="h-4 w-4 mr-2" />
           {t('products.create')}
-        </Button>
+        </Button></PermissionGate>
       </div>
 
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
@@ -569,7 +570,7 @@ export default function Products() {
                 : t('products.noProducts')}
             </p>
             {!(search || statusFilter || categoryFilter || brandFilter || tagFilter || stockFilter || typeFilter) && (
-              <Button variant="outline" size="sm" className="h-8 text-sm mt-4" onClick={openCreate}>{t('products.create')}</Button>
+              <PermissionGate permission="products:create" fallback={null}><Button variant="outline" size="sm" className="h-8 text-sm mt-4" onClick={openCreate}>{t('products.create')}</Button></PermissionGate>
             )}
           </div>
         ) : (<>

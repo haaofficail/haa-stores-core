@@ -13,6 +13,7 @@ import { Plus, Search, Edit, Trash2, Percent, AlertTriangle, Loader2, CheckCircl
 import { toast } from 'sonner';
 import { ApiClientError, promotionsApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import { PermissionGate } from '@/lib/permissions';
 
 const typeColors: Record<string, 'default' | 'success' | 'warning' | 'destructive' | 'secondary'> = {
   percentage: 'warning',
@@ -148,10 +149,12 @@ export default function Promotions() {
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">{t('promotions.title')}</h1>
-        <Button onClick={openCreate} className="h-9 text-sm px-4">
-          <Plus className="h-4 w-4 mr-2" />
-          {t('promotions.create')}
-        </Button>
+        <PermissionGate permission="promotions:create">
+          <Button onClick={openCreate} className="h-9 text-sm px-4">
+            <Plus className="h-4 w-4 mr-2" />
+            {t('promotions.create')}
+          </Button>
+        </PermissionGate>
       </div>
 
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6 flex gap-4 items-center flex-wrap">
@@ -189,7 +192,9 @@ export default function Promotions() {
             </div>
             <p className="text-sm text-neutral-500">{search || statusFilter ? t('promotions.noMatch') : t('promotions.noPromotions')}</p>
             {!search && !statusFilter && (
-              <Button variant="outline" className="h-9 text-sm mt-4" onClick={openCreate}>{t('promotions.create')}</Button>
+              <PermissionGate permission="promotions:create">
+                <Button variant="outline" className="h-9 text-sm mt-4" onClick={openCreate}>{t('promotions.create')}</Button>
+              </PermissionGate>
             )}
           </div>
         ) : (
@@ -238,12 +243,16 @@ export default function Promotions() {
                     </TableCell>
                     <TableCell className="p-3">
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => openEdit(p.id)} title={t('common.edit')} aria-label={t('common.edit', 'تعديل العرض')}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setDeleteConfirm(p.id)} title={t('common.delete')} aria-label={t('common.delete', 'حذف العرض')}>
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
+                        <PermissionGate permission="promotions:update">
+                          <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => openEdit(p.id)} title={t('common.edit')} aria-label={t('common.edit', 'تعديل العرض')}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
+                        <PermissionGate permission="promotions:delete">
+                          <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setDeleteConfirm(p.id)} title={t('common.delete')} aria-label={t('common.delete', 'حذف العرض')}>
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </PermissionGate>
                       </div>
                     </TableCell>
                   </TableRow>

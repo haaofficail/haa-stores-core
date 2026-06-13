@@ -1,6 +1,7 @@
 import { ImageOff, Edit, Archive, Globe, ExternalLink, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { handleImageError, formatCurrency } from '@/lib/utils';
+import { PermissionGate } from '@/lib/permissions';
 import type { TFunction } from 'i18next';
 import type { ProductRowData } from './ProductListTable';
 
@@ -117,9 +118,9 @@ export function ProductGrid({ products, selectedIds, onSelect, onEdit, onArchive
 
             <div className="flex items-center justify-between px-3 py-2 border-t border-neutral-50">
               <div className="flex gap-0.5">
-                <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => onEdit(p.id)} title={t('products.edit')} aria-label={t('products.edit', 'تعديل')}>
+                <PermissionGate permission="products:update" fallback={null}><Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => onEdit(p.id)} title={t('products.edit')} aria-label={t('products.edit', 'تعديل')}>
                   <Edit className="h-3 w-3" />
-                </Button>
+                </Button></PermissionGate>
                 {p.status === 'active' && storeSlug && (
                   <a href={`${STOREFRONT_BASE}/s/${storeSlug}/p/${p.slug}`} target="_blank" rel="noopener noreferrer"
                     className="h-11 w-11 inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-primary-600 transition-colors"
@@ -128,9 +129,9 @@ export function ProductGrid({ products, selectedIds, onSelect, onEdit, onArchive
                   </a>
                 )}
                 {p.status !== 'archived' && (
-                  <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => onArchive(p.id)} title={t('products.archive')} aria-label={t('products.archive', 'أرشفة')}>
+                  <PermissionGate permission="products:delete" fallback={null}><Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => onArchive(p.id)} title={t('products.archive')} aria-label={t('products.archive', 'أرشفة')}>
                     <Archive className="h-3 w-3" />
-                  </Button>
+                  </Button></PermissionGate>
                 )}
               </div>
               <Button variant="ghost" size="icon" className={`h-11 w-11 ${(() => {

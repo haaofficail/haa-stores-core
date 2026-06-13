@@ -42,21 +42,25 @@
 | Total roles | **8** (owner, admin, manager, products_manager, orders_manager, accountant, support, viewer) |
 | Owner covers all | ✅ |
 | Viewer restricted to read-only | ✅ |
+| RBAC boundary tests | **16** (10 catalog + 6 dashboard guards) |
+| Total test suite | **1356 tests** across **69 test files** |
 
 ---
 
-## RBAC Pass 2 — Pending
+## RBAC Pass 2 — Dashboard Frontend Guards ✅
+
+**Closed: 2026-06-13**
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Dashboard navigation filtering | ❌ | Sidebar shows all items regardless of permissions |
-| Route-level permission guarding (frontend) | ❌ | `App.tsx` uses `AuthGuard` only, no `PermissionGate` on routes |
-| Action button hiding | ❌ | Create/edit/delete buttons visible to all users |
-| Employee management UI | ❌ | No page for managing employees/roles |
-| Employee invite flow | ❌ | No invite system |
-| Role ↔ Permission DB schema | ❌ | Currently uses in-memory map only |
-| Permission seed data | ❌ | No DB seeds for roles/permissions |
-| Branch/location scope | ❌ | Not implemented |
+| Dashboard navigation filtering | ✅ | Sidebar filters items via `usePermissions().can()`; hides empty groups |
+| Route-level permission guarding (frontend) | ✅ | `PermissionRoute` guard wraps all dashboard routes in `App.tsx` |
+| Action button hiding | ✅ | `PermissionGate` wrappers on all CRUD buttons across 20+ pages |
+| Employee management UI | ❌ | No page for managing employees/roles (deferred to Pass 3) |
+| Employee invite flow | ❌ | No invite system (deferred to Pass 3) |
+| Role ↔ Permission DB schema | ❌ | Currently uses in-memory map only (deferred to Pass 3) |
+| Permission seed data | ❌ | No DB seeds for roles/permissions (deferred to Pass 3) |
+| Branch/location scope | ❌ | Not implemented (deferred to Pass 3+) |
 
 ---
 
@@ -101,9 +105,11 @@
 |-----------|--------|---------|
 | `usePermissions()` | ✅ | Implemented in `permissions.tsx` |
 | `PermissionGate` | ✅ | Implemented with single/any/all modes |
-| Navigation filtering | ❌ | **RBAC Pass 2** — Sidebar renders unconditionally |
-| Route-level guarding | ❌ | **RBAC Pass 2** — `App.tsx` routes unwrapped |
-| Action button hiding | ❌ | **RBAC Pass 2** — All CRUD buttons visible |
+| `UnauthorizedState` | ✅ | New component for access-denied UX |
+| `PermissionRoute` | ✅ | New route-level guard wrapper |
+| Navigation filtering | ✅ | **RBAC Pass 2** — Sidebar filtered by permissions |
+| Route-level guarding | ✅ | **RBAC Pass 2** — All routes wrapped with `GuardedRoute` |
+| Action button hiding | ✅ | **RBAC Pass 2** — All CRUD buttons guarded across 20+ pages |
 
 ---
 
@@ -112,6 +118,7 @@
 | File | Coverage | Status |
 |------|----------|--------|
 | `tests/rbac-permission-catalog.test.ts` | (1) Catalog field completeness, (2) no duplicates, (3) ROLE_PERMISSIONS ↔ Catalog match, (4) no role-internal duplicates, (5) `getPermissionsForRole` correctness, (6) unknown role handling, (7) owner covers all catalog, (8) viewer no high-risk perms, (9) category coverage, (10) riskLevel validity | ✅ 10/10 passing |
+| `tests/dashboard-rbac-guards.test.ts` | (1) Sidebar has permission metadata on all items, (2) all sidebar perms in catalog, (3) GuardedRoute on protected routes, (4) all route perms in catalog, (5) PermissionRoute uses UnauthorizedState, (6) 15+ pages have PermissionGate import | ✅ 6/6 passing |
 
 ---
 
@@ -132,10 +139,10 @@ The RBAC design follows defense-in-depth:
 
 ---
 
-## Required Tasks Before RBAC Pass 2
+## Required Tasks Before RBAC Pass 3
 
 | Task | Description |
 |------|-------------|
-| TASK-RBAC-06 | Add permission-based route filtering in frontend |
-| TASK-RBAC-07 | Add UI action hiding based on permissions |
-| TASK-RBAC-03 | Create employee permission management page in dashboard |
+| TASK-RBAC-06 | Add permission-based route filtering in frontend ✅ (Pass 2) |
+| TASK-RBAC-07 | Add UI action hiding based on permissions ✅ (Pass 2) |
+| TASK-RBAC-03 | Create employee permission management page in dashboard — pending |

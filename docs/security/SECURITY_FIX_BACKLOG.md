@@ -28,6 +28,19 @@
   - Permissions emitted in JWT on login/register
 - **Verified in:** Boundary test `tests/rbac-permission-catalog.test.ts` (10/10 passing)
 
+## P1 — High — Completed in RBAC Pass 2
+
+### SEC-003: Add role-based route filtering in dashboard frontend ✅
+
+- **Status:** ✅ **Closed** — Implemented in RBAC Pass 2
+- **Verified in:**
+  - `PermissionRoute.tsx` — route-level guard component
+  - `Sidebar.tsx` — permission-based navigation filtering
+  - `App.tsx` — 30+ dashboard routes wrapped with `GuardedRoute permission=`
+  - `UnauthorizedState.tsx` — access-denied UX component
+  - Action button guarding via `PermissionGate` across 20+ page files
+  - Boundary test: `tests/dashboard-rbac-guards.test.ts` (6/6 passing)
+
 ## P1 — High — Pending
 
 ### SEC-002: Add audit logging to customer mutations
@@ -42,17 +55,6 @@
 - **Test Plan:** Create/update customer → check `audit_logs` table for matching entry
 - **Status:** Pending — deferred from Pass 1
 
-### SEC-003: Add role-based route filtering in dashboard frontend
-
-- **Area:** Dashboard / Frontend
-- **Risk:** Any authenticated user can navigate to any dashboard page (API blocks, but UX is poor)
-- **Recommended Fix:** Extend `AuthGuard` to accept `requiredPermissions` prop; add per-route permission checking in `App.tsx`
-- **Acceptance Criteria:**
-  - Routes with `requirePermission` show 403 or hide navigation for unauthorized roles
-  - API remains the enforcement point — UI is informational only
-- **Test Plan:** Authenticate as user without `orders:read` → orders page shows "no access" instead of data
-- **Status:** Pending — RBAC Pass 2
-
 ### SEC-005: Add employee permission management UI
 
 - **Area:** Dashboard / Frontend
@@ -63,7 +65,7 @@
   - Employee permissions are derived from role
   - UI shows only actions the employee can perform
 - **Test Plan:** Assign `viewer` role → employee sees read-only UI
-- **Status:** Pending — RBAC Pass 2
+- **Status:** Pending — RBAC Pass 3
 
 ---
 

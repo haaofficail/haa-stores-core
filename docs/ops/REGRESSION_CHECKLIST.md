@@ -38,7 +38,8 @@
 
 ## Permissions / RBAC
 
-- [ ] UI hides unauthorized actions
+### Backend (Pass 1)
+
 - [ ] API rejects unauthorized actions
 - [ ] Branch/location scope respected
 - [ ] No cross-store data leakage
@@ -56,7 +57,17 @@
 - [ ] All 86 permission string literals in types/orders.ts are valid
 - [ ] Arabic labels and risk levels present in PERMISSION_CATALOG
 - [ ] Permission boundary tests (tests/rbac-permission-catalog.test.ts) pass
-- [ ] All 1350 tests pass across 68 test files
+
+### Frontend Guards (Pass 2)
+
+- [ ] Sidebar shows only nav items the user has permission for
+- [ ] Sidebar groups with no visible items are hidden
+- [ ] All dashboard routes wrapped with GuardedRoute / PermissionRoute
+- [ ] Denied routes show UnauthorizedState instead of data
+- [ ] All CRUD/action buttons guarded by PermissionGate across 20+ pages
+- [ ] All sidebar & route permission strings exist in PERMISSION_CATALOG
+- [ ] Dashboard RBAC boundary tests (tests/dashboard-rbac-guards.test.ts) pass
+- [ ] All 1356 tests pass across 69 test files
 - [ ] pnpm typecheck passes with no RBAC-related errors
 - [ ] pnpm ops:monitor: all RBAC-related checks pass
 

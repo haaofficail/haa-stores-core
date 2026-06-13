@@ -13,6 +13,7 @@ import { Plus, Search, Edit, Trash2, Tag, AlertTriangle, Loader2, CheckCircle2, 
 import { toast } from 'sonner';
 import { couponsApi, ApiClientError } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import { PermissionGate } from '@/lib/permissions';
 
 const typeColors: Record<string, 'default' | 'success' | 'warning' | 'destructive' | 'secondary'> = {
   fixed: 'success',
@@ -155,10 +156,12 @@ export default function Coupons() {
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">{t('coupons.title')}</h1>
-        <Button onClick={openCreate} className="h-9 text-sm px-4">
-          <Plus className="h-4 w-4 mr-2" />
-          {t('coupons.create')}
-        </Button>
+        <PermissionGate permission="coupons:create">
+          <Button onClick={openCreate} className="h-9 text-sm px-4">
+            <Plus className="h-4 w-4 mr-2" />
+            {t('coupons.create')}
+          </Button>
+        </PermissionGate>
       </div>
 
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
@@ -198,7 +201,9 @@ export default function Coupons() {
             </div>
             <p className="text-sm text-neutral-500">{search || statusFilter ? t('coupons.noMatch') : t('coupons.noCoupons')}</p>
             {!search && !statusFilter && (
-              <Button variant="outline" size="sm" className="h-8 text-sm mt-4" onClick={openCreate}>{t('coupons.create')}</Button>
+              <PermissionGate permission="coupons:create">
+                <Button variant="outline" size="sm" className="h-8 text-sm mt-4" onClick={openCreate}>{t('coupons.create')}</Button>
+              </PermissionGate>
             )}
           </div>
         ) : (
@@ -244,12 +249,16 @@ export default function Coupons() {
                     </TableCell>
                     <TableCell className="p-3">
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => openEdit(c.id)} title={t('coupons.edit')} aria-label={t('coupons.edit', 'تعديل الكوبون')}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setDeleteConfirm(c.id)} title={t('common.delete')} aria-label={t('common.delete', 'حذف الكوبون')}>
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
+                        <PermissionGate permission="coupons:update">
+                          <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => openEdit(c.id)} title={t('coupons.edit')} aria-label={t('coupons.edit', 'تعديل الكوبون')}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </PermissionGate>
+                        <PermissionGate permission="coupons:delete">
+                          <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setDeleteConfirm(c.id)} title={t('common.delete')} aria-label={t('common.delete', 'حذف الكوبون')}>
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </PermissionGate>
                       </div>
                     </TableCell>
                   </TableRow>

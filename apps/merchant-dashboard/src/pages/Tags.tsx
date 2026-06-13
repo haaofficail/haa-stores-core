@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { tagsApi, ApiClientError } from '@/lib/api';
+import { PermissionGate } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,12 +46,16 @@ function SortableRow({ tag, onEdit, onDelete }: { tag: any; onEdit: (t: any) => 
       </TableCell>
       <TableCell className="p-3">
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => onEdit(tag)} aria-label="تعديل التاج">
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-11 w-11 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => onDelete(tag)} aria-label="حذف التاج">
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          <PermissionGate permission="tags:manage">
+            <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => onEdit(tag)} aria-label="تعديل التاج">
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          </PermissionGate>
+          <PermissionGate permission="tags:manage">
+            <Button variant="ghost" size="icon" className="h-11 w-11 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => onDelete(tag)} aria-label="حذف التاج">
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </PermissionGate>
         </div>
       </TableCell>
     </TableRow>
@@ -145,7 +150,9 @@ export default function Tags() {
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">التاجات</h1>
-        <Button onClick={openCreate} className="h-9 text-sm px-4"><Plus className="h-4 w-4 mr-2" />إضافة تاج</Button>
+        <PermissionGate permission="tags:manage">
+          <Button onClick={openCreate} className="h-9 text-sm px-4"><Plus className="h-4 w-4 mr-2" />إضافة تاج</Button>
+        </PermissionGate>
       </div>
 
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">

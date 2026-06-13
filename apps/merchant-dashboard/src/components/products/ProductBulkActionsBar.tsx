@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { PermissionGate } from '@/lib/permissions';
 
 interface Props {
   selectedCount: number;
@@ -20,7 +21,7 @@ export function ProductBulkActionsBar({ selectedCount, onClear, onActivate, onDe
       <div className="mr-auto flex gap-2">
         <Button variant="outline" size="sm" onClick={onActivate} disabled={busy}>تفعيل</Button>
         <Button variant="outline" size="sm" onClick={onDeactivate} disabled={busy}>إلغاء التفعيل</Button>
-        <Button variant="outline" size="sm" onClick={onExportCsv} disabled={busy}>تصدير CSV</Button>
+        <PermissionGate permission="products:export" fallback={null}><Button variant="outline" size="sm" onClick={onExportCsv} disabled={busy}>تصدير CSV</Button></PermissionGate>
       </div>
     </div>
   );

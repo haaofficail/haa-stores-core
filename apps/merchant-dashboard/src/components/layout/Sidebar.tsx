@@ -1,94 +1,112 @@
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { usePermissions } from '@/lib/permissions';
 import {
   LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, BookOpen,
 } from 'lucide-react';
 
-const navGroups = [
+interface NavItem {
+  to: string;
+  icon: any;
+  label: string;
+  fallback: string;
+  permission?: string;
+}
+
+const navGroups: Array<{
+  titleKey: string;
+  title: string;
+  items: NavItem[];
+}> = [
   {
     titleKey: 'sidebar.main',
     title: 'الرئيسية',
     items: [
-      { to: '/dashboard', icon: LayoutDashboard, label: 'nav.dashboard', fallback: 'لوحة التحكم' },
+      { to: '/dashboard', icon: LayoutDashboard, label: 'nav.dashboard', fallback: 'لوحة التحكم', permission: 'dashboard:view' },
     ],
   },
   {
     titleKey: 'sidebar.operations',
     title: 'التشغيل',
     items: [
-      { to: '/products', icon: Package, label: 'nav.products', fallback: 'المنتجات' },
-      { to: '/categories', icon: Tags, label: 'nav.categories', fallback: 'التصنيفات' },
-      { to: '/brands', icon: Building2, label: 'nav.brands', fallback: 'الماركات' },
-      { to: '/tags', icon: Tag, label: 'nav.tags', fallback: 'التاجات' },
-      { to: '/orders', icon: ShoppingCart, label: 'nav.orders', fallback: 'الطلبات' },
-      { to: '/customers', icon: Users, label: 'nav.customers', fallback: 'العملاء' },
-      { to: '/channels', icon: Store, label: 'nav.channels', fallback: 'قنوات البيع' },
+      { to: '/products', icon: Package, label: 'nav.products', fallback: 'المنتجات', permission: 'products:read' },
+      { to: '/categories', icon: Tags, label: 'nav.categories', fallback: 'التصنيفات', permission: 'categories:manage' },
+      { to: '/brands', icon: Building2, label: 'nav.brands', fallback: 'الماركات', permission: 'brands:manage' },
+      { to: '/tags', icon: Tag, label: 'nav.tags', fallback: 'التاجات', permission: 'tags:manage' },
+      { to: '/orders', icon: ShoppingCart, label: 'nav.orders', fallback: 'الطلبات', permission: 'orders:read' },
+      { to: '/customers', icon: Users, label: 'nav.customers', fallback: 'العملاء', permission: 'customers:read' },
+      { to: '/channels', icon: Store, label: 'nav.channels', fallback: 'قنوات البيع', permission: 'settings:read' },
     ],
   },
   {
     titleKey: 'sidebar.financial',
     title: 'المالية',
     items: [
-      { to: '/shipping', icon: Truck, label: 'nav.shipping', fallback: 'الشحن' },
-      { to: '/wallet', icon: Wallet, label: 'nav.wallet', fallback: 'المحفظة' },
-      { to: '/coupons', icon: TicketPercent, label: 'nav.coupons', fallback: 'الكوبونات' },
+      { to: '/shipping', icon: Truck, label: 'nav.shipping', fallback: 'الشحن', permission: 'shipping:manage' },
+      { to: '/wallet', icon: Wallet, label: 'nav.wallet', fallback: 'المحفظة', permission: 'wallet:read' },
+      { to: '/coupons', icon: TicketPercent, label: 'nav.coupons', fallback: 'الكوبونات', permission: 'coupons:read' },
     ],
   },
   {
     titleKey: 'sidebar.marketing',
     title: 'التسويق',
     items: [
-      { to: '/promotions', icon: Percent, label: 'nav.promotions', fallback: 'العروض' },
-      { to: '/abandoned-carts', icon: ShoppingBag, label: 'nav.abandonedCarts', fallback: 'العربات المتروكة' },
-      { to: '/policies', icon: FileText, label: 'nav.policies', fallback: 'الصفحات والسياسات' },
+      { to: '/promotions', icon: Percent, label: 'nav.promotions', fallback: 'العروض', permission: 'promotions:read' },
+      { to: '/abandoned-carts', icon: ShoppingBag, label: 'nav.abandonedCarts', fallback: 'العربات المتروكة', permission: 'orders:read' },
+      { to: '/policies', icon: FileText, label: 'nav.policies', fallback: 'الصفحات والسياسات', permission: 'settings:read' },
     ],
   },
   {
     titleKey: 'sidebar.analytics',
     title: 'التحليلات',
     items: [
-      { to: '/reports', icon: BarChart3, label: 'nav.reports', fallback: 'التقارير' },
-      { to: '/exports', icon: Download, label: 'nav.exports', fallback: 'التصدير' },
-      { to: '/imports', icon: FileSpreadsheet, label: 'nav.imports', fallback: 'الاستيراد' },
+      { to: '/reports', icon: BarChart3, label: 'nav.reports', fallback: 'التقارير', permission: 'reports:read' },
+      { to: '/exports', icon: Download, label: 'nav.exports', fallback: 'التصدير', permission: 'exports:create' },
+      { to: '/imports', icon: FileSpreadsheet, label: 'nav.imports', fallback: 'الاستيراد', permission: 'imports:create' },
     ],
   },
   {
     titleKey: 'sidebar.support',
     title: 'الدعم',
     items: [
-      { to: '/support/tickets', icon: Headphones, label: 'nav.supportTickets', fallback: 'تذاكر الدعم' },
-      { to: '/support/kb', icon: BookOpen, label: 'nav.supportKb', fallback: 'قاعدة المعرفة' },
+      { to: '/support/tickets', icon: Headphones, label: 'nav.supportTickets', fallback: 'تذاكر الدعم', permission: 'support:read' },
+      { to: '/support/kb', icon: BookOpen, label: 'nav.supportKb', fallback: 'قاعدة المعرفة', permission: 'support:read' },
     ],
   },
   {
     titleKey: 'sidebar.settings',
     title: 'الإعدادات',
     items: [
-      { to: '/compliance', icon: Shield, label: 'nav.compliance', fallback: 'التحقق والامتثال' },
-      { to: '/audit-logs', icon: History, label: 'nav.auditLogs', fallback: 'سجل التغييرات' },
-      { to: '/subscriptions', icon: Crown, label: 'nav.subscriptions', fallback: 'الاشتراكات' },
-      { to: '/notifications', icon: Bell, label: 'nav.notifications', fallback: 'الإشعارات' },
-      { to: '/theme-store', icon: Palette, label: 'nav.themeStore', fallback: 'متجر الثيمات' },
-      { to: '/theme', icon: Palette, label: 'nav.themeEditor', fallback: 'تخصيص الثيم' },
-      { to: '/settings', icon: Settings, label: 'nav.settings', fallback: 'الإعدادات' },
+      { to: '/compliance', icon: Shield, label: 'nav.compliance', fallback: 'التحقق والامتثال', permission: 'compliance:read' },
+      { to: '/audit-logs', icon: History, label: 'nav.auditLogs', fallback: 'سجل التغييرات', permission: 'stores:read' },
+      { to: '/subscriptions', icon: Crown, label: 'nav.subscriptions', fallback: 'الاشتراكات', permission: 'subscriptions:view' },
+      { to: '/notifications', icon: Bell, label: 'nav.notifications', fallback: 'الإشعارات', permission: 'notifications:view' },
+      { to: '/theme-store', icon: Palette, label: 'nav.themeStore', fallback: 'متجر الثيمات', permission: 'theme:view' },
+      { to: '/theme', icon: Palette, label: 'nav.themeEditor', fallback: 'تخصيص الثيم', permission: 'theme:view' },
+      { to: '/settings', icon: Settings, label: 'nav.settings', fallback: 'الإعدادات', permission: 'settings:read' },
     ],
   },
   {
     titleKey: 'sidebar.developers',
     title: 'المطورين',
     items: [
-      { to: '/api-keys', icon: Key, label: 'nav.apiKeys', fallback: 'مفاتيح API' },
-      { to: '/migration', icon: ArrowLeftRight, label: 'nav.migration', fallback: 'الهجرة والتسويق' },
-      { to: '/ai-assistant', icon: Bot, label: 'nav.aiAssistant', fallback: 'المساعد الذكي' },
+      { to: '/api-keys', icon: Key, label: 'nav.apiKeys', fallback: 'مفاتيح API', permission: 'api_keys:view' },
+      { to: '/migration', icon: ArrowLeftRight, label: 'nav.migration', fallback: 'الهجرة والتسويق', permission: 'settings:read' },
+      { to: '/ai-assistant', icon: Bot, label: 'nav.aiAssistant', fallback: 'المساعد الذكي', permission: 'settings:read' },
     ],
   },
 ];
 
-function NavGroup({ titleKey, title, items }: { titleKey: string; title: string; items: Array<{ to: string; icon: any; label: string; fallback: string }> }) {
+function NavGroup({ titleKey, title, items }: { titleKey: string; title: string; items: NavItem[] }) {
   const [open, setOpen] = useState(() => localStorage.getItem('sidebar_group_'+title) !== 'false');
   const { t } = useTranslation();
+  const { can } = usePermissions();
+
+  const visible = useMemo(() => items.filter(item => !item.permission || can(item.permission)), [items, can]);
+
+  if (visible.length === 0) return null;
 
   return (
     <div className="mb-2">
@@ -101,7 +119,7 @@ function NavGroup({ titleKey, title, items }: { titleKey: string; title: string;
       </button>
       {open && (
         <div className="space-y-0.5 px-2">
-          {items.map((item) => (
+          {visible.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

@@ -20,6 +20,7 @@ import {
   Palette, Type, Layout, Home, PanelTop, Footprints, AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { PermissionGate } from '@/lib/permissions';
 import { updateSection, BannerEditor, ProductEditor, CategoriesEditor, TextEditor, ImageTextEditor, BrandsEditor, FAQEditor } from './theme-editor/SectionEditors';
 
 const COLOR_GROUPS = [
@@ -625,19 +626,23 @@ export default function ThemeEditor() {
               <Redo2 className="h-4 w-4" />
             </Button>
             <div className="w-px h-5 bg-neutral-200" />
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin ms-1.5" /> : <Save className="h-4 w-4 ms-1.5" />}
-              {isDirty && !saving ? <span className="ms-1.5 text-xs">حفظ</span> : null}
-            </Button>
+            <PermissionGate permission="theme:update">
+              <Button size="sm" onClick={handleSave} disabled={saving}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin ms-1.5" /> : <Save className="h-4 w-4 ms-1.5" />}
+                {isDirty && !saving ? <span className="ms-1.5 text-xs">حفظ</span> : null}
+              </Button>
+            </PermissionGate>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-1.5 mb-4">
           {THEME_MANIFESTS.map((theme) => (
-            <Button key={theme.themeKey} variant={(config.themeKey || config.preset) === theme.themeKey ? 'default' : 'outline'} size="sm" onClick={() => applyPreset(theme.themeKey)}>
-              <CheckCircle2 className={`h-3 w-3 ms-1 ${(config.themeKey || config.preset) === theme.themeKey ? '' : 'hidden'}`} />
-              {theme.nameAr}
-            </Button>
+            <PermissionGate key={theme.themeKey} permission="theme:apply">
+              <Button variant={(config.themeKey || config.preset) === theme.themeKey ? 'default' : 'outline'} size="sm" onClick={() => applyPreset(theme.themeKey)}>
+                <CheckCircle2 className={`h-3 w-3 ms-1 ${(config.themeKey || config.preset) === theme.themeKey ? '' : 'hidden'}`} />
+                {theme.nameAr}
+              </Button>
+            </PermissionGate>
           ))}
         </div>
 

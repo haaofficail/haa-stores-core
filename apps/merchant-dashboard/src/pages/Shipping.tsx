@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
+import { PermissionGate } from '@/lib/permissions';
 import { ApiClientError } from '@/lib/api';
 
 const shipmentStatusColors: Record<string, 'default' | 'success' | 'warning' | 'destructive' | 'secondary'> = {
@@ -101,7 +102,7 @@ function MethodsTab({ storeId }: { storeId: number }) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-neutral-400">{t('shipping.methodsDesc')}</p>
-        <Button onClick={openCreate} className="h-9 text-sm"><Plus className="h-4 w-4 mr-2" />{t('shipping.createMethod')}</Button>
+        <PermissionGate permission="shipping:manage"><Button onClick={openCreate} className="h-9 text-sm"><Plus className="h-4 w-4 mr-2" />{t('shipping.createMethod')}</Button></PermissionGate>
       </div>
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         {loading ? <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
@@ -129,10 +130,10 @@ function MethodsTab({ storeId }: { storeId: number }) {
                 <TableCell className="p-3"><Badge variant={m.isActive ? 'success' : 'secondary'} className="text-xs">{m.isActive ? t('common.active') : t('common.inactive')}</Badge></TableCell>
                 <TableCell className="p-3">
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => openEdit(m)} aria-label="تعديل طريقة الشحن"><Edit className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => toggleActive(m)} aria-label={m.isActive ? 'تعطيل طريقة الشحن' : 'تفعيل طريقة الشحن'}>
+                    <PermissionGate permission="shipping:manage"><Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => openEdit(m)} aria-label="تعديل طريقة الشحن"><Edit className="h-4 w-4" /></Button></PermissionGate>
+                    <PermissionGate permission="shipping:manage"><Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => toggleActive(m)} aria-label={m.isActive ? 'تعطيل طريقة الشحن' : 'تفعيل طريقة الشحن'}>
                       {m.isActive ? <XCircle className="h-4 w-4 text-neutral-400" /> : <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
-                    </Button>
+                    </Button></PermissionGate>
                   </div>
                 </TableCell>
               </TableRow>
@@ -222,7 +223,7 @@ function ZonesTab({ storeId }: { storeId: number }) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-neutral-400">{t('shipping.zonesDesc')}</p>
-        <Button onClick={openCreate} className="h-9 text-sm"><Plus className="h-4 w-4 mr-2" />{t('shipping.createZone')}</Button>
+        <PermissionGate permission="shipping:manage"><Button onClick={openCreate} className="h-9 text-sm"><Plus className="h-4 w-4 mr-2" />{t('shipping.createZone')}</Button></PermissionGate>
       </div>
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         {loading ? <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
@@ -247,10 +248,10 @@ function ZonesTab({ storeId }: { storeId: number }) {
                 <TableCell className="p-3"><Badge variant={z.isActive ? 'success' : 'secondary'} className="text-xs">{z.isActive ? t('common.active') : t('common.inactive')}</Badge></TableCell>
                 <TableCell className="p-3">
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => openEdit(z)} aria-label="تعديل المنطقة"><Edit className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => toggleActive(z)} aria-label={z.isActive ? 'تعطيل المنطقة' : 'تفعيل المنطقة'}>
+                    <PermissionGate permission="shipping:manage"><Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => openEdit(z)} aria-label="تعديل المنطقة"><Edit className="h-4 w-4" /></Button></PermissionGate>
+                    <PermissionGate permission="shipping:manage"><Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => toggleActive(z)} aria-label={z.isActive ? 'تعطيل المنطقة' : 'تفعيل المنطقة'}>
                       {z.isActive ? <XCircle className="h-4 w-4 text-neutral-400" /> : <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
-                    </Button>
+                    </Button></PermissionGate>
                   </div>
                 </TableCell>
               </TableRow>
@@ -313,9 +314,9 @@ function RatesTab({ storeId }: { storeId: number }) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-neutral-400">{t('shipping.ratesDesc')}</p>
-        <Button onClick={() => { setForm({ shippingMethodId: '', shippingZoneId: '', baseRate: '', perKgRate: '', freeAboveAmount: '', estimatedDaysMin: '', estimatedDaysMax: '' }); setDialog(true); }} disabled={!methods.length || !zones.length} className="h-9 text-sm">
+        <PermissionGate permission="shipping:manage"><Button onClick={() => { setForm({ shippingMethodId: '', shippingZoneId: '', baseRate: '', perKgRate: '', freeAboveAmount: '', estimatedDaysMin: '', estimatedDaysMax: '' }); setDialog(true); }} disabled={!methods.length || !zones.length} className="h-9 text-sm">
           <Plus className="h-4 w-4 mr-2" />{t('shipping.createRate')}
-        </Button>
+        </Button></PermissionGate>
       </div>
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         {loading ? <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
@@ -576,9 +577,9 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
                           <Undo2 className="h-3 w-3 mr-1" />{t('shipping.return')}
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTracking(s)}>
+                      <PermissionGate permission="shipping:manage"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTracking(s)}>
                         <Edit className="h-3.5 w-3.5" />
-                      </Button>
+                      </Button></PermissionGate>
                     </div>
                   </TableCell>
                 </TableRow>

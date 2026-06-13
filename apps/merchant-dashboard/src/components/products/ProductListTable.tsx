@@ -3,6 +3,7 @@ import { ImageOff, Edit, Archive, ExternalLink, Globe, ChevronLeft, ChevronRight
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { handleImageError, formatCurrency } from '@/lib/utils';
+import { PermissionGate } from '@/lib/permissions';
 import type { TFunction } from 'i18next';
 
 export interface ProductRowData {
@@ -186,9 +187,9 @@ export function ProductListTable({
                 </TableCell>
                 <TableCell className="p-3">
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => onEdit(p.id)} title={t('products.edit')} aria-label={t('products.edit', 'تعديل')}>
+                    <PermissionGate permission="products:update" fallback={null}><Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => onEdit(p.id)} title={t('products.edit')} aria-label={t('products.edit', 'تعديل')}>
                       <Edit className="h-3.5 w-3.5" />
-                    </Button>
+                    </Button></PermissionGate>
                     {p.status === 'active' && storeSlug && (
                       <a href={`${STOREFRONT_BASE}/s/${storeSlug}/p/${p.slug}`} target="_blank" rel="noopener noreferrer"
                         className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-neutral-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
@@ -197,9 +198,9 @@ export function ProductListTable({
                       </a>
                     )}
                     {p.status !== 'archived' && (
-                      <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => onArchive(p.id)} title={t('products.archive')} aria-label={t('products.archive', 'أرشفة')}>
+                      <PermissionGate permission="products:delete" fallback={null}><Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => onArchive(p.id)} title={t('products.archive')} aria-label={t('products.archive', 'أرشفة')}>
                         <Archive className="h-3.5 w-3.5" />
-                      </Button>
+                      </Button></PermissionGate>
                     )}
                     <Button variant="ghost" size="icon" className={`h-11 w-11 ${(() => {
                       const channels = p.marketplaceChannels || {};

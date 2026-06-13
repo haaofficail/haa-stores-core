@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { categoriesApi, uploadFile, ApiClientError } from '@/lib/api';
 import { handleImageError } from '@/lib/utils';
+import { PermissionGate } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,12 +60,16 @@ function SortableItem({ category, depth, onEdit, onDelete, children }: {
           )}
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => onEdit(category)} aria-label="تعديل التصنيف">
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-11 w-11 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => onDelete(category)} aria-label="حذف التصنيف">
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          <PermissionGate permission="categories:manage">
+            <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => onEdit(category)} aria-label="تعديل التصنيف">
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          </PermissionGate>
+          <PermissionGate permission="categories:manage">
+            <Button variant="ghost" size="icon" className="h-11 w-11 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => onDelete(category)} aria-label="حذف التصنيف">
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </PermissionGate>
         </div>
       </div>
     </div>
@@ -225,7 +230,9 @@ export default function Categories() {
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">{t('categories.title')}</h1>
-        <Button onClick={openCreate} className="h-9 text-sm px-4"><Plus className="h-4 w-4 mr-2" />{t('categories.create')}</Button>
+        <PermissionGate permission="categories:manage">
+          <Button onClick={openCreate} className="h-9 text-sm px-4"><Plus className="h-4 w-4 mr-2" />{t('categories.create')}</Button>
+        </PermissionGate>
       </div>
 
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">

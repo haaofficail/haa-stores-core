@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api';
+import { PermissionGate } from '@/lib/permissions';
 
 function SectionHeader({ title, description }: { title: string; description?: string }) {
   return (
@@ -354,15 +355,15 @@ function PublishSection({ storeId }: { storeId: number | null }) {
         <div className="flex items-center gap-3">
           <Badge className={`${statusConfig.bg} ${statusConfig.color} border-0`}>{statusConfig.label}</Badge>
           {publishStatus === 'published' ? (
-            <Button variant="outline" size="sm" onClick={handleUnpublish} disabled={publishing}>
+            <PermissionGate permission="settings:update"><Button variant="outline" size="sm" onClick={handleUnpublish} disabled={publishing}>
               {publishing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t('settings.publish.unpublish', 'إلغاء النشر')}
-            </Button>
+            </Button></PermissionGate>
           ) : (
-            <Button size="sm" onClick={handlePublish} disabled={publishing || !canPublish}>
+            <PermissionGate permission="settings:update"><Button size="sm" onClick={handlePublish} disabled={publishing || !canPublish}>
               {publishing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {t('settings.publish.publish', 'نشر المتجر')}
-            </Button>
+            </Button></PermissionGate>
           )}
         </div>
       </div>
@@ -426,10 +427,10 @@ function PublishSection({ storeId }: { storeId: number | null }) {
           )}
           <div className="flex gap-3 mt-6">
             <Button variant="outline" onClick={() => setShowAckDialog(false)} className="flex-1">إلغاء</Button>
-            <Button onClick={handleAcknowledge} disabled={!allChecked || ackSubmitting} className="flex-1">
+            <PermissionGate permission="settings:update"><Button onClick={handleAcknowledge} disabled={!allChecked || ackSubmitting} className="flex-1">
               {ackSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               تأكيد الإقرار
-            </Button>
+            </Button></PermissionGate>
           </div>
         </div>
       </div>
@@ -848,7 +849,7 @@ export default function SettingsPage() {
                         <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => settingsApi.getStoreConfig(storeId!).then(setStoreConfig)}>
                           {t('common.cancel')}
                         </Button>
-                        <Button size="sm" className="h-7 text-xs" onClick={async () => {
+                        <PermissionGate permission="settings:update"><Button size="sm" className="h-7 text-xs" onClick={async () => {
                           if (!storeId) return;
                           try {
                             const updated = await settingsApi.updateStoreConfig(storeId, {
@@ -860,7 +861,7 @@ export default function SettingsPage() {
                           } catch { toast.error(t('common.error')); }
                         }}>
                           {t('common.save')}
-                        </Button>
+                        </Button></PermissionGate>
                       </div>
                     </div>
                   </div>
@@ -951,7 +952,7 @@ export default function SettingsPage() {
               <Button variant="outline" className="h-9 text-sm" onClick={() => settingsApi.getStoreConfig(storeId!).then(setStoreConfig)}>
                 {t('common.cancel')}
               </Button>
-              <Button className="h-9 text-sm" disabled={storeConfigSaving || storeConfigLoading} onClick={async () => {
+              <PermissionGate permission="settings:update"><Button className="h-9 text-sm" disabled={storeConfigSaving || storeConfigLoading} onClick={async () => {
                 if (!storeId) return;
                 setStoreConfigSaving(true);
                 try {
@@ -963,7 +964,7 @@ export default function SettingsPage() {
               }}>
                 {storeConfigSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {storeConfigSaving ? t('common.saving') : t('common.save')}
-              </Button>
+              </Button></PermissionGate>
             </div>
           </div>
         </TabsContent>
@@ -1024,7 +1025,7 @@ export default function SettingsPage() {
             )}
             <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-neutral-100">
               <Button variant="outline" className="h-9 text-sm" onClick={() => settingsApi.getProductFeatures(storeId!).then(setFeatures)}>{t('common.cancel')}</Button>
-              <Button className="h-9 text-sm" disabled={featuresSaving || featuresLoading} onClick={async () => {
+              <PermissionGate permission="settings:update"><Button className="h-9 text-sm" disabled={featuresSaving || featuresLoading} onClick={async () => {
                 setFeaturesSaving(true);
                 try {
                   await settingsApi.updateProductFeatures(storeId!, features);
@@ -1034,7 +1035,7 @@ export default function SettingsPage() {
               }}>
                 {featuresSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 {featuresSaving ? t('common.saving') : t('common.save')}
-              </Button>
+              </Button></PermissionGate>
             </div>
           </div>
         </TabsContent>
@@ -1115,10 +1116,10 @@ export default function SettingsPage() {
                 </label>
                 <div className="flex justify-end gap-2 border-t border-neutral-100 pt-4">
                   {sizeGuideEditId && <Button variant="outline" className="h-9 text-sm" onClick={resetSizeGuideForm}>إلغاء التعديل</Button>}
-                  <Button className="h-9 text-sm" onClick={saveSizeGuide} disabled={sizeGuideSaving}>
+                  <PermissionGate permission="settings:update"><Button className="h-9 text-sm" onClick={saveSizeGuide} disabled={sizeGuideSaving}>
                     {sizeGuideSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     {sizeGuideEditId ? 'تحديث الدليل' : 'إضافة الدليل'}
-                  </Button>
+                  </Button></PermissionGate>
                 </div>
               </div>
 
@@ -1152,7 +1153,7 @@ export default function SettingsPage() {
                           </TableCell>
                           <TableCell className="p-3">
                             <div className="flex gap-1">
-                              <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => {
+                              <PermissionGate permission="settings:update"><Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => {
                                 setSizeGuideEditId(guide.id);
                                 setSizeGuideForm({
                                   name: guide.name ?? '',
@@ -1165,8 +1166,8 @@ export default function SettingsPage() {
                                 });
                               }}>
                                 <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-11 w-11 text-red-500" onClick={async () => {
+                              </Button></PermissionGate>
+                              <PermissionGate permission="settings:update"><Button variant="ghost" size="icon" className="h-11 w-11 text-red-500" onClick={async () => {
                                 if (!storeId || !confirm('حذف دليل المقاسات؟')) return;
                                 try {
                                   await settingsApi.deleteSizeGuide(storeId, guide.id);
@@ -1177,7 +1178,7 @@ export default function SettingsPage() {
                                 }
                               }}>
                                 <Trash2 className="h-4 w-4" />
-                              </Button>
+                              </Button></PermissionGate>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -1231,7 +1232,7 @@ export default function SettingsPage() {
                     onClick={() => settingsApi.getGiftOptions(storeId!).then(setGiftOptions)}>
                     {t('common.cancel')}
                   </Button>
-                  <Button className="h-9 text-sm" disabled={giftOptionsSaving || giftOptionsLoading}
+                  <PermissionGate permission="settings:update"><Button className="h-9 text-sm" disabled={giftOptionsSaving || giftOptionsLoading}
                     onClick={async () => {
                       setGiftOptionsSaving(true);
                       try {
@@ -1247,7 +1248,7 @@ export default function SettingsPage() {
                     }}>
                     {giftOptionsSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     {giftOptionsSaving ? t('common.saving') : t('common.save')}
-                  </Button>
+                  </Button></PermissionGate>
                 </div>
               </div>
             )}
@@ -1259,11 +1260,11 @@ export default function SettingsPage() {
           <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
             <div className="flex items-center justify-between mb-4">
               <SectionHeader title={t('settings.sectionPickup', 'الاستلام من الفرع')} description={t('settings.sectionPickupDesc', 'إدارة فروع الاستلام وأوقات الدوام')} />
-              <Button onClick={() => {
+              <PermissionGate permission="settings:update"><Button onClick={() => {
                 setPickupEditId(null);
                 setPickupForm({ nameAr: '', nameEn: '', address: '', mapsUrl: '', phone: '', hours: '{}', instructions: '', isActive: true });
                 setPickupDialog(true);
-              }} className="h-9 text-sm"><Plus className="h-4 w-4 mr-2" />{t('settings.createPickup', 'إضافة فرع')}</Button>
+              }} className="h-9 text-sm"><Plus className="h-4 w-4 mr-2" />{t('settings.createPickup', 'إضافة فرع')}</Button></PermissionGate>
             </div>
             {pickupLocationsLoading ? (
               <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
@@ -1296,7 +1297,7 @@ export default function SettingsPage() {
                         </TableCell>
                         <TableCell className="p-3">
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="h-11 w-11"
+                            <PermissionGate permission="settings:update"><Button variant="ghost" size="icon" className="h-11 w-11"
                               onClick={() => {
                                 setPickupEditId(loc.id);
                                 setPickupForm({
@@ -1312,8 +1313,8 @@ export default function SettingsPage() {
                                 setPickupDialog(true);
                               }}>
                               <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-11 w-11 text-red-500"
+                            </Button></PermissionGate>
+                            <PermissionGate permission="settings:update"><Button variant="ghost" size="icon" className="h-11 w-11 text-red-500"
                               onClick={async () => {
                                 if (!confirm(t('settings.confirmDeletePickup', 'هل أنت متأكد من حذف هذا الفرع؟'))) return;
                                 try {
@@ -1323,7 +1324,7 @@ export default function SettingsPage() {
                                 } catch { toast.error(t('common.error')); }
                               }}>
                               <Trash2 className="h-4 w-4" />
-                            </Button>
+                            </Button></PermissionGate>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1340,7 +1341,7 @@ export default function SettingsPage() {
                 onChange={e => setGiftOptions(p => ({ ...p, pickupInstructions: e.target.value || null }))}
                 placeholder={t('settings.pickupInstructionsPlaceholder', 'يرجى إحضار رقم الطلب عند الاستلام...')} />
               <div className="flex justify-end">
-                <Button className="h-8 text-xs mt-1" size="sm" disabled={giftOptionsSaving}
+                <PermissionGate permission="settings:update"><Button className="h-8 text-xs mt-1" size="sm" disabled={giftOptionsSaving}
                   onClick={async () => {
                     setGiftOptionsSaving(true);
                     try {
@@ -1356,7 +1357,7 @@ export default function SettingsPage() {
                   }}>
                   {giftOptionsSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
                   {t('common.save')}
-                </Button>
+                </Button></PermissionGate>
               </div>
             </div>
           </div>
@@ -1378,10 +1379,10 @@ export default function SettingsPage() {
             setErrors({});
           }
         }}>{t('common.cancel')}</Button>
-        <Button className="h-9 text-sm" onClick={save} disabled={saving}>
+        <PermissionGate permission="settings:update"><Button className="h-9 text-sm" onClick={save} disabled={saving}>
           {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           {saving ? t('common.loading') : t('common.save')}
-        </Button>
+        </Button></PermissionGate>
       </div>
 
       {/* Pickup Location Dialog */}
@@ -1449,7 +1450,7 @@ export default function SettingsPage() {
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
             <Button variant="outline" className="h-9 text-sm" onClick={() => setPickupDialog(false)}>{t('common.cancel')}</Button>
-            <Button className="h-9 text-sm" disabled={pickupSaving || !pickupForm.nameAr.trim()}
+            <PermissionGate permission="settings:update"><Button className="h-9 text-sm" disabled={pickupSaving || !pickupForm.nameAr.trim()}
               onClick={async () => {
                 if (!pickupForm.nameAr.trim()) { toast.error(t('common.required')); return; }
                 setPickupSaving(true);
@@ -1480,7 +1481,7 @@ export default function SettingsPage() {
               }}>
               {pickupSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {pickupSaving ? t('common.saving') : t('common.save')}
-            </Button>
+            </Button></PermissionGate>
           </div>
         </DialogContent>
       </Dialog>

@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { getOrderActions, OrderAction } from '@/lib/order-actions';
+import { PermissionGate } from '@/lib/permissions';
 
 const orderStatusColors: Record<string, 'default' | 'success' | 'warning' | 'destructive' | 'secondary'> = {
   draft: 'secondary', checkout_started: 'secondary', pending_payment: 'warning',
@@ -393,41 +394,45 @@ export default function Orders() {
                 }
               });
             }}>{t('orders.bulk_print', 'طباعة')}</Button>
-            <Button size="sm" className="h-8 text-xs bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50" onClick={() => {
-              const csv = [['رقم الطلب', 'العميل', 'الجوال', 'الحالة', 'المجموع', 'التاريخ']];
-              selectedOrders.forEach(id => {
-                const o = orders.find(o => o.id === id);
-                if (o) csv.push([o.orderNumber, o.customerName, o.customerPhone, t(`orders.status_${o.status}`), `${formatCurrency(o.total)} ${t('common.sar')}`, new Date(o.createdAt).toLocaleDateString('ar-SA')]);
-              });
-              const blob = new Blob(['\uFEFF' + csv.map(r => r.join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
-              const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `orders-${Date.now()}.csv`; a.click();
-            }}>{t('orders.bulk_export', 'تصدير CSV')}</Button>
-            <Button size="sm" className="h-8 text-xs bg-emerald-500 hover:bg-emerald-600 text-white" disabled={changingStatus}
-              onClick={async () => {
-                if (!storeId) return;
-                setChangingStatus(true);
-                const total = selectedOrders.size;
-                let succeeded = 0;
-                const errors: string[] = [];
-                for (const id of selectedOrders) {
-                  try {
-                    await ordersApi.changeStatus(storeId, id, 'confirmed');
-                    succeeded++;
-                  } catch (err) {
-                    const order = orders.find(o => o.id === id);
-                    errors.push(order?.orderNumber ?? String(id));
+            <PermissionGate permission="orders:export" fallback={null}>
+              <Button size="sm" className="h-8 text-xs bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50" onClick={() => {
+                const csv = [['رقم الطلب', 'العميل', 'الجوال', 'الحالة', 'المجموع', 'التاريخ']];
+                selectedOrders.forEach(id => {
+                  const o = orders.find(o => o.id === id);
+                  if (o) csv.push([o.orderNumber, o.customerName, o.customerPhone, t(`orders.status_${o.status}`), `${formatCurrency(o.total)} ${t('common.sar')}`, new Date(o.createdAt).toLocaleDateString('ar-SA')]);
+                });
+                const blob = new Blob(['\uFEFF' + csv.map(r => r.join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `orders-${Date.now()}.csv`; a.click();
+              }}>{t('orders.bulk_export', 'تصدير CSV')}</Button>
+            </PermissionGate>
+            <PermissionGate permission="orders:update_status" fallback={null}>
+              <Button size="sm" className="h-8 text-xs bg-emerald-500 hover:bg-emerald-600 text-white" disabled={changingStatus}
+                onClick={async () => {
+                  if (!storeId) return;
+                  setChangingStatus(true);
+                  const total = selectedOrders.size;
+                  let succeeded = 0;
+                  const errors: string[] = [];
+                  for (const id of selectedOrders) {
+                    try {
+                      await ordersApi.changeStatus(storeId, id, 'confirmed');
+                      succeeded++;
+                    } catch (err) {
+                      const order = orders.find(o => o.id === id);
+                      errors.push(order?.orderNumber ?? String(id));
+                    }
                   }
-                }
-                const failed = total - succeeded;
-                if (failed === 0) {
-                  toast.success(t('orders.bulkConfirmed', 'تم تأكيد {{count}} طلب', { count: succeeded }));
-                } else {
-                  toast.warning(t('orders.bulkConfirmedPartial', 'تم تأكيد {{succeeded}} من {{total}} طلب. {{failed}} طلب لم يتم تأكيده.', { succeeded, total, failed }));
-                }
-                setSelectedOrders(new Set());
-                setChangingStatus(false);
-                load();
-              }}>{t('orders.bulk_confirm', 'تأكيد الدفع')}</Button>
+                  const failed = total - succeeded;
+                  if (failed === 0) {
+                    toast.success(t('orders.bulkConfirmed', 'تم تأكيد {{count}} طلب', { count: succeeded }));
+                  } else {
+                    toast.warning(t('orders.bulkConfirmedPartial', 'تم تأكيد {{succeeded}} من {{total}} طلب. {{failed}} طلب لم يتم تأكيده.', { succeeded, total, failed }));
+                  }
+                  setSelectedOrders(new Set());
+                  setChangingStatus(false);
+                  load();
+                }}>{t('orders.bulk_confirm', 'تأكيد الدفع')}</Button>
+            </PermissionGate>
           </div>
         </div>
       )}
@@ -521,7 +526,9 @@ export default function Orders() {
                     <TableCell className="p-3">
                       <div className="flex flex-col gap-0.5">
                         <span className="text-sm font-medium text-neutral-900">{o.customerName}</span>
-                        <span className="text-xs text-neutral-400 font-mono" dir="ltr">{o.customerPhone}</span>
+                        <PermissionGate permission="orders:view_sensitive" fallback={<span className="text-xs text-neutral-300 font-mono" dir="ltr">••••••••</span>}>
+                          <span className="text-xs text-neutral-400 font-mono" dir="ltr">{o.customerPhone}</span>
+                        </PermissionGate>
                       </div>
                     </TableCell>
                     <TableCell className="p-3">
@@ -930,23 +937,33 @@ export default function Orders() {
                     XCircle: <XCircle className="h-4 w-4" />,
                     Clock: <Clock className="h-4 w-4" />,
                   };
+                  const getActionPermission = (action: OrderAction): string => {
+                    if (action.section === 'danger') {
+                      if (action.key.includes('cancel')) return 'orders:cancel';
+                      if (action.key.includes('refund')) return 'orders:refund';
+                      return 'orders:cancel';
+                    }
+                    return 'orders:update_status';
+                  };
                   const renderActionButton = (action: OrderAction) => {
                     const isDanger = action.section === 'danger';
                     const baseClass = isDanger
                       ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white border border-red-600'
                       : 'bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-200 shadow-sm';
                     return (
-                      <Button
-                        key={action.key}
-                        size="sm"
-                        className={`h-9 px-4 text-sm font-medium rounded-xl ${baseClass} flex items-center gap-1.5`}
-                        disabled={changingStatus}
-                        onClick={() => handleAction(action)}
-                        variant={isDanger ? 'default' : 'outline'}
-                      >
-                        {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : iconMap[action.icon]}
-                        {action.label}
-                      </Button>
+                      <PermissionGate permission={getActionPermission(action)} fallback={null}>
+                        <Button
+                          key={action.key}
+                          size="sm"
+                          className={`h-9 px-4 text-sm font-medium rounded-xl ${baseClass} flex items-center gap-1.5`}
+                          disabled={changingStatus}
+                          onClick={() => handleAction(action)}
+                          variant={isDanger ? 'default' : 'outline'}
+                        >
+                          {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : iconMap[action.icon]}
+                          {action.label}
+                        </Button>
+                      </PermissionGate>
                     );
                   };
 
@@ -962,15 +979,17 @@ export default function Orders() {
                           {nextAction.description && (
                             <p className="text-sm text-emerald-700">{nextAction.description}</p>
                           )}
-                          <Button
-                            size="lg"
-                            className="h-11 px-6 text-sm font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700 flex items-center gap-2 w-fit shadow-sm"
-                            disabled={changingStatus}
-                            onClick={() => handleAction(nextAction)}
-                          >
-                            {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : iconMap[nextAction.icon]}
-                            {nextAction.label}
-                          </Button>
+                          <PermissionGate permission="orders:update_status" fallback={null}>
+                            <Button
+                              size="lg"
+                              className="h-11 px-6 text-sm font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700 flex items-center gap-2 w-fit shadow-sm"
+                              disabled={changingStatus}
+                              onClick={() => handleAction(nextAction)}
+                            >
+                              {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : iconMap[nextAction.icon]}
+                              {nextAction.label}
+                            </Button>
+                          </PermissionGate>
                         </div>
                       )}
 
@@ -1264,8 +1283,18 @@ export default function Orders() {
                       {/* 10. Customer / Recipient */}
                       <DetailSection title={t('orders.customer', 'العميل')}>
                         <DetailRow label={t('orders.customer_name', 'الاسم')}>{detailOrder.customerName}</DetailRow>
-                        <DetailRow label={t('orders.customer_phone', 'الجوال')}><span dir="ltr" className="font-mono">{detailOrder.customerPhone}</span></DetailRow>
-                        {detailOrder.customerEmail && <DetailRow label={t('orders.customer_email', 'البريد')}>{detailOrder.customerEmail}</DetailRow>}
+                        <DetailRow label={t('orders.customer_phone', 'الجوال')}>
+                          <PermissionGate permission="orders:view_sensitive" fallback={<span dir="ltr" className="font-mono text-neutral-300">••••••••</span>}>
+                            <span dir="ltr" className="font-mono">{detailOrder.customerPhone}</span>
+                          </PermissionGate>
+                        </DetailRow>
+                        {detailOrder.customerEmail && (
+                          <DetailRow label={t('orders.customer_email', 'البريد')}>
+                            <PermissionGate permission="orders:view_sensitive" fallback={<span className="text-neutral-300">••••••••</span>}>
+                              {detailOrder.customerEmail}
+                            </PermissionGate>
+                          </DetailRow>
+                        )}
                         {detailOrder.shippingAddress && (detailOrder.shippingAddress as any).city && (
                           <DetailRow label={t('orders.city', 'المدينة')}>{(detailOrder.shippingAddress as any).city}</DetailRow>
                         )}
