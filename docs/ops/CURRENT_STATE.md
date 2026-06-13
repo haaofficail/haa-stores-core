@@ -5,7 +5,7 @@
 ---
 
 - **Last Updated:** 2026-06-13
-- **Current Phase:** Local MVP — Theme Stabilization & Test Baseline ✅
+- **Current Phase:** Local MVP — Theme Stabilization, Test Baseline & RBAC Pass 1 ✅
 - **Project Summary:** Multi-tenant Saudi e-commerce SaaS platform. Local-only. All 10 phases complete. Deployment gated by owner GO.
 - **Active Priorities:**
   - Establish development operating system and process discipline ✅
@@ -16,7 +16,7 @@
   - Security Baseline & RBAC Audit ✅
   - Restore Local App Runtime ✅
   - Theme Stabilization: isolation + hydration flicker fix + test DB isolation ✅
-  - Employee Permissions / RBAC implementation (next)
+  - Employee Permissions / RBAC implementation (Pass 1 complete ✅, Pass 2 planned)
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done
@@ -27,16 +27,17 @@
   - TASK-0007 (Theme Isolation) — Done
   - TASK-0008 (Theme Hydration Flicker) — Done
   - TASK-0009 (Test DB Isolation) — Done
+  - TASK-0010 (RBAC Pass 1 Implementation) — Done
 - **Known Broken Areas:**
   - Storefront root `/` hardcoded to `/s/haa-demo` redirect — works after seed ✅
   - Registration creates stores as `draft` (intentional — merchant must publish from settings)
-  - All 1340 tests pass against isolated test DB — 0 pre-existing failures
+  - All 1350 tests pass against isolated test DB — 0 pre-existing failures
 - **Known Risks:**
   - Duplicate project folders on Desktop causing path confusion ⚠️
   - No automated CI/CD
   - Dev servers must be running for HTTP-level synthetic checks
-  - Customer route uses read permission for write operations (R-0011) 🚨
-  - No RBAC data model or employee permissions (R-0012, R-0013)
+  - Customer route uses read permission for write operations (R-0011) — FIXED in RBAC Pass 1 ✅
+  - RBAC Pass 1 complete — permission catalog, 8 roles, frontend guards, backend enforcement (R-0012, R-0013 addressed) ✅
   - Support ticket accessToken in URL query (R-0014)
   - Test DB `haastores_test` must be migrated/seed after schema changes via `pnpm db:test:setup`
 - **Recently Completed:**
@@ -52,9 +53,10 @@
   - Restore Local App Runtime: seed fix (publishStatus), DB update, all tests pass, all 3 apps serve correctly ✅
   - Theme Isolation: prevent storefront theme leakage to dashboards (TASK-0007) ✅
   - Theme Hydration Flicker: zero-flash theme loading guard (TASK-0008) ✅
-  - Test DB Isolation: separate haastores_test DB for vitest, all 1340 tests pass (TASK-0009) ✅
+  - Test DB Isolation: separate haastores_test DB for vitest, all 1350 tests pass (TASK-0009) ✅
   - Theme Stabilization Verification Gate: 0 failed tests, haa-demo published, all checks pass ✅
-  - Test DB Isolation committed: working tree clean, ready for RBAC ✅
+  - RBAC Pass 1: permission catalog with Arabic labels & risk levels, 8 roles, frontend guards (usePermissions + PermissionGate), backend enforcement, customer permission fix, subscription/dashboard route protection, 10 boundary tests, 1350 tests total across 68 files, all typechecks & ops checks passing ✅
+  - Test DB Isolation committed: working tree clean, RBAC Pass 1 complete ✅
 - **Security Findings Summary:**
   - **P0:** None
   - **P1:** 3 findings — customers permission downgrade, missing customer audit logging, no frontend role filtering
@@ -66,10 +68,8 @@
   - Payment gateway credentials
   - Database production seeds
 - **Next Recommended Tasks:**
-  - Employee permissions / RBAC implementation (SEC-001, SEC-004, SEC-005)
-  - Fix customers.ts permission downgrade (SEC-001)
-  - Implement RBAC data model (SEC-004)
-  - Add employee permission management UI (SEC-005)
+  - RBAC Pass 2 — employee permission management UI, role assignment UI, RBAC admin dashboard (SEC-005)
+  - Fix support ticket accessToken in URL query (R-0014)
   - Remove or rename duplicate `haa-stores-core-spec.md` folder
   - Add all existing project files to git tracking
   - Run `pnpm ops:monitor` as routine pre-dev check
@@ -83,7 +83,7 @@
   - preflight is now a hardened Node script (`scripts/preflight.mjs`) that fails with exit code 1 from wrong directory
   - System Map is at `docs/system-map/SYSTEM_MAP.md` and `docs/system-map/ERROR_FLOW_MAP.md`
   - Security docs are at `docs/security/`
-  - Tests run against isolated `haastores_test` DB — run `pnpm db:test:setup` after schema changes
+  - Tests run against isolated `haastores_test` DB (68 test files, 1350 tests) — run `pnpm db:test:setup` after schema changes
   - Test DB setup script: `scripts/db-test-setup.sh`
   - Test env override: `tests/setup.ts` overrides DATABASE_URL automatically
 - **Important Decisions:**

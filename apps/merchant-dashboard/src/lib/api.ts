@@ -99,12 +99,12 @@ export class ApiClientError extends Error {
 // Auth
 export const authApi = {
   login: (email: string, password: string) =>
-    request<{ token: string; user: { id: number; name: string; email: string; tenantId: number; activeStoreId: number; roles: string[] } }>(
+    request<{ token: string; user: { id: number; name: string; email: string; tenantId: number; activeStoreId: number; roles: string[]; permissions: string[] } }>(
       '/auth/login',
       { method: 'POST', body: JSON.stringify({ email, password }) },
     ),
   me: () =>
-    request<{ id: number; name: string; email: string; tenantId: number; activeStoreId: number; roles: string[] }>(
+    request<{ id: number; name: string; email: string; tenantId: number; activeStoreId: number; roles: string[]; permissions: string[] }>(
       '/auth/me',
     ),
 };

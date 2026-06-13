@@ -43,14 +43,14 @@ const createCustomerSchema = z.object({
 
 const updateCustomerSchema = createCustomerSchema.partial();
 
-customersRouter.post('/', requirePermission('customers:read'), zValidator('json', createCustomerSchema), async (c) => {
+customersRouter.post('/', requirePermission('customers:create'), zValidator('json', createCustomerSchema), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const body = c.req.valid('json');
   const customer = await new CustomersService().create(storeId, body);
   return c.json({ success: true, data: customer }, 201);
 });
 
-customersRouter.patch('/:id', requirePermission('customers:read'), zValidator('json', updateCustomerSchema), async (c) => {
+customersRouter.patch('/:id', requirePermission('customers:update'), zValidator('json', updateCustomerSchema), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const id = Number(c.req.param('id'));
   const body = c.req.valid('json');

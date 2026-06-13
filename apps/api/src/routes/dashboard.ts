@@ -2,13 +2,13 @@ import { Hono } from 'hono';
 import { eq, and, count, sql, or, not, inArray } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
-import { requireAuth, requireStoreAccess } from '@haa/auth-core';
+import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';
 
 const dashboardRouter = new Hono();
 
 dashboardRouter.use('*', requireAuth(), requireStoreAccess());
 
-dashboardRouter.get('/summary', async (c) => {
+dashboardRouter.get('/summary', requirePermission('dashboard:view'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const db = createDbClient();
 

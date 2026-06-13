@@ -4,13 +4,9 @@ import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { hashPassword, verifyPassword, signToken, requireAuth, getAuth } from '@haa/auth-core';
-import { registerSchema, loginSchema, ROLE_PERMISSIONS } from '@haa/shared';
+import { registerSchema, loginSchema, getPermissionsForRole, type UserRole } from '@haa/shared';
 import { AuditLogService } from '@haa/integration-core';
 import { env } from '../env.js';
-
-function getPermissionsForRole(role: string): string[] {
-  return ROLE_PERMISSIONS[role] ?? [];
-}
 
 export const authRouter = new Hono();
 
@@ -121,10 +117,12 @@ authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
       activeStoreId: activeStore?.id ?? 0,
       tokenVersion: user.tokenVersion,
       roles: [tenantUser.role],
-      permissions: getPermissionsForRole(tenantUser.role),
+      permissions: getPermissionsForRole(tenantUser.role as UserRole),
     });
 
     await audit.record({ actorUserId: user.id, tenantId: tenantUser.tenantId, storeId: activeStore?.id, action: 'login', entityType: 'user', entityId: user.id, ipAddress, userAgent: c.req.header('user-agent') });
+
+    const permissions = getPermissionsForRole(tenantUser.role as UserRole);
 
     return c.json({
       success: true,
@@ -138,6 +136,7 @@ authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
           tenantId: tenantUser.tenantId,
           activeStoreId: activeStore?.id ?? 0,
           roles: [tenantUser.role],
+          permissions,
         },
         store: activeStore ? { id: activeStore.id, name: activeStore.name, slug: activeStore.slug } : null,
       },
@@ -174,6 +173,7 @@ authRouter.get('/me', requireAuth(), async (c) => {
       tenantId: auth.tenantId,
       activeStoreId: auth.activeStoreId,
       roles: auth.roles,
+      permissions: auth.permissions,
     },
   });
 });

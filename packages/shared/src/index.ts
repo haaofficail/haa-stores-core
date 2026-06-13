@@ -2,6 +2,7 @@ export * from './errors.js';
 export * from './error-codes.js';
 export * from './types/index.js';
 export * from './constants/index.js';
+export * from './permissions.js';
 export * from './schemas/index.js';
 export * from './media.js';
 export * from './utils.js';

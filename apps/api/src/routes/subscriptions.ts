@@ -2,30 +2,30 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { SubscriptionService } from '@haa/commerce-core';
-import { requireAuth, requireStoreAccess } from '@haa/auth-core';
+import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';
 
 const subscriptionsRouter = new Hono();
 
 subscriptionsRouter.use('*', requireAuth(), requireStoreAccess());
 
-subscriptionsRouter.get('/', async (c) => {
+subscriptionsRouter.get('/', requirePermission('subscriptions:view'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const subscription = await new SubscriptionService().getCurrentSubscription(storeId);
   return c.json({ success: true, data: subscription });
 });
 
-subscriptionsRouter.get('/current', async (c) => {
+subscriptionsRouter.get('/current', requirePermission('subscriptions:view'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const subscription = await new SubscriptionService().getCurrentSubscription(storeId);
   return c.json({ success: true, data: subscription });
 });
 
-subscriptionsRouter.get('/plans', async (c) => {
+subscriptionsRouter.get('/plans', requirePermission('subscriptions:view'), async (c) => {
   const plans = await new SubscriptionService().getPlans();
   return c.json({ success: true, data: plans });
 });
 
-subscriptionsRouter.post('/subscribe', zValidator('json', z.object({
+subscriptionsRouter.post('/subscribe', requirePermission('subscriptions:manage'), zValidator('json', z.object({
   planId: z.coerce.number().int().positive(),
   billingCycle: z.enum(['monthly', 'annual']).default('monthly'),
 })), async (c) => {
@@ -40,7 +40,7 @@ subscriptionsRouter.post('/subscribe', zValidator('json', z.object({
   return c.json({ success: true, data: subscription }, 201);
 });
 
-subscriptionsRouter.post('/upgrade', zValidator('json', z.object({
+subscriptionsRouter.post('/upgrade', requirePermission('subscriptions:manage'), zValidator('json', z.object({
   planId: z.coerce.number().int().positive(),
   billingCycle: z.enum(['monthly', 'annual']).optional(),
 })), async (c) => {
@@ -55,7 +55,7 @@ subscriptionsRouter.post('/upgrade', zValidator('json', z.object({
   return c.json({ success: true, data: subscription });
 });
 
-subscriptionsRouter.post('/downgrade', zValidator('json', z.object({
+subscriptionsRouter.post('/downgrade', requirePermission('subscriptions:manage'), zValidator('json', z.object({
   planId: z.coerce.number().int().positive(),
 })), async (c) => {
   const storeId = Number(c.req.param('storeId'));
@@ -69,13 +69,13 @@ subscriptionsRouter.post('/downgrade', zValidator('json', z.object({
   return c.json({ success: true, data: subscription });
 });
 
-subscriptionsRouter.get('/invoices', async (c) => {
+subscriptionsRouter.get('/invoices', requirePermission('subscriptions:view'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const invoices = await new SubscriptionService().getInvoices(storeId);
   return c.json({ success: true, data: invoices });
 });
 
-subscriptionsRouter.get('/limits', async (c) => {
+subscriptionsRouter.get('/limits', requirePermission('subscriptions:view'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const limits = await new SubscriptionService().checkPlanLimits(storeId);
   return c.json({ success: true, data: limits });

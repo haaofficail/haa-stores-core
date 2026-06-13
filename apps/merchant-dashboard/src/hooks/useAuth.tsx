@@ -8,6 +8,7 @@ interface User {
   tenantId: number;
   activeStoreId: number;
   roles: string[];
+  permissions: string[];
 }
 
 interface AuthContextType {

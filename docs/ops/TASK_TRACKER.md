@@ -527,3 +527,69 @@
   - In Progress: 2026-06-13
   - Done: 2026-06-13
 - **Final Notes:** All 3 apps verified serving correctly. Theme registry works (base-elegant + luxury-showcase). Fallback works. Branch: fix/theme-isolation
+
+
+---
+
+### TASK-0010: RBAC Pass 1 Implementation
+
+- **Type:** Feature / Security
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** Implement RBAC Pass 1 — permission catalog, role-permission mapping, frontend guards, and backend enforcement
+- **Expanded Requirement:** Create a complete RBAC system with typed permissions, 8 roles, permission checks in JWT/responses, frontend hooks and guards, and protected subscription/dashboard routes
+- **Problem:** No RBAC data model or employee permissions existed (R-0012, R-0013); customer route used read permission for write operations (R-0011); no frontend role filtering
+- **Goal:** Documented permission catalog, enforced role-based access across API and frontend, with 8 roles mapped to granular permissions
+- **Scope:**
+  - Permission catalog (PERMISSION_CATALOG) in packages/shared/src/permissions.ts with Arabic labels, risk levels
+  - ROLE_PERMISSIONS map with 8 roles (owner, admin, manager, products_manager, orders_manager, accountant, support, viewer)
+  - getPermissionsForRole() helper
+  - Permission type in types/orders.ts (86 string literals)
+  - Permissions in JWT, login, register, /me responses
+  - Frontend usePermissions hook and PermissionGate component
+  - Customer permission fix (create/update)
+  - Catalog drift fixed (all ROLE_PERMISSIONS keys in catalog)
+  - Viewer role restricted (no manage perms)
+  - Subscription routes protected
+  - Dashboard summary protected
+  - Local boundary test (tests/rbac-permission-catalog.test.ts, 10 tests passing)
+- **Out of Scope:**
+  - Employee permission management UI
+  - Role assignment UI
+  - RBAC admin dashboard
+  - Audit log UI
+  - Production deployment config
+- **Affected Areas:** packages/shared, packages/types, apps/api, apps/merchant-dashboard, apps/storefront, tests/
+- **Files Changed:** packages/shared/src/permissions.ts, packages/types/src/orders.ts, apps/api/src/middleware/*, apps/api/src/routes/*, apps/merchant-dashboard/src/hooks/*, apps/merchant-dashboard/src/components/*, tests/rbac-permission-catalog.test.ts
+- **Acceptance Criteria:**
+  - PERMISSION_CATALOG defined with Arabic labels and risk levels
+  - 8 roles mapped in ROLE_PERMISSIONS
+  - getPermissionsForRole() returns correct permissions
+  - Permission type with 86 string literals
+  - JWT contains permissions; login/register/me return permissions
+  - usePermissions hook and PermissionGate component work
+  - Customer create/update use correct permission
+  - No catalog drift -- all ROLE_PERMISSIONS keys exist in PERMISSION_CATALOG
+  - Viewer role has no manage permissions
+  - Subscription routes protected
+  - Dashboard summary protected
+  - 10 boundary tests pass
+  - All 1350 tests pass (68 test files)
+  - pnpm typecheck passes
+  - pnpm ops:monitor passes
+- **Test Plan:** pnpm test, pnpm typecheck, pnpm preflight, pnpm ops:monitor
+- **Test Results:**
+  - ✅ pnpm test: 68 files, 1350 tests passed
+  - ✅ pnpm typecheck: all packages pass
+  - ✅ pnpm preflight: PASSED
+  - ✅ pnpm ops:monitor: all checks pass
+  - ✅ Boundary tests (rbac-permission-catalog.test.ts): 10/10 pass
+- **Risks:** None -- local-only RBAC, no production deployment
+- **Related Issues:** R-0011, R-0012, R-0013 (from Security Baseline)
+- **Related Decisions:** None
+- **Status History:**
+  - Requested: 2026-06-13
+  - Done: 2026-06-13
+- **Final Notes:** RBAC Pass 1 covers all core permission infrastructure (typed catalog, role-permission mapping, frontend guards, backend enforcement, boundary tests). Pass 2 (planned) will add employee permission management UI, role assignment, and RBAC admin dashboard.

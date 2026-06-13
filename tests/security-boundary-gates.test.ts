@@ -137,12 +137,12 @@ describe('Security Boundary Gates — BOLA/IDOR Defense', () => {
 });
 
 describe('Security Boundary Gates — RBAC Consistency', () => {
-  it('ROLE_PERMISSIONS must be defined in @haa/shared/constants only', () => {
+  it('Permission utilities must be imported from @haa/shared', () => {
     const auth = readFileSync(
       new URL('../apps/api/src/routes/auth.ts', import.meta.url),
       'utf-8'
     );
-    expect(auth).toContain("ROLE_PERMISSIONS } from '@haa/shared'");
+    expect(auth).toContain("getPermissionsForRole");
     expect(auth).not.toContain('OWNER_PERMISSIONS');
     expect(auth).not.toContain('MANAGER_PERMISSIONS');
   });

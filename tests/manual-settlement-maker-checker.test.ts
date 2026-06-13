@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 const walletLedger = readFileSync(new URL('../packages/wallet-core/src/ledger.ts', import.meta.url), 'utf-8');
 const adminRoutes = readFileSync(new URL('../apps/api/src/routes/admin.ts', import.meta.url), 'utf-8');
 const walletRoutes = readFileSync(new URL('../apps/api/src/routes/wallet.ts', import.meta.url), 'utf-8');
-const sharedConstants = readFileSync(new URL('../packages/shared/src/constants/index.ts', import.meta.url), 'utf-8');
+const sharedPermissions = readFileSync(new URL('../packages/shared/src/permissions.ts', import.meta.url), 'utf-8');
 const sharedTypes = readFileSync(new URL('../packages/shared/src/types/orders.ts', import.meta.url), 'utf-8');
 
 describe('Manual settlement maker-checker controls', () => {
@@ -31,7 +31,7 @@ describe('Manual settlement maker-checker controls', () => {
   });
 
   it('uses the canonical payout request permission in role definitions', () => {
-    expect(sharedConstants).toContain('wallet.payout.request');
+    expect(sharedPermissions).toContain('wallet.payout.request');
     expect(walletRoutes).toContain("requireAnyPermission('wallet.payout.request', 'wallet:request_payout')");
   });
 });

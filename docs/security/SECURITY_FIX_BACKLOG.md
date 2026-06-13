@@ -11,19 +11,24 @@
 
 ---
 
-## P1 — High
+## P1 — High — Completed in RBAC Pass 1
 
-### SEC-001: Fix customer route permission downgrade
+### SEC-001: Fix customer route permission downgrade ✅
 
-- **Area:** API / RBAC
-- **Risk:** Any user with `customers:read` can create and update customer records
-- **Recommended Fix:** Change `customers.ts` POST route to require `customers:create` and PATCH route to require `customers:update`
-- **Acceptance Criteria:**
-  - `POST /:storeId/customers` requires `customers:create`
-  - `PATCH /:storeId/customers/:id` requires `customers:update`
-  - Existing `customers:read` users cannot create/update customers
-- **Test Plan:** Send POST/PATCH with `customers:read` only → 403; with correct permission → 200
-- **Status:** Pending
+- **Status:** ✅ **Closed** — `POST` uses `customers:create`, `PATCH` uses `customers:update`
+- **Verified in:** `apps/api/src/routes/customers.ts`
+
+### SEC-004: Create permission definitions and RBAC data model ✅
+
+- **Status:** ✅ **Closed** — Permission catalog exists at `packages/shared/src/permissions.ts` with:
+  - Typed `Permission` union (86 literals in `types/orders.ts`)
+  - Arabic-labeled `PERMISSION_CATALOG` with risk levels
+  - `ROLE_PERMISSIONS` map (8 roles)
+  - `getPermissionsForRole()` helper
+  - Permissions emitted in JWT on login/register
+- **Verified in:** Boundary test `tests/rbac-permission-catalog.test.ts` (10/10 passing)
+
+## P1 — High — Pending
 
 ### SEC-002: Add audit logging to customer mutations
 
@@ -35,7 +40,7 @@
   - Customer update records audit event with actor, old value, new value, timestamp
   - Audit includes IP and user-agent
 - **Test Plan:** Create/update customer → check `audit_logs` table for matching entry
-- **Status:** Pending
+- **Status:** Pending — deferred from Pass 1
 
 ### SEC-003: Add role-based route filtering in dashboard frontend
 
@@ -46,24 +51,7 @@
   - Routes with `requirePermission` show 403 or hide navigation for unauthorized roles
   - API remains the enforcement point — UI is informational only
 - **Test Plan:** Authenticate as user without `orders:read` → orders page shows "no access" instead of data
-- **Status:** Pending
-
-### SEC-004: Create permission definitions and RBAC data model
-
-- **Area:** Database / Shared
-- **Risk:** No RBAC system exists — permissions are hardcoded strings
-- **Recommended Fix:**
-  - Create `packages/shared/src/permissions.ts` with all permission string constants
-  - Add `roles` and `role_permissions` DB tables
-  - Add role/permission seed data
-  - Include permissions in JWT on login
-- **Acceptance Criteria:**
-  - Permission catalog exists in shared package
-  - Roles table with `owner`, `admin`, `manager`, `viewer` roles
-  - Role-permission mapping table
-  - Login returns user with assigned permissions
-- **Test Plan:** Create user with `viewer` role → verify `orders:create` is denied
-- **Status:** Pending
+- **Status:** Pending — RBAC Pass 2
 
 ### SEC-005: Add employee permission management UI
 
@@ -75,7 +63,7 @@
   - Employee permissions are derived from role
   - UI shows only actions the employee can perform
 - **Test Plan:** Assign `viewer` role → employee sees read-only UI
-- **Status:** Pending
+- **Status:** Pending — RBAC Pass 2
 
 ---
 

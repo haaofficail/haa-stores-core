@@ -43,6 +43,22 @@
 - [ ] Branch/location scope respected
 - [ ] No cross-store data leakage
 - [ ] Audit logged where relevant
+- [ ] Permission catalog (PERMISSION_CATALOG) contains all role permissions (no catalog drift)
+- [ ] ROLE_PERMISSIONS map covers all 8 roles (owner, admin, manager, products_manager, orders_manager, accountant, support, viewer)
+- [ ] Viewer role has no manage/create/update/delete permissions
+- [ ] Customer create/update operations use correct write permissions (not read)
+- [ ] Subscription routes protected by requirePermission()
+- [ ] Dashboard summary routes protected by requirePermission()
+- [ ] JWT contains permissions array; login/register/me return permissions
+- [ ] Frontend PermissionGate component hides unauthorized actions
+- [ ] Frontend usePermissions hook returns correct permissions for role
+- [ ] getPermissionsForRole() helper returns expected permissions
+- [ ] All 86 permission string literals in types/orders.ts are valid
+- [ ] Arabic labels and risk levels present in PERMISSION_CATALOG
+- [ ] Permission boundary tests (tests/rbac-permission-catalog.test.ts) pass
+- [ ] All 1350 tests pass across 68 test files
+- [ ] pnpm typecheck passes with no RBAC-related errors
+- [ ] pnpm ops:monitor: all RBAC-related checks pass
 
 ## Orders / Payment / Shipping
 
