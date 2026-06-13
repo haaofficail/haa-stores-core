@@ -97,9 +97,31 @@
 - [ ] Update wired to employeesApi.update
 - [ ] Delete wired to employeesApi.remove with confirm dialog
 - [ ] Refetch after mutation
-- [ ] All 1409 tests pass across 71 test files
+- [ ] All 1493 tests pass across 74 test files
 - [ ] pnpm typecheck passes with no RBAC-related errors
 - [ ] pnpm ops:monitor: all RBAC-related checks pass
+
+### Employee Audit Logging (Pass 5)
+
+- [ ] AuditLogService imported in employees.ts
+- [ ] auditMeta() helper defined with actorUserId, tenantId, ipAddress, userAgent
+- [ ] Invite success logs employee_invited with userId, name, email, role
+- [ ] Duplicate invite rejected logs employee_duplicate_rejected
+- [ ] Self-role-change blocked logs employee_self_restriction_blocked
+- [ ] Self-delete blocked logs employee_self_restriction_blocked
+- [ ] Last-owner delete blocked logs employee_last_owner_blocked
+- [ ] Role change success logs employee_role_changed with oldValue/newValue
+- [ ] Status toggle logs employee_status_changed or employee_removed
+- [ ] Delete success logs employee_removed with oldValue
+- [ ] 501 permission attempt logs employee_permission_update_unsupported
+- [ ] All audit calls include storeId: auth.activeStoreId
+- [ ] All audit calls include entityType: 'employee'
+- [ ] Invite create dialog shows clarity banner: "تم إنشاء الموظف محليًا. إرسال الدعوات البريدية غير مفعّل بعد."
+- [ ] Password is not returned in API response
+- [ ] Employee audit action labels exist in AUDIT_ACTION_LABELS
+- [ ] Employee entity label exists in AUDIT_ENTITY_LABELS
+- [ ] Audit boundary tests (tests/employee-management-api.test.ts) pass (40/40)
+- [ ] No misleading "email sent" text in invite UI
 
 ## Orders / Payment / Shipping
 

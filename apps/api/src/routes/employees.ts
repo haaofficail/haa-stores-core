@@ -6,7 +6,8 @@ import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { hashPassword } from '@haa/auth-core';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
-import { getPermissionsForRole, getPermissionInfo, ROLE_PERMISSIONS, type UserRole } from '@haa/shared';
+import { getPermissionsForRole, ROLE_PERMISSIONS, type UserRole } from '@haa/shared';
+import { AuditLogService } from '@haa/integration-core';
 
 const employeesRouter = new Hono();
 
@@ -37,6 +38,16 @@ async function getTenantIdFromStore(storeId: number): Promise<number | null> {
   const [store] = await db.select({ tenantId: s.stores.tenantId })
     .from(s.stores).where(eq(s.stores.id, storeId)).limit(1);
   return store?.tenantId ?? null;
+}
+
+function auditMeta(c: any) {
+  const auth = getAuth(c)!;
+  return {
+    actorUserId: auth.userId,
+    tenantId: auth.tenantId,
+    ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
+    userAgent: c.req.header('user-agent'),
+  };
 }
 
 async function countOwnersInTenant(tenantId: number, excludeUserId?: number): Promise<number> {
@@ -103,6 +114,13 @@ employeesRouter.post('/invite', requirePermission('employees:invite'), zValidato
       .where(and(eq(s.tenantUsers.tenantId, tenantId), eq(s.tenantUsers.userId, userId)))
       .limit(1);
     if (existingLink.length > 0) {
+      await new AuditLogService().record({
+        ...auditMeta(c),
+        storeId: auth.activeStoreId,
+        action: 'employee_duplicate_rejected',
+        entityType: 'employee',
+        newValue: { email: body.email },
+      });
       return c.json({ success: false, error: { code: 'CONFLICT', message: 'هذا المستخدم موجود بالفعل في هذا المتجر' } }, 409);
     }
   } else {
@@ -122,6 +140,15 @@ employeesRouter.post('/invite', requirePermission('employees:invite'), zValidato
   }).returning();
 
   const [userRecord] = await db.select().from(s.users).where(eq(s.users.id, userId)).limit(1);
+
+  await new AuditLogService().record({
+    ...auditMeta(c),
+    storeId: auth.activeStoreId,
+    action: 'employee_invited',
+    entityType: 'employee',
+    entityId: tenantUser.id,
+    newValue: { userId, name: userRecord.name, email: userRecord.email, role: body.role },
+  });
 
   return c.json({
     success: true,
@@ -175,6 +202,14 @@ employeesRouter.patch('/:employeeId', requirePermission('employees:update'), zVa
     }
 
     if (existing.userId === auth.userId) {
+      await new AuditLogService().record({
+        ...auditMeta(c),
+        storeId: auth.activeStoreId,
+        action: 'employee_self_restriction_blocked',
+        entityType: 'employee',
+        entityId: employeeId,
+        newValue: { requestedRole: body.role, currentRole: existing.role },
+      });
       return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'لا يمكنك تغيير دورك بنفسك' } }, 403);
     }
 
@@ -212,6 +247,36 @@ employeesRouter.patch('/:employeeId', requirePermission('employees:update'), zVa
     .innerJoin(s.users, eq(s.tenantUsers.userId, s.users.id))
     .where(eq(s.tenantUsers.id, employeeId))
     .limit(1);
+
+  const oldRole = existing.role;
+  const newRole = updated.role;
+  const oldActive = existing.isActive;
+  const newActive = updated.isActive;
+
+  if (oldRole !== newRole) {
+    await new AuditLogService().record({
+      ...auditMeta(c),
+      storeId: auth.activeStoreId,
+      action: 'employee_role_changed',
+      entityType: 'employee',
+      entityId: employeeId,
+      oldValue: { role: oldRole },
+      newValue: { role: newRole },
+    });
+  }
+
+  if (oldActive !== newActive) {
+    const action = newActive ? 'employee_status_changed' : 'employee_removed';
+    await new AuditLogService().record({
+      ...auditMeta(c),
+      storeId: auth.activeStoreId,
+      action,
+      entityType: 'employee',
+      entityId: employeeId,
+      oldValue: { isActive: oldActive },
+      newValue: { isActive: newActive },
+    });
+  }
 
   return c.json({
     success: true,
@@ -251,21 +316,56 @@ employeesRouter.delete('/:employeeId', requirePermission('employees:delete'), as
   if (existing.role === 'owner') {
     const remainingOwners = await countOwnersInTenant(tenantId, existing.userId);
     if (remainingOwners < 1) {
+      await new AuditLogService().record({
+        ...auditMeta(c),
+        storeId: auth.activeStoreId,
+        action: 'employee_last_owner_blocked',
+        entityType: 'employee',
+        entityId: employeeId,
+        oldValue: { userId: existing.userId, role: existing.role },
+      });
       return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'لا يمكن حذف آخر مالك' } }, 403);
     }
   }
 
   if (existing.userId === auth.userId) {
+    await new AuditLogService().record({
+      ...auditMeta(c),
+      storeId: auth.activeStoreId,
+      action: 'employee_self_restriction_blocked',
+      entityType: 'employee',
+      entityId: employeeId,
+      oldValue: { userId: existing.userId, role: existing.role },
+    });
     return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'لا يمكنك حذف نفسك' } }, 403);
   }
 
   await db.delete(s.tenantUsers).where(eq(s.tenantUsers.id, employeeId));
   await db.update(s.users).set({ isActive: false }).where(eq(s.users.id, existing.userId));
 
+  await new AuditLogService().record({
+    ...auditMeta(c),
+    storeId: auth.activeStoreId,
+    action: 'employee_removed',
+    entityType: 'employee',
+    entityId: employeeId,
+    oldValue: { userId: existing.userId, role: existing.role },
+  });
+
   return c.json({ success: true, data: { success: true } });
 });
 
 employeesRouter.patch('/:employeeId/permissions', requirePermission('employees:manage_permissions'), async (c) => {
+  const auth = getAuth(c)!;
+  const employeeId = Number(c.req.param('employeeId'));
+  await new AuditLogService().record({
+    ...auditMeta(c),
+    storeId: auth.activeStoreId,
+    action: 'employee_permission_update_unsupported',
+    entityType: 'employee',
+    entityId: employeeId,
+    newValue: { reason: 'custom_permissions_not_implemented' },
+  });
   return c.json({
     success: false,
     error: {

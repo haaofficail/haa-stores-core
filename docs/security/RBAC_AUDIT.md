@@ -42,8 +42,8 @@
 | Total roles | **8** (owner, admin, manager, products_manager, orders_manager, accountant, support, viewer) |
 | Owner covers all | ✅ |
 | Viewer restricted to read-only | ✅ |
-| RBAC boundary tests | **69** (10 catalog + 6 dashboard guards + 25 employee management + 28 API + 10 UI wire) |
-| Total test suite | **1409 tests** across **71 test files** |
+| RBAC boundary tests | **81** (10 catalog + 6 dashboard guards + 25 employee management + 40 API + 10 UI wire) |
+| Total test suite | **1493 tests** across **74 test files** |
 
 ---
 
@@ -96,6 +96,30 @@
 | Employee type | ✅ | `Employee` interface with userId, name, email, role, isActive, lastLoginAt, createdAt, permissions |
 | API boundary tests | ✅ | 28 tests in employee-management-api.test.ts |
 | UI wire tests | ✅ | 10 tests in employee-ui-api-wire.test.ts |
+
+## RBAC Pass 5 — Employee Audit Logs + Invite Safety Baseline ✅
+
+**Closed: 2026-06-13**
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Employee audit actions in AuditAction type | ✅ | Added 9 actions to `packages/shared/src/types/orders.ts` |
+| AUDIT_ACTION_LABELS for all employee actions | ✅ | Arabic labels in `packages/shared/src/types/audit.ts` |
+| AUDIT_ENTITY_LABELS for employee | ✅ | Added 'employee' entity label |
+| AuditLogService import in employees.ts | ✅ | Replaced unused `getPermissionInfo` import |
+| auditMeta() helper | ✅ | Common audit fields (actorUserId, tenantId, ipAddress, userAgent) |
+| Audit on invite success | ✅ | Logs `employee_invited` with newValue |
+| Audit on duplicate invite rejection | ✅ | Logs `employee_duplicate_rejected` |
+| Audit on self-role-change block | ✅ | Logs `employee_self_restriction_blocked` |
+| Audit on self-delete block | ✅ | Logs `employee_self_restriction_blocked` |
+| Audit on last-owner delete block | ✅ | Logs `employee_last_owner_blocked` |
+| Audit on role change success | ✅ | Logs `employee_role_changed` with oldValue/newValue |
+| Audit on status toggle | ✅ | Logs `employee_status_changed` or `employee_removed` |
+| Audit on permission update attempt | ✅ | Logs `employee_permission_update_unsupported` |
+| Invite safety baseline | ✅ | Password: client-generated random, hashed server-side, not returned in response, masked by maskObject |
+| UI invite clarity | ✅ | Added info banner in create dialog: "تم إنشاء الموظف محليًا. إرسال الدعوات البريدية غير مفعلّ بعد." |
+| Audit logging boundary tests | ✅ | 12 tests in employee-management-api.test.ts |
+| Full test suite | ✅ | 1493 tests passing across 74 files |
 
 ---
 
@@ -155,7 +179,7 @@
 | `tests/rbac-permission-catalog.test.ts` | (1) Catalog field completeness, (2) no duplicates, (3) ROLE_PERMISSIONS ↔ Catalog match, (4) no role-internal duplicates, (5) `getPermissionsForRole` correctness, (6) unknown role handling, (7) owner covers all catalog, (8) viewer no high-risk perms, (9) category coverage, (10) riskLevel validity | ✅ 10/10 passing |
 | `tests/dashboard-rbac-guards.test.ts` | (1) Sidebar has permission metadata on all items, (2) all sidebar perms in catalog, (3) GuardedRoute on protected routes, (4) all route perms in catalog, (5) PermissionRoute uses UnauthorizedState, (6) 15+ pages have PermissionGate import | ✅ 6/6 passing |
 | `tests/employee-management.test.ts` | Route & sidebar, PermissionGate usage, employees:* perms, matrix imports catalog + roles, no hardcoded perms, high-risk perms, role presets, dialog uses matrix, onSave callback, API contract doc | ✅ 24/24 passing |
-| `tests/employee-management-api.test.ts` | GET list with permission, POST invite with permission + validation, PATCH update with safety rules, DELETE with last-owner and self-delete, 501 permissions endpoint, route middleware, validation schemas, ROLE_PERMISSIONS import | ✅ 28/28 passing |
+| `tests/employee-management-api.test.ts` | GET list with permission, POST invite with permission + validation, PATCH update with safety rules, DELETE with last-owner and self-delete, 501 permissions endpoint, route middleware, validation schemas, ROLE_PERMISSIONS import, audit logging (12 tests) | ✅ 40/40 passing |
 | `tests/employee-ui-api-wire.test.ts` | Page imports employeesApi, calls list/invite/update/remove, loading/error/empty states, refresh button, no mock data, dialog has onSave + error handling, API client endpoints conform to contract | ✅ 10/10 passing |
 
 ---

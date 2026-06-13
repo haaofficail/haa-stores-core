@@ -108,6 +108,15 @@ export function EmployeeFormDialog({
             </div>
           </div>
 
+          {mode === 'create' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+              <div className="text-xs text-blue-700">
+                تم إنشاء الموظف محليًا. إرسال الدعوات البريدية غير مفعّل بعد.
+              </div>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-neutral-700">الدور</label>
             <select

@@ -774,3 +774,63 @@
   - Requested: 2026-06-13
   - Done: 2026-06-13
 - **Final Notes:** RBAC Pass 4 completes the Employee Management API and wires the dashboard UI. Invite email flow and custom permissions DB remain as future work.
+
+---
+
+### TASK-0014: RBAC Pass 5 — Employee Audit Logs + Invite Safety Baseline
+
+- **Type:** Feature / Security
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** Add employee audit logs for all employee management API mutations and verify invite/create safety (no password leaks, no misleading UI)
+- **Expanded Requirement:** Add AuditLogService.record() calls for every employee mutation (invite, update, delete) and blocked safety rule (last owner, self-restriction, duplicate), verify password is not leaked/handled unsafely, ensure UI does not claim email invite was sent
+- **Problem:** Employee mutations were not audit-logged; password handling and UI wording for invite flow were unchecked
+- **Goal:** Every employee action produces an audit log entry; invite flow is safe and transparent
+- **Scope:**
+  - Add 9 employee audit actions to AuditAction type (orders.ts)
+  - Add Arabic labels to AUDIT_ACTION_LABELS (audit.ts)
+  - Add 'employee' entity label to AUDIT_ENTITY_LABELS (audit.ts)
+  - Import AuditLogService in employees.ts
+  - Create auditMeta() helper for common audit fields
+  - Add 9 audit.record() calls: invite success, duplicate rejection, self-restriction (x2), last-owner block, role change, status toggle, delete, 501 attempt
+  - Verify password safety: client-generated random, hashed server-side, not returned in response
+  - Add invite clarity info banner in create dialog
+  - Add 12 audit boundary tests
+- **Out of Scope:**
+  - Real email invite (requires notification-core)
+  - Custom permissions DB (future)
+  - Branch/location scope
+  - SEC-002 (Customer audit logging — separate task)
+- **Affected Areas:** packages/shared/src/types/, apps/api/src/routes/, apps/merchant-dashboard/src/components/employees/, tests/, docs/
+- **Files Changed:**
+  - `packages/shared/src/types/orders.ts` — added 9 employee audit actions to AuditAction
+  - `packages/shared/src/types/audit.ts` — added AUDIT_ACTION_LABELS + AUDIT_ENTITY_LABELS entries
+  - `apps/api/src/routes/employees.ts` — added AuditLogService import, auditMeta() helper, 9 audit.record() calls
+  - `apps/merchant-dashboard/src/components/employees/EmployeeFormDialog.tsx` — added invite clarity info banner
+  - `tests/employee-management-api.test.ts` — added 12 audit logging tests
+- **Acceptance Criteria:**
+  - 9 employee audit actions in AuditAction type
+  - Arabic labels for all new actions
+  - AuditLogService imported in employees.ts
+  - auditMeta() helper defined
+  - 9 audit.record() calls: invite success, duplicate, 2x self-restriction, last-owner, role change, status toggle, delete, 501
+  - Password not returned in API response
+  - Info banner in create dialog about email invite not active
+  - 12 audit boundary tests passing
+  - All 1493 tests passing
+  - pnpm preflight passes
+  - pnpm typecheck passes
+- **Test Plan:** pnpm test, pnpm typecheck, pnpm preflight
+- **Test Results:**
+  - ✅ pnpm test: 74 files, 1493 tests passed
+  - ✅ pnpm typecheck: all packages pass (ignoring pre-existing storefront.ts issue)
+  - ✅ pnpm preflight: PASSED
+- **Risks:** None — local-only, no behavioral changes to existing flows (audit is fire-and-forget)
+- **Related Issues:** None
+- **Related Decisions:** Audit uses entityType 'employee' pattern; blocked operations logged via action name (employee_last_owner_blocked, employee_self_restriction_blocked) not via separate result/reasonCode fields
+- **Status History:**
+  - Requested: 2026-06-13
+  - Done: 2026-06-13
+- **Final Notes:** Employee audit logging completes RBAC Pass 5. Password is client-generated random (Math.random), hashed server-side, never returned in response, masked by maskObject in audit logs. Info banner added to create dialog to clarify email invite is not active.

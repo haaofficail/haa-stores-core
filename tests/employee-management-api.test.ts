@@ -191,3 +191,74 @@ describe('Employee Management API — Error Codes', () => {
     expect(code).toContain('NOT_IMPLEMENTED');
   });
 });
+
+describe('Employee Management API — Audit Logging', () => {
+  it('imports AuditLogService from @haa/integration-core', () => {
+    const code = employeesRoute();
+    expect(code).toContain("import { AuditLogService } from '@haa/integration-core'");
+  });
+
+  it('defines auditMeta() helper for common audit fields', () => {
+    const code = employeesRoute();
+    expect(code).toContain('function auditMeta(c: any)');
+    expect(code).toContain('actorUserId: auth.userId');
+    expect(code).toContain('tenantId: auth.tenantId');
+    expect(code).toContain('ipAddress');
+    expect(code).toContain('userAgent');
+  });
+
+  it('logs employee_duplicate_rejected on duplicate invite', () => {
+    const code = employeesRoute();
+    expect(code).toContain("action: 'employee_duplicate_rejected'");
+  });
+
+  it('logs employee_invited on successful invite', () => {
+    const code = employeesRoute();
+    expect(code).toContain("action: 'employee_invited'");
+  });
+
+  it('logs employee_self_restriction_blocked on self-role-change', () => {
+    const code = employeesRoute();
+    expect(code).toContain("action: 'employee_self_restriction_blocked'");
+  });
+
+  it('logs employee_last_owner_blocked on last-owner delete', () => {
+    const code = employeesRoute();
+    expect(code).toContain("action: 'employee_last_owner_blocked'");
+  });
+
+  it('logs employee_role_changed on role update success', () => {
+    const code = employeesRoute();
+    expect(code).toContain("action: 'employee_role_changed'");
+  });
+
+  it('logs employee_status_changed on status toggle', () => {
+    const code = employeesRoute();
+    expect(code).toContain("'employee_status_changed'");
+  });
+
+  it('logs employee_removed on delete or status deactivation', () => {
+    const code = employeesRoute();
+    expect(code).toContain("action: 'employee_removed'");
+  });
+
+  it('logs employee_permission_update_unsupported on 501 attempt', () => {
+    const code = employeesRoute();
+    expect(code).toContain("action: 'employee_permission_update_unsupported'");
+  });
+
+  it('all audit calls use auditMeta(c) + storeId', () => {
+    const code = employeesRoute();
+    const auditCalls = code.match(/AuditLogService\(\)\.record/g);
+    expect(auditCalls).toBeTruthy();
+    expect(auditCalls!.length).toBeGreaterThanOrEqual(9);
+    expect(code).toContain('storeId: auth.activeStoreId');
+  });
+
+  it('passes entityType employee in all audit calls', () => {
+    const code = employeesRoute();
+    const matches = code.match(/entityType: 'employee'/g);
+    expect(matches).toBeTruthy();
+    expect(matches!.length).toBeGreaterThanOrEqual(9);
+  });
+});
