@@ -69,6 +69,55 @@
 
 ## Active Tasks
 
+### TASK-0004: Local Dynamic Error Capture
+
+- **Type:** Monitoring, Ops, Documentation
+- **Priority:** P1 High
+- **Status:** In Progress
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** Build Local Dynamic Error Capture — structured error events with errorCode + correlationId + eventId + fingerprint, NDJSON storage, analyzable via ops:errors
+- **Expanded Requirement:** Capture all runtime errors (API, dashboard, storefront) as structured events written to local NDJSON, with sanitization, fingerprinting, correlation IDs, severity-based escalation, and integration with existing ErrorMonitor interface
+- **Problem:** Errors were logged to console but not captured as structured, searchable, analyzable events; no dedup; no correlation between frontend and backend; no severity-based escalation from captured data
+- **Goal:** Every runtime error produces a structured event with errorCode, correlationId, eventId, and fingerprint, written to NDJSON, analyzable via pnpm ops:errors
+- **Scope:**
+  - Create shared error codes module (14 codes, severity, source, origin enums)
+  - Create support-error-log service (NDJSON append-writer, sanitizer, event builder, ErrorMonitor implementation)
+  - Update error-handler middleware to wire local monitor
+  - Create POST /internal/support-errors/report endpoint (local-only)
+  - Update dashboard ErrorBoundary to report errors
+  - Create storefront ErrorBoundary and wrap App.tsx
+  - Create simulate-support-error.mjs
+  - Support doc updates (ERROR_CATALOG, TAXONOMY, PLAYBOOK, ESCALATION)
+  - Ops doc updates (TASK_TRACKER, CURRENT_STATE, CHANGELOG, REGRESSION_CHECKLIST)
+  - AGENTS.md Section 13 (Dynamic Error Capture Rule)
+  - package.json ops:errors:simulate script
+- **Out of Scope:**
+  - External monitoring services (Sentry, Datadog, etc.)
+  - Production deployment config
+  - Payment/shipping/order logic changes
+  - Refactoring existing code
+  - Security OS (RBAC audit, permission boundaries)
+- **Affected Areas:** packages/shared, apps/api, apps/merchant-dashboard, apps/storefront, scripts/, storage/, docs/support, docs/ops, AGENTS.md, package.json
+- **Files Changed:** All new files listed in scope; modified files: shared/src/index.ts, api/src/middleware/error-handler.ts, api/src/index.ts, dashboard/src/components/ErrorBoundary.tsx, storefront/src/App.tsx, storefront/src/components/ErrorBoundary.tsx, AGENTS.md, package.json, all support/ops docs
+- **Acceptance Criteria:**
+  - All 14 error codes defined in shared/error-codes.ts
+  - Events written to storage/support-error-events.ndjson
+  - Secrets sanitized before storage
+  - ErrorBoundary errors POST to /internal/support-errors/report
+  - API errors route through error-handler to NDJSON
+  - pnpm ops:errors reads both event files
+  - pnpm ops:errors:simulate generates test event
+  - pnpm preflight passes
+  - pnpm typecheck passes
+- **Test Plan:** preflight, typecheck, simulate, errors, monitor
+- **Test Results:** Pending
+- **Risks:** None — local-only, no external services
+
+---
+
+
+
 ### TASK-0003: Harden System Health Root Guard and Health Endpoint
 
 - **Type:** Ops, Security, Documentation

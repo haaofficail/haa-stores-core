@@ -67,6 +67,22 @@
 - [ ] Seed data not polluted
 - [ ] Rollback plan exists
 
+## Dynamic Error Capture
+
+- [ ] Error events written to `storage/support-error-events.ndjson`
+- [ ] No secrets exposed in stored events (passwords, tokens, cards redacted)
+- [ ] `ErrorBoundary` in dashboard catches and reports errors
+- [ ] `ErrorBoundary` in storefront catches and reports errors
+- [ ] `POST /internal/support-errors/report` works in development
+- [ ] `POST /internal/support-errors/report` returns 404 in production
+- [ ] `pnpm ops:errors` reads both monitoring-events and support-error-events
+- [ ] `pnpm ops:errors:simulate` generates a valid test event
+- [ ] Stack traces are only included in development mode
+- [ ] `error-handler.ts` writes to support-error-log on API errors
+- [ ] correlationId links frontend and backend error events
+- [ ] Error codes map to entries in ERROR_CATALOG.md
+- [ ] New error codes added to ERROR_CODE_TAXONOMY.md
+
 ## Previous Issue Checks
 
 *(Add specific checks here as issues are resolved)*

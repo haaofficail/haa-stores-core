@@ -5,18 +5,22 @@
 ---
 
 - **Last Updated:** 2026-06-13
-- **Current Phase:** Local MVP — Post LC6 / Pre-Production
+- **Current Phase:** Local MVP — Local Dynamic Error Capture
 - **Project Summary:** Multi-tenant Saudi e-commerce SaaS platform. Local-only. All 10 phases complete. Deployment gated by owner GO.
 - **Active Priorities:**
   - Establish development operating system and process discipline ✅
   - System Health Operating System ✅
   - System Health Hardening ✅
-  - Dynamic Error Capture (next)
+  - Build System Map (architecture documentation) ✅
+  - Dynamic Error Capture ✅
+  - Security OS (RBAC audit, data leakage checks, permission boundaries) (next)
   - Ensure theme isolation between storefront and merchant dashboard
   - Complete visual QA pass across all storefront pages
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done
+  - TASK-0003 (System Health Hardening) — Done
+  - TASK-0004 (Dynamic Error Capture) — In Progress
 - **Known Broken Areas:**
   - (to be documented as discovered)
 - **Known Risks:**
@@ -32,12 +36,15 @@
   - Support error catalog, taxonomy, escalation guide, support playbook
   - Phase 1–10: All gates passed
   - LC6 — Local Full Product Gate: PASS
+  - Dynamic Error Capture: 14 error codes, NDJSON logger, ErrorBoundary reporting, POST endpoint, simulate/analyze scripts ✅
+  - System Map: SYSTEM_MAP.md (10 sections, all critical paths) + ERROR_FLOW_MAP.md (12 sections, full lifecycle) ✅
 - **Do Not Touch:**
   - Production deployment configuration (requires owner GO)
   - Payment gateway credentials
   - Database production seeds
 - **Next Recommended Tasks:**
-  - Dynamic Error Capture — capture runtime errors with errorCode + correlationId
+  - Merge `chore/local-dynamic-error-capture` → `main`
+  - Security OS (RBAC audit, data leakage checks, permission boundary enforcement)
   - Remove or rename duplicate `haa-stores-core-spec.md` folder
   - Add all existing project files to git tracking
   - Run `pnpm ops:monitor` as routine pre-dev check
@@ -46,18 +53,21 @@
   - Run `pnpm setup` for initial local environment
   - Three terminals: `pnpm dev:api`, `pnpm dev:dashboard`, `pnpm dev:storefront`
   - First commit: `076bc40` — "chore: add development operating system"
-  - Branch: `chore/system-health-operating-system`
+  - Branch: `chore/local-dynamic-error-capture`
   - preflight is now a hardened Node script (`scripts/preflight.mjs`) that fails with exit code 1 from wrong directory
+  - System Map is at `docs/system-map/SYSTEM_MAP.md` and `docs/system-map/ERROR_FLOW_MAP.md`
 - **Important Decisions:**
   - NO_DEPLOY_POLICY active — local development only until owner GO
   - Short requests must be expanded before execution (DECISION-0001)
   - Development Operating System installed correctly in real project path (DECISION-0002)
   - System Health rules integrated into AGENTS.md (Section 11)
   - Root Guard hardened: preflight exits with code 1 from wrong path
+  - Dynamic Error Capture: ErrorMonitor interface reused; POST endpoint is local-only; sanitization is recursive field-name based; fingerprint is errorCode::area::route::message
 - **Monitoring Notes:**
   - Health checks: `pnpm ops:health` — checks project structure, apps, runtime
   - Synthetic checks: `pnpm ops:synthetic` — HTTP checks on running servers
-  - Error analysis: `pnpm ops:errors` — pattern detection from events
+  - Error analysis: `pnpm ops:errors` — pattern detection from events (reads both event files)
+  - Error simulation: `pnpm ops:errors:simulate` — writes random test event
   - Report: `pnpm ops:monitor:report` — generates Markdown report
   - Events stored in: `storage/monitoring-events.ndjson`
   - Support events stored in: `storage/support-error-events.ndjson`

@@ -83,7 +83,9 @@ When escalating to a developer, include:
 Severity: P0/P1/P2
 App: api/storefront/dashboard/other
 Error Code: from ERROR_CATALOG or new
-Fingerprint: from event
+eventId: from the event
+correlationId: from the event or merchant screenshot
+Fingerprint: from event (for dedup)
 Logs: relevant log lines
 Steps to Reproduce: if known
 Merchant Impact: brief description

@@ -1,0 +1,309 @@
+import { readFileSync, existsSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import 'dotenv/config';
+import { serve } from '@hono/node-server';
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { serveStatic } from 'hono/serve-static';
+import { env } from './env.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+import { errorHandler } from './middleware/error-handler.js';
+import { securityHeaders } from './middleware/security-headers.js';
+import { requestId } from './middleware/request-id.js';
+import { structuredLogger } from './middleware/structured-logger.js';
+import { rateLimiter } from './middleware/rate-limiter.js';
+import { getContent, ROOT } from './middleware/serve-local-storage.js';
+import { storageGuard } from './middleware/storage-guard.js';
+import { getCachedTenantId, setCachedTenantId, invalidateStoreTenantCache } from './middleware/store-tenant-cache.js';
+import { adminRouter } from './routes/admin.js';
+import { authRouter } from './routes/auth.js';
+import { productsRouter } from './routes/products.js';
+import { categoriesRouter } from './routes/categories.js';
+import { brandsRouter } from './routes/brands.js';
+import { tagsRouter } from './routes/tags.js';
+import { uploadsRouter } from './routes/uploads.js';
+import { customersRouter } from './routes/customers.js';
+import { cartRouter } from './routes/cart.js';
+import { checkoutRouter } from './routes/checkout.js';
+import { ordersRouter } from './routes/orders.js';
+import { codRouter } from './routes/cod.js';
+import { shippingRouter } from './routes/shipping.js';
+import { walletRouter } from './routes/wallet.js';
+import { dashboardRouter } from './routes/dashboard.js';
+import { settingsRouter } from './routes/settings.js';
+import { storefrontRouter } from './routes/storefront.js';
+import { couponsRouter } from './routes/coupons.js';
+import { exportsRouter } from './routes/exports.js';
+import { importsRouter } from './routes/imports.js';
+import { promotionsRouter } from './routes/promotions.js';
+import { reportsRouter } from './routes/reports.js';
+import { policiesRouter } from './routes/policies.js';
+import { abandonedCartsRouter } from './routes/abandoned-carts.js';
+import { complianceRouter } from './routes/compliance.js';
+import { shipmentsRouter } from './routes/shipments.js';
+import { otoWebhookRouter, shippingWebhooksRouter } from './routes/shipping-webhooks.js';
+import { webhooksRouter } from './routes/webhooks.js';
+import { subscriptionsRouter } from './routes/subscriptions.js';
+import { notificationsRouter } from './routes/notifications.js';
+import { apiKeysRouter } from './routes/api-keys.js';
+import { integrationsRouter } from './routes/integrations.js';
+import { migrationRouter } from './routes/migration.js';
+import { publicApiRouter } from './routes/public-api.js';
+import { feedsRouter } from './routes/feeds.js';
+import { aiRouter } from './routes/ai-agent.js';
+import { marketplacesRouter } from './routes/marketplaces.js';
+import { paymentSettingsRouter } from './routes/payment-settings.js';
+import { providerStatusRouter } from './routes/provider-status.js';
+import { supportRouter } from './routes/support.js';
+import { auditRouter } from './routes/audit.js';
+import { healthRouter } from './routes/health.js';
+import { supportErrorsRouter } from './routes/support-errors.js';
+import { createDbClient, closeDbClient } from '@haa/db';
+import { eq, sql } from 'drizzle-orm';
+import { setTokenVersionVerifier, setStoreTenantResolver } from '@haa/auth-core';
+import * as s from '@haa/db/schema';
+
+const app = new Hono();
+
+app.use('*', requestId());
+app.use('*', structuredLogger());
+app.use('*', securityHeaders());
+app.use('*', cors({
+  origin: env.CORS_ORIGINS,
+  credentials: true,
+}));
+
+app.onError(errorHandler);
+
+const storefrontBrowseRateLimit = rateLimiter({
+  windowMs: 10 * 60 * 1000,
+  maxRequests: env.NODE_ENV === 'development' ? 2_000 : 600,
+  message: 'تم تجاوز حد التصفح مؤقتاً. حاول لاحقاً.',
+});
+
+const checkoutRateLimit = rateLimiter({
+  windowMs: 10 * 60 * 1000,
+  maxRequests: env.NODE_ENV === 'development' ? 300 : 60,
+  message: 'تم تجاوز حد عمليات السلة أو الدفع مؤقتاً. حاول لاحقاً.',
+});
+
+const webhookRateLimit = rateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: env.NODE_ENV === 'development' ? 600 : 180,
+  keyGenerator: (c) => `webhook:${c.req.param('provider') || 'generic'}:${c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ?? c.req.header('x-real-ip') ?? 'unknown'}`,
+  message: 'Webhook rate limit exceeded.',
+});
+
+const strictRateLimit = rateLimiter({
+  windowMs: 10 * 60 * 1000,
+  maxRequests: env.NODE_ENV === 'development' ? 100 : 10,
+});
+
+// Body size limit: reject requests over 5MB
+app.use('*', async (c, next) => {
+  const contentLength = c.req.header('content-length');
+  if (contentLength && parseInt(contentLength) > 5 * 1024 * 1024) {
+    return c.json({ success: false, error: { code: 'PAYLOAD_TOO_LARGE', message: 'Request body exceeds 5MB limit' } }, 413);
+  }
+  await next();
+});
+
+// Storage rate limit: prevent crawling/enumeration of uploaded files
+const storageRateLimit = rateLimiter({
+  windowMs: 60 * 1000,
+  maxRequests: 100,
+  message: 'Too many storage requests. Slow down.',
+});
+
+// Serve uploaded images from local storage with access guard
+app.use('/storage/*', storageRateLimit, storageGuard(), serveStatic({
+  root: ROOT,
+  getContent,
+  rewriteRequestPath: (p: string) => p.replace(/^\/storage/, ''),
+}));
+
+// Upload rate limiting: 20 uploads per 10 minutes per store
+const uploadRateLimit = rateLimiter({
+  windowMs: 10 * 60 * 1000,
+  maxRequests: 20,
+  keyGenerator: (c) => `upload:${c.req.param('storeId') || 'unknown'}`,
+});
+
+// Public rate-limited routes
+app.use('/s/*', storefrontBrowseRateLimit);
+app.use('/s/:slug/cart/*', checkoutRateLimit);
+app.use('/s/:slug/checkout/*', checkoutRateLimit);
+app.use('/auth/login', strictRateLimit);
+app.use('/admin/login', strictRateLimit);
+app.use('/auth/register', strictRateLimit);
+app.use('/admin', strictRateLimit);
+app.use('/webhooks/*', webhookRateLimit);
+
+// Health Check
+app.route('/health', healthRouter);
+
+// Local error reporting endpoint
+app.route('/internal/support-errors', supportErrorsRouter);
+
+// Image upload rate limit
+app.use('/merchant/:storeId/products/:productId/images', uploadRateLimit);
+app.use('/merchant/:storeId/uploads', uploadRateLimit);
+
+
+
+app.get('/health', async (c) => {
+  let dbStatus = 'unknown';
+  try {
+    await db.execute(sql`SELECT 1 AS ok`);
+    dbStatus = 'connected';
+  } catch {
+    dbStatus = 'disconnected';
+  }
+
+  return c.json({
+    api: 'ok',
+    db: dbStatus,
+    environment: env.NODE_ENV,
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  });
+});
+
+app.route('/admin', adminRouter);
+app.route('/auth', authRouter);
+app.route('/merchant/:storeId/products', productsRouter);
+app.route('/merchant/:storeId/categories', categoriesRouter);
+app.route('/merchant/:storeId/brands', brandsRouter);
+app.route('/merchant/:storeId/tags', tagsRouter);
+app.route('/merchant/:storeId/uploads', uploadsRouter);
+app.route('/merchant/:storeId/customers', customersRouter);
+app.route('/merchant/:storeId/cart', cartRouter);
+app.route('/merchant/:storeId/checkout', checkoutRouter);
+app.route('/merchant/:storeId/orders', ordersRouter);
+app.route('/merchant/:storeId/orders', codRouter);
+app.route('/merchant/:storeId/shipping', shippingRouter);
+app.route('/merchant/:storeId/wallet', walletRouter);
+app.route('/merchant/:storeId/dashboard', dashboardRouter);
+app.route('/merchant/:storeId/settings', settingsRouter);
+app.route('/merchant/:storeId/provider-status', providerStatusRouter);
+app.route('/merchant/:storeId/coupons', couponsRouter);
+app.route('/merchant/:storeId/exports', exportsRouter);
+app.route('/merchant/:storeId/imports', importsRouter);
+app.route('/merchant/:storeId/promotions', promotionsRouter);
+app.route('/merchant/:storeId/reports', reportsRouter);
+app.route('/merchant/:storeId/policies', policiesRouter);
+app.route('/merchant/:storeId/abandoned-carts', abandonedCartsRouter);
+app.route('/merchant/:storeId/compliance', complianceRouter);
+// Storefront SPA — serve built files for browser navigation
+const STOREFRONT_DIST = resolve(__dirname, '../../storefront/dist');
+const STOREFRONT_INDEX = resolve(STOREFRONT_DIST, 'index.html');
+function readStorefrontHtml(): string | null {
+  if (!existsSync(STOREFRONT_INDEX)) return null;
+  return readFileSync(STOREFRONT_INDEX, 'utf8');
+}
+
+// Serve storefront static assets (JS, CSS, images)
+app.use('/assets/*', serveStatic({
+  root: STOREFRONT_DIST,
+  getContent,
+}));
+app.get('/vite.svg', serveStatic({
+  root: STOREFRONT_DIST,
+  getContent,
+}));
+
+// SPA middleware: serve HTML for browser navigation under /s/*
+// Must be registered BEFORE API routes so HTML navigation is caught first.
+// API calls (with Accept: */* or application/json) will pass through.
+app.use('/s/*', async (c, next) => {
+  const accept = c.req.header('accept') || '';
+  const storefrontHtml = readStorefrontHtml();
+  if (storefrontHtml && accept.includes('text/html')) {
+    return c.html(storefrontHtml);
+  }
+  await next();
+});
+
+// Storefront API routes (JSON responses)
+app.route('/s', storefrontRouter);
+app.route('/merchant/:storeId/shipments', shipmentsRouter);
+app.route('/webhooks/shipping', shippingWebhooksRouter);
+app.route('/webhooks/oto', otoWebhookRouter);
+app.route('/webhooks', webhooksRouter);
+app.route('/merchant/:storeId/subscriptions', subscriptionsRouter);
+app.route('/merchant/:storeId/notifications', notificationsRouter);
+app.route('/merchant/:storeId/api-keys', apiKeysRouter);
+app.route('/merchant/:storeId/integrations', integrationsRouter);
+app.route('/merchant/:storeId/migration', migrationRouter);
+app.route('/api/v1', publicApiRouter);
+app.route('/merchant/:storeId/feeds', feedsRouter);
+app.route('/merchant/:storeId/ai', aiRouter);
+app.route('/merchant/:storeId/marketplaces', marketplacesRouter);
+app.route('/merchant/:storeId/payment-providers', paymentSettingsRouter);
+app.route('/merchant/:storeId', supportRouter);
+app.route('/merchant/:storeId/audit', auditRouter);
+
+const port = env.API_PORT;
+
+// Initialize the DB pool singleton at startup (not per-request)
+const db = createDbClient();
+
+// Verify connectivity on startup
+db.execute(sql`SELECT 1 AS ok`).catch(() => {
+  console.warn('⚠️  DB not reachable at startup — will retry on first request');
+});
+
+// JWT token version verifier: revoke tokens on logout by checking DB
+setTokenVersionVerifier(async (decoded) => {
+  try {
+    const [user] = await db.select({ tokenVersion: s.users.tokenVersion })
+      .from(s.users)
+      .where(eq(s.users.id, decoded.userId))
+      .limit(1);
+    if (!user) return false;
+    return user.tokenVersion === decoded.tokenVersion;
+  } catch {
+    // If DB is unreachable, fail closed for security
+    return false;
+  }
+});
+
+// BOLA/IDOR Defense: Store→Tenant resolver with TTL cache.
+// Resolves which tenant owns a store to enforce tenant boundary on every request.
+setStoreTenantResolver(async (storeId) => {
+  const cached = getCachedTenantId(storeId);
+  if (cached !== undefined) return cached;
+  try {
+    const [store] = await db
+      .select({ tenantId: s.stores.tenantId })
+      .from(s.stores)
+      .where(eq(s.stores.id, storeId))
+      .limit(1);
+    if (store) {
+      setCachedTenantId(storeId, store.tenantId);
+      return store.tenantId;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+});
+
+serve({ fetch: app.fetch, port }, (info) => {
+  console.log(`🚀 Haa Stores API ready at http://localhost:${info.port}`);
+});
+
+// Graceful shutdown: close DB pool, stop accepting
+process.on('SIGTERM', async () => {
+  await closeDbClient();
+  process.exit(0);
+});
+process.on('SIGINT', async () => {
+  await closeDbClient();
+  process.exit(0);
+});
+
+export default app;

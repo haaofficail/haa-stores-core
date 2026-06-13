@@ -37,6 +37,7 @@
     "ops:health": "node scripts/monitor-health.mjs",
     "ops:synthetic": "node scripts/synthetic-checks.mjs",
     "ops:errors": "node scripts/analyze-support-errors.mjs",
+    "ops:errors:simulate": "node scripts/simulate-support-error.mjs",
     "ops:monitor": "pnpm ops:health && pnpm ops:synthetic && pnpm ops:errors",
     "ops:monitor:report": "node scripts/generate-monitoring-report.mjs",
     "ops:monitor:tail": "node scripts/tail-monitoring-events.mjs",

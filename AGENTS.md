@@ -37,15 +37,16 @@ Before ANY task:
 
 1. **Verify path** — `pwd` must be `/Users/thwany/Desktop/haa-stores-core`
 2. **Run** — `pnpm preflight`
-3. **Read** — `docs/ops/CURRENT_STATE.md`
-4. **Search** — `docs/ops/TASK_TRACKER.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/DECISIONS.md`
-5. **Classify** — Determine task type (see Section 4)
-6. **Expand** — Convert user request to professional brief (see Section 3)
-7. **Plan** — Write a short plan before any edit
-8. **One task only** — Never mix scopes
-9. **Test** — Run relevant checks
-10. **Update** — Update logs, tracker, and state
-11. **Report** — Write final report
+3. **Read** — `docs/system-map/SYSTEM_MAP.md` (architecture overview)
+4. **Read** — `docs/ops/CURRENT_STATE.md`
+5. **Search** — `docs/ops/TASK_TRACKER.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/DECISIONS.md`
+6. **Classify** — Determine task type (see Section 4)
+7. **Expand** — Convert user request to professional brief (see Section 3)
+8. **Plan** — Write a short plan before any edit
+9. **One task only** — Never mix scopes
+10. **Test** — Run relevant checks
+11. **Update** — Update logs, tracker, and state
+12. **Report** — Write final report
 
 ---
 
@@ -251,6 +252,23 @@ Before any significant development or bug fix:
 
 ---
 
+## 13. Local Dynamic Error Capture Rule
+
+1. **All runtime errors** must be captured as structured events with errorCode + correlationId + eventId + fingerprint.
+2. **Error codes** live in `packages/shared/src/error-codes.ts` with 14 predefined codes (API-001, SYS-001, STORE-001, etc.).
+3. **Events** are written as NDJSON to `storage/support-error-events.ndjson` via `apps/api/src/services/support-error-log.ts`.
+4. **ErrorBoundary** components in dashboard and storefront catch React errors, generate correlationIds, and POST to `/internal/support-errors/report`.
+5. **The report endpoint** is local-development only (404 in production).
+6. **Sanitization** strips passwords, tokens, secrets, card data, and authorization fields before storage.
+7. **Stack traces** are stripped unless NODE_ENV=development.
+8. **Simulate events** with `pnpm ops:errors:simulate`; analyze with `pnpm ops:errors`.
+9. **Analyze scripts** read both `monitoring-events.ndjson` and `support-error-events.ndjson`, report by severity/top errorCode/top fingerprint/top origin/top app/top route.
+10. **P0 alerts** recommend incidents; repeated P1 (≥3) recommends tasks; repeated fingerprints (≥3) recommends RCA.
+11. **ErrorMonitor** interface in `error-handler.ts` is wired to the local NDJSON logger — no external services.
+12. **Always update** `docs/support/ERROR_CATALOG.md`, `ERROR_CODE_TAXONOMY.md`, and `SUPPORT_PLAYBOOK.md` when adding new error codes.
+
+---
+
 ## 12. Available Commands
 
 | Command | Purpose |
@@ -259,6 +277,7 @@ Before any significant development or bug fix:
 | `pnpm ops:health` | Run health checks on project and apps |
 | `pnpm ops:synthetic` | Run synthetic HTTP checks on running servers |
 | `pnpm ops:errors` | Analyze recorded errors and suggest actions |
+| `pnpm ops:errors:simulate` | Write a random fake error event to support-error-events.ndjson |
 | `pnpm ops:monitor` | Run health + synthetic + error analysis in sequence |
 | `pnpm ops:monitor:report` | Generate a Markdown monitoring report |
 | `pnpm ops:monitor:tail` | View recent monitoring events |

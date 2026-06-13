@@ -37,3 +37,6 @@
 - When fixing an issue, always identify root cause before implementing fix
 - Update REGRESSION_CHECKLIST.md if the issue can regress
 - If the issue reveals a process gap, update the relevant docs/ops/ file
+- Search `storage/support-error-events.ndjson` by fingerprint to find all occurrences of the same issue
+- Use the correlationId in the event to find linked frontend ↔ backend errors
+- For P0 issues, create an incident in INCIDENTS.md referencing the eventId

@@ -1,6 +1,10 @@
 # Error Catalog
 
 > Known error codes with merchant-facing messages and support instructions.
+>
+> Every runtime error produces an event with: errorCode + correlationId + eventId + fingerprint.
+> Use `pnpm ops:errors` to analyze recorded events.
+> Use `pnpm ops:errors:simulate` to generate a test event.
 
 ---
 
@@ -111,3 +115,21 @@
 - **Source:** API / Worker
 - **First Checks:** Check worker logs, verify queue connection
 - **Escalation Criteria:** P1 if jobs are critical (e.g., order processing)
+
+## VALIDATION-001: Invalid Input
+
+- **Merchant Message:** يرجى التأكد من صحة البيانات المدخلة.
+- **Support Meaning:** Request payload failed schema validation
+- **Severity:** P3
+- **Source:** API / Validation layer
+- **First Checks:** Check request payload, verify field types and required fields
+- **Escalation Criteria:** P2 if merchant cannot complete a workflow due to validation bugs
+
+## NETWORK-001: Connection Error
+
+- **Merchant Message:** تعذر الاتصال بالخادم. يرجى التحقق من اتصالك.
+- **Support Meaning:** Network-level failure (timeout, DNS, connection refused)
+- **Severity:** P3
+- **Source:** Network / Connectivity
+- **First Checks:** Check if dev server is running, verify network connectivity
+- **Escalation Criteria:** P1 if persistent and affecting all users
