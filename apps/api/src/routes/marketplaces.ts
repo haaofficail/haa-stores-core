@@ -7,10 +7,17 @@ import * as s from '@haa/db/schema';
 import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';
 import { SallaService, ZidService, NoonService, AmazonService } from '@haa/marketplace-core';
 import type { ProviderCode, ChannelOrder } from '@haa/marketplace-core';
+import { sallaRouter } from './marketplaces/salla.js';
 
 const marketplacesRouter = new Hono();
 
 marketplacesRouter.use('*', requireAuth(), requireStoreAccess());
+
+// Mount Salla-specific sub-router (extracted in Quality Pass 2 — Item 2.3).
+// Salla's two OAuth routes are kept here so the rest of the file
+// (provider-agnostic routes) can dispatch to any service via
+// getProviderService(:provider, storeId).
+marketplacesRouter.route('/salla', sallaRouter);
 
 const codes = ['salla', 'zid', 'noon', 'amazon'] as const;
 
@@ -88,15 +95,6 @@ marketplacesRouter.get('/', requirePermission('settings:read'), async (c) => {
   return c.json({ success: true, data: providers });
 });
 
-marketplacesRouter.get('/salla/oauth/url', requirePermission('settings:update'), async (c) => {
-  const storeId = Number(c.req.param('storeId'));
-  const state = crypto.randomUUID();
-  const salla = getSallaService(storeId);
-  const url = salla.getOAuthUrl(state);
-
-  return c.json({ success: true, data: { url, state } });
-});
-
 marketplacesRouter.get('/zid/oauth/url', requirePermission('settings:update'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const state = crypto.randomUUID();
@@ -117,24 +115,6 @@ marketplacesRouter.get('/zid/oauth/callback', async (c) => {
     return c.redirect(`/channels/zid?connected=true`);
   } catch (error) {
     return c.redirect(`/channels/zid?error=${encodeURIComponent((error as Error).message)}`);
-  }
-});
-
-marketplacesRouter.get('/salla/oauth/callback', async (c) => {
-  const storeId = Number(c.req.param('storeId'));
-  const code = c.req.query('code');
-  const state = c.req.query('state');
-
-  if (!code) {
-    return c.json({ success: false, error: { code: 'MISSING_CODE', message: 'Authorization code is required' } }, 400);
-  }
-
-  try {
-    const salla = getSallaService(storeId);
-    const result = await salla.handleCallback(code);
-    return c.redirect(`/channels/salla?connected=true`);
-  } catch (error) {
-    return c.redirect(`/channels/salla?error=${encodeURIComponent((error as Error).message)}`);
   }
 });
 
