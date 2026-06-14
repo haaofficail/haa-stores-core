@@ -1,9 +1,10 @@
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
+import { isDemoStore } from '@haa/shared';
 
 export class SubscriptionService {
-  constructor(private db: DbClient = createDbClient()) {}
+  constructor(private db: DbClient = createDbClient(), private store?: { id: number; isDemo?: boolean | null }) {}
 
   async getPlans() {
     return this.db.select()
@@ -221,6 +222,15 @@ export class SubscriptionService {
   }
 
   async checkPlanLimits(storeId: number) {
+    // Demo stores bypass all plan limits
+    if (isDemoStore(this.store as any)) {
+      return {
+        subscription: { planName: 'Demo', planCode: 'demo', status: 'active', billingCycle: 'monthly', currentPeriodStart: new Date(), currentPeriodEnd: new Date(Date.now() + 365 * 86400000), trialEnd: null },
+        usage: { products: 0, staff: 0, orders: 0 },
+        limits: { products: -1, staff: -1, storageMb: 99999, orders: -1 },
+      };
+    }
+
     const subscription = await this.getCurrentSubscription(storeId);
     if (!subscription) return { subscription: null, usage: null, limits: null };
 
@@ -268,6 +278,7 @@ export class SubscriptionService {
   }
 
   async canCreateProduct(storeId: number): Promise<boolean> {
+    if (isDemoStore(this.store as any)) return true;
     const limits = await this.checkPlanLimits(storeId);
     if (!limits.limits) return false;
     if (limits.limits.products === -1) return true;
@@ -275,6 +286,7 @@ export class SubscriptionService {
   }
 
   async canAddStaff(storeId: number): Promise<boolean> {
+    if (isDemoStore(this.store as any)) return true;
     const limits = await this.checkPlanLimits(storeId);
     if (!limits.limits) return false;
     if (limits.limits.staff === -1) return true;

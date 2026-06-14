@@ -7,6 +7,14 @@ export class WebhookOutboxService {
   constructor(private db: DbClient = createDbClient()) {}
 
   async recordEvent(eventType: WebhookEventType, storeId: number, tenantId: number, payload: Record<string, unknown>) {
+    // Safety: check if this is a demo store and skip webhook events
+    const [store] = await this.db.select({ isDemo: s.stores.isDemo })
+      .from(s.stores).where(eq(s.stores.id, storeId)).limit(1);
+    if (store?.isDemo) {
+      console.log(`[DEMO WEBHOOK] Skipping webhook event ${eventType} for demo store ${storeId}`);
+      return null;
+    }
+
     const [event] = await this.db.insert(s.webhookEvents).values({
       eventType,
       storeId,

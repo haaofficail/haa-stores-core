@@ -31,12 +31,15 @@ export class ConsoleNotificationProvider implements NotificationProvider {
 import { eq, desc, and } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
+import { isDemoStore } from '@haa/shared';
 
 export class NotificationService {
   private providers: NotificationProvider[];
+  private isDemoProvider: boolean;
 
-  constructor(private db: DbClient = createDbClient()) {
+  constructor(private db: DbClient = createDbClient(), private store?: { id: number; isDemo?: boolean | null }) {
     this.providers = [new ConsoleNotificationProvider()];
+    this.isDemoProvider = isDemoStore(store as any) ?? false;
   }
 
   addProvider(provider: NotificationProvider) {
@@ -44,6 +47,12 @@ export class NotificationService {
   }
 
   async send(storeId: number, templateCode: string, data: Record<string, string>, channel?: string) {
+    // Demo stores: log only, no real notification delivery
+    if (this.isDemoProvider) {
+      console.log(`[DEMO NOTIFICATION] [${templateCode}] Demo store — notification suppressed (logged only)`);
+      return [];
+    }
+
     const [template] = await this.db.select().from(s.notificationTemplates)
       .where(eq(s.notificationTemplates.code, templateCode)).limit(1);
     if (!template || !template.isActive) return;

@@ -8,7 +8,7 @@ import { verifyPassword } from '@haa/auth-core';
 import { signAdminToken, requireAdminAuth, type AdminAuthContext } from '@haa/auth-core';
 import { SubscriptionService } from '@haa/commerce-core';
 import { WalletLedger } from '@haa/wallet-core';
-import { createMediaAdapter } from '@haa/shared';
+import { createMediaAdapter } from '@haa/shared/media';
 
 import { AuditLogService } from '@haa/integration-core';
 import { invalidateStoreTenantCache } from '../middleware/store-tenant-cache.js';
@@ -256,6 +256,167 @@ adminRouter.get('/payments', requireAdminAuth(), async (c) => {
   const db = createDbClient();
   const payments = await db.select().from(s.payments).where(eq(s.payments.storeId, Number(storeId))).orderBy(desc(s.payments.createdAt)).limit(100);
   return c.json({ success: true, data: payments });
+});
+
+adminRouter.get('/marketplace/summary', requireAdminAuth(), async (c) => {
+  const db = createDbClient();
+  const [pendingProducts] = await db.select({ count: sql<number>`count(*)` }).from(s.products)
+    .where(and(eq(s.products.haaMarketplaceEnabled, true), eq(s.products.haaMarketplaceReviewStatus, 'pending')));
+  const [approvedProducts] = await db.select({ count: sql<number>`count(*)` }).from(s.products)
+    .where(and(eq(s.products.haaMarketplaceEnabled, true), eq(s.products.haaMarketplaceReviewStatus, 'approved')));
+  const [sellerCount] = await db.select({ count: sql<number>`count(DISTINCT ${s.products.storeId})` }).from(s.products)
+    .where(and(eq(s.products.haaMarketplaceEnabled, true), eq(s.products.haaMarketplaceReviewStatus, 'approved')));
+  const [marketplaceOrderCount] = await db.select({ count: sql<number>`count(*)` }).from(s.marketplaceOrders);
+  const [commissionTotal] = await db.select({ total: sql<string>`COALESCE(sum(${s.marketplaceOrders.platformCommission}), 0)` }).from(s.marketplaceOrders);
+
+  return c.json({ success: true, data: {
+    pendingProducts: Number(pendingProducts.count),
+    approvedProducts: Number(approvedProducts.count),
+    sellers: Number(sellerCount.count),
+    marketplaceOrders: Number(marketplaceOrderCount.count),
+    platformCommission: commissionTotal.total,
+  }});
+});
+
+adminRouter.get('/marketplace/products', requireAdminAuth(), async (c) => {
+  const status = c.req.query('status');
+  const db = createDbClient();
+  const conditions = [eq(s.products.haaMarketplaceEnabled, true)];
+  if (status) conditions.push(eq(s.products.haaMarketplaceReviewStatus, status));
+  const rows = await db.select({ product: s.products, store: s.stores })
+    .from(s.products)
+    .innerJoin(s.stores, eq(s.products.storeId, s.stores.id))
+    .where(and(...conditions))
+    .orderBy(desc(s.products.updatedAt))
+    .limit(200);
+  return c.json({ success: true, data: rows.map(({ product, store }) => ({
+    ...product,
+    storeName: store.name,
+    storeSlug: store.slug,
+    storeCity: store.city,
+  })) });
+});
+
+adminRouter.patch('/marketplace/products/:id/review', requireAdminAuth(), zValidator('json', z.object({
+  status: z.enum(['pending', 'approved', 'rejected', 'suspended']),
+  note: z.string().max(1000).optional(),
+})), async (c) => {
+  const id = Number(c.req.param('id'));
+  const adminAuth = c.get('adminAuth') as AdminAuthContext | undefined;
+  const body = c.req.valid('json');
+  const db = createDbClient();
+  const [product] = await db.update(s.products).set({
+    haaMarketplaceReviewStatus: body.status,
+    haaMarketplaceReviewNote: body.note ?? null,
+    haaMarketplaceReviewedAt: new Date(),
+    haaMarketplaceReviewedBy: adminAuth?.userId ?? null,
+    updatedAt: new Date(),
+  }).where(eq(s.products.id, id)).returning();
+  if (!product) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } }, 404);
+  return c.json({ success: true, data: product });
+});
+
+adminRouter.patch('/marketplace/products/:id/feature', requireAdminAuth(), zValidator('json', z.object({
+  featured: z.boolean(),
+  featuredUntil: z.string().datetime().optional().nullable(),
+  sortOrder: z.coerce.number().int().optional(),
+})), async (c) => {
+  const id = Number(c.req.param('id'));
+  const body = c.req.valid('json');
+  const db = createDbClient();
+  const [product] = await db.update(s.products).set({
+    haaMarketplaceFeatured: body.featured,
+    haaMarketplaceFeaturedUntil: body.featuredUntil ? new Date(body.featuredUntil) : null,
+    haaMarketplaceFeaturedSortOrder: body.sortOrder ?? 0,
+    updatedAt: new Date(),
+  }).where(eq(s.products.id, id)).returning();
+  if (!product) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } }, 404);
+  return c.json({ success: true, data: product });
+});
+
+adminRouter.get('/marketplace/sellers', requireAdminAuth(), async (c) => {
+  const db = createDbClient();
+  const rows = await db.select({
+    id: s.stores.id,
+    name: s.stores.name,
+    slug: s.stores.slug,
+    city: s.stores.city,
+    logoUrl: s.stores.logoUrl,
+    productCount: sql<number>`count(${s.products.id})`,
+    pendingCount: sql<number>`sum(CASE WHEN ${s.products.haaMarketplaceReviewStatus} = 'pending' THEN 1 ELSE 0 END)`,
+    approvedCount: sql<number>`sum(CASE WHEN ${s.products.haaMarketplaceReviewStatus} = 'approved' THEN 1 ELSE 0 END)`,
+  })
+    .from(s.stores)
+    .innerJoin(s.products, eq(s.products.storeId, s.stores.id))
+    .where(eq(s.products.haaMarketplaceEnabled, true))
+    .groupBy(s.stores.id, s.stores.name, s.stores.slug, s.stores.city, s.stores.logoUrl)
+    .orderBy(sql`count(${s.products.id}) DESC`);
+  return c.json({ success: true, data: rows.map((row) => ({
+    ...row,
+    productCount: Number(row.productCount),
+    pendingCount: Number(row.pendingCount),
+    approvedCount: Number(row.approvedCount),
+  })) });
+});
+
+adminRouter.get('/marketplace/orders', requireAdminAuth(), async (c) => {
+  const db = createDbClient();
+  const orders = await db.select().from(s.marketplaceOrders).orderBy(desc(s.marketplaceOrders.createdAt)).limit(200);
+  return c.json({ success: true, data: orders });
+});
+
+adminRouter.get('/marketplace/settlements', requireAdminAuth(), async (c) => {
+  const db = createDbClient();
+  const rows = await db.select({
+    storeId: s.marketplaceOrderLinks.storeId,
+    storeName: s.marketplaceOrderLinks.storeName,
+    storeSlug: s.marketplaceOrderLinks.storeSlug,
+    grossSales: sql<string>`COALESCE(sum(${s.marketplaceOrderLinks.total}), 0)`,
+    platformCommission: sql<string>`COALESCE(sum(${s.marketplaceOrderLinks.platformCommission}), 0)`,
+    sellerNet: sql<string>`COALESCE(sum(${s.marketplaceOrderLinks.total} - ${s.marketplaceOrderLinks.platformCommission}), 0)`,
+    orderCount: sql<number>`count(*)`,
+  })
+    .from(s.marketplaceOrderLinks)
+    .groupBy(s.marketplaceOrderLinks.storeId, s.marketplaceOrderLinks.storeName, s.marketplaceOrderLinks.storeSlug)
+    .orderBy(sql`sum(${s.marketplaceOrderLinks.platformCommission}) DESC`);
+  return c.json({ success: true, data: rows.map((row) => ({ ...row, orderCount: Number(row.orderCount) })) });
+});
+
+adminRouter.get('/marketplace/deep-report', requireAdminAuth(), async (c) => {
+  const db = createDbClient();
+  const [totals] = await db.select({
+    gmv: sql<string>`COALESCE(sum(${s.marketplaceOrders.total}), 0)`,
+    subtotal: sql<string>`COALESCE(sum(${s.marketplaceOrders.subtotal}), 0)`,
+    shipping: sql<string>`COALESCE(sum(${s.marketplaceOrders.shippingTotal}), 0)`,
+    commission: sql<string>`COALESCE(sum(${s.marketplaceOrders.platformCommission}), 0)`,
+    orders: sql<number>`count(*)`,
+  }).from(s.marketplaceOrders);
+
+  const topSellers = await db.select({
+    storeName: s.marketplaceOrderLinks.storeName,
+    storeSlug: s.marketplaceOrderLinks.storeSlug,
+    gmv: sql<string>`COALESCE(sum(${s.marketplaceOrderLinks.total}), 0)`,
+    commission: sql<string>`COALESCE(sum(${s.marketplaceOrderLinks.platformCommission}), 0)`,
+    orders: sql<number>`count(*)`,
+  })
+    .from(s.marketplaceOrderLinks)
+    .groupBy(s.marketplaceOrderLinks.storeName, s.marketplaceOrderLinks.storeSlug)
+    .orderBy(sql`sum(${s.marketplaceOrderLinks.total}) DESC`)
+    .limit(10);
+
+  const productModeration = await db.select({
+    status: s.products.haaMarketplaceReviewStatus,
+    count: sql<number>`count(*)`,
+  })
+    .from(s.products)
+    .where(eq(s.products.haaMarketplaceEnabled, true))
+    .groupBy(s.products.haaMarketplaceReviewStatus);
+
+  return c.json({ success: true, data: {
+    totals: { ...totals, orders: Number(totals.orders) },
+    topSellers: topSellers.map((row) => ({ ...row, orders: Number(row.orders) })),
+    productModeration: productModeration.map((row) => ({ ...row, count: Number(row.count) })),
+  }});
 });
 
 adminRouter.get('/settlements/batches', requireAdminAuth(), requireAdminPermission('wallet.payout.view_all'), async (c) => {

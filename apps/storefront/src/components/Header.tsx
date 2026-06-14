@@ -1,12 +1,13 @@
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ShoppingCart, Menu, X, Search, Package } from 'lucide-react';
+import { ShoppingCart, Menu, X, Search, Package, AlertTriangle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useStore } from '@/hooks/useStore';
 import { useSharedCart } from '@/hooks/CartContext';
 import { useStorefrontTheme } from '@/hooks/useTheme';
 import { Icon } from '@/components/ui/icon';
 import { StoreIconButton } from '@/components/ui';
+import { tracker } from '@/lib/tracker';
 
 export default function Header() {
   const { t } = useTranslation();
@@ -75,9 +76,14 @@ export default function Header() {
   const showCart = headerConfig?.showCart !== false;
   const showAccount = headerConfig?.showAccount !== false;
 
+  const isDemo = store?.isDemo === true;
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      if (slug) {
+        tracker.trackSearch(slug, searchQuery.trim());
+      }
       navigate(`/s/${slug}/c/all?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchOpen(false);
       setSearchQuery('');
@@ -93,6 +99,14 @@ export default function Header() {
       >
         {t('store.skipToContent', 'تخطى إلى المحتوى')}
       </a>
+      {isDemo && (
+        <div className="bg-amber-100 text-amber-900 text-center py-1 text-[11px] sm:text-xs font-medium border-b border-amber-200">
+          <div className="container-store flex items-center justify-center gap-1.5">
+            <AlertTriangle className="w-3 h-3 inline-block" />
+            <span>متجر تجريبي — جميع المنتجات لأغراض العرض والتجربة</span>
+          </div>
+        </div>
+      )}
       <header className={`${stickyHeader ? 'sticky top-0' : 'relative'} z-sticky border-b border-border/70 backdrop-blur-xl`} style={{ backgroundColor: 'var(--header-background)', color: 'var(--header-text)' }}>
       {showAnnouncementBar && announcementText && (
         <div className="text-center py-1.5 sm:py-2 text-[11px] sm:text-xs font-medium leading-relaxed" style={{ backgroundColor: 'var(--announcement-background)', color: 'var(--announcement-text)' }}>
@@ -122,8 +136,7 @@ export default function Header() {
               <Link
                 key={link.to}
                 to={link.to}
-                className="min-h-[40px] inline-flex items-center px-3 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-colors"
-                style={{ borderRadius: '8px' }}
+                className="min-h-[44px] inline-flex items-center px-3 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-2 rounded-xl transition-colors"
               >
                 {link.label}
               </Link>
@@ -134,7 +147,7 @@ export default function Header() {
             {showSearch && (
             <form onSubmit={handleSearch} className="hidden md:flex items-center">
               {searchOpen ? (
-                <div className="flex min-h-[44px] items-center bg-surface-2 border border-border overflow-hidden" style={{ borderRadius: '8px' }}>
+                <div className="flex min-h-[44px] items-center bg-surface-2 border border-border rounded-xl overflow-hidden">
                   <input
                     ref={searchInputRef}
                     type="text"
@@ -164,8 +177,7 @@ export default function Header() {
             {showAccount && (
             <Link
               to={`/s/${slug}/track`}
-              className="hidden sm:inline-flex min-w-[44px] min-h-[44px] items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-colors"
-              style={{ borderRadius: '8px' }}
+              className="hidden sm:inline-flex min-w-[44px] min-h-[44px] items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-2 rounded-xl transition-colors"
               title={t('store.trackOrder')}
               aria-label={t('store.trackOrder', 'تتبع الطلب')}
             >
@@ -176,8 +188,7 @@ export default function Header() {
             {showCart && (
             <Link
               to={`/s/${slug}/cart`}
-              className="relative min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-colors"
-              style={{ borderRadius: '8px' }}
+              className="relative min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-2 rounded-xl transition-colors"
               aria-label={t('store.cart', 'سلة التسوق')}
             >
               <Icon icon={ShoppingCart} size="sm" />

@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';
-import { createMediaAdapter, signLocalStoragePath } from '@haa/shared';
+import { createMediaAdapter, signLocalStoragePath } from '@haa/shared/media';
 
 const uploadsRouter = new Hono();
 

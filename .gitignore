@@ -7,3 +7,5 @@ coverage
 .turbo
 .vite
 storage
+*.log
+**/*.log

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useSharedCart } from '@/hooks/CartContext';
-import { checkoutApi, featuresApi, pickupLocationsApi, giftOptionsApi, type ShippingRate, type PickupLocation, type GiftOptions, type PaymentMethodAvailability } from '@/lib/api';
+import { checkoutApi, featuresApi, pickupLocationsApi, giftOptionsApi, type ShippingRate, type PickupLocation, type GiftOptions, type PaymentMethodAvailability, type Cart } from '@/lib/api';
 import { useSEO } from '@/hooks/useSEO';
 import {
   StoreContainer, StoreButton, StoreCard, StoreInput, StoreTextarea, StoreSkeleton,
@@ -11,6 +11,8 @@ import {
 import { toast } from 'sonner';
 import { Package, ArrowLeft, ArrowRight, CreditCard, Building, Banknote, ShieldCheck, MapPin, Truck, Gift, Phone, Clock } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
+import { SarIcon } from '@/components/ui/SarIcon';
+import { tracker } from '@/lib/tracker';
 
 function generateIdempotencyKey(): string {
   try { return crypto.randomUUID(); } catch {
@@ -21,6 +23,15 @@ function generateIdempotencyKey(): string {
 function toMoneyNumber(value: unknown): number {
   const amount = Number(value ?? 0);
   return Number.isFinite(amount) ? amount : 0;
+}
+
+function getVariantLabel(item: Cart['items'][number]): string {
+  if (!item.variant) return '';
+  if (item.variant.name) return item.variant.name;
+  if (item.variant.options && typeof item.variant.options === 'object') {
+    return Object.values(item.variant.options).filter(Boolean).join(' / ');
+  }
+  return '';
 }
 
 export default function Checkout() {
@@ -81,6 +92,12 @@ export default function Checkout() {
       if (slug) navigate(`/s/${slug}/cart`);
     }
   }, [cart, cartLoading, slug, navigate]);
+
+  useEffect(() => {
+    if (slug && cart && cart.items.length > 0) {
+      tracker.trackBeginCheckout(slug, cart.id);
+    }
+  }, [slug, cart?.id, cart?.items?.length]);
 
   useEffect(() => {
     if (address.city.trim() && cart && slug) {
@@ -170,12 +187,20 @@ export default function Checkout() {
           failureUrl: cancelUrl,
         });
         clearLocalCart();
+        tracker.trackPurchase(slug, bnplResult.order.id, cart.id, { orderNumber: bnplResult.order.orderNumber, paymentMethod: 'bnpl' });
+        if (couponCode) {
+          tracker.trackCouponApplied(slug, couponCode, cart.id);
+        }
         window.location.href = bnplResult.redirectUrl;
         return;
       }
 
       const result = await checkoutApi.confirm(slug, session.id);
       clearLocalCart();
+      tracker.trackPurchase(slug, result.order.id, cart.id, { orderNumber: result.order.orderNumber });
+      if (couponCode) {
+        tracker.trackCouponApplied(slug, couponCode, cart.id);
+      }
       toast.success(t('checkout.success'));
       navigate(`/s/${slug}/order/${result.order.orderNumber}`);
     } catch (err: any) {
@@ -408,7 +433,7 @@ export default function Checkout() {
                           )}
                         </div>
                         <p className="font-bold text-sm">
-                          {toMoneyNumber(rate.baseRate) > 0 ? `${toMoneyNumber(rate.baseRate).toFixed(2)} ${t('common.sar', 'ر.س')}` : t('checkout.free', 'مجاني')}
+                          {toMoneyNumber(rate.baseRate) > 0 ? <>{toMoneyNumber(rate.baseRate).toFixed(2)} <SarIcon size="sm" /></> : t('checkout.free', 'مجاني')}
                         </p>
                       </label>
                     ))}
@@ -487,6 +512,11 @@ export default function Checkout() {
                           <div key={idx} className="flex justify-between items-start text-sm py-1">
                             <div>
                               <span className="text-text-primary">{item.product?.name ?? item.name} × {item.item?.quantity ?? item.quantity}</span>
+                              {getVariantLabel(item) && (
+                                <p className="text-[var(--badge-font-size)] text-text-tertiary mt-0.5">
+                                  {getVariantLabel(item)}
+                                </p>
+                              )}
                               {(item.item?.giftWrapSelected || item.item?.sendAsGift) && (
                           <div className="flex gap-1 mt-0.5">
                             {item.item?.giftWrapSelected && <StoreBadge variant="info" size="sm"><Icon icon={Gift} size="2xs" className="inline align-middle ms-0.5" />{t('cart.giftWrap', 'تغليف')}</StoreBadge>}
@@ -495,7 +525,7 @@ export default function Checkout() {
                               )}
                               {item.item?.giftMessage &&                       <p className="text-[var(--badge-font-size)] text-text-tertiary mt-0.5"><Icon icon={Gift} size="2xs" className="inline align-middle ms-0.5" />{item.item.giftMessage}</p>}
                             </div>
-                            <span className="font-medium tabular-nums">{Number(item.item?.totalPrice ?? item.totalPrice).toFixed(2)} {t('common.sar', 'ر.س')}</span>
+                            <span className="font-medium tabular-nums">{Number(item.item?.totalPrice ?? item.totalPrice).toFixed(2)} <SarIcon size="sm" /></span>
                           </div>
                         ))}
                       </div>
@@ -559,16 +589,21 @@ export default function Checkout() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="line-clamp-1 text-text-primary">{item.product.name}</p>
-                  <p className="text-xs text-text-tertiary">{item.quantity} × {Number(item.unitPrice).toFixed(2)}</p>
+                  {getVariantLabel(item) && (
+                    <p className="text-[var(--badge-font-size)] text-text-tertiary line-clamp-1">
+                      {getVariantLabel(item)}
+                    </p>
+                  )}
+                  <p className="text-xs text-text-tertiary">{item.quantity} × {Number(item.unitPrice).toFixed(2)} <SarIcon size="sm" /></p>
                   {item.notes && <p className="text-[var(--badge-font-size)] text-text-tertiary mt-0.5">{item.notes}</p>}
                 </div>
-                    <p className="font-medium text-sm">{Number(item.totalPrice).toFixed(2)}</p>
+                    <p className="font-medium text-sm">{Number(item.totalPrice).toFixed(2)} <SarIcon size="sm" /></p>
                   </div>
                 ))}
               </div>
               <div className="flex justify-between font-bold text-base pt-3">
                 <span>{t('checkout.total')}</span>
-                <span className="text-primary-600">{total.toFixed(2)} {t('common.sar', 'ر.س')}</span>
+                <span className="text-primary-600">{total.toFixed(2)} <SarIcon size="md" /></span>
               </div>
                 <div className="mt-4 flex items-center gap-2 text-xs text-text-tertiary">
                   <Icon icon={ShieldCheck} size="xs" />

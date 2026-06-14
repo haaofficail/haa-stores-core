@@ -6,7 +6,7 @@ interface CartContextValue {
   cart: Cart | null;
   loading: boolean;
   itemCount: number;
-  addItem: (productId: number, quantity?: number, notes?: string, giftData?: { giftWrapSelected?: boolean; sendAsGift?: boolean; giftMessage?: string }, variantId?: number) => Promise<Cart | undefined>;
+  addItem: (productId: number, quantity?: number, notes?: string, giftData?: { giftWrapSelected?: boolean; sendAsGift?: boolean; giftMessage?: string }, variantId?: number, source?: 'storefront' | 'haa_marketplace') => Promise<Cart | undefined>;
   updateItem: (itemId: number, quantity: number) => Promise<Cart | undefined>;
   removeItem: (itemId: number) => Promise<Cart | undefined>;
   refreshCart: () => Promise<void>;

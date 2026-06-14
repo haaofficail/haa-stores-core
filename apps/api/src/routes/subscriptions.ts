@@ -1,8 +1,18 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
+import { eq } from 'drizzle-orm';
+import { createDbClient } from '@haa/db';
+import * as s from '@haa/db/schema';
 import { SubscriptionService } from '@haa/commerce-core';
 import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';
+
+async function resolveStore(storeId: number) {
+  const db = createDbClient();
+  const [store] = await db.select({ id: s.stores.id, isDemo: s.stores.isDemo })
+    .from(s.stores).where(eq(s.stores.id, storeId)).limit(1);
+  return store ?? null;
+}
 
 const subscriptionsRouter = new Hono();
 
@@ -10,13 +20,15 @@ subscriptionsRouter.use('*', requireAuth(), requireStoreAccess());
 
 subscriptionsRouter.get('/', requirePermission('subscriptions:view'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const subscription = await new SubscriptionService().getCurrentSubscription(storeId);
+  const store = await resolveStore(storeId);
+  const subscription = await new SubscriptionService(undefined, store).getCurrentSubscription(storeId);
   return c.json({ success: true, data: subscription });
 });
 
 subscriptionsRouter.get('/current', requirePermission('subscriptions:view'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const subscription = await new SubscriptionService().getCurrentSubscription(storeId);
+  const store = await resolveStore(storeId);
+  const subscription = await new SubscriptionService(undefined, store).getCurrentSubscription(storeId);
   return c.json({ success: true, data: subscription });
 });
 
@@ -77,7 +89,8 @@ subscriptionsRouter.get('/invoices', requirePermission('subscriptions:view'), as
 
 subscriptionsRouter.get('/limits', requirePermission('subscriptions:view'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const limits = await new SubscriptionService().checkPlanLimits(storeId);
+  const store = await resolveStore(storeId);
+  const limits = await new SubscriptionService(undefined, store).checkPlanLimits(storeId);
   return c.json({ success: true, data: limits });
 });
 

@@ -65,8 +65,8 @@ async function seed() {
 
     console.log('\n✅ Seed completed successfully (idempotent skip)');
     console.log('\n📋 Login credentials:');
-    console.log('   Email:    ahmed@example.com');
-    console.log('   Password: Test@123456');
+    console.log('   haa-demo:         customer.haa-demo@example.com / Test@123456');
+    console.log('   demo-perfumes:    customer.perfumes@example.com / Test@123456');
     process.exit(0);
   }
 
@@ -81,14 +81,6 @@ async function seed() {
 
   // ── User ────────────────────────────────────────────
   const passwordHash = await hashPassword('Test@123456');
-  const [user] = await db.insert(s.users).values({
-    name: 'أحمد الحربي',
-    email: 'ahmed@example.com',
-    passwordHash,
-    phone: '966500000001',
-  }).returning();
-  console.log(`  ✓ User created: ${user.email}`);
-
   const [adminUser] = await db.insert(s.users).values({
     name: 'مسؤول المنصة',
     email: 'admin@example.com',
@@ -98,12 +90,47 @@ async function seed() {
   }).returning();
   console.log(`  ✓ Admin user created: ${adminUser.email}`);
 
-  // ── Tenant-User ─────────────────────────────────────
-  await db.insert(s.tenantUsers).values({
-    tenantId: tenant.id,
-    userId: user.id,
-    role: 'owner',
-  });
+  // ── Demo Merchant for haa-demo (admin access) ───────
+  const [haaDemoMerchant] = await db.insert(s.users).values({
+    name: 'تاجر هاء التجريبي',
+    email: 'merchant.haa-demo@example.com',
+    passwordHash,
+    phone: '966500000001',
+  }).returning();
+  console.log(`  ✓ haa-demo merchant user created: ${haaDemoMerchant.email}`);
+
+  // ── Demo Customer for haa-demo (storefront only) ────
+  const [haaDemoCustomer] = await db.insert(s.users).values({
+    name: 'عميل هاء التجريبي',
+    email: 'customer.haa-demo@example.com',
+    passwordHash,
+    phone: '966500000002',
+  }).returning();
+  console.log(`  ✓ haa-demo customer user created: ${haaDemoCustomer.email}`);
+
+  // ── Demo Merchant for demo-perfumes (admin access) ──
+  const [perfumeDemoMerchant] = await db.insert(s.users).values({
+    name: 'تاجر العطور التجريبي',
+    email: 'merchant.perfumes@example.com',
+    passwordHash,
+    phone: '966500000011',
+  }).returning();
+  console.log(`  ✓ demo-perfumes merchant user created: ${perfumeDemoMerchant.email}`);
+
+  // ── Demo Customer for demo-perfumes (storefront only) ──
+  const [perfumeDemoCustomer] = await db.insert(s.users).values({
+    name: 'عميل العطور التجريبي',
+    email: 'customer.perfumes@example.com',
+    passwordHash,
+    phone: '966500000012',
+  }).returning();
+  console.log(`  ✓ demo-perfumes customer user created: ${perfumeDemoCustomer.email}`);
+
+  // ── Tenant-User (merchants are tenant owners) ───────
+  await db.insert(s.tenantUsers).values([
+    { tenantId: tenant.id, userId: haaDemoMerchant.id, role: 'owner' },
+    { tenantId: tenant.id, userId: perfumeDemoMerchant.id, role: 'owner' },
+  ]);
 
   // ── Store ───────────────────────────────────────────
   const [store] = await db.insert(s.stores).values({
@@ -115,6 +142,9 @@ async function seed() {
     phone: '966500000002',
     primaryColor: '#2563eb',
     backgroundColor: '#ffffff',
+    isDemo: true,
+    demoProfile: 'general',
+    demoSeedVersion: '2026-06-initial-v1',
     publishStatus: 'published',
     policies: {
       about: 'متجر هاء التجريبي هو متجر إلكتروني سعودي يقدم تشكيلة واسعة من المنتجات عالية الجودة',
@@ -305,8 +335,32 @@ async function seed() {
     'jump-rope': 'nike',
   };
 
+  const demoStats: Record<string, { rating: number; reviewCount: number; salesCount: number }> = {
+    'wireless-bluetooth-headphones':     { rating: 4, reviewCount: 128, salesCount: 2340 },
+    'smart-watch':                       { rating: 5, reviewCount: 312, salesCount: 4560 },
+    'power-bank-10000':                  { rating: 3, reviewCount: 45,  salesCount: 890 },
+    'wireless-earbuds':                  { rating: 4, reviewCount: 89,  salesCount: 1670 },
+    'home-camera':                       { rating: 4, reviewCount: 67,  salesCount: 1230 },
+    'cotton-t-shirt':                    { rating: 3, reviewCount: 210, salesCount: 5120 },
+    'modern-backpack':                   { rating: 5, reviewCount: 156, salesCount: 2890 },
+    'winter-jacket':                     { rating: 4, reviewCount: 93,  salesCount: 780 },
+    'granite-pot-set':                   { rating: 5, reviewCount: 278, salesCount: 3450 },
+    'table-cover-set':                   { rating: 3, reviewCount: 34,  salesCount: 560 },
+    'home-bookshelf-3':                  { rating: 4, reviewCount: 112, salesCount: 1450 },
+    'electric-blender':                  { rating: 4, reviewCount: 198, salesCount: 2780 },
+    'face-moisturizer':                  { rating: 5, reviewCount: 445, salesCount: 6780 },
+    'french-perfume-50':                 { rating: 5, reviewCount: 267, salesCount: 1890 },
+    'educational-toys-set':              { rating: 4, reviewCount: 78,  salesCount: 920 },
+    'kids-school-bag':                   { rating: 3, reviewCount: 56,  salesCount: 1340 },
+    'self-development-book':             { rating: 4, reviewCount: 334, salesCount: 4560 },
+    'daily-planner':                     { rating: 2, reviewCount: 23,  salesCount: 340 },
+    'sports-shoes':                      { rating: 5, reviewCount: 423, salesCount: 7890 },
+    'jump-rope':                         { rating: 4, reviewCount: 167, salesCount: 3450 },
+  };
+
   const productRecords: Record<string, { id: number; price: string }> = {};
   for (const p of productsData) {
+    const stats = demoStats[p.slug] ?? { rating: null, reviewCount: 0, salesCount: 0 };
     const [product] = await db.insert(s.products).values({
       storeId: store.id,
       name: p.name,
@@ -328,6 +382,9 @@ async function seed() {
       brandId: brandMapBySlug[p.slug] ? brandRecords[brandMapBySlug[p.slug]!] ?? null : null,
       seoTitle: `${p.name} - متجر هاء التجريبي`,
       seoDescription: `${p.desc.substring(0, 150)}`,
+      rating: stats.rating,
+      reviewCount: stats.reviewCount,
+      salesCount: stats.salesCount,
     }).returning();
     productRecords[p.slug] = { id: product.id, price: p.price };
 
@@ -560,7 +617,7 @@ async function seed() {
         orderId: order.id,
         fromStatus: si === 0 ? null : flow[si - 1],
         toStatus: flow[si],
-        changedByUserId: isLast && os.status === 'completed' ? user.id : null,
+        changedByUserId: isLast && os.status === 'completed' ? haaDemoMerchant.id : null,
         createdAt: new Date(orderDate.getTime() + si * 3600000),
       });
     }
@@ -834,7 +891,7 @@ async function seed() {
   for (const p of permissionRecords) {
     await db.insert(s.rolePermissions).values({ roleId: adminRole.id, permissionId: p.id });
   }
-  await db.insert(s.userStoreRoles).values({ userId: user.id, storeId: store.id, roleId: adminRole.id });
+  await db.insert(s.userStoreRoles).values({ userId: haaDemoMerchant.id, storeId: store.id, roleId: adminRole.id });
   console.log(`  ✓ ${permissionRecords.length} Permissions, 1 Role, ${permissionRecords.length} role-permission assignments, 1 user-store-role`);
 
   // ── Notification Templates ─────────────────────────
@@ -853,8 +910,10 @@ async function seed() {
 
   console.log('\n✅ Seed completed successfully!');
   console.log('\n📋 Login credentials:');
-  console.log('   Email:    ahmed@example.com');
-  console.log('   Password: Test@123456');
+  console.log('   haa-demo merchant:    merchant.haa-demo@example.com / Test@123456 (admin)');
+  console.log('   haa-demo customer:    customer.haa-demo@example.com / Test@123456 (storefront)');
+  console.log('   demo-perfumes merchant: merchant.perfumes@example.com / Test@123456 (admin)');
+  console.log('   demo-perfumes customer: customer.perfumes@example.com / Test@123456 (storefront)');
   console.log('\n📦 Store URL: /s/haa-demo');
   console.log('📊 Reports:   /merchant/dashboard/reports');
   console.log('🏷️ Coupons:   /merchant/dashboard/coupons');

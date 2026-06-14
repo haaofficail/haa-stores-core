@@ -4,10 +4,144 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* ── Surfaces ── */
+  --haa-surface-1: #ffffff;
+  --haa-surface-2: #f8f9fc;
+  --haa-surface-3: #f0f2f5;
+  --haa-surface-inverse: #0f172a;
+
+  /* ── Text ── */
+  --haa-text-primary: #0f172a;
+  --haa-text-secondary: #475569;
+  --haa-text-tertiary: #94a3b8;
+  --haa-text-disabled: #cbd5e1;
+  --haa-text-inverse: #ffffff;
+  --haa-text-link: #2563eb;
+
+  /* ── Borders ── */
+  --haa-border: #e2e8f0;
+  --haa-border-strong: #cbd5e1;
+  --haa-border-focus: #2563eb;
+  --haa-border-disabled: #e2e8f0;
+  --haa-divider: #f1f5f9;
+
+  /* ── Primary — Elegant Blue ── */
+  --haa-primary-50: #eff6ff;
+  --haa-primary-100: #dbeafe;
+  --haa-primary-200: #bfdbfe;
+  --haa-primary-300: #93c5fd;
+  --haa-primary-400: #60a5fa;
+  --haa-primary-500: #2563eb;
+  --haa-primary-600: #1d4ed8;
+  --haa-primary-700: #1e40af;
+
+  /* ── Neutral (Slate) ── */
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+  --color-neutral-950: #020617;
+
+  /* ── Semantic ── */
+  --haa-success: #16a34a;
+  --haa-success-subtle: #f0fdf4;
+  --haa-success-text: #15803d;
+  --haa-warning: #d97706;
+  --haa-warning-subtle: #fffbeb;
+  --haa-warning-text: #b45309;
+  --haa-danger: #dc2626;
+  --haa-danger-subtle: #fef2f2;
+  --haa-info: #2563eb;
+
+  /* ── Shadows ── */
+  --haa-shadow-color: rgba(15, 23, 42, 0.04);
+  --haa-shadow-color-strong: rgba(15, 23, 42, 0.08);
+  --shadow-sm: 0 1px 2px var(--haa-shadow-color);
+  --shadow-md: 0 4px 12px var(--haa-shadow-color), 0 1px 3px var(--haa-shadow-color-strong);
+  --shadow-lg: 0 12px 40px var(--haa-shadow-color), 0 4px 12px var(--haa-shadow-color-strong);
+  --shadow-xl: 0 20px 60px var(--haa-shadow-color), 0 8px 20px var(--haa-shadow-color-strong);
+
+  /* ── Typography Scale ── */
+  --typography-caption2-size: 0.625rem;
+  --typography-caption2-line-height: 0.875rem;
+  --typography-caption2-letter-spacing: 0;
+  --typography-caption1-size: 0.6875rem;
+  --typography-caption1-line-height: 0.875rem;
+  --typography-caption1-letter-spacing: 0;
+  --typography-footnote-size: 0.75rem;
+  --typography-footnote-line-height: 1rem;
+  --typography-footnote-letter-spacing: 0;
+  --typography-subhead-size: 0.8125rem;
+  --typography-subhead-line-height: 1.125rem;
+  --typography-subhead-letter-spacing: 0;
+  --typography-callout-size: 0.875rem;
+  --typography-callout-line-height: 1.25rem;
+  --typography-callout-letter-spacing: 0;
+  --typography-body-size: 0.875rem;
+  --typography-body-line-height: 1.25rem;
+  --typography-body-letter-spacing: 0;
+  --typography-headline-size: 1rem;
+  --typography-headline-line-height: 1.25rem;
+  --typography-headline-letter-spacing: 0;
+  --typography-title3-size: 1.125rem;
+  --typography-title3-line-height: 1.375rem;
+  --typography-title3-letter-spacing: 0;
+  --typography-title2-size: 1.25rem;
+  --typography-title2-line-height: 1.5rem;
+  --typography-title2-letter-spacing: 0;
+  --typography-title1-size: 1.5rem;
+  --typography-title1-line-height: 1.75rem;
+  --typography-title1-letter-spacing: 0;
+  --typography-large-title-size: 1.75rem;
+  --typography-large-title-line-height: 2rem;
+  --typography-large-title-letter-spacing: 0;
+
+  /* ── Font Weights ── */
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* ── Border Widths ── */
+  --border-0: 0px;
+  --border-1: 1px;
+  --border-2: 2px;
+  --border-4: 4px;
+
+  /* ── Opacity ── */
+  --opacity-0: 0;
+  --opacity-5: 0.05;
+  --opacity-10: 0.1;
+  --opacity-20: 0.2;
+  --opacity-30: 0.3;
+  --opacity-50: 0.5;
+  --opacity-70: 0.7;
+  --opacity-100: 1;
+
+  /* ── Radii ── */
+  --radius-micro: 4px;
+  --radius-mac-btn: 8px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-ios-btn: 12px;
+  --radius-lg: 14px;
+  --radius-ios-icon: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 9999px;
+  --radius-vision-os: 24px;
+}
+
 @layer base {
   body {
-    background: var(--haa-surface-1, #ffffff);
-    color: var(--haa-text-primary, #1d1d1f);
+    background: var(--haa-surface-1);
+    color: var(--haa-text-primary);
     font-family: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -33,7 +167,7 @@
 
   html {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-neutral-300, #d4d4d4) transparent;
+    scrollbar-color: var(--color-neutral-300) transparent;
   }
 
   ::-webkit-scrollbar {

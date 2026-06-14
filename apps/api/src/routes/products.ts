@@ -4,7 +4,7 @@ import { eq, and } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { ProductsService } from '@haa/commerce-core';
-import { AuditLogService } from '@haa/integration-core';
+import { AuditLogService, WebhookOutboxService } from '@haa/integration-core';
 import { createProductSchema, updateProductSchema, paginationSchema } from '@haa/shared';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
 import { getProviderService } from './marketplaces';
@@ -12,6 +12,15 @@ import { getProviderService } from './marketplaces';
 const productsRouter = new Hono();
 
 productsRouter.use('*', requireAuth(), requireStoreAccess());
+
+async function getStoreTenantId(storeId: number): Promise<number | null> {
+  const db = createDbClient();
+  const [store] = await db.select({ tenantId: s.stores.tenantId })
+    .from(s.stores)
+    .where(eq(s.stores.id, storeId))
+    .limit(1);
+  return store?.tenantId ?? null;
+}
 
 async function autoPublishProduct(storeId: number, productId: number, productData: any) {
   const db = createDbClient();
@@ -79,28 +88,39 @@ async function autoPublishProduct(storeId: number, productId: number, productDat
   return { channels, errors };
 }
 
+async function recordMarketplaceSyncFailure(
+  storeId: number,
+  productId: number,
+  actorUserId: number | null | undefined,
+  details: Record<string, unknown>,
+) {
+  const tenantId = await getStoreTenantId(storeId);
+  await Promise.allSettled([
+    new AuditLogService().record({
+      actorUserId: actorUserId ?? null,
+      storeId,
+      action: 'product_marketplace_sync_failed',
+      entityType: 'product',
+      entityId: productId,
+      newValue: details,
+    }),
+    tenantId
+      ? new WebhookOutboxService().recordEvent('product.marketplace_sync_failed', storeId, tenantId, {
+        productId,
+        ...details,
+      })
+      : Promise.resolve(),
+  ]);
+}
+
 function autoPublishProductWithAudit(storeId: number, productId: number, productData: any, actorUserId?: number | null) {
   autoPublishProduct(storeId, productId, productData)
     .then(async (result) => {
       if (!result?.errors?.length) return;
-      await new AuditLogService().record({
-        actorUserId: actorUserId ?? null,
-        storeId,
-        action: 'product_marketplace_sync_failed',
-        entityType: 'product',
-        entityId: productId,
-        newValue: { errors: result.errors, channels: result.channels },
-      });
+      await recordMarketplaceSyncFailure(storeId, productId, actorUserId, { errors: result.errors, channels: result.channels });
     })
     .catch(async (err: any) => {
-      await new AuditLogService().record({
-        actorUserId: actorUserId ?? null,
-        storeId,
-        action: 'product_marketplace_sync_failed',
-        entityType: 'product',
-        entityId: productId,
-        newValue: { error: err?.message ?? 'Unknown marketplace sync error' },
-      });
+      await recordMarketplaceSyncFailure(storeId, productId, actorUserId, { error: err?.message ?? 'Unknown marketplace sync error' });
     });
 }
 

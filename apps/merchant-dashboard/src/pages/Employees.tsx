@@ -126,6 +126,15 @@ export default function EmployeesPage() {
         role: data.role,
         isActive: data.isActive,
       });
+      // Update permissions separately via permissions API
+      if (data.permissions.length > 0) {
+        const permissionData = data.permissions.map(key => ({
+          permissionKey: key,
+          scopeType: 'store' as const,
+          scopeId: undefined,
+        }));
+        await employeesApi.updateMemberPermissions(storeId, editTarget.id, permissionData);
+      }
     }
   }
 

@@ -131,7 +131,7 @@ for (const app of apps) {
 console.log('\n=== Runtime Health ===')
 try {
   const apiResult = execSync('curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:3000/health 2>/dev/null || echo "unavailable"', { encoding: 'utf-8', timeout: 5000 }).trim()
-  if (apiResult && apiResult !== 'unavailable' && apiResult !== '000') {
+  if (apiResult && !apiResult.includes('unavailable') && apiResult !== '000') {
     allChecks.push(check(true, 'API /health endpoint responds', { app: 'api' }))
   } else {
     allChecks.push(checkWarn(false, 'API /health endpoint responds', { app: 'api', message: 'API dev server not running', recommendation: 'Run pnpm dev:api in another terminal' }))
@@ -141,8 +141,8 @@ try {
 }
 
 try {
-  const storefrontResult = execSync('curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:5173 2>/dev/null || echo "unavailable"', { encoding: 'utf-8', timeout: 5000 }).trim()
-  if (storefrontResult && storefrontResult !== 'unavailable' && storefrontResult !== '000') {
+  const storefrontResult = execSync('curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:5174 2>/dev/null || echo "unavailable"', { encoding: 'utf-8', timeout: 5000 }).trim()
+  if (storefrontResult && !storefrontResult.includes('unavailable') && storefrontResult !== '000') {
     allChecks.push(check(true, 'Storefront responds', { app: 'storefront' }))
   } else {
     allChecks.push(checkWarn(false, 'Storefront responds', { app: 'storefront', message: 'Storefront dev server not running', recommendation: 'Run pnpm dev:storefront in another terminal' }))
@@ -152,8 +152,8 @@ try {
 }
 
 try {
-  const dashResult = execSync('curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:5174 2>/dev/null || echo "unavailable"', { encoding: 'utf-8', timeout: 5000 }).trim()
-  if (dashResult && dashResult !== 'unavailable' && dashResult !== '000') {
+  const dashResult = execSync('curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:5173 2>/dev/null || echo "unavailable"', { encoding: 'utf-8', timeout: 5000 }).trim()
+  if (dashResult && !dashResult.includes('unavailable') && dashResult !== '000') {
     allChecks.push(check(true, 'Merchant Dashboard responds', { app: 'merchant-dashboard' }))
   } else {
     allChecks.push(checkWarn(false, 'Merchant Dashboard responds', { app: 'merchant-dashboard', message: 'Merchant Dashboard dev server not running', recommendation: 'Run pnpm dev:dashboard in another terminal' }))

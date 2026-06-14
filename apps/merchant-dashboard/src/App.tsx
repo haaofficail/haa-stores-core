@@ -47,6 +47,8 @@ const SupportTickets = lazy(() => import('@/pages/SupportTickets'));
 const SupportTicketDetail = lazy(() => import('@/pages/SupportTicketDetail'));
 const SupportKb = lazy(() => import('@/pages/SupportKb'));
 const Employees = lazy(() => import('@/pages/Employees'));
+const GrowthInsights = lazy(() => import('@/pages/GrowthInsights'));
+const LiveRadar = lazy(() => import('@/pages/LiveRadar'));
 
 function Lazy({ children }: { children: ReactNode }) {
   return <Suspense fallback={<LoadingSkeleton />}>{children}</Suspense>;
@@ -110,6 +112,8 @@ export default function App() {
               <Route path="/abandoned-carts" element={<GuardedRoute permission="orders:read"><AbandonedCarts /></GuardedRoute>} />
               <Route path="/exports" element={<GuardedRoute permission="exports:create"><Exports /></GuardedRoute>} />
               <Route path="/reports" element={<GuardedRoute permission="reports:read"><Reports /></GuardedRoute>} />
+              <Route path="/growth" element={<GuardedRoute permission="reports:read"><GrowthInsights /></GuardedRoute>} />
+              <Route path="/live" element={<GuardedRoute permission="reports:read"><LiveRadar /></GuardedRoute>} />
               <Route path="/imports" element={<GuardedRoute permission="imports:create"><Imports /></GuardedRoute>} />
               <Route path="/settings" element={<GuardedRoute permission="settings:read"><Settings /></GuardedRoute>} />
               <Route path="/theme" element={<GuardedRoute permission="theme:view"><ThemeEditor /></GuardedRoute>} />

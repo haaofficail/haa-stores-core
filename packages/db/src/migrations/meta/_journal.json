@@ -159,29 +159,197 @@
     {
       "idx": 22,
       "version": "7",
+      "when": 1782000022000,
+      "tag": "0021_size_guides",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
       "when": 1781252000000,
       "tag": "0022_sweet_gift_cart",
       "breakpoints": true
     },
     {
-      "idx": 23,
+      "idx": 24,
       "version": "7",
       "when": 1781253000000,
       "tag": "0023_add_phone_to_pickup_locations",
       "breakpoints": true
     },
     {
-      "idx": 24,
+      "idx": 25,
       "version": "7",
       "when": 1781350000000,
       "tag": "0024_product_variants_is_active",
       "breakpoints": true
     },
     {
-      "idx": 25,
+      "idx": 26,
+      "version": "7",
+      "when": 1782000026000,
+      "tag": "0025_publish_gate",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
       "version": "7",
       "when": 1781197332920,
       "tag": "0025_sudden_leech",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1781338395131,
+      "tag": "0026_kind_mentallo",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1782000029000,
+      "tag": "0026_merchant_acknowledgement",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1782000030000,
+      "tag": "0027_add_token_version_to_users",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1781967600000,
+      "tag": "0027_membership_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1782000032000,
+      "tag": "0028_add_provider_shipment_id_to_shipments",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1782000033000,
+      "tag": "0028_live_presence",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1782000034000,
+      "tag": "0029_live_presence_geo",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1782000035000,
+      "tag": "0029_oto_multi_tenant_marketplace",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1782000036000,
+      "tag": "0030_live_radar_snapshots",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1782000037000,
+      "tag": "0030_wallet_settlement_readiness",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1782000038000,
+      "tag": "0031_manual_settlement_workflow",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1782000039000,
+      "tag": "0032_cart_variant_fk",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1782000040000,
+      "tag": "0033_haa_marketplace",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1782000041000,
+      "tag": "0034_marketplace_orders",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1782000042000,
+      "tag": "0035_marketplace_governance",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1782000043000,
+      "tag": "0036_marketing_actions",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1782000044000,
+      "tag": "0037_repair_marketing_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1782000050000,
+      "tag": "0038_sales_count",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1782000046000,
+      "tag": "0047_store_demo_flags",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1782000047000,
+      "tag": "0048_repair_marketing_action_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1782000048000,
+      "tag": "0039_repair_support_kb_articles",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1782000049000,
+      "tag": "0049_fk_cascade_stores_tenant",
       "breakpoints": true
     }
   ]

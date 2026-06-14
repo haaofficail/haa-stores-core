@@ -1390,7 +1390,7 @@ export default function DashboardHome() {
         ),
         action: {
           label: t("common.setup", "الإعداد"),
-          onClick: () => navigate("/marketplace"),
+          onClick: () => navigate("/channels"),
         },
       });
     if (notificationLogs.length > 0) {
@@ -2043,7 +2043,6 @@ export default function DashboardHome() {
                       ? "استلام"
                       : "توصيل";
                   const nextAction = getNextActionLabel(order);
-                  /* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
                   return (
                     <div
                       key={order.id}

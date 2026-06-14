@@ -20,6 +20,13 @@ const StoreNotFound = lazy(() => import('@/pages/StoreNotFound'));
 const Support = lazy(() => import('@/pages/Support'));
 const SupportTicket = lazy(() => import('@/pages/SupportTicket'));
 const KnowledgeBase = lazy(() => import('@/pages/KnowledgeBase'));
+const HaaMarketplace = lazy(() => import('@/pages/HaaMarketplace'));
+const MarketplaceCart = lazy(() => import('@/pages/MarketplaceCart'));
+const MarketplaceCheckout = lazy(() => import('@/pages/MarketplaceCheckout'));
+const MarketplaceOrderTrack = lazy(() => import('@/pages/MarketplaceOrderTrack'));
+const MarketplaceSeller = lazy(() => import('@/pages/MarketplaceSeller'));
+const MarketplaceSellers = lazy(() => import('@/pages/MarketplaceSellers'));
+const MarketplaceProductDetail = lazy(() => import('@/pages/marketplace/MarketplaceProductDetail'));
 
 function PageSkeleton() {
   return (
@@ -66,6 +73,14 @@ export default function App() {
             <Route path="support/kb/:articleSlug" element={<KnowledgeBase />} />
             <Route path="*" element={<StoreNotFound />} />
           </Route>
+          <Route path="/marketplace" element={<HaaMarketplace />} />
+          <Route path="/marketplace/cart" element={<MarketplaceCart />} />
+          <Route path="/marketplace/checkout" element={<MarketplaceCheckout />} />
+          <Route path="/marketplace/orders" element={<MarketplaceOrderTrack />} />
+          <Route path="/marketplace/order/:orderNumber" element={<MarketplaceOrderTrack />} />
+          <Route path="/marketplace/products/:storeSlug/:productSlug" element={<MarketplaceProductDetail />} />
+          <Route path="/marketplace/sellers" element={<MarketplaceSellers />} />
+          <Route path="/marketplace/sellers/:storeSlug" element={<MarketplaceSeller />} />
           <Route path="/" element={<Navigate to="/s/haa-demo" replace />} />
             <Route path="/legal/:legalSlug" element={<LegalPage />} />
           <Route path="*" element={<StoreNotFound />} />

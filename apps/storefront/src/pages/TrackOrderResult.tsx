@@ -8,6 +8,7 @@ import {
 } from '@/components/ui';
 import { Package, Truck, CheckCircle, Clock, ArrowLeft, MapPin, CreditCard, ShoppingBag, Store, Gift, Phone, FileText } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
+import { SarIcon } from '@/components/ui/SarIcon';
 import { toast } from 'sonner';
 import { useSEO } from '@/hooks/useSEO';
 
@@ -202,13 +203,13 @@ export default function TrackOrderResult() {
                         )}
                         {item.giftMessage && <p className="text-[var(--badge-font-size)] text-text-tertiary mt-0.5"><Icon icon={FileText} size="2xs" className="inline align-middle ms-0.5" />{item.giftMessage}</p>}
                       </div>
-                      <span className="font-medium">{Number(item.totalPrice).toFixed(2)} {t('common.sar', 'ر.س')}</span>
+                      <span className="font-medium">{Number(item.totalPrice).toFixed(2)} <SarIcon size="sm" /></span>
                     </div>
                   ))}
                 </div>
                 <div className="border-t border-border pt-3 flex justify-between items-center">
                   <span className="font-bold">{t('order.total')}</span>
-                  <span className="font-bold text-lg text-primary-600">{Number(order.total).toFixed(2)} {t('common.sar', 'ر.س')}</span>
+                  <span className="font-bold text-lg text-primary-600">{Number(order.total).toFixed(2)} <SarIcon size="md" /></span>
                 </div>
               </>
             )}

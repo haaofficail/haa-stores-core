@@ -1,7 +1,8 @@
 import { eq, and, like, count, inArray, sql, or } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
-import { createProductSchema, updateProductSchema, createMediaAdapter, ValidationError, type MediaAdapter, type UploadResult } from '@haa/shared';
+import { createProductSchema, updateProductSchema, ValidationError } from '@haa/shared';
+import { createMediaAdapter, type MediaAdapter, type UploadResult } from '@haa/shared/media';
 import { z } from 'zod';
 import { cacheBumpNamespace, cacheGetVersioned, cacheSetVersioned } from './redis';
 
@@ -341,9 +342,12 @@ export class ProductsService {
         isFragile: input.isFragile,
         giftWrapAvailable: input.giftWrapAvailable ?? false,
         giftWrapPriceOverride: input.giftWrapPriceOverride?.toString() ?? null,
+        haaMarketplaceEnabled: input.haaMarketplaceEnabled ?? false,
+        haaMarketplaceCommissionRate: input.haaMarketplaceCommissionRate?.toString() ?? '0.05',
         brandId: input.brandId ?? null,
         seoTitle: input.seoTitle ?? null,
         seoDescription: input.seoDescription ?? null,
+        salesCount: input.salesCount ?? 0,
       }).returning();
 
       if (input.categoryIds?.length) {
@@ -398,9 +402,12 @@ export class ProductsService {
         isFragile: input.isFragile,
         giftWrapAvailable: input.giftWrapAvailable,
         giftWrapPriceOverride: input.giftWrapPriceOverride?.toString(),
+        haaMarketplaceEnabled: input.haaMarketplaceEnabled,
+        haaMarketplaceCommissionRate: input.haaMarketplaceCommissionRate?.toString(),
         brandId: input.brandId,
         seoTitle: input.seoTitle,
         seoDescription: input.seoDescription,
+        salesCount: input.salesCount,
         updatedAt: new Date(),
       }).where(and(eq(s.products.id, productId), eq(s.products.storeId, storeId))).returning();
 

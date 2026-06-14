@@ -284,3 +284,136 @@ Before any significant development or bug fix:
 | `pnpm typecheck` | TypeScript type checking |
 | `pnpm test` | Run vitest tests |
 | `pnpm lint` | Run ESLint |
+
+---
+
+## 14. Mandatory Skill Selection Rule (NEW — 2026-06-14)
+
+> **No task, sub-task, or significant action may begin without first declaring and loading the relevant skill(s).**
+
+### The 4-Step Skill Gate (apply before EVERY action)
+
+For every action — no matter how small — complete these 4 steps **in order, in writing, before touching any file or command**:
+
+#### Step 1: **STATE** the task
+One sentence. What are you about to do?
+
+#### Step 2: **SELECT** the skill(s)
+Which skill(s) apply? List them by name. If unsure, consult `~/.mavis/skills/` or use the `find-skills` skill.
+
+Common skill triggers:
+
+| Task pattern | Required skill |
+|--------------|----------------|
+| Any new feature, bug fix, or refactor | `plan-mode` |
+| Any bug investigation or unexpected behavior | `systematic-debugging` |
+| Any new code or test | `test-driven-development` |
+| Before claiming "done" | `verification-before-completion` |
+| After any significant change | `requesting-code-review` |
+| Any creative/design work | `brainstorming-2` |
+| Any complex multi-step task | `plan-mode` |
+| Stuck / unsure why | `mavis-doctor` |
+| Multi-step parallel work | `mavis-team` |
+| Code review of existing code | `code-review` |
+
+#### Step 3: **STATE WHY** the skill fits
+One sentence per skill. Why does this skill apply to this specific task?
+
+#### Step 4: **LOAD** the skill(s)
+Use the `skill` tool to load each selected skill. Do not proceed until loaded.
+
+### Enforcement Format (use this exact template)
+
+Before EVERY sub-task, write this in your response:
+
+```markdown
+## Pre-Action Skill Gate
+
+**Task:** [one sentence]
+**Skills selected:**
+- `[skill-name]` — [why it fits]
+- `[skill-name]` — [why it fits]
+
+**Loading now...**
+[then call the skill tool]
+```
+
+### Examples
+
+#### Example 1: Merging duplicate schemas
+```markdown
+## Pre-Action Skill Gate
+
+**Task:** Delete duplicate `marketing-actions.ts` schema file.
+
+**Skills selected:**
+- `plan-mode` — this is a data-integrity change requiring deliberate planning
+- `systematic-debugging` — need to confirm root cause of duplication before removal
+- `verification-before-completion` — must verify no test breaks after removal
+
+**Loading now...**
+```
+
+#### Example 2: Adding a new API endpoint
+```markdown
+## Pre-Action Skill Gate
+
+**Task:** Add `requirePermission` to `dashboard.ts` routes.
+
+**Skills selected:**
+- `plan-mode` — multi-step change across multiple endpoints
+- `test-driven-development` — need boundary tests before applying changes
+- `verification-before-completion` — must verify all tests pass
+
+**Loading now...**
+```
+
+#### Example 3: Investigating a failing test
+```markdown
+## Pre-Action Skill Gate
+
+**Task:** Investigate why `compliance-regression-gate.test.ts` fails on local DB.
+
+**Skills selected:**
+- `systematic-debugging` — debugging a test failure requires root cause analysis
+- `mavis-doctor` — could be environment, migration state, or seed data issue
+
+**Loading now...**
+```
+
+### Why This Rule Exists
+
+- LLMs forget skills between turns without explicit invocation
+- The system prompt lists skill triggers but does not enforce them
+- Without this rule, agents default to "fast obvious solution" and skip methodology
+- Skills exist to cover known gaps in agent reasoning (test coverage, verification, root cause analysis)
+
+### When This Rule Does NOT Apply
+
+- Pure conversational answers (questions, explanations, greetings)
+- Reading files for context
+- Format conversions (markdown, JSON parsing)
+- Quick lookups (grep, glob, single reads)
+
+### When This Rule APPLIES (default)
+
+- Any code change (any file, any line)
+- Any new task
+- Any decision that affects architecture, security, or data
+- Any commit, push, or merge
+- Any test run considered "verification"
+
+### Violation Penalty
+
+- Every task entry in `TASK_TRACKER.md` must now include a `**Skills Used:**` field
+- A task with `**Skills Used:**` blank will be treated as incomplete
+- The owner may reject work that did not follow the skill gate
+
+### Related
+
+- Full skill list: `~/.mavis/skills/`
+- Skill description: see the `available_skills` block in this session's system prompt
+- `find-skills` skill can be used to discover relevant skills when unsure
+
+---
+

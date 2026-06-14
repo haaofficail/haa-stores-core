@@ -355,24 +355,4 @@ employeesRouter.delete('/:employeeId', requirePermission('employees:delete'), as
   return c.json({ success: true, data: { success: true } });
 });
 
-employeesRouter.patch('/:employeeId/permissions', requirePermission('employees:manage_permissions'), async (c) => {
-  const auth = getAuth(c)!;
-  const employeeId = Number(c.req.param('employeeId'));
-  await new AuditLogService().record({
-    ...auditMeta(c),
-    storeId: auth.activeStoreId,
-    action: 'employee_permission_update_unsupported',
-    entityType: 'employee',
-    entityId: employeeId,
-    newValue: { reason: 'custom_permissions_not_implemented' },
-  });
-  return c.json({
-    success: false,
-    error: {
-      code: 'NOT_IMPLEMENTED',
-      message: 'الصلاحيات المخصصة غير مدعومة بعد. صلاحيات الموظفين مشتقة من الدور.',
-    },
-  }, 501);
-});
-
 export { employeesRouter };

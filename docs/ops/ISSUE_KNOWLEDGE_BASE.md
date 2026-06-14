@@ -5,6 +5,116 @@
 
 ---
 
+### ISSUE-0009: Demo Support KB Table Missing After Migration Drift
+
+- **ID:** ISSUE-0009
+- **Date:** 2026-06-14
+- **Severity:** Medium
+- **Area:** Storefront support / Database / Demo operations
+- **Related Error Codes:** API-001
+- **Related Tasks:** TASK-0023
+- **Symptoms:** `pnpm ops:monitor` repeatedly recommended RCA for `/s/demo-perfumes/support/kb` with fingerprint `API-001::unknown::/s/demo-perfumes/support/kb::Failed_query:_select_"id",_"store_id",_"title",_"slug",_"con`.
+- **Expected:** Demo support KB route should return an empty published-articles payload when no articles exist.
+- **Actual:** The API returned 500 because `knowledge_base_articles` was absent in the local database.
+- **Root Cause:** Local migration state drift: the historical migration containing `knowledge_base_articles` was recorded as applied, but the table was missing.
+- **Fix:** Added idempotent repair migration `0039_repair_support_kb_articles.sql`, ran `pnpm db:migrate`, verified the table and route, then archived stale support-error events.
+- **Prevention:** For support/data features, verify critical tables exist after migration-state repair and rerun `pnpm ops:monitor` before closing.
+- **Regression Checklist Update:** Demo/support monitoring checks should include `/s/demo-perfumes/support/kb` returning 200.
+- **Status:** Fixed
+
+---
+
+### ISSUE-0006: Marketing Events Insert Failure
+
+- **ID:** ISSUE-0006
+- **Date:** 2026-06-13
+- **Severity:** Medium
+- **Area:** Storefront analytics / API / Data
+- **Related Error Codes:** API-001
+- **Related Tasks:** TASK-0018
+- **Symptoms:** `pnpm ops:errors` reports repeated fingerprint `API-001::unknown::/s/haa-demo/events::Failed_query:_insert_into_"marketing_events"_...` 3 times.
+- **Expected:** Storefront tracking events should be accepted or safely ignored without repeated API-001 failures.
+- **Actual:** Local support error analysis shows repeated failed inserts into `marketing_events`.
+- **Root Cause:** Unknown. Needs focused RCA; likely candidates are local migration drift, schema mismatch, or event payload mismatch.
+- **Fix:** Pending.
+- **Prevention:** Keep marketing event schema, migrations, seed/test DB, and tracker payloads aligned.
+- **Regression Checklist Update:** Pending after fix.
+- **Status:** Open
+
+---
+
+### ISSUE-0004: Local Dev Port Map Drift
+
+- **ID:** ISSUE-0004
+- **Date:** 2026-06-13
+- **Severity:** High
+- **Area:** Local runtime / Monitoring
+- **Related Error Codes:** DASH-001, SYS-003
+- **Related Tasks:** TASK-0016
+- **Symptoms:** Browser reports `ERR_CONNECTION_REFUSED` for localhost when dev servers are stopped. Monitoring/synthetic checks can also report misleading storefront/dashboard availability because their port map did not match Vite configs.
+- **Expected:** API runs on `3000`, merchant dashboard on `5173`, storefront on `5174`, and admin dashboard on `5175`. Health and synthetic scripts must check those exact services on those exact ports.
+- **Actual:** Vite could choose another port if the preferred port was occupied, and monitoring scripts checked storefront on `5173` and merchant dashboard on `5174`.
+- **Root Cause:** Port ownership was not enforced with `strictPort`, and monitoring scripts had stale/reversed hardcoded URLs.
+- **Fix:** Added `strictPort: true` to all dashboard/storefront Vite configs and corrected `monitor-health.mjs` plus `synthetic-checks.mjs` to use the canonical local port map.
+- **Prevention:** Any future local app port change must update `.env`, the app Vite config, `monitor-health.mjs`, `synthetic-checks.mjs`, and `CURRENT_STATE.md` together.
+- **Regression Checklist Update:** Added local port governance checks.
+- **Status:** Fixed
+
+---
+
+### ISSUE-0007: Support Ticket Token Was Exposed in Newly-Created URLs
+
+- **ID:** ISSUE-0007
+- **Date:** 2026-06-13
+- **Severity:** Medium
+- **Area:** Storefront / Support / Security
+- **Related Error Codes:** None
+- **Related Tasks:** TASK-0018, SEC-006
+- **Symptoms:** Customer support ticket links included `?accessToken=...`, exposing the ticket access secret to browser history, referrers, and logs.
+- **Expected:** Ticket access token should be transmitted in an HTTP header (`X-Support-Access-Token` or `Authorization: Bearer`) and should not be embedded in newly-generated URLs.
+- **Actual:** Storefront created ticket URLs with `accessToken` in the query string and the API only read ticket tokens from query/body.
+- **Root Cause:** Original support flow optimized for shareable direct links and did not treat the ticket access token as a secret transport value.
+- **Fix:** Storefront now stores the token locally/prints it as an access code, creates clean ticket URLs, and sends the token via `X-Support-Access-Token`. API endpoints accept header or bearer token, with temporary legacy query/body compatibility for old links.
+- **Prevention:** Regression test blocks creating new `?accessToken=` ticket links and verifies header-based API client usage.
+- **Regression Checklist Update:** Security Baseline includes "Support ticket auth uses header, not query param."
+- **Status:** Fixed
+
+### ISSUE-0006: Marketplace Migration State Drift and After-Sales Scope Conflict
+
+- **ID:** ISSUE-0006
+- **Date:** 2026-06-13
+- **Severity:** High
+- **Area:** Database / Marketplace / Operations
+- **Related Error Codes:** None
+- **Related Tasks:** TASK-0018
+- **Symptoms:** Drizzle migration journal did not match the SQL migration files present in the repo, and marketplace after-sales artifacts existed despite the product boundary that merchants own procedures after checkout.
+- **Expected:** `pnpm db:migrate` should run cleanly from project state, marketplace migrations should include only product opt-in/governance/order attribution, and no marketplace after-sales table should be part of the platform marketplace scope.
+- **Actual:** Migration metadata lagged behind actual migration files, and after-sales schema/migration artifacts conflicted with the final marketplace responsibility model.
+- **Root Cause:** Several feature passes added or adjusted migrations without reconciling Drizzle journal metadata and without removing earlier after-sales prototype files after the product decision changed.
+- **Fix:** Rebuilt the Drizzle journal to match actual retained SQL files, synchronized local Drizzle migration records, confirmed `pnpm db:migrate` succeeds, and removed marketplace after-sales schema/migration artifacts.
+- **Prevention:** Run `pnpm db:migrate` as part of marketplace/data work verification and reject marketplace-owned shipping/returns/dispute tables unless a new decision is documented.
+- **Regression Checklist Update:** Added database and marketplace checks for Drizzle migration success and no marketplace after-sales table.
+- **Status:** Fixed
+
+### ISSUE-0008: Historical Marketing Events Insert Fingerprint After Migration Drift
+
+- **ID:** ISSUE-0008
+- **Date:** 2026-06-13
+- **Severity:** Medium
+- **Area:** Marketing / Database / Monitoring
+- **Related Error Codes:** API-001
+- **Related Tasks:** TASK-0019
+- **Symptoms:** `pnpm ops:errors` reported a repeated fingerprint for `/s/haa-demo/events` inserting into `marketing_events`.
+- **Expected:** Marketing event ingestion should find the `marketing_events` table and not generate repeated API-001 fingerprints.
+- **Actual:** Active support-error events showed 13 repeated insert failures for `marketing_events`, and direct DB inspection showed the marketing tables were absent.
+- **Root Cause:** The local Drizzle migration state was out of sync: the old migration that should have created marketing tables was recorded as applied while the actual tables were missing.
+- **Fix:** Added idempotent repair migration `0037_repair_marketing_tables.sql`, verified `pnpm db:migrate`, confirmed `marketing_events`, `marketing_sessions`, and `product_performance_daily` exist, and verified `/s/haa-demo/events` returns `201`.
+- **Prevention:** Run `pnpm db:migrate` after adding marketing/data migrations and keep migration journal entries aligned with retained SQL files.
+- **Regression Checklist Update:** Database section now requires `pnpm db:migrate` and journal/file alignment checks.
+- **Status:** Fixed — historical events archived under `storage/archive/`
+
+---
+
 ## Issue Template
 
 - **ID:** ISSUE-XXXX
@@ -29,6 +139,40 @@
 *(No issues recorded yet)*
 
 ## Fixed Issues
+
+### ISSUE-0005: LiveRadar JSX Structure Broke Merchant Dashboard Typecheck
+
+- **ID:** ISSUE-0005
+- **Date:** 2026-06-13
+- **Severity:** Medium
+- **Area:** Merchant Dashboard / Live Radar
+- **Related Error Codes:** None
+- **Related Tasks:** TASK-0015
+- **Symptoms:** `pnpm typecheck` and ESLint failed on `apps/merchant-dashboard/src/pages/LiveRadar.tsx` with parser errors around the end of the component.
+- **Expected:** LiveRadar compiles cleanly and does not block full monorepo verification.
+- **Actual:** `HistoryCard` was missing its closing function brace, a redundant JSX fragment was left open, and Select setters were passed directly to string-valued handlers.
+- **Root Cause:** Incremental JSX edits left mismatched component structure and narrow union state setters incompatible with the generic Select callback signature.
+- **Fix:** Closed `HistoryCard`, removed the redundant fragment, balanced the root JSX container, imported Select components, and wrapped Select handlers with explicit union casts.
+- **Prevention:** Run targeted typecheck/ESLint immediately after adding nested helper components or Select controls.
+- **Regression Checklist Update:** Covered by marketplace verification gates and full typecheck/ESLint.
+- **Status:** Fixed
+
+### ISSUE-0004: Marketing Types Self-Import Broke Shared Package Exports
+
+- **ID:** ISSUE-0004
+- **Date:** 2026-06-13
+- **Severity:** Medium
+- **Area:** Shared types / Marketing
+- **Related Error Codes:** None
+- **Related Tasks:** TASK-0015
+- **Symptoms:** Full monorepo typecheck failed in `packages/shared/src/types/marketing.ts` with missing exports and circular definitions.
+- **Expected:** Marketing analytics/live-radar types are concrete exports from shared.
+- **Actual:** The file imported `LiveOverview`, `LivePages`, and related types from itself via `./marketing.js`, creating a broken self-import and leaving required exports unresolved.
+- **Root Cause:** A generated/merged type file attempted to re-import its own exports instead of defining them locally.
+- **Fix:** Replaced the self-import with concrete exported constants and type/interface definitions for marketing events, sessions, performance metrics, live radar, geo, funnel, alerts, and heartbeat payloads. Aligned `MARKETING_EVENT_TYPES` with the tested taxonomy (`view_product`, `search`, campaign/share events, cancellation/refund events).
+- **Prevention:** Shared type files must not import from their own compiled module path; add explicit exported definitions or import from a different source module.
+- **Regression Checklist Update:** Covered by full shared package typecheck and monorepo typecheck.
+- **Status:** Fixed
 
 ### ISSUE-0003: Storefront Theme Hydration Flicker (Flash of Wrong Theme)
 

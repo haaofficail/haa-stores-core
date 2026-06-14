@@ -200,14 +200,6 @@ export const paymentLogos: PaymentLogo[] = [
     sourceUrl: 'https://stcpay.com.sa',
   },
   {
-    id: 'cash-on-delivery',
-    name: 'Cash on Delivery',
-    assetPath: '/assets/payment-logos/cash-on-delivery.svg',
-    alt: 'الدفع عند الاستلام',
-    category: 'LOCAL_PAYMENT_METHOD',
-    enabled: true,
-  },
-  {
     id: 'tamara',
     name: 'Tamara',
     assetPath: '/assets/payment-logos/tamara.svg',
@@ -224,6 +216,14 @@ export const paymentLogos: PaymentLogo[] = [
     category: 'BNPL_PROVIDER',
     enabled: true,
     sourceUrl: 'https://tabby.ai',
+  },
+  {
+    id: 'cash-on-delivery',
+    name: 'Cash on Delivery',
+    assetPath: '/assets/payment-logos/cash-on-delivery.svg',
+    alt: 'الدفع عند الاستلام',
+    category: 'LOCAL_PAYMENT_METHOD',
+    enabled: true,
   },
   {
     id: 'maroof',

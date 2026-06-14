@@ -10,6 +10,7 @@ const Tenants = lazy(() => import('./pages/Tenants'));
 const Stores = lazy(() => import('./pages/Stores'));
 const KycReview = lazy(() => import('./pages/KycReview'));
 const Payments = lazy(() => import('./pages/Payments'));
+const Marketplace = lazy(() => import('./pages/Marketplace'));
 const SettlementBatches = lazy(() => import('./pages/SettlementBatches'));
 const SettlementBatchDetail = lazy(() => import('./pages/SettlementBatchDetail'));
 const AuditLogs = lazy(() => import('./pages/AuditLogs'));
@@ -46,6 +47,7 @@ const navItems = [
   { path: '/stores', label: 'المتاجر' },
   { path: '/kyc', label: 'التحقق' },
   { path: '/payments', label: 'المدفوعات' },
+  { path: '/marketplace', label: 'سوق هاء' },
   { path: '/payments/settlements', label: 'التسويات' },
   { path: '/audit', label: 'سجل التدقيق' },
   { path: '/plans', label: 'الباقات' },
@@ -130,6 +132,7 @@ export default function App() {
               <Route path="/stores" element={<Stores />} />
               <Route path="/kyc" element={<KycReview />} />
               <Route path="/payments" element={<Payments />} />
+              <Route path="/marketplace" element={<Marketplace />} />
               <Route path="/payments/settlements" element={<SettlementBatches />} />
               <Route path="/payments/settlements/:batchId" element={<SettlementBatchDetail />} />
               <Route path="/audit" element={<AuditLogs />} />

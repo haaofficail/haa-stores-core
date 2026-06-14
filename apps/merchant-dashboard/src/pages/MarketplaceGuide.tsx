@@ -56,7 +56,7 @@ export default function MarketplaceGuide() {
   const current = PROVIDERS.find(p => p.code === active) || PROVIDERS[0];
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl mx-auto">
+    <div className="p-6 space-y-6 max-w-4xl mx-auto animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -66,11 +66,11 @@ export default function MarketplaceGuide() {
         <Button
           variant="ghost"
           size="sm"
-          className="rounded-full text-xs"
-          onClick={() => navigate('/channels/hub')}
+          className="text-xs"
+          onClick={() => navigate('/channels')}
         >
-          <ArrowRight className="h-3.5 w-3.5 ml-1" />
-          {t('syncLogs.back', 'العودة للمركز')}
+          <ArrowRight className="h-3.5 w-3.5 ms-1" />
+          {t('syncLogs.back', 'العودة للقنوات')}
         </Button>
       </div>
 
@@ -95,7 +95,7 @@ export default function MarketplaceGuide() {
       </div>
 
       {/* Steps */}
-      <Card className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
+      <Card className="overflow-hidden">
         <div className={`h-2 bg-gradient-to-r ${current.color}`} />
         <CardContent className="p-6 md:p-8">
           <div className="flex items-center gap-3 mb-8">
@@ -145,10 +145,10 @@ export default function MarketplaceGuide() {
 
           <div className="mt-6 flex justify-center">
             <Button
-              className="rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40"
+              className="rounded-md bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40"
               onClick={() => navigate(`/channels/${active}`)}
             >
-              <ExternalLink className="h-4 w-4 ml-1" />
+              <ExternalLink className="h-4 w-4 ms-1" />
               {t('marketplaceGuide.connect', 'ربط')} {current.name}
             </Button>
           </div>

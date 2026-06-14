@@ -108,8 +108,19 @@ authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
       return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'No tenant access' } }, 403);
     }
 
-    const stores = await db.select().from(s.stores).where(eq(s.stores.tenantId, tenantUser.tenantId)).limit(10);
-    const activeStore = stores[0];
+    // Get stores user has access to via userStoreRoles (for demo users and multi-store merchants)
+    const userStoreRoles = await db.select({ storeId: s.userStoreRoles.storeId })
+      .from(s.userStoreRoles)
+      .where(eq(s.userStoreRoles.userId, user.id));
+    const allowedStoreIds = userStoreRoles.map(r => r.storeId);
+
+    // Get stores in tenant, prioritize ones user has explicit access to
+    const allStores = await db.select().from(s.stores).where(eq(s.stores.tenantId, tenantUser.tenantId)).limit(10);
+    let activeStore = allStores.find(s => allowedStoreIds.includes(s.id));
+    if (!activeStore && allStores.length > 0) {
+      // Fallback: if no explicit roles, use first store (for tenant owners without per-store roles)
+      activeStore = allStores[0];
+    }
 
     const token = signToken({
       userId: user.id,

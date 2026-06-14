@@ -1,7 +1,7 @@
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/node_modules/**', '**/dist/**', '**/.pnpm/**', '**/storybook-static/**', '**/*.js', '**/*.mjs', '**/*.cjs'] },
+  { ignores: ['**/node_modules/**', '**/dist/**', '**/.next/**', '**/.pnpm/**', '**/storybook-static/**', '**/*.d.ts', '**/*.js', '**/*.mjs', '**/*.cjs'] },
 
   // Base TS/TSX rules
   ...tseslint.configs.recommended,

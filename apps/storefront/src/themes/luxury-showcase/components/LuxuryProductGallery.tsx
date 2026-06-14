@@ -1,6 +1,8 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { LUXURY_THEME_CLASS } from '../luxuryTokens';
+import LuxuryImageFallback from './LuxuryImageFallback';
 
 type AnyRecord = Record<string, any>;
 
@@ -8,9 +10,7 @@ function resolveImageUrl(img: unknown): string {
   if (typeof img === 'string') return img;
   if (img && typeof img === 'object') {
     const o = img as Record<string, unknown>;
-    return (
-      String(o.url ?? o.src ?? o.imageUrl ?? o.publicUrl ?? o.key ?? o.path ?? '')
-    );
+    return String(o.url ?? o.src ?? o.imageUrl ?? o.publicUrl ?? o.key ?? o.path ?? '');
   }
   return '';
 }
@@ -50,11 +50,16 @@ export function LuxuryProductGallery({ product }: { product: AnyRecord }) {
   }, [images.length]);
 
   return (
-    <div className="relative flex flex-col gap-4 lg:flex-row lg:items-start">
-      {/* Main image — first in DOM so RTL places it rightmost */}
+    <div className={`${LUXURY_THEME_CLASS} relative flex flex-col gap-4 lg:flex-row lg:items-start`} style={{ backgroundColor: 'var(--lux-bg, #FAF7F1)' }}>
       <div className="min-w-0 flex-1">
-        <div className="group relative flex min-h-[420px] items-center justify-center overflow-hidden rounded-3xl bg-[#faf8f6] sm:min-h-[560px] lg:min-h-[720px]">
-
+        <div
+          className="group relative flex items-center justify-center overflow-hidden"
+          style={{
+            minHeight: 'clamp(360px, 50vw, 520px)',
+            backgroundColor: 'var(--lux-image-frame, #F7EFE6)',
+            borderRadius: 'var(--lux-radius-image, 4px)',
+          }}
+        >
           {activeImage ? (
             <img
               src={activeImage}
@@ -63,19 +68,21 @@ export function LuxuryProductGallery({ product }: { product: AnyRecord }) {
               loading="eager"
             />
           ) : (
-            <div className="relative z-10 flex h-72 w-full max-w-md flex-col items-center justify-center text-[#8a7e72]">
-              <ImageIcon className="mb-3 h-10 w-10 stroke-[1.2]" />
-              <p className="text-sm font-light">{t('product.noImage', 'لا توجد صورة للمنتج')}</p>
+            <div className="relative z-10 flex w-full flex-col items-center justify-center">
+              <LuxuryImageFallback aspectRatio="1/1" className="w-48 h-48 sm:w-56 sm:h-56" icon="perfume" />
+              <p className="mt-2 text-sm font-light" style={{ color: 'var(--lux-muted, #756B61)' }}>
+                {t('product.noImage', 'لا توجد صورة للمنتج')}
+              </p>
             </div>
           )}
 
-          {/* Prev/Next arrows — only when 2+ images */}
           {hasThumbnails && (
             <>
               <button
                 type="button"
                 onClick={() => goTo(activeIndex - 1)}
-                className="absolute end-3 top-1/2 z-20 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center rounded-full bg-[#faf8f6]/80 text-[#6b635b] opacity-0 shadow-sm transition hover:bg-[#faf8f6] hover:text-[#1a1a1a] group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a65d4e]"
+                className="absolute end-3 top-1/2 z-20 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center rounded-full opacity-0 shadow-sm transition hover:text-[var(--lux-text)] group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]"
+                style={{ backgroundColor: 'rgba(250,247,241,0.8)', color: 'var(--lux-muted, #756B61)' }}
                 aria-label="الصورة السابقة"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -83,7 +90,8 @@ export function LuxuryProductGallery({ product }: { product: AnyRecord }) {
               <button
                 type="button"
                 onClick={() => goTo(activeIndex + 1)}
-                className="absolute start-3 top-1/2 z-20 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center rounded-full bg-[#faf8f6]/80 text-[#6b635b] opacity-0 shadow-sm transition hover:bg-[#faf8f6] hover:text-[#1a1a1a] group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a65d4e]"
+                className="absolute start-3 top-1/2 z-20 flex min-h-[44px] min-w-[44px] -translate-y-1/2 items-center justify-center rounded-full opacity-0 shadow-sm transition hover:text-[var(--lux-text)] group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]"
+                style={{ backgroundColor: 'rgba(250,247,241,0.8)', color: 'var(--lux-muted, #756B61)' }}
                 aria-label="الصورة التالية"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -93,31 +101,27 @@ export function LuxuryProductGallery({ product }: { product: AnyRecord }) {
         </div>
       </div>
 
-      {/* Thumbnails — only shown when there are 2+ images */}
       {hasThumbnails ? (
         <div className="flex shrink-0 gap-3 overflow-x-auto lg:w-24 lg:flex-col lg:overflow-y-auto lg:overflow-x-hidden">
           {images.map((image, index) => {
             const active = index === activeIndex;
-
             return (
               <button
                 key={`${image}-${index}`}
                 type="button"
                 onClick={() => setActiveIndex(index)}
                 className={[
-                  'h-20 w-20 shrink-0 overflow-hidden rounded-xl border bg-[#faf8f6] transition-all duration-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a65d4e] lg:h-[92px] lg:w-[92px]',
-                  active
-                    ? 'border-[#a65d4e] ring-1 ring-[#a65d4e]'
-                    : 'border-[#e8ded4] opacity-70 hover:opacity-100',
+                  'h-20 w-20 shrink-0 overflow-hidden transition-all duration-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)] lg:h-[92px] lg:w-[92px]',
                 ].join(' ')}
+                style={{
+                  backgroundColor: 'var(--lux-image-frame, #F7EFE6)',
+                  borderRadius: '4px',
+                  border: active ? '1px solid var(--lux-primary, #B88A3D)' : '1px solid var(--lux-border, #E6D8C6)',
+                  opacity: active ? 1 : 0.7,
+                }}
                 aria-label={`عرض الصورة ${index + 1}`}
               >
-                <img
-                  src={image}
-                  alt=""
-                  className="h-full w-full object-cover"
-                  loading={index === 0 ? 'eager' : 'lazy'}
-                />
+                <img src={image} alt="" className="h-full w-full object-cover" loading={index === 0 ? 'eager' : 'lazy'} />
               </button>
             );
           })}

@@ -25,8 +25,20 @@ export const products = pgTable('products', {
   isFragile: boolean('is_fragile').notNull().default(false),
   giftWrapAvailable: boolean('gift_wrap_available').notNull().default(false),
   giftWrapPriceOverride: decimal('gift_wrap_price_override', { precision: 12, scale: 2 }),
+  haaMarketplaceEnabled: boolean('haa_marketplace_enabled').notNull().default(false),
+  haaMarketplaceCommissionRate: decimal('haa_marketplace_commission_rate', { precision: 5, scale: 4 }).notNull().default('0.0500'),
+  haaMarketplaceReviewStatus: varchar('haa_marketplace_review_status', { length: 30 }).notNull().default('pending'),
+  haaMarketplaceReviewNote: text('haa_marketplace_review_note'),
+  haaMarketplaceReviewedAt: timestamp('haa_marketplace_reviewed_at'),
+  haaMarketplaceReviewedBy: integer('haa_marketplace_reviewed_by'),
+  haaMarketplaceFeatured: boolean('haa_marketplace_featured').notNull().default(false),
+  haaMarketplaceFeaturedUntil: timestamp('haa_marketplace_featured_until'),
+  haaMarketplaceFeaturedSortOrder: integer('haa_marketplace_featured_sort_order').notNull().default(0),
   brandId: integer('brand_id').references(() => brands.id, { onDelete: 'set null' }),
   marketplaceChannels: jsonb('marketplace_channels').$type<Record<string, { productId: string; url?: string; price?: string; status?: string }>>(),
+  rating: integer('rating'),
+  reviewCount: integer('review_count').notNull().default(0),
+  salesCount: integer('sales_count').notNull().default(0),
   seoTitle: varchar('seo_title', { length: 60 }),
   seoDescription: varchar('seo_description', { length: 160 }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -37,6 +49,7 @@ export const products = pgTable('products', {
   storeStatusCreatedAtIdx: index('products_store_status_created_at_idx').on(table.storeId, table.status, table.createdAt),
   storeBrandIdx: index('products_store_brand_idx').on(table.storeId, table.brandId),
   storeUpdatedAtIdx: index('products_store_updated_at_idx').on(table.storeId, table.updatedAt),
+  haaMarketplaceIdx: index('products_haa_marketplace_idx').on(table.haaMarketplaceEnabled, table.haaMarketplaceReviewStatus, table.status, table.createdAt),
 }));
 
 export const productImages = pgTable('product_images', {

@@ -2,8 +2,8 @@
 
 :root {
   /* Typography — SF Scale */
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --font-sans-arabic: system-ui, sans-serif;
+  --font-sans: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-sans-arabic: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
   --font-regular: 400;
   --font-medium: 500;

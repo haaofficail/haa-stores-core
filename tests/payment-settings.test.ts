@@ -412,3 +412,47 @@ describe('getAvailableMethods', () => {
     await service.deleteCredentials(STORE, 'tabby').catch(() => {});
   });
 });
+
+describe('getAvailableMethods — Demo Store behavior', () => {
+  let service: PaymentProviderSettingsService;
+  const DEMO_STORE = 1;
+
+  beforeAll(() => {
+    process.env.PAYMENT_CREDENTIALS_ENCRYPTION_KEY = '00001111222233334444555566667777aaaaaaaaaaaabbbbbbbbbbcccccccccc';
+    service = new PaymentProviderSettingsService();
+    // Ensure demo store has no credentials for this test
+    // eslint-disable-next-line drizzle/enforce-delete-with-where
+    service.deleteCredentials(DEMO_STORE, 'tabby').catch(() => {});
+    // eslint-disable-next-line drizzle/enforce-delete-with-where
+    service.deleteCredentials(DEMO_STORE, 'tamara').catch(() => {});
+  });
+
+  it('demo store returns both BNPL providers available without any credentials', async () => {
+    const methods = await service.getAvailableMethods(DEMO_STORE, { isDemo: true });
+    const tabby = methods.find(m => m.provider === 'tabby')!;
+    const tamara = methods.find(m => m.provider === 'tamara')!;
+    expect(tabby.available).toBe(true);
+    expect(tabby.reason).toBeNull();
+    expect(tabby.mode).toBe('demo');
+    expect(tamara.available).toBe(true);
+    expect(tamara.reason).toBeNull();
+    expect(tamara.mode).toBe('demo');
+  });
+
+  it('demo store returns demo methods even when amount is outside normal limits', async () => {
+    const methods = await service.getAvailableMethods(DEMO_STORE, { isDemo: true, amount: 1 });
+    expect(methods.every(m => m.available)).toBe(true);
+  });
+
+  it('real store (no isDemo flag) returns unavailable when no credentials', async () => {
+    const methods = await service.getAvailableMethods(DEMO_STORE, { amount: 500 });
+    // Without isDemo flag, the real logic runs: no credentials → unavailable
+    const tabby = methods.find(m => m.provider === 'tabby')!;
+    const tamara = methods.find(m => m.provider === 'tamara')!;
+    // Depending on test history, it may be DISABLED or NOT_CONFIGURED
+    expect(tabby.available).toBe(false);
+    expect([null, 'PROVIDER_DISABLED', 'PROVIDER_NOT_CONFIGURED']).toContain(tabby.reason);
+    expect(tamara.available).toBe(false);
+    expect([null, 'PROVIDER_DISABLED', 'PROVIDER_NOT_CONFIGURED']).toContain(tamara.reason);
+  });
+});

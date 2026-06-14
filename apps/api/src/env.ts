@@ -2,6 +2,7 @@ export interface EnvConfig {
   NODE_ENV: string;
   DATABASE_URL: string;
   JWT_SECRET: string;
+  ADMIN_JWT_SECRET: string;
   ENCRYPTION_KEY: string;
   API_PORT: number;
   API_BASE_URL: string;
@@ -68,6 +69,7 @@ function validateLocalEnv(name: string, value: string | undefined): void {
   const knownDevDefaults: Record<string, string> = {
     JWT_SECRET: 'dev-jwt-secret-change-in-production',
     ENCRYPTION_KEY: 'dev-encryption-key-32-chars-minimum!!',
+    ADMIN_JWT_SECRET: 'dev-admin-jwt-secret-change-in-production',
   };
   if (value && knownDevDefaults[name] && value === knownDevDefaults[name]) {
     if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
@@ -80,7 +82,7 @@ export function loadEnv(): EnvConfig {
   const nodeEnv = optionalEnv('NODE_ENV', 'development');
   const isProduction = nodeEnv === 'production' || nodeEnv === 'staging';
 
-  const required: string[] = ['DATABASE_URL', 'JWT_SECRET', 'ENCRYPTION_KEY'];
+  const required: string[] = ['DATABASE_URL', 'JWT_SECRET', 'ENCRYPTION_KEY', 'ADMIN_JWT_SECRET'];
   if (isProduction) {
     required.push('API_BASE_URL', 'MERCHANT_DASHBOARD_URL', 'STOREFRONT_URL');
     required.push('DATABASE_READ_URL', 'REDIS_URL', 'QUEUE_REDIS_URL', 'CDN_PUBLIC_BASE_URL', 'SENTRY_DSN', 'OTEL_EXPORTER_OTLP_ENDPOINT');
@@ -132,6 +134,7 @@ export function loadEnv(): EnvConfig {
     REDIS_URL: process.env.REDIS_URL,
     QUEUE_REDIS_URL: process.env.QUEUE_REDIS_URL,
     JWT_SECRET: env.JWT_SECRET,
+    ADMIN_JWT_SECRET: env.ADMIN_JWT_SECRET,
     ENCRYPTION_KEY: env.ENCRYPTION_KEY,
     API_PORT: parseInt(optionalEnv('API_PORT', '3000'), 10),
     API_BASE_URL: optionalEnv('API_BASE_URL', `http://localhost:${optionalEnv('API_PORT', '3000')}`),
