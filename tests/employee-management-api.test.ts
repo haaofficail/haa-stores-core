@@ -33,13 +33,10 @@ describe('Employee Management API — Route Structure', () => {
     expect(code).toContain("employeesRouter.delete('/:employeeId'");
   });
 
-  it('PATCH /:employeeId/permissions returns 501 with clear message', () => {
+  it('PATCH /:employeeId/permissions is now handled by permissions API', () => {
     const code = employeesRoute();
-    expect(code).toContain("requirePermission('employees:manage_permissions')");
-    expect(code).toContain("employeesRouter.patch('/:employeeId/permissions'");
-    expect(code).toContain('501');
-    expect(code).toContain('NOT_IMPLEMENTED');
-    expect(code).toContain('الصلاحيات المخصصة غير مدعومة بعد');
+    expect(code).not.toContain("employeesRouter.patch('/:employeeId/permissions'");
+    // The permissions endpoint is now handled by the permissions API at /stores/:storeId/memberships/:membershipId/permissions
   });
 
   it('all routes use requireAuth + requireStoreAccess middleware', () => {
@@ -185,10 +182,10 @@ describe('Employee Management API — Error Codes', () => {
     expect(code).toContain('CONFLICT');
   });
 
-  it('returns 501 NOT_IMPLEMENTED for custom permissions', () => {
+  it('permissions are now handled by permissions API', () => {
     const code = employeesRoute();
-    expect(code).toContain('501');
-    expect(code).toContain('NOT_IMPLEMENTED');
+    // The permissions are now handled by the permissions API at /stores/:storeId/memberships/:membershipId/permissions
+    expect(code).not.toContain('membership_permissions');
   });
 });
 
@@ -242,16 +239,17 @@ describe('Employee Management API — Audit Logging', () => {
     expect(code).toContain("action: 'employee_removed'");
   });
 
-  it('logs employee_permission_update_unsupported on 501 attempt', () => {
+  it('permission updates are now logged by permissions API', () => {
     const code = employeesRoute();
-    expect(code).toContain("action: 'employee_permission_update_unsupported'");
+    // The employee_permissions_updated audit is now logged by the permissions API
+    expect(code).not.toContain("action: 'employee_permissions_updated'");
   });
 
   it('all audit calls use auditMeta(c) + storeId', () => {
     const code = employeesRoute();
     const auditCalls = code.match(/AuditLogService\(\)\.record/g);
     expect(auditCalls).toBeTruthy();
-    expect(auditCalls!.length).toBeGreaterThanOrEqual(9);
+    expect(auditCalls!.length).toBeGreaterThanOrEqual(7); // Reduced from 9 since permissions API handles the other 2
     expect(code).toContain('storeId: auth.activeStoreId');
   });
 
@@ -259,6 +257,6 @@ describe('Employee Management API — Audit Logging', () => {
     const code = employeesRoute();
     const matches = code.match(/entityType: 'employee'/g);
     expect(matches).toBeTruthy();
-    expect(matches!.length).toBeGreaterThanOrEqual(9);
+    expect(matches!.length).toBeGreaterThanOrEqual(7); // Reduced from 9 since permissions API handles the other 2
   });
 });

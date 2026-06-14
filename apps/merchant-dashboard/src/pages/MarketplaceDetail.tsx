@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   ArrowRight, RefreshCw, Unlink, Package, ExternalLink, Trash2, Loader2,
 } from 'lucide-react';
@@ -36,8 +37,10 @@ export default function MarketplaceDetailPage() {
   const [listings, setListings] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'info' | 'listings'>('info');
   const [deletingListing, setDeletingListing] = useState<number | null>(null);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
   const [noonCreds, setNoonCreds] = useState({ clientId: '', privateKey: '', sellerName: '', partnerId: '', warehouseCode: '' });
+  const [amazonMarketplaceId, setAmazonMarketplaceId] = useState('sa');
   const usesOAuth = provider === 'salla' || provider === 'zid';
   const usesManualCreds = provider === 'noon' || provider === 'amazon';
 
@@ -84,7 +87,7 @@ export default function MarketplaceDetailPage() {
       try {
         const creds = provider === 'noon'
           ? { clientId: noonCreds.clientId, privateKey: noonCreds.privateKey, sellerName: noonCreds.sellerName || undefined, partnerId: noonCreds.partnerId || undefined, warehouseCode: noonCreds.warehouseCode || undefined }
-          : { clientId: noonCreds.clientId, clientSecret: noonCreds.privateKey, refreshToken: noonCreds.sellerName, awsAccessKey: noonCreds.partnerId, awsSecretKey: noonCreds.warehouseCode, marketplaceId: 'sa' };
+          : { clientId: noonCreds.clientId, clientSecret: noonCreds.privateKey, refreshToken: noonCreds.sellerName, awsAccessKey: noonCreds.partnerId, awsSecretKey: noonCreds.warehouseCode, marketplaceId: amazonMarketplaceId };
         await marketplaceApi.connect(storeId, provider, creds);
         toast.success(t('marketplaceDetail.connectedSuccess', 'تم الربط بنجاح'));
         loadInfo();
@@ -95,6 +98,7 @@ export default function MarketplaceDetailPage() {
 
   async function handleDisconnect() {
     if (!storeId || !provider) return;
+    setConfirmDisconnect(false);
     try { await marketplaceApi.disconnect(storeId, provider); setConnected(false); setStoreInfo(null); setListings([]); toast.success(t('marketplaceDetail.disconnected', 'تم الفصل')); }
     catch { toast.error(t('marketplaceDetail.disconnectFailed', 'فشل الفصل')); }
   }
@@ -127,7 +131,7 @@ export default function MarketplaceDetailPage() {
     <div className="space-y-6 max-w-4xl mx-auto animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate('/channels')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/channels')}>
           <ArrowRight className="h-5 w-5" />
         </Button>
         <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${meta.color} flex items-center justify-center text-white shadow-lg font-bold text-sm`}>
@@ -137,53 +141,55 @@ export default function MarketplaceDetailPage() {
           <h1 className="text-xl font-bold text-neutral-900">{t('marketplaceDetail.provider.' + provider, meta.name)}</h1>
           <p className="text-xs text-neutral-500">{t('marketplaceDetail.pageSubtitle', 'تفاصيل الاتصال وإدارة القناة')}</p>
         </div>
-        <Badge className={`mr-auto ${connected ? 'bg-emerald-500/10 text-emerald-700 border-emerald-200' : 'bg-neutral-100 text-neutral-500'}`}>
+        <Badge className={`me-auto ${connected ? 'bg-emerald-500/10 text-emerald-700 border-emerald-200' : 'bg-neutral-100 text-neutral-500'}`}>
           {connected ? t('marketplaceDetail.connected', 'متصل') : t('marketplaceDetail.disconnected', 'غير متصل')}
         </Badge>
       </div>
 
       {!connected ? (
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-8 text-center">
-          <div className="mx-auto mb-4 w-20 h-20 rounded-2xl bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center text-neutral-400 text-2xl font-bold">
-            {t('marketplaceDetail.provider.' + provider, meta.name).charAt(0)}
-          </div>
-          <h2 className="text-xl font-bold text-neutral-900 mb-2">{t('marketplaceDetail.notConnected', 'غير متصل')}</h2>
-          <p className="text-sm text-neutral-500 mb-6">{t('marketplaceDetail.connectPrompt', `اربط متجر ${meta.name} للبدء في مزامنة المنتجات والطلبات`)}</p>
-
-          {usesManualCreds && (
-            <div className="max-w-md mx-auto text-right space-y-4 mb-6">
-              {['clientId', 'privateKey', 'sellerName', 'partnerId', 'warehouseCode'].map(field => (
-                <div key={field} className="space-y-1.5">
-                  <Label className="text-sm font-medium text-neutral-700">
-                    {field === 'clientId' ? 'Client ID' : field === 'privateKey' ? (provider === 'noon' ? 'Private Key' : 'Client Secret') : field === 'sellerName' ? (provider === 'noon' ? 'Seller Name' : 'Refresh Token') : field === 'partnerId' ? (provider === 'noon' ? 'Partner ID' : 'AWS Access Key') : provider === 'noon' ? 'Warehouse Code' : 'AWS Secret Key'}
-                  </Label>
-                  {field === 'privateKey' ? (
-                    <textarea dir="ltr" className="w-full rounded-xl border border-neutral-200 bg-white/50 p-3 text-sm font-mono text-left resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/30" rows={3}
-                      placeholder={provider === 'noon' ? '-----BEGIN RSA PRIVATE KEY----- ...' : 'SP-API Client Secret'}
-                      value={(noonCreds as any)[field]} onChange={(e) => setNoonCreds({ ...noonCreds, [field]: e.target.value })} />
-                  ) : (
-                    <Input dir="ltr" className="text-left rounded-xl border-neutral-200 bg-white/50" placeholder={t('marketplaceDetail.enterField', `ادخل ${field}`)}
-                      value={(noonCreds as any)[field]} onChange={(e) => setNoonCreds({ ...noonCreds, [field]: e.target.value })} />
-                  )}
-                </div>
-              ))}
-              {provider === 'amazon' && (
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-neutral-700">{t('marketplaceDetail.marketplace', 'السوق')}</Label>
-                  <select className="w-full rounded-xl border border-neutral-200 bg-white/50 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30">
-                    <option value="sa">{t('marketplaceDetail.country.sa', 'السعودية')}</option><option value="ae">{t('marketplaceDetail.country.ae', 'الإمارات')}</option><option value="eg">{t('marketplaceDetail.country.eg', 'مصر')}</option>
-                    <option value="us">{t('marketplaceDetail.country.us', 'الولايات المتحدة')}</option><option value="uk">{t('marketplaceDetail.country.uk', 'بريطانيا')}</option><option value="de">{t('marketplaceDetail.country.de', 'ألمانيا')}</option>
-                  </select>
-                </div>
-              )}
+        <Card className="overflow-hidden">
+          <CardContent className="p-8 text-center">
+            <div className="mx-auto mb-4 w-20 h-20 rounded-2xl bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center text-neutral-400 text-2xl font-bold">
+              {t('marketplaceDetail.provider.' + provider, meta.name).charAt(0)}
             </div>
-          )}
+            <h2 className="text-xl font-bold text-neutral-900 mb-2">{t('marketplaceDetail.notConnected', 'غير متصل')}</h2>
+            <p className="text-sm text-neutral-500 mb-6">{t('marketplaceDetail.connectPrompt', `اربط متجر ${meta.name} للبدء في مزامنة المنتجات والطلبات`)}</p>
 
-          <Button className="rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25" onClick={handleConnect} disabled={connecting}>
-            {connecting ? <Loader2 className="h-4 w-4 ml-1 animate-spin" /> : <ExternalLink className="h-4 w-4 ml-1" />}
-            {connecting ? t('marketplaceDetail.connecting', 'جاري...') : t('marketplaceDetail.connectButton', `ربط ${meta.name}`)}
-          </Button>
-        </div>
+            {usesManualCreds && (
+              <div className="max-w-md mx-auto text-right space-y-4 mb-6">
+                {['clientId', 'privateKey', 'sellerName', 'partnerId', 'warehouseCode'].map(field => (
+                  <div key={field} className="space-y-1.5">
+                    <Label className="text-sm font-medium text-neutral-700">
+                      {field === 'clientId' ? 'Client ID' : field === 'privateKey' ? (provider === 'noon' ? 'Private Key' : 'Client Secret') : field === 'sellerName' ? (provider === 'noon' ? 'Seller Name' : 'Refresh Token') : field === 'partnerId' ? (provider === 'noon' ? 'Partner ID' : 'AWS Access Key') : provider === 'noon' ? 'Warehouse Code' : 'AWS Secret Key'}
+                    </Label>
+                    {field === 'privateKey' ? (
+                      <textarea dir="ltr" className="w-full rounded-xl border border-neutral-200 bg-white/50 p-3 text-sm font-mono text-left resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/30" rows={3}
+                        placeholder={provider === 'noon' ? '-----BEGIN RSA PRIVATE KEY----- ...' : 'SP-API Client Secret'}
+                        value={(noonCreds as any)[field]} onChange={(e) => setNoonCreds({ ...noonCreds, [field]: e.target.value })} />
+                    ) : (
+                      <Input dir="ltr" className="text-left rounded-xl border-neutral-200 bg-white/50" placeholder={t('marketplaceDetail.enterField', `ادخل ${field}`)}
+                        value={(noonCreds as any)[field]} onChange={(e) => setNoonCreds({ ...noonCreds, [field]: e.target.value })} />
+                    )}
+                  </div>
+                ))}
+                {provider === 'amazon' && (
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-neutral-700">{t('marketplaceDetail.marketplace', 'السوق')}</Label>
+                    <select value={amazonMarketplaceId} onChange={(e) => setAmazonMarketplaceId(e.target.value)} className="w-full rounded-xl border border-neutral-200 bg-white/50 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+                      <option value="sa">{t('marketplaceDetail.country.sa', 'السعودية')}</option><option value="ae">{t('marketplaceDetail.country.ae', 'الإمارات')}</option><option value="eg">{t('marketplaceDetail.country.eg', 'مصر')}</option>
+                      <option value="us">{t('marketplaceDetail.country.us', 'الولايات المتحدة')}</option><option value="uk">{t('marketplaceDetail.country.uk', 'بريطانيا')}</option><option value="de">{t('marketplaceDetail.country.de', 'ألمانيا')}</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <Button className="rounded-md bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25" onClick={handleConnect} disabled={connecting}>
+              {connecting ? <Loader2 className="h-4 w-4 ms-1 animate-spin" /> : <ExternalLink className="h-4 w-4 ms-1" />}
+              {connecting ? t('marketplaceDetail.connecting', 'جاري...') : t('marketplaceDetail.connectButton', `ربط ${meta.name}`)}
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <>
           {/* Stats Cards */}
@@ -194,10 +200,12 @@ export default function MarketplaceDetailPage() {
                 { label: t('marketplaceDetail.stat.totalOrders', 'إجمالي الطلبات'), value: String(salesData.totalOrders || 0), suffix: '', gradient: 'from-blue-400 to-blue-600' },
                 { label: t('marketplaceDetail.stat.marketedProducts', 'المنتجات المسوقة'), value: String(listings.length), suffix: '', gradient: 'from-amber-400 to-amber-600' },
               ].map(s => (
-                <div key={s.label} className="bg-white/80 backdrop-blur-xl rounded-2xl p-5 border border-white/50 shadow-card">
-                  <p className="text-2xl font-bold text-neutral-900 tabular-nums">{s.value}<span className="text-sm font-medium text-neutral-400 mr-1">{s.suffix}</span></p>
-                  <p className="text-xs text-neutral-500 mt-1">{s.label}</p>
-                </div>
+                <Card key={s.label} className="overflow-hidden">
+                  <CardContent className="p-5">
+                    <p className="text-2xl font-bold text-neutral-900 tabular-nums">{s.value}<span className="text-sm font-medium text-neutral-400 ms-1">{s.suffix}</span></p>
+                    <p className="text-xs text-neutral-500 mt-1">{s.label}</p>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
@@ -217,38 +225,52 @@ export default function MarketplaceDetailPage() {
 
           {/* Tab Content */}
           {activeTab === 'info' && (
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="font-bold text-lg text-neutral-900">{t('marketplaceDetail.contactInfo', 'معلومات الاتصال')}</h3>
-                <Button variant="outline" size="sm" className="rounded-full border-red-200 text-red-600 hover:bg-red-50 text-xs" onClick={handleDisconnect}>
-                  <Unlink className="h-3.5 w-3.5 ml-1" />{t('marketplaceDetail.disconnect', 'فصل')}
-                </Button>
-              </div>
-              {storeInfo && (
-                <div className="space-y-3">
-                  {[
-                    { label: t('marketplaceDetail.storeName', 'اسم المتجر'), value: storeInfo.name },
-                    { label: t('marketplaceDetail.email', 'البريد الإلكتروني'), value: storeInfo.email || '—' },
-                    { label: t('marketplaceDetail.storeId', 'معرف المتجر'), value: storeInfo.storeId },
-                  ].map(item => (
-                    <div key={item.label} className="flex justify-between text-sm py-2 border-b border-neutral-100 last:border-0">
-                      <span className="text-neutral-500">{item.label}</span>
-                      <span className="font-medium text-neutral-900">{item.value}</span>
+            <Card className="overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="font-bold text-lg text-neutral-900">{t('marketplaceDetail.contactInfo', 'معلومات الاتصال')}</h3>
+                  {confirmDisconnect ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-red-600 font-medium">تأكيد الفصل؟</span>
+                      <Button variant="destructive" size="sm" className="text-xs" onClick={handleDisconnect}>
+                        {t('marketplaceDetail.yes', 'نعم')}
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-xs" onClick={() => setConfirmDisconnect(false)}>
+                        {t('marketplaceDetail.no', 'لا')}
+                      </Button>
                     </div>
-                  ))}
+                  ) : (
+                    <Button variant="outline" size="sm" className="border-red-200 text-red-600 hover:bg-red-50 text-xs" onClick={() => setConfirmDisconnect(true)}>
+                      <Unlink className="h-3.5 w-3.5 ms-1" />{t('marketplaceDetail.disconnect', 'فصل')}
+                    </Button>
+                  )}
                 </div>
-              )}
-              <div className="mt-5 flex gap-2">
-                <Button className="rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md text-sm" onClick={handleSync} disabled={syncing}>
-                  <RefreshCw className={`h-4 w-4 ml-1 ${syncing ? 'animate-spin' : ''}`} />
-                  {syncing ? t('marketplaceDetail.syncing', 'جاري...') : t('marketplaceDetail.syncOrders', 'مزامنة الطلبات')}
-                </Button>
-              </div>
-            </div>
+                {storeInfo && (
+                  <div className="space-y-3">
+                    {[
+                      { label: t('marketplaceDetail.storeName', 'اسم المتجر'), value: storeInfo.name },
+                      { label: t('marketplaceDetail.email', 'البريد الإلكتروني'), value: storeInfo.email || '—' },
+                      { label: t('marketplaceDetail.storeId', 'معرف المتجر'), value: storeInfo.storeId },
+                    ].map(item => (
+                      <div key={item.label} className="flex justify-between text-sm py-2 border-b border-neutral-100 last:border-0">
+                        <span className="text-neutral-500">{item.label}</span>
+                        <span className="font-medium text-neutral-900">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-5 flex gap-2">
+                  <Button className="rounded-md bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md text-sm" onClick={handleSync} disabled={syncing}>
+                    <RefreshCw className={`h-4 w-4 ms-1 ${syncing ? 'animate-spin' : ''}`} />
+                    {syncing ? t('marketplaceDetail.syncing', 'جاري...') : t('marketplaceDetail.syncOrders', 'مزامنة الطلبات')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {activeTab === 'listings' && (
-            <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
+            <Card className="overflow-hidden">
               <div className="p-6 pb-0">
                 <h3 className="font-bold text-lg text-neutral-900">{t('marketplaceDetail.marketedProducts', 'المنتجات المسوقة')}</h3>
               </div>
@@ -284,7 +306,7 @@ export default function MarketplaceDetailPage() {
                   ))}
                 </div>
               )}
-            </div>
+            </Card>
           )}
         </>
       )}

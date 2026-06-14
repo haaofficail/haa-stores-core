@@ -47,7 +47,7 @@ export class CartService {
     return cart;
   }
 
-  async addItem(storeId: number, cartId: string, productId: number, quantity: number, notes?: string, giftData?: { giftWrapSelected?: boolean; sendAsGift?: boolean; giftMessage?: string }, variantId?: number) {
+  async addItem(storeId: number, cartId: string, productId: number, quantity: number, notes?: string, giftData?: { giftWrapSelected?: boolean; sendAsGift?: boolean; giftMessage?: string }, variantId?: number, source = 'storefront') {
     const [cart] = await this.db.select({ id: s.carts.id })
       .from(s.carts)
       .where(and(eq(s.carts.id, cartId), eq(s.carts.storeId, storeId)))
@@ -119,6 +119,7 @@ export class CartService {
         giftWrapPrice: mergedGiftWrapPrice?.toString() ?? null,
         sendAsGift: giftData?.sendAsGift ?? existingItem[0].sendAsGift,
         giftMessage: giftData?.giftMessage ?? existingItem[0].giftMessage,
+        source: source === 'haa_marketplace' ? 'haa_marketplace' : existingItem[0].source,
         updatedAt: new Date(),
       }).where(eq(s.cartItems.id, existingItem[0].id));
     } else {
@@ -131,6 +132,7 @@ export class CartService {
         giftWrapPrice: giftWrapPrice?.toString() ?? null,
         sendAsGift: giftData?.sendAsGift ?? false,
         giftMessage: giftData?.giftMessage ?? null,
+        source,
       });
     }
 

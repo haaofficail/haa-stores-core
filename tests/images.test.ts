@@ -24,7 +24,7 @@ function mockDb(opts?: { hasImage?: boolean }) {
 describe('Image Upload / Delete', () => {
   describe('MediaAdapter', () => {
     it('validates allowed mime types', async () => {
-      const { createMediaAdapter } = await import('@haa/shared');
+      const { createMediaAdapter } = await import('@haa/shared/media');
       const adapter = createMediaAdapter('local');
       expect(adapter.validateFile(JPEG_HEADER, 'image/jpeg')).toBeNull();
       expect(adapter.validateFile(PNG_HEADER, 'image/png')).toBeNull();
@@ -35,7 +35,7 @@ describe('Image Upload / Delete', () => {
     });
 
     it('rejects oversized files (>5MB)', async () => {
-      const { createMediaAdapter } = await import('@haa/shared');
+      const { createMediaAdapter } = await import('@haa/shared/media');
       const adapter = createMediaAdapter('local');
       const oversized = Buffer.concat([JPEG_HEADER, Buffer.alloc(6 * 1024 * 1024)]);
       const result = adapter.validateFile(oversized, 'image/jpeg');
@@ -44,21 +44,21 @@ describe('Image Upload / Delete', () => {
     });
 
     it('accepts files at exactly 5MB', async () => {
-      const { createMediaAdapter } = await import('@haa/shared');
+      const { createMediaAdapter } = await import('@haa/shared/media');
       const adapter = createMediaAdapter('local');
       const exactly5mb = Buffer.concat([JPEG_HEADER, Buffer.alloc(5 * 1024 * 1024 - JPEG_HEADER.length)]);
       expect(adapter.validateFile(exactly5mb, 'image/jpeg')).toBeNull();
     });
 
     it('rejects files with mismatched content type', async () => {
-      const { createMediaAdapter } = await import('@haa/shared');
+      const { createMediaAdapter } = await import('@haa/shared/media');
       const adapter = createMediaAdapter('local');
       const result = adapter.validateFile(JPEG_HEADER, 'image/png');
       expect(result).toContain('File content does not match declared type');
     });
 
     it('generates proper storage keys', async () => {
-      const { generateStorageKey } = await import('@haa/shared');
+      const { generateStorageKey } = await import('@haa/shared/media');
       const key = generateStorageKey(1, 42, 'image/jpeg');
       expect(key).toMatch(/^stores\/1\/products\/42\/[\w-]+\.jpg$/);
       const key2 = generateStorageKey(1, 42, 'image/png');
@@ -68,7 +68,7 @@ describe('Image Upload / Delete', () => {
     });
 
     it('storage key does not include original filename', async () => {
-      const { generateStorageKey } = await import('@haa/shared');
+      const { generateStorageKey } = await import('@haa/shared/media');
       const key = generateStorageKey(1, 1, 'image/jpeg');
       expect(key).not.toContain('original');
       expect(key).not.toContain('filename');
@@ -78,7 +78,7 @@ describe('Image Upload / Delete', () => {
 
   describe('LocalStorageAdapter', () => {
     it('uploads and returns url with key', async () => {
-      const { LocalStorageAdapter } = await import('@haa/shared');
+      const { LocalStorageAdapter } = await import('@haa/shared/media');
       const adapter = new LocalStorageAdapter('/tmp/test-storage', 'http://localhost:3000/storage');
       const result = await adapter.upload(TINY_JPEG, 'image/jpeg', 1, 1);
       expect(result.url).toMatch(/^http:\/\/localhost:3000\/storage\/stores\/1\/products\/1\//);
@@ -89,13 +89,13 @@ describe('Image Upload / Delete', () => {
     });
 
     it('returns driver name as local', async () => {
-      const { LocalStorageAdapter } = await import('@haa/shared');
+      const { LocalStorageAdapter } = await import('@haa/shared/media');
       const adapter = new LocalStorageAdapter('/tmp/test-storage', 'http://localhost:3000/storage');
       expect(adapter.getDriverName()).toBe('local');
     });
 
     it('url does not expose filesystem path', async () => {
-      const { LocalStorageAdapter } = await import('@haa/shared');
+      const { LocalStorageAdapter } = await import('@haa/shared/media');
       const adapter = new LocalStorageAdapter('/tmp/test-storage', 'http://localhost:3000/storage');
       const result = await adapter.upload(TINY_JPEG, 'image/jpeg', 1, 1);
       expect(result.url).not.toContain('/tmp/');
@@ -105,7 +105,7 @@ describe('Image Upload / Delete', () => {
 
   describe('S3StorageAdapter', () => {
     it('creates with required config', async () => {
-      const { S3StorageAdapter } = await import('@haa/shared');
+      const { S3StorageAdapter } = await import('@haa/shared/media');
       const adapter = new S3StorageAdapter(
         'https://s3.example.com',
         'auto',
@@ -118,7 +118,7 @@ describe('Image Upload / Delete', () => {
     });
 
     it('generates public url from base url and key', async () => {
-      const { S3StorageAdapter } = await import('@haa/shared');
+      const { S3StorageAdapter } = await import('@haa/shared/media');
       const adapter = new S3StorageAdapter(
         'https://s3.example.com',
         'auto',
@@ -132,7 +132,7 @@ describe('Image Upload / Delete', () => {
     });
 
     it('validates mime types same as local', async () => {
-      const { S3StorageAdapter } = await import('@haa/shared');
+      const { S3StorageAdapter } = await import('@haa/shared/media');
       const adapter = new S3StorageAdapter(
         'https://s3.example.com',
         'auto',
@@ -146,7 +146,7 @@ describe('Image Upload / Delete', () => {
     });
 
     it('rejects content-type mismatch', async () => {
-      const { S3StorageAdapter } = await import('@haa/shared');
+      const { S3StorageAdapter } = await import('@haa/shared/media');
       const adapter = new S3StorageAdapter(
         'https://s3.example.com',
         'auto',
@@ -159,7 +159,7 @@ describe('Image Upload / Delete', () => {
     });
 
     it('validates file size', async () => {
-      const { S3StorageAdapter } = await import('@haa/shared');
+      const { S3StorageAdapter } = await import('@haa/shared/media');
       const adapter = new S3StorageAdapter(
         'https://s3.example.com',
         'auto',
@@ -175,18 +175,18 @@ describe('Image Upload / Delete', () => {
 
   describe('createMediaAdapter', () => {
     it('creates local adapter by default', async () => {
-      const { createMediaAdapter } = await import('@haa/shared');
+      const { createMediaAdapter } = await import('@haa/shared/media');
       const adapter = createMediaAdapter('local');
       expect(adapter.getDriverName()).toBe('local');
     });
 
     it('throws for unknown driver', async () => {
-      const { createMediaAdapter } = await import('@haa/shared');
+      const { createMediaAdapter } = await import('@haa/shared/media');
       expect(() => createMediaAdapter('unknown')).toThrow('Unknown storage driver');
     });
 
     it('throws for s3 driver without env vars', async () => {
-      const { createMediaAdapter } = await import('@haa/shared');
+      const { createMediaAdapter } = await import('@haa/shared/media');
       const originalEnv = process.env.STORAGE_DRIVER;
       delete process.env.STORAGE_DRIVER;
       delete process.env.S3_ENDPOINT;

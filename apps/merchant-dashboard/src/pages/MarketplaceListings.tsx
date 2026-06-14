@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
-  ArrowRight, Package, Trash2, ExternalLink,
+  ArrowRight, Package, Trash2, ExternalLink, Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -19,6 +19,7 @@ export default function MarketplaceListingsPage() {
   const navigate = useNavigate();
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const loadListings = useCallback(() => {
     if (!storeId || !provider) {
@@ -38,23 +39,26 @@ export default function MarketplaceListingsPage() {
     if (!storeId || !provider) return;
     const deleted = listings.find(l => l.id === listingId);
     setListings((prev) => prev.filter((l) => l.id !== listingId));
+    setDeletingId(listingId);
     try {
       await marketplaceApi.deleteListing(storeId, provider, listingId);
       toast.success(t('marketplaces.listingRemoved', 'تم إزالة المنتج'));
     } catch {
-      if (deleted) setListings((prev) => [...prev, deleted]);
+      if (deleted) setListings((prev) => [deleted, ...prev]);
       toast.error(t('common.error', 'فشل الإزالة'));
+    } finally {
+      setDeletingId(null);
     }
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(`/channels/${provider}`)}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(`/channels/${provider}`)}>
           <ArrowRight className="h-5 w-5" />
         </Button>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-lg">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white shadow-lg">
             <Package className="h-5 w-5" />
           </div>
           <div>
@@ -64,7 +68,7 @@ export default function MarketplaceListingsPage() {
         </div>
       </div>
 
-      <Card className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card">
+      <Card>
         <CardHeader className="p-6 pb-3">
           <CardTitle className="text-lg">{t('marketplaces.allListings', 'جميع المنتجات')}</CardTitle>
         </CardHeader>
@@ -94,11 +98,11 @@ export default function MarketplaceListingsPage() {
                 {listings.map((listing: any) => (
                   <TableRow key={listing.id}>
                     <TableCell className="font-medium">{listing.marketplaceSku || '—'}</TableCell>
-                    <TableCell>{listing.price} SAR</TableCell>
-                    <TableCell>{listing.salePrice ? `${listing.salePrice} SAR` : '—'}</TableCell>
+                    <TableCell>{listing.price} {t('marketplaces.currency', 'ر.س')}</TableCell>
+                    <TableCell>{listing.salePrice ? `${listing.salePrice} ${t('marketplaces.currency', 'ر.س')}` : '—'}</TableCell>
                     <TableCell>{listing.quantity ?? '—'}</TableCell>
                     <TableCell>
-                      <Badge className={listing.status === 'active' ? 'bg-green-500/10 text-green-700 border-green-200' : 'bg-neutral-100 text-neutral-500'}>
+                      <Badge className={listing.status === 'active' ? 'bg-emerald-500/10 text-emerald-700 border-emerald-200' : 'bg-neutral-100 text-neutral-500'}>
                         {listing.status === 'active' ? t('marketplaces.active', 'نشط') : t('marketplaces.inactive', 'غير نشط')}
                       </Badge>
                     </TableCell>
@@ -106,13 +110,13 @@ export default function MarketplaceListingsPage() {
                       <div className="flex gap-1">
                         {listing.marketplaceUrl && (
                           <a href={listing.marketplaceUrl} target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
                               <ExternalLink className="h-4 w-4" />
                             </Button>
                           </a>
                         )}
-                        <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 text-red-500 hover:bg-red-50" onClick={() => handleRemove(listing.id)}>
-                          <Trash2 className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-50" onClick={() => handleRemove(listing.id)} disabled={deletingId === listing.id}>
+                          {deletingId === listing.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         </Button>
                       </div>
                     </TableCell>

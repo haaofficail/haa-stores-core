@@ -34,7 +34,7 @@ import { shippingRouter } from './routes/shipping.js';
 import { walletRouter } from './routes/wallet.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { settingsRouter } from './routes/settings.js';
-import { storefrontRouter } from './routes/storefront.js';
+import { storefrontRouter } from './routes/storefront/index.js';
 import { couponsRouter } from './routes/coupons.js';
 import { exportsRouter } from './routes/exports.js';
 import { importsRouter } from './routes/imports.js';
@@ -55,13 +55,16 @@ import { publicApiRouter } from './routes/public-api.js';
 import { feedsRouter } from './routes/feeds.js';
 import { aiRouter } from './routes/ai-agent.js';
 import { marketplacesRouter } from './routes/marketplaces.js';
+import { haaMarketplaceRouter } from './routes/haa-marketplace.js';
 import { paymentSettingsRouter } from './routes/payment-settings.js';
 import { providerStatusRouter } from './routes/provider-status.js';
 import { supportRouter } from './routes/support.js';
+import { supportErrorsRouter } from './routes/support-errors.js';
 import { employeesRouter } from './routes/employees.js';
 import { auditRouter } from './routes/audit.js';
+import { marketingRouter } from './routes/marketing.js';
 import { healthRouter } from './routes/health.js';
-import { supportErrorsRouter } from './routes/support-errors.js';
+import { permissionsRouter } from './routes/permissions.js';
 import { createDbClient, closeDbClient } from '@haa/db';
 import { eq, sql } from 'drizzle-orm';
 import { setTokenVersionVerifier, setStoreTenantResolver } from '@haa/auth-core';
@@ -135,6 +138,7 @@ const uploadRateLimit = rateLimiter({
 
 // Public rate-limited routes
 app.use('/s/*', storefrontBrowseRateLimit);
+app.use('/marketplace/*', storefrontBrowseRateLimit);
 app.use('/s/:slug/cart/*', checkoutRateLimit);
 app.use('/s/:slug/checkout/*', checkoutRateLimit);
 app.use('/auth/login', strictRateLimit);
@@ -228,8 +232,18 @@ app.use('/s/*', async (c, next) => {
   await next();
 });
 
+app.use('/marketplace*', async (c, next) => {
+  const accept = c.req.header('accept') || '';
+  const storefrontHtml = readStorefrontHtml();
+  if (storefrontHtml && accept.includes('text/html')) {
+    return c.html(storefrontHtml);
+  }
+  await next();
+});
+
 // Storefront API routes (JSON responses)
 app.route('/s', storefrontRouter);
+app.route('/marketplace', haaMarketplaceRouter);
 app.route('/merchant/:storeId/shipments', shipmentsRouter);
 app.route('/webhooks/shipping', shippingWebhooksRouter);
 app.route('/webhooks/oto', otoWebhookRouter);
@@ -244,9 +258,11 @@ app.route('/merchant/:storeId/feeds', feedsRouter);
 app.route('/merchant/:storeId/ai', aiRouter);
 app.route('/merchant/:storeId/marketplaces', marketplacesRouter);
 app.route('/merchant/:storeId/payment-providers', paymentSettingsRouter);
-app.route('/merchant/:storeId/employees', employeesRouter);
+  app.route('/merchant/:storeId/employees', employeesRouter);
+  app.route('/merchant/:storeId/permissions', permissionsRouter);
 app.route('/merchant/:storeId', supportRouter);
 app.route('/merchant/:storeId/audit', auditRouter);
+app.route('/merchant/:storeId/marketing', marketingRouter);
 
 const port = env.API_PORT;
 

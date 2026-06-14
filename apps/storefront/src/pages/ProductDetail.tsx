@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { productsApi, featuresApi, giftOptionsApi, checkoutApi, sizeGuidesApi } from '@/lib/api';
 import { useSharedCart } from '@/hooks/CartContext';
+import { tracker } from '@/lib/tracker';
 import { StoreButton } from '@/components/ui';
 import { Icon } from '@/components/ui/icon';
 import { useSEO } from '@/hooks/useSEO';
@@ -39,6 +40,7 @@ export default function ProductDetail() {
   const { store } = useStore();
   const theme = useStorefrontTheme();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { slug, productSlug } = useParams<{ slug: string; productSlug: string }>();
   const [product, setProduct] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +65,7 @@ export default function ProductDetail() {
   const watcherCount = product?.views ?? null;
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const { addItem } = useSharedCart();
+  const cartSource = searchParams.get('source') === 'haa_marketplace' ? 'haa_marketplace' : 'storefront';
 
   useEffect(() => {
     if (product?.options?.length) {
@@ -109,6 +112,12 @@ export default function ProductDetail() {
   }, [slug, productSlug]);
 
   useEffect(() => { fetchProduct(); }, [fetchProduct]);
+
+  useEffect(() => {
+    if (slug && product?.id) {
+      tracker.trackProductView(slug, product.id);
+    }
+  }, [slug, product?.id]);
 
   useEffect(() => {
     if (!slug) return;
@@ -184,14 +193,14 @@ export default function ProductDetail() {
     if (quantity > maxQuantity) { toast.error(t('product.quantityMax')); return; }
     setAdding(true);
     try {
-      await addItem(product.id, quantity, undefined, giftData, selectedVariant?.id);
+      await addItem(product.id, quantity, undefined, giftData, selectedVariant?.id, cartSource);
       setAdded(true);
       toast.success(t('product.addedSuccessfully'), {
         action: { label: t('product.viewCart'), onClick: () => navigate(`/s/${slug}/cart`) },
       });
     } catch { toast.error(t('common.error')); }
     finally { setAdding(false); }
-  }, [product, isOutOfStock, hasOptions, selectedVariant, quantity, maxQuantity, addItem, slug, t, navigate, giftData]);
+  }, [product, isOutOfStock, hasOptions, selectedVariant, quantity, maxQuantity, addItem, slug, t, navigate, giftData, cartSource]);
 
   const handleBuyNow = useCallback(async () => {
     if (!product || isOutOfStock) return;
@@ -200,14 +209,17 @@ export default function ProductDetail() {
     if (quantity > maxQuantity) { toast.error(t('product.quantityMax')); return; }
     setBuying(true);
     try {
-      await addItem(product.id, quantity, undefined, giftData, selectedVariant?.id);
+      await addItem(product.id, quantity, undefined, giftData, selectedVariant?.id, cartSource);
       navigate(`/s/${slug}/checkout`);
     } catch { toast.error(t('common.error')); }
     finally { setBuying(false); }
-  }, [product, isOutOfStock, hasOptions, selectedVariant, quantity, maxQuantity, addItem, slug, t, navigate, giftData]);
+  }, [product, isOutOfStock, hasOptions, selectedVariant, quantity, maxQuantity, addItem, slug, t, navigate, giftData, cartSource]);
 
   const handleShare = useCallback(async () => {
     const url = window.location.href;
+    if (slug && product?.id) {
+      tracker.trackShare(slug, product.id, 'product');
+    }
     if (navigator.share) {
       try { await navigator.share({ title: product?.name, url }); } catch {}
     } else {
@@ -216,7 +228,7 @@ export default function ProductDetail() {
         toast.success(t('product.linkCopied', 'تم نسخ الرابط'));
       } catch { toast.error(t('common.error')); }
     }
-  }, [product?.name, t]);
+  }, [slug, product?.name, product?.id, t]);
 
   useEffect(() => {
     if (!showSizeGuide && sizeGuideOpen) setSizeGuideOpen(false);

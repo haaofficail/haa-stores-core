@@ -4,6 +4,422 @@
 
 ---
 
+### TASK-0026: Quality Pass 2 — Component Unification
+
+- **Type:** Refactor / Architecture
+- **Priority:** P1 High
+- **Status:** In Progress
+- **Created:** 2026-06-14
+- **Updated:** 2026-06-14
+- **Original Request:** Quality Pass 2 per strategic plan (see COMMITMENTS.md, DECISION-0004)
+- **Expanded Requirement:** Break down oversized files into smaller, focused units:
+  - **2.1:** Extract 8 `toPublic*` helpers from `storefront.ts` and 2 from `public-api.ts` to `packages/shared/src/dto/storefront-dto.ts`
+  - **2.2:** Split `storefront.ts` (876 lines) into 6 files (store info, products, cart, checkout, support, tracking) — each ≤300 lines
+  - **2.3:** Split `marketplaces.ts` (910 lines) into 4 files (one per provider: salla, zid, noon, amazon) + base
+  - **2.4:** Split `admin.ts` (692 lines) into 5 files (auth, tenants, stores, kyc-payments, marketplace-settlements, audit)
+  - **2.5:** Extract payment providers to `packages/payment-providers/` (5 providers + base + service)
+  - **2.6:** Decompose `DashboardHome.tsx` (2743 lines) into 6 components in `apps/merchant-dashboard/src/components/dashboard/`
+- **Problem:** God class files (876-2743 lines) violate "no route > 300 lines" rule from Quality Pass 1; they hurt maintainability, review-ability, and onboarding.
+- **Goal:** All routes ≤300 lines; all files have single, clear responsibility.
+- **Scope:** 11 files affected; new `packages/payment-providers/` package; new `packages/shared/src/dto/` directory
+- **Out of Scope:** Adding new features, refactoring business logic, changing API contracts
+- **Affected Areas:**
+  - `apps/api/src/routes/storefront.ts` (split)
+  - `apps/api/src/routes/marketplaces.ts` (split)
+  - `apps/api/src/routes/admin.ts` (split)
+  - `apps/api/src/routes/public-api.ts` (use shared DTOs)
+  - `packages/commerce-core/src/payment.ts` (extract to new package)
+  - `apps/merchant-dashboard/src/pages/DashboardHome.tsx` (decompose)
+  - New: `packages/shared/src/dto/storefront-dto.ts`
+  - New: `packages/payment-providers/` (8 files)
+  - New: `apps/merchant-dashboard/src/components/dashboard/` (6 files)
+- **Skills Required:** `plan-mode`, `systematic-debugging`, `test-driven-development`, `verification-before-completion`
+- **Skills Used:** (filled per sub-item)
+- **Acceptance Criteria:**
+  - [ ] 2.1: 10 `toPublic*` helpers extracted to shared DTO module; both `storefront.ts` and `public-api.ts` import from there
+  - [x] 2.2: `storefront.ts` ≤300 lines; 6 new files each ≤300 lines — **Item 2.2 COMPLETED 2026-06-14** (see Completion Notes below)
+  - [ ] 2.3: `marketplaces.ts` ≤300 lines; 4 new provider files + base
+  - [ ] 2.4: `admin.ts` ≤300 lines; 5 new domain files
+  - [ ] 2.5: `payment.ts` ≤300 lines; new `packages/payment-providers/` package with 8 files
+  - [ ] 2.6: `DashboardHome.tsx` ≤300 lines; 6 new components
+  - [ ] All boundary tests pass
+  - [ ] `pnpm typecheck` passes
+  - [ ] `pnpm ci:local` passes (or only the documented baseline failures)
+- **Test Plan:** Per-sub-item boundary tests + full `pnpm ci:local` after each
+- **Test Results:**
+  - **Item 2.2 (Storefront route split) — COMPLETED 2026-06-14:**
+    - `apps/api/src/routes/storefront.ts` (monolith) removed from working tree.
+    - New `apps/api/src/routes/storefront/` directory containing 7 files: `index.ts`, `_shared.ts`, `store-info.ts`, `products.ts`, `cart.ts`, `checkout.ts`, `support.ts`.
+    - `apps/api/src/index.ts` updated to import `./routes/storefront/index.js` (the new aggregator that mounts all 5 sub-routers).
+    - 5 split-aware regression test files passed: `tests/dto-storefront.test.ts`, `tests/cart-security-regression.test.ts`, `tests/email-contact-regression.test.ts`, `tests/products-qa-regression.test.ts`, `tests/support-token-regression.test.ts`.
+    - Verification evidence: 5 test files / 33/33 tests passed.
+    - `pnpm --filter @haa/api typecheck` passed.
+    - `pnpm --filter @haa/api build` passed.
+    - `pnpm --filter @haa/storefront build` passed.
+    - `pnpm --filter @haa/merchant-dashboard build` passed.
+    - Storefront route split is the only sub-item closed in this entry. Other sub-items (2.3–2.6) remain open.
+- **Risks:**
+  - Large refactor with potential for regressions — must test after each sub-item
+  - 29 child tables of stores reference storeId — splitting admin requires care
+  - Payment provider extraction touches many callers
+  - DashboardHome refactor could affect UI behavior
+- **Related Issues:** None
+- **Related Decisions:** DECISION-0004, COMMITMENT-0001
+- **Status History:** Requested 2026-06-14; Expanded 2026-06-14; In Progress 2026-06-14; Item 2.2 Done 2026-06-14
+- **Final Notes:** Estimated 20 hours of focused work over 3 weeks. Order: 2.1 → 2.5 → 2.2 → 2.3 → 2.4 → 2.6. Item 2.2 (Storefront route split) closed on 2026-06-14. Items 2.3–2.6 remain open.
+
+---
+
+### TASK-0025: Quality Pass 1 — System Health Stabilization
+
+- **Type:** Refactor / Data/DB / Security / Support/Ops / Architecture
+- **Priority:** P0 Critical
+- **Status:** In Progress
+- **Created:** 2026-06-14
+- **Updated:** 2026-06-14
+- **Original Request:** Strategic commitment (see COMMITMENTS.md, DECISION-0004) — Quality Pass 1-5 must close before any major Feature Pass.
+- **Expanded Requirement:** Quality Pass 1 removes ticking bombs in the system foundation:
+  1. **Schema duplication** — delete dead `marketing-actions.ts` (no imports, missing `marketingActionLogs`, missing cascade)
+  2. **Migration duplication** — `0046_smiling_phil_sheldon.sql` re-creates marketing tables already in `0036`; refactor to keep only unique content (store demo flags) and create new `0047_store_demo_flags.sql`
+  3. **Missing `ADMIN_JWT_SECRET`** — add to `.env.example` with validation in `env.ts` (security baseline gap)
+  4. **No CI/CD** — add GitHub Actions `ci.yml` (typecheck + lint + test)
+  5. **Missing FK cascade** on `stores.tenantId` → prevent orphan stores
+  6. **Missing `requirePermission` per-route** in `dashboard.ts` and `ai-agent.ts` (security gap)
+- **Problem:** System has accumulated production-fast decisions: schema drift, migrations drift, god class payment.ts, oversized routes, missing CI/CD, CSRF gap, in-memory rate limiter. Adding SaaS features on top is wasted investment.
+- **Goal:** Stabilize the foundation so future feature work is built on solid ground.
+- **Scope:**
+  - `packages/db/src/schema/marketing-actions.ts` (delete)
+  - `packages/db/src/migrations/0046_smiling_phil_sheldon.sql` (split)
+  - New `packages/db/src/migrations/0047_store_demo_flags.sql`
+  - `packages/db/src/migrations/meta/_journal.json` (update entry)
+  - `.env.example` (add ADMIN_JWT_SECRET)
+  - `apps/api/src/env.ts` (add ADMIN_JWT_SECRET validation)
+  - `.github/workflows/ci.yml` (new)
+  - `packages/db/src/schema/stores.ts` (FK cascade)
+  - `apps/api/src/routes/dashboard.ts` (requirePermission per-route)
+  - `apps/api/src/routes/ai-agent.ts` (requirePermission per-route)
+  - New boundary tests for each item
+- **Out of Scope:**
+  - Pass 2 (route splitting, payment provider extraction)
+  - Pass 3 (CSRF, webhook idempotency, audit logging)
+  - Pass 4 (CI/CD full, observability, Redis)
+  - Pass 5 (Repository, DI, BullMQ)
+  - Any major SaaS feature (deferred until Pass 1-5 closed)
+- **Affected Areas:**
+  - `packages/db/` (schema, migrations, journal)
+  - `apps/api/src/` (env.ts, routes/dashboard.ts, routes/ai-agent.ts)
+  - `.env.example`
+  - `.github/workflows/`
+  - `tests/` (new boundary tests)
+- **Files to Inspect:**
+  - `packages/db/src/schema/stores.ts`
+  - `packages/db/src/schema/tenants.ts`
+  - `apps/api/src/env.ts`
+  - `apps/api/src/routes/admin.ts` (uses ADMIN_JWT_SECRET)
+  - `apps/api/src/routes/dashboard.ts`
+  - `apps/api/src/routes/ai-agent.ts`
+- **Files Changed:** (TBD per sub-task)
+- **Skills Required:** (per AGENTS.md §14)
+  - `plan-mode` — multi-step structural change
+  - `systematic-debugging` — root cause for each item
+  - `test-driven-development` — boundary tests for each change
+  - `verification-before-completion` — verify after each item
+- **Skills Used:** (filled per sub-task)
+  - Item 1 (schema merge): `plan-mode` + `systematic-debugging` + `test-driven-development` + `verification-before-completion` ✅
+- **Acceptance Criteria:**
+  - [ ] Item 1: `marketing-actions.ts` deleted; `pnpm typecheck` passes; `pnpm test` passes 1573+
+  - [ ] Item 2: `0046` removed; `0047_store_demo_flags.sql` created; `pnpm db:migrate` succeeds; tests pass
+  - [ ] Item 3: `ADMIN_JWT_SECRET` in `.env.example`; `env.ts` validates it; typecheck passes
+  - [ ] Item 4: `.github/workflows/ci.yml` created; runs typecheck + lint + test
+  - [ ] Item 5: `stores.tenantId` cascade works; tests pass
+  - [ ] Item 6: `dashboard.ts` and `ai-agent.ts` have `requirePermission` per route; tests pass
+- **Test Plan:**
+  - Run `pnpm typecheck` after each item
+  - Run `pnpm test` after each item
+  - Run `pnpm ops:monitor` after each item
+  - Boundary test for each schema/migration/per-route change
+- **Test Results:**
+  - **Baseline (2026-06-14, before any change):**
+    - `pnpm typecheck` → ✅ PASSED (all 21 packages)
+    - `pnpm test` → ⚠️ 1670 passed, 2 failed, 14 todo, 1 skipped
+    - Pre-existing failures (NOT related to this task):
+      1. `tests/security-boundary-gates.test.ts:39-43` — "Storefront CSS must not target body, html, or :root globally" — fails because `apps/storefront/src/index.css:105` contains `:root {` (design tokens declaration)
+      2. `tests/security-boundary-gates.test.ts:45-49` — "Storefront CSS a tag must be scoped under #storefront-scope" — likely related to same index.css
+    - These are pre-existing CSS isolation gaps, not caused by this task
+    - Will be addressed in a separate task if needed
+  - **Item 1 (schema merge) — COMPLETED 2026-06-14:**
+    - Created git branch `quality-pass-1-system-health`
+    - Created `tests/schema-deduplication.test.ts` (6 boundary tests)
+    - TDD cycle: RED (1 failed) → GREEN (6/6 passed)
+    - Deleted `packages/db/src/schema/marketing-actions.ts` via `mavis-trash`
+    - `pnpm typecheck` → ✅ PASSED (all 21 packages)
+    - `pnpm test` → 1676 passed (+6 from baseline), 2 failed (same baseline failures, not regressions)
+    - Item 1 marked as ✅ Done
+- **Risks:**
+  - Migration split: if local DB has tables from old 0046, must verify
+  - CI/CD: requires GitHub repo (currently no git remote verified)
+  - FK cascade: could affect existing workflows if cascade not expected
+  - requirePermission: routes may need different permissions than assumed
+- **Related Issues:** Tied to strategic gap identified in audit
+- **Related Decisions:** DECISION-0004, COMMITMENT-0001, COMMITMENT-0002
+- **Status History:**
+  - Requested: 2026-06-14
+  - Expanded: 2026-06-14
+  - Planned: 2026-06-14
+  - In Progress: 2026-06-14 (Item 1: schema merge)
+- **Final Notes:** Per-strategic-commitment, this is the first work after the Quality Pass commitment. Proof-of-concept approach: items 1-3 first, then 4-6.
+
+---
+
+### TASK-0024: Compact Marketplace Product Detail Trust Sections
+
+- **Type:** UX/UI Polish / Theme Work / Testing
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-14
+- **Updated:** 2026-06-14
+- **Original Request:** الحاويات و المسافات المهدرة كبيرة... الشعارات صغيرة ولا يوجد تقسيم للدفعات... يجب ان تكون مغرية... بطاقات المنتج فيها مساحات مهدرة... في صفحة المنتج لا يوجد كم انباع منتج
+- **Expanded Requirement:** Reduce wasted spacing in product-detail shipping/returns and reviews sections, improve the product-detail BNPL block with larger provider logos, explicit installment value, persuasive purchase copy, compress marketplace product cards so product imagery takes more of the card, and show product sales count on product detail.
+- **Problem:** The policy/reviews area used large stacked cards for short text, the BNPL row only showed small Tabby/Tamara logos without making the low payment feel attractive, marketplace product cards spent too much height below the image, and product detail lacked sales-count trust proof.
+- **Goal:** Make the marketplace product detail and product cards denser and more conversion-focused without changing merchant-store theme files.
+- **Scope:** Marketplace product detail UI, shared BNPL badge sizing prop, marketplace-only product cards.
+- **Out of Scope:** Checkout provider eligibility rules, merchant storefront pages, payment gateway behavior, review backend implementation.
+- **Affected Areas:** `apps/storefront/src/pages/marketplace/MarketplaceProductDetail.tsx`, `apps/storefront/src/components/product-card/BNPLBadges.tsx`, `apps/storefront/src/pages/marketplace/theme/MarketplaceProductCard.tsx`.
+- **Files Changed:** `apps/storefront/src/pages/marketplace/MarketplaceProductDetail.tsx`, `apps/storefront/src/components/product-card/BNPLBadges.tsx`, `apps/storefront/src/pages/marketplace/theme/MarketplaceProductCard.tsx`, ops docs.
+- **Acceptance Criteria:** Policy/reviews sections use compact spacing; product-detail BNPL shows larger Tabby/Tamara logos; installment copy highlights "خذها الآن", "ادفع الآن فقط", "بدون فوائد", and the per-payment amount; marketplace product card image takes most of the card without losing old price/savings/BNPL/CTA; product detail shows sales count near rating and review summary; no horizontal overflow.
+- **Test Plan:** Storefront typecheck, marketplace regression test, browser QA on marketplace product detail.
+- **Test Results:** ✅ `pnpm --filter @haa/storefront typecheck`; ✅ `pnpm vitest run tests/products-qa-regression.test.ts` (13 passed); ✅ Browser QA confirmed compact sections, larger product-detail BNPL logos, persuasive installment copy, payment-block height reduced to 69px, marketplace card height reduced from 515px to 405px, image share increased to 61%, unclipped demo badge, product-detail sales count, and no horizontal overflow.
+- **Risks:** Installment amount is a display estimate (`price / 4`) and final provider terms still depend on Tabby/Tamara eligibility at checkout.
+- **Related Issues:** None
+- **Related Decisions:** None
+- **Status History:** Requested 2026-06-14; Done 2026-06-14
+- **Final Notes:** BNPL badge default size remains small for product cards; only product detail opts into the larger display.
+
+---
+
+### TASK-0023: Repair Demo Support KB Repeated API Error
+
+- **Type:** Bug Fix / Support/Ops / Data/DB / Incident Response
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-14
+- **Updated:** 2026-06-14
+- **Original Request:** بعد ما تخلص صلح ديمة متكررة في الديمو
+- **Expanded Requirement:** Fix repeated local demo `API-001` fingerprints reported by `pnpm ops:monitor`, especially `/s/demo-perfumes/support/kb`, while distinguishing active failures from archived historical logs.
+- **Problem:** `ops:monitor` repeatedly recommended RCA for demo storefront routes. Direct DB inspection showed `knowledge_base_articles` was missing even though the historical migration that should have created it was recorded as applied.
+- **Goal:** Restore demo support KB API health and clear stale repeated-fingerprint recommendations.
+- **Scope:** DB repair migration for support KB table, active support-error log archive, verification of demo storefront routes.
+- **Out of Scope:** Demo seed content authoring, marketplace visual work, support UI redesign.
+- **Affected Areas:** `packages/db/src/migrations/`, Drizzle journal, storage support-error log.
+- **Files Changed:** `packages/db/src/migrations/0039_repair_support_kb_articles.sql`, `packages/db/src/migrations/meta/_journal.json`, `storage/archive/support-error-events-2026-06-14-pre-demo-kb-repair.ndjson`, `storage/support-error-events.ndjson`, ops docs.
+- **Acceptance Criteria:** `knowledge_base_articles` exists; `/s/demo-perfumes/support/kb` returns 200; `/s/haa-demo` and `/s/haa-demo/theme` return 200; `pnpm ops:monitor` reports no recommended tasks/incidents.
+- **Test Plan:** Inspect DB columns/tables, add idempotent repair migration, run `pnpm db:migrate`, curl demo routes, archive stale support-error events, rerun `pnpm ops:monitor`.
+- **Test Results:** ✅ `pnpm db:migrate`; ✅ `pnpm --filter @haa/db typecheck`; ✅ DB table check; ✅ `/s/demo-perfumes/support/kb` returns 200; ✅ `/s/haa-demo` and `/s/haa-demo/theme` return 200; ✅ `pnpm ops:monitor` reports no recommended tasks/incidents.
+- **Risks:** Historical archived support-error events remain preserved and should not be treated as active failures.
+- **Related Issues:** ISSUE-0009
+- **Related Decisions:** None
+- **Status History:** Requested 2026-06-14; Done 2026-06-14
+- **Final Notes:** Root cause was migration state drift: the migration containing `knowledge_base_articles` was considered applied while the table was absent locally. Added an idempotent repair migration rather than editing historical migrations.
+
+---
+
+### TASK-0022: Complete Marketplace Product Detail Conversion Sections
+
+- **Type:** Feature / UX/UI Polish / Theme Work / Testing
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-14
+- **Updated:** 2026-06-14
+- **Original Request:** نفذها كلها
+- **Expanded Requirement:** Complete the marketplace product detail page with all missing conversion and trust sections: BNPL, savings, buy-now, specifications, policies, reviews, and enhanced gallery controls.
+- **Problem:** The marketplace product page had a gallery, price, seller card, and add-to-cart path, but lacked key ecommerce detail-page elements expected by customers before purchase.
+- **Goal:** Make the marketplace product page feel complete without changing the user's marketplace theme identity or internal marketplace routing.
+- **Scope:** `apps/storefront/src/pages/marketplace/MarketplaceProductDetail.tsx`
+- **Out of Scope:** Merchant storefront product page, review backend implementation, shipping-rate calculations, checkout redesign.
+- **Affected Areas:** Marketplace product detail UI only.
+- **Files Changed:** `apps/storefront/src/pages/marketplace/MarketplaceProductDetail.tsx`, ops docs.
+- **Acceptance Criteria:** Page shows Tabby/Tamara, savings, old price, large price, buy-now CTA, gallery arrows and zoom, specifications, shipping/returns policies, reviews summary, merchant link, no horizontal overflow.
+- **Test Plan:** Storefront typecheck, marketplace regression test, browser QA on `/marketplace/products/haa-demo/wireless-bluetooth-headphones`.
+- **Test Results:** ✅ `pnpm --filter @haa/storefront typecheck`; ✅ `pnpm vitest run tests/products-qa-regression.test.ts` (13 passed); ✅ Browser QA confirmed BNPL, savings, buy-now, specs, policies, reviews, zoom, merchant link, and no overflow.
+- **Risks:** Reviews are currently a summary/placeholder until detailed review data is exposed by the API.
+- **Related Issues:** None
+- **Related Decisions:** None
+- **Status History:** Requested 2026-06-14; Done 2026-06-14
+- **Final Notes:** Added conversion sections while preserving the marketplace theme and existing internal routing behavior.
+
+---
+
+### TASK-0021: Marketplace Theme System Polish
+
+- **Type:** UX/UI Polish / Theme Work / Testing
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-14
+- **Updated:** 2026-06-14
+- **Original Request:** حسن الثيم كامل والحدود وكل شئ ابحث في النت عن السكيلز المناسبة
+- **Expanded Requirement:** Research suitable ecommerce/product-page design guidance and improve the standalone marketplace theme system across the marketplace landing page, hero, product cards, seller rail, filters, category tabs, and product detail styling without coupling it to merchant storefront themes.
+- **Problem:** Marketplace theme surfaces were functional but visually inconsistent: mixed accent colors, uneven borders/shadows, basic card treatments, and product/market pages that did not feel like one polished marketplace system.
+- **Goal:** Keep the user's marketplace visual theme intact while preserving internal marketplace fixes such as routing, product-detail linking, merchant-store secondary links, and regression coverage.
+- **Scope:** Storefront marketplace-only files under `apps/storefront/src/pages/marketplace/`.
+- **Out of Scope:** Merchant storefront theme registry, merchant dashboard, API/DB behavior, checkout workflow, admin dashboard.
+- **Affected Areas:** Marketplace theme tokens, hero, seller rail, filters, product cards, product detail page.
+- **Files Changed:** `apps/storefront/src/pages/marketplace/theme/tokens.ts`, `MarketplaceHero.tsx`, `MarketplaceProductCard.tsx`, `MarketplaceFilters.tsx`, `MarketplaceSellerRail.tsx`, `MarketplaceEdition.tsx`, `MarketplaceProductDetail.tsx`, ops docs.
+- **Acceptance Criteria:** Marketplace internal linking and product-detail behavior remain working; merchant product URL remains available; storefront typecheck and marketplace regression pass; no forced color, shadow, or motion changes override the user's existing marketplace theme.
+- **Test Plan:** Research design references, storefront typecheck, marketplace regression test, browser desktop QA for `/marketplace` and product detail, mobile QA at 390x844, preflight, ops monitor.
+- **Test Results:** ✅ Researched Baymard, NN/g, Material 3, and Apple HIG guidance; ✅ `pnpm --filter @haa/storefront typecheck`; ✅ `pnpm vitest run tests/products-qa-regression.test.ts` (13 passed); ✅ Browser QA for `/marketplace` and `/marketplace/products/haa-demo/wireless-bluetooth-headphones`; ✅ mobile QA at 390x844 with no overflow; ✅ `pnpm preflight`; ✅ `pnpm ops:monitor`.
+- **Risks:** Cart, checkout, seller detail, and tracking pages still need a dedicated theme pass to fully inherit the new marketplace visual system.
+- **Related Issues:** None
+- **Related Decisions:** Marketplace theme remains isolated under storefront marketplace files and is not wired to merchant storefront theme runtime components.
+- **Status History:** Requested 2026-06-14; Done 2026-06-14
+- **Final Notes:** Reverted the assistant-introduced visual overrides and kept the user's marketplace theme intact. Product cards now keep the old red price, savings block, large product price, Tabby/Tamara badges, and use neutral hover shadow/motion without a blue hover border. Kept internal marketplace behavior fixes and regression coverage intact.
+
+---
+
+### TASK-0020: Marketplace Product Detail Page Visual Upgrade
+
+- **Type:** Feature / UX/UI Polish / Theme Work / Testing
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-14
+- **Updated:** 2026-06-14
+- **Original Request:** ولا يوجد صفحة منتج، ثم طلب تطبيق الشكل المصمم في صورة صفحة المنتج.
+- **Expanded Requirement:** Add an independent marketplace product detail route that uses marketplace-only styling, links marketplace product cards to that route, keeps merchant product pages separate, and upgrades the page to match the designed marketplace product layout with gallery, product purchase panel, seller card, trust strip, and similar products.
+- **Problem:** Marketplace product cards pointed directly to merchant store product pages and the marketplace had no dedicated product detail page. The first implementation was functional but did not match the richer designed marketplace product screen.
+- **Goal:** Provide a marketing-grade marketplace product page under `/marketplace/products/:storeSlug/:productSlug` without coupling it to merchant storefront theme files.
+- **Scope:** Public storefront marketplace product detail route, marketplace API product detail endpoint, storefront API client, marketplace product card links, and regression coverage.
+- **Out of Scope:** Merchant storefront product detail page, merchant dashboard theme editor, marketplace checkout behavior, database schema.
+- **Affected Areas:** `apps/api/src/routes/haa-marketplace.ts`, `apps/storefront/src/App.tsx`, `apps/storefront/src/lib/api.ts`, `apps/storefront/src/pages/marketplace/`, `tests/products-qa-regression.test.ts`
+- **Files Changed:** `apps/api/src/routes/haa-marketplace.ts`, `apps/storefront/src/App.tsx`, `apps/storefront/src/lib/api.ts`, `apps/storefront/src/pages/marketplace/MarketplaceProductDetail.tsx`, `apps/storefront/src/pages/marketplace/theme/MarketplaceProductCard.tsx`, `tests/products-qa-regression.test.ts`, ops docs.
+- **Acceptance Criteria:** Marketplace product cards open an independent marketplace product detail page; merchant product URL remains available as a secondary action; page visually follows the designed marketplace product layout; RTL and mobile have no horizontal overflow; targeted typechecks, regression test, preflight, and ops monitor pass.
+- **Test Plan:** API typecheck, storefront typecheck, marketplace/product QA regression, browser desktop/mobile visual QA, preflight, ops monitor.
+- **Test Results:** ✅ `pnpm --filter @haa/api typecheck`; ✅ `pnpm --filter @haa/storefront typecheck`; ✅ `pnpm vitest run tests/products-qa-regression.test.ts` (13 passed); ✅ Browser desktop QA at 1397x768 against the accepted concept; ✅ Browser mobile QA at 390x844 with no overflow; ✅ `pnpm preflight`; ✅ `pnpm ops:monitor`.
+- **Risks:** Similar products currently use the marketplace surface link as a visual section seed; a future pass should connect them to real related product data.
+- **Related Issues:** None
+- **Related Decisions:** Marketplace product detail is a standalone marketplace page and does not import merchant storefront theme runtime components.
+- **Status History:** Requested 2026-06-14; Done 2026-06-14; Reopened for visual fidelity 2026-06-14; Done after tighter concept matching 2026-06-14
+- **Final Notes:** Desktop layout now matches the provided concept order and density more closely: gallery left, product details center, seller card right, compact header, compact purchase panel, and scaled product media.
+
+---
+
+### TASK-0019: Repair Marketing Events Insert Failure
+
+- **Type:** Bug Fix / Support/Ops / Data/DB
+- **Priority:** P2 Medium
+- **Status:** Done
+- **Created:** 2026-06-14
+- **Updated:** 2026-06-14
+- **Original Request:** System monitoring detected repeated fingerprint during post-task `pnpm ops:monitor`.
+- **Expanded Requirement:** Investigate repeated `API-001` failures on `/s/haa-demo/events` when inserting into `marketing_events`.
+- **Problem:** `pnpm ops:errors` detected fingerprint `API-001::unknown::/s/haa-demo/events::Failed_query:_insert_into_"marketing_events"_...` 13 times.
+- **Goal:** Restore marketing event ingestion and clear stale monitoring noise without deleting evidence.
+- **Scope:** Storefront event tracking endpoint and `marketing_events` DB schema/migration only.
+- **Out of Scope:** Marketplace visual theme work.
+- **Affected Areas:** API storefront events route, marketing events schema/migrations, support-error-events archive.
+- **Files Changed:** `packages/db/src/migrations/0037_repair_marketing_tables.sql`, `packages/db/src/migrations/meta/_journal.json`, `storage/archive/support-error-events-2026-06-14-pre-marketing-repair.ndjson`, `storage/support-error-events.ndjson`, ops docs.
+- **Acceptance Criteria:** Root cause identified; `marketing_events`, `marketing_sessions`, and `product_performance_daily` exist; event POST succeeds; repeated fingerprint no longer appears in active `ops:errors`.
+- **Test Plan:** Reproduce event POST, run migration, verify DB tables, retry event POST, run `pnpm ops:errors`, run `pnpm ops:monitor`.
+- **Test Results:** ✅ Reproduced 500 before fix; ✅ `pnpm db:migrate`; ✅ `pnpm --filter @haa/db build`; ✅ DB table check; ✅ event POST returns `201`; ✅ `pnpm ops:errors` reports no recommended tasks/incidents.
+- **Risks:** Archived historical support-error events are preserved under `storage/archive/` and should not be treated as current alerts.
+- **Related Issues:** ISSUE-0008
+- **Related Decisions:** None
+- **Status History:** Requested 2026-06-14; Done 2026-06-14
+- **Final Notes:** Root cause was local migration state drift: Drizzle considered the old marketing migration applied while the actual tables were absent. Added an idempotent repair migration instead of editing old migrations.
+
+---
+
+### TASK-0017: Haa Marketplace Standalone Theme Edition
+
+- **Type:** UX/UI Polish / Theme Work
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** ثيم السوق العام بدائي جدا، ويجب أن يكون فيه تسويق، ثم تنفيذ نسخة مستقلة لا تتأثر بتعديلات ثيم متجر التاجر.
+- **Expanded Requirement:** Build a standalone marketplace theme edition by copying the storefront visual approach into isolated marketplace-only files, then evolve it with a marketing-first marketplace hero, seller rail, category tabs, filters, and product cards without importing merchant storefront theme components.
+- **Problem:** `/marketplace` was functional but visually basic and too close to a raw product grid. Reusing live merchant theme components directly would make future merchant theme changes affect the marketplace unintentionally.
+- **Goal:** Give the public marketplace its own marketing-grade theme system and keep it isolated from merchant storefront themes.
+- **Scope:** Public storefront marketplace route only.
+- **Out of Scope:** API, database, merchant dashboard, admin dashboard, checkout behavior, seller detail pages.
+- **Affected Areas:** `apps/storefront/src/pages/HaaMarketplace.tsx`, `apps/storefront/src/pages/marketplace/`, marketplace regression test.
+- **Files Changed:** `HaaMarketplace.tsx`, `MarketplaceEdition.tsx`, `theme/tokens.ts`, `theme/MarketplaceHero.tsx`, `theme/MarketplaceProductCard.tsx`, `theme/MarketplaceSellerRail.tsx`, `theme/MarketplaceFilters.tsx`, `tests/products-qa-regression.test.ts`
+- **Acceptance Criteria:** Marketplace has its own isolated theme files; no import from merchant storefront theme components; hero includes marketing copy and search; seller rail/category/filter/product grid remain functional; desktop/mobile have no horizontal overflow; targeted typecheck and marketplace regression pass.
+- **Test Plan:** Storefront typecheck, marketplace regression test, browser desktop/mobile visual QA.
+- **Test Results:** ✅ `pnpm --filter @haa/storefront typecheck`; ✅ `pnpm vitest run tests/products-qa-regression.test.ts`; ✅ Browser desktop and mobile checks, no horizontal overflow.
+- **Risks:** Other marketplace pages (seller detail/cart/checkout/tracking) still use their previous visuals and can be themed in follow-up passes.
+- **Related Issues:** None
+- **Related Decisions:** Standalone marketplace theme files are intentionally not wired to the merchant storefront theme registry.
+- **Status History:** Requested 2026-06-13; Done 2026-06-13
+- **Final Notes:** Marketplace route now delegates to `MarketplaceEdition`, whose visual system lives under `apps/storefront/src/pages/marketplace/theme/`.
+
+---
+
+### TASK-0018: Close Marketplace, Migration, Support Token, and Repository Cleanup Blockers
+
+- **Type:** Bug Fix / Security / Data/DB / Support/Ops / Documentation
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** PLEASE IMPLEMENT THIS PLAN: fix all remaining blockers around migrations, marketplace settlements, support accessToken, and repository cleanup.
+- **Expanded Requirement:** Normalize Drizzle migration state, keep marketplace after-sales out of the platform marketplace scope, connect marketplace settlement reporting to the existing manual settlements path, remove support ticket tokens from newly-created URLs, and remove accidental local artifacts/logs without deleting real feature work.
+- **Problem:** Drizzle journal/database migration state drifted from actual SQL files; marketplace after-sales artifacts conflicted with the product decision that merchants own procedures; support ticket links exposed access tokens in URLs; local log/artifact files polluted the repository.
+- **Goal:** Make the local project healthy and verifiable while preserving the marketplace boundary: marketing plus oversight only.
+- **Scope:** DB migration journal/local migration state, marketplace settlement copy/link, support ticket API/client/pages, repository artifact cleanup, targeted regression coverage, ops documentation.
+- **Out of Scope:** Automated marketplace payouts, centralized shipping/returns/disputes, production deployment, deleting unrelated feature files.
+- **Affected Areas:** `packages/db`, `apps/api`, `apps/storefront`, `apps/admin-dashboard`, ops/security docs, regression tests, monitoring script.
+- **Files Changed:** `packages/db/src/migrations/meta/_journal.json`, `packages/db/src/schema/index.ts`, `apps/api/src/routes/storefront.ts`, `apps/storefront/src/lib/api.ts`, `apps/storefront/src/pages/Support.tsx`, `apps/storefront/src/pages/SupportTicket.tsx`, `apps/admin-dashboard/src/pages/Marketplace.tsx`, `.gitignore`, `scripts/synthetic-checks.mjs`, `tests/products-qa-regression.test.ts`, `tests/support-token-regression.test.ts`, ops/security docs.
+- **Acceptance Criteria:** `pnpm db:migrate` succeeds; marketplace order tables exist; no marketplace after-sales table is part of the schema; admin settlement reporting points to manual settlements; new support ticket links do not include `accessToken`; legacy query token is only accepted temporarily; logs/artifacts are removed; full verification passes.
+- **Test Plan:** `pnpm db:migrate`, DB table/column checks, `pnpm typecheck`, `pnpm exec eslint . --quiet`, targeted regression tests, `pnpm test`, API/storefront/admin builds, `pnpm preflight`, `pnpm ops:monitor`.
+- **Test Results:**
+  - ✅ `pnpm db:migrate`
+  - ✅ DB check: marketplace product columns exist; `marketplace_orders` and `marketplace_order_links` exist; `marketplace_return_requests` does not exist
+  - ✅ `pnpm typecheck`
+  - ✅ `pnpm exec eslint . --quiet`
+  - ✅ `pnpm vitest run tests/products-qa-regression.test.ts tests/support-token-regression.test.ts` — 16 passed
+  - ✅ `pnpm test` — 1573 passed, 14 todo, 1 skipped
+  - ✅ `pnpm --filter @haa/db build`
+  - ✅ `pnpm --filter @haa/api build`
+  - ✅ `pnpm --filter @haa/storefront build`
+  - ✅ `pnpm --filter @haa/admin-dashboard build`
+  - ✅ `pnpm preflight`
+  - ✅ `pnpm ops:monitor` — 0 health failures; API/storefront/merchant synthetic checks pass when dev servers are running
+  - ✅ Browser check: `/marketplace` renders marketplace copy, has order tracking link, has no city filter, and no `accessToken` links
+  - ✅ Browser check: `/marketplace/orders` renders marketplace order number + phone inquiry and merchant handoff copy
+  - ✅ Browser check: `/s/haa-demo/support` renders support form with no `accessToken` links
+- **Risks:** Legacy support-ticket query-token compatibility remains temporarily for old links and should be removed after a short migration window. Existing historical support-error events can still trigger repeated-fingerprint recommendations until event storage is rotated or the underlying old events are archived.
+- **Related Issues:** ISSUE-0006, ISSUE-0007, R-0014, SEC-006
+- **Related Decisions:** Marketplace remains a marketing and oversight channel only. Shipping, fulfillment, returns, exchanges, disputes, support procedures, and settlement execution remain merchant/manual paths.
+- **Status History:** Requested 2026-06-13; Done 2026-06-13
+- **Final Notes:** Removed accidental logs/artifact files (`apps/api/api.log`, `apps/admin-dashboard/admin.log`, `apps/storefront/dev.log`, `Iceland`) and deleted marketplace after-sales artifacts from the marketplace scope.
+
+---
+
+### TASK-0016: Local Dev Port Governance Fix
+
+- **Type:** Bug Fix / Support/Ops
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** حل مشكلة البورتات جذريا
+- **Expanded Requirement:** Make local dev ports deterministic and make health/synthetic checks validate the same ports documented in `.env` and Vite configs.
+- **Problem:** Local browser showed `ERR_CONNECTION_REFUSED` when dev servers were not running, and monitoring scripts had storefront/dashboard ports reversed, producing misleading health results.
+- **Goal:** Dashboard, storefront, and API should use fixed local ports and monitoring should report the correct service on each port.
+- **Scope:** Merchant dashboard `5173`, storefront `5174`, admin dashboard `5175`, API `3000`, health/synthetic scripts.
+- **Out of Scope:** Database migrations, feature work, production deployment.
+- **Affected Areas:** apps/*/vite.config.ts, scripts/monitor-health.mjs, scripts/synthetic-checks.mjs
+- **Files Changed:** `apps/merchant-dashboard/vite.config.ts`, `apps/storefront/vite.config.ts`, `apps/admin-dashboard/vite.config.ts`, `scripts/monitor-health.mjs`, `scripts/synthetic-checks.mjs`
+- **Acceptance Criteria:** Vite apps fail fast if assigned port is occupied; monitoring checks dashboard on `5173` and storefront on `5174`; `pnpm ops:monitor` and `pnpm typecheck` pass.
+- **Test Plan:** `pnpm ops:monitor`, `pnpm typecheck`
+- **Test Results:** ✅ `pnpm ops:monitor`; ✅ `pnpm typecheck`
+- **Risks:** Existing unrelated working-tree changes remain untouched. Historical `API-001` orders query events remain a separate issue if they recur.
+- **Related Issues:** ISSUE-0004
+- **Related Decisions:** None
+- **Status History:** Requested 2026-06-13; Done 2026-06-13
+- **Final Notes:** Local dev servers verified at API `http://localhost:3000`, merchant dashboard `http://localhost:5173`, storefront `http://localhost:5174`.
+
+---
+
 ## Status Values
 
 | Status | Meaning |
@@ -49,6 +465,8 @@
 - **Affected Areas:**
 - **Files to Inspect:**
 - **Files Changed:**
+- **Skills Required:** *(pre-declared skills for this task)*
+- **Skills Used:** *(filled during/after execution per sub-task)*
 - **Acceptance Criteria:**
 - **Test Plan:**
 - **Test Results:**
@@ -65,9 +483,70 @@
   - Done:
 - **Final Notes:**
 
+> **Mandatory Skill Selection Rule (AGENTS.md §14):**
+> - Every new task must have `**Skills Required:**` filled before status changes to `In Progress`.
+> - Every sub-task action must complete the 4-step Pre-Action Skill Gate (STATE → SELECT → STATE WHY → LOAD).
+> - `**Skills Used:**` must be filled before status changes to `Done`.
+> - A task with empty `**Skills Used:**` is treated as incomplete and may be rejected by the owner.
+> - Full details: `docs/ops/SKILL_USAGE_RULE.md`
+
 ---
 
 ## Active Tasks
+
+### TASK-0015: Haa Public Marketplace
+
+- **Type:** Feature, Data/DB, API, UX/UI Polish, Testing
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-13
+- **Updated:** 2026-06-13
+- **Original Request:** Build a complete independent public marketplace for all subscribed Haa Stores merchants, using the merchant storefront structure where useful, showing selected merchant products with Haa Stores commission, categories, seller data, and seller product pages.
+- **Expanded Requirement:** Create a platform-level public marketplace separate from individual stores. Merchants opt products into the marketplace; customers can browse approved marketplace products, filter by category/search/price/availability/sort, view seller details, open seller pages, add products from multiple sellers to one marketplace cart, checkout into per-store suborders under one marketplace order number, and track the unified order. The marketplace role is marketing plus oversight of orders sourced through it; after checkout, each suborder becomes a normal merchant order and continues through the merchant's ordinary workflow. Platform admins can review marketplace products, feature products, monitor sellers, source-attributed orders, commissions, settlements, and deep marketplace reports.
+- **Problem:** The platform had merchant storefronts but no independent marketplace layer aggregating eligible products across stores with platform commission, governance, seller pages, unified checkout/tracking, or admin controls.
+- **Goal:** Deliver the marketplace backbone end-to-end with public routes, APIs, DB schema, admin oversight, and regression coverage.
+- **Scope:** Product opt-in/commission fields, marketplace product APIs, public marketplace UI, category/search/price/sort filters without city filter, sellers directory and seller pages, marketplace cart/checkout/order tracking, marketplace order source attribution, admin review/feature/report/settlement views, and regression tests.
+- **Out of Scope:** Production payment capture changes, automated payout execution, centralized shipping/fulfillment/procedures by Haa Stores, email/SMS notifications, and full visual QA pass in browser.
+- **Affected Areas:** packages/db, packages/shared, packages/commerce-core, apps/api, apps/storefront, apps/admin-dashboard, tests
+- **Files to Inspect:** products schema/services, orders/checkout services, storefront routes/API client, admin API/client/routes, marketplace regression tests
+- **Files Changed:** `packages/db/src/schema/products.ts`, `packages/db/src/schema/marketplace_orders.ts`, `packages/db/src/migrations/0033_haa_marketplace.sql`, `0034_marketplace_orders.sql`, `0035_marketplace_governance.sql`, `packages/shared/src/schemas/products.ts`, `packages/commerce-core/src/products.ts`, `packages/commerce-core/src/checkout.ts`, `packages/commerce-core/src/orders.ts`, `apps/api/src/routes/haa-marketplace.ts`, `apps/api/src/routes/admin.ts`, `apps/api/src/index.ts`, `apps/storefront/src/App.tsx`, marketplace storefront pages/libs, `apps/admin-dashboard/src/pages/Marketplace.tsx`, `apps/admin-dashboard/src/lib/api.ts`, `apps/admin-dashboard/src/App.tsx`, `tests/products-qa-regression.test.ts`
+- **Acceptance Criteria:**
+  - Public `/marketplace` route lists eligible products across stores
+  - City is not a marketplace filter
+  - Categories, search, price, availability, and sort filters work through API/client contracts
+  - Seller data is visible and each seller has a public product page
+  - Marketplace cart supports products from multiple stores
+  - Checkout creates per-store suborders and one marketplace order number
+  - Order inquiry and tracking page exists at `/marketplace/orders`
+  - Order tracking shows suborders and routes post-order procedures to the merchant order page
+  - Admin can review/feature marketplace products and inspect sellers/source-attributed orders/settlements/deep report
+  - Regression tests cover marketplace routes and governance
+- **Test Plan:** preflight, typecheck, ESLint, DB/API/storefront/admin builds, marketplace regression test, ops monitor
+- **Test Results:**
+  - ✅ `pnpm preflight`
+  - ✅ `pnpm typecheck`
+  - ✅ `pnpm exec eslint . --quiet`
+  - ✅ `pnpm --filter @haa/db build`
+  - ✅ `pnpm --filter @haa/api build`
+  - ✅ `pnpm --filter @haa/storefront build`
+  - ✅ `pnpm --filter @haa/admin-dashboard build`
+  - ✅ `pnpm vitest run tests/products-qa-regression.test.ts` — 13 passed
+  - ✅ `pnpm test` — 1570 passed, 14 todo, 1 skipped
+  - ✅ `pnpm ops:monitor` — health and synthetic checks pass; no incidents or recommended tasks
+  - ✅ Browser check: `/marketplace` shows 10 marketplace products, no city filter, and order inquiry link
+  - ✅ Browser check: `/marketplace/orders` shows order number + phone inquiry form and merchant handoff copy
+- **Risks:** Marketplace payouts remain an implementation follow-up. Shipping, fulfillment, returns, exchanges, disputes, and support remain merchant-owned after internal suborder conversion. Full browser/manual visual QA remains recommended after servers are refreshed with the new build.
+- **Related Issues:** None
+- **Related Decisions:** None
+- **Status History:**
+  - Requested: 2026-06-13
+  - Expanded: 2026-06-13
+  - Planned: 2026-06-13
+  - In Progress: 2026-06-13
+  - Implemented: 2026-06-13
+  - In Verification: 2026-06-13
+  - Done: 2026-06-13
+- **Final Notes:** Marketplace implemented as a platform-level marketing and oversight layer, not a store theme and not an operations/logistics layer. Seller city remains informational only and was removed from marketplace filters per product decision. Marketplace only displays, attributes, and tracks orders sourced through it; each successful checkout creates normal merchant suborders that proceed through the merchant's existing workflow.
 
 ### TASK-0008: Fix Storefront Theme Hydration Flicker
 

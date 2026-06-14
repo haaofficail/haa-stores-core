@@ -21,6 +21,8 @@
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
     "seed": "tsx src/seed/index.ts",
+    "seed:perfume": "tsx src/seed/demo/perfume-demo.ts",
+    "seed:haa-demo": "tsx src/seed/demo/haa-demo.ts",
     "studio": "drizzle-kit studio",
     "dev": "tsc --watch"
   },

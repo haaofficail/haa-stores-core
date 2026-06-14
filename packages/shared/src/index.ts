@@ -4,6 +4,7 @@ export * from './types/index.js';
 export * from './constants/index.js';
 export * from './permissions.js';
 export * from './schemas/index.js';
-export * from './media.js';
 export * from './utils.js';
 export * from './legal/platform-legal.js';
+export * from './demo/demo-rules.js';
+export * from './dto/storefront-dto.js';

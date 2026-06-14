@@ -33,7 +33,8 @@ const emptyForm: ProductFormData = {
   lengthCm: '', widthCm: '', heightCm: '',
   requiresShipping: true, isFragile: false,
   giftWrapAvailable: false, giftWrapPriceOverride: '',
-  seoTitle: '', seoDescription: '', categoryIds: [], brandId: undefined, tagIds: [],
+  haaMarketplaceEnabled: false, haaMarketplaceCommissionRate: '0.05',
+  salesCount: 0, seoTitle: '', seoDescription: '', categoryIds: [], brandId: undefined, tagIds: [],
   hasVariants: false, options: [], variants: [],
 };
 
@@ -197,7 +198,9 @@ export default function Products() {
         lengthCm: p.lengthCm ?? '', widthCm: p.widthCm ?? '', heightCm: p.heightCm ?? '',
         requiresShipping: p.requiresShipping ?? true, isFragile: p.isFragile ?? false,
         giftWrapAvailable: p.giftWrapAvailable ?? false, giftWrapPriceOverride: p.giftWrapPriceOverride ?? '',
-        seoTitle: p.seoTitle ?? '', seoDescription: p.seoDescription ?? '', categoryIds: catIds,
+        haaMarketplaceEnabled: p.haaMarketplaceEnabled ?? false,
+        haaMarketplaceCommissionRate: p.haaMarketplaceCommissionRate ?? '0.05',
+        salesCount: p.salesCount ?? 0, seoTitle: p.seoTitle ?? '', seoDescription: p.seoDescription ?? '', categoryIds: catIds,
         brandId: p.brand?.id ?? undefined, tagIds,
         hasVariants: hasVar, options: opts, variants: vars,
       });
@@ -228,6 +231,8 @@ export default function Products() {
         widthCm: form.widthCm ? Number(form.widthCm) : undefined,
         heightCm: form.heightCm ? Number(form.heightCm) : undefined,
         giftWrapPriceOverride: form.giftWrapPriceOverride ? Number(form.giftWrapPriceOverride) : undefined,
+        haaMarketplaceCommissionRate: form.haaMarketplaceCommissionRate ? Number(form.haaMarketplaceCommissionRate) : 0.05,
+        salesCount: Number(form.salesCount),
         categoryIds: form.categoryIds.length > 0 ? form.categoryIds : undefined,
         brandId: form.brandId,
         tagIds: form.tagIds?.length ? form.tagIds : undefined,

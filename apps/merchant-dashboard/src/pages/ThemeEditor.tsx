@@ -22,6 +22,8 @@ import {
 import { toast } from 'sonner';
 import { PermissionGate } from '@/lib/permissions';
 import { updateSection, BannerEditor, ProductEditor, CategoriesEditor, TextEditor, ImageTextEditor, BrandsEditor, FAQEditor } from './theme-editor/SectionEditors';
+import { getThemeCapsule } from '@haa/storefront-themes';
+import { ThemeEditorHost } from '@/components/theme-editor/ThemeEditorHost';
 
 const COLOR_GROUPS = [
   {
@@ -117,7 +119,8 @@ function hexToHsl(hex: string) {
   const g = parseInt(hex.slice(3, 5), 16) / 255;
   const b = parseInt(hex.slice(5, 7), 16) / 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h = 0, s = 0, l = (max + min) / 2;
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
@@ -668,6 +671,25 @@ export default function ThemeEditor() {
           </details>
         )}
 
+      {(() => {
+        const activeTheme: string = config.themeKey || config.preset || 'base-elegant';
+        const capsule = getThemeCapsule(activeTheme);
+        if (capsule?.editorSchema?.groups?.length) {
+          return (
+            <ThemeEditorHost
+              config={config}
+              activeTheme={activeTheme}
+              onUpdateConfig={updateConfig}
+            />
+          );
+        }
+        return null;
+      })()}
+      {(() => {
+        const activeTheme: string = config.themeKey || config.preset || 'base-elegant';
+        const capsule = getThemeCapsule(activeTheme);
+        if (capsule?.editorSchema?.groups?.length) return null;
+        return (
       <Tabs defaultValue="colors" dir="rtl" className="space-y-0">
         <TabsList className="w-full justify-start overflow-x-auto flex-nowrap mb-6">
           <TabsTrigger value="colors"><Palette className="h-4 w-4 ms-1.5" />{t('theme.colors', 'الألوان')}</TabsTrigger>
@@ -1241,6 +1263,8 @@ export default function ThemeEditor() {
           </div>
         </TabsContent>
       </Tabs>
+        );
+      })()}
       </div>
       </div>
 

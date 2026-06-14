@@ -170,7 +170,7 @@ export class AiCommerceAgent {
             confidence: 1,
           };
         } else {
-          const dynamicResponse = await (template.response as Function)({
+          const dynamicResponse = await (template.response as (context: Record<string, unknown>) => Promise<string> | string)({
             storeId,
             productsService: this.productsService,
             reportsService: this.reportsService,

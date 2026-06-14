@@ -3,16 +3,7 @@ import { eq } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { ApiKeyService } from '@haa/integration-core';
-
-function toPublicProduct(product: Record<string, unknown>): Record<string, unknown> {
-  const { cost, createdAt, updatedAt, storeId, seoTitle, seoDescription, barcode, ...rest } = product;
-  return rest;
-}
-
-function toPublicOrder(order: Record<string, unknown>): Record<string, unknown> {
-  const { checkoutSessionId, idempotencyKey, walletEntry, paymentIntentRaw, auditLogs, platformFee, customerId, createdAt, updatedAt, metadata, billingAddress, notes, paidAmount, discount, customerEmail, ...rest } = order;
-  return rest;
-}
+import { toPublicProduct, toPublicOrder } from '@haa/shared/dto/storefront-dto';
 
 interface ApiKeyMeta {
   storeId: number;

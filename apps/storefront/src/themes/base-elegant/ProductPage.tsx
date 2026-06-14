@@ -192,7 +192,7 @@ function InstallmentPromo({ price, paymentMethods }: { price: string | number; p
           <p className="text-xs font-medium text-success leading-none">{t('payment.installmentsTitle', 'قسّطها بدون فوائد')}</p>
           <div className="flex items-baseline whitespace-nowrap" style={{ gap: 'var(--space-1)', marginBlockStart: 'var(--space-1)' }}>
             <span className="text-lg font-bold text-text-primary tabular-nums">{formatCurrency(perPayment)}</span>
-            <SarIcon className="inline-block h-[0.85em] w-[0.75em] align-middle text-text-primary" />
+            <SarIcon size="md" className="text-text-primary" />
             <span className="text-xs text-text-secondary">{t('payment.fourPayments', 'على 4 دفعات')}</span>
           </div>
           <p className="text-[var(--badge-font-size)] text-text-tertiary" style={{ marginBlockStart: 'var(--space-1)' }}>
@@ -591,15 +591,15 @@ export default function BaseElegantProductPage(props: ProductPageProps) {
 
             <Surface className="shadow-none [&>*+*]:mt-[var(--space-5)]">
               <div className="flex items-baseline flex-wrap" style={{ gap: 'var(--space-2)' }}>
-                <span className="text-xl sm:text-2xl font-bold text-text-primary tabular-nums">{formatCurrency(props.effectivePrice)} <SarIcon className="inline-block h-[0.85em] w-[0.75em] align-middle" /></span>
+                <span className="text-xl sm:text-2xl font-bold text-text-primary tabular-nums">{formatCurrency(props.effectivePrice)} <SarIcon size="md" /></span>
                 {props.hasDiscount && (
-                  <><span className="relative text-lg text-text-tertiary tabular-nums">{formatCurrency(props.effectiveCompareAtPrice!)} <SarIcon className="inline-block h-[0.85em] w-[0.75em] align-middle" /><span className="absolute inset-x-0 top-[60%] h-px bg-border" aria-hidden="true" /></span>
+                  <><span className="relative text-lg text-text-tertiary tabular-nums">{formatCurrency(props.effectiveCompareAtPrice!)} <SarIcon size="md" /><span className="absolute inset-x-0 top-[60%] h-px bg-border" aria-hidden="true" /></span>
                     <StoreBadge variant="discount" size="md">{t('ui.discount', 'خصم')} {props.discountPercent}%</StoreBadge></>
                )}
              </div>
                    {props.hasDiscount && (
                      <div className="flex items-center flex-wrap text-sm" style={{ gap: 'var(--space-2)' }}>
-                        <StoreBadge variant="stock">{t('product.save')} {formatCurrency(Number(props.effectiveCompareAtPrice) - Number(props.effectivePrice))} <SarIcon className="inline-block h-[0.8em] w-[0.7em] align-middle" /></StoreBadge>
+                        <StoreBadge variant="stock">{t('product.save')} {formatCurrency(Number(props.effectiveCompareAtPrice) - Number(props.effectivePrice))} <SarIcon size="md" /></StoreBadge>
                         {props.isFreeShipping && <StoreBadge variant="stock"><Icon icon={Truck} size="2xs" />{t('product.freeShipping', 'الشحن مجاني')}</StoreBadge>}
                      </div>
                    )}
@@ -656,7 +656,7 @@ export default function BaseElegantProductPage(props: ProductPageProps) {
                 {(props.features?.giftWrap !== false) && props.product?.giftWrapAvailable && (
                   <CheckboxPill checked={props.giftWrap} onChange={props.onGiftWrapChange}>
                     <Icon icon={Gift} size="2xs" />{t('product.giftWrap', 'تغليف هدية')}
-                    {props.giftWrapPriceDisplay !== null && <span className="text-text-tertiary">(+{formatCurrency(props.giftWrapPriceDisplay!)})</span>}
+                    {props.giftWrapPriceDisplay !== null && <span className="text-text-tertiary">(+{formatCurrency(props.giftWrapPriceDisplay!)} <SarIcon size="sm" />)</span>}
                   </CheckboxPill>
                 )}
                 {(props.features?.sendAsGift !== false) && (

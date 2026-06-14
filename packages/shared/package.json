@@ -9,6 +9,18 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./media": {
+      "import": "./dist/media.js",
+      "types": "./dist/media.d.ts"
+    },
+    "./permissions": {
+      "import": "./dist/permissions.js",
+      "types": "./dist/permissions.d.ts"
+    },
+    "./dto/storefront-dto": {
+      "import": "./dist/dto/storefront-dto.js",
+      "types": "./dist/dto/storefront-dto.d.ts"
     }
   },
   "scripts": {

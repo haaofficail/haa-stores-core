@@ -58,7 +58,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "subscription_invoices" ADD CONSTRAINT "subscription_invoices_subscription_id_merchant_subscriptions_id_fk" FOREIGN KEY ("subscription_id") REFERENCES "public"."merchant_subscriptions"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "subscription_invoices" ADD CONSTRAINT "sub_invoices_sub_id_merch_subs_fk" FOREIGN KEY ("subscription_id") REFERENCES "public"."merchant_subscriptions"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;

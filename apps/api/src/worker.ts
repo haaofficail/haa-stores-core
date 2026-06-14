@@ -1,9 +1,6 @@
 import 'dotenv/config';
-import { Queue, Worker, type JobsOptions } from 'bullmq';
 import { closeDbClient } from '@haa/db';
 import { env } from './env.js';
-
-export const JOB_QUEUE_NAME = 'haa-production-jobs';
 
 export const JOB_NAMES = {
   marketplaceSync: 'marketplace.sync',
@@ -11,93 +8,109 @@ export const JOB_NAMES = {
   imageOptimize: 'image.optimize',
   cartRecover: 'cart.recover',
   reportExport: 'report.export',
+  livePresenceCleanup: 'live-presence.cleanup',
+  liveSnapshot: 'live-snapshot.create',
+  marketingActionGenerate: 'marketing-action.generate',
 } as const;
 
 type JobName = typeof JOB_NAMES[keyof typeof JOB_NAMES];
 
-const redisUrl = process.env.QUEUE_REDIS_URL || process.env.REDIS_URL;
-if (!redisUrl) {
-  throw new Error('QUEUE_REDIS_URL or REDIS_URL is required to start workers.');
+interface ScheduledJob {
+  name: JobName;
+  intervalMs: number;
+  handler: () => Promise<void>;
+  timeoutId?: NodeJS.Timeout;
 }
 
-const parsedRedisUrl = new URL(redisUrl);
-const connection = {
-  host: parsedRedisUrl.hostname,
-  port: Number(parsedRedisUrl.port || 6379),
-  username: parsedRedisUrl.username || undefined,
-  password: parsedRedisUrl.password || undefined,
-  db: Number(parsedRedisUrl.pathname.replace('/', '') || 0),
-  tls: parsedRedisUrl.protocol === 'rediss:' ? {} : undefined,
-  maxRetriesPerRequest: null,
-  enableOfflineQueue: false,
-};
-
-export const productionQueue = new Queue(JOB_QUEUE_NAME, { connection });
-
-const defaultJobOptions: JobsOptions = {
-  attempts: 5,
-  backoff: { type: 'exponential', delay: 5_000 },
-  removeOnComplete: { age: 60 * 60 * 24, count: 5_000 },
-  removeOnFail: { age: 60 * 60 * 24 * 7, count: 10_000 },
-};
-
-export async function scheduleRecurringJobs(): Promise<void> {
-  if (process.env.ENABLE_MARKETPLACE_SYNC_WORKER === 'false') return;
-
-  await productionQueue.add(
-    JOB_NAMES.marketplaceSync,
-    {},
-    {
-      ...defaultJobOptions,
-      jobId: 'marketplace.sync.recurring',
-      repeat: { every: Number(process.env.MARKETPLACE_SYNC_INTERVAL_MS || 5 * 60 * 1000) },
-    },
-  );
-}
-
-async function handleJob(name: JobName, data: unknown): Promise<unknown> {
-  switch (name) {
-    case JOB_NAMES.marketplaceSync: {
+const scheduledJobs: ScheduledJob[] = [
+  {
+    name: JOB_NAMES.marketplaceSync,
+    intervalMs: Number(process.env.MARKETPLACE_SYNC_INTERVAL_MS || 5 * 60 * 1000),
+    handler: async () => {
       const { syncAllStores } = await import('./routes/marketplaces.js');
-      return syncAllStores();
-    }
-    case JOB_NAMES.webhookDeliver:
-    case JOB_NAMES.imageOptimize:
-    case JOB_NAMES.cartRecover:
-    case JOB_NAMES.reportExport:
-      throw new Error(`${name} worker handler is not wired yet. Keep this job disabled until its service is moved out of HTTP.`);
-    default:
-      throw new Error(`Unknown job: ${name}`);
+      await syncAllStores();
+    },
+  },
+  {
+    name: JOB_NAMES.livePresenceCleanup,
+    intervalMs: 60 * 60 * 1000,
+    handler: async () => {
+      const { runLivePresenceCleanup } = await import('@haa/commerce-core');
+      await runLivePresenceCleanup();
+    },
+  },
+  {
+    name: JOB_NAMES.liveSnapshot,
+    intervalMs: 15 * 60 * 1000,
+    handler: async () => {
+      const { runLiveSnapshotCron } = await import('@haa/commerce-core');
+      await runLiveSnapshotCron();
+    },
+  },
+  {
+    name: JOB_NAMES.marketingActionGenerate,
+    intervalMs: 60 * 60 * 1000,
+    handler: async () => {
+      const { MarketingActionService } = await import('@haa/commerce-core');
+      const { createDbClient } = await import('@haa/db');
+      const db = createDbClient();
+      const service = new MarketingActionService(db);
+      const stores = await db.select({ id: (await import('@haa/db/schema')).stores.id })
+        .from((await import('@haa/db/schema')).stores);
+      for (const store of stores) {
+        try {
+          await service.generateActions(store.id);
+        } catch (err) {
+          console.error(`[scheduler] marketing-action.generate failed for store ${store.id}:`, err);
+        }
+      }
+    },
+  },
+];
+
+async function runJob(job: ScheduledJob): Promise<void> {
+  const start = Date.now();
+  try {
+    await job.handler();
+    console.log(`[scheduler] completed ${job.name} in ${Date.now() - start}ms`);
+  } catch (error) {
+    console.error(`[scheduler] failed ${job.name}:`, error);
   }
 }
 
-const concurrency = Number(process.env.WORKER_CONCURRENCY || 5);
+function startScheduler(): void {
+  if (process.env.ENABLE_SCHEDULER === 'false') {
+    console.log('[scheduler] disabled via ENABLE_SCHEDULER=false');
+    return;
+  }
 
-await scheduleRecurringJobs();
+  console.log('[scheduler] starting with jobs:', scheduledJobs.map(j => `${j.name} (${j.intervalMs}ms)`).join(', '));
 
-const worker = new Worker(
-  JOB_QUEUE_NAME,
-  async (job) => {
-    return handleJob(job.name as JobName, job.data);
-  },
-  { connection, concurrency },
-);
+  for (const job of scheduledJobs) {
+    const intervalId = setInterval(() => runJob(job), job.intervalMs);
+    job.timeoutId = intervalId;
+    intervalId.unref();
+    runJob(job);
+  }
+}
 
-worker.on('completed', (job) => {
-  console.log(`[worker] completed ${job.name}#${job.id}`);
-});
+function stopScheduler(): void {
+  for (const job of scheduledJobs) {
+    if (job.timeoutId) {
+      clearInterval(job.timeoutId);
+      job.timeoutId = undefined;
+    }
+  }
+}
 
-worker.on('failed', (job, error) => {
-  console.error(`[worker] failed ${job?.name}#${job?.id}:`, error);
-});
-
-console.log(`Haa Stores worker started in ${env.NODE_ENV} with concurrency=${concurrency}`);
+startScheduler();
 
 async function shutdown(): Promise<void> {
-  await worker.close();
-  await productionQueue.close();
+  stopScheduler();
   await closeDbClient();
 }
 
 process.on('SIGTERM', () => shutdown().finally(() => process.exit(0)));
 process.on('SIGINT', () => shutdown().finally(() => process.exit(0)));
+
+console.log(`Haa Stores scheduler started in ${env.NODE_ENV}`);

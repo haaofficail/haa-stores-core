@@ -202,6 +202,19 @@ export const adminApi = {
   getKycProfiles: () => request<any[]>('GET', '/admin/kyc'),
   reviewKyc: (id: number, status: string, rejectionReason?: string) => request<any>('PATCH', `/admin/kyc/${id}/review`, { status, rejectionReason }),
   getPayments: () => request<any[]>('GET', '/admin/payments'),
+  getMarketplaceSummary: () => request<any>('GET', '/admin/marketplace/summary'),
+  getMarketplaceProducts: (status?: string) => {
+    const qs = status ? `?status=${encodeURIComponent(status)}` : '';
+    return request<any[]>('GET', `/admin/marketplace/products${qs}`);
+  },
+  reviewMarketplaceProduct: (id: number, status: 'pending' | 'approved' | 'rejected' | 'suspended', note?: string) =>
+    request<any>('PATCH', `/admin/marketplace/products/${id}/review`, { status, note }),
+  featureMarketplaceProduct: (id: number, data: { featured: boolean; featuredUntil?: string | null; sortOrder?: number }) =>
+    request<any>('PATCH', `/admin/marketplace/products/${id}/feature`, data),
+  getMarketplaceSellers: () => request<any[]>('GET', '/admin/marketplace/sellers'),
+  getMarketplaceOrders: () => request<any[]>('GET', '/admin/marketplace/orders'),
+  getMarketplaceSettlements: () => request<any[]>('GET', '/admin/marketplace/settlements'),
+  getMarketplaceDeepReport: () => request<any>('GET', '/admin/marketplace/deep-report'),
   getSettlementBatches: (storeId?: number) => {
     const qs = storeId ? `?storeId=${storeId}` : '';
     return request<SettlementBatch[]>('GET', `/admin/settlements/batches${qs}`);

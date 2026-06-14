@@ -81,12 +81,29 @@ export type {
 // ─── STOREFRONT REGISTRY (🛑 storefront only) ───
 export {
   registerStorefrontTheme,
+  registerThemeCapsule,
   getStorefrontThemeComponents,
   getStorefrontThemeManifest,
   getAllStorefrontThemeManifests,
+  getThemeCapsule,
+  getAllThemeCapsules,
   resolveStorefrontThemeKey,
   DEFAULT_STOREFRONT_THEME_KEY,
 } from './registry';
 
-// ─── BUILT-IN THEMES (safe — pure manifest data) ───
+// ─── THEME CAPSULE CONTRACT (safe) ───
+export type {
+  ThemeCapsule,
+  ThemeTokens,
+  ThemeEditorField,
+  ThemeEditorGroup,
+  ThemeEditorSchema,
+  ThemeSpecificConfig,
+  ThemeCapabilityFlags,
+  ThemePreviewMeta,
+  ThemeCapsuleCategory,
+} from './contracts/theme-capsule';
+
+// ─── BUILT-IN THEMES (safe — capsule + manifest data) ───
 export { baseElegantManifest } from './themes/base-elegant';
+export { luxuryShowcaseCapsule } from './themes/luxury-showcase';

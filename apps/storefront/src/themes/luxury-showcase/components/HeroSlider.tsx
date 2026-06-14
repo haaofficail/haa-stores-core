@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import '@splidejs/react-splide/css/core';
+import { LUXURY_THEME_CLASS } from '../luxuryTokens';
 
 type Slide = {
   imageUrl: string;
@@ -40,7 +41,7 @@ export default function HeroSlider({ slides, slug }: { slides: Slide[]; slug: st
   if (!slides || slides.length === 0) return null;
 
   return (
-    <div className="hero-slider relative">
+    <div className={`${LUXURY_THEME_CLASS} relative`}>
       <Splide
         ref={splideRef}
         options={{
@@ -82,7 +83,7 @@ export default function HeroSlider({ slides, slug }: { slides: Slide[]; slug: st
                 }}
                 role="link"
                 tabIndex={0}
-                className="relative flex h-[420px] w-full cursor-pointer items-center justify-center overflow-hidden bg-[#faf8f6] sm:h-[520px] lg:h-[620px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[#a65d4e]"
+                className="relative flex h-[420px] w-full cursor-pointer items-center justify-center overflow-hidden bg-[var(--surface-1)] sm:h-[520px] lg:h-[620px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--primary)]"
               >
                 {hasImage && (
                   <picture>
@@ -94,7 +95,7 @@ export default function HeroSlider({ slides, slug }: { slides: Slide[]; slug: st
                     />
                   </picture>
                 )}
-                <div className={`absolute inset-0 ${hasImage ? 'bg-gradient-to-l from-[#1a1a1a]/70 via-[#1a1a1a]/20 to-transparent' : 'hidden'}`} />
+                <div className={`absolute inset-0 ${hasImage ? 'bg-gradient-to-l from-[var(--text-primary)]/70 via-[var(--text-primary)]/20 to-transparent' : 'hidden'}`} />
                 <div className="relative z-10 mx-auto flex w-full max-w-[var(--container-max-width,1440px)] flex-col justify-center px-4 sm:px-6 lg:px-8">
                   {slide.title && (
                     <span className="mb-2 text-[11px] font-light uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
@@ -107,7 +108,7 @@ export default function HeroSlider({ slides, slug }: { slides: Slide[]; slug: st
                     </p>
                   )}
                   {slide.buttonText && (
-                    <span className="inline-flex min-h-[44px] w-max items-center justify-center border border-white/40 px-6 text-xs font-light uppercase tracking-[0.15em] text-white transition hover:bg-[#faf8f6]/10">
+                    <span className="inline-flex min-h-[44px] w-max items-center justify-center border border-white/40 px-6 text-xs font-light uppercase tracking-[0.15em] text-white transition hover:bg-[var(--surface-1)]/10">
                       {slide.buttonText}
                     </span>
                   )}
@@ -123,11 +124,11 @@ export default function HeroSlider({ slides, slug }: { slides: Slide[]; slug: st
             <button
               key={i}
               onClick={() => splideRef.current?.go(i)}
-              className="flex h-11 w-11 items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a65d4e]"
+              className="flex h-11 w-11 items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--primary)]"
               aria-label={`Go to slide ${i + 1}`}
             >
               <span className={`block rounded-full transition-all duration-300 ${
-                i === current ? 'h-1.5 w-6 bg-[#faf8f6]' : 'h-1.5 w-1.5 bg-[#faf8f6]/30 hover:bg-[#faf8f6]/50'
+                i === current ? 'h-1.5 w-6 bg-[var(--surface-1)]' : 'h-1.5 w-1.5 bg-[var(--surface-1)]/30 hover:bg-[var(--surface-1)]/50'
               }`} />
             </button>
           ))}

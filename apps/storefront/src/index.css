@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -17,6 +15,7 @@
     --space-10: 40px;
     --space-12: 48px;
     --space-16: 64px;
+    --font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
   }
 
   #storefront-scope {
@@ -24,12 +23,18 @@
   }
 
   #storefront-scope {
-    background-color: var(--surface-1);
-    color: var(--text-primary);
-    font-family: var(--theme-font-family, 'IBM Plex Sans Arabic', system-ui, sans-serif);
+    background-color: #ffffff;
+    color: #000000;
+    font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif !important;
     font-size: var(--theme-font-body-size, 1rem);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  #storefront-scope *,
+  #storefront-scope *::before,
+  #storefront-scope *::after {
+    font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif !important;
   }
 
   #storefront-scope h1,
@@ -38,6 +43,7 @@
   #storefront-scope h4,
   #storefront-scope h5,
   #storefront-scope h6 {
+    font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif !important;
     font-size: var(--theme-font-heading-size, inherit);
   }
 
@@ -45,9 +51,23 @@
     text-decoration: none;
   }
 
+  #storefront-scope input[type="number"]::-webkit-inner-spin-button,
+  #storefront-scope input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  #storefront-scope input[type="number"] {
+    -moz-appearance: textfield;
+  }
 }
 
-/* ── RTL: Mirror directional icons (scoped to storefront) ── */
+/* ── RTL: Prevent SAR icon mirroring ── */
+#storefront-scope .sar-icon {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+/* ── RTL: Mirror directional icons ── */
 #storefront-scope [dir="rtl"] .lucide-arrow-left,
 #storefront-scope [dir="rtl"] .lucide-arrow-right {
   transform: scaleX(-1);
@@ -81,70 +101,90 @@
   }
 }
 
-/* Splide carousel arrow styling — using logical positioning */
-.splide__track {
-  padding-bottom: 0.5rem;
+/* ── Design Token System ── */
+:root {
+  /* Border radius (matches tailwind.config extended borderRadius) */
+  --card-radius: 16px;
+  --radius-pill: 9999px;
+  --badge-radius: 9999px;
+  --radius-modal: 24px;
+
+  /* Shadows (matches tailwind.config extended boxShadow) */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.06), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.06), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+
+  /* Primary palette (matches tailwind.config extended colors.primary) */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #2563eb;
+  --color-primary-600: #1d4ed8;
+  --color-primary-700: #1e40af;
+  --color-primary-800: #1e3a8a;
+  --color-primary-900: #172554;
+  --color-primary-950: #0f172a;
+
+  /* Surface colors (matches tailwind.config extended colors.surface) */
+  --surface-1: #ffffff;
+  --surface-2: #f9fafb;
+  --surface-3: #f3f4f6;
+  --surface-inverse: #111827;
+
+  /* Text colors (matches tailwind.config extended colors.text) */
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #9ca3af;
+  --text-disabled: #d1d5db;
+  --text-link: #2563eb;
+
+  /* Border colors (matches tailwind.config extended colors.border) */
+  --border-default: #e5e7eb;
+  --border-hover: #d1d5db;
+  --border-focus: #2563eb;
+  --border-disabled: #f3f4f6;
+
+  /* Status colors (matches tailwind.config extended colors) */
+  --color-success: #16a34a;
+  --color-success-subtle: #f0fdf4;
+  --color-success-text: #15803d;
+  --color-warning: #f59e0b;
+  --color-warning-subtle: #fffbeb;
+  --color-warning-text: #b45309;
+  --color-danger: #dc2626;
+  --color-danger-subtle: #fef2f2;
+  --color-danger-text: #b91c1c;
+  --color-info: #2563eb;
+  --color-info-subtle: #eff6ff;
+  --color-info-text: #1d4ed8;
 }
+
+/* Splide carousel arrow styling */
+.splide__track { padding-bottom: 0.5rem; }
 .splide__arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 9999px;
-  border: 0;
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 1;
+  width: 2.5rem; height: 2.5rem; border-radius: 9999px; border: 0;
   background: var(--surface-1, #fff);
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s;
-  color: var(--text-primary, #374151);
-  padding: 0;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.2s;
+  color: var(--text-primary, #374151); padding: 0;
 }
-.splide:hover .splide__arrow {
-  opacity: 0.85;
-}
-.splide__arrow:hover {
-  opacity: 1 !important;
-}
-.splide__arrow:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
-.splide__arrow svg {
-  width: 1.25rem;
-  height: 1.25rem;
-  fill: currentColor;
-}
-/* Splide RTL: use inset-inline instead of left/right */
-.splide--rtl .splide__arrow--prev {
-  inset-inline-start: auto;
-  inset-inline-end: 0.5rem;
-}
-.splide--rtl .splide__arrow--prev svg {
-  transform: scaleX(1);
-}
-.splide--rtl .splide__arrow--next {
-  inset-inline-start: 0.5rem;
-  inset-inline-end: auto;
-}
-.splide--rtl .splide__arrow--next svg {
-  transform: scaleX(-1);
-}
+.splide:hover .splide__arrow { opacity: 0.85; }
+.splide__arrow:hover { opacity: 1 !important; }
+.splide__arrow:disabled { opacity: 0.3; cursor: default; }
+.splide__arrow svg { width: 1.25rem; height: 1.25rem; fill: currentColor; }
+.splide--rtl .splide__arrow--prev { inset-inline-start: auto; inset-inline-end: 0.5rem; }
+.splide--rtl .splide__arrow--prev svg { transform: scaleX(1); }
+.splide--rtl .splide__arrow--next { inset-inline-start: 0.5rem; inset-inline-end: auto; }
+.splide--rtl .splide__arrow--next svg { transform: scaleX(-1); }
 
-/* ── RTL: Breadcrumb chevron flip (scoped to storefront) ── */
-#storefront-scope [dir="rtl"] .breadcrumb-chevron {
-  transform: scaleX(-1);
-}
-
-/* ── RTL: Utility class for flipping any element (icons, arrows) ── */
-#storefront-scope [dir="rtl"] .rtl-flip {
-  transform: scaleX(-1);
-}
+/* ── RTL: Breadcrumb chevron flip ── */
+#storefront-scope [dir="rtl"] .breadcrumb-chevron { transform: scaleX(-1); }
+#storefront-scope [dir="rtl"] .rtl-flip { transform: scaleX(-1); }
 
 @media (prefers-reduced-motion: reduce) {
   #storefront-scope, #storefront-scope *,

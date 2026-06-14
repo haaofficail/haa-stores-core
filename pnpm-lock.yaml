@@ -33,6 +33,9 @@ importers:
 
   apps/admin-dashboard:
     dependencies:
+      '@haa/system-theme':
+        specifier: workspace:*
+        version: link:../../packages/system-theme
       '@haa/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
@@ -69,7 +72,7 @@ importers:
         version: 18.3.7(@types/react@18.3.31)
       '@vitejs/plugin-react':
         specifier: ^4.3.1
-        version: 4.7.0(vite@6.4.2(@types/node@20.19.42)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))
+        version: 4.7.0(vite@6.4.2(@types/node@20.19.42)(jiti@1.21.7)(lightningcss@1.32.0)(tsx@4.22.4))
       autoprefixer:
         specifier: ^10.4.20
         version: 10.5.0(postcss@8.5.15)
@@ -84,7 +87,7 @@ importers:
         version: 5.9.3
       vite:
         specifier: 6.4.2
-        version: 6.4.2(@types/node@20.19.42)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
+        version: 6.4.2(@types/node@20.19.42)(jiti@1.21.7)(lightningcss@1.32.0)(tsx@4.22.4)
 
   apps/api:
     dependencies:
@@ -167,6 +170,9 @@ importers:
       '@haa/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@haa/storefront-themes':
+        specifier: workspace:*
+        version: link:../../packages/storefront-themes
       '@haa/system-theme':
         specifier: workspace:*
         version: link:../../packages/system-theme
@@ -275,7 +281,7 @@ importers:
         version: 18.3.7(@types/react@18.3.31)
       '@vitejs/plugin-react':
         specifier: ^4.3.1
-        version: 4.7.0(vite@6.4.2(@types/node@20.19.42)(jiti@1.21.7)(lightningcss@1.32.0)(tsx@4.22.4))
+        version: 4.7.0(vite@6.4.2(@types/node@20.19.42)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4))
       autoprefixer:
         specifier: ^10.4.20
         version: 10.5.0(postcss@8.5.15)
@@ -290,7 +296,7 @@ importers:
         version: 5.9.3
       vite:
         specifier: 6.4.2
-        version: 6.4.2(@types/node@20.19.42)(jiti@1.21.7)(lightningcss@1.32.0)(tsx@4.22.4)
+        version: 6.4.2(@types/node@20.19.42)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
 
   apps/storefront:
     dependencies:

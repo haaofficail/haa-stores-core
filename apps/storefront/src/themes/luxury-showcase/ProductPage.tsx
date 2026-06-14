@@ -1,10 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import type { ProductPageProps } from '@haa/storefront-themes';
-import ThemedProductCard from '@/components/ThemedProductCard';
-import { LuxuryProductGallery } from './components/LuxuryProductGallery';
+import LuxuryProductCard from './components/LuxuryProductCard';
+import LuxuryProductGallerySlider from './components/sliders/LuxuryProductGallerySlider';
 import { LuxuryProductInfoPanel } from './components/LuxuryProductInfoPanel';
 import { LuxuryProductTabs } from './components/LuxuryProductTabs';
+import { LUXURY_THEME_CLASS } from './luxuryTokens';
 
 type AnyRecord = Record<string, any>;
 
@@ -51,14 +52,6 @@ function getRelatedProducts(props: AnyRecord): AnyRecord[] {
     const id = item.id ?? item.slug ?? item.name;
     if (seen.has(id)) continue;
     seen.add(id);
-
-    const price = Number(item.price ?? item.finalPrice ?? 0);
-    const hasImage = Boolean(
-      item.images?.[0] ?? item.image ?? item.imageUrl ?? item.thumbnail,
-    );
-
-    if (!hasImage || price <= 0) continue;
-
     result.push(item);
     if (result.length >= 4) break;
   }
@@ -83,7 +76,8 @@ export function LuxuryShowcaseProductPage(props: ProductPageProps) {
     <main
       id="main-content"
       dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}
-      className="min-h-screen bg-[#faf8f6] text-[#1a1a1a]"
+      className={LUXURY_THEME_CLASS}
+      style={{ backgroundColor: 'var(--lux-bg, #FAF7F1)', color: 'var(--lux-text, #2B2520)' }}
     >
       <div
         className="mx-auto w-full px-4 py-4 sm:px-6 lg:px-8"
@@ -91,9 +85,10 @@ export function LuxuryShowcaseProductPage(props: ProductPageProps) {
       >
         <nav
           aria-label="Breadcrumb"
-          className="mb-4 flex items-center gap-2 text-[11px] font-light tracking-wide text-[#8a7e72]"
+          className="mb-4 flex items-center gap-2 text-[11px] font-light tracking-wide"
+          style={{ color: 'var(--lux-muted, #756B61)' }}
         >
-          <Link to={`/s/${slug}`} className="transition hover:text-[#1a1a1a]">
+          <Link to={`/s/${slug}`} className="transition hover:text-[var(--lux-text)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]">
             {t('store.home')}
           </Link>
           <span>/</span>
@@ -103,11 +98,11 @@ export function LuxuryShowcaseProductPage(props: ProductPageProps) {
               <span>/</span>
             </>
           ) : null}
-          <span className="line-clamp-1 text-[#1a1a1a]">{name}</span>
+          <span className="line-clamp-1" style={{ color: 'var(--lux-text, #2B2520)' }}>{name}</span>
         </nav>
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(360px,0.75fr)] lg:items-start lg:gap-8">
-          <LuxuryProductGallery product={product} />
+          <LuxuryProductGallerySlider product={product} />
 
           <LuxuryProductInfoPanel
             product={product}
@@ -123,18 +118,17 @@ export function LuxuryShowcaseProductPage(props: ProductPageProps) {
         </section>
 
         {relatedProducts.length > 0 ? (
-          <section className="mt-10 border-t border-[#e8ded4]/40 pt-6 lg:mt-12 lg:pt-8">
-            <h2 className="mb-4 text-lg font-light tracking-tight text-[#1a1a1a] lg:text-xl">
+          <section className="mt-10 border-t pt-6 lg:mt-12 lg:pt-8" style={{ borderColor: 'var(--lux-border, #E6D8C6)' }}>
+            <h2 className="mb-4 text-lg font-light tracking-tight lg:text-xl" style={{ color: 'var(--lux-text, #2B2520)' }}>
               {t('product.relatedTitle', 'قد يعجبك أيضًا')}
             </h2>
 
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {relatedProducts.map((item) => (
-                <ThemedProductCard
+                <LuxuryProductCard
                   key={item.id || item.slug || item.name}
                   product={item as any}
                   slug={slug}
-                  compact={false}
                   onAddToCart={p.onAddToCart}
                 />
               ))}

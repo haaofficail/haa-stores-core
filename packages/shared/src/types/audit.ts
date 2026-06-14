@@ -86,6 +86,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   employee_invalid_role_rejected: 'رفض دور غير صالح',
   employee_duplicate_rejected: 'رفض موظف مكرر',
   employee_permission_update_unsupported: 'محاولة تعديل صلاحيات غير مدعومة',
+  employee_permissions_updated: 'تحديث صلاحيات الموظف',
 };
 
 export const AUDIT_ENTITY_LABELS: Record<string, string> = {

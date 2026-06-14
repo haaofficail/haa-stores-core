@@ -119,7 +119,7 @@ export default function FilterSidebar({ filters, onChange, brands, tags, onClose
             </StoreButton>
           )}
           {onClose && (
-            <button onClick={onClose} className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-surface-2 rounded-lg transition-colors" type="button" aria-label={t('common.close', 'إغلاق')}>
+            <button onClick={onClose} className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-surface-2 rounded-xl transition-colors" type="button" aria-label={t('common.close', 'إغلاق')}>
               <Icon icon={X} size="xs" className="text-text-tertiary" />
             </button>
           )}

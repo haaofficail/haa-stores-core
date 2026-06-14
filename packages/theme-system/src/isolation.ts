@@ -78,7 +78,10 @@ function getLegacyScope(): HTMLElement | null {
 export function clearTheme() {
   const root = document.documentElement;
   THEME_VARS.forEach(v => root.style.removeProperty(v));
-  getLegacyScope()?.style && THEME_VARS.forEach(v => getLegacyScope()!.style.removeProperty(v));
+  const legacyScope = getLegacyScope();
+  if (legacyScope?.style) {
+    THEME_VARS.forEach(v => legacyScope.style.removeProperty(v));
+  }
 
   document.querySelector('link[data-theme-font]')?.remove();
   document.getElementById('haa-custom-css')?.remove();

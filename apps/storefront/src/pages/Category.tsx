@@ -5,7 +5,7 @@ import { productsApi, categoriesApi, brandsApi, tagsApi, type PublicProduct, typ
 import { useSharedCart } from '@/hooks/CartContext';
 import ThemedProductCard from '@/components/ThemedProductCard';
 import CountdownTimer from '@/components/CountdownTimer';
-import { SarIcon } from '@/components/ui/SarIcon';
+import { ProductPriceBlock, BNPLBadges } from '@/components/product-card';
 import {
   StoreContainer, StoreBreadcrumbs,
   StoreSelect, StoreEmptyState, StoreSkeleton, StoreButton,
@@ -15,7 +15,7 @@ import { useSEO } from '@/hooks/useSEO';
 import { breadcrumbJSONLD } from '@/lib/jsonld';
 import { useStore } from '@/hooks/useStore';
 import FilterSidebar, { defaultFilters, filtersToParams, getActiveFilterCount, type FilterState } from '@/components/FilterSidebar';
-import { Package, X, LayoutGrid, List, Check, ShoppingCart, Star, BadgeCheck, Percent, SlidersHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, X, LayoutGrid, List, Check, ShoppingCart, Star, BadgeCheck, Percent, SlidersHorizontal, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'name';
@@ -41,14 +41,13 @@ function ListProductCard({ product, slug }: { product: PublicProduct; slug: stri
   const [imgError, setImgError] = useState(false);
 
   const hasDiscount = product.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
-  const discountPercent = hasDiscount ? Math.round((1 - Number(product.price) / Number(product.compareAtPrice!)) * 100) : 0;
+  const discountPercent = hasDiscount ? Math.round((1 - Number(product.price) / Number(product.compareAtPrice!)) * 100) : null;
   const countdownEnd = useMemo(() => hasDiscount && product.offerEndDate ? new Date(product.offerEndDate).getTime() : 0, [hasDiscount, product.offerEndDate]);
   const isOutOfStock = product.trackInventory && product.stockQuantity === 0;
   const isLowStock = product.trackInventory && product.stockQuantity > 0 && product.stockQuantity <= 5;
   const hasStock = !isOutOfStock && !isLowStock && (!product.trackInventory || product.stockQuantity > 5);
   const hasRating = product.rating != null;
-  const formattedPrice = useMemo(() => Number(product.price).toFixed(2), [product.price]);
-  const formattedCompare = useMemo(() => hasDiscount ? Number(product.compareAtPrice!).toFixed(2) : '', [hasDiscount, product.compareAtPrice]);
+
 
   const handleAdd = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -124,19 +123,23 @@ function ListProductCard({ product, slug }: { product: PublicProduct; slug: stri
               <CountdownTimer endTime={countdownEnd} size="sm" />
             </span>
           )}
+          {(
+            <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-gray-500 leading-none">
+              <TrendingUp className="h-3 w-3" />
+              {product.salesCount != null && product.salesCount > 0 ? product.salesCount : 0}+
+            </span>
+          )}
         </div>
       </Link>
 
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        <div className="text-right leading-none">
-          <div className="text-base sm:text-lg font-bold text-text-primary whitespace-nowrap">
-            {formattedPrice} <SarIcon className="inline-block h-[0.85em] w-[0.75em] align-middle" />
-          </div>
-          {hasDiscount && (
-            <div className="text-[var(--badge-font-size)] text-text-tertiary line-through leading-none mt-0.5">
-              {formattedCompare} <SarIcon className="inline-block h-[0.7em] w-[0.6em] align-middle" />
-            </div>
-          )}
+        <div className="text-right flex flex-col items-end gap-1">
+          <ProductPriceBlock
+            price={Number(product.price)}
+            oldPrice={hasDiscount ? Number(product.compareAtPrice!) : null}
+            showSavings={false}
+          />
+          <BNPLBadges />
         </div>
 
         {hasStock ? (
@@ -161,7 +164,7 @@ function ListProductCard({ product, slug }: { product: PublicProduct; slug: stri
             onClick={handleAdd}
             disabled={adding}
             aria-label={t('product.addToCart')}
-            className="h-9 px-2.5 sm:px-3 rounded-lg bg-primary-500 text-white text-xs font-semibold flex items-center gap-1 hover:bg-primary-600 active:scale-[0.97] transition-[box-shadow,transform] duration-200 disabled:opacity-50 whitespace-nowrap"
+            className="min-h-[40px] px-2.5 sm:px-3 rounded-xl bg-primary-500 text-white text-xs font-semibold flex items-center gap-1 hover:bg-primary-600 active:scale-[0.97] transition-[box-shadow,transform] duration-200 disabled:opacity-50 whitespace-nowrap"
           >
             {adding ? (
               <span className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

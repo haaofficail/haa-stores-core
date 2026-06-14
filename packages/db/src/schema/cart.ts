@@ -32,6 +32,7 @@ export const cartItems = pgTable('cart_items', {
   giftWrapPrice: decimal('gift_wrap_price', { precision: 12, scale: 2 }),
   sendAsGift: boolean('send_as_gift').notNull().default(false),
   giftMessage: varchar('gift_message', { length: 1000 }),
+  source: varchar('source', { length: 30 }).notNull().default('storefront'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({

@@ -11,9 +11,10 @@ import { type LucideIcon } from 'lucide-react';
  * - empty state: 48px (xl)
  * - illustration: 64px (2xl)
  */
-export type IconSize = '2xs' | 'xs' | 'sm' | 'md' | 'default' | 'lg' | 'xl' | '2xl';
+export type IconSize = '3xs' | '2xs' | 'xs' | 'sm' | 'md' | 'default' | 'lg' | 'xl' | '2xl';
 
 const sizeMap: Record<IconSize, string> = {
+  '3xs': 'h-[10px] w-[10px]',
   '2xs': 'h-3 w-3',
   xs: 'h-4 w-4',
   sm: 'h-[18px] w-[18px]',

@@ -144,8 +144,11 @@ export class OrdersService {
     fulfillmentType?: string;
     pickupLocationId?: number;
     giftOptions?: { sendAsGift?: boolean; message?: string } | null;
-    items: Array<{ productId: number; variantId?: number | null; name: string; sku?: string; quantity: number; unitPrice: number; totalPrice: number; notes?: string; giftWrapSelected?: boolean; giftWrapPrice?: number; sendAsGift?: boolean; giftMessage?: string }>;
+    source?: string;
+    platformCommission?: number;
+    items: Array<{ productId: number; variantId?: number | null; name: string; sku?: string; quantity: number; unitPrice: number; totalPrice: number; notes?: string; giftWrapSelected?: boolean; giftWrapPrice?: number; sendAsGift?: boolean; giftMessage?: string; source?: string; platformCommissionRate?: number; platformCommission?: number }>;
     notes?: string;
+    metadata?: Record<string, unknown>;
   }) {
     return this.db.transaction(async (tx) => {
       const [order] = await tx.insert(s.orders).values({
@@ -172,9 +175,12 @@ export class OrdersService {
         paidAmount: null,
         paymentMethod: data.paymentMethod ?? null,
         notes: data.notes ?? null,
+        source: data.source ?? 'storefront',
+        platformCommission: data.platformCommission?.toString() ?? null,
         fulfillmentType: data.fulfillmentType ?? 'shipping',
         pickupLocationId: data.pickupLocationId ?? null,
         giftOptions: (data.giftOptions ?? null) as any,
+        metadata: (data.metadata ?? null) as any,
       }).returning();
 
       for (const item of data.items) {
@@ -192,6 +198,9 @@ export class OrdersService {
           giftWrapPrice: item.giftWrapPrice?.toString() ?? null,
           sendAsGift: item.sendAsGift ?? false,
           giftMessage: item.giftMessage ?? null,
+          source: item.source ?? 'storefront',
+          platformCommissionRate: item.platformCommissionRate?.toString() ?? null,
+          platformCommission: item.platformCommission?.toString() ?? null,
         });
       }
 

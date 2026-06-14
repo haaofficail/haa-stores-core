@@ -48,7 +48,7 @@ function httpCheck(url, label, opts = {}) {
     const result = execSync(`curl -s -o /dev/null -w "%{http_code}" --connect-timeout 3 ${url} 2>/dev/null || echo "unavailable"`, { encoding: 'utf-8', timeout: 8000 }).trim()
     const durationMs = Date.now() - start
 
-    if (result === 'unavailable' || result === '000') {
+    if (result.includes('unavailable') || result === '000') {
       emit({
         target: label,
         status: 'warn',
@@ -123,10 +123,10 @@ function httpCheck(url, label, opts = {}) {
 }
 
 console.log('\n=== Storefront Synthetic Checks ===')
-httpCheck('http://localhost:5173', 'Storefront home page', { app: 'storefront', target: 'storefront-home' })
+httpCheck('http://localhost:5174', 'Storefront home page', { app: 'storefront', target: 'storefront-home' })
 
 console.log('\n=== Merchant Dashboard Synthetic Checks ===')
-httpCheck('http://localhost:5174', 'Merchant Dashboard root', { app: 'merchant-dashboard', target: 'dashboard-root' })
+httpCheck('http://localhost:5173', 'Merchant Dashboard root', { app: 'merchant-dashboard', target: 'dashboard-root' })
 
 console.log('\n=== API Synthetic Checks ===')
 httpCheck('http://localhost:3000/health', 'API /health endpoint', { app: 'api', target: 'api-health' })

@@ -33,6 +33,9 @@ export interface ProductFormData {
   isFragile: boolean;
   giftWrapAvailable: boolean;
   giftWrapPriceOverride: string;
+  haaMarketplaceEnabled: boolean;
+  haaMarketplaceCommissionRate: string;
+  salesCount: number;
   seoTitle: string;
   seoDescription: string;
   categoryIds: number[];
@@ -102,6 +105,11 @@ export function validateProduct(form: ProductFormData): ValidationError[] {
 
   if (form.seoDescription && form.seoDescription.length > 160) {
     errors.push({ field: 'seoDescription', message: 'seo_description_too_long' });
+  }
+
+  const commission = Number(form.haaMarketplaceCommissionRate);
+  if (form.haaMarketplaceEnabled && (Number.isNaN(commission) || commission < 0 || commission > 1)) {
+    errors.push({ field: 'haaMarketplaceCommissionRate', message: 'commission_invalid' });
   }
 
   return errors;

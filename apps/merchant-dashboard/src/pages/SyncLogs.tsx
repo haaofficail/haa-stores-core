@@ -72,19 +72,19 @@ export default function SyncLogs() {
           <Button
             variant="ghost"
             size="sm"
-            className="rounded-full text-xs"
-            onClick={() => navigate('/channels/hub')}
+            className="text-xs"
+            onClick={() => navigate('/channels')}
           >
-            <ArrowRight className="h-3.5 w-3.5 ml-1" />
-            {t('syncLogs.back', 'العودة للمركز')}
+            <ArrowRight className="h-3.5 w-3.5 ms-1" />
+            {t('syncLogs.back', 'العودة للقنوات')}
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="rounded-full border-neutral-200"
+            className="text-xs"
             onClick={() => loadLogs(pagination.page)}
           >
-            <RefreshCw className="h-4 w-4 ml-1" />
+            <RefreshCw className="h-3.5 w-3.5 ms-1" />
             {t('integrationHub.refresh', 'تحديث')}
           </Button>
         </div>
@@ -98,7 +98,7 @@ export default function SyncLogs() {
             key={f.value}
             size="sm"
             variant={typeFilter === f.value ? 'default' : 'outline'}
-            className={`rounded-full text-xs ${typeFilter === f.value ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25' : 'border-neutral-200'}`}
+            className={`text-xs ${typeFilter === f.value ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25' : 'border-neutral-200'}`}
             onClick={() => setTypeFilter(f.value)}
           >
             {t(f.label, f.fallback)}
@@ -107,7 +107,7 @@ export default function SyncLogs() {
       </div>
 
       {/* Logs */}
-      <Card className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card">
+      <Card>
         <CardContent className="p-6">
           {loading ? (
             <div className="space-y-3">
@@ -149,18 +149,18 @@ export default function SyncLogs() {
                     </div>
                     <div className="shrink-0">
                       {log.status === 'completed' ? (
-                        <Badge className="bg-green-500/10 text-green-700 border-green-200">
-                          <CheckCircle2 className="h-3.5 w-3.5 ml-1" />
+                        <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">
+                          <CheckCircle2 className="h-3.5 w-3.5 ms-1" />
                           {t('integrationSync.completed', 'تم')}
                         </Badge>
                       ) : log.status === 'failed' ? (
                         <Badge className="bg-red-500/10 text-red-700 border-red-200">
-                          <XCircle className="h-3.5 w-3.5 ml-1" />
+                          <XCircle className="h-3.5 w-3.5 ms-1" />
                           {t('integrationSync.failed', 'فشل')}
                         </Badge>
                       ) : (
                         <Badge className="bg-amber-500/10 text-amber-700 border-amber-200">
-                          <RefreshCw className="h-3.5 w-3.5 ml-1 animate-spin" />
+                          <RefreshCw className="h-3.5 w-3.5 ms-1 animate-spin" />
                           {t('integrationSync.running', 'قيد التشغيل')}
                         </Badge>
                       )}
@@ -179,7 +179,6 @@ export default function SyncLogs() {
           <Button
             size="sm"
             variant="outline"
-            className="rounded-full border-neutral-200"
             disabled={pagination.page <= 1}
             onClick={() => loadLogs(pagination.page - 1)}
           >
@@ -191,7 +190,6 @@ export default function SyncLogs() {
           <Button
             size="sm"
             variant="outline"
-            className="rounded-full border-neutral-200"
             disabled={pagination.page >= pagination.totalPages}
             onClick={() => loadLogs(pagination.page + 1)}
           >

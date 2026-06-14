@@ -41,6 +41,7 @@ export interface StoreInfo {
   logoUrl: string | null;
   status: string;
   isActive: boolean;
+  isDemo?: boolean;
   email: string | null;
   phone: string | null;
   contactChannels?: {
@@ -112,6 +113,51 @@ export interface PublicProduct {
   giftWrapPriceOverride: string | null;
 }
 
+export interface HaaMarketplaceProduct extends PublicProduct {
+  store: {
+    id: number;
+    name: string;
+    slug: string;
+    logoUrl: string | null;
+    city: string | null;
+    isDemoStore?: boolean;
+  };
+  commissionRate: string;
+  haaMarketplaceFeatured?: boolean;
+  productUrl: string;
+  merchantProductUrl?: string;
+  isDemoStore?: boolean;
+}
+
+export interface HaaMarketplaceProductListResult {
+  data: HaaMarketplaceProduct[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface HaaMarketplaceSeller {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  logoUrl: string | null;
+  coverUrl: string | null;
+  city: string | null;
+  district: string | null;
+  email: string | null;
+  phone: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  productCount: number;
+  rating: number | null;
+  reviewCount: number | null;
+  createdAt: string;
+  marketplaceUrl: string;
+  storefrontUrl: string;
+}
+
 export interface PublicBrand {
   id: number;
   name: string;
@@ -146,6 +192,7 @@ export interface CartItem {
   giftWrapPrice: string | null;
   sendAsGift: boolean;
   giftMessage: string | null;
+  source: string;
   variant: ProductVariant | null;
   product: PublicProduct;
 }
@@ -337,6 +384,73 @@ export const productsApi = {
     request<PublicProduct>(`/s/${slug}/products/${productSlug}`),
 };
 
+export const haaMarketplaceApi = {
+  getProduct: (storeSlug: string, productSlug: string) =>
+    request<HaaMarketplaceProduct>(
+      `/marketplace/products/${encodeURIComponent(storeSlug)}/${encodeURIComponent(productSlug)}`,
+    ),
+  listProducts: (params?: { page?: number; limit?: number; search?: string; category?: string; store?: string; minPrice?: number; maxPrice?: number; availableOnly?: boolean; featured?: boolean; sort?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.search) q.set('search', params.search);
+    if (params?.category) q.set('category', params.category);
+    if (params?.store) q.set('store', params.store);
+    if (params?.minPrice !== undefined) q.set('minPrice', String(params.minPrice));
+    if (params?.maxPrice !== undefined) q.set('maxPrice', String(params.maxPrice));
+    if (params?.availableOnly) q.set('availableOnly', 'true');
+    if (params?.featured) q.set('featured', 'true');
+    if (params?.sort) q.set('sort', params.sort);
+    const qs = q.toString();
+    return request<HaaMarketplaceProductListResult>(`/marketplace/products${qs ? `?${qs}` : ''}`);
+  },
+  listCategories: () => request<HaaMarketplaceCategory[]>(`/marketplace/categories`),
+  listSellers: () => request<HaaMarketplaceSeller[]>(`/marketplace/sellers`),
+  getSeller: (storeSlug: string) => request<HaaMarketplaceSeller>(`/marketplace/sellers/${storeSlug}`),
+  createOrder: (data: {
+    customerName: string;
+    customerPhone: string;
+    customerEmail?: string;
+    shippingAddress?: Record<string, unknown>;
+    paymentMethod?: string;
+    notes?: string;
+    subOrders: Array<{ storeSlug: string; orderNumber: string }>;
+  }) => request<MarketplaceOrder>(`/marketplace/orders`, { method: 'POST', body: JSON.stringify(data) }),
+  getOrder: (marketplaceOrderNumber: string, phone: string) =>
+    request<MarketplaceOrder>(`/marketplace/orders/${marketplaceOrderNumber}?phone=${encodeURIComponent(phone)}`),
+};
+
+export interface HaaMarketplaceCategory {
+  name: string;
+  slug: string;
+  count: number;
+}
+
+export interface MarketplaceOrder {
+  marketplaceOrderNumber: string;
+  status: string;
+  paymentStatus: string;
+  fulfillmentStatus: string;
+  customerName?: string;
+  customerPhone?: string;
+  subtotal: string;
+  shippingTotal: string;
+  total: string;
+  platformCommission: string;
+  createdAt?: string;
+  subOrders: Array<{
+    storeName: string;
+    storeSlug: string;
+    orderNumber: string;
+    status: string;
+    paymentStatus: string;
+    fulfillmentStatus: string;
+    subtotal?: string;
+    shippingCost?: string;
+    total: string;
+  }>;
+}
+
 export const sizeGuidesApi = {
   getForProduct: (slug: string, productId: number) =>
     request<SizeGuide | null>(`/s/${slug}/size-guide?productId=${productId}`),
@@ -355,10 +469,10 @@ export const cartApi = {
     request<Cart>(`/s/${slug}/cart`, { method: 'POST' }),
   get: (slug: string, cartId: string) =>
     request<Cart>(`/s/${slug}/cart/${cartId}`),
-  addItem: (slug: string, cartId: string, productId: number, quantity: number, notes?: string, giftData?: { giftWrapSelected?: boolean; sendAsGift?: boolean; giftMessage?: string }, variantId?: number) =>
+  addItem: (slug: string, cartId: string, productId: number, quantity: number, notes?: string, giftData?: { giftWrapSelected?: boolean; sendAsGift?: boolean; giftMessage?: string }, variantId?: number, source?: 'storefront' | 'haa_marketplace') =>
     request<Cart>(`/s/${slug}/cart/${cartId}/items`, {
       method: 'POST',
-      body: JSON.stringify({ productId, variantId, quantity, notes, ...giftData }),
+      body: JSON.stringify({ productId, variantId, quantity, notes, source, ...giftData }),
     }),
   updateItem: (slug: string, cartId: string, itemId: number, quantity: number) =>
     request<Cart>(`/s/${slug}/cart/${cartId}/items/${itemId}`, {
@@ -505,11 +619,14 @@ export const supportApi = {
   createTicket: (slug: string, data: { name: string; email?: string; phone?: string; subject: string; message: string }) =>
     request<CreatedTicket>(`/s/${slug}/support/tickets`, { method: 'POST', body: JSON.stringify(data) }),
   getTicket: (slug: string, ticketId: number, accessToken: string) =>
-    request<SupportTicket & { messages: TicketMessage[] }>(`/s/${slug}/support/tickets/${ticketId}?accessToken=${accessToken}`),
+    request<SupportTicket & { messages: TicketMessage[] }>(`/s/${slug}/support/tickets/${ticketId}`, {
+      headers: { 'X-Support-Access-Token': accessToken },
+    }),
   replyToTicket: (slug: string, ticketId: number, accessToken: string, message: string) =>
     request<TicketMessage>(`/s/${slug}/support/tickets/${ticketId}/reply`, {
       method: 'POST',
-      body: JSON.stringify({ message, accessToken }),
+      headers: { 'X-Support-Access-Token': accessToken },
+      body: JSON.stringify({ message }),
     }),
   listKbArticles: (slug: string, category?: string) =>
     request<KbListResult>(`/s/${slug}/support/kb${category ? `?category=${encodeURIComponent(category)}` : ''}`),
