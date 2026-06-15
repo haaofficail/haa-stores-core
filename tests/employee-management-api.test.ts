@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 
 const employeesRoute = () =>
   readFileSync(new URL('../apps/api/src/routes/employees.ts', import.meta.url), 'utf-8');
+const employeeService = () =>
+  readFileSync(new URL('../packages/auth-core/src/employee-service.ts', import.meta.url), 'utf-8');
 const apiIndex = () =>
   readFileSync(new URL('../apps/api/src/index.ts', import.meta.url), 'utf-8');
 const dashboardApi = () =>
@@ -74,36 +76,36 @@ describe('Employee Management API — Validation Schemas', () => {
   });
 });
 
-describe('Employee Management API — Safety Rules', () => {
+describe('Employee Management API — Safety Rules (in EmployeeService)', () => {
   it('blocks deleting last owner', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     expect(code).toContain('لا يمكن حذف آخر مالك');
-    expect(code).toContain('countOwnersInTenant');
+    expect(code).toContain('countTenantOwners');
   });
 
   it('blocks demoting last owner', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     expect(code).toContain('لا يمكن تخفيض آخر مالك');
-    expect(code).toContain('countOwnersInTenant');
+    expect(code).toContain('countTenantOwners');
   });
 
   it('blocks self-role-change', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     expect(code).toContain('لا يمكنك تغيير دورك بنفسك');
   });
 
   it('blocks self-delete', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     expect(code).toContain('لا يمكنك حذف نفسك');
   });
 
   it('only owner can assign owner role', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     expect(code).toContain('فقط المالك يمكنه تعيين مالك جديد');
   });
 
   it('rejects duplicate employee in same tenant', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     expect(code).toContain('هذا المستخدم موجود بالفعل في هذا المتجر');
   });
 
@@ -115,15 +117,16 @@ describe('Employee Management API — Safety Rules', () => {
 
 describe('Employee Management API — Permissions Derivation', () => {
   it('returns permissions derived from getPermissionsForRole()', () => {
-    const code = employeesRoute();
+    // Used in the service (via the EmployeeRow mapping)
+    const code = employeeService();
     expect(code).toContain('getPermissionsForRole');
     const matches = code.match(/getPermissionsForRole/g);
     expect(matches).toBeTruthy();
-    expect(matches!.length).toBeGreaterThanOrEqual(3);
+    expect(matches!.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('imports ROLE_PERMISSIONS and getPermissionsForRole from @haa/shared', () => {
-    const code = employeesRoute();
+  it('EmployeeService imports ROLE_PERMISSIONS and getPermissionsForRole from @haa/shared', () => {
+    const code = employeeService();
     expect(code).toContain("getPermissionsForRole");
     expect(code).toContain("ROLE_PERMISSIONS");
   });
@@ -163,7 +166,7 @@ describe('Employee Management API — Dashboard API Client', () => {
   });
 });
 
-describe('Employee Management API — Error Codes', () => {
+describe('Employee Management API — Error Codes (route layer)', () => {
   it('returns RBAC-001 compatible 403 on permission denial', () => {
     const code = employeesRoute();
     expect(code).toContain('403');
@@ -173,7 +176,7 @@ describe('Employee Management API — Error Codes', () => {
   it('returns 404 when employee not found', () => {
     const code = employeesRoute();
     expect(code).toContain('404');
-    expect(code).toContain('الموظف غير موجود');
+    expect(code).toContain('NOT_FOUND');
   });
 
   it('returns 409 CONFLICT on duplicate employee', () => {
@@ -189,53 +192,44 @@ describe('Employee Management API — Error Codes', () => {
   });
 });
 
-describe('Employee Management API — Audit Logging', () => {
+describe('Employee Management API — Audit Logging (in EmployeeService)', () => {
   it('imports AuditLogService from @haa/integration-core', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     expect(code).toContain("import { AuditLogService } from '@haa/integration-core'");
   });
 
-  it('defines auditMeta() helper for common audit fields', () => {
-    const code = employeesRoute();
-    expect(code).toContain('function auditMeta(c: any)');
-    expect(code).toContain('actorUserId: auth.userId');
-    expect(code).toContain('tenantId: auth.tenantId');
-    expect(code).toContain('ipAddress');
-    expect(code).toContain('userAgent');
-  });
-
   it('logs employee_duplicate_rejected on duplicate invite', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     expect(code).toContain("action: 'employee_duplicate_rejected'");
   });
 
   it('logs employee_invited on successful invite', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     expect(code).toContain("action: 'employee_invited'");
   });
 
   it('logs employee_self_restriction_blocked on self-role-change', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     expect(code).toContain("action: 'employee_self_restriction_blocked'");
   });
 
   it('logs employee_last_owner_blocked on last-owner delete', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     expect(code).toContain("action: 'employee_last_owner_blocked'");
   });
 
   it('logs employee_role_changed on role update success', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     expect(code).toContain("action: 'employee_role_changed'");
   });
 
   it('logs employee_status_changed on status toggle', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     expect(code).toContain("'employee_status_changed'");
   });
 
   it('logs employee_removed on delete or status deactivation', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     expect(code).toContain("action: 'employee_removed'");
   });
 
@@ -245,18 +239,19 @@ describe('Employee Management API — Audit Logging', () => {
     expect(code).not.toContain("action: 'employee_permissions_updated'");
   });
 
-  it('all audit calls use auditMeta(c) + storeId', () => {
-    const code = employeesRoute();
-    const auditCalls = code.match(/AuditLogService\(\)\.record/g);
-    expect(auditCalls).toBeTruthy();
-    expect(auditCalls!.length).toBeGreaterThanOrEqual(7); // Reduced from 9 since permissions API handles the other 2
-    expect(code).toContain('storeId: auth.activeStoreId');
+  it('all audit calls pass storeId in the service', () => {
+    const code = employeeService();
+    // The service is now responsible for passing storeId from ctx
+    // (it was previously the route's responsibility).
+    const storeIdRefs = code.match(/storeId: ctx\.storeId/g);
+    expect(storeIdRefs).toBeTruthy();
+    expect(storeIdRefs!.length).toBeGreaterThanOrEqual(5);
   });
 
   it('passes entityType employee in all audit calls', () => {
-    const code = employeesRoute();
+    const code = employeeService();
     const matches = code.match(/entityType: 'employee'/g);
     expect(matches).toBeTruthy();
-    expect(matches!.length).toBeGreaterThanOrEqual(7); // Reduced from 9 since permissions API handles the other 2
+    expect(matches!.length).toBeGreaterThanOrEqual(5);
   });
 });

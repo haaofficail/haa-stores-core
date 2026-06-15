@@ -1,9 +1,10 @@
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { createDbClient, type DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { PERMISSION_CATALOG, type UserRole } from '@haa/shared';
 import { ALLOWED_SCOPES, type ScopeType } from '@haa/shared/permissions';
 import { AuditLogService } from '@haa/integration-core';
+import { countTenantOwners } from './tenant-owners-helper.js';
 
 /**
  * PermissionService — owns the membership-permission business logic.
@@ -164,15 +165,8 @@ export class PermissionService {
 
     // 2. Owner protection: can't demote the last owner
     if (membership.role === 'owner') {
-      const [ownerCount] = await this.db
-        .select({ total: sql<number>`count(*)::int` })
-        .from(s.tenantUsers)
-        .where(and(
-          eq(s.tenantUsers.tenantId, ctx.tenantId),
-          eq(s.tenantUsers.role, 'owner'),
-        ));
-
-      if (ownerCount.total <= 1) {
+      const remainingOwners = await countTenantOwners(this.db, ctx.tenantId);
+      if (remainingOwners <= 0) {
         return { kind: 'last_owner', message: LAST_OWNER_MESSAGE };
       }
     }

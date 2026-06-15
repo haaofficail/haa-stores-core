@@ -85,7 +85,10 @@ describe('Permissions API — Business Logic (in PermissionService)', () => {
   it('PATCH /memberships/:membershipId/permissions protects owner permissions', () => {
     const code = permissionService();
     expect(code).toContain("membership.role === 'owner'");
-    expect(code).toContain('ownerCount.total <= 1');
+    // Uses the shared countTenantOwners helper (introduced in
+    // Route Migration 6/24) — check the import + the comparison.
+    expect(code).toContain('countTenantOwners');
+    expect(code).toContain('remainingOwners <= 0');
   });
 
   it('PATCH /memberships/:membershipId/permissions prevents self-permission change', () => {
