@@ -24,7 +24,6 @@ import {
   complianceApi,
 } from "@/lib/api";
 import { formatNumber, formatCurrency } from "@/lib/utils";
-import { handleImageError } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -44,7 +43,6 @@ import {
   Wallet,
   Tag,
   Layers,
-  ImageIcon,
   ArrowUpRight,
   Crown,
   X,
@@ -66,7 +64,6 @@ import { toast } from "sonner";
 import {
   CHART_COLORS,
   getRemainingDays,
-  formatTimeAgo,
   getUpcomingSeason,
 } from "./dashboard/constants";
 import { StatsCards, type StatCardData } from "./dashboard/StatsCards";
@@ -79,6 +76,7 @@ import { PrimaryKpiCards } from "./dashboard/PrimaryKpiCards";
 import { RecentActionableOrders, type ActionableOrder } from "./dashboard/RecentActionableOrders";
 import { StoreReadinessBanner } from "./dashboard/StoreReadinessBanner";
 import { LowStockList } from "./dashboard/LowStockList";
+import { RecentSoldProducts } from "./dashboard/RecentSoldProducts";
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
@@ -1731,89 +1729,7 @@ export default function DashboardHome() {
             {/* Middle Row: Recent Sold Products + Top Products */}
             <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
               {/* Recent Sold Products */}
-              <div className="col-span-3 bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-card overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
-                  <h3 className="font-bold text-base text-neutral-900">
-                    {t("dashboard.recentSoldProducts", "آخر المنتجات المباعة")}
-                  </h3>
-                  <button
-                    className="text-sm text-blue-600 hover:text-blue-700 font-bold"
-                    onClick={() => navigate("/orders")}
-                  >
-                    {t("common.viewAll", "عرض الكل")}
-                  </button>
-                </div>
-                <div className="p-4">
-                  {recentItems.length === 0 ? (
-                    <div className="text-center py-6">
-                      <div className="inline-flex p-3 rounded-xl bg-neutral-100 mb-2">
-                        <ShoppingCart className="h-6 w-6 text-neutral-400" />
-                      </div>
-                      <p className="text-sm text-neutral-500">
-                        {t(
-                          "dashboard.noProductsSold",
-                          "لا توجد منتجات مباعة بعد",
-                        )}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-neutral-100">
-                      {recentItems.flatMap((order: any) =>
-                        order.items?.map((item: any) => (
-                          <div
-                            key={`${order.id}-${item.id}`}
-                            className="flex items-center gap-3 py-3 px-2 hover:bg-neutral-50 rounded-xl transition-colors"
-                          >
-                            <div className="h-12 w-12 rounded-lg overflow-hidden bg-neutral-100 border border-neutral-200 shrink-0">
-                              {item.productThumbUrl || item.productImageUrl ? (
-                                <img
-                                  src={
-                                    item.productThumbUrl || item.productImageUrl
-                                  }
-                                  alt={item.name}
-                                  className="h-full w-full object-cover"
-                                  onError={handleImageError}
-                                />
-                              ) : (
-                                <div className="h-full w-full flex items-center justify-center text-neutral-300">
-                                  <ImageIcon className="h-5 w-5" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-bold text-neutral-900 truncate">
-                                {item.name}
-                              </p>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-xs text-neutral-400">
-                                  {t("common.quantity", "العدد:")}{" "}
-                                  {item.quantity}
-                                </span>
-                                <span className="text-xs text-neutral-300">
-                                  •
-                                </span>
-                                <span className="text-xs text-neutral-500 font-medium">
-                                  {formatCurrency(item.totalPrice)}{" "}
-                                  {t("common.sar", "ر.س")}
-                                </span>
-                                <span className="text-xs text-neutral-300">
-                                  •
-                                </span>
-                                <span className="text-xs text-neutral-400">
-                                  {order.orderNumber}
-                                </span>
-                              </div>
-                            </div>
-                            <span className="text-xs text-neutral-400 shrink-0">
-                              {formatTimeAgo(t, order.createdAt)}
-                            </span>
-                          </div>
-                        )),
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+              <RecentSoldProducts orders={recentItems} t={t} />
 
               {/* Top Products + Quick Actions */}
               <div className="col-span-2 space-y-5">
