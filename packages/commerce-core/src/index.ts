@@ -8,6 +8,16 @@ export { CustomersService } from './customers.js';
 export { CartService } from './cart.js';
 export { OrdersService } from './orders.js';
 export { CheckoutService } from './checkout.js';
+export { AuthFlowService, authFlowService } from './auth-flow.js';
+export type {
+  RegisterInput,
+  RegisterPayload,
+  RegisterError,
+  LoginInput,
+  LoginError,
+  LoginPayload,
+  MeUser,
+} from './auth-flow.js';
 export { FakePaymentProvider, GeideaPaymentProvider, MoyasarSandboxProvider, TabbyProvider, TamaraProvider, PaymentService, createGeideaSignature, createPaymentProvider, getPaymentProviderStatus, getAvailablePaymentMethods, mapProviderStatus, mapProviderError, verifyGeideaCallbackSignature } from '@haa/payment-providers';
 export type { PaymentProvider } from '@haa/payment-providers';
 export { buildLocalWhatsappQrDataUrl, buildWhatsappContactChannel, buildWhatsappLink, getOfficialContactEmail, isValidWhatsappPhone, normalizeWhatsappPhone } from './contact-channels.js';

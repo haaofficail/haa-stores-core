@@ -29,6 +29,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
+    "@haa/auth-core": "workspace:*",
     "@haa/db": "workspace:*",
     "@haa/integration-core": "workspace:*",
     "@haa/notification-core": "workspace:*",

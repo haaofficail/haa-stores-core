@@ -401,6 +401,9 @@ importers:
 
   packages/commerce-core:
     dependencies:
+      '@haa/auth-core':
+        specifier: workspace:*
+        version: link:../auth-core
       '@haa/db':
         specifier: workspace:*
         version: link:../db
