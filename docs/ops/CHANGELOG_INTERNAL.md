@@ -5,6 +5,51 @@
 
 ---
 
+## 2026-06-15 (Quality Pass 4 — Items 2 + 3: Observability + Redis Rate Limiter)
+
+### Added
+
+- `apps/api/src/services/observability.ts` (~115 LOC) — observability shim with noop-first design:
+  - `initObservability()` — wires an `ErrorMonitor` to the existing `error-handler.ts` interface
+  - `createErrorMonitor()` — returns Sentry monitor if `SENTRY_DSN` + `@sentry/node` are present, else noop
+  - `NoopMonitor` class — always safe to call, logs to stderr
+  - `tryCreateSentryMonitor()` — lazy `require('@sentry/node')` with try/catch fallback to noop
+  - `SentryShape` interface — local type definition so we don't need a hard import of the optional package
+  - `initObservability()` is **idempotent** — safe to call multiple times
+- `tests/observability-wiring.test.ts` (10 source-grep tests) — asserts the module shape, lazy require, noop, boot wiring, env recognition.
+- `tests/redis-rate-limiter-wiring.test.ts` (14 source-grep tests) — asserts the production Redis rate-limiter wiring contract: atomic store, factory reads `RATE_LIMIT_STORE`, default `memory`, `REDIS_URL` required, X-RateLimit headers, 429 + RATE_LIMITED, store created once (not per-request), env.ts production defaults.
+
+### Modified
+
+- `apps/api/src/index.ts` — added `import { initObservability } from './services/observability.js'` and a call to `initObservability()` right after `app.onError(errorHandler)`. This is the only change to runtime code in this commit.
+
+### Background
+
+The project declared `SENTRY_DSN` and `OTEL_EXPORTER_OTLP_ENDPOINT` as required env vars in production (env.ts:88) but had **no consumer** for them — boot would fail with "missing SENTRY_DSN" yet no Sentry SDK was ever loaded. Similarly, the `ErrorMonitor` interface in `error-handler.ts` (from Quality Pass 1) had zero implementations and zero callers. This commit closes the gap with a noop-first shim: production deployments can opt in to Sentry by setting `SENTRY_DSN` + installing `@sentry/node`; dev/test/local runs are unaffected.
+
+For the Redis rate limiter, the production code (`RedisAtomicRateLimiterStore` + factory) was already in place from earlier work but **untested**. This commit adds a contract test so future changes can't silently break the multi-instance production rate limiting.
+
+### Verified (TDD)
+
+- Observability: 10/10 new tests pass.
+- Redis: 14/14 new tests pass.
+- `pnpm --filter @haa/api typecheck` — clean.
+- `pnpm --filter @haa/api build` — clean.
+- Full test suite: 1922/1926 passing (4 pre-existing baseline failures in TASK-0027 working tree, unrelated to this commit).
+- Negative-path: Sentry require failure (package not installed) → noop monitor, no boot crash. Verified by reading the `try/catch` in `tryCreateSentryMonitor`.
+
+### Risks
+
+- 🟢 Low. Both files are additive; the only runtime change is `initObservability()` which gracefully falls back to noop.
+- 🟡 The Sentry init config is minimal (tracesSampleRate 0.1, environment from NODE_ENV). Production tuning belongs in deployment env config, not in code.
+- 🟡 The Redis rate-limiter is only as good as the Redis instance behind it. The atomic store uses `INCR` + `PEXPIRE` (correct) but if the Redis is single-instance (no cluster), there's still a SPoF.
+
+### Next
+
+- Quality Pass 4 Item 4+: per-task scope. With CI + observability + Redis rate-limiter shipped, the core ops hardening is done. Possible next: request body size limits, response compression, structured log shipping (Loki/Datadog), request signing for outbound webhooks.
+
+---
+
 ## 2026-06-15 (Quality Pass 4 — Item 1: CI/CD Pipeline)
 
 ### Added
