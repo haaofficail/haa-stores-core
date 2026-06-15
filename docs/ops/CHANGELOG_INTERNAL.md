@@ -5,6 +5,37 @@
 
 ---
 
+## 2026-06-15 (Quality Pass 3 — Item 4: Deeper RBAC Review)
+
+### Added
+
+- `tests/rbac-coverage.test.ts` — automated enforcement that every mutating route in `apps/api/src/routes/` is RBAC-protected. The test scans every `.ts` file in the routes directory, finds every POST/PUT/PATCH/DELETE declaration, and asserts:
+
+  1. **`requireAuth`** is called (inline or via the file-level `<router>.use('*', requireAuth(), ...)` middleware).
+  2. **`requireStoreAccess`** is called for routes whose URL contains `:storeId`.
+  3. **`requirePermission` / `requireAnyPermission`** is called on every mutating route.
+
+- A `DENY_LIST` of route files that are intentionally public (no auth): pre-auth (auth, admin/*), webhooks (signature-based), storefront customer endpoints (cart, checkout, haa-marketplace, support under `/s/*`), and one-offs (landing-ai-agent, public-api with API key auth, health, support-errors, migration).
+
+### Background
+
+The RBAC framework is solid — Quality Pass 1 + 2 + RBAC Passes 1-5 already implemented 38+ routes with `requirePermission` + `requireAuth` + `requireStoreAccess`. But nothing **enforced** this contract: a future change could add a new mutating route without guards and the regression would slip through. The test codifies the contract.
+
+### Verified (TDD)
+
+- 4/4 new tests pass.
+- **Negative test confirmed the test catches violations**: temporarily removed `requirePermission` from `coupons.ts POST /`, the test flagged it correctly. Restored.
+- `pnpm --filter @haa/api typecheck` — clean
+- Full test suite: 1891 passing, 0 regressions vs the pre-change baseline. (The 70+ pre-existing failures in `luxury-showcase-*` and `landing-ai-chat` tests come from the user's pre-existing TASK-0027 working tree, unrelated to this commit.)
+
+### Risk
+
+- 🟢 The test is a file-source scan; it does not change any production code.
+- 🟡 Future maintainers must keep `DENY_LIST` in sync if a new intentionally-public route is added (a code comment at the top of the test explains the convention).
+- 🟡 The slice-window heuristic for inline-middleware detection (slice ends at the next route declaration) is correct for the current code style but could drift if the convention changes (e.g. multi-line arrow functions inside route definitions).
+
+---
+
 ## 2026-06-15 (Quality Pass 3 — Item 3: Audit Logging Depth)
 
 ### Changed
