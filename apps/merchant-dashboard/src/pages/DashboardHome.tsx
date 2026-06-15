@@ -24,7 +24,6 @@ import {
   complianceApi,
 } from "@/lib/api";
 import { formatNumber, formatCurrency } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DollarSign,
@@ -78,6 +77,7 @@ import { AiGreetingCard } from "./dashboard/AiGreetingCard";
 import { RecentCustomersList } from "./dashboard/RecentCustomersList";
 import { QuickActionsGrid } from "./dashboard/QuickActionsGrid";
 import { SmartAlertsStrip } from "./dashboard/SmartAlertsStrip";
+import { WelcomeBanner } from "./dashboard/WelcomeBanner";
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
@@ -1507,39 +1507,13 @@ export default function DashboardHome() {
 
       {/* Welcome Banner */}
       {onboardingJustDone && (
-        <div className="relative overflow-hidden bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-600 rounded-2xl p-5 text-white shadow-2xl shadow-emerald-500/30">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full -translate-x-32 -translate-y-32 blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-48 h-48 bg-white/5 rounded-full translate-x-24 translate-y-24 blur-2xl" />
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
-                <PartyPopper className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="font-bold text-base">
-                  {t("dashboard.firstWelcomeTitle", "تهانينا! متجرك جاهز")}
-                </h2>
-                <p className="text-emerald-50 text-sm">
-                  {t(
-                    "dashboard.firstWelcomeDesc",
-                    "يمكنك الآن البدء في إدارة متجرك ومتابعة الطلبات",
-                  )}
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white/80 hover:text-white hover:bg-white/10 h-10 text-sm rounded-xl"
-              onClick={() => {
-                localStorage.setItem("onboarding_banner_dismissed", "true");
-                setOnboardingJustDone(false);
-              }}
-            >
-              {t("common.close", "إغلاق")}
-            </Button>
-          </div>
-        </div>
+        <WelcomeBanner
+          t={t}
+          onDismiss={() => {
+            localStorage.setItem("onboarding_banner_dismissed", "true");
+            setOnboardingJustDone(false);
+          }}
+        />
       )}
 
       {/* ── KPI Cards ─────────────────────────────────────────────── */}
