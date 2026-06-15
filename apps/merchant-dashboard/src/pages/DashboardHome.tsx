@@ -79,6 +79,7 @@ import { SmartAlertsStrip } from "./dashboard/SmartAlertsStrip";
 import { WelcomeBanner } from "./dashboard/WelcomeBanner";
 import { TopProductsList } from "./dashboard/TopProductsList";
 import { QuickStatsGrid } from "./dashboard/QuickStatsGrid";
+import { ShowMoreKpiToggle } from "./dashboard/ShowMoreKpiToggle";
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
@@ -1530,20 +1531,11 @@ export default function DashboardHome() {
         />
 
         {/* "عرض المزيد" toggle (mobile only) */}
-        <div className="sm:hidden mt-2">
-          <button
-            type="button"
-            onClick={() => setShowMoreKpi((v) => !v)}
-            className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors"
-          >
-            {showMoreKpi
-              ? t("common.showLess", "عرض أقل")
-              : t("common.showMore", "عرض المزيد")}
-            <ChevronDown
-              className={`h-3 w-3 transition-transform ${showMoreKpi ? "rotate-180" : ""}`}
-            />
-          </button>
-        </div>
+        <ShowMoreKpiToggle
+          showMore={showMoreKpi}
+          onToggle={() => setShowMoreKpi((v) => !v)}
+          t={t}
+        />
 
         {/* Extended KPI (desktop: always, mobile: when toggled) */}
         <StatsCards stats={stats} showOnMobile={showMoreKpi} />
