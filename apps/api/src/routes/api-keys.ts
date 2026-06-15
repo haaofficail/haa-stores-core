@@ -1,9 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { eq, desc } from 'drizzle-orm';
-import { createDbClient } from '@haa/db';
-import * as s from '@haa/db/schema';
 import { ApiKeyService } from '@haa/integration-core';
 import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';
 
@@ -40,11 +37,7 @@ apiKeysRouter.get('/scopes', requirePermission('settings:read'), async (c) => {
 
 apiKeysRouter.get('/logs', requirePermission('settings:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const db = createDbClient();
-  const logs = await db.select().from(s.integrationLogs)
-    .where(eq(s.integrationLogs.storeId, storeId))
-    .orderBy(desc(s.integrationLogs.createdAt))
-    .limit(100);
+  const logs = await new ApiKeyService().listLogs(storeId);
   return c.json({ success: true, data: logs });
 });
 
