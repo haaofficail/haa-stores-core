@@ -32,7 +32,6 @@ import {
   Package,
   AlertTriangle,
   CheckCircle2,
-  Plus,
   List,
   Percent,
   Globe,
@@ -78,6 +77,7 @@ import { LowStockList } from "./dashboard/LowStockList";
 import { RecentSoldProducts } from "./dashboard/RecentSoldProducts";
 import { AiGreetingCard } from "./dashboard/AiGreetingCard";
 import { RecentCustomersList } from "./dashboard/RecentCustomersList";
+import { QuickActionsGrid } from "./dashboard/QuickActionsGrid";
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
@@ -1647,61 +1647,7 @@ export default function DashboardHome() {
       )}
 
       {/* Quick Actions */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-card p-4">
-        <h3 className="font-bold text-xs text-neutral-500 mb-3">
-          {t("dashboard.quickActions.title", "إجراءات سريعة")}
-        </h3>
-        <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
-          <button
-            onClick={() => navigate("/products?create=true")}
-            className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="text-sm font-bold">
-              {t("dashboard.quickActions.addProduct", "منتج")}
-            </span>
-          </button>
-          <button
-            onClick={() => navigate("/orders")}
-            className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-neutral-100 text-neutral-900 hover:bg-neutral-200 transition-all hover:-translate-y-0.5"
-          >
-            <List className="h-4 w-4" />
-            <span className="text-sm font-bold">
-              {t("dashboard.quickActions.viewOrders", "طلبات")}
-            </span>
-          </button>
-          <button
-            onClick={() => navigate("/coupons")}
-            className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-neutral-100 text-neutral-900 hover:bg-neutral-200 transition-all hover:-translate-y-0.5"
-          >
-            <Percent className="h-4 w-4" />
-            <span className="text-sm font-bold">
-              {t("dashboard.quickActions.createCoupon", "كوبون")}
-            </span>
-          </button>
-          <button
-            onClick={() => {
-              const storeSlug =
-                window.location.hostname === "localhost"
-                  ? "haa-demo"
-                  : window.location.pathname.split("/s/")[1]?.split("/")[0] ||
-                    "haa-demo";
-              const baseUrl =
-                import.meta.env.VITE_STOREFRONT_URL ||
-                (window.location.hostname === "localhost"
-                  ? "http://localhost:3000"
-                  : window.location.origin);
-              window.open(`${baseUrl}/s/${storeSlug}`, "_blank");
-            }}
-            className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-neutral-100 text-neutral-900 hover:bg-neutral-200 transition-all hover:-translate-y-0.5"
-          >
-            <Globe className="h-4 w-4" />
-            <span className="text-sm font-bold">
-              {t("dashboard.quickActions.openStore", "المتجر")}
-            </span>
-          </button>
-        </div>
-      </div>
+      <QuickActionsGrid t={t} />
 
       {/* ── Analytics Section — collapsible ───────────────────────── */}
       <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-card overflow-hidden">
