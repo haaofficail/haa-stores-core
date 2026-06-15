@@ -5,7 +5,7 @@
 ---
 
 - **Last Updated:** 2026-06-15
-- **Current Phase:** Quality Pass 2 — Component Unification (COMPLETED; all 6 sub-items done; 22 sub-components extracted from DashboardHome)
+- **Current Phase:** Quality Pass 3 — Security & Permissions (in progress; 1/5 sub-items done — CSRF origin check shipped)
 - **Project Summary:** Multi-tenant Saudi e-commerce SaaS platform. Local-only. All 10 phases complete. Deployment gated by owner GO.
 - **Strategic Commitment:** `docs/ops/COMMITMENTS.md` is now active and binding — **Quality Pass 1-5 before any major Feature Pass**.
 - **Active Priorities:**
@@ -36,6 +36,7 @@
   - **Quality Pass 2 — Item 2.3 (Marketplaces split) ✅ DONE** — Salla, Zid, Amazon extracted to `apps/api/src/routes/marketplaces/{salla,zid,amazon}.ts`. Noon has no dedicated routes (provider-agnostic dispatch only) so no extraction. 🆕
   - **Quality Pass 2 — Item 2.4 (Admin route split) ✅ DONE — Quality Pass 2 5/6 complete** — removed monolith `apps/api/src/routes/admin.ts` (692 LOC), created `apps/api/src/routes/admin/` directory with 5 files (`index.ts` aggregator + schemas + `requireAdminPermission`, `auth.ts`, `tenants-stores.ts`, `marketplace.ts`, `operations.ts`), updated `apps/api/src/index.ts` to import `./routes/admin/index.js`, 4 file-based tests updated to read all 5 split files, 7 admin-related test files / 28 tests pass, full suite 1785/1799 passing (14 pre-existing failures on TASK-0027 / Quality Pass 1 — unrelated to Item 2.4), `pnpm --filter @haa/api typecheck` + `build` both pass 🆕
   - **Quality Pass 2 — Item 2.6 (DashboardHome decomposition) ✅ COMPLETED — 22 incremental commits** — extracted 22 sub-components + 1 constants file to `apps/merchant-dashboard/src/pages/dashboard/`. DashboardHome.tsx 2743 → 1599 LOC (**-41.7%, -1144 lines**). Every visual section is now a focused, presentational sub-component. The remaining content in DashboardHome is all hooks, state, API orchestration, and computed values (not visual structure) — out of scope for Item 2.6. Each commit independently verified: typecheck + build + 3 dashboard test files / 144 tests pass. 🆕
+  - **Quality Pass 3 — Item 1 (CSRF Origin Check) ✅ DONE** — new `apps/api/src/middleware/csrf-origin.ts` middleware (1 file, ~62 LOC) plus mount in `apps/api/src/index.ts` and new test file `tests/csrf-origin.test.ts` (11/11 passing). Defense-in-depth CSRF protection: rejects cross-origin mutating requests (POST/PUT/PATCH/DELETE) whose Origin is not in `env.CORS_ORIGINS`. Mounted after CORS so both layers share the same allow-list. Webhooks and server-to-server calls (no Origin header) pass through automatically. TDD: test written first, watched fail, then implemented. 🆕
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done

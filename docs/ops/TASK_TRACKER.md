@@ -1354,3 +1354,49 @@
   - Requested: 2026-06-13
   - Done: 2026-06-13
 - **Final Notes:** Employee audit logging completes RBAC Pass 5. Password is client-generated random (Math.random), hashed server-side, never returned in response, masked by maskObject in audit logs. Info banner added to create dialog to clarify email invite is not active.
+
+---
+
+
+### TASK-0027: Quality Pass 3 — Security & Permissions (CSRF Origin Check)
+
+- **Type:** Security / Refactor
+- **Priority:** P1 High
+- **Status:** In Progress
+- **Created:** 2026-06-15
+- **Updated:** 2026-06-15
+- **Original Request:** Quality Pass 3 per strategic plan (see COMMITMENTS.md) — "Security & permissions, 5-6 weeks, Production-grade security posture"
+- **Expanded Requirement:** First sub-item of Pass 3 — add CSRF origin check middleware to the API. Subsequent items will be webhook idempotency, audit logging, and a deeper RBAC review.
+- **Problem:** No CSRF protection on the API. Project uses Bearer tokens in localStorage (no cookies) which mitigates the classic CSRF vector, but the project also sets `cors({ credentials: true })` and has mutating endpoints that should reject cross-origin browser requests.
+- **Goal:** Add defense-in-depth CSRF protection with minimal disruption to existing flows.
+- **Scope:** 1 new middleware, 1 mount point in apps/api/src/index.ts, 1 new test file. No frontend changes (frontends already send Origin via fetch).
+- **Out of Scope:** Double-submit cookie pattern, refactoring CORS config, touching existing middleware (rate-limiter, error-handler, etc.), touching webhook endpoints.
+- **Affected Areas:**
+  - `apps/api/src/middleware/csrf-origin.ts` (new)
+  - `apps/api/src/index.ts` (1 import + 1 app.use() line)
+  - `tests/csrf-origin.test.ts` (new)
+- **Skills Used:** plan-mode, test-driven-development, verification-before-completion
+- **Acceptance Criteria:**
+  - [x] New `csrf-origin.ts` middleware exists and exports a `csrfOrigin()` factory
+  - [x] Middleware uses Hono's MiddlewareHandler type
+  - [x] Middleware reads `env.CORS_ORIGINS` for the allow-list
+  - [x] Only mutating methods (POST/PUT/PATCH/DELETE) are inspected
+  - [x] GET/HEAD/OPTIONS pass through
+  - [x] Mutating requests without an Origin header pass through (server-to-server)
+  - [x] Mutating requests with a non-allow-listed Origin return 403 + CSRF_ORIGIN_REJECTED
+  - [x] Middleware is mounted in apps/api/src/index.ts immediately after the CORS middleware
+  - [x] 11 source-grep tests pass
+  - [x] `pnpm --filter @haa/api typecheck` clean
+  - [x] `pnpm --filter @haa/api build` clean
+  - [x] Full test suite: 1826 passing, 0 regressions
+- **Test Plan:** Source-grep test file (consistent with project's existing test pattern for middleware). Full suite + typecheck + build.
+- **Test Results:**
+  - **Item 1 (CSRF Origin Check) — COMPLETED 2026-06-15:** 11/11 new tests pass. 0 regressions on the full suite.
+- **Risks:**
+  - 🟢 Low. Defense-in-depth layer. Webhooks pass through the no-Origin branch automatically.
+  - 🟡 If a webhook provider ever starts sending Origin (uncommon), they'd need to be allow-listed. Worth monitoring.
+  - 🟡 If the project later adds cookie-based auth, the middleware should be extended with double-submit cookie support.
+- **Related Issues:** None
+- **Related Decisions:** Use Origin check (not double-submit cookie) because the project has no cookies. Mounted after CORS so the same env.CORS_ORIGINS list is shared.
+- **Status History:** Requested 2026-06-15; Expanded 2026-06-15; In Progress 2026-06-15; Item 1 Done 2026-06-15.
+- **Final Notes:** First sub-item of Quality Pass 3 closed. Remaining Pass 3 sub-items (webhook idempotency, audit logging depth, deeper RBAC review) can be tackled in future sessions.

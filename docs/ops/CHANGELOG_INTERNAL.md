@@ -5,6 +5,47 @@
 
 ---
 
+## 2026-06-15 (Quality Pass 3 — Item 1: CSRF Origin Check)
+
+### Added
+
+New defense-in-depth CSRF protection on the API:
+
+- `apps/api/src/middleware/csrf-origin.ts` — new middleware that:
+  - Lets GET/HEAD/OPTIONS pass through unchanged.
+  - Lets mutating methods (POST/PUT/PATCH/DELETE) pass through when the request has no `Origin` header (legitimate server-to-server, CLI, mobile-app, and webhook calls).
+  - Lets mutating methods pass when the `Origin` is in `env.CORS_ORIGINS` (with trailing-slash normalization for forgiveness).
+  - Rejects mutating methods with a non-allow-listed `Origin` with `403` and structured error `CSRF_ORIGIN_REJECTED`.
+
+- `tests/csrf-origin.test.ts` — 11 source-grep tests covering the middleware's contract and the mount point in `apps/api/src/index.ts`.
+
+- `apps/api/src/index.ts` — imports the new middleware and registers it globally with `app.use('*', csrfOrigin())` immediately after the CORS middleware, so both layers share the same `env.CORS_ORIGINS` allow-list.
+
+### Why Origin check (not double-submit cookies)
+
+The project uses **Bearer tokens in `localStorage`** and has **no cookies anywhere**. The classic CSRF attack exploits auto-attached cookies, which we don't have. However, three reasons to add the defense-in-depth layer:
+
+1. Some browsers treat `Authorization` headers as credentials in cross-origin `fetch({ credentials: 'include' })` mode.
+2. The project sets `cors({ credentials: true })` which signals cookie-or-credential auth to clients.
+3. A future change adding cookie-based sessions would silently lose CSRF protection without a new layer.
+
+This pattern is the modern equivalent of double-submit cookies for Bearer-token APIs (the approach used by GitHub, GitLab, etc.). If the project ever adds cookie auth, a double-submit-cookie layer can be added on top.
+
+### Verified (TDD)
+
+- 11 new tests in `tests/csrf-origin.test.ts`, all pass. Test was written first, watched fail (ENOENT for the middleware file), then the middleware + mount were implemented, watched pass.
+- `pnpm --filter @haa/api typecheck` — clean
+- `pnpm --filter @haa/api build` — clean
+- Full test suite: 1826 passing, 14 pre-existing failures unrelated (ci-cd-pipeline, migration-dedup, schema-dedup, security-boundary — all confirmed on pre-change commit `5e7dfd6`).
+
+### Risk
+
+- 🟢 Low. Defense-in-depth. Webhooks and server-to-server calls pass through the no-Origin branch automatically.
+- 🟡 If a webhook provider ever starts sending `Origin` (uncommon), they'd need to be allow-listed. Worth monitoring in production.
+- 🟡 If cookie-based auth is added later, extend with double-submit cookie support.
+
+---
+
 ## 2026-06-15 (Quality Pass 2 — Item 2.6: DashboardHome Decomposition, COMPLETED)
 
 ### Changed
