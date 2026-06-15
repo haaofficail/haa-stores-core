@@ -77,6 +77,7 @@ import { DashboardHeader } from "./dashboard/DashboardHeader";
 import { SubscriptionBadge } from "./dashboard/SubscriptionBadge";
 import { PrimaryKpiCards } from "./dashboard/PrimaryKpiCards";
 import { RecentActionableOrders, type ActionableOrder } from "./dashboard/RecentActionableOrders";
+import { StoreReadinessBanner } from "./dashboard/StoreReadinessBanner";
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
@@ -1632,22 +1633,7 @@ export default function DashboardHome() {
 
       {/* ── Store Readiness (one-liner summary) ───────────────────── */}
       {summary?.readiness && summary.readiness.issues.length > 0 && (
-        <button
-          type="button"
-          onClick={() => navigate("/settings")}
-          className="w-full flex items-center gap-2 px-4 py-3 rounded-2xl border border-red-100 bg-red-50/50 hover:bg-red-50 transition-colors text-right"
-        >
-          <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
-          <span className="text-xs font-bold text-red-700 flex-1 truncate">
-            {summary.readiness.issues.length === 1
-              ? summary.readiness.issues[0].title
-              : t("dashboard.readiness.multipleIssues", "{{count}} مشاكل تحتاج حل").replace("{{count}}", String(summary.readiness.issues.length))}
-          </span>
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-500 tabular-nums shrink-0">
-            {summary.readiness.score}%
-          </span>
-          <ChevronDown className="h-3 w-3 text-neutral-400 shrink-0" />
-        </button>
+        <StoreReadinessBanner readiness={summary.readiness} t={t} />
       )}
 
       {/* ── Low Stock (compact, max 3) ─────────────────────────────── */}
