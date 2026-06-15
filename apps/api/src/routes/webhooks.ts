@@ -7,6 +7,7 @@ import { WalletLedger } from '@haa/wallet-core';
 import { WebhookOutboxService } from '@haa/integration-core';
 import { NotificationService } from '@haa/notification-core';
 import type { ProviderCode } from '@haa/shared';
+import { deduplicateFromContext } from '../middleware/webhook-dedup.js';
 
 const webhooksRouter = new Hono();
 
@@ -27,7 +28,9 @@ webhooksRouter.post('/payments/:provider', async (c) => {
     || '';
   const idempotencyKey = c.req.header('x-idempotency-key') || c.req.header('idempotency-key') || undefined;
 
-  // Verify webhook signature
+  // Verify webhook signature FIRST. Dedup happens after, so an
+  // attacker can't pre-poison the idempotency table with
+  // arbitrary bodies to block legitimate deliveries.
   if (!provider.verifyWebhookSignature(rawBody, signature)) {
     // Log invalid signature attempt
     try {
@@ -41,6 +44,15 @@ webhooksRouter.post('/payments/:provider', async (c) => {
     } catch { /* ignore parse errors */ }
 
     return c.json({ success: false, error: { code: 'INVALID_SIGNATURE', message: 'Invalid webhook signature' } }, 401);
+  }
+
+  // Signature is valid — now check for duplicate delivery. Most
+  // providers don't send x-idempotency-key, so the helper falls
+  // back to a hash of (provider + rawBody + signature). The same
+  // physical delivery always produces the same key.
+  const dup = await deduplicateFromContext(c, providerCode, rawBody, signature);
+  if (dup.duplicate) {
+    return c.json({ success: true, data: { eventType: 'duplicate_ignored' } });
   }
 
   // Parse and handle the webhook
