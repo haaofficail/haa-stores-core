@@ -5,7 +5,7 @@
 ---
 
 - **Last Updated:** 2026-06-15
-- **Current Phase:** Quality Pass 3 — Security & Permissions (in progress; 4/5 sub-items done — CSRF + webhook idempotency + audit depth + RBAC coverage shipped)
+- **Current Phase:** Quality Pass 4 — Operations & Quality (in progress; 1/N sub-items done — CI/CD pipeline shipped)
 - **Project Summary:** Multi-tenant Saudi e-commerce SaaS platform. Local-only. All 10 phases complete. Deployment gated by owner GO.
 - **Strategic Commitment:** `docs/ops/COMMITMENTS.md` is now active and binding — **Quality Pass 1-5 before any major Feature Pass**.
 - **Active Priorities:**
@@ -41,6 +41,8 @@
   - **Quality Pass 3 — Item 3 (Audit Logging Depth) ✅ DONE** — added audit logging to 2 critical paths that had zero: `orders.ts` PATCH `/:orderId/status` (action `order_status_changed` with oldValue + newValue + reason) and `wallet.ts` POST `/payouts/request` + POST `/payouts` (action `payout_requested` with amount + status). Side change: added `'payout_requested'` to the `AuditAction` union + matching Arabic label. 9/9 new tests pass; 0 regressions on full suite (1862/1890). 🆕
 
   - **Quality Pass 3 — Item 4 (Deeper RBAC Review) ✅ DONE** — added `tests/rbac-coverage.test.ts` which scans every file in `apps/api/src/routes/` and asserts (a) every mutating route (POST/PUT/PATCH/DELETE) calls `requireAuth` (inline or file-level `use`), (b) every store-scoped mutating route also calls `requireStoreAccess`, (c) every mutating route has a `requirePermission` or `requireAnyPermission` guard. Intentionally-public routes are in a `DENY_LIST` (pre-auth, webhooks with signature, storefront public, etc.). The RBAC framework is solid (38+ routes already protected); the test codifies the contract to prevent future regressions. 4/4 new tests pass; negative test confirmed the test catches violations. 0 regressions on full suite (1891 passing; the 70+ pre-existing failures are in the users TASK-0027 luxury-showcase working tree, unrelated to this commit). 🆕
+  - **Quality Pass 3 — 4/4 SPECIFIED SUB-ITEMS COMPLETE → CLOSED. Quality Pass 4 STARTED.**
+  - **Quality Pass 4 — Item 1 (CI/CD Pipeline) ✅ DONE** — created `.github/workflows/ci.yml` (158 lines, 4 parallel jobs: preflight, typecheck, lint, test). Triggers on `push` to main + `quality-pass-*` branches and on `pull_request` to main. Node 20, pnpm 10, pnpm store cache, concurrency cancel-in-progress. TDD: 10/10 `tests/ci-cd-pipeline.test.ts` (RED → GREEN). Full suite: 1898/1902 passing (4 pre-existing baseline failures in TASK-0027 working tree, unrelated). 🆕
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done
@@ -61,16 +63,18 @@
    - TASK-0019 (Marketing Events Insert Repair) — Done
    - TASK-0020 (Marketplace Product Detail Page Visual Upgrade) — Done
    - TASK-0021 (Marketplace Theme System Polish) — Done
-   - TASK-0022 (Marketplace Product Detail Completion) — Done
-   - TASK-0023 (Demo Support KB Repair) — Done
-   - TASK-0024 (Marketplace Product Detail Trust Section Density) — Done
+    - TASK-0022 (Marketplace Product Detail Completion) — Done
+    - TASK-0023 (Demo Support KB Repair) — Done
+    - TASK-0024 (Marketplace Product Detail Trust Section Density) — Done
+    - TASK-0027 (Quality Pass 3 — Security & Permissions) — Done (4/4 specified sub-items: CSRF + webhook idempotency + audit depth + RBAC coverage)
+    - TASK-0028 (Quality Pass 4 — Operations & Quality, Item 1: CI/CD Pipeline) — In Progress (1/N sub-items: CI yml shipped)
 - **Known Broken Areas:**
   - Storefront root `/` hardcoded to `/s/haa-demo` redirect — works after seed ✅
   - Registration creates stores as `draft` (intentional — merchant must publish from settings)
   - All 1573 tests pass against isolated test DB (78 test files, 1 skipped) — 0 pre-existing failures
 - **Known Risks:**
   - Duplicate project folders on Desktop causing path confusion ⚠️
-  - No automated CI/CD
+  - CI/CD pipeline shipped (Quality Pass 4 Item 1) ✅ — runs on push to main + quality-pass-* and on PR
   - Dev servers must be running for HTTP-level synthetic checks
   - Repeated local `API-001` on `/s/haa-demo/events` marketing event inserts — FIXED by TASK-0019 / ISSUE-0008 ✅
   - Customer route uses read permission for write operations (R-0011) — FIXED in RBAC Pass 1 ✅
