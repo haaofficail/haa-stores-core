@@ -64,13 +64,6 @@ import {
   Menu,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import {
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
 import { toast } from "sonner";
 import {
   CHART_COLORS,
@@ -84,6 +77,7 @@ import {
 } from "./dashboard/constants";
 import { StatsCards, type StatCardData } from "./dashboard/StatsCards";
 import { SalesChart } from "./dashboard/SalesChart";
+import { CategoryPieChart } from "./dashboard/CategoryPieChart";
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
@@ -2058,70 +2052,7 @@ export default function DashboardHome() {
               <SalesChart salesData={salesData} t={t} i18nLanguage={i18n.language} />
 
               {/* Order Distribution */}
-              <div className="col-span-2 bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-card p-5">
-                <h3 className="font-bold text-base text-neutral-900 mb-3">
-                  {t("dashboard.orderDistribution", "توزيع الطلبات")}
-                </h3>
-                {orderStatusDist.length > 0 ? (
-                  <div className="flex items-center gap-4">
-                    <ResponsiveContainer width="55%" height={200}>
-                      <PieChart>
-                        <Pie
-                          data={orderStatusDist}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={80}
-                          paddingAngle={3}
-                          dataKey="count"
-                          nameKey="status"
-                        >
-                          {orderStatusDist.map((_, i) => (
-                            <Cell
-                              key={i}
-                              fill={CHART_COLORS[i % CHART_COLORS.length]}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          contentStyle={{
-                            borderRadius: 12,
-                            border: "1px solid #e2e8f0",
-                            fontSize: 13,
-                          }}
-                          formatter={(value: any, name: any) => [value, name]}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div className="flex-1 space-y-2">
-                      {orderStatusDist.slice(0, 5).map((item, i) => (
-                        <div
-                          key={item.status}
-                          className="flex items-center gap-2 text-sm"
-                        >
-                          <span
-                            className="h-2.5 w-2.5 rounded-full shrink-0"
-                            style={{
-                              backgroundColor:
-                                CHART_COLORS[i % CHART_COLORS.length],
-                            }}
-                          />
-                          <span className="flex-1 text-neutral-600">
-                            {t(`orders.status_${item.status}`)}
-                          </span>
-                          <span className="font-bold text-neutral-900">
-                            {item.count}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="h-[200px] flex items-center justify-center text-sm text-neutral-400">
-                    {t("dashboard.noOrders", "لا توجد طلبات")}
-                  </div>
-                )}
-              </div>
+              <CategoryPieChart orderStatusDist={orderStatusDist} t={t} />
             </div>
 
             {/* Middle Row: Recent Sold Products + Top Products */}
