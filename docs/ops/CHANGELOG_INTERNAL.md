@@ -5,6 +5,36 @@
 
 ---
 
+## 2026-06-15 (Quality Pass 3 — Item 3: Audit Logging Depth)
+
+### Changed
+
+- `apps/api/src/routes/orders.ts` — `PATCH /:orderId/status` now records an `order_status_changed` audit entry with `oldValue: { status: prevStatus }` and `newValue: { status: new, reason }`.
+- `apps/api/src/routes/wallet.ts` — `POST /payouts/request` and `POST /payouts` now record a `payout_requested` audit entry with `newValue: { amount, status }`.
+- `packages/shared/src/types/orders.ts` — added `'payout_requested'` to the `AuditAction` union (was in `WebhookEventType` but missing from `AuditAction`).
+- `packages/shared/src/types/audit.ts` — added matching Arabic label `'طلب سحب أرباح'` to `AUDIT_ACTION_LABELS`.
+
+### Background (pre-change state)
+
+Of 8 total `audit.record()` calls in the API, none were in `orders.ts` or `wallet.ts`. `products.ts` already had audit on create/update/bulk/delete (added in an earlier task). The high-impact paths for compliance and incident investigation — order status changes, refunds, payout requests — were **completely unaudited**.
+
+### Verified (TDD)
+
+- 9/9 new tests in `tests/audit-depth.test.ts` pass.
+- TDD cycle: RED (9 failed because the audit calls were missing) → GREEN (added the calls) → RED (TypeScript caught the missing `AuditAction` value) → GREEN (added the value + label, full chain builds clean).
+- `pnpm --filter @haa/api typecheck` — clean
+- `pnpm --filter @haa/api build` — clean
+- `pnpm --filter @haa/shared build` — clean
+- `pnpm --filter @haa/integration-core build` — clean
+- Full test suite: 1862 passing, 14 pre-existing failures unrelated (ci-cd-pipeline, migration-dedup, schema-dedup, security-boundary — all confirmed on pre-change commit `596337c`).
+
+### Risk
+
+- 🟡 Future route changes in `orders/products/wallet` can forget audit calls. The test asserts presence in 3 specific files but doesn't lint every route. A custom lint rule could enforce this later (out of scope for Item 3).
+- 🟢 The action vocabulary is fully type-safe — adding a new action value requires adding a label or the `Record<AuditAction, string>` invariant fails to compile. The TS compiler is the gate.
+
+---
+
 ## 2026-06-15 (Quality Pass 3 — Item 2: Webhook Idempotency)
 
 ### Added

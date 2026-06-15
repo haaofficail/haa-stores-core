@@ -5,7 +5,7 @@
 ---
 
 - **Last Updated:** 2026-06-15
-- **Current Phase:** Quality Pass 3 — Security & Permissions (in progress; 2/5 sub-items done — CSRF + webhook idempotency shipped)
+- **Current Phase:** Quality Pass 3 — Security & Permissions (in progress; 3/5 sub-items done — CSRF + webhook idempotency + audit depth shipped)
 - **Project Summary:** Multi-tenant Saudi e-commerce SaaS platform. Local-only. All 10 phases complete. Deployment gated by owner GO.
 - **Strategic Commitment:** `docs/ops/COMMITMENTS.md` is now active and binding — **Quality Pass 1-5 before any major Feature Pass**.
 - **Active Priorities:**
@@ -38,6 +38,7 @@
   - **Quality Pass 2 — Item 2.6 (DashboardHome decomposition) ✅ COMPLETED — 22 incremental commits** — extracted 22 sub-components + 1 constants file to `apps/merchant-dashboard/src/pages/dashboard/`. DashboardHome.tsx 2743 → 1599 LOC (**-41.7%, -1144 lines**). Every visual section is now a focused, presentational sub-component. The remaining content in DashboardHome is all hooks, state, API orchestration, and computed values (not visual structure) — out of scope for Item 2.6. Each commit independently verified: typecheck + build + 3 dashboard test files / 144 tests pass. 🆕
   - **Quality Pass 3 — Item 1 (CSRF Origin Check) ✅ DONE** — new `apps/api/src/middleware/csrf-origin.ts` middleware (1 file, ~62 LOC) plus mount in `apps/api/src/index.ts` and new test file `tests/csrf-origin.test.ts` (11/11 passing). Defense-in-depth CSRF protection: rejects cross-origin mutating requests (POST/PUT/PATCH/DELETE) whose Origin is not in `env.CORS_ORIGINS`. Mounted after CORS so both layers share the same allow-list. Webhooks and server-to-server calls (no Origin header) pass through automatically. TDD: test written first, watched fail, then implemented. 🆕
   - **Quality Pass 3 — Item 2 (Webhook Idempotency / Deduplication) ✅ DONE** — new `apps/api/src/middleware/webhook-dedup.ts` (~110 LOC) with `deduplicateWebhook` + `resolveIdempotencyKey` helpers. Key design: prefer provider-supplied `x-idempotency-key` header; fall back to `sha256(provider + rawBody + signature)` when absent. Critically, dedup runs **AFTER** signature verification so attackers can't pre-poison the idempotency table with bogus signatures. Wired into all 3 webhook handlers (payment, generic shipping, OTO). 13/13 new tests pass; 0 regressions on full suite (1839/1867 with the 14 pre-existing baseline failures). 🆕
+  - **Quality Pass 3 — Item 3 (Audit Logging Depth) ✅ DONE** — added audit logging to 2 critical paths that had zero: `orders.ts` PATCH `/:orderId/status` (action `order_status_changed` with oldValue + newValue + reason) and `wallet.ts` POST `/payouts/request` + POST `/payouts` (action `payout_requested` with amount + status). Side change: added `'payout_requested'` to the `AuditAction` union + matching Arabic label. 9/9 new tests pass; 0 regressions on full suite (1862/1890). 🆕
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done
