@@ -1442,7 +1442,69 @@
   - **Item 1 (CI/CD Pipeline) — COMPLETED 2026-06-15:** Created `.github/workflows/ci.yml` (158 lines) with 4 jobs: `preflight`, `typecheck`, `lint`, `test`. Each job: checkout → setup-node@v4 (Node 20) → pnpm/action-setup@v4 (pnpm 10) → pnpm store cache (key on `pnpm-lock.yaml`) → `pnpm install --frozen-lockfile` → run the relevant command. Triggers on `push` to main + `quality-pass-*` branches and on `pull_request` to main. Concurrency group cancels in-progress runs. RED → GREEN verified: 10/10 `tests/ci-cd-pipeline.test.ts` now pass. Full suite: 1898/1902 passing (4 pre-existing baseline failures in TASK-0027 luxury-showcase working tree, unrelated to this commit).
   - **Item 2 (Observability / Sentry Wiring) — COMPLETED 2026-06-15:** Created `apps/api/src/services/observability.ts` (~115 LOC) with a noop-first design: if `SENTRY_DSN` is set + `@sentry/node` is installed at runtime → Sentry monitor; otherwise noop (with stderr logging). The Sentry require is **lazy** (CommonJS `require` cast to a local `SentryShape` interface) so the package stays optional — dev/test/local runs without the dependency. Wired into `apps/api/src/index.ts` via `initObservability()` right after `app.onError(errorHandler)`. The `ErrorMonitor` interface was already there in `error-handler.ts` (from Quality Pass 1) but had zero callers — this commit closes that gap. 10/10 new tests pass (asserts the module shape + lazy require + noop + boot wiring + env recognition). Full suite: 1922/1926 passing (4 pre-existing baseline failures, unrelated to this commit). Typecheck + build clean.
   - **Item 3 (Redis Rate Limiter Production Wiring) — COMPLETED 2026-06-15:** The Redis rate-limiter code (`RedisAtomicRateLimiterStore`, `RedisRateLimiterStore`, `InMemoryRateLimiterStore` + factory that reads `RATE_LIMIT_STORE`) was already present in `apps/api/src/middleware/rate-limiter.ts` from earlier work. The gap was: (a) no test asserted the production wiring was correct, (b) `env.ts` declared `RATE_LIMIT_STORE=redis-atomic` as the production default but no test verified the contract. Added `tests/redis-rate-limiter-wiring.test.ts` (14 source-grep tests) that asserts: atomic Redis store exists, factory reads `RATE_LIMIT_STORE` env, default is `memory`, `REDIS_URL` is read by Redis store classes, errors are clear when missing, response headers (`X-RateLimit-Limit/Remaining/Reset`) are set, 429 + `RATE_LIMITED` is returned when over limit, store is created once (not per-request, prevents connection leak), and `env.ts` defaults to `redis-atomic` in production while requiring `REDIS_URL`. 14/14 new tests pass; 0 regressions on full suite (1922 passing).
+- **Status History:** Requested 2026-06-15; Expanded 2026-06-15; In Progress 2026-06-15; Items 1+2+3 Done 2026-06-15.
+- **Quality Pass 4 — 3/3 SPECIFIED SUB-ITEMS COMPLETE → CLOSED. Quality Pass 5 STARTED.**
+
+---
+
+### TASK-0029: Quality Pass 5 — Architectural Cleanup (Service Layer + Queue + Theme)
+
+- **Type:** Architecture / Refactor
+- **Priority:** P1 High
+- **Status:** In Progress
+- **Created:** 2026-06-15
+- **Updated:** 2026-06-15
+- **Original Request:** Quality Pass 5 per strategic plan (see COMMITMENTS.md) — "Architectural cleanup, 9-10 weeks, Extensible without duplication"
+- **Expanded Requirement:** Three high-leverage sub-items:
+  - **5.1 Service Layer Enforcement** — codify Principle 5 ("No route accesses Drizzle directly") with a test that prevents new violations, plus a migration plan for the 24 existing violations.
+  - **5.2 Queue Scaffold (BullMQ shim)** — same pattern as the observability shim: optional BullMQ dependency, noop default, never throws at boot. Production deployments can opt in by installing bullmq + setting QUEUE_REDIS_URL.
+  - **5.3 Theme Package Rationalization** — the project has 5 theme packages; `@haa/theme-system` is explicitly legacy (its replacement `@haa/storefront-themes` says so in its description). Codify the deprecation in a plan doc and a test that prevents adding a 6th theme package.
+- **Problem:**
+  - 24 route files import `drizzle-orm` directly, violating Principle 5 from COMMITMENTS.md
+  - `QUEUE_REDIS_URL` is declared required in production but no queue code consumes it (same gap as Sentry had before QP 4)
+  - 5 theme packages with overlapping purposes; `@haa/theme-system` is dead weight that should be removed in a coordinated migration
+- **Goal:** Establish architectural contracts (tests) that prevent regression. Plan the actual migrations without forcing them in one session.
+- **Scope:**
+  - 1 new service module: `apps/api/src/services/queue.ts` (~120 LOC)
+  - 1 new convention doc: `apps/api/src/services/README.md`
+  - 1 new rationalization plan: `docs/ops/THEME_RATIONALIZATION.md`
+  - 3 new theme package READMEs: `storefront-themes`, `system-theme`, `theme-react`
+  - 3 new test files: `service-layer-enforcement.test.ts` (7 tests), `queue-scaffold.test.ts` (12 tests), `theme-rationalization.test.ts` (7 tests)
+  - No route refactors (migration backlog tracked by the service-layer test)
+  - No theme package deletions (tracked by the rationalization plan)
+- **Out of Scope:** Full service-layer migration of the 24 existing violations (multi-session work). BullMQ worker surface (producer only for now). `@haa/theme-system` deletion (8 call-sites, multi-step migration).
+- **Affected Areas:**
+  - `apps/api/src/services/queue.ts` (new)
+  - `apps/api/src/services/README.md` (new)
+  - `docs/ops/THEME_RATIONALIZATION.md` (new)
+  - `packages/storefront-themes/README.md` (new)
+  - `packages/system-theme/README.md` (new)
+  - `packages/theme-react/README.md` (new)
+  - `tests/service-layer-enforcement.test.ts` (new)
+  - `tests/queue-scaffold.test.ts` (new)
+  - `tests/theme-rationalization.test.ts` (new)
+- **Skills Used:** plan-mode, test-driven-development, verification-before-completion
+- **Acceptance Criteria:**
+  - [x] Service-layer enforcement test exists, asserts README + budget ceiling
+  - [x] Queue module exists with noop + lazy BullMQ + try/catch fallback
+  - [x] Theme rationalization plan exists and flags `@haa/theme-system` as deprecated
+  - [x] All 3 new test files pass (7+12+7 = 26 new tests)
+  - [x] Typecheck + build clean
+  - [x] Full suite: 1948/1952 passing (4 pre-existing baseline failures, unrelated)
+- **Test Plan:** TDD for each item (RED → GREEN). Full suite + typecheck + build verification.
+- **Test Results:**
+  - **Item 1 (Service Layer Enforcement) — COMPLETED 2026-06-15:** Created `tests/service-layer-enforcement.test.ts` (7 source-grep tests) that scans every route file, counts `drizzle-orm` imports, asserts the count stays ≤ a `MAX_EXISTING_ROUTE_VIOLATIONS` budget (default 24). Also asserts `apps/api/src/services/README.md` exists and documents the service-layer convention. The test logs the current migration backlog so future sessions can chip away at it. 7/7 new tests pass.
+  - **Item 2 (Queue Scaffold) — COMPLETED 2026-06-15:** Created `apps/api/src/services/queue.ts` (~120 LOC) following the same shim pattern as observability: lazy `require('bullmq')` cast, noop default backend, `QUEUE_REDIS_URL`-gated, never throws at boot. Test verified RED (9/12 fail without impl) → GREEN (12/12 with impl). 12/12 new tests pass.
+  - **Item 3 (Theme Package Rationalization) — COMPLETED 2026-06-15:** Created `docs/ops/THEME_RATIONALIZATION.md` (the migration plan) + 3 missing theme package READMEs (storefront-themes, system-theme, theme-react). New `tests/theme-rationalization.test.ts` (7 tests) asserts: all theme packages have a `package.json` with a name, the plan doc exists, the legacy package is flagged, no 7th theme package can be added silently. 7/7 new tests pass.
 - **Risks:**
+  - 🟢 Low for the contracts (tests) — they prevent regression, don't change runtime behavior.
+  - 🟡 Service-layer migration of 24 existing violations is significant work — explicitly deferred to future sessions via the test's migration backlog.
+  - 🟡 BullMQ is loaded lazily but the producer API I shipped is minimal. Worker surface (the actual job processing) is a future iteration.
+  - 🟡 `@haa/theme-system` deletion is a coordinated 8-step migration across 3 apps — the plan doc records the steps.
+- **Related Issues:** None
+- **Related Decisions:** Service-layer test uses a hard budget ceiling (24) instead of 0 — this lets us track the migration incrementally. The test logs the current violations every run so progress is visible.
+- **Status History:** Requested 2026-06-15; Expanded 2026-06-15; In Progress 2026-06-15; Items 1+2+3 Done 2026-06-15.
+- **Final Notes:** Quality Pass 5 core items shipped. Remaining Pass 5 scope is execution work (route migrations, theme-system removal) tracked by the new tests.
   - 🟢 Low. Adds a CI workflow, doesn't change runtime code.
   - 🟡 CI secrets (e.g. Sentry DSN) are not wired here — those come with the observability sub-item.
   - 🟡 The `quality-pass-*` branch glob is permissive; main branch protection should still require reviews.
