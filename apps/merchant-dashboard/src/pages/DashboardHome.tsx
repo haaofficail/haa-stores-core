@@ -65,10 +65,6 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
   Tooltip,
   ResponsiveContainer,
   PieChart,
@@ -87,6 +83,7 @@ import {
   getNextActionLabel,
 } from "./dashboard/constants";
 import { StatsCards, type StatCardData } from "./dashboard/StatsCards";
+import { SalesChart } from "./dashboard/SalesChart";
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
@@ -2058,107 +2055,7 @@ export default function DashboardHome() {
             {/* Charts Row */}
             <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
               {/* Sales Chart */}
-              <div className="col-span-3 bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-card p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-base text-neutral-900">
-                    {t("dashboard.salesLast30Days", "المبيعات (آخر ٣٠ يوم)")}
-                  </h3>
-                  {salesData && (
-                    <div className="flex items-center gap-3 text-xs text-neutral-500">
-                      <span className="flex items-center gap-1">
-                        <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" />{" "}
-                        {t("common.total", "الإجمالي:")}{" "}
-                        {formatNumber(salesData.totalSales ?? 0)}{" "}
-                        {t("common.sar", "ر.س")}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="h-2.5 w-2.5 rounded-full bg-neutral-300" />{" "}
-                        {t("common.totalOrders", "الطلبات:")}{" "}
-                        {salesData.totalOrders ?? 0}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                {salesData?.salesByDay?.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <AreaChart
-                      data={salesData.salesByDay}
-                      margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
-                    >
-                      <defs>
-                        <linearGradient
-                          id="salesGrad"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset="5%"
-                            stopColor="#6366f1"
-                            stopOpacity={0.2}
-                          />
-                          <stop
-                            offset="95%"
-                            stopColor="#6366f1"
-                            stopOpacity={0}
-                          />
-                        </linearGradient>
-                      </defs>
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 11, fill: "#94a3b8" }}
-                        tickFormatter={(d: string) =>
-                          new Date(d).toLocaleDateString(
-                            i18n.language === "ar" ? "ar-SA" : i18n.language,
-                            { day: "numeric", month: "short" },
-                          )
-                        }
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 11, fill: "#94a3b8" }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          borderRadius: 12,
-                          border: "1px solid #e2e8f0",
-                          fontSize: 13,
-                        }}
-                        formatter={(value: any) => [
-                          formatNumber(value) + " " + t("common.sar", "ر.س"),
-                          t("common.sales", "المبيعات"),
-                        ]}
-                        labelFormatter={(d: string) =>
-                          new Date(d).toLocaleDateString(
-                            i18n.language === "ar" ? "ar-SA" : i18n.language,
-                            {
-                              weekday: "long",
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            },
-                          )
-                        }
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="sales"
-                        stroke="#6366f1"
-                        strokeWidth={2}
-                        fill="url(#salesGrad)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-[220px] flex items-center justify-center text-sm text-neutral-400">
-                    {t("dashboard.noSalesData", "لا توجد بيانات مبيعات كافية")}
-                  </div>
-                )}
-              </div>
+              <SalesChart salesData={salesData} t={t} i18nLanguage={i18n.language} />
 
               {/* Order Distribution */}
               <div className="col-span-2 bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-card p-5">
