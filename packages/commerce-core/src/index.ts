@@ -18,6 +18,7 @@ export type {
   LoginPayload,
   MeUser,
 } from './auth-flow.js';
+export { ProviderStatusService, providerStatusService } from './provider-status-service.js';
 export { FakePaymentProvider, GeideaPaymentProvider, MoyasarSandboxProvider, TabbyProvider, TamaraProvider, PaymentService, createGeideaSignature, createPaymentProvider, getPaymentProviderStatus, getAvailablePaymentMethods, mapProviderStatus, mapProviderError, verifyGeideaCallbackSignature } from '@haa/payment-providers';
 export type { PaymentProvider } from '@haa/payment-providers';
 export { buildLocalWhatsappQrDataUrl, buildWhatsappContactChannel, buildWhatsappLink, getOfficialContactEmail, isValidWhatsappPhone, normalizeWhatsappPhone } from './contact-channels.js';
