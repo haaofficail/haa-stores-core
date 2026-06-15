@@ -43,7 +43,6 @@ import {
   Layers,
   ArrowUpRight,
   Crown,
-  X,
   CreditCard,
   Shield,
   Bell,
@@ -78,6 +77,7 @@ import { RecentSoldProducts } from "./dashboard/RecentSoldProducts";
 import { AiGreetingCard } from "./dashboard/AiGreetingCard";
 import { RecentCustomersList } from "./dashboard/RecentCustomersList";
 import { QuickActionsGrid } from "./dashboard/QuickActionsGrid";
+import { SmartAlertsStrip } from "./dashboard/SmartAlertsStrip";
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
@@ -1499,55 +1499,11 @@ export default function DashboardHome() {
       <SubscriptionBadge subscription={subscription} t={t} />
 
       {/* Smart Alerts — critical only, compact */}
-      {visibleAlerts
-        .filter((a) => a.type === "danger" || a.type === "warning")
-        .slice(0, 3).length > 0 && (
-        <div className="rounded-2xl border border-white/50 bg-white/80 backdrop-blur-xl shadow-card p-3">
-          <div className="flex flex-wrap gap-1.5">
-            {visibleAlerts
-              .filter((a) => a.type === "danger" || a.type === "warning")
-              .slice(0, 3)
-              .map((alert) => {
-                const isDismissing = dismissingAlerts.has(alert.id);
-                const borderMap = {
-                  danger: "border-red-200 bg-red-50",
-                  warning: "border-amber-200 bg-amber-50",
-                  info: "border-blue-200 bg-blue-50",
-                  success: "border-emerald-200 bg-emerald-50",
-                } as const;
-                const iconMap = {
-                  danger: "text-red-500",
-                  warning: "text-amber-500",
-                  info: "text-blue-500",
-                  success: "text-emerald-500",
-                } as const;
-                return (
-                  <div
-                    key={alert.id}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border backdrop-blur-sm transition-all duration-300
-                    ${borderMap[alert.type as keyof typeof borderMap] || "border-neutral-100 bg-neutral-50"} ${isDismissing ? "opacity-0 scale-95" : ""}`}
-                  >
-                    <alert.icon
-                      className={`h-3 w-3 shrink-0 ${iconMap[alert.type as keyof typeof iconMap] || "text-neutral-500"}`}
-                    />
-                    <span className="text-xs font-bold text-neutral-900 whitespace-nowrap">
-                      {alert.title}
-                    </span>
-                    <span className="text-[11px] text-neutral-500 truncate max-w-[160px]">
-                      {alert.description}
-                    </span>
-                    <button
-                      onClick={() => dismissAlert(alert.id)}
-                      className="shrink-0 p-0.5 rounded hover:bg-black/5 transition-colors"
-                    >
-                      <X className="h-2.5 w-2.5 text-neutral-400" />
-                    </button>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
-      )}
+      <SmartAlertsStrip
+        alerts={visibleAlerts as SmartAlert[]}
+        dismissingIds={dismissingAlerts}
+        onDismiss={dismissAlert}
+      />
 
       {/* Welcome Banner */}
       {onboardingJustDone && (
