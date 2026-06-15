@@ -2,7 +2,16 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const walletLedger = readFileSync(new URL('../packages/wallet-core/src/ledger.ts', import.meta.url), 'utf-8');
-const adminRoutes = readFileSync(new URL('../apps/api/src/routes/admin.ts', import.meta.url), 'utf-8');
+// Quality Pass 2 — Item 2.4: admin.ts was split into a directory of 5 files.
+// Concatenate the per-domain files so existing assertions that grep the
+// full admin surface continue to work.
+const adminRoutes = [
+  'index.ts',
+  'auth.ts',
+  'tenants-stores.ts',
+  'marketplace.ts',
+  'operations.ts',
+].map((f) => readFileSync(new URL(`../apps/api/src/routes/admin/${f}`, import.meta.url), 'utf-8')).join('\n');
 const walletRoutes = readFileSync(new URL('../apps/api/src/routes/wallet.ts', import.meta.url), 'utf-8');
 const sharedPermissions = readFileSync(new URL('../packages/shared/src/permissions.ts', import.meta.url), 'utf-8');
 const sharedTypes = readFileSync(new URL('../packages/shared/src/types/orders.ts', import.meta.url), 'utf-8');

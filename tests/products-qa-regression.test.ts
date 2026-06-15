@@ -206,11 +206,15 @@ describe('Products QA regression', () => {
     expect(readSource('apps/admin-dashboard/src/pages/Marketplace.tsx')).toContain('تقرير السوق العميق');
     expect(readSource('apps/admin-dashboard/src/pages/Marketplace.tsx')).toContain('/payments/settlements');
     expect(readSource('apps/admin-dashboard/src/pages/Marketplace.tsx')).toContain('مسار التسويات اليدوية');
-    expect(readSource('apps/api/src/routes/admin.ts')).toContain("adminRouter.get('/marketplace/summary'");
-    expect(readSource('apps/api/src/routes/admin.ts')).toContain("adminRouter.patch('/marketplace/products/:id/review'");
-    expect(readSource('apps/api/src/routes/admin.ts')).toContain("adminRouter.patch('/marketplace/products/:id/feature'");
-    expect(readSource('apps/api/src/routes/admin.ts')).toContain("adminRouter.get('/marketplace/deep-report'");
-    expect(readSource('apps/api/src/routes/admin.ts')).not.toContain("adminRouter.get('/marketplace/returns'");
+    // Quality Pass 2 — Item 2.4: admin.ts was split into a directory.
+    // Marketplace routes moved to admin/index.ts (mount points) + admin/marketplace.ts (handlers).
+    const adminIndexSrc = readSource('apps/api/src/routes/admin/index.ts');
+    const adminMarketplaceSrc = readSource('apps/api/src/routes/admin/marketplace.ts');
+    expect(adminIndexSrc).toContain("/marketplace/summary'");
+    expect(adminIndexSrc).toContain("/marketplace/products/:id/review'");
+    expect(adminIndexSrc).toContain("/marketplace/products/:id/feature'");
+    expect(adminIndexSrc).toContain("/marketplace/deep-report'");
+    expect(adminIndexSrc + adminMarketplaceSrc).not.toContain("/marketplace/returns'");
     expect(marketplaceApiRoute).not.toContain("haaMarketplaceRouter.post('/orders/:marketplaceOrderNumber/returns'");
     expect(marketplaceTrack).toContain('يكتمل عند التاجر');
     expect(marketplaceTrack).toContain('متابعة إجراءات الطلب عند التاجر');

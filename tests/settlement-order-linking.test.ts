@@ -3,7 +3,13 @@ import { describe, expect, it } from 'vitest';
 
 const walletLedger = readFileSync(new URL('../packages/wallet-core/src/ledger.ts', import.meta.url), 'utf-8');
 const walletRoutes = readFileSync(new URL('../apps/api/src/routes/wallet.ts', import.meta.url), 'utf-8');
-const adminRoutes = readFileSync(new URL('../apps/api/src/routes/admin.ts', import.meta.url), 'utf-8');
+const adminRoutes = [
+  'index.ts',
+  'auth.ts',
+  'tenants-stores.ts',
+  'marketplace.ts',
+  'operations.ts',
+].map((f) => readFileSync(new URL(`../apps/api/src/routes/admin/${f}`, import.meta.url), 'utf-8')).join('\n');
 const ordersRoutes = readFileSync(new URL('../apps/api/src/routes/orders.ts', import.meta.url), 'utf-8');
 const merchantApi = readFileSync(new URL('../apps/merchant-dashboard/src/lib/api.ts', import.meta.url), 'utf-8');
 const merchantApp = readFileSync(new URL('../apps/merchant-dashboard/src/App.tsx', import.meta.url), 'utf-8');

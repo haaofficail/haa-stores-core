@@ -18,7 +18,7 @@ import { rateLimiter } from './middleware/rate-limiter.js';
 import { getContent, ROOT } from './middleware/serve-local-storage.js';
 import { storageGuard } from './middleware/storage-guard.js';
 import { getCachedTenantId, setCachedTenantId, invalidateStoreTenantCache } from './middleware/store-tenant-cache.js';
-import { adminRouter } from './routes/admin.js';
+import { adminRouter } from './routes/admin/index.js';
 import { authRouter } from './routes/auth.js';
 import { productsRouter } from './routes/products.js';
 import { categoriesRouter } from './routes/categories.js';
