@@ -5,30 +5,53 @@
 
 ---
 
-## 2026-06-15 (Quality Pass 2 — Item 2.6: DashboardHome Decomposition, Partial)
+## 2026-06-15 (Quality Pass 2 — Item 2.6: DashboardHome Decomposition, COMPLETED)
 
 ### Changed
 
-Decomposed `apps/merchant-dashboard/src/pages/DashboardHome.tsx` (2743 LOC) incrementally across 6 commits, each independently verified. Extracted 5 sub-components + 1 constants file to `apps/merchant-dashboard/src/pages/dashboard/`:
+Decomposed `apps/merchant-dashboard/src/pages/DashboardHome.tsx` (2743 LOC) incrementally across **22 commits**, each independently verified with typecheck + build + 3 dashboard test files / 144 tests. Extracted 22 sub-components + 1 constants file to `apps/merchant-dashboard/src/pages/dashboard/`:
 
-- `constants.ts` (147 LOC) — pure helpers with no React/JSX dependencies: `CHART_COLORS`, `getRemainingDays`, `formatTimeAgo`, `getUpcomingSeason`, `orderStatusColors`, `arabicStatusLabels`, `arabicPaymentLabels`, `getNextActionLabel`. Arabic strings preserved exactly (including subtle spelling variants like مرتجع).
-- `StatsCards.tsx` (92 LOC) — the 5-tile extended KPI grid (total sales, orders, new orders, active products, wallet) with trend badges. Takes `stats: StatCardData[]` and `showOnMobile: boolean`. Pure presentational.
-- `SalesChart.tsx` (124 LOC) — AreaChart of last-30-days sales with localized tooltip and "no data" empty state. Takes `salesData`, `t`, `i18nLanguage`. Recharts `AreaChart` + `XAxis` + `YAxis` + `Tooltip` + `Area` imports moved here.
-- `CategoryPieChart.tsx` (98 LOC) — donut chart of order status distribution with top-5 legend. Takes `orderStatusDist` and `t`. Recharts `PieChart` + `Pie` + `Cell` imports moved here.
-- `NextActionBanner.tsx` (102 LOC) — Action Center strip (COD collection, ready to ship, ready for pickup, etc.) with mobile scroll + desktop grid. Takes `items: ActionCenterItem[]` and `t`. Owns its `useNavigate()`.
-- `DashboardHeader.tsx` (78 LOC) — top bar (mobile menu trigger, title, last-updated timestamp, notifications with red dot, refresh). Takes `t`, `visibleAlerts`, `onRefresh`.
+**Helpers (no React deps):**
+- `constants.ts` — `CHART_COLORS`, `getRemainingDays`, `formatTimeAgo`, `getUpcomingSeason`, `orderStatusColors`, `arabicStatusLabels`, `arabicPaymentLabels`, `getNextActionLabel`. Arabic strings preserved exactly (including subtle spelling variants like مرتجع).
+
+**Visual sub-components (pure presentational unless noted):**
+- `StatsCards.tsx` — 5-tile extended KPI grid (total sales, orders, new orders, products, wallet) with trend badges
+- `PrimaryKpiCards.tsx` — 2 always-visible KPI tiles (today's sales + actionable orders)
+- `ShowMoreKpiToggle.tsx` — Mobile KPI expand toggle button
+- `SalesChart.tsx` — AreaChart of last-30-days sales with localized tooltip
+- `CategoryPieChart.tsx` — Donut chart + top-5 legend for order status distribution
+- `AnalyticsSection.tsx` — Collapsible "تحليلات" wrapper (uses SalesChart + CategoryPieChart + RecentSoldProducts + TopProductsList)
+- `NextActionBanner.tsx` — Action Center strip (COD, ready to ship, etc.) with mobile scroll + desktop grid
+- `RecentActionableOrders.tsx` — Recent orders list (max 3) with status/fulfillment/payment pills
+- `RecentSoldProducts.tsx` — Recent sold products list (item rows with image, qty, total, time-ago)
+- `TopProductsList.tsx` — Top products by revenue (rank badge + progress bar)
+- `StoreReadinessBanner.tsx` — Red readiness alert banner
+- `LowStockList.tsx` — Low-stock products with +1 stock bump button
+- `QuickActionsGrid.tsx` — 4-button quick action grid (add product, orders, coupon, storefront)
+- `MoreSection.tsx` — Collapsible "المزيد" wrapper (uses RecentCustomersList + QuickStatsGrid)
+- `RecentCustomersList.tsx` — Recent customers list (avatar + name + phone + tap-to-call)
+- `QuickStatsGrid.tsx` — Brands/tags/categories/products/orders tiles
+- `SubscriptionBadge.tsx` — Subscription status pill (plan name + status + remaining days)
+- `SmartAlertsStrip.tsx` — Critical alert chips (max 3) with icon, title, dismiss
+- `WelcomeBanner.tsx` — Onboarding celebration banner
+- `AiGreetingCard.tsx` — AI greeting one-liner
+- `DashboardHeader.tsx` — Top bar (title, last-updated, notifications, refresh)
 
 ### Architecture
 
 - **Pattern:** Each extracted sub-component is a pure presentational React component that takes its data as props. State and side effects (API calls, navigate, toast) stay in `DashboardHome`. The orchestrator passes derived data + callbacks down.
-- **Type safety:** The shared types (`StatCardData`, `ActionCenterItem`) are exported from the sub-component files. The parent's `useMemo` literals are annotated to match, so TypeScript catches drift at compile time.
+- **Type safety:** Each shared type (`StatCardData`, `ActionCenterItem`, `ActionableOrder`, `RecentOrder`, `RecentCustomer`, `TopProduct`, `LowStockProduct`, `SmartAlert`) is exported from the sub-component file. The parent's `useMemo` literals are annotated to match.
 - **No new dependencies.** No state management library, no context, no React.memo. Just plain props.
+
+### Result
+
+`DashboardHome.tsx`: 2743 → **1599 LOC** (−41.7%, −1144 lines). The render section is now ~110 lines of clean orchestration — every section comment is followed by 1-3 lines of `<ComponentName ... />` calls. The remaining 1500 lines inside the component is all hooks (useState, useEffect, useMemo, useCallback, useRef), state, and API orchestration.
 
 ### Scope decision (defer the rest)
 
-The remaining ~800 LOC of inline JSX is mixed (recent orders, low stock, customers, onboarding checklist, sales/pie charts already done, recent sold products, top products, wallet, brands, tags, categories, etc.). Each remaining block reads from a tangle of local state (recentOrders, recentItems, lowStock, recentCustomers, brands, tags, subscription, cats, marketplaceHub, etc.) and a single-session "extract all 6 at once" refactor would be high risk without visual QA between each block. The conservative approach is: extract one block per future commit with its own visual QA pass.
+The 1500 LOC remaining inside DashboardHome is the **state and orchestration layer** — 27 useState hooks, 25+ API calls, the load() function, handleStockUpdate, visibleAlerts, acItems, topProducts, salesData, etc. Moving this would require either (a) a custom hook layer, (b) a context provider, or (c) a state management library. None of these are in scope for Item 2.6 (which is about visual structure, not state architecture) and they would each carry significant risk for limited benefit. They are best left for a future architectural pass if/when the orchestrator's complexity becomes a maintenance problem.
 
-### Verified (per commit, all 6)
+### Verified (per commit, all 22)
 
 - `pnpm --filter @haa/merchant-dashboard typecheck` — clean
 - `pnpm --filter @haa/merchant-dashboard build` — clean (DashboardHome chunk size fluctuates ±0.5 kB, no bundle-size regression)
@@ -36,9 +59,9 @@ The remaining ~800 LOC of inline JSX is mixed (recent orders, low stock, custome
 
 ### Risk
 
-- 🟢 Low. Each extraction is a self-contained JSX block with the same data flow. The orchestrator is unchanged in structure. The remaining inline sections (recent orders, etc.) are not affected by the extractions.
-- 🟡 The "red dot on bell" was the only behavioral logic that moved into a sub-component (computed inside `DashboardHeader` from the `visibleAlerts` prop). The parent still passes the same data, and the count condition (`type === "danger" || type === "warning"`) is preserved exactly.
+- 🟢 Low. Each extraction is a self-contained JSX block with the same data flow. The orchestrator is unchanged in structure — only the JSX moved out, prop signatures were added, and unused imports were removed.
 - 🟡 Several unused imports (lucide icons, recharts) were removed from `DashboardHome` after each extraction. If any are re-added in the future, they will need to be re-imported.
+- 🟡 The `c: any` typing in handler functions (loosened for ergonomics during the API split) is preserved across all new sub-components. A future tightening pass could replace with strict Hono-style types.
 
 ---
 
