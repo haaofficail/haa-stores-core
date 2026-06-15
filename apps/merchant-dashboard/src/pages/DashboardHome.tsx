@@ -62,8 +62,6 @@ import {
   getUpcomingSeason,
 } from "./dashboard/constants";
 import { StatsCards, type StatCardData } from "./dashboard/StatsCards";
-import { SalesChart } from "./dashboard/SalesChart";
-import { CategoryPieChart } from "./dashboard/CategoryPieChart";
 import { NextActionBanner, type ActionCenterItem } from "./dashboard/NextActionBanner";
 import { DashboardHeader } from "./dashboard/DashboardHeader";
 import { SubscriptionBadge } from "./dashboard/SubscriptionBadge";
@@ -71,15 +69,14 @@ import { PrimaryKpiCards } from "./dashboard/PrimaryKpiCards";
 import { RecentActionableOrders, type ActionableOrder } from "./dashboard/RecentActionableOrders";
 import { StoreReadinessBanner } from "./dashboard/StoreReadinessBanner";
 import { LowStockList } from "./dashboard/LowStockList";
-import { RecentSoldProducts } from "./dashboard/RecentSoldProducts";
 import { AiGreetingCard } from "./dashboard/AiGreetingCard";
 import { RecentCustomersList } from "./dashboard/RecentCustomersList";
 import { QuickActionsGrid } from "./dashboard/QuickActionsGrid";
 import { SmartAlertsStrip } from "./dashboard/SmartAlertsStrip";
 import { WelcomeBanner } from "./dashboard/WelcomeBanner";
-import { TopProductsList } from "./dashboard/TopProductsList";
 import { QuickStatsGrid } from "./dashboard/QuickStatsGrid";
 import { ShowMoreKpiToggle } from "./dashboard/ShowMoreKpiToggle";
+import { AnalyticsSection } from "./dashboard/AnalyticsSection";
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
@@ -1573,43 +1570,16 @@ export default function DashboardHome() {
       <QuickActionsGrid t={t} />
 
       {/* ── Analytics Section — collapsible ───────────────────────── */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-card overflow-hidden">
-        <button
-          onClick={() => setShowAnalytics((v) => !v)}
-          className="w-full flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 hover:bg-neutral-50 transition-colors"
-        >
-          <h3 className="font-bold text-sm sm:text-base text-neutral-900">
-            {t("dashboard.analytics", "تحليلات")}
-          </h3>
-          <ChevronDown
-            className={`h-4 w-4 text-neutral-400 transition-transform ${showAnalytics ? "rotate-0" : "-rotate-90"}`}
-          />
-        </button>
-        {showAnalytics && (
-          <div className="px-5 pb-5 space-y-5">
-            {/* Charts Row */}
-            <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-              {/* Sales Chart */}
-              <SalesChart salesData={salesData} t={t} i18nLanguage={i18n.language} />
-
-              {/* Order Distribution */}
-              <CategoryPieChart orderStatusDist={orderStatusDist} t={t} />
-            </div>
-
-            {/* Middle Row: Recent Sold Products + Top Products */}
-            <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-              {/* Recent Sold Products */}
-              <RecentSoldProducts orders={recentItems} t={t} />
-
-              {/* Top Products + Quick Actions */}
-              <div className="col-span-2 space-y-5">
-                {/* Top Products */}
-                <TopProductsList products={topProducts} t={t} />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      <AnalyticsSection
+        showAnalytics={showAnalytics}
+        onToggle={() => setShowAnalytics((v) => !v)}
+        salesData={salesData}
+        orderStatusDist={orderStatusDist}
+        recentItems={recentItems}
+        topProducts={topProducts}
+        t={t}
+        i18nLanguage={i18n.language}
+      />
 
       {/* ── AI Greeting — compact ──────────────────────────────────── */}
       {aiGreeting && <AiGreetingCard greeting={aiGreeting} t={t} />}
