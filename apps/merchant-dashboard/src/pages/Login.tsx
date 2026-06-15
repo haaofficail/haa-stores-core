@@ -4,11 +4,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { ApiClientError } from '@/lib/api';
 import { toast } from 'sonner';
-import { Sparkles, Store } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+import OperationFeed from '@/components/OperationFeed';
 
 export default function Login() {
   const { t } = useTranslation();
@@ -63,57 +63,93 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-primary-50/30 p-4">
-      <div className={`transition-all duration-700 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-lg shadow-primary-200 mb-4 transition-transform duration-500 hover:scale-105">
-            <Store className="h-8 w-8" />
-          </div>
-          <h1 className="text-3xl font-bold text-neutral-900 mb-1">{t('auth.welcomeBrand')}</h1>
-          <p className="text-neutral-400">{t('auth.welcomeSubtitle')}</p>
-        </div>
+    <div
+      dir="rtl"
+      style={{
+        '--haa-primary-50': '#eef5fc',
+        '--haa-primary-100': '#d4e8fa',
+        '--haa-primary-500': '#58a1e2',
+        '--haa-primary-600': '#3d8ad4',
+        '--haa-primary-700': '#2a6fb8',
+      } as React.CSSProperties}
+      className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50/30 p-6"
+    >
+      <div className={`mx-auto flex min-h-screen max-w-7xl items-center justify-center transition-all duration-700 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div className="grid w-full items-stretch gap-8 lg:grid-cols-5 lg:gap-12">
 
-        <Card className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden w-full max-w-md">
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-xl text-neutral-900">{t('auth.welcomeBack')}</CardTitle>
-            <CardDescription className="text-neutral-400">{t('auth.loginToDashboard')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm text-neutral-900">{t('auth.email')}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  dir="ltr"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-9 text-sm rounded-xl border border-neutral-200 transition-shadow focus:shadow-md"
-                />
+          {/* Right Side — Brand + Form stacked */}
+          <div className="flex flex-col justify-center gap-6 lg:col-span-2">
+            <div className="flex flex-col items-center gap-0">
+              <div className="flex items-center gap-2.5">
+                <img src="/haa-logo.png" alt="Haa" className="h-20 w-auto" />
+                <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900">متاجر هاء</h1>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm text-neutral-900">{t('auth.password')}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  dir="ltr"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="h-9 text-sm rounded-xl border border-neutral-200 transition-shadow focus:shadow-md"
-                />
-              </div>
-              <Button type="submit" className="h-9 text-sm px-4 w-full transition-all hover:shadow-lg" disabled={loading}>
-                {loading ? t('auth.loggingIn') : t('auth.loginButton')}
-              </Button>
-            </form>
-            <div className="flex items-center justify-center gap-2 mt-6 text-xs text-neutral-400">
-              <Sparkles className="h-3 w-3" />
-              <span>{t('auth.aiPowered')}</span>
+              <p className="-mt-1 text-xs leading-relaxed text-neutral-500">منصة التجارة الإلكترونية الأسهل للمتاجر السعودية</p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="mx-auto w-full max-w-xs rounded-2xl border border-neutral-100 bg-white p-6 shadow-lg">
+              <div className="w-full">
+                <div className="text-center">
+                  <h2 className="text-xl font-bold text-neutral-900">مرحبًا بعودتك</h2>
+                  <p className="mt-1 text-xs text-neutral-400">سجل دخولك للوحة التحكم</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="mt-6 space-y-3.5">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-sm font-medium text-neutral-900">البريد الإلكتروني</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      dir="ltr"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="h-10 text-sm rounded-xl border border-neutral-200 bg-neutral-50/50 transition-all focus:shadow-md focus:bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="password" className="text-sm font-medium text-neutral-900">كلمة المرور</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      dir="ltr"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="h-10 text-sm rounded-xl border border-neutral-200 bg-neutral-50/50 transition-all focus:shadow-md focus:bg-white"
+                    />
+                  </div>
+                  <Button type="submit" className="h-10 text-sm px-4 w-full rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold transition-all hover:from-primary-600 hover:to-primary-700 hover:shadow-lg" disabled={loading}>
+                    {loading ? 'جاري الدخول...' : 'دخول'}
+                  </Button>
+                </form>
+
+                <div className="mt-5 text-center">
+                  <p className="text-xs text-neutral-400 mb-2.5">ليس لديك حساب؟</p>
+                  <Link
+                    to="https://haa.store/signup"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 px-6 text-sm font-semibold text-white shadow-lg shadow-primary-500/25 transition-all hover:scale-[1.02] hover:shadow-xl"
+                  >
+                    سجّل كتاجر جديد
+                  </Link>
+                </div>
+
+                <div className="flex items-center justify-center gap-2 mt-8 text-xs text-neutral-400">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>مدعوم بالذكاء الاصطناعي</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Left Side — Operations (3/5) */}
+          <div className="flex flex-col lg:col-span-3">
+            <div className="w-full pt-[120px]">
+              <OperationFeed />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
