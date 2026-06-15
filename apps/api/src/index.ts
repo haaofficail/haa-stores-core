@@ -11,6 +11,7 @@ import { env } from './env.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import { errorHandler } from './middleware/error-handler.js';
+import { initObservability } from './services/observability.js';
 import { securityHeaders } from './middleware/security-headers.js';
 import { csrfOrigin } from './middleware/csrf-origin.js';
 import { requestId } from './middleware/request-id.js';
@@ -88,6 +89,11 @@ app.use('*', cors({
 app.use('*', csrfOrigin());
 
 app.onError(errorHandler);
+
+// Wire observability (Sentry if SENTRY_DSN set + @sentry/node installed,
+// noop otherwise). Must happen after `app.onError` so unhandled errors
+// routed through the handler are captured.
+initObservability();
 
 const storefrontBrowseRateLimit = rateLimiter({
   windowMs: 10 * 60 * 1000,

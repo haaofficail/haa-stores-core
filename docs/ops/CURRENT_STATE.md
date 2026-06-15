@@ -5,7 +5,7 @@
 ---
 
 - **Last Updated:** 2026-06-15
-- **Current Phase:** Quality Pass 4 — Operations & Quality (in progress; 1/N sub-items done — CI/CD pipeline shipped)
+- **Current Phase:** Quality Pass 4 — Operations & Quality (in progress; 3/3 specified sub-items done — CI/CD + observability + Redis rate-limiter shipped)
 - **Project Summary:** Multi-tenant Saudi e-commerce SaaS platform. Local-only. All 10 phases complete. Deployment gated by owner GO.
 - **Strategic Commitment:** `docs/ops/COMMITMENTS.md` is now active and binding — **Quality Pass 1-5 before any major Feature Pass**.
 - **Active Priorities:**
@@ -43,6 +43,9 @@
   - **Quality Pass 3 — Item 4 (Deeper RBAC Review) ✅ DONE** — added `tests/rbac-coverage.test.ts` which scans every file in `apps/api/src/routes/` and asserts (a) every mutating route (POST/PUT/PATCH/DELETE) calls `requireAuth` (inline or file-level `use`), (b) every store-scoped mutating route also calls `requireStoreAccess`, (c) every mutating route has a `requirePermission` or `requireAnyPermission` guard. Intentionally-public routes are in a `DENY_LIST` (pre-auth, webhooks with signature, storefront public, etc.). The RBAC framework is solid (38+ routes already protected); the test codifies the contract to prevent future regressions. 4/4 new tests pass; negative test confirmed the test catches violations. 0 regressions on full suite (1891 passing; the 70+ pre-existing failures are in the users TASK-0027 luxury-showcase working tree, unrelated to this commit). 🆕
   - **Quality Pass 3 — 4/4 SPECIFIED SUB-ITEMS COMPLETE → CLOSED. Quality Pass 4 STARTED.**
   - **Quality Pass 4 — Item 1 (CI/CD Pipeline) ✅ DONE** — created `.github/workflows/ci.yml` (158 lines, 4 parallel jobs: preflight, typecheck, lint, test). Triggers on `push` to main + `quality-pass-*` branches and on `pull_request` to main. Node 20, pnpm 10, pnpm store cache, concurrency cancel-in-progress. TDD: 10/10 `tests/ci-cd-pipeline.test.ts` (RED → GREEN). Full suite: 1898/1902 passing (4 pre-existing baseline failures in TASK-0027 working tree, unrelated). 🆕
+  - **Quality Pass 4 — Item 2 (Observability / Sentry Wiring) ✅ DONE** — created `apps/api/src/services/observability.ts` (~115 LOC, noop-first shim). `initObservability()` wires an `ErrorMonitor` to the existing `error-handler.ts` interface. Sentry is loaded lazily (CommonJS `require` cast to a local `SentryShape` interface) so the package stays optional — dev/test/local runs without the dependency. If `SENTRY_DSN` is set + `@sentry/node` installed → Sentry monitor; otherwise noop. Wired into `apps/api/src/index.ts` after `app.onError`. 10/10 new tests pass; 0 regressions on full suite (1922 passing). 🆕
+  - **Quality Pass 4 — Item 3 (Redis Rate Limiter Production Wiring) ✅ DONE** — the production code was already there (`RedisAtomicRateLimiterStore` + factory reading `RATE_LIMIT_STORE`), but untested. Added `tests/redis-rate-limiter-wiring.test.ts` (14 source-grep tests) that asserts: atomic store exists, factory reads env, default `memory`, `REDIS_URL` required, X-RateLimit headers, 429 + RATE_LIMITED, store created once (not per-request), env.ts production defaults to `redis-atomic`. 14/14 new tests pass; 0 regressions on full suite (1922 passing). 🆕
+  - **Quality Pass 4 — 3/3 SPECIFIED SUB-ITEMS COMPLETE → core ops hardening shipped (CI + observability + Redis rate-limiter).**
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done
@@ -67,7 +70,7 @@
     - TASK-0023 (Demo Support KB Repair) — Done
     - TASK-0024 (Marketplace Product Detail Trust Section Density) — Done
     - TASK-0027 (Quality Pass 3 — Security & Permissions) — Done (4/4 specified sub-items: CSRF + webhook idempotency + audit depth + RBAC coverage)
-    - TASK-0028 (Quality Pass 4 — Operations & Quality, Item 1: CI/CD Pipeline) — In Progress (1/N sub-items: CI yml shipped)
+    - TASK-0028 (Quality Pass 4 — Operations & Quality) — In Progress (3/3 specified sub-items done: CI/CD pipeline + observability shim + Redis rate-limiter production wiring)
 - **Known Broken Areas:**
   - Storefront root `/` hardcoded to `/s/haa-demo` redirect — works after seed ✅
   - Registration creates stores as `draft` (intentional — merchant must publish from settings)
