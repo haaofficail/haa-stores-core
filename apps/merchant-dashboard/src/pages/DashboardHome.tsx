@@ -78,6 +78,7 @@ import { SubscriptionBadge } from "./dashboard/SubscriptionBadge";
 import { PrimaryKpiCards } from "./dashboard/PrimaryKpiCards";
 import { RecentActionableOrders, type ActionableOrder } from "./dashboard/RecentActionableOrders";
 import { StoreReadinessBanner } from "./dashboard/StoreReadinessBanner";
+import { LowStockList } from "./dashboard/LowStockList";
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
@@ -1638,54 +1639,12 @@ export default function DashboardHome() {
 
       {/* ── Low Stock (compact, max 3) ─────────────────────────────── */}
       {lowStock.length > 0 && (
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-card p-4 sm:p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-sm sm:text-base text-neutral-900 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
-              <span>{t("dashboard.lowStock", "مخزون منخفض")}</span>
-              <span className="text-[11px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">
-                {lowStock.length}
-              </span>
-            </h3>
-            {lowStock.length > 3 && (
-              <button
-                onClick={() => navigate("/products")}
-                className="text-xs font-bold text-blue-600"
-              >
-                {t("common.viewAll", "عرض الكل")}
-              </button>
-            )}
-          </div>
-          <div className="space-y-1.5">
-            {lowStock.slice(0, 3).map((p: any) => (
-              <div
-                key={p.id}
-                className="flex items-center justify-between p-2.5 rounded-xl border border-red-100 bg-red-50/50"
-              >
-                <span className="text-sm font-medium text-neutral-900 truncate flex-1 min-w-0">
-                  {p.name}
-                </span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-xs font-bold text-red-600 tabular-nums">
-                    {t("stock.pieces", "{{count}}").replace("{{count}}", String(p.stockQuantity))}
-                  </span>
-                  <button
-                    onClick={() =>
-                      handleStockUpdate(p.id, (p.stockQuantity || 0) + 1)
-                    }
-                    disabled={updatingStock === p.id}
-                    className="px-2 py-0.5 text-[11px] font-bold text-emerald-600 bg-white hover:bg-emerald-50 rounded-lg border border-emerald-200 transition-colors disabled:opacity-50"
-                  >
-                    +1
-                  </button>
-                  {updatingStock === p.id && (
-                    <span className="text-xs text-neutral-400">...</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <LowStockList
+          products={lowStock}
+          updatingStockId={updatingStock}
+          onUpdateStock={handleStockUpdate}
+          t={t}
+        />
       )}
 
       {/* Quick Actions */}
