@@ -28,7 +28,7 @@ const servicesReadme = resolve(servicesDir, 'README.md');
  *      shrinks as the migration progresses.
  */
 
-const MAX_EXISTING_ROUTE_VIOLATIONS = 22; // hard ceiling — must not grow
+const MAX_EXISTING_ROUTE_VIOLATIONS = 21; // hard ceiling — must not grow
 
 function read(p: string): string {
   return existsSync(p) ? readFileSync(p, 'utf-8') : '';
