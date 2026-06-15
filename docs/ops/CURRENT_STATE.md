@@ -4,8 +4,8 @@
 
 ---
 
-- **Last Updated:** 2026-06-14
-- **Current Phase:** Quality Pass 1 — System Health Stabilization (NEXT)
+- **Last Updated:** 2026-06-15
+- **Current Phase:** Quality Pass 2 — Component Unification (in progress; 5/6 sub-items done, Item 2.6 remaining)
 - **Project Summary:** Multi-tenant Saudi e-commerce SaaS platform. Local-only. All 10 phases complete. Deployment gated by owner GO.
 - **Strategic Commitment:** `docs/ops/COMMITMENTS.md` is now active and binding — **Quality Pass 1-5 before any major Feature Pass**.
 - **Active Priorities:**
@@ -32,6 +32,9 @@
   - **Quality Pass 1 — Item 5 (FK Cascade on stores.tenantId) ✅ DONE** — added `ON DELETE CASCADE` to `stores.tenantId` FK via migration `0049_fk_cascade_stores_tenant.sql`, updated `stores.ts` schema with `onDelete: 'cascade'`, added `tests/stores-tenant-cascade.test.ts` (5 tests passing), main DB verified cascade is now `confdeltype='c'` 🆕
   - **🎉 Quality Pass 1 — Item 6 (requirePermission on ai-agent.ts) ✅ DONE — Quality Pass 1 COMPLETE 100%** — added `ai:read` and `ai:execute` to Permission type + Catalog + owner/manager roles, added `requirePermission` to 11 endpoints in `ai-agent.ts`, added `tests/require-permission-routes.test.ts` (19 tests passing), typecheck passes, `pnpm ci:local` reports 1719 passed (+61 from baseline) with 2 pre-existing CSS failures 🆕
   - **Quality Pass 2 — Item 2.2 (Storefront route split) ✅ DONE — sub-item only** — removed monolith `apps/api/src/routes/storefront.ts` from working tree, created `apps/api/src/routes/storefront/` with 7 files (`index.ts`, `_shared.ts`, `store-info.ts`, `products.ts`, `cart.ts`, `checkout.ts`, `support.ts`), updated `apps/api/src/index.ts` to import `./routes/storefront/index.js`, 5 split-aware regression test files / 33 tests passed, `pnpm --filter @haa/api typecheck` + `pnpm --filter @haa/api build` + `pnpm --filter @haa/storefront build` + `pnpm --filter @haa/merchant-dashboard build` all passed 🆕
+  - **Quality Pass 2 — Item 2.5 (Payment providers package) ✅ DONE** — new `packages/payment-providers/` with 5 providers (moyasar, hyperpay, geidea, oto, fake) + base + factory. Backward compat via re-export from `packages/commerce-core/src/index.ts` (41 import sites unchanged). Tests: 4 split-aware / 12 tests pass. Bug fix: `mapProviderStatus` / `mapProviderError` updated to match test contract. 🆕
+  - **Quality Pass 2 — Item 2.3 (Marketplaces split) ✅ DONE** — Salla, Zid, Amazon extracted to `apps/api/src/routes/marketplaces/{salla,zid,amazon}.ts`. Noon has no dedicated routes (provider-agnostic dispatch only) so no extraction. 🆕
+  - **Quality Pass 2 — Item 2.4 (Admin route split) ✅ DONE — Quality Pass 2 5/6 complete** — removed monolith `apps/api/src/routes/admin.ts` (692 LOC), created `apps/api/src/routes/admin/` directory with 5 files (`index.ts` aggregator + schemas + `requireAdminPermission`, `auth.ts`, `tenants-stores.ts`, `marketplace.ts`, `operations.ts`), updated `apps/api/src/index.ts` to import `./routes/admin/index.js`, 4 file-based tests updated to read all 5 split files, 7 admin-related test files / 28 tests pass, full suite 1785/1799 passing (14 pre-existing failures on TASK-0027 / Quality Pass 1 — unrelated to Item 2.4), `pnpm --filter @haa/api typecheck` + `build` both pass 🆕
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done

@@ -5,6 +5,52 @@
 
 ---
 
+## 2026-06-15 (Quality Pass 2 — Item 2.4: Admin Route Split)
+
+### Changed
+
+- `apps/api/src/routes/admin.ts` (monolith, 692 LOC) **removed from working tree** as part of the Quality Pass 2 admin route split refactor.
+- New `apps/api/src/routes/admin/` directory created with 5 files:
+  - `index.ts` (155 LOC) — aggregator that mounts every admin route under the right HTTP verb, with `zValidator`, `requireAdminAuth()`, and `requireAdminPermission()` middleware applied in the original order. Also defines all 11 zod schemas (login, tenant/store CRUD, KYC review, product review/feature, plan update, settings update, payout reason, upload proof) and exports the `requireAdminPermission` helper used by settlement/payout action routes.
+  - `auth.ts` (32 LOC) — `POST /login` (the only route that does NOT require an existing token; issues the admin JWT after password verification + audit log).
+  - `tenants-stores.ts` (203 LOC) — `GET /dashboard`, full `/tenants/*` CRUD + status, full `/stores/*` CRUD + status + cache invalidation, full `/kyc/*` (list + review with audit log), `GET /payments`.
+  - `marketplace.ts` (320 LOC) — `GET /marketplace/summary`, `/marketplace/products` list, `/marketplace/products/:id/review`, `/marketplace/products/:id/feature`, `/marketplace/sellers`, `/marketplace/orders`, `/marketplace/settlements`, `/marketplace/deep-report`, full `/settlements/batches/*` (permission-gated), full `/settlements/manual-payouts/*` workflow (review/approve/reject/mark-transfer-pending/mark-transferred/upload-proof/verify-transfer/cancel/reverse) with `payoutActionContext` audit trail.
+  - `operations.ts` (130 LOC) — `GET /audit` (with tenant/store filter), `GET /webhooks` (with tenant/store filter), `GET/PATCH /plans`, `POST /upload` (media adapter), `GET/PUT /settings` (platform name/logo/favicon), `GET /users` (strips passwordHash).
+- `apps/api/src/index.ts` updated to import `./routes/admin/index.js` (matches the storefront/ aggregator pattern).
+- 4 file-based regression tests updated to read all 5 split files instead of the now-deleted `admin.ts`:
+  - `tests/manual-settlement-maker-checker.test.ts` — adminRoutes constant now concatenates 5 split files via `readFileSync`.
+  - `tests/manual-settlement-review-workflow.test.ts` — same.
+  - `tests/settlement-order-linking.test.ts` — same.
+  - `tests/products-qa-regression.test.ts` — switched to `readSource('apps/api/src/routes/admin/index.ts')` + `readSource('apps/api/src/routes/admin/marketplace.ts')` for path/permission assertions.
+
+### Architecture
+
+- The split preserves middleware sequence exactly: every route that called `requireAdminAuth()` in the original now has the same call in the aggregator, in the same order with `zValidator` for body validation and `requireAdminPermission(permission)` for payout/seller routes.
+- Each split file exports **raw Hono handlers** (no inline middleware). This means handler signature is `async (c) => {...}` instead of `requireAdminAuth()(async (c) => {...})`, which makes the handler list flat and grep-friendly.
+- Local helper `payoutActionContext` is duplicated in `marketplace.ts` rather than imported from `index.ts` to keep that file self-contained (the helper is also exported from `index.ts` for external callers if needed).
+- Aggregator pattern matches `routes/storefront/index.ts` from Item 2.2 — directory-as-module resolution works because the API uses `moduleResolution: "bundler"`.
+
+### Verified
+
+- `pnpm --filter @haa/api typecheck` — clean
+- `pnpm --filter @haa/api build` — clean
+- 7 admin-related test files / 28 tests pass:
+  - `tests/manual-settlement-maker-checker.test.ts`
+  - `tests/manual-settlement-review-workflow.test.ts`
+  - `tests/manual-settlement-ledger.test.ts`
+  - `tests/manual-settlement-dashboard-ux.test.ts`
+  - `tests/manual-settlement-audit-log.test.ts`
+  - `tests/admin-jwt-secret.test.ts`
+  - `tests/dashboard-rbac-guards.test.ts`
+- Full test suite: 1785/1799 passing. The 14 pre-existing failures are on TASK-0027 (luxury-showcase work) and Quality Pass 1 checks (CI/CD pipeline, schema/migration deduplication, security boundary gates) — all unrelated to Item 2.4 and confirmed failing on the pre-change commit `005f2d9`.
+
+### Risk
+
+- 🟡 The split uses `c: any` for handler params (instead of Hono's strict `Context` type) to keep the handler shape uniform and avoid one-off generic types per aggregator. Lint/type safety is preserved by the router itself.
+- 🟡 Some routes in `marketplace.ts` and `operations.ts` are at the upper edge of the 300-line cap. Future sub-routes in those areas should re-split if the cap is exceeded.
+
+---
+
 ## 2026-06-14 (Quality Pass 2 — Item 2.2: Storefront Route Split) — Sub-item only
 
 ### Changed

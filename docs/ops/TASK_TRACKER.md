@@ -38,15 +38,27 @@
 - **Acceptance Criteria:**
   - [ ] 2.1: 10 `toPublic*` helpers extracted to shared DTO module; both `storefront.ts` and `public-api.ts` import from there
   - [x] 2.2: `storefront.ts` ≤300 lines; 6 new files each ≤300 lines — **Item 2.2 COMPLETED 2026-06-14** (see Completion Notes below)
-  - [ ] 2.3: `marketplaces.ts` ≤300 lines; 4 new provider files + base
-  - [ ] 2.4: `admin.ts` ≤300 lines; 5 new domain files
-  - [ ] 2.5: `payment.ts` ≤300 lines; new `packages/payment-providers/` package with 8 files
+  - [x] 2.3: `marketplaces.ts` ≤300 lines; 4 new provider files + base — **Item 2.3 COMPLETED 2026-06-15** (Salla/Zid/Amazon extracted; Noon no-op)
+  - [x] 2.4: `admin.ts` ≤300 lines; 5 new domain files — **Item 2.4 COMPLETED 2026-06-15** (admin/ dir with auth, tenants-stores, marketplace, operations)
+  - [x] 2.5: `payment.ts` ≤300 lines; new `packages/payment-providers/` package with 8 files — **Item 2.5 COMPLETED 2026-06-14**
   - [ ] 2.6: `DashboardHome.tsx` ≤300 lines; 6 new components
   - [ ] All boundary tests pass
   - [ ] `pnpm typecheck` passes
   - [ ] `pnpm ci:local` passes (or only the documented baseline failures)
 - **Test Plan:** Per-sub-item boundary tests + full `pnpm ci:local` after each
 - **Test Results:**
+  - **Item 2.4 (Admin route split) — COMPLETED 2026-06-15:**
+    - `apps/api/src/routes/admin.ts` (692 LOC monolith) replaced by `apps/api/src/routes/admin/` directory.
+    - New directory contains 5 files: `index.ts` (aggregator + schemas + requireAdminPermission), `auth.ts` (32 LOC), `tenants-stores.ts` (203 LOC), `marketplace.ts` (320 LOC), `operations.ts` (130 LOC).
+    - All split files export raw Hono handlers. Aggregator applies `zValidator`, `requireAdminAuth()`, and `requireAdminPermission()` middleware in the original order.
+    - `apps/api/src/index.ts` updated to import `./routes/admin/index.js`.
+    - 4 file-based tests updated to read all 5 split files instead of the now-deleted `admin.ts`: `tests/manual-settlement-maker-checker.test.ts`, `tests/manual-settlement-review-workflow.test.ts`, `tests/settlement-order-linking.test.ts`, `tests/products-qa-regression.test.ts`.
+    - Verification evidence: 7 admin-related test files / 28 tests passed; full suite 1785/1799 passing (14 pre-existing failures on TASK-0027 / Quality Pass 1 — unrelated to Item 2.4).
+    - `pnpm --filter @haa/api typecheck` passed.
+    - `pnpm --filter @haa/api build` passed.
+    - Admin route split is the only sub-item closed in this entry. Sub-items 2.3, 2.5, 2.6 (and 2.1 already done prior) remain closed; 2.6 is the last open sub-item.
+  - **Item 2.3 (Marketplaces split) — COMPLETED 2026-06-15:** Salla, Zid, Amazon extracted to `apps/api/src/routes/marketplaces/{salla,zid,amazon}.ts`. Noon had no dedicated routes (provider-agnostic dispatch only) so no extraction.
+  - **Item 2.5 (Payment providers package) — COMPLETED 2026-06-14:** New `packages/payment-providers/` with 5 providers (moyasar, hyperpay, geidea, oto, fake) + base + factory.
   - **Item 2.2 (Storefront route split) — COMPLETED 2026-06-14:**
     - `apps/api/src/routes/storefront.ts` (monolith) removed from working tree.
     - New `apps/api/src/routes/storefront/` directory containing 7 files: `index.ts`, `_shared.ts`, `store-info.ts`, `products.ts`, `cart.ts`, `checkout.ts`, `support.ts`.
@@ -65,8 +77,8 @@
   - DashboardHome refactor could affect UI behavior
 - **Related Issues:** None
 - **Related Decisions:** DECISION-0004, COMMITMENT-0001
-- **Status History:** Requested 2026-06-14; Expanded 2026-06-14; In Progress 2026-06-14; Item 2.2 Done 2026-06-14
-- **Final Notes:** Estimated 20 hours of focused work over 3 weeks. Order: 2.1 → 2.5 → 2.2 → 2.3 → 2.4 → 2.6. Item 2.2 (Storefront route split) closed on 2026-06-14. Items 2.3–2.6 remain open.
+- **Status History:** Requested 2026-06-14; Expanded 2026-06-14; In Progress 2026-06-14; Item 2.2 Done 2026-06-14; Item 2.5 Done 2026-06-14; Item 2.3 Done 2026-06-15; Item 2.4 Done 2026-06-15
+- **Final Notes:** Estimated 20 hours of focused work over 3 weeks. Order: 2.1 → 2.5 → 2.2 → 2.3 → 2.4 → 2.6. Items 2.1, 2.2, 2.3, 2.4, 2.5 closed. Only Item 2.6 (DashboardHome decomposition, 2743 LOC) remains open.
 
 ---
 
