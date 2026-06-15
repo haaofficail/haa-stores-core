@@ -12,6 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import { errorHandler } from './middleware/error-handler.js';
 import { securityHeaders } from './middleware/security-headers.js';
+import { csrfOrigin } from './middleware/csrf-origin.js';
 import { requestId } from './middleware/request-id.js';
 import { structuredLogger } from './middleware/structured-logger.js';
 import { rateLimiter } from './middleware/rate-limiter.js';
@@ -79,6 +80,11 @@ app.use('*', cors({
   origin: env.CORS_ORIGINS,
   credentials: true,
 }));
+// CSRF defense-in-depth: reject mutating requests from origins not in
+// the allow-list. Mounted after CORS so we can rely on the same
+// env.CORS_ORIGINS list. Webhooks and server-to-server calls (no
+// Origin header) pass through automatically.
+app.use('*', csrfOrigin());
 
 app.onError(errorHandler);
 
