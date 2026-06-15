@@ -5,6 +5,43 @@
 
 ---
 
+## 2026-06-15 (Quality Pass 2 — Item 2.6: DashboardHome Decomposition, Partial)
+
+### Changed
+
+Decomposed `apps/merchant-dashboard/src/pages/DashboardHome.tsx` (2743 LOC) incrementally across 6 commits, each independently verified. Extracted 5 sub-components + 1 constants file to `apps/merchant-dashboard/src/pages/dashboard/`:
+
+- `constants.ts` (147 LOC) — pure helpers with no React/JSX dependencies: `CHART_COLORS`, `getRemainingDays`, `formatTimeAgo`, `getUpcomingSeason`, `orderStatusColors`, `arabicStatusLabels`, `arabicPaymentLabels`, `getNextActionLabel`. Arabic strings preserved exactly (including subtle spelling variants like مرتجع).
+- `StatsCards.tsx` (92 LOC) — the 5-tile extended KPI grid (total sales, orders, new orders, active products, wallet) with trend badges. Takes `stats: StatCardData[]` and `showOnMobile: boolean`. Pure presentational.
+- `SalesChart.tsx` (124 LOC) — AreaChart of last-30-days sales with localized tooltip and "no data" empty state. Takes `salesData`, `t`, `i18nLanguage`. Recharts `AreaChart` + `XAxis` + `YAxis` + `Tooltip` + `Area` imports moved here.
+- `CategoryPieChart.tsx` (98 LOC) — donut chart of order status distribution with top-5 legend. Takes `orderStatusDist` and `t`. Recharts `PieChart` + `Pie` + `Cell` imports moved here.
+- `NextActionBanner.tsx` (102 LOC) — Action Center strip (COD collection, ready to ship, ready for pickup, etc.) with mobile scroll + desktop grid. Takes `items: ActionCenterItem[]` and `t`. Owns its `useNavigate()`.
+- `DashboardHeader.tsx` (78 LOC) — top bar (mobile menu trigger, title, last-updated timestamp, notifications with red dot, refresh). Takes `t`, `visibleAlerts`, `onRefresh`.
+
+### Architecture
+
+- **Pattern:** Each extracted sub-component is a pure presentational React component that takes its data as props. State and side effects (API calls, navigate, toast) stay in `DashboardHome`. The orchestrator passes derived data + callbacks down.
+- **Type safety:** The shared types (`StatCardData`, `ActionCenterItem`) are exported from the sub-component files. The parent's `useMemo` literals are annotated to match, so TypeScript catches drift at compile time.
+- **No new dependencies.** No state management library, no context, no React.memo. Just plain props.
+
+### Scope decision (defer the rest)
+
+The remaining ~800 LOC of inline JSX is mixed (recent orders, low stock, customers, onboarding checklist, sales/pie charts already done, recent sold products, top products, wallet, brands, tags, categories, etc.). Each remaining block reads from a tangle of local state (recentOrders, recentItems, lowStock, recentCustomers, brands, tags, subscription, cats, marketplaceHub, etc.) and a single-session "extract all 6 at once" refactor would be high risk without visual QA between each block. The conservative approach is: extract one block per future commit with its own visual QA pass.
+
+### Verified (per commit, all 6)
+
+- `pnpm --filter @haa/merchant-dashboard typecheck` — clean
+- `pnpm --filter @haa/merchant-dashboard build` — clean (DashboardHome chunk size fluctuates ±0.5 kB, no bundle-size regression)
+- 3 dashboard test files / 144 tests pass
+
+### Risk
+
+- 🟢 Low. Each extraction is a self-contained JSX block with the same data flow. The orchestrator is unchanged in structure. The remaining inline sections (recent orders, etc.) are not affected by the extractions.
+- 🟡 The "red dot on bell" was the only behavioral logic that moved into a sub-component (computed inside `DashboardHeader` from the `visibleAlerts` prop). The parent still passes the same data, and the count condition (`type === "danger" || type === "warning"`) is preserved exactly.
+- 🟡 Several unused imports (lucide icons, recharts) were removed from `DashboardHome` after each extraction. If any are re-added in the future, they will need to be re-imported.
+
+---
+
 ## 2026-06-15 (Quality Pass 2 — Item 2.4: Admin Route Split)
 
 ### Changed
