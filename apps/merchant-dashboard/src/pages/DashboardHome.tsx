@@ -44,7 +44,6 @@ import {
   Wallet,
   Tag,
   Layers,
-  RotateCw,
   ImageIcon,
   ArrowUpRight,
   Crown,
@@ -61,7 +60,6 @@ import {
   Truck,
   Users,
   ChevronDown,
-  Menu,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -79,6 +77,7 @@ import { StatsCards, type StatCardData } from "./dashboard/StatsCards";
 import { SalesChart } from "./dashboard/SalesChart";
 import { CategoryPieChart } from "./dashboard/CategoryPieChart";
 import { NextActionBanner, type ActionCenterItem } from "./dashboard/NextActionBanner";
+import { DashboardHeader } from "./dashboard/DashboardHeader";
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
@@ -1490,45 +1489,11 @@ export default function DashboardHome() {
   return (
     <div className="space-y-3 sm:space-y-4 max-w-7xl mx-auto animate-fade-in px-3 sm:px-4 md:px-6">
       {/* ── Header ──────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <button
-            type="button"
-            className="lg:hidden p-2 -ml-2 rounded-xl hover:bg-neutral-100 transition-colors shrink-0"
-            onClick={() => {/* sidebar toggle handled by layout */}}
-          >
-            <Menu className="h-5 w-5 text-neutral-700" />
-          </button>
-          <div className="min-w-0">
-            <h1 className="text-lg sm:text-xl font-bold text-neutral-900 truncate">
-              {t("dashboard.title", "لوحة التحكم")}
-            </h1>
-            <p className="text-xs text-neutral-400 truncate">
-              {formatTimeAgo(t, new Date())}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            className="p-2 rounded-xl hover:bg-neutral-100 transition-colors relative"
-            title={t("common.notifications", "الإشعارات")}
-          >
-            <Bell className="h-5 w-5 text-neutral-600" />
-            {visibleAlerts.filter((a) => a.type === "danger" || a.type === "warning").length > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
-            )}
-          </button>
-          <button
-            type="button"
-            className="p-2 rounded-xl hover:bg-neutral-100 transition-colors"
-            onClick={() => setRefreshKey((k) => k + 1)}
-            title={t("common.refresh", "تحديث")}
-          >
-            <RotateCw className="h-4 w-4 text-neutral-600" />
-          </button>
-        </div>
-      </div>
+      <DashboardHeader
+        t={t}
+        visibleAlerts={visibleAlerts}
+        onRefresh={() => setRefreshKey((k) => k + 1)}
+      />
 
       {/* ── Subscription badge (mobile-compact) ──────────────────── */}
       {subscription && (
