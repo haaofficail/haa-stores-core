@@ -77,6 +77,7 @@ import { StoreReadinessBanner } from "./dashboard/StoreReadinessBanner";
 import { LowStockList } from "./dashboard/LowStockList";
 import { RecentSoldProducts } from "./dashboard/RecentSoldProducts";
 import { AiGreetingCard } from "./dashboard/AiGreetingCard";
+import { RecentCustomersList } from "./dashboard/RecentCustomersList";
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
@@ -1835,70 +1836,7 @@ export default function DashboardHome() {
         {showMore && (
           <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-4">
             {/* ── Recent Customers ────────────────────────────────── */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-card overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100">
-                <h3 className="font-bold text-sm text-neutral-900">
-                  {t("dashboard.recentCustomers", "آخر العملاء")}
-                </h3>
-                <button
-                  className="text-xs text-blue-600 hover:text-blue-700 font-bold"
-                  onClick={() => navigate("/customers")}
-                >
-                  {t("common.viewAll", "عرض الكل")}
-                </button>
-              </div>
-              <div className="p-3">
-                {recentCustomers.length === 0 ? (
-                  <div className="text-center py-4">
-                    <div className="inline-flex p-2 rounded-xl bg-neutral-100 mb-1.5">
-                      <ShoppingCart className="h-5 w-5 text-neutral-400" />
-                    </div>
-                    <p className="text-xs text-neutral-500">
-                      {t("dashboard.noCustomers", "لا يوجد عملاء")}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    {recentCustomers.slice(0, 5).map((c: any) => (
-                      <div
-                        key={c.id}
-                        className="flex items-center justify-between p-2 rounded-xl border border-neutral-100"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-indigo-400 to-indigo-600 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
-                            {c.name?.charAt(0) || "?"}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold text-neutral-900 truncate">
-                              {c.name}
-                            </p>
-                            <p className="text-[11px] text-neutral-400 truncate dir-ltr text-left">
-                              {c.phone || c.email || "—"}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <span className="text-[11px] text-neutral-400">
-                            {c.totalOrders || 0}
-                          </span>
-                          {c.phone && (
-                            <a
-                              href={`tel:${c.phone}`}
-                              className="p-0.5 text-blue-500"
-                              title={t("common.call", "اتصال")}
-                            >
-                              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                              </svg>
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            <RecentCustomersList customers={recentCustomers} t={t} />
 
             {/* ── Quick Stats (zero-value items hidden) ──────────── */}
             <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-card p-4">
