@@ -9,17 +9,20 @@ import { SallaService, ZidService, NoonService, AmazonService } from '@haa/marke
 import type { ProviderCode, ChannelOrder } from '@haa/marketplace-core';
 import { sallaRouter } from './marketplaces/salla.js';
 import { zidRouter } from './marketplaces/zid.js';
+import { amazonRouter } from './marketplaces/amazon.js';
 
 const marketplacesRouter = new Hono();
 
 marketplacesRouter.use('*', requireAuth(), requireStoreAccess());
 
-// Mount provider-specific sub-routers (extracted in Quality Pass 2 — Items 2.3/2.3b).
-// Salla's and Zid's OAuth routes are kept here so the rest of the file
-// (provider-agnostic routes) can dispatch to any service via
-// getProviderService(:provider, storeId).
+// Mount provider-specific sub-routers (extracted in Quality Pass 2 — Items 2.3/2.3b/2.3d).
+// Salla, Zid, and Amazon have dedicated OAuth flows; Noon uses the
+// generic /:provider/... dispatch routes so it does not need its
+// own sub-router. The provider-agnostic routes below dispatch to
+// any service via getProviderService(:provider, storeId).
 marketplacesRouter.route('/salla', sallaRouter);
 marketplacesRouter.route('/zid', zidRouter);
+marketplacesRouter.route('/amazon', amazonRouter);
 
 const codes = ['salla', 'zid', 'noon', 'amazon'] as const;
 
@@ -97,29 +100,8 @@ marketplacesRouter.get('/', requirePermission('settings:read'), async (c) => {
   return c.json({ success: true, data: providers });
 });
 
-marketplacesRouter.get('/amazon/oauth/url', requirePermission('settings:update'), async (c) => {
-  const storeId = Number(c.req.param('storeId'));
-  const state = crypto.randomUUID();
-  const url = getAmazonService(storeId).getOAuthUrl(state);
-  return c.json({ success: true, data: { url, state } });
-});
-
-marketplacesRouter.get('/amazon/oauth/callback', async (c) => {
-  const storeId = Number(c.req.param('storeId'));
-  const code = c.req.query('code');
-  const marketplaceId = c.req.query('marketplaceId') || 'sa';
-
-  if (!code) {
-    return c.json({ success: false, error: { code: 'MISSING_CODE', message: 'Authorization code is required' } }, 400);
-  }
-
-  try {
-    const result = await getAmazonService(storeId).handleCallback(code, marketplaceId);
-    return c.redirect(`/channels/amazon?connected=true`);
-  } catch (error) {
-    return c.redirect(`/channels/amazon?error=${encodeURIComponent((error as Error).message)}`);
-  }
-});
+// Amazon OAuth routes (GET /amazon/oauth/url, GET /amazon/oauth/callback)
+// moved to ./marketplaces/amazon.ts (Item 2.3d).
 
 marketplacesRouter.post(
   '/:provider/connect',
