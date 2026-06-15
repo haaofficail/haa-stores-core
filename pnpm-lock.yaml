@@ -410,6 +410,9 @@ importers:
       '@haa/notification-core':
         specifier: workspace:*
         version: link:../notification-core
+      '@haa/payment-providers':
+        specifier: workspace:*
+        version: link:../payment-providers
       '@haa/shared':
         specifier: workspace:*
         version: link:../shared
@@ -516,6 +519,25 @@ importers:
     devDependencies:
       '@types/node':
         specifier: ^20.14.12
+        version: 20.19.42
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.3
+
+  packages/payment-providers:
+    dependencies:
+      '@haa/db':
+        specifier: workspace:*
+        version: link:../db
+      '@haa/shared':
+        specifier: workspace:*
+        version: link:../shared
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(postgres@3.4.9)
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.0
         version: 20.19.42
       typescript:
         specifier: ^5.5.4

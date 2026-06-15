@@ -76,7 +76,15 @@ export default function LuxuryShowcaseFooter() {
 
           <div className="flex flex-col items-center md:items-end gap-1">
             <p className="text-[11px] font-light" style={{ color: 'var(--lux-muted, #756B61)' }}>
-              &copy; {new Date().getFullYear()} {store.name} — {t('footer.poweredBy', 'هاء متاجر')}
+              &copy; {new Date().getFullYear()} {store.name} —{' '}
+              <Link
+                to="/signup"
+                className="underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)] rounded-sm"
+                style={{ color: 'var(--lux-primary, #B88A3D)' }}
+                aria-label={t('footer.poweredBy', 'هاء متاجر') + ' — ' + t('store.buildYourStore', 'ابنِ متجرك')}
+              >
+                {t('footer.poweredBy', 'هاء متاجر')}
+              </Link>
             </p>
           </div>
         </div>

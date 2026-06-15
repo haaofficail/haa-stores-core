@@ -66,6 +66,7 @@ export function LuxuryProductGallery({ product }: { product: AnyRecord }) {
               alt={product?.nameAr || product?.name || 'صورة المنتج'}
               className="relative z-10 max-h-[85%] max-w-[90%] object-contain lg:max-h-[88%] lg:max-w-[88%]"
               loading="eager"
+              decoding="sync"
             />
           ) : (
             <div className="relative z-10 flex w-full flex-col items-center justify-center">
@@ -121,7 +122,7 @@ export function LuxuryProductGallery({ product }: { product: AnyRecord }) {
                 }}
                 aria-label={`عرض الصورة ${index + 1}`}
               >
-                <img src={image} alt="" className="h-full w-full object-cover" loading={index === 0 ? 'eager' : 'lazy'} />
+                <img src={image} alt="" className="h-full w-full object-cover" loading={index === 0 ? 'eager' : 'lazy'} decoding={index === 0 ? 'sync' : 'async'} />
               </button>
             );
           })}

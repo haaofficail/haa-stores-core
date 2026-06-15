@@ -57,6 +57,7 @@ import { feedsRouter } from './routes/feeds.js';
 import { aiRouter } from './routes/ai-agent.js';
 import { marketplacesRouter } from './routes/marketplaces.js';
 import { haaMarketplaceRouter } from './routes/haa-marketplace.js';
+import { createLandingAIAgentRoute } from './routes/landing-ai-agent.js';
 import { paymentSettingsRouter } from './routes/payment-settings.js';
 import { providerStatusRouter } from './routes/provider-status.js';
 import { supportRouter } from './routes/support.js';
@@ -250,6 +251,7 @@ app.use('/marketplace*', async (c, next) => {
 // Storefront API routes (JSON responses)
 app.route('/s', storefrontRouter);
 app.route('/marketplace', haaMarketplaceRouter);
+app.route('/api/landing-ai-agent', createLandingAIAgentRoute());
 app.route('/merchant/:storeId/shipments', shipmentsRouter);
 app.route('/webhooks/shipping', shippingWebhooksRouter);
 app.route('/webhooks/oto', otoWebhookRouter);

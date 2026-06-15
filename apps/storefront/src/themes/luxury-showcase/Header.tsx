@@ -1,6 +1,6 @@
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ShoppingCart, Menu, X, Search, Package } from 'lucide-react';
+import { ShoppingCart, Menu, X, Search, Package, Store } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useStore } from '@/hooks/useStore';
 import { useStorefrontTheme } from '@/hooks/useTheme';
@@ -77,7 +77,6 @@ export default function LuxuryShowcaseHeader() {
   const navLinks = [
     { to: `/s/${slug}`, label: t('store.home') },
     { to: `/s/${slug}/c/all`, label: t('store.allCategories') },
-    { to: `/s/${slug}/c/all`, label: t('store.categories', 'التصنيفات') },
     { to: `/s/${slug}/about`, label: t('store.about') },
     { to: `/s/${slug}/contact`, label: t('store.contact') },
     { to: `/s/${slug}/support`, label: t('support.title', 'الدعم الفني') },
@@ -185,6 +184,25 @@ export default function LuxuryShowcaseHeader() {
                 aria-label={t('store.trackOrder', 'تتبع الطلب')}
               >
                 <Package className="w-3.5 h-3.5" strokeWidth={ICON_STROKE} />
+              </Link>
+              <Link
+                to="/signup"
+                className="md:hidden min-w-[40px] min-h-[40px] inline-flex items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--primary)]"
+                style={{ color: 'var(--lux-primary, #B88A3D)' }}
+                title={t('store.buildYourStore', 'ابنِ متجرك')}
+                aria-label={t('store.buildYourStore', 'ابنِ متجرك')}
+              >
+                <Store className="w-4 h-4" strokeWidth={ICON_STROKE} />
+              </Link>
+              <Link
+                to="/signup"
+                className="hidden md:inline-flex min-h-[32px] items-center gap-1.5 px-3 text-[10px] font-light tracking-[0.12em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--primary)] rounded-sm whitespace-nowrap"
+                style={{ backgroundColor: 'var(--lux-primary, #B88A3D)', color: '#FFFFFF' }}
+                title={t('store.buildYourStore', 'ابنِ متجرك')}
+                aria-label={t('store.buildYourStore', 'ابنِ متجرك')}
+              >
+                <Store className="w-3 h-3" strokeWidth={ICON_STROKE} />
+                <span>{t('store.buildYourStore', 'ابنِ متجرك')}</span>
               </Link>
               <Link
                 to={`/s/${slug}/cart`}

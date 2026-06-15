@@ -92,6 +92,9 @@ export default function HeroSlider({ slides, slug }: { slides: Slide[]; slug: st
                       src={slide.imageUrl}
                       alt={slide.title || ''}
                       className="absolute inset-0 h-full w-full object-cover"
+                      loading="eager"
+                      decoding="sync"
+                      fetchPriority="high"
                     />
                   </picture>
                 )}
@@ -108,7 +111,14 @@ export default function HeroSlider({ slides, slug }: { slides: Slide[]; slug: st
                     </p>
                   )}
                   {slide.buttonText && (
-                    <span className="inline-flex min-h-[44px] w-max items-center justify-center border border-white/40 px-6 text-xs font-light uppercase tracking-[0.15em] text-white transition hover:bg-[var(--surface-1)]/10">
+                    <span
+                      className="inline-flex min-h-[44px] w-max items-center justify-center px-6 text-xs font-light uppercase tracking-[0.15em] transition hover:opacity-90"
+                      style={{
+                        backgroundColor: 'var(--lux-primary, #B88A3D)',
+                        color: '#FFFFFF',
+                        border: '1px solid var(--lux-primary, #B88A3D)',
+                      }}
+                    >
                       {slide.buttonText}
                     </span>
                   )}

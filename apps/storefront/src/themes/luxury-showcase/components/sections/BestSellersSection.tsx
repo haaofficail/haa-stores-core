@@ -23,13 +23,25 @@ export default function BestSellersSection({
   if (active.length === 0) return null;
 
   return (
-    <section className={`${LUXURY_THEME_CLASS} py-4 sm:py-5`} style={{ backgroundColor: 'var(--lux-bg, #FAF7F1)' }}>
+    <section className={`${LUXURY_THEME_CLASS} py-12 sm:py-14 lg:py-16`} style={{ backgroundColor: 'var(--lux-bg, #FAF7F1)' }}>
       <div className="mx-auto max-w-[var(--container-max-width,1440px)] px-4 sm:px-6 lg:px-8">
-        <div className="mb-5 text-center">
-          <h2 className="text-lg font-light sm:text-xl" style={{ color: 'var(--lux-text, #2B2520)' }}>
+        <div className="mb-10 text-center sm:mb-12">
+          <p
+            className="mb-3 text-[10px] font-light uppercase tracking-[0.32em]"
+            style={{ color: 'var(--lux-primary, #B88A3D)' }}
+          >
+            Most loved
+          </p>
+          <h2
+            className="text-[clamp(22px,3vw,36px)] font-light leading-tight tracking-[-0.01em]"
+            style={{
+              color: 'var(--lux-text, #2B2520)',
+              fontFamily: 'theme-serif, "IBM Plex Sans Arabic", serif',
+            }}
+          >
             {title || t('home.bestSellers', 'الأكثر مبيعاً')}
           </h2>
-          <div className="mx-auto mt-2 h-px w-8" style={{ backgroundColor: 'var(--lux-primary, #B88A3D)' }} />
+          <div className="mx-auto mt-3 h-px w-10" style={{ backgroundColor: 'var(--lux-primary, #B88A3D)' }} />
         </div>
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {active.map((product: any) => (

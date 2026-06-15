@@ -44,7 +44,7 @@ export default function LuxuryThreeColumnBanners({
               style={{ minHeight: 'clamp(160px, 24vw, 280px)', backgroundColor: 'var(--lux-image-frame, #F7EFE6)' }}
             >
               {hasImage ? (
-                <img src={b.imageUrl} alt={b.title || ''} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                <img src={b.imageUrl} alt={b.title || ''} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" />
               ) : (
                 <div className="absolute inset-0">
                   <LuxuryImageFallback aspectRatio="auto" className="w-full h-full" icon={['star', 'perfume', 'gift'][i] as any} />

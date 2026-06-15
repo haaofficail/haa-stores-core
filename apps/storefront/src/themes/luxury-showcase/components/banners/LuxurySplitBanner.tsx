@@ -39,7 +39,7 @@ export default function LuxurySplitBanner({
       <div className={`mx-auto flex max-w-[var(--container-max-width,1440px)] flex-col ${reversed ? 'lg:flex-row-reverse' : 'lg:flex-row'} px-4 sm:px-6 lg:px-8`}>
         <div className="flex items-center justify-center lg:w-1/2" style={{ minHeight: 'clamp(280px, 35vw, 400px)' }}>
           {imageUrl ? (
-            <img src={imageUrl} alt={title} className="h-full w-full object-cover" />
+            <img src={imageUrl} alt={title} className="h-full w-full object-cover" loading="lazy" decoding="async" />
           ) : (
             <LuxuryImageFallback aspectRatio="4/3" className="w-full" icon="star" />
           )}

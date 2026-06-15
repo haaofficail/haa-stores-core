@@ -44,7 +44,7 @@ export default function LuxuryTwoColumnBanners({
               style={{ minHeight: 'clamp(180px, 28vw, 320px)', backgroundColor: 'var(--lux-image-frame, #F7EFE6)' }}
             >
               {hasImage ? (
-                <img src={b.imageUrl} alt={b.title || ''} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                <img src={b.imageUrl} alt={b.title || ''} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" />
               ) : (
                 <div className="absolute inset-0">
                   <LuxuryImageFallback aspectRatio="auto" className="w-full h-full" icon={i === 0 ? 'star' : 'perfume'} />

@@ -70,7 +70,7 @@ export default function LuxuryProductCard({
       >
         <div className="flex h-14 w-14 shrink-0 items-center justify-center sm:h-16 sm:w-16" style={{ backgroundColor: 'var(--lux-bg, #FAF7F1)', borderRadius: '4px' }}>
           {hasImage ? (
-            <img width={160} height={160} src={firstImage} alt={name} className="h-full w-full object-contain p-2" onError={() => setImgError(true)} />
+            <img width={160} height={160} src={firstImage} alt={name} className="h-full w-full object-contain p-2" loading="lazy" decoding="async" onError={() => setImgError(true)} />
           ) : (
             <LuxuryImageFallback aspectRatio="1/1" className="w-full h-full" />
           )}
@@ -106,6 +106,8 @@ export default function LuxuryProductCard({
             src={firstImage} alt={name}
             className="w-full object-contain transition-transform duration-500 group-hover:scale-105"
             style={{ aspectRatio: '1 / 1' }}
+            loading="lazy"
+            decoding="async"
             onError={() => setImgError(true)}
           />
         ) : (

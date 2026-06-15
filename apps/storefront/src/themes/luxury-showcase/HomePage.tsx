@@ -14,6 +14,7 @@ import BestSellersSection from './components/sections/BestSellersSection';
 import BrandStorySection from './components/sections/BrandStorySection';
 import TrustRowSection from './components/sections/TrustRowSection';
 import NewsletterSection from './components/sections/NewsletterSection';
+import JournalSection from './components/sections/JournalSection';
 
 function getCollectionsFromCategories(categories: any[]): { name: string; description?: string; imageUrl?: string; slug?: string }[] {
   return categories.slice(0, 4).map((c: any) => ({
@@ -182,6 +183,9 @@ export default function LuxuryShowcaseHomePage(props: HomePageProps) {
 
       {/* Trust Row */}
       <TrustRowSection />
+
+      {/* Journal / Stories */}
+      <JournalSection />
 
       {/* Newsletter */}
       <NewsletterSection />

@@ -81,7 +81,7 @@ export default function Layout() {
     <StoreProvider slug={slug}>
       <CartProvider slug={slug}>
         <ThemeProvider value={effectiveConfig}>
-          <div className="min-h-screen flex flex-col" id="storefront-scope" data-theme-scope="storefront" data-storefront-theme={runtimeKey}>
+          <div className="min-h-screen flex flex-col overflow-x-hidden" id="storefront-scope" data-theme-scope="storefront" data-storefront-theme={runtimeKey}>
             {RuntimeHeader ? <RuntimeHeader /> : <Header />}
             <main className="flex-1">
               <Outlet />

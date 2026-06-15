@@ -47,15 +47,47 @@ export const luxuryTokens = {
     cardGap: '18px',
   },
   typography: {
-    headingFamily: 'theme-serif',
-    bodyFamily: 'theme-sans',
-    heroSize: 'clamp(34px, 5vw, 68px)',
+    headingFamily: 'theme-serif, "IBM Plex Sans Arabic", serif',
+    bodyFamily: 'theme-sans, "IBM Plex Sans Arabic", sans-serif',
+    // Apple-grade type scale: rounded ratios, generous leading, tight tracking.
+    displaySize: 'clamp(40px, 6vw, 84px)',
+    heroSize: 'clamp(32px, 5vw, 72px)',
     sectionTitleSize: 'clamp(22px, 3vw, 36px)',
+    cardTitleSize: 'clamp(15px, 1.4vw, 17px)',
     productNameSize: '14px',
-    bodySize: '14px',
+    bodySize: '15px',
+    smallSize: '13px',
+    eyebrowSize: '10px',
+    // Line-heights (multipliers): tight on display, generous on body.
+    displayLeading: '1.02',
+    heroLeading: '1.05',
+    titleLeading: '1.2',
+    bodyLeading: '1.6',
+    // Tracking (em-equivalent): tighter for display, looser for caps.
+    displayTracking: '-0.02em',
+    titleTracking: '-0.01em',
+    bodyTracking: '0',
+    eyebrowTracking: '0.32em',
+    capsTracking: '0.18em',
+  },
+  // Responsive container widths — match the Apple-style fluid layout.
+  responsive: {
+    containerMaxWidth: '1440px',
+    mobilePadding: '1rem',
+    tabletPadding: '1.5rem',
+    desktopPadding: '2rem',
+    mobileMinHeight: 'clamp(360px, 60vw, 480px)',
+    desktopMinHeight: 'clamp(420px, 50vw, 620px)',
   },
   shadows: {
     soft: '0 18px 50px rgba(43, 37, 32, 0.08)',
+    card: '0 2px 8px rgba(43, 37, 32, 0.04)',
+    cardHover: '0 8px 24px rgba(43, 37, 32, 0.08)',
+  },
+  transitions: {
+    fast: '150ms ease-out',
+    base: '220ms ease-out',
+    slow: '320ms cubic-bezier(0.4, 0, 0.2, 1)',
   },
 } as const;
 

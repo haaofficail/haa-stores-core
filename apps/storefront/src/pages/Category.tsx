@@ -253,7 +253,7 @@ export default function Category() {
       params.category = categorySlug;
     }
 
-    productsApi.list(slug, params)
+    productsApi.listPaginated(slug, params)
       .then((res) => {
         setProducts(res.data);
         setTotal(res.total);

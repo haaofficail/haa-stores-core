@@ -1,10 +1,14 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Layout from '@/components/Layout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const Home = lazy(() => import('@/pages/Home'));
+const LandingPage = lazy(() => import('@/pages/LandingPage'));
+const AuthLogin = lazy(() => import('@/pages/Auth').then((m) => ({ default: m.LoginPage })));
+const AuthSignup = lazy(() => import('@/pages/Auth').then((m) => ({ default: m.SignupPage })));
+const AuthWaitlist = lazy(() => import('@/pages/Auth').then((m) => ({ default: m.WaitlistPage })));
 const Category = lazy(() => import('@/pages/Category'));
 const ProductDetail = lazy(() => import('@/pages/ProductDetail'));
 const Cart = lazy(() => import('@/pages/Cart'));
@@ -55,6 +59,10 @@ export default function App() {
       <ErrorBoundary>
         <Suspense fallback={<PageSkeleton />}>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<AuthLogin />} />
+          <Route path="/signup" element={<AuthSignup />} />
+          <Route path="/waitlist" element={<AuthWaitlist />} />
           <Route path="/s/:slug" element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="c/:categorySlug" element={<Category />} />
@@ -74,6 +82,7 @@ export default function App() {
             <Route path="*" element={<StoreNotFound />} />
           </Route>
           <Route path="/marketplace" element={<HaaMarketplace />} />
+          <Route path="/about" element={<About />} />
           <Route path="/marketplace/cart" element={<MarketplaceCart />} />
           <Route path="/marketplace/checkout" element={<MarketplaceCheckout />} />
           <Route path="/marketplace/orders" element={<MarketplaceOrderTrack />} />
@@ -81,8 +90,7 @@ export default function App() {
           <Route path="/marketplace/products/:storeSlug/:productSlug" element={<MarketplaceProductDetail />} />
           <Route path="/marketplace/sellers" element={<MarketplaceSellers />} />
           <Route path="/marketplace/sellers/:storeSlug" element={<MarketplaceSeller />} />
-          <Route path="/" element={<Navigate to="/s/haa-demo" replace />} />
-            <Route path="/legal/:legalSlug" element={<LegalPage />} />
+          <Route path="/legal/:legalSlug" element={<LegalPage />} />
           <Route path="*" element={<StoreNotFound />} />
         </Routes>
         </Suspense>

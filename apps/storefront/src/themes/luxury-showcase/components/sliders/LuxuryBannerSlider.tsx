@@ -45,7 +45,7 @@ export default function LuxuryBannerSlider({
             {hasImage ? (
               <picture>
                 <source media="(max-width: 768px)" srcSet={slide.imageMobileUrl || slide.imageUrl} />
-                <img src={slide.imageUrl} alt={slide.title || ''} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                <img src={slide.imageUrl} alt={slide.title || ''} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="eager" decoding="sync" />
               </picture>
             ) : (
               <div className="absolute inset-0">

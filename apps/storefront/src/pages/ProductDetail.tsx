@@ -168,8 +168,8 @@ export default function ProductDetail() {
   const hasDimensions = product ? product.lengthCm || product.widthCm || product.heightCm : false;
   const hasWeight = product ? product.weightGrams != null && product.weightGrams > 0 : false;
   const isFreeShipping = true;
-  const showSizeGuide = Boolean(product && features?.sizeGuide !== false && sizeGuide && sizeGuide.rows.length > 0);
-  const hasElectronicPayment = paymentMethods.some((method: any) =>
+  const showSizeGuide = Boolean(product && features?.sizeGuide !== false && sizeGuide && Array.isArray(sizeGuide.rows) && sizeGuide.rows.length > 0);
+  const hasElectronicPayment = (paymentMethods ?? []).some((method: any) =>
     method.available && method.provider !== 'cash_on_delivery' && method.provider !== 'cod'
   );
 

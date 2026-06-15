@@ -37,7 +37,7 @@ export default function LuxuryCollectionBanner({
       style={{ backgroundColor: 'var(--lux-image-frame, #F7EFE6)', minHeight: 'clamp(200px, 30vw, 320px)' }}
     >
       {imageUrl ? (
-        <img src={imageUrl} alt={name} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        <img src={imageUrl} alt={name} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" />
       ) : (
         <div className="absolute inset-0">
           <LuxuryImageFallback aspectRatio="auto" className="w-full h-full" icon="star" />

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, Heart, Minus, Plus, Share2, ShoppingBag } from 'lucide-react';
+import { Check, Heart, Minus, Plus, Share2, ShoppingBag, ShieldCheck, Truck, RefreshCcw } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { LUXURY_THEME_CLASS } from '../luxuryTokens';
@@ -216,9 +216,9 @@ export function LuxuryProductInfoPanel({
               'flex min-h-8 flex-1 items-center justify-center rounded-lg px-3 text-xs font-light uppercase tracking-[0.16em] transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]',
             ].join(' ')}
             style={{
-              backgroundColor: outOfStock ? 'transparent' : 'var(--lux-text, #2B2520)',
+              backgroundColor: outOfStock ? 'transparent' : 'var(--lux-primary, #B88A3D)',
               color: outOfStock ? 'var(--lux-muted, #756B61)' : '#FFFFFF',
-              border: outOfStock ? '1px solid var(--lux-border, #E6D8C6)' : 'none',
+              border: outOfStock ? '1px solid var(--lux-border, #E6D8C6)' : '1px solid var(--lux-primary, #B88A3D)',
               cursor: outOfStock ? 'not-allowed' : 'pointer',
             }}
           >
@@ -266,6 +266,57 @@ export function LuxuryProductInfoPanel({
             <Heart className="h-4 w-4 stroke-[1.5]" />
           </button>
         </div>
+
+        {/* Inline trust row — luxury reference pattern. Three small
+            assurances immediately below the action buttons. */}
+        <ul
+          className="mt-6 grid grid-cols-3 gap-3 border-t pt-6"
+          style={{ borderColor: 'var(--lux-border, #E6D8C6)' }}
+          aria-label={t('product.trustAriaLabel', 'ضمانات المنتج')}
+        >
+          <li className="flex flex-col items-center gap-1.5 text-center">
+            <Truck
+              className="h-4 w-4"
+              style={{ color: 'var(--lux-primary, #B88A3D)' }}
+              strokeWidth={1.5}
+              aria-hidden="true"
+            />
+            <span className="text-[10px] font-light leading-tight" style={{ color: 'var(--lux-muted, #756B61)' }}>
+              <span className="block" style={{ color: 'var(--lux-text, #2B2520)' }}>
+                {t('product.freeShipping', 'شحن مجاني')}
+              </span>
+              <span className="block">{t('product.worldwide', 'لجميع الدول')}</span>
+            </span>
+          </li>
+          <li className="flex flex-col items-center gap-1.5 text-center">
+            <ShieldCheck
+              className="h-4 w-4"
+              style={{ color: 'var(--lux-primary, #B88A3D)' }}
+              strokeWidth={1.5}
+              aria-hidden="true"
+            />
+            <span className="text-[10px] font-light leading-tight" style={{ color: 'var(--lux-muted, #756B61)' }}>
+              <span className="block" style={{ color: 'var(--lux-text, #2B2520)' }}>
+                {t('product.warranty', 'ضمان سنتين')}
+              </span>
+              <span className="block">{t('product.onAllOrders', 'على كل الطلبات')}</span>
+            </span>
+          </li>
+          <li className="flex flex-col items-center gap-1.5 text-center">
+            <RefreshCcw
+              className="h-4 w-4"
+              style={{ color: 'var(--lux-primary, #B88A3D)' }}
+              strokeWidth={1.5}
+              aria-hidden="true"
+            />
+            <span className="text-[10px] font-light leading-tight" style={{ color: 'var(--lux-muted, #756B61)' }}>
+              <span className="block" style={{ color: 'var(--lux-text, #2B2520)' }}>
+                {t('product.returnsDays', 'استرجاع 30 يوم')}
+              </span>
+              <span className="block">{t('product.hassleFree', 'بدون تعقيد')}</span>
+            </span>
+          </li>
+        </ul>
 
       </div>
     </aside>

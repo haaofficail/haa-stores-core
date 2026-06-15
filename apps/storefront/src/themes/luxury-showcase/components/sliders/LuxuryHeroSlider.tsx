@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Store } from 'lucide-react';
 import LuxurySlider from './LuxurySlider';
 import { LUXURY_THEME_CLASS } from '../../luxuryTokens';
 import LuxuryImageFallback from '../LuxuryImageFallback';
@@ -30,6 +32,8 @@ export default function LuxuryHeroSlider({
   slug: string;
   autoplay?: boolean;
 }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   if (slides.length === 0) return null;
 
   return (
@@ -54,11 +58,18 @@ export default function LuxuryHeroSlider({
             {hasImage ? (
               <picture>
                 <source media="(max-width: 768px)" srcSet={slide.imageMobileUrl || slide.imageUrl} />
-                <img src={slide.imageUrl} alt={slide.title || ''} className="absolute inset-0 h-full w-full object-cover" />
+                <img
+                  src={slide.imageUrl}
+                  alt={slide.title || ''}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  loading="eager"
+                  decoding="sync"
+                  fetchPriority="high"
+                />
               </picture>
             ) : (
               <div className="absolute inset-0">
-                <LuxuryImageFallback aspectRatio="auto" className="w-full h-full" icon="perfume" />
+                <LuxuryImageFallback aspectRatio="auto" className="w-full h-full" icon="hero" />
               </div>
             )}
             {hasImage && (
@@ -66,33 +77,68 @@ export default function LuxuryHeroSlider({
             )}
             <div className="relative z-10 mx-auto flex w-full max-w-[var(--container-max-width,1440px)] flex-col items-start justify-center px-6 sm:px-10 lg:px-12">
               {slide.title && (
+                <span
+                  className="mb-4 inline-flex items-center text-[10px] font-light uppercase tracking-[0.32em]"
+                  style={{ color: hasImage ? 'rgba(255,255,255,0.85)' : 'var(--lux-primary, #B88A3D)' }}
+                >
+                  {t('hero.eyebrow', 'مدعوم من هاء ستورز')}
+                </span>
+              )}
+              {slide.title && (
                 <h2
-                  className="mb-2 max-w-2xl text-[clamp(28px,5vw,68px)] font-light leading-tight tracking-tight"
-                  style={{ color: hasImage ? '#FFFFFF' : 'var(--lux-text, #2B2520)' }}
+                  className="mb-3 max-w-2xl text-[clamp(32px,5vw,72px)] font-light leading-[1.05] tracking-[-0.01em]"
+                  style={{
+                    color: hasImage ? '#FFFFFF' : 'var(--lux-text, #2B2520)',
+                    fontFamily: 'theme-serif, "IBM Plex Sans Arabic", serif',
+                  }}
                 >
                   {slide.title}
                 </h2>
               )}
               {slide.description && (
                 <p
-                  className="max-w-lg text-base font-light leading-relaxed sm:text-lg"
-                  style={{ color: hasImage ? 'rgba(255,255,255,0.85)' : 'var(--lux-muted, #756B61)' }}
+                  className="max-w-lg text-[15px] font-light leading-[1.65] sm:text-[17px]"
+                  style={{
+                    color: hasImage ? 'rgba(255,255,255,0.85)' : 'var(--lux-muted, #756B61)',
+                    fontFamily: 'theme-sans, "IBM Plex Sans Arabic", sans-serif',
+                  }}
                 >
                   {slide.description}
                 </p>
               )}
-              {slide.buttonText && (
-                <span
-                  className="mt-6 inline-flex min-h-[48px] items-center justify-center px-8 text-xs font-light uppercase tracking-[0.15em] transition-all"
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                {slide.buttonText && (
+                  <span
+                    className="inline-flex min-h-[48px] items-center justify-center px-8 text-xs font-light uppercase tracking-[0.18em] transition-all hover:opacity-90"
+                    style={{
+                      color: '#FFFFFF',
+                      backgroundColor: 'var(--lux-primary, #B88A3D)',
+                      border: '1px solid var(--lux-primary, #B88A3D)',
+                      borderRadius: '3px',
+                    }}
+                  >
+                    {slide.buttonText}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate('/signup');
+                  }}
+                  className="inline-flex min-h-[48px] items-center justify-center gap-2 px-6 text-xs font-light uppercase tracking-[0.18em] transition-all hover:opacity-80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]"
                   style={{
-                    color: hasImage ? '#FFFFFF' : 'var(--lux-primary, #B88A3D)',
-                    border: hasImage ? '1px solid rgba(255,255,255,0.4)' : '1px solid var(--lux-primary, #B88A3D)',
+                    color: hasImage ? '#FFFFFF' : 'var(--lux-text, #2B2520)',
+                    border: hasImage
+                      ? '1px solid rgba(255,255,255,0.6)'
+                      : '1px solid var(--lux-text, #2B2520)',
                     borderRadius: '3px',
                   }}
                 >
-                  {slide.buttonText}
-                </span>
-              )}
+                  <Store className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  {t('hero.buildYourStoreCta', 'ابنِ متجرك')}
+                </button>
+              </div>
             </div>
           </Link>
         );

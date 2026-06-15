@@ -45,7 +45,7 @@ export default function LuxuryProductFeatureBanner({
       >
         <div className="flex w-full items-center justify-center sm:w-1/2" style={{ minHeight: 'clamp(200px, 30vw, 340px)' }}>
           {hasImage ? (
-            <img src={imageUrl} alt={title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+            <img src={imageUrl} alt={title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" />
           ) : (
             <LuxuryImageFallback aspectRatio="1/1" className="w-40 h-40 sm:w-48 sm:h-48" icon="perfume" />
           )}

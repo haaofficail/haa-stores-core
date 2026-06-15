@@ -17,7 +17,9 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@haa/commerce-core/landing-ai-agent": ["../../packages/commerce-core/src/landing-ai-agent/index.ts"],
+      "@haa/commerce-core/landing-ai-agent/*": ["../../packages/commerce-core/src/landing-ai-agent/*"]
     }
   },
   "include": ["src"]

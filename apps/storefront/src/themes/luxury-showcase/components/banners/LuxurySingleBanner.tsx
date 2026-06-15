@@ -44,7 +44,7 @@ export default function LuxurySingleBanner({
         {hasImage ? (
           <picture>
             <source media="(max-width: 768px)" srcSet={imageMobileUrl || imageUrl} />
-            <img src={imageUrl} alt={title} className="absolute inset-0 h-full w-full object-cover" />
+            <img src={imageUrl} alt={title} className="absolute inset-0 h-full w-full object-cover" loading="eager" decoding="sync" />
           </picture>
         ) : (
           <div className="absolute inset-0">

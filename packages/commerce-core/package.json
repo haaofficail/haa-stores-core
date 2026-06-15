@@ -17,6 +17,10 @@
     "./encryption": {
       "import": "./dist/encryption.js",
       "types": "./dist/encryption.d.ts"
+    },
+    "./landing-ai-agent": {
+      "import": "./dist/landing-ai-agent/index.js",
+      "types": "./dist/landing-ai-agent/index.d.ts"
     }
   },
   "scripts": {

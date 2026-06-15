@@ -1,12 +1,5 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
-interface ApiError {
-  success: false;
-  error: { code: string; message: string };
-}
-
-type ApiResponse<T> = { success: true; data: T } | ApiError;
-
 export class ApiClientError extends Error {
   code: string;
   constructor(code: string, message: string) {
@@ -24,13 +17,27 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   };
 
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
-  const json: ApiResponse<T> = await res.json();
+  // Wrap the response so TypeScript and runtime agree: `T` is whatever
+  // the API puts inside `data` (typically an array, a single object, or
+  // a paginated envelope). The previous version typed `json` as
+  // `ApiResponse<T>`, which lied about the runtime shape and caused
+  // `request<ProductListResult>` to return `PublicProduct[]` while
+  // claiming to return a paginated envelope.
+  const json = (await res.json()) as { success?: boolean; data?: T; error?: { code: string; message: string } };
 
-  if (!json.success) {
+  if (json && json.success === false && json.error) {
     throw new ApiClientError(json.error.code, json.error.message);
   }
 
-  return json.data;
+  // Some endpoints (e.g. /products) return the data wrapped in a
+  // paginated envelope. Detect that shape and unwrap one level so the
+  // caller can decide what to do with the metadata.
+  const raw = json?.data;
+  if (raw && typeof raw === 'object' && !Array.isArray(raw) && 'data' in (raw as any) && Array.isArray((raw as any).data)) {
+    return raw as unknown as T;
+  }
+
+  return raw as T;
 }
 
 export interface StoreInfo {
@@ -364,6 +371,10 @@ export interface ProductListResult {
 }
 
 export const productsApi = {
+  /**
+   * Returns just the products array. Most callers only need this.
+   * The API helper unwraps the paginated envelope for you.
+   */
   list: (slug: string, params?: ProductListParams) => {
     const q = new URLSearchParams();
     if (params?.page) q.set('page', String(params.page));
@@ -376,9 +387,26 @@ export const productsApi = {
     if (params?.maxPrice !== undefined) q.set('maxPrice', String(params.maxPrice));
     if (params?.sort) q.set('sort', params.sort);
     const qs = q.toString();
-    return request<ProductListResult>(
-      `/s/${slug}/products${qs ? `?${qs}` : ''}`,
-    );
+    return request<PublicProduct[]>(`/s/${slug}/products${qs ? `?${qs}` : ''}`);
+  },
+  /**
+   * Returns the full paginated envelope (`{ data, total, page, totalPages }`).
+   * Use this when you need pagination metadata (e.g. a category page with
+   * multiple pages).
+   */
+  listPaginated: (slug: string, params?: ProductListParams) => {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.category) q.set('category', params.category);
+    if (params?.search) q.set('search', params.search);
+    if (params?.brandId) q.set('brandId', String(params.brandId));
+    if (params?.tagId) q.set('tagId', String(params.tagId));
+    if (params?.minPrice !== undefined) q.set('minPrice', String(params.minPrice));
+    if (params?.maxPrice !== undefined) q.set('maxPrice', String(params.maxPrice));
+    if (params?.sort) q.set('sort', params.sort);
+    const qs = q.toString();
+    return request<ProductListResult>(`/s/${slug}/products${qs ? `?${qs}` : ''}`);
   },
   getBySlug: (slug: string, productSlug: string) =>
     request<PublicProduct>(`/s/${slug}/products/${productSlug}`),
