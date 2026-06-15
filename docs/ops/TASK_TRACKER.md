@@ -1403,3 +1403,47 @@
 - **Item 2 (Webhook Idempotency / Deduplication) — COMPLETED 2026-06-15:** Added `apps/api/src/middleware/webhook-dedup.ts` with `deduplicateWebhook` + `resolveIdempotencyKey` helpers, wired into all 3 webhook handlers (payment + generic shipping + OTO). Key design: prefer provider-supplied `x-idempotency-key` header; fall back to `sha256(provider + rawBody + signature)` when the provider doesn't send one. Critically, dedup runs **AFTER** signature verification so attackers can't pre-poison the idempotency table with bogus signatures. 13/13 new tests pass; 0 regressions on full suite (1839/1867 with the 14 pre-existing baseline failures).
 - **Item 3 (Audit Logging Depth) — COMPLETED 2026-06-15:** Added audit logging to 2 high-impact critical paths that were completely missing it: `orders.ts` PATCH `/:orderId/status` (action `order_status_changed` with prev/new status + reason) and `wallet.ts` POST `/payouts/request` + POST `/payouts` (action `payout_requested` with amount + status). Side change: added `'payout_requested'` to the `AuditAction` union (it was in `WebhookEventType` but not `AuditAction`) + matching Arabic label `'طلب سحب أرباح'` to `AUDIT_ACTION_LABELS`. 9/9 new tests pass; 0 regressions on full suite (1862/1890 with the 14 pre-existing baseline failures).
 - **Item 4 (Deeper RBAC Review) — COMPLETED 2026-06-15:** The RBAC framework is solid (38+ routes already use `requirePermission` + `requireAuth` + `requireStoreAccess` from Quality Pass 1 + 2 + RBAC Passes 1-5). The gap was that nothing enforced this contract. Added `tests/rbac-coverage.test.ts` which scans every file in `apps/api/src/routes/` and asserts: (a) every mutating route (POST/PUT/PATCH/DELETE) calls `requireAuth` (inline or file-level `use`); (b) every store-scoped mutating route also calls `requireStoreAccess`; (c) every mutating route has a `requirePermission` or `requireAnyPermission` guard. Intentionally-public routes are in a `DENY_LIST` (pre-auth, webhooks with signature, storefront public, etc.). 4/4 new tests pass. Negative test confirmed the test catches violations: temporarily removed `requirePermission` from `coupons.ts POST /`, the test flagged it correctly. 0 regressions on full suite (1891 passing; the 70+ pre-existing failures are in TASK-0027 luxury-showcase working tree, unrelated to this commit).
+- **Quality Pass 3 STATUS: 4/4 SPECIFIED SUB-ITEMS COMPLETE.** Pass 3 closed. Moving to Quality Pass 4 (Operations & quality).
+
+---
+
+### TASK-0028: Quality Pass 4 — Operations & Quality (CI/CD Pipeline)
+
+- **Type:** DevOps / CI
+- **Priority:** P1 High
+- **Status:** In Progress
+- **Created:** 2026-06-15
+- **Updated:** 2026-06-15
+- **Original Request:** Quality Pass 4 per strategic plan (see COMMITMENTS.md) — "Operations & quality, 7-8 weeks, full CI/CD, Sentry/OTEL, Redis-backed rate limiter"
+- **Expanded Requirement:** First sub-item of Pass 4 — establish a working GitHub Actions CI pipeline that runs on every push and pull_request. Subsequent items: Sentry/OTEL observability wiring + Redis-backed rate-limiter production wiring.
+- **Problem:** No `.github/` directory exists in the repo. The project has `tests/ci-cd-pipeline.test.ts` from Quality Pass 1 that asserts a CI workflow should exist with specific shape (triggers, Node 20+, pnpm setup, runs typecheck/lint/test/preflight) but the file was never created. This means: (a) no automated verification on PRs, (b) the existing test was just a placeholder, (c) every commit relies on local `pnpm ci:local` to catch breakage.
+- **Goal:** Real, working CI that runs on every push/PR. Catches typecheck/lint/test/preflight regressions before they reach main.
+- **Scope:** 1 new file (`.github/workflows/ci.yml`). No new packages, no code changes, no test changes (existing test asserts the workflow shape).
+- **Out of Scope:** Deployment workflows, secrets management, E2E tests in CI (Playwright is local-only by design), Sentry wiring (next sub-item), Redis rate-limiter production switch (next sub-item), Docker image builds.
+- **Affected Areas:**
+  - `.github/workflows/ci.yml` (new — 158 lines)
+- **Skills Used:** plan-mode, test-driven-development, verification-before-completion
+- **Acceptance Criteria:**
+  - [x] `.github/workflows/ci.yml` exists
+  - [x] Triggers on `push` to main + all `quality-pass-*` branches, and on `pull_request` to main
+  - [x] Sets up Node 20+ via `actions/setup-node@v4`
+  - [x] Sets up pnpm via `pnpm/action-setup@v4`
+  - [x] Runs `pnpm install --frozen-lockfile`
+  - [x] Runs `pnpm preflight`
+  - [x] Runs `pnpm typecheck`
+  - [x] Runs `pnpm lint`
+  - [x] Runs `pnpm test` with `NODE_ENV=test`
+  - [x] Concurrency group cancels in-progress runs on the same ref
+  - [x] pnpm store cache is configured for fast re-runs
+  - [x] 10/10 existing `tests/ci-cd-pipeline.test.ts` pass (RED → GREEN)
+  - [x] Full test suite: 1898/1902 passing (4 pre-existing baseline failures in TASK-0027 working tree, unrelated)
+- **Test Plan:** Existing `tests/ci-cd-pipeline.test.ts` asserts the file's content. TDD: confirmed RED (10 failures) before writing the file, confirmed GREEN (10 passes) after.
+- **Test Results:**
+  - **Item 1 (CI/CD Pipeline) — COMPLETED 2026-06-15:** Created `.github/workflows/ci.yml` (158 lines) with 4 jobs: `preflight`, `typecheck`, `lint`, `test`. Each job: checkout → setup-node@v4 (Node 20) → pnpm/action-setup@v4 (pnpm 10) → pnpm store cache (key on `pnpm-lock.yaml`) → `pnpm install --frozen-lockfile` → run the relevant command. Triggers on `push` to main + `quality-pass-*` branches and on `pull_request` to main. Concurrency group cancels in-progress runs. RED → GREEN verified: 10/10 `tests/ci-cd-pipeline.test.ts` now pass. Full suite: 1898/1902 passing (4 pre-existing baseline failures in TASK-0027 luxury-showcase working tree, unrelated to this commit).
+- **Risks:**
+  - 🟢 Low. Adds a CI workflow, doesn't change runtime code.
+  - 🟡 CI secrets (e.g. Sentry DSN) are not wired here — those come with the observability sub-item.
+  - 🟡 The `quality-pass-*` branch glob is permissive; main branch protection should still require reviews.
+- **Related Issues:** None
+- **Related Decisions:** Split into 4 parallel jobs (preflight, typecheck, lint, test) with `preflight` as the gate dependency. pnpm 10 matches the local dev version (10.32.1). `concurrency.cancel-in-progress: true` saves CI minutes on rapid pushes.
+- **Status History:** Requested 2026-06-15; Expanded 2026-06-15; In Progress 2026-06-15; Item 1 Done 2026-06-15.

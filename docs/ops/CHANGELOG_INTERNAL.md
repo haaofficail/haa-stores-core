@@ -5,6 +5,42 @@
 
 ---
 
+## 2026-06-15 (Quality Pass 4 — Item 1: CI/CD Pipeline)
+
+### Added
+
+- `.github/workflows/ci.yml` (158 lines) — real GitHub Actions CI pipeline. 4 parallel jobs (`preflight`, `typecheck`, `lint`, `test`), each with: `actions/checkout@v4` → `actions/setup-node@v4` (Node 20) → `pnpm/action-setup@v4` (pnpm 10) → pnpm store cache (key on `pnpm-lock.yaml`) → `pnpm install --frozen-lockfile` → run the relevant command.
+
+### Triggers
+
+- `push` to `main` and to all `quality-pass-*` branches
+- `pull_request` to `main`
+- `concurrency.cancel-in-progress: true` to save CI minutes on rapid pushes
+- `preflight` is the gate dependency for the other 3 jobs
+
+### Background
+
+The project has had `tests/ci-cd-pipeline.test.ts` since Quality Pass 1 that asserts a CI workflow should exist with specific shape — but the workflow file was never created. Every commit relied on local `pnpm ci:local` to catch breakage. This commit makes the existing test green for the first time and gives the project a real automated gate on every push/PR.
+
+### Verified (TDD)
+
+- RED confirmed: `tests/ci-cd-pipeline.test.ts` had 10/10 failures before this commit.
+- GREEN confirmed: 10/10 pass after this commit.
+- Full test suite: 1898/1902 passing (4 pre-existing baseline failures in TASK-0027 working tree, unrelated to this commit).
+
+### Risks
+
+- 🟢 Low. Adds a CI workflow, doesn't change runtime code.
+- 🟡 CI secrets (e.g. Sentry DSN) are not wired here — those come with the observability sub-item.
+- 🟡 The `quality-pass-*` branch glob is permissive; main branch protection should still require reviews.
+
+### Next
+
+- Item 2: Sentry / OpenTelemetry observability wiring
+- Item 3: Redis-backed rate-limiter production switch (`RATE_LIMIT_STORE=redis-atomic`)
+
+---
+
 ## 2026-06-15 (Quality Pass 3 — Item 4: Deeper RBAC Review)
 
 ### Added
