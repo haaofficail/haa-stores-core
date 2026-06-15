@@ -53,7 +53,6 @@ import {
   Store,
   Truck,
   Users,
-  ChevronDown,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -70,13 +69,12 @@ import { RecentActionableOrders, type ActionableOrder } from "./dashboard/Recent
 import { StoreReadinessBanner } from "./dashboard/StoreReadinessBanner";
 import { LowStockList } from "./dashboard/LowStockList";
 import { AiGreetingCard } from "./dashboard/AiGreetingCard";
-import { RecentCustomersList } from "./dashboard/RecentCustomersList";
 import { QuickActionsGrid } from "./dashboard/QuickActionsGrid";
 import { SmartAlertsStrip } from "./dashboard/SmartAlertsStrip";
 import { WelcomeBanner } from "./dashboard/WelcomeBanner";
-import { QuickStatsGrid } from "./dashboard/QuickStatsGrid";
 import { ShowMoreKpiToggle } from "./dashboard/ShowMoreKpiToggle";
 import { AnalyticsSection } from "./dashboard/AnalyticsSection";
+import { MoreSection } from "./dashboard/MoreSection";
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
@@ -1585,36 +1583,17 @@ export default function DashboardHome() {
       {aiGreeting && <AiGreetingCard greeting={aiGreeting} t={t} />}
 
       {/* ── المزيد ────────────────────────────────────────────────── */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-card overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setShowMore((v) => !v)}
-          className="w-full flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 hover:bg-neutral-50 transition-colors"
-        >
-          <h3 className="font-bold text-sm sm:text-base text-neutral-900">
-            {t("dashboard.more", "المزيد")}
-          </h3>
-          <ChevronDown
-            className={`h-4 w-4 text-neutral-400 transition-transform ${showMore ? "" : "-rotate-90"}`}
-          />
-        </button>
-        {showMore && (
-          <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-4">
-            {/* ── Recent Customers ────────────────────────────────── */}
-            <RecentCustomersList customers={recentCustomers} t={t} />
-
-            {/* ── Quick Stats (zero-value items hidden) ──────────── */}
-            <QuickStatsGrid
-              brandsCount={brands.length}
-              tagsCount={tags.length}
-              categoriesCount={cats.length}
-              productsCount={summary?.totalProducts ?? 0}
-              ordersCount={summary?.totalOrders ?? 0}
-              t={t}
-            />
-          </div>
-        )}
-      </div>
+      <MoreSection
+        showMore={showMore}
+        onToggle={() => setShowMore((v) => !v)}
+        recentCustomers={recentCustomers}
+        brandsCount={brands.length}
+        tagsCount={tags.length}
+        categoriesCount={cats.length}
+        productsCount={summary?.totalProducts ?? 0}
+        ordersCount={summary?.totalOrders ?? 0}
+        t={t}
+      />
     </div>
   );
 }
