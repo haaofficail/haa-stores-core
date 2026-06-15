@@ -5,7 +5,7 @@
 ---
 
 - **Last Updated:** 2026-06-15
-- **Current Phase:** Quality Pass 4 — Operations & Quality (in progress; 3/3 specified sub-items done — CI/CD + observability + Redis rate-limiter shipped)
+- **Current Phase:** Quality Pass 5 — Architectural Cleanup (in progress; 3/3 core sub-items done — service-layer enforcement + queue scaffold + theme rationalization shipped)
 - **Project Summary:** Multi-tenant Saudi e-commerce SaaS platform. Local-only. All 10 phases complete. Deployment gated by owner GO.
 - **Strategic Commitment:** `docs/ops/COMMITMENTS.md` is now active and binding — **Quality Pass 1-5 before any major Feature Pass**.
 - **Active Priorities:**
@@ -46,6 +46,11 @@
   - **Quality Pass 4 — Item 2 (Observability / Sentry Wiring) ✅ DONE** — created `apps/api/src/services/observability.ts` (~115 LOC, noop-first shim). `initObservability()` wires an `ErrorMonitor` to the existing `error-handler.ts` interface. Sentry is loaded lazily (CommonJS `require` cast to a local `SentryShape` interface) so the package stays optional — dev/test/local runs without the dependency. If `SENTRY_DSN` is set + `@sentry/node` installed → Sentry monitor; otherwise noop. Wired into `apps/api/src/index.ts` after `app.onError`. 10/10 new tests pass; 0 regressions on full suite (1922 passing). 🆕
   - **Quality Pass 4 — Item 3 (Redis Rate Limiter Production Wiring) ✅ DONE** — the production code was already there (`RedisAtomicRateLimiterStore` + factory reading `RATE_LIMIT_STORE`), but untested. Added `tests/redis-rate-limiter-wiring.test.ts` (14 source-grep tests) that asserts: atomic store exists, factory reads env, default `memory`, `REDIS_URL` required, X-RateLimit headers, 429 + RATE_LIMITED, store created once (not per-request), env.ts production defaults to `redis-atomic`. 14/14 new tests pass; 0 regressions on full suite (1922 passing). 🆕
   - **Quality Pass 4 — 3/3 SPECIFIED SUB-ITEMS COMPLETE → core ops hardening shipped (CI + observability + Redis rate-limiter).**
+  - **Quality Pass 4 — 3/3 SPECIFIED SUB-ITEMS COMPLETE → CLOSED. Quality Pass 5 STARTED.**
+  - **Quality Pass 5 — Item 1 (Service Layer Enforcement) ✅ DONE** — created `tests/service-layer-enforcement.test.ts` (7 tests) that scans every route file, counts `drizzle-orm` imports, asserts the count stays ≤ `MAX_EXISTING_ROUTE_VIOLATIONS` (24). The test logs the current migration backlog every run. Also created `apps/api/src/services/README.md` documenting the service-layer convention. 7/7 new tests pass; 0 regressions on full suite (1948 passing). 🆕
+  - **Quality Pass 5 — Item 2 (Queue Scaffold) ✅ DONE** — created `apps/api/src/services/queue.ts` (~120 LOC) following the observability shim pattern: lazy `require('bullmq')` cast to `any`, noop default backend, `QUEUE_REDIS_URL`-gated, never throws at boot. TDD verified: 9/12 tests fail without impl → 12/12 with impl. 12/12 new tests pass; 0 regressions on full suite (1948 passing). 🆕
+  - **Quality Pass 5 — Item 3 (Theme Package Rationalization) ✅ DONE** — created `docs/ops/THEME_RATIONALIZATION.md` (multi-step migration plan to deprecate `@haa/theme-system` → `@haa/storefront-themes`) + 3 missing theme package READMEs (storefront-themes, system-theme, theme-react). New `tests/theme-rationalization.test.ts` (7 tests) asserts: theme package structure, plan doc exists, legacy package flagged, no 7th theme package can be added silently. 7/7 new tests pass; 0 regressions on full suite (1948 passing). 🆕
+  - **Quality Pass 5 — 3/3 CORE SUB-ITEMS COMPLETE → architectural contracts shipped (service-layer + queue + theme rationalization).**
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done
@@ -70,7 +75,8 @@
     - TASK-0023 (Demo Support KB Repair) — Done
     - TASK-0024 (Marketplace Product Detail Trust Section Density) — Done
     - TASK-0027 (Quality Pass 3 — Security & Permissions) — Done (4/4 specified sub-items: CSRF + webhook idempotency + audit depth + RBAC coverage)
-    - TASK-0028 (Quality Pass 4 — Operations & Quality) — In Progress (3/3 specified sub-items done: CI/CD pipeline + observability shim + Redis rate-limiter production wiring)
+    - TASK-0028 (Quality Pass 4 — Operations & Quality) — Done (3/3 specified sub-items: CI/CD pipeline + observability shim + Redis rate-limiter production wiring)
+    - TASK-0029 (Quality Pass 5 — Architectural Cleanup) — In Progress (3/3 core sub-items done: service-layer enforcement + queue scaffold + theme package rationalization)
 - **Known Broken Areas:**
   - Storefront root `/` hardcoded to `/s/haa-demo` redirect — works after seed ✅
   - Registration creates stores as `draft` (intentional — merchant must publish from settings)

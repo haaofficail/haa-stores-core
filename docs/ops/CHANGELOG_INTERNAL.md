@@ -5,6 +5,53 @@
 
 ---
 
+## 2026-06-15 (Quality Pass 5 — Items 1+2+3: Service Layer + Queue Scaffold + Theme Rationalization)
+
+### Added
+
+- `apps/api/src/services/queue.ts` (~120 LOC) — BullMQ shim with noop-first design, mirroring the observability shim pattern:
+  - `getQueue()` returns the active producer (BullMQ if installed + `QUEUE_REDIS_URL` set, else noop)
+  - `NoopQueue` is always safe, logs to stderr so production operators see what would have been queued
+  - BullMQ loaded lazily via CommonJS `require` cast to `any` — package stays optional
+  - try/catch fallback to noop if BullMQ init fails
+  - `JobOptions` shape (name, data, delayMs, attempts) is BullMQ-flavored so noop + real are interchangeable
+- `apps/api/src/services/README.md` — convention doc for the service layer. Codifies Principle 5 ("No route accesses Drizzle directly"), documents where service code lives (`packages/commerce-core` for business logic, `apps/api/src/services` for cross-cutting API services, `apps/api/src/routes` for transport only), and the migration steps for converting a route to use the service layer.
+- `docs/ops/THEME_RATIONALIZATION.md` — multi-step migration plan to deprecate and remove `@haa/theme-system` (the legacy package, replaced by `@haa/storefront-themes` per its own description). Lists the 8 call-sites, the API surface mapping, and the recommended migration order (apps/api → apps/merchant-dashboard → apps/storefront).
+- `packages/storefront-themes/README.md` — explains role + relationship to other theme packages
+- `packages/system-theme/README.md` — dashboard identity layer docs
+- `packages/theme-react/README.md` — React bindings docs
+- `tests/service-layer-enforcement.test.ts` (7 tests) — scans every route file, counts `drizzle-orm` imports, asserts the count stays ≤ `MAX_EXISTING_ROUTE_VIOLATIONS` (24). Logs the current migration backlog every run.
+- `tests/queue-scaffold.test.ts` (12 tests) — asserts queue module shape, lazy BullMQ, noop default, `QUEUE_REDIS_URL` gating, try/catch fallback, `JobOptions` interface.
+- `tests/theme-rationalization.test.ts` (7 tests) — asserts theme package structure, rationalization plan exists, legacy package flagged, no 7th theme package can be added silently.
+
+### Background
+
+Quality Pass 5 is the architectural cleanup pass. The three items shipped in this commit are **contracts** (tests + scaffolds + plan docs) that prevent the codebase from regressing into the same gaps that existed before. The actual migration work (converting 24 routes to use the service layer, removing `@haa/theme-system`) is multi-step and tracked by the new tests.
+
+### Verified (TDD)
+
+- Service-layer: 7/7 new tests pass.
+- Queue: 12/12 new tests pass (verified RED 9/12 fail without impl → GREEN 12/12 with impl).
+- Theme: 7/7 new tests pass.
+- `pnpm --filter @haa/api typecheck` — clean.
+- `pnpm --filter @haa/api build` — clean.
+- Full test suite: 1948/1952 passing (4 pre-existing baseline failures in TASK-0027 working tree, unrelated to this commit).
+
+### Risks
+
+- 🟢 Low for the contracts. They prevent regression without changing runtime behavior.
+- 🟡 Service-layer migration of 24 routes is significant work — deferred to future sessions via the test's migration backlog.
+- 🟡 BullMQ producer API is minimal. Worker surface (the actual job processing) is a future iteration.
+- 🟡 `@haa/theme-system` deletion is a coordinated 8-step migration across 3 apps — the plan doc records the steps.
+
+### Next
+
+- Migrate one route file from direct Drizzle access to a service call (start the budget reduction).
+- Wire a real BullMQ worker process in a production deployment to drain the noop-queue.
+- Begin the `@haa/theme-system` migration per the rationalization plan.
+
+---
+
 ## 2026-06-15 (Quality Pass 4 — Items 2 + 3: Observability + Redis Rate Limiter)
 
 ### Added
