@@ -5,6 +5,41 @@
 
 ---
 
+## 2026-06-15 (Quality Pass 3 — Item 2: Webhook Idempotency)
+
+### Added
+
+- `apps/api/src/middleware/webhook-dedup.ts` — `deduplicateWebhook` + `resolveIdempotencyKey` helpers that dedup inbound webhooks at the API edge.
+- `tests/webhook-dedup.test.ts` — 13 source-grep tests covering the helper's contract and the wiring in both webhook route files.
+
+### Why
+
+Payment providers (Moyasar, HyperPay, etc.) and shipping providers (SMSA, OTO, Aramex) regularly re-deliver the same webhook for reliability. The existing code had partial dedup support — `paymentWebhookEvents.idempotencyKey` is UNIQUE in the schema and Moyasar's provider checks for duplicates — but:
+
+1. Most providers do **not** send `x-idempotency-key` on inbound webhooks, so the existing dedup never fired in practice.
+2. Shipping webhooks had **no dedup at all** — every duplicate re-delivery re-processed the business logic (double wallet entries, double notifications, double outbox events).
+
+### Design
+
+- **Key resolution:** prefer the provider-supplied `x-idempotency-key` header; fall back to `sha256(provider + rawBody + signature)` when the header is absent. The fallback guarantees the same physical delivery always produces the same key.
+- **Wired into all 3 webhook handlers** (payment at `/webhooks/payments/:provider`, generic shipping at `/webhooks/shipping/:provider`, OTO at `/webhooks/shipping/oto/`).
+- **Ordering:** dedup runs **after** signature verification. If dedup ran first, an attacker could pre-poison the idempotency table with arbitrary bodies + bogus signatures to block legitimate deliveries. With signature-first ordering, only legitimate providers can claim a key.
+- **Storage:** uses the existing `paymentWebhookEvents` table (already has the UNIQUE constraint on `idempotencyKey`). No new table.
+
+### Verified (TDD)
+
+- 13/13 new tests pass. Test written first (RED), watched fail (ENOENT for the helper file), then implemented (GREEN), then corrected the ordering (signature before dedup) and updated the test to assert that ordering.
+- `pnpm --filter @haa/api typecheck` — clean
+- `pnpm --filter @haa/api build` — clean
+- Full test suite: 1839 passing, 14 pre-existing failures unrelated (ci-cd-pipeline, migration-dedup, schema-dedup, security-boundary — all confirmed on pre-change commit `bf63dcf`).
+
+### Risk
+
+- 🟡 Shipping providers don't have their own unique-constrained dedup tables — they all use `paymentWebhookEvents`. If a payment webhook and a shipping webhook from the same provider hash to the same key (unlikely but possible), they would collide. Real-world risk is essentially zero because the provider names are disjoint.
+- 🟢 Future maintainers should not reverse the signature-before-dedup ordering. The tests assert this.
+
+---
+
 ## 2026-06-15 (Quality Pass 3 — Item 1: CSRF Origin Check)
 
 ### Added
