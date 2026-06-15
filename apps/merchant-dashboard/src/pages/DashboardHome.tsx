@@ -23,7 +23,7 @@ import {
   notificationApi,
   complianceApi,
 } from "@/lib/api";
-import { formatNumber, formatCurrency } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DollarSign,
@@ -58,7 +58,6 @@ import {
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  CHART_COLORS,
   getRemainingDays,
   getUpcomingSeason,
 } from "./dashboard/constants";
@@ -78,6 +77,7 @@ import { RecentCustomersList } from "./dashboard/RecentCustomersList";
 import { QuickActionsGrid } from "./dashboard/QuickActionsGrid";
 import { SmartAlertsStrip } from "./dashboard/SmartAlertsStrip";
 import { WelcomeBanner } from "./dashboard/WelcomeBanner";
+import { TopProductsList } from "./dashboard/TopProductsList";
 
 export default function DashboardHome() {
   const { t, i18n } = useTranslation();
@@ -1611,81 +1611,7 @@ export default function DashboardHome() {
               {/* Top Products + Quick Actions */}
               <div className="col-span-2 space-y-5">
                 {/* Top Products */}
-                <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-card p-5">
-                  <h3 className="font-bold text-base text-neutral-900 mb-3 flex items-center gap-2">
-                    {t("dashboard.topProducts", "أفضل المنتجات")}
-                    <span className="text-xs font-normal text-neutral-400">
-                      {t("dashboard.byRevenue", "(حسب الإيرادات)")}
-                    </span>
-                  </h3>
-                  {topProducts.length > 0 ? (
-                    <div className="space-y-4">
-                      {(() => {
-                        const maxRevenue = Math.max(
-                          ...topProducts.map((p) => Number(p.totalRevenue)),
-                        );
-                        const totalRevenue = topProducts.reduce(
-                          (s, p) => s + Number(p.totalRevenue),
-                          0,
-                        );
-                        return topProducts.map((p, i) => {
-                          const revenue = Number(p.totalRevenue);
-                          const pct =
-                            totalRevenue > 0
-                              ? (revenue / totalRevenue) * 100
-                              : 0;
-                          return (
-                            <div key={p.productId}>
-                              <div className="flex items-center justify-between mb-1.5">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <span
-                                    className={`h-6 w-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${i === 0 ? "bg-amber-100 text-amber-700" : i === 1 ? "bg-neutral-100 text-neutral-600" : i === 2 ? "bg-orange-100 text-orange-700" : "bg-neutral-50 text-neutral-400"}`}
-                                  >
-                                    {i + 1}
-                                  </span>
-                                  <p className="text-sm font-medium text-neutral-900 truncate">
-                                    {p.name}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <span className="text-xs text-neutral-400">
-                                    {p.totalQuantity} {t("common.sold", "مباع")}
-                                  </span>
-                                  <span className="text-xs font-bold text-neutral-900">
-                                    {formatNumber(revenue)}{" "}
-                                    {t("common.sar", "ر.س")}
-                                  </span>
-                                  <span
-                                    className="text-xs font-bold"
-                                    style={{
-                                      color:
-                                        CHART_COLORS[i % CHART_COLORS.length],
-                                    }}
-                                  >
-                                    {pct.toFixed(0)}%
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="h-2 rounded-full bg-neutral-100 overflow-hidden">
-                                <div
-                                  className="h-full rounded-full transition-all"
-                                  style={{
-                                    width: `${(revenue / maxRevenue) * 100}%`,
-                                    background: `linear-gradient(to left, ${CHART_COLORS[i % CHART_COLORS.length]}, ${CHART_COLORS[(i + 1) % CHART_COLORS.length]})`,
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-neutral-400 text-center py-6">
-                      {t("common.noData", "لا توجد بيانات كافية")}
-                    </p>
-                  )}
-                </div>
+                <TopProductsList products={topProducts} t={t} />
               </div>
             </div>
           </div>
