@@ -68,6 +68,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   export_wallet: 'تصدير المحفظة',
   import_products: 'استيراد المنتجات',
   refund_processed: 'معالجة استرداد',
+  payout_requested: 'طلب سحب أرباح',
   kyc_reviewed: 'مراجعة بيانات التحقق',
   compliance_check_failed: 'فشل فحص الامتثال',
   policy_updated: 'تحديث سياسة',

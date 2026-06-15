@@ -169,6 +169,7 @@ export type AuditAction =
   | 'export_wallet'
   | 'import_products'
   | 'refund_processed'
+  | 'payout_requested'
   // Employee management
   | 'employee_invited'
   | 'employee_role_changed'

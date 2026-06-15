@@ -61,9 +61,27 @@ ordersRouter.patch('/:orderId/status', requirePermission('orders:update_status')
   const orderId = Number(c.req.param('orderId'));
   const body = c.req.valid('json');
   const auth = getAuth(c);
+  // Capture the previous status for the audit trail. The service
+  // returns the updated order on success, but we need the prior
+  // value for the oldValue field.
+  let prevStatus: string | null = null;
   try {
+    const existing = await new OrdersService().getById(storeId, orderId);
+    if (!existing) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } }, 404);
+    prevStatus = existing.status;
     const order = await new OrdersService().changeStatus(storeId, orderId, body.status as any, auth?.userId, body.reason);
     if (!order) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } }, 404);
+    await new AuditLogService().record({
+      actorUserId: auth?.userId,
+      storeId,
+      action: 'order_status_changed',
+      entityType: 'order',
+      entityId: orderId,
+      oldValue: { status: prevStatus },
+      newValue: { status: order.status, reason: body.reason },
+      ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
+      userAgent: c.req.header('user-agent'),
+    });
     return c.json({ success: true, data: order });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Status change failed';

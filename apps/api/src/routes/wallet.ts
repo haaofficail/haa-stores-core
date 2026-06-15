@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { WalletLedger } from '@haa/wallet-core';
 import { KycService } from '@haa/commerce-core';
+import { AuditLogService } from '@haa/integration-core';
 import { paginationSchema, type Permission } from '@haa/shared';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
 
@@ -74,10 +75,21 @@ const payoutRequestSchema = z.object({
 
 walletRouter.post('/payouts/request', requireAnyPermission('wallet.payout.request', 'wallet:request_payout'), zValidator('json', payoutRequestSchema), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const actorUserId = getAuth(c)?.userId;
+  const auth = getAuth(c);
+  const actorUserId = auth?.userId;
   const body = c.req.valid('json');
   try {
     const payout = await new WalletLedger().requestPayout(storeId, body.amount, actorUserId);
+    await new AuditLogService().record({
+      actorUserId: actorUserId ?? null,
+      storeId,
+      action: 'payout_requested',
+      entityType: 'payout',
+      entityId: payout.id,
+      newValue: { amount: body.amount, status: payout.status },
+      ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
+      userAgent: c.req.header('user-agent'),
+    });
     return c.json({ success: true, data: payout }, 201);
   } catch (e) {
     return c.json({
@@ -89,10 +101,21 @@ walletRouter.post('/payouts/request', requireAnyPermission('wallet.payout.reques
 
 walletRouter.post('/payouts', requireAnyPermission('wallet.payout.request', 'wallet:request_payout'), zValidator('json', payoutRequestSchema), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const actorUserId = getAuth(c)?.userId;
+  const auth = getAuth(c);
+  const actorUserId = auth?.userId;
   const body = c.req.valid('json');
   try {
     const payout = await new WalletLedger().requestPayout(storeId, body.amount, actorUserId);
+    await new AuditLogService().record({
+      actorUserId: actorUserId ?? null,
+      storeId,
+      action: 'payout_requested',
+      entityType: 'payout',
+      entityId: payout.id,
+      newValue: { amount: body.amount, status: payout.status },
+      ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
+      userAgent: c.req.header('user-agent'),
+    });
     return c.json({ success: true, data: payout }, 201);
   } catch (e) {
     return c.json({
