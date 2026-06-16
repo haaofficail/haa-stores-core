@@ -83,6 +83,30 @@ export class WalletLedger {
     return account;
   }
 
+  /**
+   * Idempotency check: returns true if a `platform_fee` wallet entry
+   * already exists for this store + order reference. Used to prevent
+   * double-charge when a payment webhook is replayed or when the
+   * checkout flow runs more than once for the same order.
+   *
+   * The natural unique key for a platform_fee is
+   * `(store_id, reference_type='order', reference_id=<orderId>, type='platform_fee')`.
+   * The lookup is cheap (indexed on `referenceIdx`).
+   */
+  async hasPlatformFeeForOrder(storeId: number, orderId: number): Promise<boolean> {
+    const [existing] = await this.db
+      .select({ id: s.walletEntries.id })
+      .from(s.walletEntries)
+      .where(and(
+        eq(s.walletEntries.storeId, storeId),
+        eq(s.walletEntries.type, 'platform_fee'),
+        eq(s.walletEntries.referenceType, 'order'),
+        eq(s.walletEntries.referenceId, orderId),
+      ))
+      .limit(1);
+    return !!existing;
+  }
+
   async recordEntry(input: LedgerEntryInput) {
     return this.db.transaction(async (tx) => {
       const account = await this.ensureAccount(input.storeId);

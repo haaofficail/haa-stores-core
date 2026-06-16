@@ -98,24 +98,29 @@ webhooksRouter.post('/payments/:provider', async (c) => {
             const platformPolicy = await txBilling.getPlatformFeePolicy(storeId);
             const platformFee = calcPlatformFee(Number(payment.amount), platformPolicy);
             if (platformFee > 0) {
-              await txWallet.recordEntry({
-                storeId, type: 'platform_fee', direction: 'debit',
-                amount: platformFee,
-                referenceType: 'order', referenceId: payment.orderId,
-                description: `رسوم منصة Haa (${describePlatformFeePolicy(platformPolicy)}) للطلب عبر ${providerCode}`,
-                status: 'available',
-                feeRatePct: platformPolicy.pct ?? null,
-                feeFixed: platformPolicy.fixed ?? null,
-                feeSource: 'platform_policy',
-                metadata: {
-                  orderTotal: Number(payment.amount),
-                  platformFeeMode: platformPolicy.mode,
-                  platformFeePct: platformPolicy.pct ?? null,
-                  platformFeeFixed: platformPolicy.fixed ?? null,
-                  platformFeeLabel: describePlatformFeePolicy(platformPolicy),
-                  appliedAt: new Date().toISOString(),
-                },
-              });
+              // Idempotency: skip if a platform_fee entry already exists
+              // for this order (e.g. webhook replay).
+              const alreadyCharged = await txWallet.hasPlatformFeeForOrder(storeId, payment.orderId);
+              if (!alreadyCharged) {
+                await txWallet.recordEntry({
+                  storeId, type: 'platform_fee', direction: 'debit',
+                  amount: platformFee,
+                  referenceType: 'order', referenceId: payment.orderId,
+                  description: `رسوم منصة Haa (${describePlatformFeePolicy(platformPolicy)}) للطلب عبر ${providerCode}`,
+                  status: 'available',
+                  feeRatePct: platformPolicy.pct ?? null,
+                  feeFixed: platformPolicy.fixed ?? null,
+                  feeSource: 'platform_policy',
+                  metadata: {
+                    orderTotal: Number(payment.amount),
+                    platformFeeMode: platformPolicy.mode,
+                    platformFeePct: platformPolicy.pct ?? null,
+                    platformFeeFixed: platformPolicy.fixed ?? null,
+                    platformFeeLabel: describePlatformFeePolicy(platformPolicy),
+                    appliedAt: new Date().toISOString(),
+                  },
+                });
+              }
             }
 
             await txOutbox.recordEvent('payment.succeeded', storeId, tenantId, { paymentId: payment.id, orderId: payment.orderId, provider: providerCode });

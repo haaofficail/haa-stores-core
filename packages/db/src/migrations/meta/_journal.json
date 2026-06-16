@@ -365,6 +365,13 @@
       "when": 1782000051000,
       "tag": "0051_wallet_fee_snapshot",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1782000052000,
+      "tag": "0052_store_billing_pct_cap",
+      "breakpoints": true
     }
   ]
 }

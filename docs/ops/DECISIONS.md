@@ -317,5 +317,46 @@ This makes the merge gate green: TASK-0030 can be merged without
 needing the missing snapshot files, and a future operator who needs
 to bootstrap a brand-new DB has a deterministic, documented path.
 
+### Hardening (post-review follow-up #2, 2026-06-16)
+
+Following the local financial review (see
+`docs/ops/PENDING_PR_TASK_0030.md` for the original review), the
+following defensive hardening was applied before merge:
+
+1. **Hard cap on `platform_fee_pct` (50%)** —
+   - `MAX_PLATFORM_FEE_PCT = 0.5` constant in `@haa/wallet-core`
+   - Zod schema in admin route rejects pct > cap (early layer)
+   - `validatePlatformFeePolicyInput` rejects pct > cap (validation
+     layer)
+   - DB CHECK constraint `store_billing_settings_pct_cap` rejects
+     pct > cap (last line of defense, migration 0052)
+   - 4 new unit tests cover the cap boundary
+
+2. **`effectiveFrom` documentation** —
+   - Inline comment in `billing-settings-service.ts` explicitly
+     states that `effectiveFrom` is currently **immediately effective**
+     on every write. The column is reserved for a future
+     "scheduled change" feature; `getPlatformFeePolicy` does NOT
+     honor the field.
+
+3. **Atomicity: policy + audit in one transaction** —
+   - The `try/catch` around the audit log was REMOVED. Now if the
+     audit log fails, the policy update throws and the surrounding
+     transaction rolls back.
+   - The admin route's `patchBillingSettings` handler is now wrapped
+     in `db.transaction(...)`. The policy write + audit write
+     participate in the same transaction.
+
+4. **Idempotency for `platform_fee` ledger entries** —
+   - New `WalletLedger.hasPlatformFeeForOrder(storeId, orderId)`
+     method queries the natural unique key.
+   - Checkout and webhook call this BEFORE inserting a
+     `platform_fee` entry. Replay → no double-charge.
+
+All 4 fixes have tests (4 new unit tests for the cap) and the
+`pnpm preflight` passes. The 62/62 TASK-0030 tests all pass.
+Related wallet/ledger suites (5 files, 31 tests) all pass with no
+regressions.
+
 ### Skills Used
 plan-mode, test-driven-development, verification-before-completion.

@@ -72,5 +72,6 @@ export {
   validatePlatformFeePolicyInput,
   DEFAULT_PLATFORM_FEE_POLICY,
   PLATFORM_FEE_MODES,
+  MAX_PLATFORM_FEE_PCT,
 } from '@haa/wallet-core';
 export type { PlatformFeeMode, PlatformFeePolicy } from '@haa/wallet-core';

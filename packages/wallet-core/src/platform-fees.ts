@@ -136,6 +136,24 @@ function formatFixed(amount: number): string {
 }
 
 /**
+ * Maximum allowed platform-fee percentage (50%).
+ *
+ * Hard cap. Mirrored at three layers:
+ *   1. This constant is the source of truth in code.
+ *   2. Zod schema in `apps/api/src/routes/admin/billing-settings.ts`
+ *      rejects pct > MAX_PLATFORM_FEE_PCT.
+ *   3. PostgreSQL CHECK constraint in migration 0052
+ *      `store_billing_settings_pct_cap` enforces pct <= 0.5 at the DB
+ *      level as a last line of defense.
+ *
+ * Rationale: protects merchants from an admin error that would zero
+ * out their wallet. 50% is generous enough for legitimate business
+ * models (commission, fixed fees, hybrid) and tight enough to prevent
+ * accidental catastrophic billing.
+ */
+export const MAX_PLATFORM_FEE_PCT = 0.5;
+
+/**
  * Validate a candidate policy for the admin PATCH endpoint.
  * Returns either `{ ok: true, policy }` (normalized) or
  * `{ ok: false, error }` (Arabic message).
@@ -155,6 +173,13 @@ export function validatePlatformFeePolicyInput(input: {
 
   if (pctNum != null && (!Number.isFinite(pctNum) || pctNum < 0)) {
     return { ok: false, error: 'نسبة رسوم المنصة لا يمكن أن تكون سالبة' };
+  }
+  // Hard cap: defense-in-depth with DB CHECK constraint.
+  if (pctNum != null && pctNum > MAX_PLATFORM_FEE_PCT) {
+    return {
+      ok: false,
+      error: `نسبة رسوم المنصة تتجاوز الحد الأقصى (${MAX_PLATFORM_FEE_PCT * 100}%)`,
+    };
   }
   if (fixedNum != null && (!Number.isFinite(fixedNum) || fixedNum < 0)) {
     return { ok: false, error: 'الرسم الثابت لا يمكن أن يكون سالبًا' };

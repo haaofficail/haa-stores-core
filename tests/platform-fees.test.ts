@@ -11,6 +11,7 @@ import {
   validatePlatformFeePolicyInput,
   DEFAULT_PLATFORM_FEE_POLICY,
   PLATFORM_FEE_MODES,
+  MAX_PLATFORM_FEE_PCT,
 } from '@haa/wallet-core';
 
 describe('calcPlatformFee — pure unit', () => {
@@ -165,6 +166,34 @@ describe('validatePlatformFeePolicyInput', () => {
   it('rejects percentage_plus_fixed with both zero', () => {
     const r = validatePlatformFeePolicyInput({ platformFeeMode: 'percentage_plus_fixed', platformFeePct: 0, platformFeeFixed: 0 });
     expect(r.ok).toBe(false);
+  });
+
+  // ── Hard cap (50%) — defense-in-depth with DB CHECK constraint ────────
+  it('MAX_PLATFORM_FEE_PCT is 0.5 (50%)', () => {
+    expect(MAX_PLATFORM_FEE_PCT).toBe(0.5);
+  });
+  it('accepts pct at the cap (exactly 0.5)', () => {
+    const r = validatePlatformFeePolicyInput({ platformFeeMode: 'percentage', platformFeePct: 0.5 });
+    expect(r.ok).toBe(true);
+  });
+  it('rejects pct just above the cap (0.500001)', () => {
+    const r = validatePlatformFeePolicyInput({ platformFeeMode: 'percentage', platformFeePct: 0.500001 });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/الحد الأقصى/);
+  });
+  it('rejects pct = 1.0 (100% — merchant would be zeroed out)', () => {
+    const r = validatePlatformFeePolicyInput({ platformFeeMode: 'percentage', platformFeePct: 1.0 });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/الحد الأقصى/);
+  });
+  it('rejects pct in percentage_plus_fixed mode if it exceeds the cap', () => {
+    const r = validatePlatformFeePolicyInput({
+      platformFeeMode: 'percentage_plus_fixed',
+      platformFeePct: 0.6,
+      platformFeeFixed: 1,
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/الحد الأقصى/);
   });
 });
 
