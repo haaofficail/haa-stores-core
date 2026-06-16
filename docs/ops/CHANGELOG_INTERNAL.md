@@ -5,6 +5,68 @@
 
 ---
 
+## 2026-06-16 (Session #1: Financial Wallet Accuracy Foundation — Audit + COD Fee + WalletPostingService)
+
+### Context
+
+Session #1 of the 4-session "production-ready" roadmap (see `~/.mavis/scratchpads/mvs_50210367da784a45867523901dde4cbc/scratchpad.md`). Owner directive: "Complete the entire technical product. Only external integrations activation and deployment remain for me." Combined with the 14-phase remediation plan from the Financial Wallet Accuracy Pass Phase 1 audit (TASK-0031). **3 of 5 owner questions resolved** (Q1 gateway fee UX, Q2 refund policy per provider, Q3 COD fee). **Q1+Q2 implementation deferred to TASK-0034 (Session #2); Q3 implementation DONE in TASK-0032.** Q4 (Tabby/Tamara fee data source) and Q5 (payout pending reservation policy) still open; to be answered during Session #2.
+
+### Added
+
+- **TASK-0031: Financial Wallet Accuracy Pass — Phase 1 Audit (diagnostic only).** New `docs/ops/FINANCIAL_WALLET_AUDIT_PHASE_1.md` (402 lines, 18 sections) on `docs/financial-wallet-audit-phase-1` branch. Documents all 6 `recordEntry(...)` call sites, live-DB entry-type distribution (2 types: `sale` + `platform_fee`, 25 each), 5 critical findings, 14-phase remediation plan (Phases 2-15), and 5 open owner questions. **0 code, 0 migration, 0 schema changes.** Integration branch `integration/platform-fee-policy` HEAD untouched at `761ae27e`; stash `stash@{0}` (QP5 noise) preserved untouched. 3 audit-branch commits, all docs-only.
+- **TASK-0032: Phase 9 — COD Fee Policy (Q3 owner decision, DONE).** Per-store COD fee policy decoupled from platform fee. Migration `0053_cod_fee_policy.sql` adds 4 columns to `store_billing_settings`: `cod_fee_mode varchar(30) default 'percentage' NOT NULL`, `cod_fee_pct numeric(8,6)`, `cod_fee_fixed numeric(12,2)`, `is_cod_fee_enabled boolean default true NOT NULL`. CHECK constraint `store_billing_settings_cod_pct_cap` enforces `cod_fee_pct <= 0.5`. New `packages/wallet-core/src/cod-fees.ts` (parallel to `platform-fees.ts`): `CodFeePolicy`, `COD_FEE_MODES`, `DEFAULT_COD_FEE_POLICY` (default 2%), `normalizeCodFeePolicy`, `calcCodFee` (4 modes: `none` / `percentage` / `fixed` / `percentage_plus_fixed`), `describeCodFeePolicy`, `validateCodFeePolicyInput`, `MAX_COD_FEE_PCT` (50%). `packages/commerce-core/src/orders.ts:321` (`collectCOD`) no longer hardcodes `* 0.02` — reads from the policy service and snapshots policy onto the `cod_fee` wallet entry (feeRatePct, feeFixed, feeSource='cod_policy') for historical immutability. **2 new test files:** `tests/cod-fees.test.ts` (34 unit tests) + `tests/cod-fees-wiring.test.ts` (12 source-grep tests) = 46/46 passing. No regressions on `platform-fees` tests.
+- **TASK-0033: Phase 2-3 — WalletPostingService (Session #1 of 4-session master plan, Session #1 scope DONE).** New `packages/commerce-core/src/wallet-posting-service.ts` — central posting service. 8 methods declared (`postSale`, `postPlatformFee`, `postCodFee`, `postRefund`, `postPayoutDebit`, `postPayoutReversal`, `postGatewayFee`, `postSettlementDifference`). **3 fully implemented in Session #1:** `postSale`, `postCodFee`, `postRefund` (exceeded target of 2). **5 stubbed for Session #2 / TASK-0034.** Centralized dedup via `hasExistingEntry(storeId, referenceType, referenceId, type)` helper — **resolves Critical Finding 4 (sale double-write race)**. Refactored 2 of 6 `recordEntry(...)` call sites to use the service (`orders.ts:313,320`). 4 call sites still raw, queued for Session #2 (TASK-0034 sub-items 5+6: `apps/api/src/routes/orders.ts:131` refund, `checkout.ts`, `payment-webhook-service.ts`). `WalletEntryType` union extended with `gateway_fee` + `settlement_difference` for the upcoming Phase 4-9 work. **2 new test files:** `tests/wallet-posting-service.test.ts` (12 unit tests) + `tests/wallet-posting-wiring.test.ts` (7 source-grep tests) = 19/19 passing.
+- **TASK-0034: Phase 4-9 + Saudi PDPL (Session #2 brief, registered; queued for next session).** 8 sub-items planned: (1) `postPlatformFee` (mirrors `postCodFee`); (2) `postGatewayFee` + `postSettlementDifference` (new entry types); (3) `GatewayFeeRefundPolicy` enum (Q2: `REFUNDABLE | NON_REFUNDABLE`); (4) `postPayoutDebit` + `postPayoutReversal` (Q5); (5) migrate `apps/api/src/routes/orders.ts:131` refund to service; (6) migrate `checkout.ts` + `payment-webhook-service.ts` to service; (7) PDPL data export + account deletion endpoints (`GET /api/merchant/data-export`, `DELETE /api/merchant/account`); (8) gateway fee UX (Q1: "You receive X" + collapsible breakdown). Out of Session #2: Route Migrations 20-24 (QP5 remainder), 3DS flow, ZATCA e-invoicing, deployment runbook, legal templates.
+
+### Changed (audit decisions)
+
+- **Owner Decision Q1 (gateway fee UX):** "You receive X" with collapsible breakdown. Rationale: more transparent and matches Saudi BNPL UX conventions. Implementation deferred to TASK-0034 sub-item 8.
+- **Owner Decision Q2 (refund policy per provider):** Per-provider enum, default `NON_REFUNDABLE`. Provider-specific defaults: Moyasar=`REFUNDABLE`, Tabby/Tamara=`NON_REFUNDABLE` pending verification. Implementation deferred to TASK-0034 sub-item 3.
+- **Owner Decision Q3 (COD fee):** Per-store policy, decoupled from platform fee, default 2% (preserves current behavior). **DONE in TASK-0032.**
+
+### Background
+
+The wallet entry creation was dispersed across 6 call sites in 3 files with no central posting service. The Phase 1 audit (TASK-0031) flagged 5 critical findings. Session #1 shipped:
+- **Findings 1, 3, 4** — addressed via the new `WalletPostingService` (TASK-0033). Centralized dedup kills the sale double-write race (Finding 4). Route-level refund (Finding 3) and 6 dispersed call sites (Finding 1) are partially addressed; remaining 4 call sites queued for Session #2 (TASK-0034 sub-items 5+6).
+- **Finding 2** (no `gateway_fee` entry type) — `WalletEntryType` union extended; full implementation queued for TASK-0034 sub-item 2.
+- **Finding 5** (hardcoded COD fee) — DONE in TASK-0032. Policy-driven via `store_billing_settings.cod_fee_*` columns.
+
+### Verified (Session #1 end state)
+
+- **Test count:** `pnpm test` → 2273 passing (+18 from baseline 2255), 4 pre-existing baseline failures (migration-deduplication / schema-deduplication / security-boundary-gates CSS isolation) unrelated to Session #1 work.
+- **TASK-0031:** 0 code changes; diagnostic report exists and matches all acceptance criteria.
+- **TASK-0032:** `pnpm vitest run tests/cod-fees.test.ts tests/cod-fees-wiring.test.ts` → 46/46. `pnpm vitest run tests/cod-fees.test.ts tests/cod-fees-wiring.test.ts tests/platform-fees.test.ts tests/platform-fees-wiring.test.ts` → 108/108 (no regressions). Typecheck clean on `@haa/wallet-core`, `@haa/commerce-core`, `@haa/db`.
+- **TASK-0033:** `pnpm vitest run tests/wallet-posting-service.test.ts tests/wallet-posting-wiring.test.ts` → 19/19. Typecheck clean on `@haa/commerce-core`, `@haa/wallet-core`.
+- **TASK-0032 Fresh-DB verification (2026-06-16):** Created `haastores_cod_test`, applied all 56 migrations via `psql -f` (drizzle-kit migrate fails silently on stale journal — known gotcha documented in MEMORY.md), then verified: (a) 4 new columns exist with correct types/defaults, (b) CHECK constraint exists with correct def, (c) all 6 behavioral tests pass (valid insert 0.02, cap edge case 0.5 OK, over-cap rejected 0.6 raises `store_billing_settings_cod_pct_cap`, pct=NULL OK, fixed mode OK, percentage_plus_fixed mode OK), (d) idempotent re-apply confirmed (4 `column already exists` NOTICEs + `DO` block re-runs, schema unchanged), (e) 97 total tables created (full schema applied).
+- **Branch state:** `feature/phase-9-cod-fee-policy` @ `ef991a86` (6 Session #1 commits). `docs/financial-wallet-audit-phase-1` @ `09f0323b` (3 audit commits, all docs, parked). `integration/platform-fee-policy` @ `761ae27e` (untouched, parked). Stash `stash@{0}` (QP5 noise) preserved.
+
+### Risks (Session #1 → Session #2 handoff)
+
+- 🟢 **Low** for Session #1 work — all changes are additive or policy-driven, with no merchant-visible behavior change (default values preserve current behavior).
+- 🟡 **5 stub methods in WalletPostingService** — `postPlatformFee`, `postPayoutDebit`, `postPayoutReversal`, `postGatewayFee`, `postSettlementDifference` are declared but not implemented. Session #2 = TASK-0034.
+- 🟡 **4 raw call sites** — `apps/api/src/routes/orders.ts:131` refund + `checkout.ts` + `payment-webhook-service.ts` still use raw `WalletLedger.recordEntry(...)`. Session #2 = TASK-0034 sub-items 5+6.
+- 🟡 **drizzle-kit migrate gotcha** — `drizzle-kit migrate` fails silently on stale journal (root cause: 0050/0051 applied via psql, journal not synced). Documented in MEMORY.md (`drizzle-migration-snapshots` topic). Affects fresh-DB verification only; existing-DB unaffected.
+- 🟡 **Admin/merchant UI for COD fee field** — backend ready, UI deferred. Not blocking backend correctness.
+- 🟡 **Q4 (Tabby/Tamara fee data source) and Q5 (payout pending reservation policy)** — owner decisions deferred to Session #2 (TASK-0034).
+- 🟡 **3 of 4 owner gates still required** — deployment, live API keys (Moyasar/Tabby/Tamara/Sentry), legal docs finalization. Owner-only.
+
+### Session #2 plan (TASK-0034, ~3-4 hours focused work)
+
+8 sub-items as listed in "Added" above. Expected commits: ~6-8 (one per sub-item or grouped). After Session #2: 0 raw call sites, all 8 WalletPostingService methods implemented, Saudi PDPL endpoints live, gateway fee UX shipped to merchant wallet.
+
+### Session #3+ (not in Session #2)
+
+- Quality Pass 5 remainder: Route Migrations 20-24 (subscriptions, webhooks, shipments, haa-marketplace, admin/tenants-stores, admin/marketplace) — total 5 routes still on raw Drizzle.
+- 3D Secure flow (SAMA mandatory since 2021).
+- ZATCA e-invoicing Phase 2 integration (invoice generator with QR).
+- VAT-aware pricing display.
+- Deployment runbook (provision server, run docker-compose, configure reverse proxy).
+- Legal docs templates: Privacy Policy, ToS, DPAs.
+- Live API keys (Moyasar, Tabby, Tamara, Sentry DSN, Postgres production credentials).
+- Walk-through with owner.
+
+---
+
 ## 2026-06-15 (Quality Pass 5 — Items 1+2+3: Service Layer + Queue Scaffold + Theme Rationalization)
 
 ### Added

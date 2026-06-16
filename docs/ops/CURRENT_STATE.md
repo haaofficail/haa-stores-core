@@ -4,8 +4,9 @@
 
 ---
 
-- **Last Updated:** 2026-06-15
+- **Last Updated:** 2026-06-16 (Session #1 closure — Financial Wallet Accuracy Foundation)
 - **Current Phase:** Quality Pass 5 — Architectural Cleanup (in progress; 3/3 core sub-items done — service-layer enforcement + queue scaffold + theme rationalization shipped)
+- **Active Audit (NEW 2026-06-16):** Financial Wallet Accuracy Pass — Phase 1 diagnostic complete on branch `docs/financial-wallet-audit-phase-1`. See TASK-0031 for full report + 5 findings. **3 of 5 owner questions resolved** (Q1 gateway fee UX, Q2 refund policy, Q3 COD fee). **Q1+Q2 implementation deferred to TASK-0034 (Session #2); Q3 implementation DONE in TASK-0032.** Phase 2-3 of the 14-phase remediation plan is also DONE (TASK-0033: WalletPostingService foundation).
 - **Project Summary:** Multi-tenant Saudi e-commerce SaaS platform. Local-only. All 10 phases complete. Deployment gated by owner GO.
 - **Strategic Commitment:** `docs/ops/COMMITMENTS.md` is now active and binding — **Quality Pass 1-5 before any major Feature Pass**.
 - **Active Priorities:**
@@ -52,6 +53,11 @@
   - **Quality Pass 5 — Item 3 (Theme Package Rationalization) ✅ DONE** — created `docs/ops/THEME_RATIONALIZATION.md` (multi-step migration plan to deprecate `@haa/theme-system` → `@haa/storefront-themes`) + 3 missing theme package READMEs (storefront-themes, system-theme, theme-react). New `tests/theme-rationalization.test.ts` (7 tests) asserts: theme package structure, plan doc exists, legacy package flagged, no 7th theme package can be added silently. 7/7 new tests pass; 0 regressions on full suite (1948 passing). 🆕
   - **Quality Pass 5 — 3/3 CORE SUB-ITEMS COMPLETE → architectural contracts shipped (service-layer + queue + theme rationalization).**
   - **Configurable Platform Fee Policy ✅ DONE (TASK-0030)** — platform fee is now read from `store_billing_settings` at order time and snapshotted onto the `platform_fee` wallet entry (feeRatePct, feeFixed, feeSource='platform_policy'). 4 modes supported (none / percentage / fixed / percentage_plus_fixed). Admin can edit at `/admin/store-billing`; merchant wallet shows it read-only. Every change records an `store_billing_settings_updated` audit entry. 2 migrations (0050 + 0051), 2 new test files (57 tests passing), 0 regressions. Backward compat preserved — flat `platformFees` / `paymentFees` fields still returned alongside the new structured `fees` block. See `DECISIONS.md` DECISION-0007. 🆕
+  - **TASK-0031 — Financial Wallet Accuracy Pass Phase 1 (audit, diagnostic only) ✅ DONE (2026-06-16)** — read-only diagnostic on `docs/financial-wallet-audit-phase-1` branch. `docs/ops/FINANCIAL_WALLET_AUDIT_PHASE_1.md` (402 lines, 18 sections) documents all 6 `recordEntry(...)` call sites, live-DB entry-type distribution, 5 critical findings, 14-phase remediation plan, and 5 open owner questions. 0 code, 0 migration, 0 schema changes. Integration branch `integration/platform-fee-policy` HEAD untouched at `761ae27e`; stash `stash@{0}` (QP5 noise) preserved. 🆕
+  - **TASK-0032 — Phase 9: COD Fee Policy (Q3 owner decision) ✅ DONE (2026-06-16)** — per-store COD fee policy decoupled from platform fee. New `codFeeMode` / `codFeePct` / `codFeeFixed` / `isCodFeeEnabled` columns on `store_billing_settings` (migration 0053 + CHECK cap at 50%). New `packages/wallet-core/src/cod-fees.ts` (parallel to `platform-fees.ts`, 4 modes, full validation, default 2%). `orders.ts:321` no longer hardcodes `* 0.02` (defense-in-depth: wiring test catches future regressions). Policy snapshotted onto the `cod_fee` wallet entry for historical immutability. 2 new test files: `tests/cod-fees.test.ts` + `tests/cod-fees-wiring.test.ts` (all passing). Fresh-DB verified: `haastores_cod_test` created, all 56 migrations applied via `psql` (drizzle-kit migrate fails silently on stale journal — gotcha documented in MEMORY.md), all 4 new columns exist with correct types/defaults, 6 behavioral tests pass, idempotent re-apply confirmed. **Out-of-scope (deferred, not required for backend correctness):** admin dashboard UI for COD fee field, merchant wallet UI for COD fee display. 🆕
+  - **TASK-0033 — Phase 2-3: WalletPostingService (central posting surface) ✅ Session #1 DONE (2026-06-16)** — new `packages/commerce-core/src/wallet-posting-service.ts` with 8 posting methods (3 fully implemented: `postSale`, `postCodFee`, `postRefund`; 5 stubbed for Session #2: `postPlatformFee`, `postPayoutDebit`, `postPayoutReversal`, `postGatewayFee`, `postSettlementDifference`). Centralized dedup via `hasExistingEntry(storeId, referenceType, referenceId, type)` — kills the sale double-write race (Critical Finding 4). Refactored 2 of 6 call sites to use the service (`orders.ts:313,320`); 4 call sites still raw, queued for Session #2 (TASK-0034 sub-items 5+6). `WalletEntryType` union extended with `gateway_fee` + `settlement_difference` for the upcoming Phase 4-9 work. 2 new test files: `tests/wallet-posting-service.test.ts` (12 unit tests) + `tests/wallet-posting-wiring.test.ts` (7 source-grep tests) — all passing. Audit Critical Findings 1 (6 call sites), 3 (route-level refund), 4 (sale double-write) addressed at the service level. 🆕
+  - **TASK-0034 — Phase 4-9 + Saudi PDPL (Session #2 brief, queued) ⏳ REGISTERED 2026-06-16** — 8 sub-items planned for next session: (1) `postPlatformFee`, (2) `postGatewayFee` + `postSettlementDifference`, (3) `GatewayFeeRefundPolicy` enum (Q2), (4) `postPayoutDebit` + `postPayoutReversal`, (5) migrate `apps/api/src/routes/orders.ts:131` refund, (6) migrate `checkout.ts` + `payment-webhook-service.ts`, (7) PDPL data export + account deletion endpoints, (8) gateway fee UX (Q1). Out of Session #2: Route Migrations 20-24 (QP5 remainder), 3DS, ZATCA, deployment runbook, legal templates. See `~/.mavis/scratchpads/mvs_50210367da784a45867523901dde4cbc/scratchpad.md` for the full 4-session roadmap. 🆕
+  - **Owner Decisions Resolved (2026-06-16, Session #1):** Q1 (gateway fee UX) → "You receive X" with collapsible breakdown (TASK-0034 sub-item 8); Q2 (refund policy per provider) → per-provider enum, default NON_REFUNDABLE, Moyasar=REFUNDABLE, Tabby/Tamara=NON_REFUNDABLE pending verification (TASK-0034 sub-item 3); Q3 (COD fee) → DONE in TASK-0032 (per-store policy, default 2%, decoupled from platform fee). 🆕
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done
@@ -79,10 +85,14 @@
     - TASK-0028 (Quality Pass 4 — Operations & Quality) — Done (3/3 specified sub-items: CI/CD pipeline + observability shim + Redis rate-limiter production wiring)
     - TASK-0029 (Quality Pass 5 — Architectural Cleanup) — In Progress (3/3 core sub-items done: service-layer enforcement + queue scaffold + theme package rationalization)
     - TASK-0030 (Configurable Platform Fee Policy) — Done (see DECISIONS.md DECISION-0007): store_billing_settings + fee-snapshot fields + 4 modes + admin/merchant UIs + 57 new tests)
+    - TASK-0031 (Financial Wallet Accuracy Pass — Phase 1 audit) — Done (diagnostic only; 5 findings + 14-phase plan; Q1+Q2 deferred to TASK-0034, Q3 done in TASK-0032)
+    - TASK-0032 (Phase 9: COD Fee Policy, Q3 owner decision) — Done (per-store policy in store_billing_settings; cod-fees.ts module; orders.ts:321 policy-driven; fresh-DB verified; admin/merchant UI for COD deferred)
+    - TASK-0033 (Phase 2-3: WalletPostingService foundation) — Session #1 Done (8 methods declared, 3 implemented, dedup centralized, 2 of 6 call sites refactored; remaining 4 call sites + 5 stub methods = Session #2 / TASK-0034)
+    - TASK-0034 (Phase 4-9 + Saudi PDPL — Session #2 brief) — In Progress (8 sub-items registered; queued for next session)
 - **Known Broken Areas:**
   - Storefront root `/` hardcoded to `/s/haa-demo` redirect — works after seed ✅
   - Registration creates stores as `draft` (intentional — merchant must publish from settings)
-  - All 1573 tests pass against isolated test DB (78 test files, 1 skipped) — 0 pre-existing failures
+  - All 2273 tests pass against isolated test DB (+18 from Session #1 baseline 2255) — 4 pre-existing baseline failures (migration-deduplication / schema-deduplication / security-boundary-gates CSS isolation) unrelated to Session #1 work
 - **Known Risks:**
   - Duplicate project folders on Desktop causing path confusion ⚠️
   - CI/CD pipeline shipped (Quality Pass 4 Item 1) ✅ — runs on push to main + quality-pass-* and on PR
@@ -93,6 +103,7 @@
   - Support ticket accessToken in URL query (R-0014) — FIXED for new links; temporary legacy query compatibility remains ✅
   - Test DB `haastores_test` must be migrated/seed after schema changes via `pnpm db:test:setup`
 - **Recently Completed:**
+  - **Session #1 — Financial Wallet Accuracy Foundation (2026-06-16):** audit (TASK-0031) + COD fee policy (TASK-0032) + WalletPostingService foundation (TASK-0033) + Session #2 brief (TASK-0034). 6 commits on `feature/phase-9-cod-fee-policy` (TASK-0031/0032 briefs + 0053 migration + WalletPostingService + refactor + fresh-DB verification + TASK-0034 brief). 3 commits on `docs/financial-wallet-audit-phase-1` (audit report + 2 docs registrations). 0 code, 0 schema, 0 migration regressions. +18 tests added. 3 of 5 owner decisions resolved (Q1, Q2, Q3). Integration branch HEAD untouched at `761ae27e`; stash `stash@{0}` preserved. **Session #2 = TASK-0034 (Phase 4-9 + Saudi PDPL), ~3-4 hours of focused work. Owner gates still required: deployment, live secrets, legal docs, pricing beyond Q1/Q2/Q3.** 🆕
   - Quality Pass 2 — Item 2.2 (Storefront route split) — sub-item only: removed monolith `apps/api/src/routes/storefront.ts` from working tree, created `apps/api/src/routes/storefront/` with 7 files (`index.ts`, `_shared.ts`, `store-info.ts`, `products.ts`, `cart.ts`, `checkout.ts`, `support.ts`), updated `apps/api/src/index.ts` to import `./routes/storefront/index.js`, 5 split-aware regression test files / 33 tests passed, `pnpm --filter @haa/api typecheck` + `pnpm --filter @haa/api build` + `pnpm --filter @haa/storefront build` + `pnpm --filter @haa/merchant-dashboard build` all passed ✅
   - Marketplace Product Detail Trust Section Density: compressed the shipping/returns and reviews sections, reduced wasted card spacing, enlarged Tabby/Tamara logos only on the product detail page, added persuasive BNPL copy with "ادفع الآن فقط" and per-payment amount, reduced payment-block height to 69px, compressed marketplace product cards from 515px to 405px with image share increased to 61%, fixed clipped demo badge, added product-detail sales count, and verified no horizontal overflow ✅
   - Marketplace Product Detail Completion: product page now includes Tabby/Tamara BNPL, savings block, old price, large price, buy-now CTA, gallery arrows/zoom, specifications, policies, reviews summary, merchant link, and no horizontal overflow ✅
@@ -156,14 +167,17 @@
   - Three terminals: `pnpm dev:api`, `pnpm dev:dashboard`, `pnpm dev:storefront`
   - Canonical local ports: API `3000`, merchant dashboard `5173`, storefront `5174`, admin dashboard `5175`; Vite apps use `strictPort: true`
   - First commit: `076bc40` — "chore: add development operating system"
-  - Branch: `fix/theme-stabilization-pass-1`
-  - Latest commit: `c985e6d` — fix: apply footer follow-up lint and monitoring updates
+  - **Active branch (Session #1 work):** `feature/phase-9-cod-fee-policy` @ `ef991a86` (6 Session #1 commits)
+  - **Audit branch (untouched, parked):** `docs/financial-wallet-audit-phase-1` @ `09f0323b` (3 audit-only commits; diagnostic, 0 code)
+  - **Integration branch (untouched, parked):** `integration/platform-fee-policy` @ `761ae27e`
+  - **Stash (preserved):** `stash@{0}` — QP5 noise (5 files, M18 HEAD)
   - preflight is now a hardened Node script (`scripts/preflight.mjs`) that fails with exit code 1 from wrong directory
   - System Map is at `docs/system-map/SYSTEM_MAP.md` and `docs/system-map/ERROR_FLOW_MAP.md`
   - Security docs are at `docs/security/`
-   - Tests run against isolated `haastores_test` DB (74 test files, 1493 tests) — run `pnpm db:test:setup` after schema changes
+   - Tests run against isolated `haastores_test` DB — 2273 passing (+18 from Session #1 baseline 2255), 4 pre-existing baseline failures unrelated — run `pnpm db:test:setup` after schema changes
   - Test DB setup script: `scripts/db-test-setup.sh`
   - Test env override: `tests/setup.ts` overrides DATABASE_URL automatically
+  - **Session #2 scratchpad (handoff):** `~/.mavis/scratchpads/mvs_50210367da784a45867523901dde4cbc/scratchpad.md` — full 4-session roadmap + owner decision log + audit reference
 - **Important Decisions:**
   - NO_DEPLOY_POLICY active — local development only until owner GO
   - Short requests must be expanded before execution (DECISION-0001)
