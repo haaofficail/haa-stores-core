@@ -1616,3 +1616,43 @@
 - **Status History:**
   - Requested: 2026-06-16
   - In Progress: 2026-06-16
+  - Fresh-DB Verified: 2026-06-16
+
+---
+
+### TASK-0033: Financial Wallet Accuracy — Master Plan & Phase 2-3 (WalletPostingService)
+
+- **Type:** Architecture / Refactor
+- **Priority:** P1 High
+- **Status:** In Progress
+- **Created:** 2026-06-16
+- **Updated:** 2026-06-16
+- **Original Request:** Owner directive (2026-06-16): "Complete the entire technical product. Only external integrations activation and deployment remain for me." Combine with the audit's 14-phase remediation plan from TASK-0031.
+- **Problem:** The wallet entry creation is dispersed across 6 call sites in 3 files. The audit (TASK-0031) flagged this as Critical Finding 1: no central posting service. Findings 3 (route-level refund) and 4 (sale double-write race) are direct consequences. Phase 9 (COD fee) and Phase 6-7 (gateway fee UX) both need a stable, centralized posting service to hang off.
+- **Goal:** Build `WalletPostingService` that owns ALL `recordEntry(...)` calls. Refactor every existing call site to use it. Add centralized dedup + idempotency. Make Phase 4-9 of the audit's plan trivially additive.
+- **Scope (4 sessions — see scratchpad for full roadmap):**
+  - **Session #1 (this task — Phase 2-3 of the audit):**
+    - New `packages/commerce-core/src/wallet-posting-service.ts` — central service.
+    - Methods: `postSale`, `postPlatformFee`, `postCodFee`, `postRefund`, `postPayoutDebit`, `postPayoutReversal`, `postGatewayFee`, `postSettlementDifference`.
+    - Centralized dedup: a single `hasExistingEntry(storeId, referenceType, referenceId, type)` helper.
+    - Refactor 3 call sites: `checkout.ts:322,345`, `orders.ts:313,320`, `apps/api/src/routes/orders.ts:131`.
+    - New tests: `tests/wallet-posting-service.test.ts` (unit, dedup logic) + `tests/wallet-posting-wiring.test.ts` (source-grep).
+  - **Session #2 (Phase 4-9):** gateway_fee + refund policy + payout flows + Saudi PDPL endpoints.
+  - **Session #3 (Quality Pass 5 + ZATCA + 3DS):** Route Migrations 20-24 + compliance.
+  - **Session #4 (Deployment readiness):** legal templates, runbook, integration tests.
+- **Out of Scope:** Deployment, live API keys, legal doc finalization, pricing decisions.
+- **Affected Areas:** `packages/commerce-core`, `apps/api`, `tests/`.
+- **Skills Required:** plan-mode, test-driven-development, verification-before-completion, requesting-code-review.
+- **Skills Used:** plan-mode, test-driven-development, verification-before-completion.
+- **Acceptance Criteria (Session #1 only):**
+  - [ ] `WalletPostingService` class exists with all 8 methods declared (some may be stubbed)
+  - [ ] At least 2 methods fully implemented + tested: `postCodFee` and `postRefund`
+  - [ ] Centralized dedup helper prevents sale double-write
+  - [ ] Refactored call sites: `orders.ts:313,320` use the service
+  - [ ] `tests/wallet-posting-service.test.ts` passes (RED → GREEN verified)
+  - [ ] `tests/wallet-posting-wiring.test.ts` catches future regressions
+  - [ ] No new typecheck errors
+  - [ ] Full suite passes or only the 4 pre-existing baseline failures
+- **Status History:**
+  - Requested: 2026-06-16
+  - In Progress: 2026-06-16

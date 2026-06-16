@@ -60,14 +60,16 @@ describe('COD fee — schema', () => {
   });
 });
 
-describe('COD fee — call site (orders.ts:321)', () => {
-  it('orders.ts imports calcCodFee + describeCodFeePolicy from wallet-core', () => {
+describe('COD fee — call site (orders.ts:321, refactored to WalletPostingService in TASK-0033)', () => {
+  it('orders.ts uses WalletPostingService for the cod_fee entry', () => {
+    // After TASK-0033, the inline calcCodFee + describeCodFeePolicy calls
+    // moved into WalletPostingService.postCodFee. The call site should
+    // use the service, not the raw calculation.
     const orders = read('packages/commerce-core/src/orders.ts');
-    expect(orders).toMatch(/calcCodFee/);
-    expect(orders).toMatch(/describeCodFeePolicy/);
+    expect(orders).toMatch(/WalletPostingService/);
   });
 
-  it('orders.ts imports StoreBillingSettingsService', () => {
+  it('orders.ts imports StoreBillingSettingsService for the policy lookup', () => {
     const orders = read('packages/commerce-core/src/orders.ts');
     expect(orders).toMatch(/StoreBillingSettingsService/);
   });
@@ -77,22 +79,10 @@ describe('COD fee — call site (orders.ts:321)', () => {
     expect(orders).toMatch(/getCodFeePolicy/);
   });
 
-  it('orders.ts no longer contains the hardcoded `0.02` literal', () => {
+  it('orders.ts no longer has inline `calcCodFee(...)` calls (moved to service)', () => {
+    // After TASK-0033, calcCodFee lives only in WalletPostingService.
     const orders = read('packages/commerce-core/src/orders.ts');
-    // Look for "* 0.02" or "* 0.02" patterns in the collectCOD call site.
-    // We allow "0.02" to appear in JSDoc comments but not in the fee
-    // calculation itself.
-    const codFeeCalculation = orders.match(/type:\s*['"]cod_fee['"][\s\S]{0,400}amount:/);
-    expect(codFeeCalculation).not.toBeNull();
-    if (codFeeCalculation) {
-      expect(codFeeCalculation[0]).not.toMatch(/\*\s*0\.02/);
-    }
-  });
-
-  it('orders.ts collects the fee via calcCodFee (not literal multiplication)', () => {
-    const orders = read('packages/commerce-core/src/orders.ts');
-    // The new code stores the calculated value into a local before recordEntry.
-    expect(orders).toMatch(/const\s+codFeeAmount\s*=\s*calcCodFee/);
+    expect(orders).not.toMatch(/calcCodFee/);
   });
 });
 

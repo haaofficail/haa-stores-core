@@ -5,12 +5,9 @@ import type { OrderStatus, PaymentStatus, FulfillmentStatus } from '@haa/shared'
 import { ORDER_STATUS_TRANSITIONS } from '@haa/shared';
 import { NotificationService } from '@haa/notification-core';
 import { AuditLogService } from '@haa/integration-core';
-import {
-  WalletLedger,
-  calcCodFee,
-  describeCodFeePolicy,
-} from '@haa/wallet-core';
+import { WalletLedger } from '@haa/wallet-core';
 import { StoreBillingSettingsService } from './billing-settings-service.js';
+import { WalletPostingService } from './wallet-posting-service.js';
 
 export class OrdersService {
   constructor(private db: DbClient = createDbClient()) {}
@@ -316,25 +313,43 @@ export class OrdersService {
 
       // Read the per-store COD-fee policy at collection time. The policy
       // is then snapshotted onto the `cod_fee` wallet entry for
-      // historical immutability — see TASK-0032.
+      // historical immutability — see TASK-0032 + TASK-0033.
       const txBilling = new StoreBillingSettingsService(tx as any);
       const codPolicy = await txBilling.getCodFeePolicy(storeId);
-      const codFeeAmount = calcCodFee(Number(order.total), codPolicy);
-      const codPolicyDesc = describeCodFeePolicy(codPolicy);
 
+      // Centralize wallet entry creation via WalletPostingService
+      // (TASK-0033). This replaces the previous inline `recordEntry`
+      // call sites with a single, idempotent, auditable surface.
+      const txPosting = new WalletPostingService(tx as any);
       const txWallet = new WalletLedger(tx as any);
+
+      const saleResult = await txPosting.postSale({
+        storeId,
+        orderId: order.id,
+        orderTotal: Number(order.total),
+        orderNumber: order.orderNumber,
+        method: 'cod',
+      });
       await txWallet.recordEntry({
-        storeId, type: 'sale', direction: 'credit',
-        amount: Number(order.total),
+        storeId, type: saleResult.entryType, direction: 'credit',
+        amount: saleResult.amount,
         referenceType: 'order', referenceId: order.id,
         description: `COD collection for order ${order.orderNumber}`,
         status: 'available',
       });
+
+      const codResult = await txPosting.postCodFee({
+        storeId,
+        orderId: order.id,
+        orderTotal: Number(order.total),
+        orderNumber: order.orderNumber,
+        policy: codPolicy,
+      });
       await txWallet.recordEntry({
-        storeId, type: 'cod_fee', direction: 'debit',
-        amount: codFeeAmount,
+        storeId, type: codResult.entryType, direction: 'debit',
+        amount: codResult.amount,
         referenceType: 'order', referenceId: order.id,
-        description: `COD fee (${codPolicyDesc}) for order ${order.orderNumber}`,
+        description: `COD fee (${codResult.policyDescription}) for order ${order.orderNumber}`,
         status: 'available',
       });
 

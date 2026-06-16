@@ -60,7 +60,11 @@ export type WalletEntryType =
   | 'payout_debit'
   | 'payout_reversal'
   | 'cod_receivable'
-  | 'cod_fee';
+  | 'cod_fee'
+  // Added in TASK-0033 (Session #1) — see audit Phase 4-5 for the
+  // gateway_fee + settlement_difference work coming in Session #2.
+  | 'gateway_fee'
+  | 'settlement_difference';
 
 export type WalletEntryDirection = 'credit' | 'debit';
 
