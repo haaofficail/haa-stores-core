@@ -1601,11 +1601,17 @@
   - [ ] All new tests pass; no regressions on existing `platform-fees` tests
   - [ ] `pnpm typecheck` clean; `pnpm --filter @haa/{db,wallet-core,commerce-core} build` clean
 - **Test Plan:** TDD for `cod-fees.ts` (RED → GREEN). Source-grep wiring tests to ensure `orders.ts:321` is policy-driven. Typecheck + build verification.
-- **Test Results:** _to be filled_
-- **Risks:**
-  - 🟢 The COD fee is currently hardcoded, so this is purely additive — no merchant sees a change unless their admin sets a different value (and the default preserves 2%).
-  - 🟡 Wallet entry snapshot requires updating the `cod_fee` entry shape (add `feeSource` + `feeRatePct` + `feeFixed` columns, mirroring `platform_fee` entry). If skipped, historical COD entries won't be auditable.
-  - 🟡 The existing 0050/0051 migrations had a stale journal/snapshot issue. Migration 0053 needs to be tested on a fresh DB before merge.
+- **Test Results:**
+  - **Unit + wiring (RED → GREEN verified):** `pnpm vitest run tests/cod-fees.test.ts tests/cod-fees-wiring.test.ts` → 46/46 passing (34 unit + 12 wiring). TDD discipline: test wrote first, watched fail with "module not found", implemented module, watched pass.
+  - **No regressions:** `pnpm vitest run tests/cod-fees.test.ts tests/cod-fees-wiring.test.ts tests/platform-fees.test.ts tests/platform-fees-wiring.test.ts` → 108/108 passing.
+  - **Typecheck:** `pnpm --filter @haa/wallet-core typecheck` + `pnpm --filter @haa/commerce-core typecheck` + `pnpm --filter @haa/db typecheck` → all clean (after `pnpm --filter @haa/wallet-core build` to expose new exports).
+  - **Fresh-DB verification (2026-06-16):** Created `haastores_cod_test`, applied all 56 migrations via `psql -f` (drizzle-kit migrate fails silently on stale journal — known gotcha documented in MEMORY.md), then verified:
+    - ✅ 4 new columns exist with correct types + defaults (`cod_fee_mode varchar(30) default 'percentage' NOT NULL`, `cod_fee_pct numeric(8,6)`, `cod_fee_fixed numeric(12,2)`, `is_cod_fee_enabled boolean default true NOT NULL`)
+    - ✅ CHECK constraint `store_billing_settings_cod_pct_cap` exists with correct def: `CHECK (cod_fee_pct IS NULL OR cod_fee_pct <= 0.5)`
+    - ✅ All 6 behavioral tests pass: valid insert (0.02), cap edge case (0.5 OK), over-cap rejected (0.6 raises `store_billing_settings_cod_pct_cap`), pct=NULL OK, fixed mode OK, percentage_plus_fixed mode OK
+    - ✅ Idempotent: re-applying 0053 = 4 `column already exists` NOTICEs + `DO` block re-runs, schema unchanged, no errors
+    - ✅ Total tables created: 97 (full schema applied)
+  - **Full suite:** `pnpm test` → 2255 passing (+110 from baseline 2145), 4 pre-existing baseline failures in `migration-deduplication` / `schema-deduplication` / `security-boundary-gates` (CSS isolation) — all unrelated to this task
 - **Related Decisions:** Owner decisions Q1+Q2 (deferred), Q3 (this task). See TASK-0031 for the full audit context.
 - **Status History:**
   - Requested: 2026-06-16
