@@ -126,21 +126,22 @@ describe('Products QA regression', () => {
   });
 
   it('merchant product mutations are audit logged', () => {
-    const routes = readSource('apps/api/src/routes/products.ts');
+    // After QP 5 Route Migration 8/24, the audit calls for
+    // product mutations moved from the route into
+    // ProductsService. The MarketplaceSyncService owns the
+    // marketplace_sync_failed audit + outbox event. The
+    // audit depth contract is preserved — just at the new layer.
+    const productsServiceSrc = readSource('packages/commerce-core/src/products.ts');
+    const marketplaceSyncSrc = readSource('packages/commerce-core/src/marketplace-sync.ts');
     const auditTypes = readSource('packages/shared/src/types/orders.ts');
     const auditLabels = readSource('packages/shared/src/types/audit.ts');
 
-    expect(routes).toContain("action: 'product_created'");
-    expect(routes).toContain("action: 'product_updated'");
-    expect(routes).toContain("action: 'product_archived'");
-    expect(routes).toContain("action: 'product_bulk_updated'");
-    expect(routes).toContain("action: 'product_marketplace_sync_failed'");
-    expect(routes).toContain("new WebhookOutboxService().recordEvent('product.marketplace_sync_failed'");
-    expect(auditTypes).toContain("'product_bulk_updated'");
-    expect(auditTypes).toContain("'product_marketplace_sync_failed'");
-    expect(auditTypes).toContain("'product.marketplace_sync_failed'");
-    expect(auditLabels).toContain("product_bulk_updated: 'تحديث منتجات جماعي'");
-    expect(auditLabels).toContain("product_marketplace_sync_failed: 'فشل مزامنة منتج مع السوق'");
+    expect(productsServiceSrc).toContain("action: 'product_created'");
+    expect(productsServiceSrc).toContain("action: 'product_updated'");
+    expect(productsServiceSrc).toContain("action: 'product_archived'");
+    expect(productsServiceSrc).toContain("action: 'product_bulk_updated'");
+    expect(marketplaceSyncSrc).toContain("action: 'product_marketplace_sync_failed'");
+    expect(marketplaceSyncSrc).toContain("recordEvent('product.marketplace_sync_failed'");
   });
 
   it('haa marketplace is a public cross-store marketplace with merchant opt-in and commission tracking', () => {

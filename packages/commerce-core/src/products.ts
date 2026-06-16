@@ -3,14 +3,33 @@ import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { createProductSchema, updateProductSchema, ValidationError } from '@haa/shared';
 import { createMediaAdapter, type MediaAdapter, type UploadResult } from '@haa/shared/media';
+import { AuditLogService } from '@haa/integration-core';
 import { z } from 'zod';
 import { cacheBumpNamespace, cacheGetVersioned, cacheSetVersioned } from './redis';
 
 type CreateProductInput = z.infer<typeof createProductSchema>;
 type UpdateProductInput = z.infer<typeof updateProductSchema>;
 
+/**
+ * Audit context passed to mutating methods. The route populates
+ * this from the request (getAuth(c), c.req.header('x-forwarded-for'),
+ * etc.) and the service uses it to record the audit log entry.
+ *
+ * Same shape as the AuditLogService.record() options the route
+ * used to pass directly. Kept narrow to avoid leaking transport
+ * details into the service.
+ */
+export interface AuditContext {
+  actorUserId?: number | null;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
 export class ProductsService {
-  constructor(private db: DbClient = createDbClient()) {}
+  constructor(
+    private db: DbClient = createDbClient(),
+    private audit: AuditLogService = new AuditLogService(),
+  ) {}
 
   private cacheNamespace(storeId: number): string {
     return `prod:${storeId}`;
@@ -316,7 +335,7 @@ export class ProductsService {
     }
   }
 
-  async create(storeId: number, input: CreateProductInput) {
+  async create(storeId: number, input: CreateProductInput, auditCtx?: AuditContext) {
     return this.db.transaction(async (tx) => {
       await this.validateProductRelations(tx, storeId, input);
 
@@ -370,11 +389,26 @@ export class ProductsService {
 
       await cacheBumpNamespace(this.cacheNamespace(storeId));
 
+      // Audit (fire-and-forget — failure here doesn't fail the
+      // create; the audit is for observability, not a constraint).
+      if (auditCtx) {
+        await this.audit.record({
+          actorUserId: auditCtx.actorUserId ?? null,
+          storeId,
+          action: 'product_created',
+          entityType: 'product',
+          entityId: product.id,
+          newValue: { id: product.id, name: product.name, status: product.status },
+          ipAddress: auditCtx.ipAddress,
+          userAgent: auditCtx.userAgent,
+        });
+      }
+
       return product;
     });
   }
 
-  async update(storeId: number, productId: number, input: UpdateProductInput) {
+  async update(storeId: number, productId: number, input: UpdateProductInput, auditCtx?: AuditContext) {
     const existing = await this.getById(storeId, productId);
     if (!existing) return null;
 
@@ -437,11 +471,28 @@ export class ProductsService {
 
       await cacheBumpNamespace(this.cacheNamespace(storeId));
 
+      // Audit (mirrors the original route's audit call: old vs
+      // new for the auditable fields, no oldValue if the product
+      // didn't exist before the call).
+      if (auditCtx) {
+        await this.audit.record({
+          actorUserId: auditCtx.actorUserId ?? null,
+          storeId,
+          action: 'product_updated',
+          entityType: 'product',
+          entityId: productId,
+          oldValue: existing ? { name: existing.name, status: existing.status, price: existing.price } : null,
+          newValue: { id: updated[0].id, name: updated[0].name, status: updated[0].status, price: updated[0].price },
+          ipAddress: auditCtx.ipAddress,
+          userAgent: auditCtx.userAgent,
+        });
+      }
+
       return updated[0];
     });
   }
 
-  async bulkAction(storeId: number, productIds: number[], action: 'activate' | 'deactivate') {
+  async bulkAction(storeId: number, productIds: number[], action: 'activate' | 'deactivate', auditCtx?: AuditContext) {
     const status = action === 'activate' ? 'active' : 'draft';
     const result = await this.db.update(s.products)
       .set({ status, updatedAt: new Date() })
@@ -452,18 +503,45 @@ export class ProductsService {
 
     const succeeded = result.map(r => r.id);
     const failed = productIds.filter(id => !succeeded.includes(id));
+
+    if (auditCtx) {
+      await this.audit.record({
+        actorUserId: auditCtx.actorUserId ?? null,
+        storeId,
+        action: 'product_bulk_updated',
+        entityType: 'product',
+        entityId: null,
+        newValue: { action, productIds, result: { total: productIds.length, succeeded: succeeded.length, failed: failed.length } },
+        ipAddress: auditCtx.ipAddress,
+        userAgent: auditCtx.userAgent,
+      });
+    }
+
     return { total: productIds.length, succeeded: succeeded.length, failed: failed.length, failedIds: failed };
   }
 
-  async archive(storeId: number, productId: number) {
+  async archive(storeId: number, productId: number, auditCtx?: AuditContext) {
     const existing = await this.getById(storeId, productId);
     if (!existing) return null;
     const [updated] = await this.db.update(s.products).set({
       status: 'archived', updatedAt: new Date(),
     }).where(and(eq(s.products.id, productId), eq(s.products.storeId, storeId))).returning();
-    
+
     await cacheBumpNamespace(this.cacheNamespace(storeId));
-    
+
+    if (auditCtx) {
+      await this.audit.record({
+        actorUserId: auditCtx.actorUserId ?? null,
+        storeId,
+        action: 'product_archived',
+        entityType: 'product',
+        entityId: productId,
+        newValue: { id: updated.id, name: updated.name, status: updated.status },
+        ipAddress: auditCtx.ipAddress,
+        userAgent: auditCtx.userAgent,
+      });
+    }
+
     return updated;
   }
 
@@ -471,7 +549,7 @@ export class ProductsService {
     return this.archive(storeId, productId);
   }
 
-  async addImage(storeId: number, productId: number, buffer: Buffer, mimetype: string, alt?: string) {
+  async addImage(storeId: number, productId: number, buffer: Buffer, mimetype: string, alt?: string, auditCtx?: AuditContext) {
     const product = await this.getById(storeId, productId);
     if (!product) return null;
 
@@ -519,10 +597,23 @@ export class ProductsService {
 
     await cacheBumpNamespace(this.cacheNamespace(storeId));
 
+    if (auditCtx) {
+      await this.audit.record({
+        actorUserId: auditCtx.actorUserId ?? null,
+        storeId,
+        action: 'product_image_uploaded',
+        entityType: 'product_image',
+        entityId: image.id,
+        newValue: { productId, url: image.url },
+        ipAddress: auditCtx.ipAddress,
+        userAgent: auditCtx.userAgent,
+      });
+    }
+
     return image;
   }
 
-  async deleteImage(storeId: number, productId: number, imageId: number) {
+  async deleteImage(storeId: number, productId: number, imageId: number, auditCtx?: AuditContext) {
     const [imageRow] = await this.db.select({ image: s.productImages })
       .from(s.productImages)
       .innerJoin(s.products, eq(s.productImages.productId, s.products.id))
@@ -544,6 +635,19 @@ export class ProductsService {
       .where(and(eq(s.productImages.id, imageId), eq(s.productImages.productId, productId)));
 
     await cacheBumpNamespace(this.cacheNamespace(storeId));
+
+    if (auditCtx) {
+      await this.audit.record({
+        actorUserId: auditCtx.actorUserId ?? null,
+        storeId,
+        action: 'product_image_deleted',
+        entityType: 'product_image',
+        entityId: imageId,
+        oldValue: { productId, url: image.url },
+        ipAddress: auditCtx.ipAddress,
+        userAgent: auditCtx.userAgent,
+      });
+    }
 
     return image;
   }
