@@ -1560,3 +1560,53 @@
 - **Status History:**
   - Requested: 2026-06-16
   - Done: 2026-06-16
+
+---
+
+### TASK-0032: Financial Wallet Accuracy Pass — Phase 9 (COD Fee Policy)
+
+- **Type:** Feature / Data/DB / API / Testing
+- **Priority:** P1 High
+- **Status:** In Progress
+- **Created:** 2026-06-16
+- **Updated:** 2026-06-16
+- **Original Request:** Replace the hardcoded `* 0.02` COD fee in `packages/commerce-core/src/orders.ts:321` with a per-store policy-driven value. Decouple COD fee from the platform fee so merchants can set them independently. See FINANCIAL_WALLET_AUDIT_PHASE_1.md Section 1 finding #5 and Phase 9 of the 14-phase remediation plan.
+- **Problem:** The COD fee is hardcoded at 2% in `orders.ts:321` and is NOT driven by the `StoreBillingSettings` policy service. This violates Principle 3 from COMMITMENTS.md ("no hardcoded fees"). It also blocks the per-store pricing flexibility that TASK-0030 unlocked for online platform fees.
+- **Goal:** Add a per-store COD fee policy (`codFeeMode` + `codFeeValue` + `isCodFeeEnabled`) to `store_billing_settings`. Replace the hardcoded call site with policy-driven calculation. Add unit + wiring tests. Default value preserves the current 2% behavior to avoid disrupting existing merchants.
+- **Owner Decisions (resolved 2026-06-16 in this session):**
+  - Q1 (gateway fee UX): **"You receive X" with collapsible breakdown.** Tracked separately as future Phase 6-7 work.
+  - Q2 (refund policy per provider): **Per-provider enum, default NON_REFUNDABLE, Moyasar=REFUNDABLE, Tabby/Tamara=NON_REFUNDABLE pending verification.** Tracked separately as future Phase 8 work.
+  - Q3 (COD fee): **Add `codFeeMode/Value/Enabled` to `StoreBillingSettings`, default 2%, decoupled from platform fee.** This task.
+- **Scope (this task only):**
+  - **Schema:** Migration 0053 — add 4 columns to `store_billing_settings`: `cod_fee_mode`, `cod_fee_pct`, `cod_fee_fixed`, `is_cod_fee_enabled`. Default values preserve current 2% COD behavior.
+  - **Service module:** New `packages/wallet-core/src/cod-fees.ts` — parallel to `platform-fees.ts`. Exports `CodFeePolicy`, `COD_FEE_MODES`, `DEFAULT_COD_FEE_POLICY`, `normalizeCodFeePolicy`, `calcCodFee`, `describeCodFeePolicy`, `validateCodFeePolicyInput`, `MAX_COD_FEE_PCT`. Pure module (no I/O), unit-testable.
+  - **Call site:** Update `packages/commerce-core/src/orders.ts:321` (the `collectCOD` method) — replace `* 0.02` with a policy-driven calculation. Snapshot the policy onto the `cod_fee` wallet entry for historical immutability.
+  - **Tests:** New `tests/cod-fees.test.ts` (unit tests for `calcCodFee` + validation, mirrors `tests/platform-fees.test.ts` structure). New `tests/cod-fees-wiring.test.ts` (source-grep wiring tests, mirrors `tests/platform-fees-wiring.test.ts` structure).
+- **Out of Scope (deferred to future tasks):**
+  - Admin dashboard UI for COD fee field (follow-up commit; not needed for backend correctness)
+  - Merchant wallet UI for COD fee display (follow-up commit; not needed for backend correctness)
+  - Phase 6-7 (gateway fee UX)
+  - Phase 8 (refund policy per provider)
+  - Phases 2-5 (centralized `WalletPostingService`, gateway_fee entry type) — separate track
+- **Affected Areas:** `packages/db`, `packages/wallet-core`, `packages/commerce-core`, `tests/`.
+- **Skills Required:** plan-mode, test-driven-development, verification-before-completion, requesting-code-review.
+- **Skills Used:** test-driven-development, verification-before-completion.
+- **Acceptance Criteria:**
+  - [ ] Migration 0053 adds 4 columns with sensible defaults (2% / enabled)
+  - [ ] `cod-fees.ts` module is pure (no I/O) and mirrors `platform-fees.ts` API surface
+  - [ ] `calcCodFee` handles all 4 modes (`none`, `percentage`, `fixed`, `percentage_plus_fixed`)
+  - [ ] `validateCodFeePolicyInput` rejects negative values, mode-specific required fields, pct > `MAX_COD_FEE_PCT` (50%)
+  - [ ] `orders.ts:321` no longer contains the literal `0.02` (defense-in-depth: also caught by a wiring test)
+  - [ ] `collectCOD` reads from the policy service, snapshots onto the wallet entry
+  - [ ] All new tests pass; no regressions on existing `platform-fees` tests
+  - [ ] `pnpm typecheck` clean; `pnpm --filter @haa/{db,wallet-core,commerce-core} build` clean
+- **Test Plan:** TDD for `cod-fees.ts` (RED → GREEN). Source-grep wiring tests to ensure `orders.ts:321` is policy-driven. Typecheck + build verification.
+- **Test Results:** _to be filled_
+- **Risks:**
+  - 🟢 The COD fee is currently hardcoded, so this is purely additive — no merchant sees a change unless their admin sets a different value (and the default preserves 2%).
+  - 🟡 Wallet entry snapshot requires updating the `cod_fee` entry shape (add `feeSource` + `feeRatePct` + `feeFixed` columns, mirroring `platform_fee` entry). If skipped, historical COD entries won't be auditable.
+  - 🟡 The existing 0050/0051 migrations had a stale journal/snapshot issue. Migration 0053 needs to be tested on a fresh DB before merge.
+- **Related Decisions:** Owner decisions Q1+Q2 (deferred), Q3 (this task). See TASK-0031 for the full audit context.
+- **Status History:**
+  - Requested: 2026-06-16
+  - In Progress: 2026-06-16
