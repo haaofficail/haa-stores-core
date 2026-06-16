@@ -5,7 +5,12 @@ import type { OrderStatus, PaymentStatus, FulfillmentStatus } from '@haa/shared'
 import { ORDER_STATUS_TRANSITIONS } from '@haa/shared';
 import { NotificationService } from '@haa/notification-core';
 import { AuditLogService } from '@haa/integration-core';
-import { WalletLedger } from '@haa/wallet-core';
+import {
+  WalletLedger,
+  calcCodFee,
+  describeCodFeePolicy,
+} from '@haa/wallet-core';
+import { StoreBillingSettingsService } from './billing-settings-service.js';
 
 export class OrdersService {
   constructor(private db: DbClient = createDbClient()) {}
@@ -309,6 +314,14 @@ export class OrdersService {
       const txOrders = new OrdersService(tx as any);
       const updated = await txOrders.updatePaymentStatus(storeId, orderId, 'paid', Number(order.total));
 
+      // Read the per-store COD-fee policy at collection time. The policy
+      // is then snapshotted onto the `cod_fee` wallet entry for
+      // historical immutability — see TASK-0032.
+      const txBilling = new StoreBillingSettingsService(tx as any);
+      const codPolicy = await txBilling.getCodFeePolicy(storeId);
+      const codFeeAmount = calcCodFee(Number(order.total), codPolicy);
+      const codPolicyDesc = describeCodFeePolicy(codPolicy);
+
       const txWallet = new WalletLedger(tx as any);
       await txWallet.recordEntry({
         storeId, type: 'sale', direction: 'credit',
@@ -319,9 +332,9 @@ export class OrdersService {
       });
       await txWallet.recordEntry({
         storeId, type: 'cod_fee', direction: 'debit',
-        amount: Math.round(Number(order.total) * 0.02 * 100) / 100,
+        amount: codFeeAmount,
         referenceType: 'order', referenceId: order.id,
-        description: `COD fee (2%) for order ${order.orderNumber}`,
+        description: `COD fee (${codPolicyDesc}) for order ${order.orderNumber}`,
         status: 'available',
       });
 

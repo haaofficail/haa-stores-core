@@ -1,14 +1,14 @@
 // StoreBillingSettingsService — owns reads and writes of the per-store
-// platform-fee policy.
+// platform-fee policy AND the per-store COD-fee policy.
 //
 // Reads are used at checkout (Phase 4) and by the merchant wallet (Phase 7).
 // Writes are gated to admin-only and record an audit log entry on every
 // successful change (Phase 11).
 //
 // Lives in `commerce-core` because it depends on `@haa/integration-core`
-// (AuditLogService). The pure calculation (`calcPlatformFee` etc.) lives in
-// `@haa/wallet-core` and is re-exported from there for direct use in routes
-// that don't need DB access.
+// (AuditLogService). The pure calculation (`calcPlatformFee`,
+// `calcCodFee` etc.) lives in `@haa/wallet-core` and is re-exported from
+// there for direct use in routes that don't need DB access.
 
 import { eq } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
@@ -16,8 +16,11 @@ import * as s from '@haa/db/schema';
 import { AuditLogService } from '@haa/integration-core';
 import {
   DEFAULT_PLATFORM_FEE_POLICY,
+  DEFAULT_COD_FEE_POLICY,
   PlatformFeePolicy,
+  CodFeePolicy,
   normalizePlatformFeePolicy,
+  normalizeCodFeePolicy,
 } from '@haa/wallet-core';
 
 export class StoreBillingSettingsService {
@@ -36,6 +39,22 @@ export class StoreBillingSettingsService {
       .limit(1);
     if (!row) return { ...DEFAULT_PLATFORM_FEE_POLICY };
     return normalizePlatformFeePolicy(row);
+  }
+
+  /**
+   * Read the COD-fee policy for a store. Returns the default
+   * `DEFAULT_COD_FEE_POLICY` (2% percentage) if no row exists yet,
+   * so `collectCOD` never breaks for a fresh tenant. Decoupled from
+   * the platform-fee policy — see TASK-0032.
+   */
+  async getCodFeePolicy(storeId: number): Promise<CodFeePolicy> {
+    const [row] = await this.db
+      .select()
+      .from(s.storeBillingSettings)
+      .where(eq(s.storeBillingSettings.storeId, storeId))
+      .limit(1);
+    if (!row) return { ...DEFAULT_COD_FEE_POLICY };
+    return normalizeCodFeePolicy(row);
   }
 
   /**
