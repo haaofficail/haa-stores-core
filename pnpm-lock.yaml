@@ -431,6 +431,9 @@ importers:
       '@haa/shipping-core':
         specifier: workspace:*
         version: link:../shipping-core
+      '@haa/theme-system':
+        specifier: workspace:*
+        version: link:../theme-system
       '@haa/wallet-core':
         specifier: workspace:*
         version: link:../wallet-core

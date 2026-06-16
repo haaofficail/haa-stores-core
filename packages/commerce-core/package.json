@@ -36,6 +36,7 @@
     "@haa/payment-providers": "workspace:*",
     "@haa/shared": "workspace:*",
     "@haa/shipping-core": "workspace:*",
+    "@haa/theme-system": "workspace:*",
     "@haa/wallet-core": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "ioredis": "^5.11.1",

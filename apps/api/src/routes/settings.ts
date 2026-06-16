@@ -1,27 +1,12 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { eq, and, count, desc } from 'drizzle-orm';
-import { createDbClient } from '@haa/db';
-import * as s from '@haa/db/schema';
-import { getPaymentProviderStatus, KycService, PublishGateService, AcknowledgementService } from '@haa/commerce-core';
+import { getPaymentProviderStatus, KycService, PublishGateService, AcknowledgementService, StoreSettingsService } from '@haa/commerce-core';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
-import { mergeAndResolveThemeConfig, resolveActiveThemeConfig } from '@haa/theme-system/server';
 
 const settingsRouter = new Hono();
 
 settingsRouter.use('*', requireAuth(), requireStoreAccess());
-
-function getStoreSettingsColumns(settings: any) {
-  return {
-    welcomeMessage: settings?.welcomeMessage ?? null,
-    welcomeMessageEnabled: settings?.welcomeMessageEnabled ?? false,
-    preparationTime: settings?.preparationTime ?? 0,
-    preparationTimeEnabled: settings?.preparationTimeEnabled ?? false,
-    minOrderAmount: settings?.minOrderAmount ?? '0',
-    minOrderEnabled: settings?.minOrderEnabled ?? false,
-  };
-}
 
 const sizeGuideRowSchema = z.record(z.string().min(1).max(60), z.string().max(120));
 const sizeGuideSchema = z.object({
@@ -48,12 +33,11 @@ const updateStoreSchema = z.object({
   seoDescription: z.string().max(160).optional(),
 });
 
+// ── Store metadata ───────────────────────────────────────
+
 settingsRouter.get('/', requirePermission('stores:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const db = createDbClient();
-  const [store] = await db.select().from(s.stores)
-    .where(and(eq(s.stores.id, storeId), eq(s.stores.isActive, true)))
-    .limit(1);
+  const store = await new StoreSettingsService().getStore(storeId);
   if (!store) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Store not found' } }, 404);
   const { tenantId, ...rest } = store;
   return c.json({ success: true, data: rest });
@@ -62,37 +46,18 @@ settingsRouter.get('/', requirePermission('stores:read'), async (c) => {
 settingsRouter.put('/', requirePermission('settings:update'), zValidator('json', updateStoreSchema), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const body = c.req.valid('json');
-  const db = createDbClient();
-
-  const cleanBody: Record<string, unknown> = { updatedAt: new Date() };
-  for (const [key, value] of Object.entries(body)) {
-    if (value !== undefined) cleanBody[key] = value;
-  }
-
-  const [updated] = await db.update(s.stores).set(cleanBody)
-    .where(eq(s.stores.id, storeId)).returning();
+  const updated = await new StoreSettingsService().updateStore(storeId, body);
   if (!updated) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Store not found' } }, 404);
   const { tenantId, ...rest } = updated;
   return c.json({ success: true, data: rest });
 });
 
+// ── Store config (welcome + min order + address) ────────
+
 settingsRouter.get('/store-config', requirePermission('stores:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const db = createDbClient();
-  const [store] = await db.select().from(s.stores).where(eq(s.stores.id, storeId)).limit(1);
-  const [settings] = await db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-  return c.json({
-    success: true,
-    data: {
-      ...getStoreSettingsColumns(settings),
-      city: store?.city ?? null,
-      district: store?.district ?? null,
-      street: store?.street ?? null,
-      postalCode: store?.postalCode ?? null,
-      latitude: store?.latitude ?? null,
-      longitude: store?.longitude ?? null,
-    },
-  });
+  const data = await new StoreSettingsService().getStoreConfig(storeId);
+  return c.json({ success: true, data });
 });
 
 settingsRouter.put('/store-config', requirePermission('settings:update'), zValidator('json', z.object({
@@ -111,78 +76,22 @@ settingsRouter.put('/store-config', requirePermission('settings:update'), zValid
 })), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const body = c.req.valid('json');
-  const db = createDbClient();
-
-  const settingsUpdate: Record<string, unknown> = { updatedAt: new Date() };
-  const storeUpdate: Record<string, unknown> = {};
-
-  if (body.welcomeMessage !== undefined) settingsUpdate.welcomeMessage = body.welcomeMessage;
-  if (body.welcomeMessageEnabled !== undefined) settingsUpdate.welcomeMessageEnabled = body.welcomeMessageEnabled;
-  if (body.preparationTime !== undefined) settingsUpdate.preparationTime = body.preparationTime;
-  if (body.preparationTimeEnabled !== undefined) settingsUpdate.preparationTimeEnabled = body.preparationTimeEnabled;
-  if (body.minOrderAmount !== undefined) settingsUpdate.minOrderAmount = body.minOrderAmount.toString();
-  if (body.minOrderEnabled !== undefined) settingsUpdate.minOrderEnabled = body.minOrderEnabled;
-  if (body.city !== undefined) storeUpdate.city = body.city;
-  if (body.district !== undefined) storeUpdate.district = body.district;
-  if (body.street !== undefined) storeUpdate.street = body.street;
-  if (body.postalCode !== undefined) storeUpdate.postalCode = body.postalCode;
-  if (body.latitude !== undefined) storeUpdate.latitude = body.latitude?.toString() ?? null;
-  if (body.longitude !== undefined) storeUpdate.longitude = body.longitude?.toString() ?? null;
-
-  if (Object.keys(settingsUpdate).length > 1) {
-    const [existing] = await db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-    if (existing) {
-      await db.update(s.storeSettings).set(settingsUpdate).where(eq(s.storeSettings.storeId, storeId));
-    } else {
-      await db.insert(s.storeSettings).values({ storeId, ...settingsUpdate as any });
-    }
-  }
-
-  if (Object.keys(storeUpdate).length > 0) {
-    storeUpdate.updatedAt = new Date();
-    await db.update(s.stores).set(storeUpdate).where(eq(s.stores.id, storeId));
-  }
-
-  const [updatedStore] = await db.select().from(s.stores).where(eq(s.stores.id, storeId)).limit(1);
-  const [updatedSettings] = await db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-  return c.json({
-    success: true,
-    data: {
-      ...getStoreSettingsColumns(updatedSettings),
-      city: updatedStore?.city ?? null,
-      district: updatedStore?.district ?? null,
-      street: updatedStore?.street ?? null,
-      postalCode: updatedStore?.postalCode ?? null,
-      latitude: updatedStore?.latitude ?? null,
-      longitude: updatedStore?.longitude ?? null,
-    },
-  });
+  const data = await new StoreSettingsService().updateStoreConfig(storeId, body);
+  return c.json({ success: true, data });
 });
+
+// ── Size guides ──────────────────────────────────────────
 
 settingsRouter.get('/size-guides', requirePermission('stores:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const db = createDbClient();
-  const guides = await db.select()
-    .from(s.sizeGuides)
-    .where(eq(s.sizeGuides.storeId, storeId))
-    .orderBy(desc(s.sizeGuides.updatedAt));
+  const guides = await new StoreSettingsService().listSizeGuides(storeId);
   return c.json({ success: true, data: guides });
 });
 
 settingsRouter.post('/size-guides', requirePermission('settings:update'), zValidator('json', sizeGuideSchema), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const body = c.req.valid('json');
-  const db = createDbClient();
-  const [guide] = await db.insert(s.sizeGuides).values({
-    storeId,
-    name: body.name,
-    type: body.type,
-    unit: body.unit,
-    rows: body.rows,
-    categoryIds: body.categoryIds,
-    productIds: body.productIds,
-    isActive: body.isActive,
-  }).returning();
+  const guide = await new StoreSettingsService().createSizeGuide(storeId, body);
   return c.json({ success: true, data: guide }, 201);
 });
 
@@ -190,11 +99,7 @@ settingsRouter.put('/size-guides/:guideId', requirePermission('settings:update')
   const storeId = Number(c.req.param('storeId'));
   const guideId = Number(c.req.param('guideId'));
   const body = c.req.valid('json');
-  const db = createDbClient();
-  const [guide] = await db.update(s.sizeGuides).set({
-    ...body,
-    updatedAt: new Date(),
-  }).where(and(eq(s.sizeGuides.id, guideId), eq(s.sizeGuides.storeId, storeId))).returning();
+  const guide = await new StoreSettingsService().updateSizeGuide(storeId, guideId, body);
   if (!guide) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Size guide not found' } }, 404);
   return c.json({ success: true, data: guide });
 });
@@ -202,66 +107,20 @@ settingsRouter.put('/size-guides/:guideId', requirePermission('settings:update')
 settingsRouter.delete('/size-guides/:guideId', requirePermission('settings:update'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const guideId = Number(c.req.param('guideId'));
-  const db = createDbClient();
-  const [deleted] = await db.delete(s.sizeGuides)
-    .where(and(eq(s.sizeGuides.id, guideId), eq(s.sizeGuides.storeId, storeId)))
-    .returning({ id: s.sizeGuides.id });
+  const deleted = await new StoreSettingsService().deleteSizeGuide(storeId, guideId);
   if (!deleted) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Size guide not found' } }, 404);
   return c.json({ success: true, data: deleted });
 });
 
+// ── Readiness aggregation ────────────────────────────────
+
 settingsRouter.get('/readiness', requirePermission('stores:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const db = createDbClient();
-
-  const [store] = await db.select().from(s.stores).where(eq(s.stores.id, storeId)).limit(1);
-
-  const [categoriesCount] = await db.select({ total: count() }).from(s.categories)
-    .where(eq(s.categories.storeId, storeId));
-  const [activeProductsCount] = await db.select({ total: count() }).from(s.products)
-    .where(and(eq(s.products.storeId, storeId), eq(s.products.status, 'active')));
-
-  const productsWithImages = await db.select({ productId: s.productImages.productId })
-    .from(s.productImages)
-    .innerJoin(s.products, eq(s.productImages.productId, s.products.id))
-    .where(eq(s.products.storeId, storeId))
-    .limit(1);
-
-  const [activeMethodsCount] = await db.select({ total: count() }).from(s.shippingMethods)
-    .where(and(eq(s.shippingMethods.storeId, storeId), eq(s.shippingMethods.isActive, true)));
-  const [zonesCount] = await db.select({ total: count() }).from(s.shippingZones)
-    .where(eq(s.shippingZones.storeId, storeId));
-  const [ratesCount] = await db.select({ total: count() }).from(s.shippingRates)
-    .innerJoin(s.shippingMethods, eq(s.shippingRates.shippingMethodId, s.shippingMethods.id))
-    .where(eq(s.shippingMethods.storeId, storeId));
-
-  const [ordersCount] = await db.select({ total: count() }).from(s.orders)
-    .where(eq(s.orders.storeId, storeId));
-
-  const items = [
-    { key: 'store_name', label: 'settings.storeReadiness.storeName', completed: !!(store?.name && store.name.length > 0), actionLabel: 'settings.storeReadiness.actionSettings', actionHref: '/settings' },
-    { key: 'store_description', label: 'settings.storeReadiness.storeDescription', completed: !!(store?.description && store.description.length > 0), actionLabel: 'settings.storeReadiness.actionSettings', actionHref: '/settings' },
-    { key: 'store_logo', label: 'settings.storeReadiness.storeLogo', completed: !!(store?.logoUrl && store.logoUrl.length > 0), actionLabel: 'settings.storeReadiness.actionSettings', actionHref: '/settings' },
-    { key: 'store_color', label: 'settings.storeReadiness.storeColor', completed: !!(store?.primaryColor && store.primaryColor.length > 0), actionLabel: 'settings.storeReadiness.actionSettings', actionHref: '/settings' },
-    { key: 'store_contact', label: 'settings.storeReadiness.storeContact', completed: !!((store?.phone && store.phone.length > 0) || (store?.email && store.email.length > 0)), actionLabel: 'settings.storeReadiness.actionSettings', actionHref: '/settings' },
-    { key: 'has_category', label: 'settings.storeReadiness.hasCategory', completed: Number(categoriesCount?.total ?? 0) >= 1, actionLabel: 'settings.storeReadiness.actionCategories', actionHref: '/categories' },
-    { key: 'has_active_product', label: 'settings.storeReadiness.hasActiveProduct', completed: Number(activeProductsCount?.total ?? 0) >= 1, actionLabel: 'settings.storeReadiness.actionProducts', actionHref: '/products' },
-    { key: 'has_product_image', label: 'settings.storeReadiness.hasProductImage', completed: productsWithImages.length > 0, actionLabel: 'settings.storeReadiness.actionProducts', actionHref: '/products' },
-    { key: 'has_shipping_method', label: 'settings.storeReadiness.hasShippingMethod', completed: Number(activeMethodsCount?.total ?? 0) >= 1, actionLabel: 'settings.storeReadiness.actionShipping', actionHref: '/shipping' },
-    { key: 'has_shipping_zone', label: 'settings.storeReadiness.hasShippingZone', completed: Number(zonesCount?.total ?? 0) >= 1, actionLabel: 'settings.storeReadiness.actionShipping', actionHref: '/shipping' },
-    { key: 'has_shipping_rate', label: 'settings.storeReadiness.hasShippingRate', completed: Number(ratesCount?.total ?? 0) >= 1, actionLabel: 'settings.storeReadiness.actionShipping', actionHref: '/shipping' },
-    { key: 'has_order', label: 'settings.storeReadiness.hasOrder', completed: Number(ordersCount?.total ?? 0) >= 1, actionLabel: 'settings.storeReadiness.actionStorefront', actionHref: '#' },
-  ];
-
-  const completedCount = items.filter(i => i.completed).length;
-  const totalCount = items.length;
-  const percentage = Math.round((completedCount / totalCount) * 100);
-
-  return c.json({
-    success: true,
-    data: { percentage, completedCount, totalCount, items },
-  });
+  const data = await new StoreSettingsService().getReadiness(storeId);
+  return c.json({ success: true, data });
 });
+
+// ── Payment status (delegated to existing services) ─────
 
 settingsRouter.get('/payment-status', requirePermission('stores:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
@@ -271,19 +130,12 @@ settingsRouter.get('/payment-status', requirePermission('stores:read'), async (c
   return c.json({ success: true, data: { ...status, kycRequiredForLive } });
 });
 
-const defaultFeatures = {
-  imageLightbox: true, stickyCart: true, trustBadges: true, reviews: true,
-  shareButton: true, deliveryEstimate: true, sizeGuide: true, alsoBought: true,
-  recentlyViewed: true, priceAlert: true, giftWrap: true, sendAsGift: true, pickup: true, stockBar: true,
-  liveViewers: true, compareBadges: true,
-  badgeMaroof: false, badgeSaudiBusinessCenter: false, badgeSaudiMade: false,
-};
+// ── Product features ─────────────────────────────────────
 
 settingsRouter.get('/product-features', requirePermission('stores:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const db = createDbClient();
-  const [settings] = await db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-  return c.json({ success: true, data: (settings?.productFeatures as any) ?? defaultFeatures });
+  const data = await new StoreSettingsService().getProductFeatures(storeId);
+  return c.json({ success: true, data });
 });
 
 settingsRouter.put('/product-features', requirePermission('settings:update'), zValidator('json', z.object({
@@ -301,33 +153,19 @@ settingsRouter.put('/product-features', requirePermission('settings:update'), zV
 })), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const body = c.req.valid('json');
-  const db = createDbClient();
-
-  // Prevent enabling pickup without at least one active pickup location
-  if (body.pickup === true) {
-    const [activeLocation] = await db.select({ id: s.pickupLocations.id }).from(s.pickupLocations)
-      .where(and(eq(s.pickupLocations.storeId, storeId), eq(s.pickupLocations.isActive, true))).limit(1);
-    if (!activeLocation) {
-      return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'لا يمكن تفعيل الاستلام من الفرع قبل إضافة فرع نشط واحد على الأقل' } }, 400);
-    }
+  const result = await new StoreSettingsService().updateProductFeatures(storeId, body);
+  if (result.kind === 'pickup_no_location') {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: result.message } }, 400);
   }
-
-  const [existing] = await db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-  const current = (existing?.productFeatures as any) ?? defaultFeatures;
-  const updated = { ...current, ...body };
-  if (existing) {
-    await db.update(s.storeSettings).set({ productFeatures: updated as any, updatedAt: new Date() }).where(eq(s.storeSettings.storeId, storeId));
-  } else {
-    await db.insert(s.storeSettings).values({ storeId, productFeatures: updated as any });
-  }
-  return c.json({ success: true, data: updated });
+  return c.json({ success: true, data: result.features });
 });
+
+// ── Theme ────────────────────────────────────────────────
 
 settingsRouter.get('/theme', requirePermission('stores:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const db = createDbClient();
-  const [settings] = await db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-  return c.json({ success: true, data: resolveActiveThemeConfig(settings?.themeConfig as any) });
+  const data = await new StoreSettingsService().getTheme(storeId);
+  return c.json({ success: true, data });
 });
 
 settingsRouter.put('/theme', requirePermission('settings:update'), zValidator('json', z.object({
@@ -390,53 +228,28 @@ settingsRouter.put('/theme', requirePermission('settings:update'), zValidator('j
     commercialRegistration: z.object({ enabled: z.boolean().optional(), crNumber: z.string().optional(), verificationUrl: z.string().optional(), acceptedTerms: z.boolean().optional() }).optional(),
     unifiedQr: z.object({ enabled: z.boolean().optional(), qrImageUrl: z.string().optional(), qrTargetUrl: z.string().optional(), acceptedTerms: z.boolean().optional() }).optional(),
     maroof: z.object({ enabled: z.boolean().optional(), maroofNumber: z.string().optional(), verificationUrl: z.string().optional(), acceptedTerms: z.boolean().optional(), legacy: z.literal(true).optional() }).optional(),
-    saudiMade: z.object({ enabled: z.boolean().optional(), membershipNumber: z.string().optional(), verificationUrl: z.string().optional(), acceptedTerms: z.boolean().optional(), officialAssetUrl: z.string().optional(), memberConfirmed: z.boolean().optional() }).optional(),
+    saudiMade: z.object({ enabled: z.boolean().optional(), membershipNumber: z.string().optional(), verificationUrl: z.string().optional(), acceptedTerms: z.boolean().optional(), oficialAssetUrl: z.string().optional(), memberConfirmed: z.boolean().optional() }).optional(),
     vat: z.object({ enabled: z.boolean().optional(), vatNumber: z.string().optional(), verificationUrl: z.string().optional(), acceptedTerms: z.boolean().optional() }).optional(),
   }).optional(),
 })), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const body = c.req.valid('json');
-  const db = createDbClient();
-  const [existing] = await db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-  const existingConfig = (existing?.themeConfig as any) ?? null;
-  const current = resolveActiveThemeConfig(existing?.themeConfig as any);
-  const history = ((existingConfig as any)?._history ?? []) as any[];
-  const snapshot = { ...current };
-  delete (snapshot as any)._history;
-  history.unshift({ config: snapshot, appliedAt: new Date().toISOString(), preset: current.preset, themeKey: current.themeKey });
-  const trimmed = history.slice(0, 5);
-  const updated = { ...mergeAndResolveThemeConfig(current, body as any), _history: trimmed };
-  if (existing) {
-    await db.update(s.storeSettings).set({ themeConfig: updated as any, updatedAt: new Date() }).where(eq(s.storeSettings.storeId, storeId));
-  } else {
-    await db.insert(s.storeSettings).values({ storeId, themeConfig: updated as any });
-  }
-  const { _history, ...clean } = updated;
-  return c.json({ success: true, data: clean, history: trimmed });
+  const { config, history } = await new StoreSettingsService().updateTheme(storeId, body);
+  return c.json({ success: true, data: config, history });
 });
 
 settingsRouter.get('/theme/history', requirePermission('stores:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const db = createDbClient();
-  const [settings] = await db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-  const history = ((settings?.themeConfig as any)?._history ?? []) as any[];
-  return c.json({ success: true, data: history });
+  const data = await new StoreSettingsService().getThemeHistory(storeId);
+  return c.json({ success: true, data });
 });
 
-// Gift Options
+// ── Gift options ─────────────────────────────────────────
+
 settingsRouter.get('/gift-options', requirePermission('stores:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const db = createDbClient();
-  const [settings] = await db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-  return c.json({
-    success: true,
-    data: {
-      giftWrapDefaultPrice: settings?.giftWrapDefaultPrice ?? '0',
-      giftMessageMaxLength: settings?.giftMessageMaxLength ?? 250,
-      giftWrapInstructions: settings?.giftWrapInstructions ?? null,
-      pickupInstructions: settings?.pickupInstructions ?? null,
-    },
-  });
+  const data = await new StoreSettingsService().getGiftOptions(storeId);
+  return c.json({ success: true, data });
 });
 
 settingsRouter.put('/gift-options', requirePermission('settings:update'), zValidator('json', z.object({
@@ -447,31 +260,12 @@ settingsRouter.put('/gift-options', requirePermission('settings:update'), zValid
 })), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const body = c.req.valid('json');
-  const db = createDbClient();
-  const [existing] = await db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-  const updateData: Record<string, unknown> = { updatedAt: new Date() };
-  if (body.giftWrapDefaultPrice !== undefined) updateData.giftWrapDefaultPrice = body.giftWrapDefaultPrice.toString();
-  if (body.giftMessageMaxLength !== undefined) updateData.giftMessageMaxLength = body.giftMessageMaxLength;
-  if (body.giftWrapInstructions !== undefined) updateData.giftWrapInstructions = body.giftWrapInstructions;
-  if (body.pickupInstructions !== undefined) updateData.pickupInstructions = body.pickupInstructions;
-  if (existing) {
-    await db.update(s.storeSettings).set(updateData).where(eq(s.storeSettings.storeId, storeId));
-  } else {
-    await db.insert(s.storeSettings).values({ storeId, ...updateData as any });
-  }
-  const [updated] = await db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-  return c.json({
-    success: true,
-    data: {
-      giftWrapDefaultPrice: updated?.giftWrapDefaultPrice ?? '0',
-      giftMessageMaxLength: updated?.giftMessageMaxLength ?? 250,
-      giftWrapInstructions: updated?.giftWrapInstructions ?? null,
-      pickupInstructions: updated?.pickupInstructions ?? null,
-    },
-  });
+  const data = await new StoreSettingsService().updateGiftOptions(storeId, body);
+  return c.json({ success: true, data });
 });
 
-// Pickup Locations
+// ── Pickup locations ─────────────────────────────────────
+
 const pickupLocationSchema = z.object({
   nameAr: z.string().min(1).max(255),
   nameEn: z.string().max(255).optional().nullable(),
@@ -485,28 +279,14 @@ const pickupLocationSchema = z.object({
 
 settingsRouter.get('/pickup-locations', requirePermission('stores:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const db = createDbClient();
-  const locations = await db.select().from(s.pickupLocations)
-    .where(eq(s.pickupLocations.storeId, storeId))
-    .orderBy(s.pickupLocations.createdAt);
+  const locations = await new StoreSettingsService().listPickupLocations(storeId);
   return c.json({ success: true, data: locations });
 });
 
 settingsRouter.post('/pickup-locations', requirePermission('settings:update'), zValidator('json', pickupLocationSchema), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const body = c.req.valid('json');
-  const db = createDbClient();
-  const [location] = await db.insert(s.pickupLocations).values({
-    storeId,
-    nameAr: body.nameAr,
-    nameEn: body.nameEn ?? null,
-    address: body.address ?? null,
-    mapsUrl: body.mapsUrl ?? null,
-    phone: body.phone ?? null,
-    hours: (body.hours ?? null) as any,
-    instructions: body.instructions ?? null,
-    isActive: body.isActive ?? true,
-  }).returning();
+  const location = await new StoreSettingsService().createPickupLocation(storeId, body);
   return c.json({ success: true, data: location }, 201);
 });
 
@@ -514,19 +294,7 @@ settingsRouter.put('/pickup-locations/:id', requirePermission('settings:update')
   const storeId = Number(c.req.param('storeId'));
   const id = Number(c.req.param('id'));
   const body = c.req.valid('json');
-  const db = createDbClient();
-  const updateData: Record<string, unknown> = { updatedAt: new Date() };
-  if (body.nameAr !== undefined) updateData.nameAr = body.nameAr;
-  if (body.nameEn !== undefined) updateData.nameEn = body.nameEn;
-  if (body.address !== undefined) updateData.address = body.address;
-  if (body.mapsUrl !== undefined) updateData.mapsUrl = body.mapsUrl;
-  if (body.phone !== undefined) updateData.phone = body.phone;
-  if (body.hours !== undefined) updateData.hours = body.hours;
-  if (body.instructions !== undefined) updateData.instructions = body.instructions;
-  if (body.isActive !== undefined) updateData.isActive = body.isActive;
-  const [updated] = await db.update(s.pickupLocations).set(updateData)
-    .where(and(eq(s.pickupLocations.id, id), eq(s.pickupLocations.storeId, storeId)))
-    .returning();
+  const updated = await new StoreSettingsService().updatePickupLocation(storeId, id, body);
   if (!updated) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Location not found' } }, 404);
   return c.json({ success: true, data: updated });
 });
@@ -534,13 +302,12 @@ settingsRouter.put('/pickup-locations/:id', requirePermission('settings:update')
 settingsRouter.delete('/pickup-locations/:id', requirePermission('settings:update'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const id = Number(c.req.param('id'));
-  const db = createDbClient();
-  const [deleted] = await db.delete(s.pickupLocations)
-    .where(and(eq(s.pickupLocations.id, id), eq(s.pickupLocations.storeId, storeId)))
-    .returning();
+  const deleted = await new StoreSettingsService().deletePickupLocation(storeId, id);
   if (!deleted) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Location not found' } }, 404);
   return c.json({ success: true, data: deleted });
 });
+
+// ── Publish + acknowledge (delegated to existing services) ───
 
 settingsRouter.post('/publish', requirePermission('settings:update'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
@@ -583,20 +350,20 @@ settingsRouter.post('/unpublish', requirePermission('settings:update'), async (c
   }
 });
 
-settingsRouter.get('/publish-status', requirePermission('settings:read'), async (c) => {
+settingsRouter.get('/publish-status', requirePermission('stores:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const publishStatus = await new PublishGateService().getPublishStatus(storeId);
   return c.json({ success: true, data: { storeId, publishStatus } });
 });
 
 // Merchant Acknowledgement
-settingsRouter.get('/acknowledgement/status', requirePermission('settings:read'), async (c) => {
+settingsRouter.get('/acknowledgement/status', requirePermission('stores:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const status = await new AcknowledgementService().getStatus(storeId);
   return c.json({ success: true, data: status });
 });
 
-settingsRouter.get('/acknowledgement/required-items', requirePermission('settings:read'), async (c) => {
+settingsRouter.get('/acknowledgement/required-items', requirePermission('stores:read'), async (c) => {
   const service = new AcknowledgementService();
   return c.json({
     success: true,
