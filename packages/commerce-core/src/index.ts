@@ -65,6 +65,8 @@ export { MarketingActionService, runMarketingActionGeneration } from './marketin
 export type { GeneratedAction, ActionListOptions, ActionListResult } from './marketing-action-engine.js';
 export { CustomerSegmentationService, runCustomerSegmentationSummary } from './customer-segmentation.js';
 export { StoreBillingSettingsService } from './billing-settings-service.js';
+export { ShipmentsService } from './shipments-service.js';
+export type { ShipmentsResult } from './shipments-service.js';
 export {
   calcPlatformFee,
   normalizePlatformFeePolicy,
