@@ -2,6 +2,7 @@ import { eq, and } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import type { ProviderCode } from '@haa/shared';
+import { isDemoStore } from '@haa/shared';
 import { encrypt, decrypt, redactCredential } from './encryption.js';
 export { redactCredential, isEncryptionKeySet } from './encryption.js';
 
@@ -283,8 +284,12 @@ export class PaymentProviderSettingsService {
 
   async getAvailableMethods(
     storeId: number,
-    options?: { country?: string; currency?: string; amount?: number }
+    options?: { country?: string; currency?: string; amount?: number; isDemo?: boolean }
   ): Promise<PaymentMethodAvailability[]> {
+    if (options?.isDemo) {
+      return this.getDemoAvailableMethods();
+    }
+
     const rows = await this.db.select().from(s.merchantPaymentProviderSettings)
       .where(eq(s.merchantPaymentProviderSettings.storeId, storeId));
 
@@ -351,6 +356,13 @@ export class PaymentProviderSettingsService {
     });
 
     return results;
+  }
+
+  private getDemoAvailableMethods(): PaymentMethodAvailability[] {
+    return [
+      { provider: 'tabby', name: 'تابي', available: true, reason: null, mode: 'demo', minOrderAmount: null, maxOrderAmount: '5000', currency: 'SAR' },
+      { provider: 'tamara', name: 'تمارا', available: true, reason: null, mode: 'demo', minOrderAmount: null, maxOrderAmount: '5000', currency: 'SAR' },
+    ];
   }
 
   async getCredentialsDecrypted(storeId: number, providerCode: string): Promise<Record<string, string> | null> {

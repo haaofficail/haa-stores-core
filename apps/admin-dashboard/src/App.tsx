@@ -10,11 +10,13 @@ const Tenants = lazy(() => import('./pages/Tenants'));
 const Stores = lazy(() => import('./pages/Stores'));
 const KycReview = lazy(() => import('./pages/KycReview'));
 const Payments = lazy(() => import('./pages/Payments'));
+const Marketplace = lazy(() => import('./pages/Marketplace'));
 const SettlementBatches = lazy(() => import('./pages/SettlementBatches'));
 const SettlementBatchDetail = lazy(() => import('./pages/SettlementBatchDetail'));
 const AuditLogs = lazy(() => import('./pages/AuditLogs'));
 const Plans = lazy(() => import('./pages/Plans'));
 const Settings = lazy(() => import('./pages/Settings'));
+const StoreBillingSettings = lazy(() => import('./pages/StoreBillingSettings'));
 
 function PageSkeleton() {
   return (
@@ -44,8 +46,10 @@ const navItems = [
   { path: '/', label: 'الرئيسية' },
   { path: '/tenants', label: 'التجار' },
   { path: '/stores', label: 'المتاجر' },
+  { path: '/store-billing', label: 'رسوم المتاجر' },
   { path: '/kyc', label: 'التحقق' },
   { path: '/payments', label: 'المدفوعات' },
+  { path: '/marketplace', label: 'سوق هاء' },
   { path: '/payments/settlements', label: 'التسويات' },
   { path: '/audit', label: 'سجل التدقيق' },
   { path: '/plans', label: 'الباقات' },
@@ -60,6 +64,7 @@ function AdminLayout() {
   useEffect(() => {
     adminApi.getSettings().then(s => {
       setPlatform({ name: s.name, logoUrl: s.logoUrl });
+      if (s.logoUrl) document.documentElement.style.setProperty('--logo-src', `'${s.logoUrl}'`);
       if (s.faviconUrl) {
         const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
           || document.querySelector<HTMLLinkElement>('link[rel="shortcut icon"]');
@@ -87,6 +92,11 @@ function AdminLayout() {
           {platform.logoUrl && (
             <img src={platform.logoUrl} alt={platform.name} className="h-8 w-8 rounded-lg object-cover" />
           )}
+          {!platform.logoUrl && (
+            <div className="h-8 w-8 rounded-lg bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-500">
+              ه
+            </div>
+          )}
           <h1 className="text-xl font-bold">لوحة الإدارة — {loading ? '...' : platform.name}</h1>
         </div>
         <nav className="flex items-center gap-1" aria-label="التنقل الرئيسي">
@@ -94,9 +104,9 @@ function AdminLayout() {
             <Link
               key={item.path}
               to={item.path}
-              className={`text-sm px-3 py-1.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+              className={`text-sm px-3 py-1.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                 location.pathname === item.path
-                  ? 'bg-blue-50 text-blue-700 font-medium'
+                  ? 'bg-primary-50 text-primary-700 font-medium'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
@@ -130,11 +140,13 @@ export default function App() {
               <Route path="/stores" element={<Stores />} />
               <Route path="/kyc" element={<KycReview />} />
               <Route path="/payments" element={<Payments />} />
+              <Route path="/marketplace" element={<Marketplace />} />
               <Route path="/payments/settlements" element={<SettlementBatches />} />
               <Route path="/payments/settlements/:batchId" element={<SettlementBatchDetail />} />
               <Route path="/audit" element={<AuditLogs />} />
               <Route path="/plans" element={<Plans />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/store-billing" element={<StoreBillingSettings />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

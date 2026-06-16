@@ -17,6 +17,10 @@
     "./encryption": {
       "import": "./dist/encryption.js",
       "types": "./dist/encryption.d.ts"
+    },
+    "./landing-ai-agent": {
+      "import": "./dist/landing-ai-agent/index.js",
+      "types": "./dist/landing-ai-agent/index.d.ts"
     }
   },
   "scripts": {
@@ -25,11 +29,14 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
+    "@haa/auth-core": "workspace:*",
     "@haa/db": "workspace:*",
     "@haa/integration-core": "workspace:*",
     "@haa/notification-core": "workspace:*",
+    "@haa/payment-providers": "workspace:*",
     "@haa/shared": "workspace:*",
     "@haa/shipping-core": "workspace:*",
+    "@haa/theme-system": "workspace:*",
     "@haa/wallet-core": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "ioredis": "^5.11.1",

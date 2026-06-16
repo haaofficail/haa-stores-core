@@ -24,9 +24,15 @@ const statusColors: Record<string, string> = {
 
 export default function SupportTicket() {
   const { slug, ticketId } = useParams<{ slug: string; ticketId: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useTranslation();
-  const accessToken = searchParams.get('accessToken');
+  const storageKey = slug && ticketId ? `support-ticket-token:${slug}:${ticketId}` : '';
+  const legacyAccessToken = searchParams.get('accessToken');
+  const [accessToken, setAccessToken] = useState(() => {
+    if (legacyAccessToken) return legacyAccessToken;
+    return storageKey ? localStorage.getItem(storageKey) ?? '' : '';
+  });
+  const [tokenInput, setTokenInput] = useState('');
   const [ticket, setTicket] = useState<SupportTicketType | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -40,6 +46,8 @@ export default function SupportTicket() {
       setLoading(false);
       return;
     }
+    if (storageKey) localStorage.setItem(storageKey, accessToken);
+    if (legacyAccessToken) setSearchParams(new URLSearchParams(), { replace: true });
     setLoading(true);
     setLoadError('');
     supportApi.getTicket(slug, Number(ticketId), accessToken)
@@ -52,14 +60,32 @@ export default function SupportTicket() {
         }
       })
       .finally(() => setLoading(false));
-  }, [slug, ticketId, accessToken, t]);
+  }, [slug, ticketId, accessToken, legacyAccessToken, setSearchParams, storageKey, t]);
 
   if (!accessToken) {
     return (
       <div className="container-store py-12 max-w-2xl mx-auto text-center">
         <AlertTriangle className="h-12 w-12 text-warning mx-auto mb-4" />
-        <h1 className="text-xl font-bold text-text-primary mb-2">{t('support.noAccessToken', 'رابط غير صالح')}</h1>
-        <p className="text-text-secondary mb-4">{t('support.noAccessTokenDesc', 'رمز الدخول مطلوب لعرض التذكرة.')}</p>
+        <h1 className="text-xl font-bold text-text-primary mb-2">{t('support.noAccessToken', 'رمز الدخول مطلوب')}</h1>
+        <p className="text-text-secondary mb-4">{t('support.noAccessTokenDesc', 'أدخل رمز الدخول الذي ظهر لك عند إنشاء التذكرة.')}</p>
+        <form
+          className="mx-auto mb-5 max-w-md space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (tokenInput.trim()) setAccessToken(tokenInput.trim());
+          }}
+        >
+          <input
+            value={tokenInput}
+            onChange={(e) => setTokenInput(e.target.value)}
+            className={`w-full px-4 py-2.5 rounded-xl border border-border-primary bg-white text-text-primary ${FOCUS_VISIBLE}`}
+            placeholder={t('support.accessCodePlaceholder', 'رمز الدخول')}
+            dir="ltr"
+          />
+          <button type="submit" className="inline-flex items-center justify-center rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-700">
+            {t('support.openTicket', 'فتح التذكرة')}
+          </button>
+        </form>
         <Link to={`/s/${slug}/support`} className={`text-primary-600 hover:text-primary-700 text-sm inline-flex items-center gap-1 ${FOCUS_VISIBLE}`}>
           <ArrowRight className="h-4 w-4" /> {t('support.newTicket', 'إنشاء تذكرة جديدة')}
         </Link>

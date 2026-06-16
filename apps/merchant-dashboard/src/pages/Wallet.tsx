@@ -15,12 +15,12 @@ import {
   Wallet, DollarSign, CreditCard, ArrowUpCircle, ArrowDownCircle,
   TrendingUp, Clock, CheckCircle2, AlertTriangle,
   Search, RotateCcw, ChevronLeft, ChevronRight, Info, ExternalLink,
-  Banknote, Ship, RefreshCw, Loader2,
+  Banknote, Ship, RefreshCw, Loader2, Landmark,
 } from 'lucide-react';
 
-const directionColors: Record<string, 'success' | 'destructive'> = {
-  credit: 'success',
-  debit: 'destructive',
+const directionStyles: Record<string, { bg: string; icon: string; badge: string }> = {
+  credit: { bg: 'bg-emerald-50', icon: 'text-emerald-600', badge: 'border-emerald-200 bg-emerald-50/60 text-emerald-700' },
+  debit:  { bg: 'bg-rose-50',    icon: 'text-rose-600',    badge: 'border-rose-200 bg-rose-50/60 text-rose-700' },
 };
 
 const statusColors: Record<string, 'default' | 'success' | 'warning' | 'destructive' | 'secondary'> = {
@@ -39,6 +39,18 @@ const typeIcons: Record<string, React.ReactNode> = {
   refund: <RefreshCw className="h-3.5 w-3.5" />,
   payout: <ArrowDownCircle className="h-3.5 w-3.5" />,
   adjustment: <TrendingUp className="h-3.5 w-3.5" />,
+  deposit: <Landmark className="h-3.5 w-3.5" />,
+};
+
+const typeColors: Record<string, { bg: string; icon: string; badge: string }> = {
+  sale:         { bg: 'bg-emerald-50',     icon: 'text-emerald-600',   badge: 'border-emerald-200 bg-emerald-50/60 text-emerald-700' },
+  platform_fee: { bg: 'bg-blue-50',        icon: 'text-blue-600',      badge: 'border-blue-200 bg-blue-50/60 text-blue-700' },
+  payment_fee:  { bg: 'bg-amber-50',       icon: 'text-amber-600',     badge: 'border-amber-200 bg-amber-50/60 text-amber-700' },
+  shipping_fee: { bg: 'bg-purple-50',      icon: 'text-purple-600',    badge: 'border-purple-200 bg-purple-50/60 text-purple-700' },
+  refund:       { bg: 'bg-rose-50',        icon: 'text-rose-600',      badge: 'border-rose-200 bg-rose-50/60 text-rose-700' },
+  payout:       { bg: 'bg-neutral-100',    icon: 'text-neutral-600',   badge: 'border-neutral-200 bg-neutral-100 text-neutral-700' },
+  adjustment:   { bg: 'bg-cyan-50',        icon: 'text-cyan-600',      badge: 'border-cyan-200 bg-cyan-50/60 text-cyan-700' },
+  deposit:      { bg: 'bg-emerald-50',     icon: 'text-emerald-600',   badge: 'border-emerald-200 bg-emerald-50/60 text-emerald-700' },
 };
 
 function SummaryCard({ title, value, icon, color, subtitle }: {
@@ -178,7 +190,7 @@ export default function WalletPage() {
             title={t('wallet.netBalance')}
             value={`${fmt(summary?.netBalance)} ${t('common.sar')}`}
             icon={<Wallet className="h-4 w-4" />}
-            color={(summary?.netBalance ?? 0) >= 0 ? 'text-blue-600' : 'text-red-600'}
+            color={(summary?.netBalance ?? 0) >= 0 ? 'text-primary-600' : 'text-red-600'}
           />
         </div>
 
@@ -209,10 +221,10 @@ export default function WalletPage() {
           />
         </div>
 
-        <div className="bg-blue-50/50 border border-blue-200/50 rounded-3xl p-4">
+        <div className="bg-primary-50/50 border border-primary-200/50 rounded-3xl p-4">
           <div className="flex items-start gap-3">
-            <Info className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
-            <div className="text-sm text-blue-800 space-y-1">
+            <Info className="h-5 w-5 text-primary-500 mt-0.5 shrink-0" />
+            <div className="text-sm text-primary-800 space-y-1">
               <p className="font-medium">{t('wallet.explanationTitle')}</p>
               <ul className="list-disc list-inside space-y-0.5 text-xs">
                 <li><strong>{t('wallet.totalSales')}:</strong> {t('wallet.expSales')}</li>
@@ -226,6 +238,35 @@ export default function WalletPage() {
             </div>
           </div>
         </div>
+
+        {/* Phase 8 — Configurable Platform Fee Policy (read-only).
+            Merchants can see how the platform fee is calculated but cannot
+            modify it. The PATCH endpoint is admin-only. */}
+        {summary?.platformFee && (
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-2xl bg-blue-50 text-blue-600 shrink-0">
+                <Banknote className="h-4 w-4" />
+              </div>
+              <div className="text-sm text-neutral-700 space-y-1.5 flex-1">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <p className="font-medium text-neutral-900">
+                    {t('wallet.platformFeePolicyTitle', 'رسوم منصة Haa')}
+                  </p>
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50/60 text-blue-700 px-2 py-1 text-xs">
+                    {summary.platformFee.label}
+                  </span>
+                </div>
+                <p className="text-xs text-neutral-500 leading-relaxed">
+                  {t(
+                    'wallet.platformFeePolicyDescription',
+                    'رسوم منصة Haa تُحتسب حسب باقة متجرك أو الاتفاق التجاري الخاص بك، وتظهر منفصلة عن رسوم معالجة الدفع. لا يمكن للتاجر تعديل هذه الرسوم — يتم تحديثها من قبل إدارة Haa عند الحاجة.',
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6 space-y-3">
           <div className="flex gap-3 items-center flex-wrap">
@@ -260,6 +301,7 @@ export default function WalletPage() {
                 <SelectItem value="refund">{t('wallet.refund')}</SelectItem>
                 <SelectItem value="payout">{t('wallet.payout')}</SelectItem>
                 <SelectItem value="adjustment">{t('wallet.adjustment')}</SelectItem>
+                <SelectItem value="deposit">{t('wallet.deposit')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -316,7 +358,7 @@ export default function WalletPage() {
             <div className="relative">
               {tableLoading && (
                 <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center rounded-b-3xl">
-                  <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                  <Loader2 className="h-5 w-5 animate-spin text-primary-500" />
                 </div>
               )}
               <Table>
@@ -339,16 +381,20 @@ export default function WalletPage() {
                       {new Date(e.createdAt).toLocaleDateString('ar-SA')}
                     </TableCell>
                     <TableCell className="p-3">
-                      <Badge variant="outline" className="gap-1 font-normal text-xs px-2.5 py-0.5">
-                        {typeIcons[e.type] ?? null}
+                      <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${typeColors[e.type]?.badge ?? 'border-neutral-200 bg-neutral-50 text-neutral-700'}`}>
+                        <span className={`flex h-5 w-5 items-center justify-center rounded ${typeColors[e.type]?.bg ?? 'bg-neutral-100'} ${typeColors[e.type]?.icon ?? 'text-neutral-600'}`}>
+                          {typeIcons[e.type] ?? null}
+                        </span>
                         {t(`wallet.${e.type}` as any)}
-                      </Badge>
+                      </span>
                     </TableCell>
                     <TableCell className="p-3">
-                      <Badge variant={directionColors[e.direction] ?? 'default'} className="gap-1 text-xs px-2.5 py-0.5">
-                        {e.direction === 'credit' ? <ArrowUpCircle className="h-3 w-3" /> : <ArrowDownCircle className="h-3 w-3" />}
+                      <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${directionStyles[e.direction]?.badge ?? 'border-neutral-200 bg-neutral-50 text-neutral-700'}`}>
+                        <span className={`flex h-5 w-5 items-center justify-center rounded ${directionStyles[e.direction]?.bg ?? 'bg-neutral-100'} ${directionStyles[e.direction]?.icon ?? 'text-neutral-600'}`}>
+                          {e.direction === 'credit' ? <ArrowUpCircle className="h-3 w-3" /> : <ArrowDownCircle className="h-3 w-3" />}
+                        </span>
                         {t(`wallet.${e.direction}` as any)}
-                      </Badge>
+                      </span>
                     </TableCell>
                     <TableCell className={`text-sm font-medium text-right tabular-nums p-3 ${e.direction === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
                       {e.direction === 'credit' ? '+' : '-'}{fmt(e.amount)} {t('common.sar')}

@@ -190,7 +190,7 @@
 - **Impact:** Token can leak via server logs, referrer headers, browser history
 - **Likelihood:** 2
 - **Severity:** 3
-- **Mitigation:** Local development only — no production exposure
-- **Owner:** TBD
-- **Status:** Open
-- **Related Tasks:** SEC-006
+- **Mitigation:** New storefront support links are clean and ticket access is sent via `X-Support-Access-Token`; API also accepts `Authorization: Bearer`. Legacy query-token compatibility remains temporary for existing links only.
+- **Owner:** All agents
+- **Status:** Mitigated
+- **Related Tasks:** SEC-006, TASK-0018

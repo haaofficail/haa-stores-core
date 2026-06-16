@@ -9,12 +9,14 @@
  * registerStorefrontTheme() call here.
  */
 
-import { registerStorefrontTheme, baseElegantManifest } from '@haa/storefront-themes';
+import { registerStorefrontTheme, registerThemeCapsule, baseElegantManifest, luxuryShowcaseCapsule } from '@haa/storefront-themes';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ProductCard from './components/ProductCard';
 import { BaseElegantHomePage, BaseElegantProductPage } from './themes/base-elegant';
 import { luxuryShowcaseManifest, LuxuryShowcaseHeader, LuxuryShowcaseFooter, LuxuryShowcaseHomePage, LuxuryShowcaseProductPage, LuxuryProductCard } from './themes/luxury-showcase';
+
+registerThemeCapsule('luxury-showcase', luxuryShowcaseCapsule);
 
 registerStorefrontTheme('base-elegant', {
   manifest: baseElegantManifest,

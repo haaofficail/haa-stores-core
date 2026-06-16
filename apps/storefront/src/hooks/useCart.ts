@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { cartApi, type Cart } from '@/lib/api';
+import { tracker } from '@/lib/tracker';
 
 const CART_PREFIX = 'storefront_cart_';
 
@@ -72,11 +73,12 @@ export function useCart(slug: string | undefined) {
     } catch {}
   }, [slug, cart?.id]);
 
-  const addItem = useCallback(async (productId: number, quantity: number = 1, notes?: string, giftData?: { giftWrapSelected?: boolean; sendAsGift?: boolean; giftMessage?: string }, variantId?: number) => {
+  const addItem = useCallback(async (productId: number, quantity: number = 1, notes?: string, giftData?: { giftWrapSelected?: boolean; sendAsGift?: boolean; giftMessage?: string }, variantId?: number, source?: 'storefront' | 'haa_marketplace') => {
     if (!slug || !cart?.id) return;
-    const updated = await cartApi.addItem(slug, cart.id, productId, quantity, notes, giftData, variantId);
+    const updated = await cartApi.addItem(slug, cart.id, productId, quantity, notes, giftData, variantId, source);
     const normalized = normalizeCart(updated);
     setCart(normalized);
+    tracker.trackAddToCart(slug, productId, cart.id, { quantity, variantId, source });
     return normalized;
   }, [slug, cart?.id]);
 
@@ -93,6 +95,7 @@ export function useCart(slug: string | undefined) {
     const updated = await cartApi.removeItem(slug, cart.id, itemId);
     const normalized = normalizeCart(updated);
     setCart(normalized);
+    tracker.trackRemoveFromCart(slug, itemId, cart.id);
     return normalized;
   }, [slug, cart?.id]);
 

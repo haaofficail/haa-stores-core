@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 
@@ -46,5 +46,23 @@ export class ApiKeyService {
 
   async logRequest(data: { storeId: number; apiKeyId?: number; method: string; path: string; statusCode: number; ipAddress?: string; durationMs?: number; requestBody?: unknown; responseSummary?: string; errorMessage?: string }) {
     await this.db.insert(s.integrationLogs).values(data as any);
+  }
+
+  /**
+   * Read the most recent integration log entries for a store.
+   * Used by the /api/api-keys/:storeId/logs route. Returns up to
+   * `limit` entries, ordered newest first.
+   *
+   * Originally inlined in apps/api/src/routes/api-keys.ts;
+   * extracted to the service as part of Quality Pass 5,
+   * Route Migration 4/24.
+   */
+  async listLogs(storeId: number, limit: number = 100) {
+    return this.db
+      .select()
+      .from(s.integrationLogs)
+      .where(eq(s.integrationLogs.storeId, storeId))
+      .orderBy(desc(s.integrationLogs.createdAt))
+      .limit(limit);
   }
 }

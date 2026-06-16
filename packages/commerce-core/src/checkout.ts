@@ -4,15 +4,18 @@ import * as s from '@haa/db/schema';
 import { CartService } from './cart.js';
 import { OrdersService } from './orders.js';
 import { CouponsService } from './coupons.js';
-import { PaymentService, createPaymentProvider } from './payment.js';
-import type { PaymentProvider } from './payment.js';
-import { WalletLedger } from '@haa/wallet-core';
+import { PaymentService, createPaymentProvider, FakePaymentProvider } from '@haa/payment-providers';
+import type { PaymentProvider } from '@haa/payment-providers';
+import { WalletLedger, calcPlatformFee, describePlatformFeePolicy } from '@haa/wallet-core';
+import type { PlatformFeePolicy } from '@haa/wallet-core';
+import { StoreBillingSettingsService } from './billing-settings-service.js';
 import { WebhookOutboxService } from '@haa/integration-core';
 import { AuditLogService } from '@haa/integration-core';
 import { ManualShippingProvider } from '@haa/shipping-core';
 import { NotificationService } from '@haa/notification-core';
 import { CustomersService } from './customers.js';
 import { acquireLock, releaseLock } from './redis.js';
+import { isDemoStore } from '@haa/shared';
 
 export class CheckoutService {
   private cartService: CartService;
@@ -24,12 +27,15 @@ export class CheckoutService {
   private auditLog: AuditLogService;
   private shippingProvider: ManualShippingProvider;
   private customersService: CustomersService;
+  private isDemo: boolean;
 
-  constructor(private db: DbClient = createDbClient(), provider?: PaymentProvider) {
+  constructor(private db: DbClient = createDbClient(), provider?: PaymentProvider, private store?: { id: number; isDemo?: boolean | null }) {
     this.cartService = new CartService(this.db);
     this.ordersService = new OrdersService(this.db);
     this.paymentService = new PaymentService(this.db);
-    this.paymentProvider = provider ?? createPaymentProvider();
+    this.isDemo = isDemoStore(store as any) ?? false;
+    // Demo stores always use FakePaymentProvider (no real API calls)
+    this.paymentProvider = this.isDemo ? new FakePaymentProvider() : (provider ?? createPaymentProvider());
     this.walletLedger = new WalletLedger(this.db);
     this.webhookOutbox = new WebhookOutboxService(this.db);
     this.auditLog = new AuditLogService(this.db);
@@ -198,6 +204,12 @@ export class CheckoutService {
 
         const sessionMeta = (session.metadata ?? {}) as Record<string, unknown>;
         const giftOpts = sessionMeta.giftOptions as { sendAsGift?: boolean; message?: string } | undefined;
+        const orderSource = cart.items.some((i: any) => i.item.source === 'haa_marketplace') ? 'haa_marketplace' : 'storefront';
+        const platformCommission = cart.items.reduce((sum: number, i: any) => {
+          if (i.item.source !== 'haa_marketplace') return sum;
+          const rate = Number(i.product.haaMarketplaceCommissionRate ?? 0.05);
+          return sum + Math.round(Number(i.item.totalPrice) * rate * 100) / 100;
+        }, 0);
 
         const order = await new OrdersService(tx as any).create({
           storeId,
@@ -217,6 +229,8 @@ export class CheckoutService {
           paymentMethod: session.paymentMethod ?? undefined,
           couponCode: session.couponCode ?? undefined,
           couponDiscount: session.couponDiscount ? Number(session.couponDiscount) : undefined,
+          source: orderSource,
+          platformCommission: platformCommission > 0 ? platformCommission : undefined,
           fulfillmentType: (sessionMeta.fulfillmentType as string) ?? 'shipping',
           pickupLocationId: sessionMeta.pickupLocationId ? Number(sessionMeta.pickupLocationId) : undefined,
           giftOptions: giftOpts,
@@ -233,6 +247,11 @@ export class CheckoutService {
             giftWrapPrice: (i.item as any).giftWrapPrice ? Number((i.item as any).giftWrapPrice) : undefined,
             sendAsGift: (i.item as any).sendAsGift ?? false,
             giftMessage: (i.item as any).giftMessage ?? undefined,
+            source: i.item.source ?? 'storefront',
+            platformCommissionRate: i.item.source === 'haa_marketplace' ? Number(i.product.haaMarketplaceCommissionRate ?? 0.05) : undefined,
+            platformCommission: i.item.source === 'haa_marketplace'
+              ? Math.round(Number(i.item.totalPrice) * Number(i.product.haaMarketplaceCommissionRate ?? 0.05) * 100) / 100
+              : undefined,
           })),
           notes: session.notes ?? undefined,
         });
@@ -281,10 +300,23 @@ export class CheckoutService {
       // Phase 3: Finalize (Local Transaction)
       await this.db.transaction(async (tx) => {
         const txOrdersService = new OrdersService(tx as any);
+
+        await tx.insert(s.marketingEvents).values({
+          storeId, sessionId: `order-${order.orderNumber}`, orderId: order.id,
+          eventType: 'order_created', cartId: session.cartId ?? null,
+          path: '/checkout/confirm',
+          metadata: { orderNumber: order.orderNumber, total: Number(order.total), paymentMethod: order.paymentMethod },
+        });
         
         if (paymentStatus === 'paid') {
           await txOrdersService.updatePaymentStatus(storeId, order.id, 'paid', Number(order.total));
           await txOrdersService.changeStatus(storeId, order.id, 'confirmed', actorUserId);
+
+          for (const item of cartItems) {
+            await tx.update(s.products)
+              .set({ salesCount: sql`${s.products.salesCount} + ${item.quantity}` })
+              .where(eq(s.products.id, item.product.id));
+          }
 
           const txWallet = new WalletLedger(tx as any);
           await txWallet.recordEntry({
@@ -295,27 +327,87 @@ export class CheckoutService {
             status: 'available',
           });
 
-          await txWallet.recordEntry({
-            storeId, type: 'platform_fee', direction: 'debit',
-            amount: Math.round(Number(order.total) * 0.02 * 100) / 100,
-            referenceType: 'order', referenceId: order.id,
-            description: `Platform fee (2%) for order ${order.orderNumber}`,
-            status: 'available',
+          // Phase 4: read the store's configurable platform-fee policy and
+          // snapshot the rate + fixed amount onto the fee entry. The policy
+          // is locked to this order — changing the policy later never
+          // re-prices this order.
+          const txBilling = new StoreBillingSettingsService(tx as any);
+          const platformPolicy = await txBilling.getPlatformFeePolicy(storeId);
+          const platformFee = calcPlatformFee(Number(order.total), platformPolicy);
+          if (platformFee > 0) {
+            // Idempotency: skip if a platform_fee entry already exists for
+            // this order (e.g. retry of the same checkout session or
+            // accidental double-invocation). Safe because the natural
+            // unique key (store + type + reference) is exactly the
+            // ordering the idempotency check enforces.
+            const alreadyCharged = await txWallet.hasPlatformFeeForOrder(storeId, order.id);
+            if (!alreadyCharged) {
+              await txWallet.recordEntry({
+                storeId, type: 'platform_fee', direction: 'debit',
+                amount: platformFee,
+                referenceType: 'order', referenceId: order.id,
+                description: `رسوم منصة Haa (${describePlatformFeePolicy(platformPolicy)}) للطلب ${order.orderNumber}`,
+                status: 'available',
+                feeRatePct: platformPolicy.pct ?? null,
+                feeFixed: platformPolicy.fixed ?? null,
+                feeSource: 'platform_policy',
+                metadata: {
+                  orderTotal: Number(order.total),
+                  platformFeeMode: platformPolicy.mode,
+                  platformFeePct: platformPolicy.pct ?? null,
+                  platformFeeFixed: platformPolicy.fixed ?? null,
+                  platformFeeLabel: describePlatformFeePolicy(platformPolicy),
+                  appliedAt: new Date().toISOString(),
+                },
+              });
+            }
+          }
+
+          await tx.insert(s.marketingEvents).values({
+            storeId, sessionId: `order-${order.orderNumber}`, orderId: order.id,
+            eventType: 'payment_succeeded', cartId: session.cartId ?? null,
+            path: '/checkout/confirm',
+            metadata: { orderNumber: order.orderNumber, paidAmount: Number(order.total) },
           });
 
-          const txOutbox = new WebhookOutboxService(tx as any);
-          await txOutbox.recordEvent('order.created', storeId, 0, { orderId: order.id, orderNumber: order.orderNumber, total: Number(order.total) });
-          await txOutbox.recordEvent('order.paid', storeId, 0, { orderId: order.id, orderNumber: order.orderNumber, paidAmount: Number(order.total) });
+          if (!this.isDemo) {
+            const txOutbox = new WebhookOutboxService(tx as any);
+            await txOutbox.recordEvent('order.created', storeId, 0, { orderId: order.id, orderNumber: order.orderNumber, total: Number(order.total) });
+            await txOutbox.recordEvent('order.paid', storeId, 0, { orderId: order.id, orderNumber: order.orderNumber, paidAmount: Number(order.total) });
+          }
         } else if (paymentStatus === 'pending' && order.paymentMethod === 'cash_on_delivery') {
           // COD: mark payment as pending, confirm order, no wallet entries until collection
           await txOrdersService.updatePaymentStatus(storeId, order.id, 'pending', Number(order.total));
           await txOrdersService.changeStatus(storeId, order.id, 'confirmed', actorUserId);
 
-          const txOutbox = new WebhookOutboxService(tx as any);
-          await txOutbox.recordEvent('order.created', storeId, 0, { orderId: order.id, orderNumber: order.orderNumber, total: Number(order.total) });
+          for (const item of cartItems) {
+            await tx.update(s.products)
+              .set({ salesCount: sql`${s.products.salesCount} + ${item.quantity}` })
+              .where(eq(s.products.id, item.product.id));
+          }
+
+          await tx.insert(s.marketingEvents).values({
+            storeId, sessionId: `order-${order.orderNumber}`, orderId: order.id,
+            eventType: 'payment_succeeded', cartId: session.cartId ?? null,
+            path: '/checkout/confirm',
+            metadata: { orderNumber: order.orderNumber, paymentMethod: 'cash_on_delivery', status: 'pending_collection' },
+          });
+
+          if (!this.isDemo) {
+            const txOutbox = new WebhookOutboxService(tx as any);
+            await txOutbox.recordEvent('order.created', storeId, 0, { orderId: order.id, orderNumber: order.orderNumber, total: Number(order.total) });
+          }
         } else {
           // Payment failed or pending
           await txOrdersService.changeStatus(storeId, order.id, 'payment_failed', actorUserId);
+
+          await tx.insert(s.marketingEvents).values({
+            storeId, sessionId: `order-${order.orderNumber}`, orderId: order.id,
+            eventType: 'payment_failed', cartId: session.cartId ?? null,
+            path: '/checkout/confirm',
+            metadata: { orderNumber: order.orderNumber, paymentMethod: order.paymentMethod, paymentMessage },
+          });
+
           // Here we should ideally release the stock back
           await this.incrementStock(tx as any, cartItems.map(i => ({ productId: i.product.id, variantId: i.variant?.id ?? null, quantity: i.item.quantity }))); 
         }
@@ -331,8 +423,8 @@ export class CheckoutService {
         await this.cartService.clearCart(storeId, session.cartId);
       });
 
-      // Send notifications
-      if (paymentStatus === 'paid' || (paymentStatus === 'pending' && order.paymentMethod === 'cash_on_delivery')) {
+      // Send notifications (demo stores skip real notifications)
+      if (!this.isDemo && (paymentStatus === 'paid' || (paymentStatus === 'pending' && order.paymentMethod === 'cash_on_delivery'))) {
         const isCOD = order.paymentMethod === 'cash_on_delivery';
         try {
           const sessionMeta = (session.metadata ?? {}) as Record<string, unknown>;
@@ -401,6 +493,88 @@ export class CheckoutService {
       const isTabby = session.paymentMethod === 'tabby_installments';
       const isTamara = session.paymentMethod === 'tamara_installments';
       if (!isTabby && !isTamara) throw new Error('Payment method is not a BNPL provider');
+
+      // Demo stores use mock payment provider for BNPL too
+      if (this.isDemo) {
+        const demoOrderData = await this.db.transaction(async (tx) => {
+          const [existingOrder] = await tx.select().from(s.orders)
+            .where(eq(s.orders.checkoutSessionId, sessionId)).limit(1);
+          if (existingOrder) return { order: existingOrder, idempotent: true };
+
+          const cart = await this.cartService.getCart(storeId, session.cartId);
+          if (!cart) throw new Error('Cart not found');
+
+          const customer = await this.customersService.findOrCreate(storeId, {
+            name: session.customerName, phone: session.customerPhone,
+            email: session.customerEmail ?? undefined,
+          });
+
+          const orderNumber = await new OrdersService(tx as any).generateOrderNumber(storeId);
+          const sessionMeta = (session.metadata ?? {}) as Record<string, unknown>;
+          const giftOpts = sessionMeta.giftOptions as { sendAsGift?: boolean; message?: string } | undefined;
+
+          const order = await new OrdersService(tx as any).create({
+            storeId,
+            customerId: customer.id,
+            orderNumber,
+            checkoutSessionId: session.id,
+            idempotencyKey: session.idempotencyKey,
+            customerName: session.customerName,
+            customerPhone: session.customerPhone,
+            customerEmail: session.customerEmail ?? undefined,
+            shippingAddress: session.shippingAddress as Record<string, unknown> ?? undefined,
+            shippingMethodId: session.shippingMethodId ?? undefined,
+            shippingCost: session.shippingCost ? Number(session.shippingCost) : undefined,
+            subtotal: Number(session.subtotal),
+            taxAmount: Number(session.taxAmount ?? 0),
+            total: Number(session.total),
+            paymentMethod: session.paymentMethod ?? undefined,
+            couponCode: session.couponCode ?? undefined,
+            couponDiscount: session.couponDiscount ? Number(session.couponDiscount) : undefined,
+            fulfillmentType: (sessionMeta.fulfillmentType as string) ?? 'shipping',
+            pickupLocationId: sessionMeta.pickupLocationId ? Number(sessionMeta.pickupLocationId) : undefined,
+            giftOptions: giftOpts,
+            items: cart.items.map((i: any) => ({
+              productId: i.product.id,
+              variantId: i.variant?.id ?? null,
+              name: i.variant ? `${i.product.name} - ${i.variant.name}` : i.product.name,
+              sku: i.variant?.sku ?? i.product.sku ?? undefined,
+              quantity: i.item.quantity,
+              unitPrice: Number(i.item.unitPrice),
+              totalPrice: Number(i.item.totalPrice),
+              notes: i.item.notes ?? undefined,
+              giftWrapSelected: (i.item as any).giftWrapSelected ?? false,
+              giftWrapPrice: (i.item as any).giftWrapPrice ? Number((i.item as any).giftWrapPrice) : undefined,
+              sendAsGift: (i.item as any).sendAsGift ?? false,
+              giftMessage: (i.item as any).giftMessage ?? undefined,
+            })),
+            notes: session.notes ?? undefined,
+            metadata: { isDemoPayment: true },
+          });
+
+          if (session.couponCode && session.couponDiscount) {
+            const couponService = new CouponsService(this.db);
+            const couponRecord = await couponService.getByCode(storeId, session.couponCode);
+            if (couponRecord) await couponService.incrementUsed(storeId, couponRecord.id);
+          }
+
+          await tx.update(s.checkoutSessions).set({ status: 'completed', completedAt: new Date() })
+            .where(eq(s.checkoutSessions.id, sessionId));
+
+          const txOrders = new OrdersService(tx as any);
+          await txOrders.changeStatus(storeId, order.id, 'confirmed', actorUserId);
+          await this.decrementStock(tx as any, cart.items);
+
+          return { order, idempotent: false };
+        });
+
+        const { order } = demoOrderData;
+        return {
+          order,
+          paymentId: `demo-payment-${order.id}`,
+          redirectUrl: '',
+        };
+      }
 
       const providerCode = isTabby ? 'tabby' : 'tamara';
       const provider = createPaymentProvider(providerCode as any);
@@ -532,6 +706,13 @@ export class CheckoutService {
         await txOrders.updatePaymentStatus(storeId, payment.orderId, 'paid', Number(payment.amount));
         await txOrders.changeStatus(storeId, payment.orderId, 'confirmed', actorUserId);
 
+        const orderItemRows = await tx.select().from(s.orderItems).where(eq(s.orderItems.orderId, payment.orderId));
+        for (const item of orderItemRows) {
+          await tx.update(s.products)
+            .set({ salesCount: sql`${s.products.salesCount} + ${item.quantity}` })
+            .where(eq(s.products.id, item.productId));
+        }
+
         const txWallet = new WalletLedger(tx as any);
         await txWallet.recordEntry({
           storeId, type: 'sale', direction: 'credit',
@@ -540,23 +721,47 @@ export class CheckoutService {
           description: `Order payment (BNPL)`,
           status: 'available',
         });
-        await txWallet.recordEntry({
-          storeId, type: 'platform_fee', direction: 'debit',
-          amount: Math.round(Number(payment.amount) * 0.02 * 100) / 100,
-          referenceType: 'order', referenceId: payment.orderId,
-          description: `Platform fee (2%)`,
-          status: 'available',
-        });
+        // Phase 4: same configurable policy path as the regular checkout.
+        const txBilling = new StoreBillingSettingsService(tx as any);
+        const platformPolicy = await txBilling.getPlatformFeePolicy(storeId);
+        const platformFee = calcPlatformFee(Number(payment.amount), platformPolicy);
+        if (platformFee > 0) {
+          // Idempotency: skip if a platform_fee entry already exists for
+          // this order (e.g. webhook replay).
+          const alreadyCharged = await txWallet.hasPlatformFeeForOrder(storeId, payment.orderId);
+          if (!alreadyCharged) {
+            await txWallet.recordEntry({
+              storeId, type: 'platform_fee', direction: 'debit',
+              amount: platformFee,
+              referenceType: 'order', referenceId: payment.orderId,
+              description: `رسوم منصة Haa (${describePlatformFeePolicy(platformPolicy)})`,
+              status: 'available',
+              feeRatePct: platformPolicy.pct ?? null,
+              feeFixed: platformPolicy.fixed ?? null,
+              feeSource: 'platform_policy',
+              metadata: {
+                orderTotal: Number(payment.amount),
+                platformFeeMode: platformPolicy.mode,
+                platformFeePct: platformPolicy.pct ?? null,
+                platformFeeFixed: platformPolicy.fixed ?? null,
+                platformFeeLabel: describePlatformFeePolicy(platformPolicy),
+                appliedAt: new Date().toISOString(),
+              },
+            });
+          }
+        }
 
-        const txOutbox = new WebhookOutboxService(tx as any);
-        await txOutbox.recordEvent('order.paid', storeId, 0, {
-          orderId: payment.orderId, paidAmount: Number(payment.amount),
-        });
+        if (!this.isDemo) {
+          const txOutbox = new WebhookOutboxService(tx as any);
+          await txOutbox.recordEvent('order.paid', storeId, 0, {
+            orderId: payment.orderId, paidAmount: Number(payment.amount),
+          });
+        }
       });
 
       const [order] = await this.db.select().from(s.orders).where(eq(s.orders.id, payment.orderId)).limit(1);
       const orderNumber = order?.orderNumber ?? '';
-      if (order) {
+      if (order && !this.isDemo) {
         try {
           const notifService = new NotificationService();
           await notifService.send(storeId, 'payment_success', {

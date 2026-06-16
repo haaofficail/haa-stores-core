@@ -7,10 +7,22 @@ import * as s from '@haa/db/schema';
 import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';
 import { SallaService, ZidService, NoonService, AmazonService } from '@haa/marketplace-core';
 import type { ProviderCode, ChannelOrder } from '@haa/marketplace-core';
+import { sallaRouter } from './marketplaces/salla.js';
+import { zidRouter } from './marketplaces/zid.js';
+import { amazonRouter } from './marketplaces/amazon.js';
 
 const marketplacesRouter = new Hono();
 
 marketplacesRouter.use('*', requireAuth(), requireStoreAccess());
+
+// Mount provider-specific sub-routers (extracted in Quality Pass 2 — Items 2.3/2.3b/2.3d).
+// Salla, Zid, and Amazon have dedicated OAuth flows; Noon uses the
+// generic /:provider/... dispatch routes so it does not need its
+// own sub-router. The provider-agnostic routes below dispatch to
+// any service via getProviderService(:provider, storeId).
+marketplacesRouter.route('/salla', sallaRouter);
+marketplacesRouter.route('/zid', zidRouter);
+marketplacesRouter.route('/amazon', amazonRouter);
 
 const codes = ['salla', 'zid', 'noon', 'amazon'] as const;
 
@@ -88,79 +100,8 @@ marketplacesRouter.get('/', requirePermission('settings:read'), async (c) => {
   return c.json({ success: true, data: providers });
 });
 
-marketplacesRouter.get('/salla/oauth/url', requirePermission('settings:update'), async (c) => {
-  const storeId = Number(c.req.param('storeId'));
-  const state = crypto.randomUUID();
-  const salla = getSallaService(storeId);
-  const url = salla.getOAuthUrl(state);
-
-  return c.json({ success: true, data: { url, state } });
-});
-
-marketplacesRouter.get('/zid/oauth/url', requirePermission('settings:update'), async (c) => {
-  const storeId = Number(c.req.param('storeId'));
-  const state = crypto.randomUUID();
-  const url = getZidService(storeId).getOAuthUrl(state);
-  return c.json({ success: true, data: { url, state } });
-});
-
-marketplacesRouter.get('/zid/oauth/callback', async (c) => {
-  const storeId = Number(c.req.param('storeId'));
-  const code = c.req.query('code');
-
-  if (!code) {
-    return c.json({ success: false, error: { code: 'MISSING_CODE', message: 'Authorization code is required' } }, 400);
-  }
-
-  try {
-    const result = await getZidService(storeId).handleCallback(code);
-    return c.redirect(`/channels/zid?connected=true`);
-  } catch (error) {
-    return c.redirect(`/channels/zid?error=${encodeURIComponent((error as Error).message)}`);
-  }
-});
-
-marketplacesRouter.get('/salla/oauth/callback', async (c) => {
-  const storeId = Number(c.req.param('storeId'));
-  const code = c.req.query('code');
-  const state = c.req.query('state');
-
-  if (!code) {
-    return c.json({ success: false, error: { code: 'MISSING_CODE', message: 'Authorization code is required' } }, 400);
-  }
-
-  try {
-    const salla = getSallaService(storeId);
-    const result = await salla.handleCallback(code);
-    return c.redirect(`/channels/salla?connected=true`);
-  } catch (error) {
-    return c.redirect(`/channels/salla?error=${encodeURIComponent((error as Error).message)}`);
-  }
-});
-
-marketplacesRouter.get('/amazon/oauth/url', requirePermission('settings:update'), async (c) => {
-  const storeId = Number(c.req.param('storeId'));
-  const state = crypto.randomUUID();
-  const url = getAmazonService(storeId).getOAuthUrl(state);
-  return c.json({ success: true, data: { url, state } });
-});
-
-marketplacesRouter.get('/amazon/oauth/callback', async (c) => {
-  const storeId = Number(c.req.param('storeId'));
-  const code = c.req.query('code');
-  const marketplaceId = c.req.query('marketplaceId') || 'sa';
-
-  if (!code) {
-    return c.json({ success: false, error: { code: 'MISSING_CODE', message: 'Authorization code is required' } }, 400);
-  }
-
-  try {
-    const result = await getAmazonService(storeId).handleCallback(code, marketplaceId);
-    return c.redirect(`/channels/amazon?connected=true`);
-  } catch (error) {
-    return c.redirect(`/channels/amazon?error=${encodeURIComponent((error as Error).message)}`);
-  }
-});
+// Amazon OAuth routes (GET /amazon/oauth/url, GET /amazon/oauth/callback)
+// moved to ./marketplaces/amazon.ts (Item 2.3d).
 
 marketplacesRouter.post(
   '/:provider/connect',
@@ -243,6 +184,10 @@ marketplacesRouter.get('/:provider/listings', requirePermission('products:read')
       const listings = await getSallaService(storeId).listProducts();
       return c.json({ success: true, data: listings });
     }
+    if (provider === 'zid') {
+      const listings = await getZidService(storeId).listProducts();
+      return c.json({ success: true, data: listings });
+    }
     if (provider === 'noon') {
       const listings = await getNoonService(storeId).listProducts();
       return c.json({ success: true, data: listings });
@@ -269,6 +214,10 @@ marketplacesRouter.post(
     try {
       if (provider === 'salla') {
         const listing = await getSallaService(storeId).createProduct(data);
+        return c.json({ success: true, data: listing }, 201);
+      }
+      if (provider === 'zid') {
+        const listing = await getZidService(storeId).createProduct(data);
         return c.json({ success: true, data: listing }, 201);
       }
       if (provider === 'noon') {
@@ -301,6 +250,10 @@ marketplacesRouter.put(
         const listing = await getSallaService(storeId).updateProduct(listingId, data);
         return c.json({ success: true, data: listing });
       }
+      if (provider === 'zid') {
+        const listing = await getZidService(storeId).updateProduct(listingId, data);
+        return c.json({ success: true, data: listing });
+      }
       if (provider === 'noon') {
         const listing = await getNoonService(storeId).updateProduct(listingId, data);
         return c.json({ success: true, data: listing });
@@ -325,6 +278,9 @@ marketplacesRouter.delete('/:provider/listings/:listingId', requirePermission('p
     if (provider === 'salla') {
       await getSallaService(storeId).deleteProduct(listingId);
     }
+    if (provider === 'zid') {
+      await getZidService(storeId).deleteProduct(listingId);
+    }
     if (provider === 'noon') {
       await getNoonService(storeId).deleteProduct(listingId);
     }
@@ -344,6 +300,10 @@ marketplacesRouter.post('/:provider/sync/orders', requirePermission('orders:read
   try {
     if (provider === 'salla') {
       const orders = await getSallaService(storeId).importOrders();
+      return c.json({ success: true, data: orders });
+    }
+    if (provider === 'zid') {
+      const orders = await getZidService(storeId).importOrders();
       return c.json({ success: true, data: orders });
     }
     if (provider === 'noon') {
@@ -374,6 +334,10 @@ marketplacesRouter.post(
         const result = await getSallaService(storeId).syncInventory(items);
         return c.json({ success: true, data: result });
       }
+      if (provider === 'zid') {
+        const result = await getZidService(storeId).syncInventory(items);
+        return c.json({ success: true, data: result });
+      }
       if (provider === 'noon') {
         const result = await getNoonService(storeId).syncInventory(items);
         return c.json({ success: true, data: result });
@@ -396,6 +360,10 @@ marketplacesRouter.post('/:provider/sync/products', requirePermission('products:
   try {
     if (provider === 'salla') {
       const products = await getSallaService(storeId).listProducts();
+      return c.json({ success: true, data: products });
+    }
+    if (provider === 'zid') {
+      const products = await getZidService(storeId).listProducts();
       return c.json({ success: true, data: products });
     }
     if (provider === 'noon') {
@@ -421,6 +389,10 @@ marketplacesRouter.get('/:provider/sales', requirePermission('reports:read'), as
   try {
     if (provider === 'salla') {
       const report = await getSallaService(storeId).getSalesReport(from, to);
+      return c.json({ success: true, data: report });
+    }
+    if (provider === 'zid') {
+      const report = await getZidService(storeId).getSalesReport(from, to);
       return c.json({ success: true, data: report });
     }
     if (provider === 'noon') {
@@ -468,9 +440,17 @@ marketplacesRouter.get('/summary', requirePermission('reports:read'), async (c) 
     amazonOrders = report.totalOrders;
   } catch {}
 
+  let zidSales = '0';
+  let zidOrders = 0;
+  try {
+    const report = await getZidService(storeId).getSalesReport(from, to);
+    zidSales = report.totalSales;
+    zidOrders = report.totalOrders;
+  } catch {}
+
   const summary = [
     { code: 'salla', name: 'سلة', totalSales: sallaSales, totalOrders: sallaOrders, currency: 'SAR' },
-    { code: 'zid', name: 'زد', totalSales: '0', totalOrders: 0, currency: 'SAR' },
+    { code: 'zid', name: 'زد', totalSales: zidSales, totalOrders: zidOrders, currency: 'SAR' },
     { code: 'noon', name: 'نون', totalSales: noonSales, totalOrders: noonOrders, currency: 'SAR' },
     { code: 'amazon', name: 'أمازون', totalSales: amazonSales, totalOrders: amazonOrders, currency: 'SAR' },
   ];
@@ -500,6 +480,21 @@ marketplacesRouter.get('/hub', requirePermission('reports:read'), async (c) => {
       eq(s.marketplaceConnections.providerId, s.marketplaceProviders.id),
     )
     .where(eq(s.marketplaceConnections.storeId, storeId));
+
+  const connectionIds = connections.map(c => c.id);
+  const listingCounts = connectionIds.length > 0
+    ? await db
+        .select({
+          connectionId: s.channelListings.connectionId,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(s.channelListings)
+        .where(and(
+          eq(s.channelListings.storeId, storeId),
+          sql`${s.channelListings.connectionId} IN ${connectionIds}`,
+        ))
+        .groupBy(s.channelListings.connectionId)
+    : [];
 
   const codes = ['salla', 'zid', 'noon', 'amazon'] as const;
   const from = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -546,6 +541,7 @@ marketplacesRouter.get('/hub', requirePermission('reports:read'), async (c) => {
   const providers = codes.map((code, i) => {
     const conn = connections.find(c => c.providerCode === code);
     const sale = salesResults[i].status === 'fulfilled' ? salesResults[i].value : null;
+    const listings = conn ? listingCounts.find(l => l.connectionId === conn.id) : null;
     return {
       code,
       name: conn?.providerName || code,
@@ -557,6 +553,7 @@ marketplacesRouter.get('/hub', requirePermission('reports:read'), async (c) => {
       lastSyncAt: conn?.lastSyncAt || null,
       totalSales: sale?.totalSales || '0',
       totalOrders: sale?.totalOrders || 0,
+      totalListings: listings?.count || 0,
       currency: sale?.currency || 'SAR',
     };
   });

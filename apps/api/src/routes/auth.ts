@@ -1,166 +1,144 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { createDbClient } from '@haa/db';
-import * as s from '@haa/db/schema';
-import { eq, sql } from 'drizzle-orm';
-import { hashPassword, verifyPassword, signToken, requireAuth, getAuth } from '@haa/auth-core';
+import { requireAuth, getAuth, signToken } from '@haa/auth-core';
 import { registerSchema, loginSchema, getPermissionsForRole, type UserRole } from '@haa/shared';
 import { AuditLogService } from '@haa/integration-core';
-import { env } from '../env.js';
+import { AuthFlowService } from '@haa/commerce-core';
 
 export const authRouter = new Hono();
 
 // POST /auth/register
 authRouter.post('/register', zValidator('json', registerSchema), async (c) => {
   const body = c.req.valid('json');
-  const db = createDbClient();
+  const service = new AuthFlowService();
 
   try {
-    const result = await db.transaction(async (tx) => {
-      const existingUser = await tx.select().from(s.users).where(eq(s.users.email, body.email)).limit(1);
-      if (existingUser.length > 0) {
-        return { error: 'Email already registered' } as const;
-      }
-
-      const existingStore = await tx.select().from(s.stores).where(eq(s.stores.slug, body.storeSlug)).limit(1);
-      if (existingStore.length > 0) {
-        return { error: 'Store slug already taken' } as const;
-      }
-
-      const passwordHash = await hashPassword(body.password);
-
-      const [user] = await tx.insert(s.users).values({
-        name: body.name,
-        email: body.email,
-        passwordHash,
-        phone: body.phone,
-      }).returning();
-
-      const [tenant] = await tx.insert(s.tenants).values({
-        name: body.storeName,
-        slug: body.storeSlug,
-        email: body.email,
-        phone: body.phone,
-      }).returning();
-
-      await tx.insert(s.tenantUsers).values({
-        tenantId: tenant.id,
-        userId: user.id,
-        role: 'owner',
-      });
-
-      const [store] = await tx.insert(s.stores).values({
-        tenantId: tenant.id,
-        name: body.storeName,
-        slug: body.storeSlug,
-        email: body.email,
-        phone: body.phone,
-      }).returning();
-
-      await tx.insert(s.storeSettings).values({ storeId: store.id });
-
-      const token = signToken({
-        userId: user.id,
-        tenantId: tenant.id,
-        activeStoreId: store.id,
-        tokenVersion: user.tokenVersion,
-        roles: ['owner'],
-        permissions: getPermissionsForRole('owner'),
-      });
-
-      return { token, user: { id: user.id, name: user.name, email: user.email }, store: { id: store.id, name: store.name, slug: store.slug } } as const;
+    const result = await service.register({
+      name: body.name,
+      email: body.email,
+      password: body.password,
+      phone: body.phone,
+      storeName: body.storeName,
+      storeSlug: body.storeSlug,
     });
 
-    if ('error' in result) {
-      return c.json({ success: false, error: { code: 'CONFLICT', message: result.error } }, 409);
+    if ('kind' in result) {
+      // Both `email_taken` and `slug_taken` are 409 Conflicts.
+      return c.json(
+        { success: false, error: { code: 'CONFLICT', message: result.message } },
+        409,
+      );
     }
 
-    return c.json({ success: true, data: result }, 201);
+    // Mint the JWT in the transport layer. Service returns the data
+    // needed; the route decides how to encode it.
+    const token = signToken({
+      userId: result.userId,
+      tenantId: result.tenantId,
+      activeStoreId: result.storeId,
+      tokenVersion: result.userTokenVersion,
+      roles: [result.role],
+      permissions: getPermissionsForRole(result.role),
+    });
+
+    return c.json(
+      {
+        success: true,
+        data: {
+          token,
+          user: { id: result.userId, name: result.userName, email: result.userEmail },
+          store: { id: result.storeId, name: result.storeName, slug: result.storeSlug },
+        },
+      },
+      201,
+    );
   } catch (err) {
     console.error('Registration error:', err);
-    return c.json({ success: false, error: { code: 'INTERNAL', message: 'Registration failed' } }, 500);
+    return c.json(
+      { success: false, error: { code: 'INTERNAL', message: 'Registration failed' } },
+      500,
+    );
   }
 });
 
 // POST /auth/login
 authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
   const body = c.req.valid('json');
-  const db = createDbClient();
-  const audit = new AuditLogService();
+  const service = new AuthFlowService();
   const ipAddress = c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip');
+  const userAgent = c.req.header('user-agent');
 
   try {
-    const [user] = await db.select().from(s.users).where(eq(s.users.email, body.email)).limit(1);
-    if (!user) {
-      await audit.record({ action: 'failed_login', entityType: 'user', ipAddress, userAgent: c.req.header('user-agent') });
-      return c.json({ success: false, error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' } }, 401);
+    const result = await service.login(
+      { email: body.email, password: body.password, ipAddress, userAgent },
+      new AuditLogService(),
+    );
+
+    if ('kind' in result) {
+      if (result.kind === 'no_tenant') {
+        return c.json(
+          { success: false, error: { code: 'FORBIDDEN', message: result.message } },
+          403,
+        );
+      }
+      return c.json(
+        { success: false, error: { code: 'INVALID_CREDENTIALS', message: result.message } },
+        401,
+      );
     }
 
-    const valid = await verifyPassword(body.password, user.passwordHash);
-    if (!valid) {
-      await audit.record({ actorUserId: user.id, action: 'failed_login', entityType: 'user', entityId: user.id, ipAddress, userAgent: c.req.header('user-agent') });
-      return c.json({ success: false, error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' } }, 401);
-    }
-
-    const [tenantUser] = await db.select().from(s.tenantUsers).where(eq(s.tenantUsers.userId, user.id)).limit(1);
-    if (!tenantUser) {
-      await audit.record({ actorUserId: user.id, action: 'failed_login', entityType: 'tenant_user', entityId: user.id, ipAddress, userAgent: c.req.header('user-agent') });
-      return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'No tenant access' } }, 403);
-    }
-
-    const stores = await db.select().from(s.stores).where(eq(s.stores.tenantId, tenantUser.tenantId)).limit(10);
-    const activeStore = stores[0];
-
+    // Mint the JWT in the transport layer.
+    const role = result.role as UserRole;
+    const permissions = getPermissionsForRole(role);
     const token = signToken({
-      userId: user.id,
-      tenantId: tenantUser.tenantId,
-      activeStoreId: activeStore?.id ?? 0,
-      tokenVersion: user.tokenVersion,
-      roles: [tenantUser.role],
-      permissions: getPermissionsForRole(tenantUser.role as UserRole),
+      userId: result.userId,
+      tenantId: result.tenantId,
+      activeStoreId: result.storeId,
+      tokenVersion: result.userTokenVersion,
+      roles: [result.role],
+      permissions,
     });
-
-    await audit.record({ actorUserId: user.id, tenantId: tenantUser.tenantId, storeId: activeStore?.id, action: 'login', entityType: 'user', entityId: user.id, ipAddress, userAgent: c.req.header('user-agent') });
-
-    const permissions = getPermissionsForRole(tenantUser.role as UserRole);
 
     return c.json({
       success: true,
       data: {
         token,
         user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          tenantId: tenantUser.tenantId,
-          activeStoreId: activeStore?.id ?? 0,
-          roles: [tenantUser.role],
+          id: result.userId,
+          name: result.userName,
+          email: result.userEmail,
+          phone: result.userPhone,
+          tenantId: result.tenantId,
+          activeStoreId: result.storeId,
+          roles: [result.role],
           permissions,
         },
-        store: activeStore ? { id: activeStore.id, name: activeStore.name, slug: activeStore.slug } : null,
+        store:
+          result.storeName && result.storeSlug
+            ? { id: result.storeId, name: result.storeName, slug: result.storeSlug }
+            : null,
       },
     });
   } catch (err) {
     console.error('Login error:', err);
-    return c.json({ success: false, error: { code: 'INTERNAL', message: 'Login failed' } }, 500);
+    return c.json(
+      { success: false, error: { code: 'INTERNAL', message: 'Login failed' } },
+      500,
+    );
   }
 });
 
 // GET /auth/me
 authRouter.get('/me', requireAuth(), async (c) => {
   const auth = getAuth(c)!;
-  const db = createDbClient();
+  const service = new AuthFlowService();
 
-  const [user] = await db.select({
-    id: s.users.id,
-    name: s.users.name,
-    email: s.users.email,
-    phone: s.users.phone,
-  }).from(s.users).where(eq(s.users.id, auth.userId)).limit(1);
-
+  const user = await service.getMe(auth.userId);
   if (!user) {
-    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found' } }, 404);
+    return c.json(
+      { success: false, error: { code: 'NOT_FOUND', message: 'User not found' } },
+      404,
+    );
   }
 
   return c.json({
@@ -181,14 +159,15 @@ authRouter.get('/me', requireAuth(), async (c) => {
 // POST /auth/logout
 authRouter.post('/logout', requireAuth(), async (c) => {
   const auth = getAuth(c)!;
-  const db = createDbClient();
+  const service = new AuthFlowService();
   try {
-    await db.update(s.users)
-      .set({ tokenVersion: sql`${s.users.tokenVersion} + 1` })
-      .where(eq(s.users.id, auth.userId));
+    await service.logout(auth.userId);
     return c.json({ success: true, data: { message: 'Logged out successfully' } });
   } catch (err) {
     console.error('Logout error:', err);
-    return c.json({ success: false, error: { code: 'INTERNAL', message: 'Logout failed' } }, 500);
+    return c.json(
+      { success: false, error: { code: 'INTERNAL', message: 'Logout failed' } },
+      500,
+    );
   }
 });

@@ -3,7 +3,7 @@ import { tenants } from './tenants.js';
 
 export const stores = pgTable('stores', {
   id: serial('id').primaryKey(),
-  tenantId: integer('tenant_id').notNull().references(() => tenants.id),
+  tenantId: integer('tenant_id').notNull().references(() => tenants.id, { onDelete: 'cascade' }),
   name: varchar('name', { length: 255 }).notNull(),
   slug: varchar('slug', { length: 100 }).notNull(),
   description: text('description'),
@@ -13,6 +13,9 @@ export const stores = pgTable('stores', {
   backgroundColor: varchar('background_color', { length: 20 }).default('#ffffff'),
   email: varchar('email', { length: 255 }),
   phone: varchar('phone', { length: 20 }),
+  isDemo: boolean('is_demo').notNull().default(false),
+  demoProfile: varchar('demo_profile', { length: 50 }),
+  demoSeedVersion: varchar('demo_seed_version', { length: 50 }),
   status: varchar('status', { length: 20 }).notNull().default('active'),
   isActive: boolean('is_active').notNull().default(true),
   publishStatus: varchar('publish_status', { length: 20 }).notNull().default('draft'),

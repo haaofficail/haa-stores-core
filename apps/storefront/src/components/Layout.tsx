@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Outlet, useParams } from 'react-router-dom';
+import { Outlet, useParams, useLocation } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import { StoreProvider } from '@/hooks/useStore';
 import { CartProvider } from '@/hooks/CartContext';
 import { useThemeConfig, setThemeApiBase, getStorefrontThemeComponents, resolveStorefrontThemeKey } from '@haa/storefront-themes';
 import { ThemeProvider } from '@/hooks/useTheme';
+import { tracker } from '@/lib/tracker';
 import '@/theme-registry';
 
 setThemeApiBase(import.meta.env.VITE_API_URL ?? '');
@@ -42,6 +43,8 @@ export default function Layout() {
   const fallbackTimer = useRef<ReturnType<typeof setTimeout>>();
   const [useFallback, setUseFallback] = useState(false);
 
+  const location = useLocation();
+
   useEffect(() => {
     if (themeConfig) {
       if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
@@ -51,6 +54,12 @@ export default function Layout() {
     fallbackTimer.current = setTimeout(() => setUseFallback(true), FALLBACK_TIMEOUT_MS);
     return () => { if (fallbackTimer.current) clearTimeout(fallbackTimer.current); };
   }, [themeConfig]);
+
+  useEffect(() => {
+    if (slug) {
+      tracker.trackPageView(slug);
+    }
+  }, [slug, location.pathname]);
 
   if (!themeConfig && !useFallback) {
     return (
@@ -72,7 +81,7 @@ export default function Layout() {
     <StoreProvider slug={slug}>
       <CartProvider slug={slug}>
         <ThemeProvider value={effectiveConfig}>
-          <div className="min-h-screen flex flex-col" id="storefront-scope" data-theme-scope="storefront" data-storefront-theme={runtimeKey}>
+          <div className="min-h-screen flex flex-col overflow-x-hidden" id="storefront-scope" data-theme-scope="storefront" data-storefront-theme={runtimeKey}>
             {RuntimeHeader ? <RuntimeHeader /> : <Header />}
             <main className="flex-1">
               <Outlet />

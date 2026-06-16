@@ -40,6 +40,7 @@ export const orders = pgTable('orders', {
   cancelledReason: text('cancelled_reason'),
   source: varchar('source', { length: 30 }).notNull().default('storefront'),
   externalId: varchar('external_id', { length: 255 }),
+  platformCommission: decimal('platform_commission', { precision: 12, scale: 2 }),
   completedAt: timestamp('completed_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -68,6 +69,9 @@ export const orderItems = pgTable('order_items', {
   giftWrapPrice: decimal('gift_wrap_price', { precision: 12, scale: 2 }),
   sendAsGift: boolean('send_as_gift').default(false),
   giftMessage: text('gift_message'),
+  source: varchar('source', { length: 30 }).notNull().default('storefront'),
+  platformCommissionRate: decimal('platform_commission_rate', { precision: 5, scale: 4 }),
+  platformCommission: decimal('platform_commission', { precision: 12, scale: 2 }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({
   orderIdx: index('order_items_order_idx').on(table.orderId),

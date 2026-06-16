@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Search, ChevronLeft, Loader2, Info, CheckCircle, X, type LucideIcon } from 'lucide-react';
 import { Icon } from './icon';
 import { SarIcon } from './SarIcon';
+import { CurrencyAmount, CurrencyStrike } from '@/components/product-card';
 
 // Re-export from @haa/ui
 export {
@@ -346,30 +347,20 @@ export function StoreErrorState({ icon: IconComponent, title, description, onRet
   );
 }
 
-export function StorePrice({ price, compareAtPrice, currency, size = 'md', showDiscountBadge = true }: {
-  price: number | string; compareAtPrice?: number | string | null; currency?: string; size?: 'sm' | 'md' | 'lg'; showDiscountBadge?: boolean;
+export function StorePrice({ price, compareAtPrice, size = 'md', showDiscountBadge = true }: {
+  price: number | string; compareAtPrice?: number | string | null; size?: 'sm' | 'md' | 'lg'; showDiscountBadge?: boolean;
 }) {
   const { t } = useTranslation();
-  const resolvedCurrency: ReactNode = currency || <SarIcon className="inline-block h-[0.85em] w-[0.75em] align-middle" />;
   const hasDiscount = compareAtPrice && Number(compareAtPrice) > Number(price);
-  const discountPercent = hasDiscount ? Math.round((1 - Number(price) / Number(compareAtPrice)) * 100) : 0;
-
-  const sz = {
-    sm: { current: 'text-sm font-bold', original: 'text-xs' },
-    md: { current: 'text-lg font-bold', original: 'text-sm' },
-    lg: { current: 'text-xl sm:text-2xl font-bold', original: 'text-lg' },
-  };
+  const discountPercent = hasDiscount ? Math.round((1 - Number(price) / Number(compareAtPrice)) * 100) : null;
+  const priceSize = size === 'lg' ? 'lg' : size === 'sm' ? 'sm' : 'md';
 
   return (
     <div className="flex items-baseline gap-2 flex-wrap">
-      <span className={`${sz[size].current} text-text-primary`} dir="ltr">
-        {Number(price).toFixed(2)} {resolvedCurrency}
-      </span>
+      <CurrencyAmount amount={price} size={priceSize as any} weight="bold" color="text-text-primary" />
       {hasDiscount && (
         <>
-          <span className={`${sz[size].original} text-text-tertiary line-through`} dir="ltr">
-            {Number(compareAtPrice).toFixed(2)} {resolvedCurrency}
-          </span>
+          <CurrencyStrike amount={compareAtPrice!} size={size === 'sm' ? 'sm' : 'md' as any} />
           {showDiscountBadge && (
             <StoreBadge variant="discount" size={size === 'sm' ? 'sm' : 'md'} className="shrink-0">
               {discountPercent}% {t('ui.discount', 'خصم')}

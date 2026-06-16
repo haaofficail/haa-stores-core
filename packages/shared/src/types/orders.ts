@@ -116,6 +116,7 @@ export type WebhookEventType =
   | 'store.updated'
   | 'product.created'
   | 'product.updated'
+  | 'product.marketplace_sync_failed'
   | 'order.created'
   | 'order.paid'
   | 'order.cancelled'
@@ -168,6 +169,18 @@ export type AuditAction =
   | 'export_wallet'
   | 'import_products'
   | 'refund_processed'
+  | 'payout_requested'
+  // Employee management
+  | 'employee_invited'
+  | 'employee_role_changed'
+  | 'employee_status_changed'
+  | 'employee_removed'
+  | 'employee_last_owner_blocked'
+  | 'employee_self_restriction_blocked'
+  | 'employee_invalid_role_rejected'
+  | 'employee_duplicate_rejected'
+  | 'employee_permission_update_unsupported'
+  | 'employee_permissions_updated'
   | 'kyc_reviewed'
   | 'compliance_check_failed'
   | 'policy_updated'
@@ -176,7 +189,8 @@ export type AuditAction =
   | 'commercial_registration_updated'
   | 'vat_number_updated'
   | 'customer_data_exported'
-  | 'merchant_acknowledgement';
+  | 'merchant_acknowledgement'
+  | 'store_billing_settings_updated';
 
 export type UserRole = 'owner' | 'admin' | 'manager' | 'products_manager' | 'orders_manager' | 'accountant' | 'support' | 'viewer';
 
@@ -219,10 +233,14 @@ export type Permission =
   | 'wallet.payout.reverse'
   | 'wallet.payout.view_all'
   | 'wallet.payout.view_store'
+  | 'billing.platform_fee.read'
+  | 'billing.platform_fee.update'
   | 'shipping:manage'
   | 'settings:view'
   | 'settings:update'
   | 'staff:manage'
+  | 'ai:read'
+  | 'ai:execute'
   | 'reports:view'
   | 'reports:export'
   | 'reports:read'

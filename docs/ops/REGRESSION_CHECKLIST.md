@@ -14,6 +14,15 @@
 - [ ] No files outside scope were modified
 - [ ] docs/ops/ files updated if needed
 
+## Local Port Governance
+
+- [ ] API health endpoint is checked on `http://localhost:3000/health`
+- [ ] Merchant dashboard is checked on `http://localhost:5173`
+- [ ] Storefront is checked on `http://localhost:5174`
+- [ ] Admin dashboard reserves `http://localhost:5175`
+- [ ] Vite apps use `strictPort: true` so port conflicts fail visibly
+- [ ] `pnpm ops:monitor` passes after starting local dev servers
+
 ## UI / UX
 
 - [ ] RTL layout correct
@@ -97,9 +106,31 @@
 - [ ] Update wired to employeesApi.update
 - [ ] Delete wired to employeesApi.remove with confirm dialog
 - [ ] Refetch after mutation
-- [ ] All 1409 tests pass across 71 test files
+- [ ] All 1493 tests pass across 74 test files
 - [ ] pnpm typecheck passes with no RBAC-related errors
 - [ ] pnpm ops:monitor: all RBAC-related checks pass
+
+### Employee Audit Logging (Pass 5)
+
+- [ ] AuditLogService imported in employees.ts
+- [ ] auditMeta() helper defined with actorUserId, tenantId, ipAddress, userAgent
+- [ ] Invite success logs employee_invited with userId, name, email, role
+- [ ] Duplicate invite rejected logs employee_duplicate_rejected
+- [ ] Self-role-change blocked logs employee_self_restriction_blocked
+- [ ] Self-delete blocked logs employee_self_restriction_blocked
+- [ ] Last-owner delete blocked logs employee_last_owner_blocked
+- [ ] Role change success logs employee_role_changed with oldValue/newValue
+- [ ] Status toggle logs employee_status_changed or employee_removed
+- [ ] Delete success logs employee_removed with oldValue
+- [ ] 501 permission attempt logs employee_permission_update_unsupported
+- [ ] All audit calls include storeId: auth.activeStoreId
+- [ ] All audit calls include entityType: 'employee'
+- [ ] Invite create dialog shows clarity banner: "تم إنشاء الموظف محليًا. إرسال الدعوات البريدية غير مفعّل بعد."
+- [ ] Password is not returned in API response
+- [ ] Employee audit action labels exist in AUDIT_ACTION_LABELS
+- [ ] Employee entity label exists in AUDIT_ENTITY_LABELS
+- [ ] Audit boundary tests (tests/employee-management-api.test.ts) pass (40/40)
+- [ ] No misleading "email sent" text in invite UI
 
 ## Orders / Payment / Shipping
 
@@ -120,9 +151,49 @@
 ## Database
 
 - [ ] Migrations are reversible
+- [ ] `pnpm db:migrate` succeeds without manual SQL patches
+- [ ] Drizzle `_journal.json` entries match retained SQL migration files
+- [ ] Marketing tables exist after migration: `marketing_events`, `marketing_sessions`, `product_performance_daily`
 - [ ] No destructive changes without approval
 - [ ] Seed data not polluted
 - [ ] Rollback plan exists
+
+## Haa Public Marketplace
+
+- [ ] Marketplace theme files stay under `apps/storefront/src/pages/marketplace/theme/`
+- [ ] Marketplace pages do not import merchant storefront theme runtime components such as `ThemedProductCard`
+- [ ] `/marketplace` first viewport has marketing copy, search, cart, sellers, and tracking actions
+- [ ] `/marketplace` lists only marketplace-enabled, approved, public products
+- [ ] Marketplace filters include category/search/price/availability/sort
+- [ ] Marketplace filters do NOT include city
+- [ ] Seller city/location is informational only, not a marketplace filter
+- [ ] Product cards link to seller pages and merchant store product pages where appropriate
+- [ ] Product cards open `/marketplace/products/:storeSlug/:productSlug` for marketplace product detail
+- [ ] Marketplace product detail keeps "عرض في متجر التاجر" as a secondary merchant-store action
+- [ ] Marketplace product detail desktop layout keeps gallery left, details center, seller card right
+- [ ] Marketplace product detail mobile layout has no horizontal overflow
+- [ ] Marketplace product detail shows Tabby/Tamara BNPL under the price
+- [ ] Marketplace product detail BNPL is persuasive and compact: shows "ادفع الآن فقط", per-payment amount, "بدون فوائد", and larger provider logos
+- [ ] Marketplace product detail shows savings, old price, and large current price when discounted
+- [ ] Marketplace product detail includes specifications, shipping/returns policies, and review summary sections
+- [ ] Marketplace product detail policy/reviews sections do not use oversized nested cards or wasted vertical spacing
+- [ ] Marketplace product detail gallery has arrows and image zoom
+- [ ] Payment-logo rows keep Cash on Delivery as the final/leftmost RTL payment option after Tabby
+- [ ] Demo support KB route `/s/demo-perfumes/support/kb` returns HTTP 200
+- [ ] `/marketplace/sellers` lists participating sellers
+- [ ] `/marketplace/sellers/:storeSlug` shows seller data and seller products
+- [ ] Marketplace cart preserves store grouping for multi-seller checkout
+- [ ] Marketplace checkout creates per-store suborders under one marketplace order number
+- [ ] Marketplace checkout makes clear that suborders become normal merchant orders after checkout
+- [ ] `/marketplace/orders` supports marketplace order number + phone inquiry
+- [ ] Marketplace order tracking validates phone and shows suborders
+- [ ] Marketplace order tracking routes post-order procedures to the merchant order page
+- [ ] Marketplace UI does not imply Haa Stores owns shipping, fulfillment, returns, exchanges, or disputes
+- [ ] Admin marketplace review actions cannot be replaced by UI-only enforcement
+- [ ] Featured marketplace products respect review status and feature metadata
+- [ ] Marketplace settlement/deep-report views show platform commission totals
+- [ ] Marketplace settlement/deep-report views link execution to the existing manual settlements path
+- [ ] Marketplace schema does not create marketplace-owned after-sales tables
 
 ## Dynamic Error Capture
 
@@ -148,6 +219,8 @@
 - [ ] AuthGuard in dashboard checks user exists (basic auth)
 - [ ] API enforcement exists independently of UI hiding
 - [ ] Support ticket auth uses header, not query param
+- [ ] Storefront does not create support ticket links containing `?accessToken=`
+- [ ] Temporary legacy support-ticket query token compatibility is not used by new UI links
 - [ ] Error capture sanitization covers all sensitive field patterns
 - [ ] `.env` is gitignored
 - [ ] Stack traces are stripped in production responses

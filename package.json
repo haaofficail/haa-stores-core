@@ -35,6 +35,7 @@
     "oauth:test": "npx tsx scripts/test-marketplace-oauth.ts",
     "smoke": "vitest run --config vitest.smoke.config.ts",
     "preflight": "node scripts/preflight.mjs",
+    "ci:local": "node scripts/local-ci.mjs",
     "ops:health": "node scripts/monitor-health.mjs",
     "ops:synthetic": "node scripts/synthetic-checks.mjs",
     "ops:errors": "node scripts/analyze-support-errors.mjs",

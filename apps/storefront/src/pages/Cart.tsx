@@ -13,6 +13,15 @@ import { useSEO } from '@/hooks/useSEO';
 import { useStore } from '@/hooks/useStore';
 import { checkoutApi, type CouponValidation, type Cart } from '@/lib/api';
 
+function getVariantLabel(item: Cart['items'][number]): string {
+  if (!item.variant) return '';
+  if (item.variant.name) return item.variant.name;
+  if (item.variant.options && typeof item.variant.options === 'object') {
+    return Object.values(item.variant.options).filter(Boolean).join(' / ');
+  }
+  return '';
+}
+
 export default function Cart() {
   const { t } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
@@ -98,7 +107,11 @@ export default function Cart() {
   const handleMoveToCart = async (item: Cart['items'][number]) => {
     setUpdating(item.id);
     try {
-      await addItem(item.product.id, item.quantity);
+      await addItem(item.product.id, item.quantity, undefined, {
+        giftWrapSelected: item.giftWrapSelected,
+        sendAsGift: item.sendAsGift,
+        giftMessage: item.giftMessage ?? undefined,
+      }, item.variantId ?? undefined);
       setSavedItems((prev) => prev.filter((i) => i.id !== item.id));
       toast.success(t('cart.moveToCart', 'تم نقل المنتج للسلة'));
     } catch {
@@ -150,7 +163,9 @@ export default function Cart() {
         <div className="grid lg:grid-cols-3 gap-4 lg:gap-6">
           <div className="lg:col-span-2 space-y-2">
             {cart.items.map((item) => {
-              const maxQty = item.product.trackInventory ? Math.max(1, item.product.stockQuantity) : 99;
+              const variantLabel = getVariantLabel(item);
+              const availableStock = item.variant ? item.variant.stockQuantity : item.product.stockQuantity;
+              const maxQty = item.product.trackInventory ? Math.max(1, availableStock) : 99;
               return (
                 <StoreCard key={item.id} className="p-3">
                   <div className="flex items-center gap-3">
@@ -172,8 +187,13 @@ export default function Cart() {
                       >
                         {item.product.name}
                       </Link>
+                      {variantLabel && (
+                        <p className="text-[var(--badge-font-size)] text-text-tertiary mt-0.5 line-clamp-1">
+                          {variantLabel}
+                        </p>
+                      )}
                       <p className="text-primary-600 font-semibold text-xs mt-0.5">
-                        {Number(item.unitPrice).toFixed(2)} <SarIcon className="inline-block h-[0.85em] w-[0.75em] align-middle" />
+                        {Number(item.unitPrice).toFixed(2)} <SarIcon size="md" />
                       </p>
                       {(item.giftWrapSelected || item.sendAsGift) && (
                         <div className="flex flex-wrap gap-1 mt-0.5">
@@ -192,7 +212,7 @@ export default function Cart() {
                         disabled={updating === item.id}
                       />
                       <p className="font-semibold text-xs sm:w-16 sm:text-start">
-                        {Number(item.totalPrice).toFixed(2)} <SarIcon className="inline-block h-[0.85em] w-[0.75em] align-middle" />
+                        {Number(item.totalPrice).toFixed(2)} <SarIcon size="md" />
                       </p>
                       <button
                         onClick={() => handleSaveForLater(item)}
@@ -233,14 +253,26 @@ export default function Cart() {
                           )}
                         </Link>
                         <div className="flex-1 min-w-0">
+                          {(() => {
+                            const variantLabel = getVariantLabel(item);
+                            return (
+                              <>
                           <Link
                             to={`/s/${slug}/p/${item.product.slug}`}
                             className="font-medium text-sm text-text-primary hover:text-primary-600 transition-colors line-clamp-1"
                           >
                             {item.product.name}
                           </Link>
+                                {variantLabel && (
+                                  <p className="text-[var(--badge-font-size)] text-text-tertiary mt-0.5 line-clamp-1">
+                                    {variantLabel}
+                                  </p>
+                                )}
+                              </>
+                            );
+                          })()}
                           <p className="text-primary-600 font-semibold text-xs mt-0.5">
-                            {Number(item.unitPrice).toFixed(2)} <SarIcon className="inline-block h-[0.85em] w-[0.75em] align-middle" />
+                            {Number(item.unitPrice).toFixed(2)} <SarIcon size="md" />
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -279,7 +311,7 @@ export default function Cart() {
                 {remaining > 0 ? (
                   <>
                     <p className="text-xs font-medium text-primary-700 mb-1.5">
-                      {t('cart.freeShippingProgress', { amount: `${remaining.toFixed(2)} ${t('common.sar')}` })}
+                      {t('cart.freeShippingProgress', { amount: `${remaining.toFixed(2)} ر.س` })}
                     </p>
                     <div className="h-1.5 bg-primary-100 rounded-full overflow-hidden">
                       <div className="h-full bg-primary-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
@@ -305,7 +337,7 @@ export default function Cart() {
                   <div>
                     <p className="text-xs font-bold text-primary-700">{couponData.code}</p>
                       <p className="text-[var(--badge-font-size)] text-primary-600">
-                        {t('cart.couponDiscount', 'الخصم')}: -{Number(couponData.discount).toFixed(2)} <SarIcon className="inline-block h-[0.85em] w-[0.75em] align-middle" />
+                        {t('cart.couponDiscount', 'الخصم')}: -{Number(couponData.discount).toFixed(2)} <SarIcon size="md" />
                       </p>
                   </div>
                   <button
@@ -356,7 +388,12 @@ export default function Cart() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="line-clamp-1 text-text-primary">{item.product.name}</p>
-                      <p className="text-[var(--badge-font-size)] text-text-tertiary">{item.quantity} × {Number(item.unitPrice).toFixed(2)}</p>
+                      {getVariantLabel(item) && (
+                        <p className="text-[var(--badge-font-size)] text-text-tertiary line-clamp-1">
+                          {getVariantLabel(item)}
+                        </p>
+                      )}
+                      <p className="text-[var(--badge-font-size)] text-text-tertiary">{item.quantity} × {Number(item.unitPrice).toFixed(2)} <SarIcon size="sm" /></p>
                       {(item.giftWrapSelected || item.sendAsGift) && (
                          <div className="flex flex-wrap gap-1 mt-0.5">
                             {item.giftWrapSelected && <StoreBadge variant="info" size="sm"><Icon icon={Gift} size="2xs" className="inline align-middle ms-0.5" />{t('cart.giftWrap', 'تغليف')}</StoreBadge>}
@@ -364,7 +401,7 @@ export default function Cart() {
                          </div>
                       )}
                     </div>
-                    <p className="font-medium text-xs">{Number(item.totalPrice).toFixed(2)} <SarIcon className="inline-block h-[0.85em] w-[0.75em] align-middle" /></p>
+                    <p className="font-medium text-xs">{Number(item.totalPrice).toFixed(2)} <SarIcon size="md" /></p>
                   </div>
                 ))}
               </div>
@@ -372,12 +409,12 @@ export default function Cart() {
               <div className="pt-3 space-y-1.5 border-t border-border">
                 <div className="flex justify-between text-xs">
                   <span className="text-text-secondary">{t('cart.subtotal')}</span>
-                  <span className="font-medium">{subtotal.toFixed(2)} <SarIcon className="inline-block h-[0.85em] w-[0.75em] align-middle" /></span>
+                  <span className="font-medium">{subtotal.toFixed(2)} <SarIcon size="md" /></span>
                 </div>
                 {couponData?.valid && (
                   <div className="flex justify-between text-xs">
                     <span className="text-text-secondary">{t('cart.couponDiscount', 'الخصم')}</span>
-                    <span className="font-medium text-primary-600">-{Number(couponData.discount).toFixed(2)} <SarIcon className="inline-block h-[0.85em] w-[0.75em] align-middle" /></span>
+                    <span className="font-medium text-primary-600">-{Number(couponData.discount).toFixed(2)} <SarIcon size="md" /></span>
                   </div>
                 )}
                 <p className="text-[11px] text-text-tertiary text-start">{t('cart.shippingCalculated', 'سيتم حساب الشحن عند إتمام الطلب')}</p>
@@ -386,7 +423,7 @@ export default function Cart() {
               <div className="pt-3 mt-3 border-t border-border">
                 <div className="flex justify-between items-center mb-3">
                   <span className="font-bold text-sm">{t('cart.total', 'الإجمالي')}</span>
-                  <span className="font-bold text-base text-primary-600">{(subtotal - (couponData?.discount || 0)).toFixed(2)} <SarIcon className="inline-block h-[0.85em] w-[0.75em] align-middle" /></span>
+                  <span className="font-bold text-base text-primary-600">{(subtotal - (couponData?.discount || 0)).toFixed(2)} <SarIcon size="md" /></span>
                 </div>
                 <StoreButton
                   href={`/s/${slug}/checkout${couponData?.valid && couponData.code ? `?coupon=${encodeURIComponent(couponData.code)}` : ''}`}

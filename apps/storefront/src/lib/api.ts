@@ -1,12 +1,5 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
-interface ApiError {
-  success: false;
-  error: { code: string; message: string };
-}
-
-type ApiResponse<T> = { success: true; data: T } | ApiError;
-
 export class ApiClientError extends Error {
   code: string;
   constructor(code: string, message: string) {
@@ -24,13 +17,27 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   };
 
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
-  const json: ApiResponse<T> = await res.json();
+  // Wrap the response so TypeScript and runtime agree: `T` is whatever
+  // the API puts inside `data` (typically an array, a single object, or
+  // a paginated envelope). The previous version typed `json` as
+  // `ApiResponse<T>`, which lied about the runtime shape and caused
+  // `request<ProductListResult>` to return `PublicProduct[]` while
+  // claiming to return a paginated envelope.
+  const json = (await res.json()) as { success?: boolean; data?: T; error?: { code: string; message: string } };
 
-  if (!json.success) {
+  if (json && json.success === false && json.error) {
     throw new ApiClientError(json.error.code, json.error.message);
   }
 
-  return json.data;
+  // Some endpoints (e.g. /products) return the data wrapped in a
+  // paginated envelope. Detect that shape and unwrap one level so the
+  // caller can decide what to do with the metadata.
+  const raw = json?.data;
+  if (raw && typeof raw === 'object' && !Array.isArray(raw) && 'data' in (raw as any) && Array.isArray((raw as any).data)) {
+    return raw as unknown as T;
+  }
+
+  return raw as T;
 }
 
 export interface StoreInfo {
@@ -41,6 +48,7 @@ export interface StoreInfo {
   logoUrl: string | null;
   status: string;
   isActive: boolean;
+  isDemo?: boolean;
   email: string | null;
   phone: string | null;
   contactChannels?: {
@@ -112,6 +120,51 @@ export interface PublicProduct {
   giftWrapPriceOverride: string | null;
 }
 
+export interface HaaMarketplaceProduct extends PublicProduct {
+  store: {
+    id: number;
+    name: string;
+    slug: string;
+    logoUrl: string | null;
+    city: string | null;
+    isDemoStore?: boolean;
+  };
+  commissionRate: string;
+  haaMarketplaceFeatured?: boolean;
+  productUrl: string;
+  merchantProductUrl?: string;
+  isDemoStore?: boolean;
+}
+
+export interface HaaMarketplaceProductListResult {
+  data: HaaMarketplaceProduct[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface HaaMarketplaceSeller {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  logoUrl: string | null;
+  coverUrl: string | null;
+  city: string | null;
+  district: string | null;
+  email: string | null;
+  phone: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  productCount: number;
+  rating: number | null;
+  reviewCount: number | null;
+  createdAt: string;
+  marketplaceUrl: string;
+  storefrontUrl: string;
+}
+
 export interface PublicBrand {
   id: number;
   name: string;
@@ -146,6 +199,7 @@ export interface CartItem {
   giftWrapPrice: string | null;
   sendAsGift: boolean;
   giftMessage: string | null;
+  source: string;
   variant: ProductVariant | null;
   product: PublicProduct;
 }
@@ -317,6 +371,10 @@ export interface ProductListResult {
 }
 
 export const productsApi = {
+  /**
+   * Returns just the products array. Most callers only need this.
+   * The API helper unwraps the paginated envelope for you.
+   */
   list: (slug: string, params?: ProductListParams) => {
     const q = new URLSearchParams();
     if (params?.page) q.set('page', String(params.page));
@@ -329,13 +387,97 @@ export const productsApi = {
     if (params?.maxPrice !== undefined) q.set('maxPrice', String(params.maxPrice));
     if (params?.sort) q.set('sort', params.sort);
     const qs = q.toString();
-    return request<ProductListResult>(
-      `/s/${slug}/products${qs ? `?${qs}` : ''}`,
-    );
+    return request<PublicProduct[]>(`/s/${slug}/products${qs ? `?${qs}` : ''}`);
+  },
+  /**
+   * Returns the full paginated envelope (`{ data, total, page, totalPages }`).
+   * Use this when you need pagination metadata (e.g. a category page with
+   * multiple pages).
+   */
+  listPaginated: (slug: string, params?: ProductListParams) => {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.category) q.set('category', params.category);
+    if (params?.search) q.set('search', params.search);
+    if (params?.brandId) q.set('brandId', String(params.brandId));
+    if (params?.tagId) q.set('tagId', String(params.tagId));
+    if (params?.minPrice !== undefined) q.set('minPrice', String(params.minPrice));
+    if (params?.maxPrice !== undefined) q.set('maxPrice', String(params.maxPrice));
+    if (params?.sort) q.set('sort', params.sort);
+    const qs = q.toString();
+    return request<ProductListResult>(`/s/${slug}/products${qs ? `?${qs}` : ''}`);
   },
   getBySlug: (slug: string, productSlug: string) =>
     request<PublicProduct>(`/s/${slug}/products/${productSlug}`),
 };
+
+export const haaMarketplaceApi = {
+  getProduct: (storeSlug: string, productSlug: string) =>
+    request<HaaMarketplaceProduct>(
+      `/marketplace/products/${encodeURIComponent(storeSlug)}/${encodeURIComponent(productSlug)}`,
+    ),
+  listProducts: (params?: { page?: number; limit?: number; search?: string; category?: string; store?: string; minPrice?: number; maxPrice?: number; availableOnly?: boolean; featured?: boolean; sort?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.search) q.set('search', params.search);
+    if (params?.category) q.set('category', params.category);
+    if (params?.store) q.set('store', params.store);
+    if (params?.minPrice !== undefined) q.set('minPrice', String(params.minPrice));
+    if (params?.maxPrice !== undefined) q.set('maxPrice', String(params.maxPrice));
+    if (params?.availableOnly) q.set('availableOnly', 'true');
+    if (params?.featured) q.set('featured', 'true');
+    if (params?.sort) q.set('sort', params.sort);
+    const qs = q.toString();
+    return request<HaaMarketplaceProductListResult>(`/marketplace/products${qs ? `?${qs}` : ''}`);
+  },
+  listCategories: () => request<HaaMarketplaceCategory[]>(`/marketplace/categories`),
+  listSellers: () => request<HaaMarketplaceSeller[]>(`/marketplace/sellers`),
+  getSeller: (storeSlug: string) => request<HaaMarketplaceSeller>(`/marketplace/sellers/${storeSlug}`),
+  createOrder: (data: {
+    customerName: string;
+    customerPhone: string;
+    customerEmail?: string;
+    shippingAddress?: Record<string, unknown>;
+    paymentMethod?: string;
+    notes?: string;
+    subOrders: Array<{ storeSlug: string; orderNumber: string }>;
+  }) => request<MarketplaceOrder>(`/marketplace/orders`, { method: 'POST', body: JSON.stringify(data) }),
+  getOrder: (marketplaceOrderNumber: string, phone: string) =>
+    request<MarketplaceOrder>(`/marketplace/orders/${marketplaceOrderNumber}?phone=${encodeURIComponent(phone)}`),
+};
+
+export interface HaaMarketplaceCategory {
+  name: string;
+  slug: string;
+  count: number;
+}
+
+export interface MarketplaceOrder {
+  marketplaceOrderNumber: string;
+  status: string;
+  paymentStatus: string;
+  fulfillmentStatus: string;
+  customerName?: string;
+  customerPhone?: string;
+  subtotal: string;
+  shippingTotal: string;
+  total: string;
+  platformCommission: string;
+  createdAt?: string;
+  subOrders: Array<{
+    storeName: string;
+    storeSlug: string;
+    orderNumber: string;
+    status: string;
+    paymentStatus: string;
+    fulfillmentStatus: string;
+    subtotal?: string;
+    shippingCost?: string;
+    total: string;
+  }>;
+}
 
 export const sizeGuidesApi = {
   getForProduct: (slug: string, productId: number) =>
@@ -355,10 +497,10 @@ export const cartApi = {
     request<Cart>(`/s/${slug}/cart`, { method: 'POST' }),
   get: (slug: string, cartId: string) =>
     request<Cart>(`/s/${slug}/cart/${cartId}`),
-  addItem: (slug: string, cartId: string, productId: number, quantity: number, notes?: string, giftData?: { giftWrapSelected?: boolean; sendAsGift?: boolean; giftMessage?: string }, variantId?: number) =>
+  addItem: (slug: string, cartId: string, productId: number, quantity: number, notes?: string, giftData?: { giftWrapSelected?: boolean; sendAsGift?: boolean; giftMessage?: string }, variantId?: number, source?: 'storefront' | 'haa_marketplace') =>
     request<Cart>(`/s/${slug}/cart/${cartId}/items`, {
       method: 'POST',
-      body: JSON.stringify({ productId, variantId, quantity, notes, ...giftData }),
+      body: JSON.stringify({ productId, variantId, quantity, notes, source, ...giftData }),
     }),
   updateItem: (slug: string, cartId: string, itemId: number, quantity: number) =>
     request<Cart>(`/s/${slug}/cart/${cartId}/items/${itemId}`, {
@@ -505,11 +647,14 @@ export const supportApi = {
   createTicket: (slug: string, data: { name: string; email?: string; phone?: string; subject: string; message: string }) =>
     request<CreatedTicket>(`/s/${slug}/support/tickets`, { method: 'POST', body: JSON.stringify(data) }),
   getTicket: (slug: string, ticketId: number, accessToken: string) =>
-    request<SupportTicket & { messages: TicketMessage[] }>(`/s/${slug}/support/tickets/${ticketId}?accessToken=${accessToken}`),
+    request<SupportTicket & { messages: TicketMessage[] }>(`/s/${slug}/support/tickets/${ticketId}`, {
+      headers: { 'X-Support-Access-Token': accessToken },
+    }),
   replyToTicket: (slug: string, ticketId: number, accessToken: string, message: string) =>
     request<TicketMessage>(`/s/${slug}/support/tickets/${ticketId}/reply`, {
       method: 'POST',
-      body: JSON.stringify({ message, accessToken }),
+      headers: { 'X-Support-Access-Token': accessToken },
+      body: JSON.stringify({ message }),
     }),
   listKbArticles: (slug: string, category?: string) =>
     request<KbListResult>(`/s/${slug}/support/kb${category ? `?category=${encodeURIComponent(category)}` : ''}`),

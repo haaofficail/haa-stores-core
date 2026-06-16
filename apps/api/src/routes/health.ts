@@ -1,22 +1,15 @@
 import { Hono } from 'hono';
-import { sql } from 'drizzle-orm';
-import { createDbClient } from '@haa/db';
+import { BasicHealthService } from '@haa/integration-core';
 
 const healthRouter = new Hono();
 
 healthRouter.get('/', async (c) => {
-  const db = createDbClient();
-  let dbStatus = 'unknown';
-  try {
-    await db.execute(sql`SELECT 1 AS ok`);
-    dbStatus = 'connected';
-  } catch {
-    dbStatus = 'disconnected';
-  }
+  const service = new BasicHealthService();
+  const { connected } = await service.ping();
 
   return c.json({
     api: 'ok',
-    db: dbStatus,
+    db: connected ? 'connected' : 'disconnected',
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),

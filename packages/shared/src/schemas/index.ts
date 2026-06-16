@@ -26,3 +26,4 @@ export { createCheckoutSessionSchema, updateOrderStatusSchema, updateShipmentSta
 export { createShippingMethodSchema, createShippingZoneSchema, createShippingRateSchema } from './shipping.js';
 export { createCouponSchema, updateCouponSchema, applyCouponSchema } from './coupons.js';
 export { createPromotionSchema, updatePromotionSchema } from './promotions.js';
+export { eventPayloadSchema, EVENT_PAYLOAD_MAX_BYTES, heartbeatPayloadSchema, HEARTBEAT_PAYLOAD_MAX_BYTES } from './marketing.js';

@@ -68,6 +68,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   export_wallet: 'تصدير المحفظة',
   import_products: 'استيراد المنتجات',
   refund_processed: 'معالجة استرداد',
+  payout_requested: 'طلب سحب أرباح',
   kyc_reviewed: 'مراجعة بيانات التحقق',
   compliance_check_failed: 'فشل فحص الامتثال',
   policy_updated: 'تحديث سياسة',
@@ -77,6 +78,17 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   vat_number_updated: 'تحديث الرقم الضريبي',
   customer_data_exported: 'تصدير بيانات العملاء',
   merchant_acknowledgement: 'إقرار التاجر',
+  employee_invited: 'إضافة موظف',
+  employee_role_changed: 'تغيير دور الموظف',
+  employee_status_changed: 'تغيير حالة الموظف',
+  employee_removed: 'حذف موظف',
+  employee_last_owner_blocked: 'منع حذف آخر مالك',
+  employee_self_restriction_blocked: 'منع تقييد النفس',
+  employee_invalid_role_rejected: 'رفض دور غير صالح',
+  employee_duplicate_rejected: 'رفض موظف مكرر',
+  employee_permission_update_unsupported: 'محاولة تعديل صلاحيات غير مدعومة',
+  employee_permissions_updated: 'تحديث صلاحيات الموظف',
+  store_billing_settings_updated: 'تحديث إعدادات رسوم المتجر',
 };
 
 export const AUDIT_ENTITY_LABELS: Record<string, string> = {
@@ -95,4 +107,5 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   brand: 'الماركة',
   bank_account: 'الحساب البنكي',
   kyc: 'بيانات التحقق',
+  employee: 'الموظف',
 };

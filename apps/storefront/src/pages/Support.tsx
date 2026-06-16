@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { ArrowRight, Send, CheckCircle, ExternalLink } from 'lucide-react';
+import { ArrowRight, Send, CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supportApi, type CreatedTicket } from '@/lib/api';
 
@@ -31,6 +31,7 @@ export default function Support() {
     setError('');
     try {
       const result = await supportApi.createTicket(slug, { name, email, phone, subject, message });
+      localStorage.setItem(`support-ticket-token:${slug}:${result.id}`, result.accessToken);
       setTicket(result);
     } catch (err: any) {
       setError(err.message || t('common.error'));
@@ -39,7 +40,8 @@ export default function Support() {
     }
   }
 
-  const ticketUrl = ticket && slug ? `${window.location.origin}/s/${slug}/support/tickets/${ticket.id}?accessToken=${ticket.accessToken}` : '';
+  const ticketPath = ticket && slug ? `/s/${slug}/support/tickets/${ticket.id}` : '';
+  const ticketUrl = ticketPath ? `${window.location.origin}${ticketPath}` : '';
 
   if (ticket) {
     return (
@@ -54,21 +56,20 @@ export default function Support() {
           {t('support.submittedDesc', 'تم استلام طلبك وسنقوم بالرد في أقرب وقت.')}
         </p>
         <p className="text-xs text-text-tertiary mb-6">
-          {t('support.saveLink', 'احفظ الرابط التالي لمتابعة طلبك:')}
+          {t('support.saveLink', 'احفظ الرابط ورمز الدخول التاليين لمتابعة طلبك:')}
         </p>
-        <div className="bg-surface-1 rounded-xl p-4 mb-6 text-left" dir="ltr">
-          <a
-            href={ticketUrl}
-            className="text-sm text-primary-600 hover:text-primary-700 break-all inline-flex items-center gap-1.5"
-            target="_blank" rel="noopener noreferrer"
-          >
+        <div className="bg-surface-1 rounded-xl p-4 mb-6 text-left space-y-3" dir="ltr">
+          <a href={ticketUrl} className="text-sm text-primary-600 hover:text-primary-700 break-all">
             {ticketUrl}
-            <ExternalLink className="h-3.5 w-3.5 shrink-0" />
           </a>
+          <div className="rounded-lg border border-border-primary bg-white p-3">
+            <p className="text-[11px] uppercase tracking-wide text-text-tertiary">Access code</p>
+            <code className="mt-1 block break-all text-sm font-semibold text-text-primary">{ticket.accessToken}</code>
+          </div>
         </div>
         <div className="flex items-center justify-center gap-3">
           <Link
-            to={ticketUrl.replace(window.location.origin, '')}
+            to={ticketPath}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors"
           >
             {t('support.viewTicket', 'متابعة الطلب')}

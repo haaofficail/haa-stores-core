@@ -207,6 +207,43 @@ export function ProductFormDialog({
             </div>
           </FormSection>
 
+          <FormSection title="سوق هاء العام" defaultOpen={false}>
+            <div className="space-y-4">
+              <label className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
+                <input
+                  type="checkbox"
+                  checked={form.haaMarketplaceEnabled}
+                  onChange={(e) => onFieldChange('haaMarketplaceEnabled', e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-neutral-300"
+                />
+                <span>
+                  <span className="block text-sm font-semibold text-neutral-900">عرض المنتج في سوق هاء</span>
+                  <span className="block text-xs text-neutral-500 mt-1">
+                    يظهر هذا المنتج في السوق العام لجميع عملاء هاء ستورز مع حفظ الطلب داخل متجرك وتسجيل عمولة المنصة.
+                  </span>
+                </span>
+              </label>
+              {form.haaMarketplaceEnabled && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-neutral-500">نسبة عمولة هاء</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={form.haaMarketplaceCommissionRate}
+                      onChange={(e) => onFieldChange('haaMarketplaceCommissionRate', e.target.value)}
+                      className="h-9 text-sm"
+                    />
+                    <p className="text-xs text-neutral-400">مثال: 0.05 تعني 5%</p>
+                    <FieldError message={getError('haaMarketplaceCommissionRate') ? 'نسبة العمولة يجب أن تكون بين 0 و 1' : undefined} />
+                  </div>
+                </div>
+              )}
+            </div>
+          </FormSection>
+
           <FormSection title="الماركة والتاجات والتصنيفات" defaultOpen={false}>
             <div className="space-y-4">
               <div className="space-y-1.5">
@@ -347,6 +384,24 @@ export function ProductFormDialog({
               <div className="space-y-1">
                 <p className="text-xs text-neutral-400">{t('products.imageHint')}</p>
                 {imageError && <p className="text-xs text-red-500">{imageError}</p>}
+              </div>
+            </div>
+          </FormSection>
+
+          <FormSection title="التسويق" defaultOpen={false}>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm text-neutral-500">عدد المشتريات (أداة تسويقية)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={form.salesCount}
+                  onChange={(e) => onFieldChange('salesCount', Number(e.target.value))}
+                  className="h-9 text-sm"
+                />
+                <p className="text-xs text-neutral-400">
+                  يظهر في بطاقة المنتج كـ "اشتراه X+ شخص". يمكنك تعديله يدوياً لتعزيز المصداقية، ويزداد تلقائياً مع كل طلب مؤكد.
+                </p>
               </div>
             </div>
           </FormSection>

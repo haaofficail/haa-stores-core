@@ -40,7 +40,7 @@ export default function Home() {
       categoriesApi.list(slug),
     ])
       .then(([p, c]) => {
-        setProducts(p.data);
+        setProducts(p);
         setCategories(c);
       })
       .catch(() => setError(true))

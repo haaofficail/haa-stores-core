@@ -91,16 +91,16 @@
 
 ## P2 — Medium
 
-### SEC-006: Move support ticket accessToken to header
+### SEC-006: Move support ticket accessToken to header ✅
 
 - **Area:** API / Storefront
 - **Risk:** `accessToken` in URL query string can leak via logs, referrers, browser history
 - **Recommended Fix:** Change support ticket auth to use `Authorization: Bearer <accessToken>` header instead of query param
 - **Acceptance Criteria:**
-  - Support ticket endpoints read token from header
-  - Backwards compatible (accept both during migration)
-- **Test Plan:** Send request with header → 200; send with query param → still works (transition period)
-- **Status:** Pending
+  - Support ticket endpoints read token from header ✅
+  - Backwards compatible (accept both during migration) ✅
+- **Test Plan:** Header-based client regression plus temporary query compatibility check
+- **Status:** ✅ **Closed** — new storefront links do not include `accessToken`; token is sent via `X-Support-Access-Token`, with temporary legacy query/body compatibility for old links
 
 ### SEC-007: Rate limit public order lookup by phone
 

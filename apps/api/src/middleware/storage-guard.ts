@@ -1,6 +1,6 @@
 import type { Context, Next } from 'hono';
 import { getAuth } from '@haa/auth-core';
-import { verifyLocalStoragePath } from '@haa/shared';
+import { verifyLocalStoragePath } from '@haa/shared/media';
 
 export function storageGuard() {
   return async (c: Context, next: Next) => {

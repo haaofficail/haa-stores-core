@@ -695,6 +695,30 @@ export interface Employee {
   permissions: string[];
 }
 
+export interface PermissionInfo {
+  key: string;
+  labelAr: string;
+  descriptionAr: string;
+  category: string;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  allowedScopes: string[];
+  selected?: boolean;
+}
+
+export interface PermissionPreset {
+  key: string;
+  labelAr: string;
+  permissionKeys: string[];
+}
+
+export interface MembershipPermission {
+  permissionKey: string;
+  scopeType: string;
+  scopeId: number | null;
+  createdAt: string;
+  createdByUserId: number;
+}
+
 export const employeesApi = {
   // employeesApi.list
   list: (storeId: number) =>
@@ -708,11 +732,74 @@ export const employeesApi = {
   // employeesApi.remove
   remove: (storeId: number, employeeId: number) =>
     request<{ success: true }>(`/merchant/${storeId}/employees/${employeeId}`, { method: 'DELETE' }),
+
+  // Permissions API
+  // GET /permissions - returns catalog grouped by category
+  getPermissions: (storeId: number) =>
+    request<{ permissions: PermissionInfo[]; grouped: Record<string, PermissionInfo[]> }>(
+      `/merchant/${storeId}/permissions`
+    ),
+  // GET /permission-presets - returns presets
+  getPermissionPresets: (storeId: number) =>
+    request<PermissionPreset[]>(`/merchant/${storeId}/permission-presets`),
+  // GET /memberships/:membershipId/permissions - returns specific member's permissions
+  getMemberPermissions: (storeId: number, membershipId: number) =>
+    request<{ membershipId: number; permissions: MembershipPermission[] }>(
+      `/merchant/${storeId}/memberships/${membershipId}/permissions`
+    ),
+  // PATCH /memberships/:membershipId/permissions - updates member's permissions
+  updateMemberPermissions: (storeId: number, membershipId: number, permissions: Array<{
+    permissionKey: string;
+    scopeType: 'store' | 'branch' | 'warehouse' | 'channel';
+    scopeId?: number;
+  }>) =>
+    request<{ membershipId: number; permissions: MembershipPermission[] }>(
+      `/merchant/${storeId}/memberships/${membershipId}/permissions`,
+      { method: 'PATCH', body: JSON.stringify({ permissions }) }
+    ),
 };
 
 export const onboardingApi = {
   generateProducts: (storeId: number, data: { category?: string; count?: number }) =>
     aiApi.generateProducts(storeId, data),
+};
+
+export const marketingApi = {
+  overview: (storeId: number, dateFrom?: string, dateTo?: string) => {
+    const q = new URLSearchParams();
+    if (dateFrom) q.set('dateFrom', dateFrom);
+    if (dateTo) q.set('dateTo', dateTo);
+    const qs = q.toString();
+    return request<any>(`/merchant/${storeId}/marketing/overview${qs ? `?${qs}` : ''}`);
+  },
+  products: (storeId: number, dateFrom?: string, dateTo?: string) => {
+    const q = new URLSearchParams();
+    if (dateFrom) q.set('dateFrom', dateFrom);
+    if (dateTo) q.set('dateTo', dateTo);
+    const qs = q.toString();
+    return request<any>(`/merchant/${storeId}/marketing/products${qs ? `?${qs}` : ''}`);
+  },
+  sources: (storeId: number, dateFrom?: string, dateTo?: string) => {
+    const q = new URLSearchParams();
+    if (dateFrom) q.set('dateFrom', dateFrom);
+    if (dateTo) q.set('dateTo', dateTo);
+    const qs = q.toString();
+    return request<any>(`/merchant/${storeId}/marketing/sources${qs ? `?${qs}` : ''}`);
+  },
+  insights: (storeId: number, dateFrom?: string, dateTo?: string) => {
+    const q = new URLSearchParams();
+    if (dateFrom) q.set('dateFrom', dateFrom);
+    if (dateTo) q.set('dateTo', dateTo);
+    const qs = q.toString();
+    return request<any[]>(`/merchant/${storeId}/marketing/insights${qs ? `?${qs}` : ''}`);
+  },
+  aggregate: (storeId: number, dateFrom?: string, dateTo?: string) => {
+    const q = new URLSearchParams();
+    if (dateFrom) q.set('dateFrom', dateFrom);
+    if (dateTo) q.set('dateTo', dateTo);
+    const qs = q.toString();
+    return request<{ ok: boolean }>(`/merchant/${storeId}/marketing/aggregate${qs ? `?${qs}` : ''}`, { method: 'POST' });
+  },
 };
 
 export const promotionsApi = {
@@ -831,7 +918,7 @@ export const marketplaceApi = {
         code: string; name: string; isConnected: boolean; status: string;
         storeName: string | null; storeEmail: string | null; externalStoreId: string | null;
         lastSyncAt: string | null;
-        totalSales: string; totalOrders: number; currency: string;
+        totalSales: string; totalOrders: number; totalListings: number; currency: string;
       }>;
       syncLogs: Array<{
         id: number; providerCode: string; providerName: string;

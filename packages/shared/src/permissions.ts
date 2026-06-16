@@ -1,5 +1,19 @@
 import type { Permission, UserRole } from './types/orders.js';
 
+export type ScopeType = 'store' | 'branch' | 'warehouse' | 'channel';
+
+export interface PermissionScopeInfo {
+  scopeType: ScopeType;
+  labelAr: string;
+}
+
+export const ALLOWED_SCOPES: PermissionScopeInfo[] = [
+  { scopeType: 'store', labelAr: 'المتجر ككل' },
+  { scopeType: 'branch', labelAr: 'فرع محدد' },
+  { scopeType: 'warehouse', labelAr: 'مستودع محدد' },
+  { scopeType: 'channel', labelAr: 'قناة بيع محددة' },
+];
+
 export interface PermissionInfo {
   key: Permission;
   labelAr: string;
@@ -7,11 +21,155 @@ export interface PermissionInfo {
   category: string;
   riskLevel: 'low' | 'medium' | 'high' | 'critical';
   recommendedForRoles: string[];
+  allowedScopes?: ScopeType[];
 }
+
+export interface PermissionPreset {
+  key: string;
+  labelAr: string;
+  permissionKeys: Permission[];
+}
+
+export const PERMISSION_PRESETS: PermissionPreset[] = [
+  {
+    key: 'owner',
+    labelAr: 'مالك',
+    permissionKeys: [
+      'dashboard:view', 'stores:read', 'stores:update',
+      'products:read', 'products:create', 'products:update', 'products:delete', 'products:export', 'products:import',
+      'categories:manage', 'brands:manage', 'tags:manage',
+      'orders:read', 'orders:update_status', 'orders:cancel', 'orders:refund', 'orders:export', 'orders:view_sensitive',
+      'customers:read', 'customers:create', 'customers:update', 'customers:delete', 'customers:export', 'customers:view_sensitive',
+      'wallet:read', 'wallet:withdraw', 'shipping:manage',
+      'settings:read', 'settings:update',
+      'reports:read', 'reports:export',
+      'coupons:read', 'coupons:create', 'coupons:update', 'coupons:delete',
+      'promotions:read', 'promotions:create', 'promotions:update', 'promotions:delete',
+      'policies:update', 'abandoned_carts:view',
+      'theme:view', 'theme:apply', 'theme:update', 'theme:publish',
+      'employees:view', 'employees:invite', 'employees:update', 'employees:delete', 'employees:manage_permissions',
+      'wallet:request_payout', 'wallet.payout.request', 'wallet.payout.review', 'wallet.payout.approve',
+      'wallet.payout.reject', 'wallet.payout.mark_transferred', 'wallet.payout.upload_proof',
+      'wallet.payout.verify_transfer', 'wallet.payout.cancel', 'wallet.payout.reverse',
+      'wallet.payout.view_all', 'wallet.payout.view_store',
+      'api_keys:view', 'api_keys:create', 'api_keys:revoke',
+      'compliance:read', 'compliance:write', 'compliance:submit', 'compliance:documents',
+      'subscriptions:view', 'subscriptions:manage',
+      'notifications:view', 'notifications:update',
+      'exports:create', 'imports:create',
+      'storefront:read',
+      'support:read', 'support:create', 'support:update', 'support:delete',
+    ],
+  },
+  {
+    key: 'store_manager',
+    labelAr: 'مدير متجر',
+    permissionKeys: [
+      'dashboard:view', 'stores:read',
+      'products:read', 'products:create', 'products:update',
+      'categories:manage', 'brands:manage', 'tags:manage',
+      'orders:read', 'orders:update_status', 'orders:cancel', 'orders:export',
+      'customers:read', 'customers:create', 'customers:update',
+      'wallet:read',
+      'shipping:manage',
+      'settings:read',
+      'reports:read',
+      'coupons:read', 'coupons:create', 'coupons:update',
+      'promotions:read', 'promotions:create', 'promotions:update',
+      'abandoned_carts:view',
+      'theme:view', 'theme:apply', 'theme:update',
+      'notifications:view',
+      'exports:create',
+      'storefront:read',
+      'support:read', 'support:create', 'support:update',
+    ],
+  },
+  {
+    key: 'orders_manager',
+    labelAr: 'مدير طلبات',
+    permissionKeys: [
+      'dashboard:view',
+      'orders:read', 'orders:update_status', 'orders:cancel', 'orders:export',
+      'customers:read',
+      'shipping:manage',
+      'storefront:read',
+    ],
+  },
+  {
+    key: 'shipping_staff',
+    labelAr: 'موظف شحن',
+    permissionKeys: [
+      'orders:read', 'orders:update_status',
+      'shipping:manage',
+      'storefront:read',
+    ],
+  },
+  {
+    key: 'product_manager',
+    labelAr: 'مدير منتجات',
+    permissionKeys: [
+      'products:read', 'products:create', 'products:update', 'products:delete',
+      'categories:manage', 'brands:manage', 'tags:manage',
+    ],
+  },
+  {
+    key: 'marketing',
+    labelAr: 'تسويق',
+    permissionKeys: [
+      'dashboard:view',
+      'products:read',
+      'coupons:read', 'coupons:create', 'coupons:update',
+      'promotions:read', 'promotions:create', 'promotions:update',
+      'reports:read',
+      'storefront:read',
+    ],
+  },
+  {
+    key: 'customer_support',
+    labelAr: 'دعم العملاء',
+    permissionKeys: [
+      'orders:read', 'orders:update_status',
+      'customers:read', 'customers:create', 'customers:update',
+      'support:read', 'support:create', 'support:update',
+      'storefront:read',
+    ],
+  },
+  {
+    key: 'accountant',
+    labelAr: 'محاسب',
+    permissionKeys: [
+      'orders:read', 'orders:refund', 'orders:export',
+      'customers:read', 'customers:export',
+      'wallet:read',
+      'reports:read',
+      'exports:create',
+    ],
+  },
+  {
+    key: 'developer',
+    labelAr: 'مطور',
+    permissionKeys: [
+      'api_keys:view', 'api_keys:create', 'api_keys:revoke',
+      'settings:read', 'settings:update',
+      'storefront:read',
+    ],
+  },
+  {
+    key: 'viewer',
+    labelAr: 'مشاهد',
+    permissionKeys: [
+      'dashboard:view', 'stores:read',
+      'products:read', 'orders:read', 'customers:read',
+      'wallet:read', 'reports:read',
+      'settings:read', 'storefront:read',
+      'support:read',
+    ],
+  },
+];
 
 export const PERMISSION_CATALOG: PermissionInfo[] = [
   // ── Dashboard ──
-  { key: 'dashboard:view', labelAr: 'عرض لوحة التحكم', descriptionAr: 'عرض الصفحة الرئيسية للوحة التحكم والإحصائيات الموجزة', category: 'dashboard', riskLevel: 'low', recommendedForRoles: ['owner', 'admin', 'manager', 'staff', 'viewer'] },
+  { key: 'dashboard:view', labelAr: 'عرض لوحة التحكم', descriptionAr: 'عرض الصفحة الرئيسية للوحة التحكم والإحصائيات الموجزة', category: 'dashboard', riskLevel: 'low', recommendedForRoles: ['owner', 'admin', 'manager', 'staff', 'viewer'], allowedScopes: ['store'] },
 
   // ── Store ──
   { key: 'stores:read', labelAr: 'عرض المتجر', descriptionAr: 'عرض بيانات المتجر والإعدادات العامة', category: 'store', riskLevel: 'low', recommendedForRoles: ['owner', 'admin', 'manager', 'viewer'] },
@@ -64,6 +222,10 @@ export const PERMISSION_CATALOG: PermissionInfo[] = [
   { key: 'wallet.payout.reverse', labelAr: 'عكس صرف', descriptionAr: 'عكس عملية الصرف بعد اكتمالها', category: 'wallet_payout', riskLevel: 'critical', recommendedForRoles: ['owner'] },
   { key: 'wallet.payout.view_all', labelAr: 'عرض كل الطلبات', descriptionAr: 'عرض جميع طلبات الصرف', category: 'wallet_payout', riskLevel: 'high', recommendedForRoles: ['owner'] },
   { key: 'wallet.payout.view_store', labelAr: 'عرض طلبات المتجر', descriptionAr: 'عرض طلبات صرف المتجر', category: 'wallet_payout', riskLevel: 'medium', recommendedForRoles: ['owner'] },
+
+  // ── AI Agent ──
+  { key: 'ai:read', labelAr: 'استخدام AI للقراءة', descriptionAr: 'استخدام المساعد الذكي لقراءة وتحليل البيانات (ملخصات، اقتراحات قراءة)', category: 'ai', riskLevel: 'low', recommendedForRoles: ['owner', 'admin', 'manager'], allowedScopes: ['store'] },
+  { key: 'ai:execute', labelAr: 'تنفيذ عمليات AI', descriptionAr: 'تنفيذ عمليات AI تكتب أو تعدل بيانات (توليد منتجات، تعديل عناوين، تنفيذ إجراءات)', category: 'ai', riskLevel: 'high', recommendedForRoles: ['owner', 'admin', 'manager'], allowedScopes: ['store'] },
 
   // ── Coupons ──
   { key: 'coupons:read', labelAr: 'عرض كوبونات الخصم', descriptionAr: 'عرض قائمة كوبونات الخصم', category: 'coupons', riskLevel: 'low', recommendedForRoles: ['owner', 'admin', 'manager'] },
@@ -135,6 +297,14 @@ export const PERMISSION_CATALOG: PermissionInfo[] = [
   { key: 'support:create', labelAr: 'إنشاء تذكرة', descriptionAr: 'إنشاء تذكرة دعم جديدة', category: 'support', riskLevel: 'medium', recommendedForRoles: ['owner', 'admin', 'manager'] },
   { key: 'support:update', labelAr: 'تحديث التذكرة', descriptionAr: 'تحديث حالة وأولوية التذكرة والرد عليها', category: 'support', riskLevel: 'medium', recommendedForRoles: ['owner', 'admin', 'manager'] },
   { key: 'support:delete', labelAr: 'حذف التذكرة', descriptionAr: 'حذف تذكرة الدعم', category: 'support', riskLevel: 'high', recommendedForRoles: ['owner', 'admin'] },
+
+  // ── Admin Billing (platform-level only) ──
+  // These permissions are checked by the admin routes via
+  // `requireAdminPermission(...)`. Admin login mints `admin:*` so all
+  // admins currently pass automatically, but listing them here keeps
+  // the catalog discoverable for future fine-grained role work.
+  { key: 'billing.platform_fee.read', labelAr: 'عرض إعدادات رسوم المتاجر', descriptionAr: 'عرض سياسة رسوم المنصة لكل متجر (إعداد الأدمن)', category: 'admin_billing', riskLevel: 'medium', recommendedForRoles: [] },
+  { key: 'billing.platform_fee.update', labelAr: 'تعديل إعدادات رسوم المتاجر', descriptionAr: 'تغيير وضع/نسبة/رسم ثابت لرسوم المنصة لمتجر (إعداد الأدمن)', category: 'admin_billing', riskLevel: 'critical', recommendedForRoles: [] },
 ];
 
 export type PermissionCategory = (typeof PERMISSION_CATALOG)[number]['category'];
@@ -194,6 +364,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'promotions:delete',
     'policies:update',
     'abandoned_carts:view',
+    'ai:read',
+    'ai:execute',
     'theme:view',
     'theme:apply',
     'theme:update',
@@ -275,6 +447,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'promotions:delete',
     'policies:update',
     'abandoned_carts:view',
+    'ai:read',
+    'ai:execute',
     'theme:view',
     'theme:apply',
     'theme:update',
@@ -321,6 +495,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'promotions:create',
     'promotions:update',
     'abandoned_carts:view',
+    'ai:read',
+    'ai:execute',
     'theme:view',
     'notifications:view',
     'exports:create',
@@ -375,4 +551,46 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 
 export function getPermissionsForRole(role: UserRole): Permission[] {
   return ROLE_PERMISSIONS[role] ?? [];
+}
+
+export function getPermissionPreset(key: string): PermissionPreset | undefined {
+  return PERMISSION_PRESETS.find(p => p.key === key);
+}
+
+export function getDefaultAllowedScopes(permissionKey: Permission): ScopeType[] {
+  const entry = PERMISSION_CATALOG.find(p => p.key === permissionKey);
+  return entry?.allowedScopes ?? ['store'];
+}
+
+export function getCategoryLabelAr(category: string): string {
+  const labels: Record<string, string> = {
+    dashboard: 'لوحة التحكم',
+    store: 'المتجر',
+    products: 'المنتجات',
+    categories: 'التصنيفات',
+    brands: 'الماركات',
+    tags: 'التاجات',
+    orders: 'الطلبات',
+    customers: 'العملاء',
+    shipping: 'الشحن',
+    wallet: 'المحفظة',
+    wallet_payout: 'صرف المحفظة',
+    coupons: 'الكوبونات',
+    promotions: 'العروض',
+    policies: 'السياسات',
+    abandoned_carts: 'السلات المتروكة',
+    reports: 'التقارير',
+    theme: 'الثيم',
+    settings: 'الإعدادات',
+    employees: 'الموظفين',
+    api_keys: 'مفاتيح API',
+    compliance: 'الامتثال',
+    subscriptions: 'الباقات',
+    notifications: 'الإشعارات',
+    export_import: 'التصدير والاستيراد',
+    storefront: 'المتجر العام',
+    support: 'الدعم',
+    admin_billing: 'فوترة الأدمن',
+  };
+  return labels[category] || category;
 }

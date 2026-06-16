@@ -7,3 +7,10 @@ coverage
 .turbo
 .vite
 storage
+
+# macOS Finder metadata noise
+.DS_Store
+
+# Log files (avoid tracking accidental local logs)
+*.log
+**/*.log

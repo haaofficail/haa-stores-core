@@ -22,6 +22,7 @@ export default defineConfig({
   },
   server: {
     port: 5174,
+    strictPort: true,
     proxy: {
       '/s/': {
         target: 'http://localhost:3000',
@@ -35,6 +36,15 @@ export default defineConfig({
       '/storage/': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+      },
+      '/marketplace': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        bypass: (req) => {
+          if (req.headers.accept?.includes('text/html')) {
+            return '/index.html';
+          }
+        },
       },
     },
   },

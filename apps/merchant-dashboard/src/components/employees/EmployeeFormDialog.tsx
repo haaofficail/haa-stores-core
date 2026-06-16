@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Permission } from '@haa/shared';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle, Loader2 } from 'lucide-react';
 import { PermissionCheckboxMatrix } from './PermissionCheckboxMatrix';
 import { usePermissions } from '@/lib/permissions';
+import { employeesApi } from '@/lib/api';
 
 type EmployeeFormMode = 'create' | 'edit';
 
 interface EmployeeFormData {
+  id?: number;
   name: string;
   email: string;
   role: string;
-  permissions: Permission[];
+  permissions: string[];
   isActive: boolean;
 }
 
@@ -43,7 +45,47 @@ export function EmployeeFormDialog({
     }
   );
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Load permissions when editing
+  useEffect(() => {
+    if (mode === 'edit' && initialData) {
+      setForm({
+        name: initialData.name,
+        email: initialData.email,
+        role: initialData.role,
+        permissions: initialData.permissions,
+        isActive: initialData.isActive,
+      });
+      // Load member's specific permissions
+      const storeId = Number(localStorage.getItem('active_store_id'));
+      if (storeId) {
+        setLoading(true);
+        employeesApi.getMemberPermissions(storeId, initialData.id!)
+          .then(data => {
+            if (data.permissions) {
+              setForm(f => ({
+                ...f,
+                permissions: data.permissions.map(p => p.permissionKey),
+              }));
+            }
+          })
+          .catch(() => {
+            // Fallback to role-based permissions
+          })
+          .finally(() => setLoading(false));
+      }
+    } else if (mode === 'create') {
+      setForm({
+        name: '',
+        email: '',
+        role: 'viewer',
+        permissions: [],
+        isActive: true,
+      });
+    }
+  }, [mode, initialData]);
 
   if (!open) return null;
 
@@ -52,7 +94,11 @@ export function EmployeeFormDialog({
     setSaving(true);
     setError(null);
     try {
-      await onSave(form);
+      // Include permissions in the save data
+      await onSave({
+        ...form,
+        permissions: form.permissions,
+      });
       onClose();
     } catch (err: any) {
       setError(err?.message || 'حدث خطأ أثناء الحفظ');
@@ -72,12 +118,19 @@ export function EmployeeFormDialog({
           <h2 className="text-lg font-semibold text-neutral-900">
             {mode === 'create' ? 'إضافة موظف' : 'تعديل بيانات الموظف'}
           </h2>
-          <button onClick={onClose} className="p-1 hover:bg-neutral-100 rounded-lg transition-colors">
+          <button onClick={onClose} className="p-1 hover:bg-neutral-100 rounded-lg transition-colors" disabled={loading || saving}>
             <X className="h-5 w-5 text-neutral-500" />
           </button>
         </div>
 
         <div className="px-6 py-4 space-y-4">
+          {loading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
+              <span className="ml-2 text-sm text-neutral-500">جاري تحميل الصلاحيات...</span>
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
@@ -106,7 +159,18 @@ export function EmployeeFormDialog({
                 placeholder="email@example.com"
               />
             </div>
-          </div>
+            </div>
+
+            <input type="hidden" name="loading" value={loading.toString()} />
+
+            {mode === 'create' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+              <div className="text-xs text-blue-700">
+                تم إنشاء الموظف محليًا. إرسال الدعوات البريدية غير مفعّل بعد.
+              </div>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-neutral-700">الدور</label>
@@ -139,8 +203,8 @@ export function EmployeeFormDialog({
           <div className="border-t border-neutral-200 pt-4">
             <h3 className="text-sm font-semibold text-neutral-700 mb-3">الصلاحيات</h3>
             <PermissionCheckboxMatrix
-              selectedPermissions={form.permissions}
-              onChange={perms => setForm(f => ({ ...f, permissions: perms }))}
+              selectedPermissions={form.permissions as Permission[]}
+              onChange={perms => setForm(f => ({ ...f, permissions: perms as string[] }))}
               readOnly={!canManagePerms}
               currentUserPermissions={userPerms as Permission[]}
               isOwner={isOwner}

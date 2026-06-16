@@ -85,15 +85,15 @@ The `AuthGuard` component checks only `user !== null`. Any authenticated user (m
 | Sensitive merchant data | ✅ | `toPublicProduct()` strips cost, barcode, SEO fields |
 | Theme config exposure | ⚠️ | Theme config returned publicly (CSS only, no credentials) |
 | Auth bypass | ✅ | No JWT required — session-based cart tokens |
-| Support ticket accessToken in URL | ⚠️ | `accessToken` is a query parameter — could leak in logs |
+| Support ticket accessToken in URL | ✅ | New links are clean; token is sent via header with temporary legacy query compatibility |
 
 ### Finding P2-01: Theme config publicly exposed
 
 Storefront returns theme configuration (CSS, settings) without authentication. Low risk since themes are customer-facing by design, but theme settings could reveal store structure.
 
-### Finding P2-02: Support ticket accessToken in query string
+### Finding P2-02: Support ticket accessToken in query string — Fixed
 
-Support ticket authentication uses `accessToken` as a URL query parameter. This can leak via server logs, referrer headers, or browser history.
+Support ticket authentication no longer creates new URLs with `accessToken` as a query parameter. The storefront sends the token via `X-Support-Access-Token`, and the API also accepts `Authorization: Bearer`. Query-token compatibility remains temporarily for old links only.
 
 ---
 
@@ -136,7 +136,7 @@ These are checked as case-insensitive substring matches against object keys. Val
 |----------|-------|-------------|
 | **P0** | 0 | — |
 | **P1** | 3 | customer permission downgrade, missing customer audit, no frontend role filtering |
-| **P2** | 2 | theme config public, accessToken in URL query |
+| **P2** | 1 open, 1 fixed | theme config public; support ticket accessToken URL leak fixed for new links |
 | **P3** | 3 | no refresh token, localStorage JWT, no session polling |
 
 ---
@@ -150,6 +150,6 @@ None — all findings are in a local-development context with no production depl
 1. Fix `customers.ts` permission downgrade (P1)
 2. Add audit logging to customer mutations (P1)
 3. Add role-based route filtering in dashboard App.tsx (P1)
-4. Move support ticket accessToken to header (P2)
-5. Audit remaining route groups (webhooks, shipping, payments) (P2)
+4. Audit remaining route groups (webhooks, shipping, payments) (P2)
+5. Remove temporary legacy support-ticket query-token compatibility after old links expire
 6. Add refresh token mechanism (P3)

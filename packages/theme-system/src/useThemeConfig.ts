@@ -36,7 +36,7 @@ export async function fetchThemeConfig(slug: string): Promise<ThemeConfig> {
   const res = await fetch(`${apiBase}/s/${slug}/theme`);
   const json = await res.json();
   if (!json.success) throw new Error(json.error?.message ?? 'Failed to load theme');
-  return resolveActiveThemeConfig(json.data);
+  return json.data as ThemeConfig;
 }
 
 export function loadTheme(config: ThemeConfig, slug?: string) {

@@ -83,7 +83,7 @@ describe('validateSectionProps', () => {
 
   it('ignores non-string props', () => {
     const props = { count: 5, flag: true, missing: null }
-    expect(validateSectionProps(props)).toEqual({ ok: true)
+    expect(validateSectionProps(props)).toEqual({ ok: true })
   })
 })
 

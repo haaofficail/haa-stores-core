@@ -8,8 +8,24 @@ export { CustomersService } from './customers.js';
 export { CartService } from './cart.js';
 export { OrdersService } from './orders.js';
 export { CheckoutService } from './checkout.js';
-export { FakePaymentProvider, GeideaPaymentProvider, MoyasarSandboxProvider, TabbyProvider, TamaraProvider, PaymentService, createGeideaSignature, createPaymentProvider, getPaymentProviderStatus, getAvailablePaymentMethods, mapProviderStatus, mapProviderError, verifyGeideaCallbackSignature } from './payment.js';
-export type { PaymentProvider } from './payment.js';
+export { AuthFlowService, authFlowService } from './auth-flow.js';
+export type {
+  RegisterInput,
+  RegisterPayload,
+  RegisterError,
+  LoginInput,
+  LoginError,
+  LoginPayload,
+  MeUser,
+} from './auth-flow.js';
+export { ProviderStatusService, providerStatusService } from './provider-status-service.js';
+export { MarketplaceSyncService, marketplaceSyncService } from './marketplace-sync.js';
+export type { MarketplaceProvider, MarketplaceProviderResolver, AutoPublishInput, AutoPublishResult } from './marketplace-sync.js';
+export { StoreSettingsService, storeSettingsService } from './store-settings-service.js';
+export { DashboardService, dashboardService } from './dashboard-service.js';
+export type { DashboardSummary, ReadinessIssue, RecentActionableOrder } from './dashboard-service.js';
+export { FakePaymentProvider, GeideaPaymentProvider, MoyasarSandboxProvider, TabbyProvider, TamaraProvider, PaymentService, createGeideaSignature, createPaymentProvider, getPaymentProviderStatus, getAvailablePaymentMethods, mapProviderStatus, mapProviderError, verifyGeideaCallbackSignature } from '@haa/payment-providers';
+export type { PaymentProvider } from '@haa/payment-providers';
 export { buildLocalWhatsappQrDataUrl, buildWhatsappContactChannel, buildWhatsappLink, getOfficialContactEmail, isValidWhatsappPhone, normalizeWhatsappPhone } from './contact-channels.js';
 export { PaymentProviderSettingsService, getTabbyBaseUrl, getTamaraBaseUrl, validateTabbyCredentials, validateTamaraCredentials, redactCredential } from './payment-settings.js';
 export type { PaymentProviderSetting, PaymentProviderSettingView, UpsertPaymentProviderInput, CredentialsInput, ProviderValidationResult, PaymentMethodAvailability, UnavailabilityReason } from './payment-settings.js';
@@ -36,3 +52,26 @@ export { SaudiPolicyGenerator } from './saudi-policy-generator.js';
 export type { PolicyGeneratorInput, GeneratedPolicy, PolicyGenerationResult } from './saudi-policy-generator.js';
 export { SupportService } from './support.js';
 export type { CreateTicketInput, ReplyToTicketInput, CreateKbArticleInput, UpdateKbArticleInput } from './support.js';
+export { GrowthAggregationService } from './growth-aggregation.js';
+export type { OverviewMetrics, ProductMetrics, SourceMetrics, CampaignMetrics, GrowthInsight } from './growth-aggregation.js';
+export { LivePresenceService, runLivePresenceCleanup } from './live-presence.js';
+export type { NormalizedDevice } from './device-normalization.js';
+export { normalizeDevice } from './device-normalization.js';
+export { resolveGeo, resolveGeoFromHeaders } from './geo-resolver.js';
+export type { GeoInfo } from './geo-resolver.js';
+export { LiveSnapshotService, runLiveSnapshotCron } from './live-snapshots.js';
+export type { LiveSnapshot } from './live-snapshots.js';
+export { MarketingActionService, runMarketingActionGeneration } from './marketing-action-engine.js';
+export type { GeneratedAction, ActionListOptions, ActionListResult } from './marketing-action-engine.js';
+export { CustomerSegmentationService, runCustomerSegmentationSummary } from './customer-segmentation.js';
+export { StoreBillingSettingsService } from './billing-settings-service.js';
+export {
+  calcPlatformFee,
+  normalizePlatformFeePolicy,
+  describePlatformFeePolicy,
+  validatePlatformFeePolicyInput,
+  DEFAULT_PLATFORM_FEE_POLICY,
+  PLATFORM_FEE_MODES,
+  MAX_PLATFORM_FEE_PCT,
+} from '@haa/wallet-core';
+export type { PlatformFeeMode, PlatformFeePolicy } from '@haa/wallet-core';

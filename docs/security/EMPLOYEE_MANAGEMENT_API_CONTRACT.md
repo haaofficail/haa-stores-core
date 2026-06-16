@@ -140,4 +140,5 @@ This requires changes in:
 | 7. Safety rule enforcement | ✅ Done |
 | 8. DB migration for custom permissions | ❌ Future |
 | 9. Real email invite flow | ❌ Future |
-| 10. Employee audit logs | ❌ Future |
+| 10. Employee audit logs | ✅ Done |
+| 11. Invite safety baseline (password handling, UI clarity) | ✅ Done |

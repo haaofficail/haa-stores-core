@@ -1,16 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { createGeideaSignature, verifyGeideaCallbackSignature } from '../packages/commerce-core/src/payment';
+import { createGeideaSignature, verifyGeideaCallbackSignature } from '../packages/payment-providers/src/base';
 
-const paymentSource = readFileSync(new URL('../packages/commerce-core/src/payment.ts', import.meta.url), 'utf-8');
+const geideaSource = readFileSync(new URL('../packages/payment-providers/src/geidea.ts', import.meta.url), 'utf-8');
+const factorySource = readFileSync(new URL('../packages/payment-providers/src/factory.ts', import.meta.url), 'utf-8');
 const orderTypesSource = readFileSync(new URL('../packages/shared/src/types/orders.ts', import.meta.url), 'utf-8');
 
 describe('Geidea provider regression', () => {
   it('adds Geidea as the approved card provider and disables fake fallback when it is selected', () => {
     expect(orderTypesSource).toContain("export type ProviderCode = 'fake' | 'geidea'");
     expect(orderTypesSource).toContain("'geidea_card'");
-    expect(paymentSource).toContain("if (resolvedProvider === 'geidea')");
-    expect(paymentSource).toContain('Fake fallback is disabled');
+    expect(factorySource).toContain("if (resolvedProvider === 'geidea')");
+    expect(factorySource).toContain('Fake fallback is disabled');
   });
 
   it('creates and verifies callback signatures without exposing the API password', () => {

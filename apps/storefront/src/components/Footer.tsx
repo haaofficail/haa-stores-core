@@ -20,24 +20,17 @@ export default function Footer() {
 
   if (loading || !store) {
     return (
-      <footer className="bg-surface-1 mt-auto border-t border-border">
+      <footer className="bg-white mt-auto border-t border-gray-100">
         <div className="container-store py-4 sm:py-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="sm:col-span-2 lg:col-span-1 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-lg bg-surface-2 animate-pulse" />
-                <div className="h-5 w-24 bg-surface-2 rounded animate-pulse" />
-              </div>
-              <div className="h-4 w-48 bg-surface-2 rounded animate-pulse" />
+              <div className="flex items-center gap-3"><div className="h-9 w-9 rounded-lg bg-gray-100 animate-pulse" /><div className="h-5 w-24 bg-gray-100 rounded animate-pulse" /></div>
+              <div className="h-4 w-48 bg-gray-100 rounded animate-pulse" />
             </div>
             {[1, 2, 3].map((i) => (
               <div key={i} className="space-y-3">
-                <div className="h-4 w-20 bg-surface-2 rounded animate-pulse" />
-                <div className="space-y-2">
-                  {[1, 2, 3].map((j) => (
-                    <div key={j} className="h-3 w-24 bg-surface-2 rounded animate-pulse" />
-                  ))}
-                </div>
+                <div className="h-4 w-20 bg-gray-100 rounded animate-pulse" />
+                <div className="space-y-2">{[1, 2, 3].map((j) => (<div key={j} className="h-3 w-24 bg-gray-100 rounded animate-pulse" />))}</div>
               </div>
             ))}
           </div>
@@ -50,7 +43,6 @@ export default function Footer() {
   const socialLinks: SocialLinks = theme?.socialLinks ?? {};
   const showPaymentLogos = footerConfig?.showPaymentLogos !== false;
   const showSocialLinks = footerConfig?.showSocialLinks !== false;
-  const showNewsletter = footerConfig?.showNewsletter !== false;
   const companyDescription = footerConfig?.companyDescription?.trim() || store.description;
   const whatsappContact = store.contactChannels?.whatsapp;
   const visibleSocialLinks = [
@@ -65,101 +57,80 @@ export default function Footer() {
   return (
     <>
       {showPaymentLogos && (
-        <div className="bg-surface-1">
+        <div className="bg-white border-t border-gray-100">
           <div className="container-store py-2">
-            <div className="flex items-center justify-center gap-x-3 gap-y-1 overflow-x-auto">
-              {getPaymentLogosByCategory('LOCAL_PAYMENT_METHOD').map(logo => (
-                <PaymentLogoImg key={logo.id} logo={logo} size="h-2.5" />
-              ))}
-              {getPaymentLogosByCategory('CARD_NETWORK').map(logo => (
-                <PaymentLogoImg key={logo.id} logo={logo} size="h-2.5" />
-              ))}
-              {getPaymentLogosByCategory('DIGITAL_WALLET').map(logo => (
-                <PaymentLogoImg key={logo.id} logo={logo} size="h-2.5" />
-              ))}
-              {getPaymentLogosByCategory('BNPL_PROVIDER').map(logo => (
-                <PaymentLogoImg key={logo.id} logo={logo} size="h-2.5" />
-              ))}
+            <div className="flex items-center justify-center gap-x-3 gap-y-1 flex-wrap">
+              {getPaymentLogosByCategory('LOCAL_PAYMENT_METHOD').map(logo => <PaymentLogoImg key={logo.id} logo={logo} size="h-2.5" />)}
+              {getPaymentLogosByCategory('CARD_NETWORK').map(logo => <PaymentLogoImg key={logo.id} logo={logo} size="h-2.5" />)}
+              {getPaymentLogosByCategory('DIGITAL_WALLET').map(logo => <PaymentLogoImg key={logo.id} logo={logo} size="h-2.5" />)}
+              {getPaymentLogosByCategory('BNPL_PROVIDER').map(logo => <PaymentLogoImg key={logo.id} logo={logo} size="h-2.5" />)}
             </div>
           </div>
         </div>
       )}
-      <footer className="bg-surface-1 mt-auto">
-      <div className="container-store py-3 sm:py-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-6">
+      <footer className="bg-white mt-auto border-t border-gray-100">
+        <div className="container-store py-6 sm:py-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-6">
 
-          {/* Col 1: Logo + About + Newsletter — 5 cols on lg */}
-          <div className="lg:col-span-5 space-y-3">
-            <div className="flex items-center gap-2">
-              {store.logoUrl ? (
-                <img src={store.logoUrl} alt={store.name} className="h-7 w-7 rounded-lg object-cover" />
-              ) : (
-                <div className="h-7 w-7 rounded-lg bg-primary-500 flex items-center justify-center text-white font-bold text-xs">
-                  {store.name.charAt(0)}
-                </div>
+            {/* Col 1: Logo + About — 5 cols */}
+            <div className="lg:col-span-5 space-y-3">
+              <div className="flex items-center gap-2">
+                {store.logoUrl ? (
+                  <img src={store.logoUrl} alt={store.name} className="h-7 w-7 rounded-lg object-cover" />
+                ) : (
+                  <div className="h-7 w-7 rounded-lg bg-primary-500 flex items-center justify-center text-white font-bold text-xs">
+                    {store.name.charAt(0)}
+                  </div>
+                )}
+                <span className="font-bold text-sm text-black">{store.name}</span>
+              </div>
+              {companyDescription && (
+                <p className="text-sm text-gray-500 leading-relaxed line-clamp-2">{companyDescription}</p>
               )}
-              <span className="font-bold text-sm text-text-primary">{store.name}</span>
             </div>
-            {companyDescription && (
-              <p className="text-sm text-text-secondary leading-relaxed line-clamp-2">{companyDescription}</p>
-            )}
-            {showNewsletter && (
-              <form className="flex gap-1.5" onSubmit={(e) => e.preventDefault()}>
-                <input
-                  type="email"
-                  className="min-h-[36px] flex-1 rounded-lg border border-border bg-surface-1 px-3 text-sm outline-none focus:border-primary-500"
-                  placeholder={t('footer.emailPlaceholder', 'البريد الإلكتروني')}
-                />
-                <button type="submit" className="min-h-[36px] rounded-lg bg-primary-500 px-3 text-sm font-semibold text-white hover:bg-primary-600 shrink-0">
-                  {t('common.subscribe', 'اشتراك')}
-                </button>
-              </form>
-            )}
-          </div>
 
-          {/* Col 2: Links combined (Quick + Customer Service) — 3 cols on lg */}
-          <div className="lg:col-span-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <h4 className="font-semibold text-text-primary mb-2 text-sm">{t('footer.quickLinks')}</h4>
-                <ul className="space-y-1.5">
-                  <li><Link to={`/s/${slug}`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors">{t('store.home')}</Link></li>
-                  <li><Link to={`/s/${slug}/c/all`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors">{t('store.categories')}</Link></li>
-                  <li><Link to={`/s/${slug}/about`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors">{t('store.about')}</Link></li>
-                  <li><Link to={`/s/${slug}/contact`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors">{t('store.contact')}</Link></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-text-primary mb-2 text-sm">{t('footer.customerService')}</h4>
-                <ul className="space-y-1.5">
-                  <li><Link to={`/s/${slug}/track`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors">{t('store.trackOrder')}</Link></li>
-                  <li><Link to={`/s/${slug}/policies/returns`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors">{t('footer.returnPolicy')}</Link></li>
-                  <li><Link to={`/s/${slug}/policies/privacy`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors">{t('footer.privacyPolicy')}</Link></li>
-                  <li><Link to={`/s/${slug}/policies/terms`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors">{t('footer.termsOfService')}</Link></li>
-                </ul>
+            {/* Col 2: Quick Links + Customer Service — 3 cols */}
+            <div className="lg:col-span-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <h4 className="font-bold text-black mb-2 text-sm">{t('footer.quickLinks')}</h4>
+                  <ul className="space-y-1.5">
+                    <li><Link to={`/s/${slug}`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('store.home')}</Link></li>
+                    <li><Link to={`/s/${slug}/c/all`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('store.categories')}</Link></li>
+                    <li><Link to={`/s/${slug}/about`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('store.about')}</Link></li>
+                    <li><Link to={`/s/${slug}/contact`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('store.contact')}</Link></li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-bold text-black mb-2 text-sm">{t('footer.customerService')}</h4>
+                  <ul className="space-y-1.5">
+                    <li><Link to={`/s/${slug}/track`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('store.trackOrder')}</Link></li>
+                    <li><Link to={`/s/${slug}/policies/returns`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('footer.returnPolicy')}</Link></li>
+                    <li><Link to={`/s/${slug}/policies/privacy`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('footer.privacyPolicy')}</Link></li>
+                    <li><Link to={`/s/${slug}/policies/terms`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('footer.termsOfService')}</Link></li>
+                  </ul>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Col 3: Contact + Social + Payments — 4 cols on lg */}
-          <div className="lg:col-span-4 space-y-3">
-            <div>
-              <h4 className="font-semibold text-text-primary mb-2 text-sm">{t('store.contact')}</h4>
+            {/* Col 3: Contact + Social — 4 cols */}
+            <div className="lg:col-span-4 space-y-3">
+              <h4 className="font-bold text-black mb-2 text-sm">{t('store.contact')}</h4>
               <ul className="space-y-1.5">
                 <li className="flex items-center gap-2">
-                  <Icon icon={Mail} size="xs" className="text-text-tertiary" />
-                  <a href={`mailto:${contactEmail}`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors" dir="ltr">{contactEmail}</a>
+                  <Icon icon={Mail} size="xs" className="text-gray-400" />
+                  <a href={`mailto:${contactEmail}`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors" dir="ltr">{contactEmail}</a>
                 </li>
                 {store.phone && (
                   <li className="flex items-center gap-2">
-                    <Icon icon={Phone} size="xs" className="text-text-tertiary" />
-                    <a href={`tel:${store.phone}`} className="text-sm text-text-secondary hover:text-primary-600 transition-colors" dir="ltr">{store.phone}</a>
+                    <Icon icon={Phone} size="xs" className="text-gray-400" />
+                    <a href={`tel:${store.phone}`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors" dir="ltr">{store.phone}</a>
                   </li>
                 )}
                 {whatsappContact?.enabled && whatsappContact.waMeLink && (
                   <li className="flex items-center gap-2">
-                    <Icon icon={Phone} size="xs" className="text-text-tertiary" />
-                    <a href={whatsappContact.waMeLink} target="_blank" rel="noreferrer" className="text-sm text-text-secondary hover:text-primary-600 transition-colors" dir="ltr">WhatsApp</a>
+                    <Icon icon={Phone} size="xs" className="text-gray-400" />
+                    <a href={whatsappContact.waMeLink} target="_blank" rel="noreferrer" className="text-sm text-gray-500 hover:text-primary-600 transition-colors" dir="ltr">WhatsApp</a>
                   </li>
                 )}
               </ul>
@@ -167,7 +138,7 @@ export default function Footer() {
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {visibleSocialLinks.map((link) => (
                     <a key={link.key} href={link.href} target="_blank" rel="noreferrer"
-                      className="text-xs px-2 py-0.5 rounded-full bg-surface-2 text-text-secondary hover:text-primary-600 transition-colors">
+                      className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 hover:text-primary-600 transition-colors">
                       {link.label}
                     </a>
                   ))}
@@ -175,18 +146,17 @@ export default function Footer() {
               )}
             </div>
           </div>
-        </div>
 
-        {/* Bottom bar: copyright + legal links */}
-        <div className="mt-3 pt-3 border-t border-border">
-          <p className="text-xs text-text-tertiary text-center">
-            &copy; {new Date().getFullYear()} {store.name}. {t('footer.copyright')}
-            <span className="mx-1.5">&middot;</span>
-            <span>{t('footer.poweredBy', 'مدعوم بواسطة هاء متاجر')}</span>
-          </p>
+          {/* Bottom bar */}
+          <div className="mt-4 pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-400 text-center">
+              &copy; {new Date().getFullYear()} {store.name}. {t('footer.copyright')}
+              <span className="mx-1.5">&middot;</span>
+              <span>{t('footer.poweredBy', 'مدعوم بواسطة هاء متاجر')}</span>
+            </p>
+          </div>
         </div>
-      </div>
-    </footer>
+      </footer>
     </>
   );
 }

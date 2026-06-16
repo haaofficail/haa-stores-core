@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
 import { usePermissions } from '@/lib/permissions';
 import {
-  LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, BookOpen, UserCog,
+  LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, BookOpen, UserCog, TrendingUp, Activity, ExternalLink, AlertTriangle,
 } from 'lucide-react';
 
 interface NavItem {
@@ -63,6 +63,8 @@ const navGroups: Array<{
     title: 'التحليلات',
     items: [
       { to: '/reports', icon: BarChart3, label: 'nav.reports', fallback: 'التقارير', permission: 'reports:read' },
+      { to: '/growth', icon: TrendingUp, label: 'nav.growth', fallback: 'مؤشرات النمو', permission: 'reports:read' },
+      { to: '/live', icon: Activity, label: 'nav.liveRadar', fallback: 'الرادار الحي', permission: 'reports:read' },
       { to: '/exports', icon: Download, label: 'nav.exports', fallback: 'التصدير', permission: 'exports:create' },
       { to: '/imports', icon: FileSpreadsheet, label: 'nav.imports', fallback: 'الاستيراد', permission: 'imports:create' },
     ],
@@ -147,6 +149,7 @@ function NavGroup({ titleKey, title, items }: { titleKey: string; title: string;
 export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: () => void }) {
   const { t } = useTranslation();
   const [isRTL] = useState(() => document.dir === 'rtl');
+  const storefrontBase = import.meta.env.VITE_STOREFRONT_URL || 'http://localhost:5174';
 
   return (
     <>
@@ -174,9 +177,22 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
         ))}
       </nav>
       <div className="p-4">
-        <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-lg p-3">
-           <p className="text-xs font-semibold text-neutral-700">{t('sidebar.demoLabel', 'ها ديمو')}</p>
-           <p className="text-xs text-neutral-500 mt-0.5">{t('sidebar.demoVersion', 'الإصدار التجريبي')}</p>
+        <a
+          href={`${storefrontBase}/marketplace`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-3 flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100"
+        >
+          <Store className="h-4 w-4 shrink-0" />
+          <span className="flex-1 truncate">{t('nav.haaMarketplace', 'سوق هاء العام')}</span>
+          <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+        </a>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <div className="flex items-center gap-2 text-amber-800">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <p className="text-xs font-semibold">{t('sidebar.demoLabel', 'متجر تجريبي')}</p>
+          </div>
+          <p className="text-xs text-amber-600 mt-1">{t('sidebar.demoVersion', 'جميع الخصائص مفعلة للتجربة')}</p>
         </div>
       </div>
     </aside>

@@ -4,7 +4,16 @@ import { describe, expect, it } from 'vitest';
 const walletLedger = readFileSync(new URL('../packages/wallet-core/src/ledger.ts', import.meta.url), 'utf-8');
 const walletSchema = readFileSync(new URL('../packages/db/src/schema/wallet.ts', import.meta.url), 'utf-8');
 const walletRoutes = readFileSync(new URL('../apps/api/src/routes/wallet.ts', import.meta.url), 'utf-8');
-const adminRoutes = readFileSync(new URL('../apps/api/src/routes/admin.ts', import.meta.url), 'utf-8');
+// Quality Pass 2 — Item 2.4: admin.ts was split into a directory. Concat
+// the 4 per-domain files (auth, tenants-stores, marketplace, operations)
+// plus the aggregator (index.ts) so path/permission assertions still match.
+const adminRoutes = [
+  'index.ts',
+  'auth.ts',
+  'tenants-stores.ts',
+  'marketplace.ts',
+  'operations.ts',
+].map((f) => readFileSync(new URL(`../apps/api/src/routes/admin/${f}`, import.meta.url), 'utf-8')).join('\n');
 
 describe('Manual settlement review workflow', () => {
   it('defines the required payout workflow statuses and transition methods', () => {

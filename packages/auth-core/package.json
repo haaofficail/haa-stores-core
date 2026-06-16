@@ -17,8 +17,11 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
+    "@haa/db": "workspace:*",
+    "@haa/integration-core": "workspace:*",
     "@haa/shared": "workspace:*",
     "bcryptjs": "^2.4.3",
+    "drizzle-orm": "^0.45.2",
     "jsonwebtoken": "^9.0.2",
     "hono": "^4.5.0"
   },

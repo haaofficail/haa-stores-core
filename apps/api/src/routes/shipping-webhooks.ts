@@ -3,6 +3,7 @@ import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { createShippingProvider, OtoMarketplaceService, verifyOtoWebhookSignature } from '@haa/shipping-core';
 import type { ShippingProviderCode } from '@haa/shared';
+import { deduplicateFromContext } from '../middleware/webhook-dedup.js';
 
 const shippingWebhooksRouter = new Hono();
 const otoWebhookRouter = new Hono();
@@ -21,6 +22,14 @@ otoWebhookRouter.post('/', async (c) => {
 
   if (!verifyOtoWebhookSignature(eventType, payload, signature)) {
     return c.json({ success: false, error: { code: 'INVALID_SIGNATURE', message: 'Invalid OTO webhook signature.' } }, 401);
+  }
+
+  // Signature is valid — now check for duplicate delivery. OTO
+  // doesn't send x-idempotency-key, so the helper falls back to
+  // sha256(provider + rawBody + signature).
+  const dup = await deduplicateFromContext(c, 'oto', rawBody, signature);
+  if (dup.duplicate) {
+    return c.json({ success: true, data: { eventType: 'duplicate_ignored' } });
   }
 
   const result = await new OtoMarketplaceService().handleWebhook(eventType, payload);
@@ -47,6 +56,13 @@ shippingWebhooksRouter.post('/:provider', async (c) => {
       });
     } catch { /* ignore */ }
     return c.json({ success: false, error: { code: 'INVALID_SIGNATURE', message: 'Invalid webhook signature' } }, 401);
+  }
+
+  // Signature is valid — now check for duplicate delivery. Same
+  // provider + rawBody + signature = same physical delivery.
+  const dup = await deduplicateFromContext(c, providerCode, rawBody, signature);
+  if (dup.duplicate) {
+    return c.json({ success: true, data: { eventType: 'duplicate_ignored' } });
   }
 
   try {

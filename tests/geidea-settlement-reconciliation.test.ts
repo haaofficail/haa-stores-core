@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 const walletSchema = readFileSync(new URL('../packages/db/src/schema/wallet.ts', import.meta.url), 'utf-8');
 const walletLedger = readFileSync(new URL('../packages/wallet-core/src/ledger.ts', import.meta.url), 'utf-8');
 const providerStatusRoute = readFileSync(new URL('../apps/api/src/routes/provider-status.ts', import.meta.url), 'utf-8');
+const providerStatusService = readFileSync(new URL('../packages/commerce-core/src/provider-status-service.ts', import.meta.url), 'utf-8');
 
 describe('Geidea settlement reconciliation regression', () => {
   it('records provider transactions with order, amount, currency, fees, and reconciliation status', () => {
@@ -24,9 +25,11 @@ describe('Geidea settlement reconciliation regression', () => {
   });
 
   it('does not report settlement ready without PSP/legal confirmation', () => {
-    expect(providerStatusRoute).toContain('pspSettlementPartnerConfirmed');
-    expect(providerStatusRoute).toContain('merchantOfRecordConfirmed');
-    expect(providerStatusRoute).toContain('samaComplianceStatus');
+    // After QP 5 Route Migration 7/24, the provider-status
+    // aggregation moved from the route into ProviderStatusService.
+    expect(providerStatusService).toContain('pspSettlementPartnerConfirmed');
+    expect(providerStatusService).toContain('merchantOfRecordConfirmed');
+    expect(providerStatusService).toContain('samaComplianceStatus');
     expect(walletLedger).toContain('requires_psp_or_legal_confirmation');
     expect(walletLedger).toContain('liveEnabled: false');
   });
