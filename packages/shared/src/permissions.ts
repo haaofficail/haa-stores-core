@@ -297,14 +297,6 @@ export const PERMISSION_CATALOG: PermissionInfo[] = [
   { key: 'support:create', labelAr: 'إنشاء تذكرة', descriptionAr: 'إنشاء تذكرة دعم جديدة', category: 'support', riskLevel: 'medium', recommendedForRoles: ['owner', 'admin', 'manager'] },
   { key: 'support:update', labelAr: 'تحديث التذكرة', descriptionAr: 'تحديث حالة وأولوية التذكرة والرد عليها', category: 'support', riskLevel: 'medium', recommendedForRoles: ['owner', 'admin', 'manager'] },
   { key: 'support:delete', labelAr: 'حذف التذكرة', descriptionAr: 'حذف تذكرة الدعم', category: 'support', riskLevel: 'high', recommendedForRoles: ['owner', 'admin'] },
-
-  // ── Admin Billing (platform-level only) ──
-  // These permissions are checked by the admin routes via
-  // `requireAdminPermission(...)`. Admin login mints `admin:*` so all
-  // admins currently pass automatically, but listing them here keeps
-  // the catalog discoverable for future fine-grained role work.
-  { key: 'billing.platform_fee.read', labelAr: 'عرض إعدادات رسوم المتاجر', descriptionAr: 'عرض سياسة رسوم المنصة لكل متجر (إعداد الأدمن)', category: 'admin_billing', riskLevel: 'medium', recommendedForRoles: [] },
-  { key: 'billing.platform_fee.update', labelAr: 'تعديل إعدادات رسوم المتاجر', descriptionAr: 'تغيير وضع/نسبة/رسم ثابت لرسوم المنصة لمتجر (إعداد الأدمن)', category: 'admin_billing', riskLevel: 'critical', recommendedForRoles: [] },
 ];
 
 export type PermissionCategory = (typeof PERMISSION_CATALOG)[number]['category'];
@@ -590,7 +582,6 @@ export function getCategoryLabelAr(category: string): string {
     export_import: 'التصدير والاستيراد',
     storefront: 'المتجر العام',
     support: 'الدعم',
-    admin_billing: 'فوترة الأدمن',
   };
   return labels[category] || category;
 }
