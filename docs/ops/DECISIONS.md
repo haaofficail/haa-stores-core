@@ -280,5 +280,42 @@ and auditability.
   bug. The SQL is correct and idempotent; the toolchain limitation is
   orthogonal.
 
+### Resolution (post-commit follow-up, 2026-06-16)
+
+The `drizzle-kit migrate` silent-exit blocker was successfully worked
+around with a **two-pass bootstrap** that does NOT require generating
+the missing snapshot files:
+
+1. **Pass 1 — sequential `psql -f` apply**:
+   Walk `packages/db/src/migrations/[0-9][0-9][0-9][0-9]_*.sql` in
+   numeric order, apply each via psql. Pre-existing migrations may
+   emit `NOTICE: already exists` for some indexes/columns (safe to
+   ignore). All 53 SQL files apply cleanly. Result: 97 public tables
+   including `store_billing_settings` (correctly populated with the
+   default 2% policy schema) and `wallet_entries` (with all 3 fee
+   columns).
+
+2. **Pass 2 — `drizzle-orm` migrator** to record the SHA-256 hashes
+   in `drizzle.__drizzle_migrations`. This makes the bootstrapped DB
+   compatible with future `pnpm db:migrate` calls (which becomes an
+   idempotent no-op).
+
+The bootstrap is codified in:
+- `scripts/bootstrap-fresh-db.sh` — orchestrator
+- `scripts/record-migration-hashes.mjs` — drizzle-orm migrator wrapper
+
+**End-to-end verification on a brand-new DB (`bootstrap_e2e`)**:
+- 53 SQL files applied via `psql -f` → 0 failed
+- 97 public tables created
+- `drizzle.__drizzle_migrations` populated with 52 rows
+- `pnpm db:migrate` on the bootstrapped DB: "migrations applied
+  successfully!" (idempotent — no new rows added)
+- `store_billing_settings` schema verified correct
+- `wallet_entries` has all 3 fee columns
+
+This makes the merge gate green: TASK-0030 can be merged without
+needing the missing snapshot files, and a future operator who needs
+to bootstrap a brand-new DB has a deterministic, documented path.
+
 ### Skills Used
 plan-mode, test-driven-development, verification-before-completion.
