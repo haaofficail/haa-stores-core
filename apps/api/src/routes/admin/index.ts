@@ -35,6 +35,7 @@ import {
   settingsRoutes,
   usersRoute,
 } from './operations.js';
+import { getBillingSettings, patchBillingSettings } from './billing-settings.js';
 
 // ── Permission guard used by settlement/payout routes. ────────────────────
 export function requireAdminPermission(permission: string) {
@@ -224,5 +225,19 @@ adminRouter.put('/settings', requireAdminAuth(), zValidator('json', settingsUpda
 
 // /users
 adminRouter.get('/users', requireAdminAuth(), usersRoute);
+
+// /stores/:storeId/billing-settings
+adminRouter.get(
+  '/stores/:storeId/billing-settings',
+  requireAdminAuth(),
+  requireAdminPermission('billing.platform_fee.read'),
+  getBillingSettings,
+);
+adminRouter.patch(
+  '/stores/:storeId/billing-settings',
+  requireAdminAuth(),
+  requireAdminPermission('billing.platform_fee.update'),
+  patchBillingSettings,
+);
 
 export { adminRouter };

@@ -3,7 +3,7 @@ import type { Context, Next } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { WalletLedger } from '@haa/wallet-core';
-import { KycService } from '@haa/commerce-core';
+import { KycService, StoreBillingSettingsService, describePlatformFeePolicy } from '@haa/commerce-core';
 import { AuditLogService } from '@haa/integration-core';
 import { paginationSchema, type Permission } from '@haa/shared';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
@@ -31,7 +31,26 @@ walletRouter.get('/summary', requirePermission('wallet:read'), async (c) => {
   const summary = await new WalletLedger().getSummary(storeId);
   const kycStatus = await new KycService().getStatus(storeId);
   const kycApproved = new KycService().isKycApproved(kycStatus.status);
-  return c.json({ success: true, data: { ...summary, kycApproved, kycStatus: kycStatus.status } });
+  // Phase 7: include the store's platform-fee policy as a read-only surface
+  // so the merchant wallet can show the merchant how the platform fee is
+  // calculated (transparency). Merchants cannot modify this — the PATCH
+  // endpoint is admin-only.
+  const policy = await new StoreBillingSettingsService().getPlatformFeePolicy(storeId);
+  return c.json({
+    success: true,
+    data: {
+      ...summary,
+      kycApproved,
+      kycStatus: kycStatus.status,
+      platformFee: {
+        mode: policy.mode,
+        pct: policy.pct,
+        fixed: policy.fixed,
+        enabled: policy.enabled,
+        label: describePlatformFeePolicy(policy),
+      },
+    },
+  });
 });
 
 walletRouter.get('/entries', requirePermission('wallet:read'), async (c) => {

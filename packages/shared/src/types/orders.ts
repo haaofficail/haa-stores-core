@@ -189,7 +189,8 @@ export type AuditAction =
   | 'commercial_registration_updated'
   | 'vat_number_updated'
   | 'customer_data_exported'
-  | 'merchant_acknowledgement';
+  | 'merchant_acknowledgement'
+  | 'store_billing_settings_updated';
 
 export type UserRole = 'owner' | 'admin' | 'manager' | 'products_manager' | 'orders_manager' | 'accountant' | 'support' | 'viewer';
 
@@ -232,6 +233,8 @@ export type Permission =
   | 'wallet.payout.reverse'
   | 'wallet.payout.view_all'
   | 'wallet.payout.view_store'
+  | 'billing.platform_fee.read'
+  | 'billing.platform_fee.update'
   | 'shipping:manage'
   | 'settings:view'
   | 'settings:update'

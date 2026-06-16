@@ -6,7 +6,9 @@ import { OrdersService } from './orders.js';
 import { CouponsService } from './coupons.js';
 import { PaymentService, createPaymentProvider, FakePaymentProvider } from '@haa/payment-providers';
 import type { PaymentProvider } from '@haa/payment-providers';
-import { WalletLedger } from '@haa/wallet-core';
+import { WalletLedger, calcPlatformFee, describePlatformFeePolicy } from '@haa/wallet-core';
+import type { PlatformFeePolicy } from '@haa/wallet-core';
+import { StoreBillingSettingsService } from './billing-settings-service.js';
 import { WebhookOutboxService } from '@haa/integration-core';
 import { AuditLogService } from '@haa/integration-core';
 import { ManualShippingProvider } from '@haa/shipping-core';
@@ -325,13 +327,33 @@ export class CheckoutService {
             status: 'available',
           });
 
-          await txWallet.recordEntry({
-            storeId, type: 'platform_fee', direction: 'debit',
-            amount: Math.round(Number(order.total) * 0.02 * 100) / 100,
-            referenceType: 'order', referenceId: order.id,
-            description: `Platform fee (2%) for order ${order.orderNumber}`,
-            status: 'available',
-          });
+          // Phase 4: read the store's configurable platform-fee policy and
+          // snapshot the rate + fixed amount onto the fee entry. The policy
+          // is locked to this order — changing the policy later never
+          // re-prices this order.
+          const txBilling = new StoreBillingSettingsService(tx as any);
+          const platformPolicy = await txBilling.getPlatformFeePolicy(storeId);
+          const platformFee = calcPlatformFee(Number(order.total), platformPolicy);
+          if (platformFee > 0) {
+            await txWallet.recordEntry({
+              storeId, type: 'platform_fee', direction: 'debit',
+              amount: platformFee,
+              referenceType: 'order', referenceId: order.id,
+              description: `رسوم منصة Haa (${describePlatformFeePolicy(platformPolicy)}) للطلب ${order.orderNumber}`,
+              status: 'available',
+              feeRatePct: platformPolicy.pct ?? null,
+              feeFixed: platformPolicy.fixed ?? null,
+              feeSource: 'platform_policy',
+              metadata: {
+                orderTotal: Number(order.total),
+                platformFeeMode: platformPolicy.mode,
+                platformFeePct: platformPolicy.pct ?? null,
+                platformFeeFixed: platformPolicy.fixed ?? null,
+                platformFeeLabel: describePlatformFeePolicy(platformPolicy),
+                appliedAt: new Date().toISOString(),
+              },
+            });
+          }
 
           await tx.insert(s.marketingEvents).values({
             storeId, sessionId: `order-${order.orderNumber}`, orderId: order.id,
@@ -691,13 +713,30 @@ export class CheckoutService {
           description: `Order payment (BNPL)`,
           status: 'available',
         });
-        await txWallet.recordEntry({
-          storeId, type: 'platform_fee', direction: 'debit',
-          amount: Math.round(Number(payment.amount) * 0.02 * 100) / 100,
-          referenceType: 'order', referenceId: payment.orderId,
-          description: `Platform fee (2%)`,
-          status: 'available',
-        });
+        // Phase 4: same configurable policy path as the regular checkout.
+        const txBilling = new StoreBillingSettingsService(tx as any);
+        const platformPolicy = await txBilling.getPlatformFeePolicy(storeId);
+        const platformFee = calcPlatformFee(Number(payment.amount), platformPolicy);
+        if (platformFee > 0) {
+          await txWallet.recordEntry({
+            storeId, type: 'platform_fee', direction: 'debit',
+            amount: platformFee,
+            referenceType: 'order', referenceId: payment.orderId,
+            description: `رسوم منصة Haa (${describePlatformFeePolicy(platformPolicy)})`,
+            status: 'available',
+            feeRatePct: platformPolicy.pct ?? null,
+            feeFixed: platformPolicy.fixed ?? null,
+            feeSource: 'platform_policy',
+            metadata: {
+              orderTotal: Number(payment.amount),
+              platformFeeMode: platformPolicy.mode,
+              platformFeePct: platformPolicy.pct ?? null,
+              platformFeeFixed: platformPolicy.fixed ?? null,
+              platformFeeLabel: describePlatformFeePolicy(platformPolicy),
+              appliedAt: new Date().toISOString(),
+            },
+          });
+        }
 
         if (!this.isDemo) {
           const txOutbox = new WebhookOutboxService(tx as any);

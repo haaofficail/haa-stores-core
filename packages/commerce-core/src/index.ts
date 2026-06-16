@@ -64,3 +64,13 @@ export type { LiveSnapshot } from './live-snapshots.js';
 export { MarketingActionService, runMarketingActionGeneration } from './marketing-action-engine.js';
 export type { GeneratedAction, ActionListOptions, ActionListResult } from './marketing-action-engine.js';
 export { CustomerSegmentationService, runCustomerSegmentationSummary } from './customer-segmentation.js';
+export { StoreBillingSettingsService } from './billing-settings-service.js';
+export {
+  calcPlatformFee,
+  normalizePlatformFeePolicy,
+  describePlatformFeePolicy,
+  validatePlatformFeePolicyInput,
+  DEFAULT_PLATFORM_FEE_POLICY,
+  PLATFORM_FEE_MODES,
+} from '@haa/wallet-core';
+export type { PlatformFeeMode, PlatformFeePolicy } from '@haa/wallet-core';

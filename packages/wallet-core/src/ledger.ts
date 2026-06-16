@@ -13,6 +13,15 @@ interface LedgerEntryInput {
   referenceId?: number;
   description?: string;
   status?: WalletEntryStatus;
+  /**
+   * Fee-snapshot fields. When recording a `platform_fee` or `payment_fee`
+   * entry, the caller MUST pass the exact `feeRatePct`, `feeFixed`, and
+   * `feeSource` that produced the amount, so historical entries are
+   * immutable and traceable even if the store's billing policy changes later.
+   */
+  feeRatePct?: number | null;
+  feeFixed?: number | null;
+  feeSource?: string | null;
   metadata?: Record<string, unknown>;
 }
 
@@ -115,6 +124,9 @@ export class WalletLedger {
         referenceType: input.referenceType ?? null,
         referenceId: input.referenceId ?? null,
         description: input.description ?? null,
+        feeRatePct: input.feeRatePct != null ? input.feeRatePct.toString() : null,
+        feeFixed: input.feeFixed != null ? input.feeFixed.toString() : null,
+        feeSource: input.feeSource ?? null,
         metadata: input.metadata ?? null,
       }).returning();
 
@@ -655,10 +667,26 @@ export class WalletLedger {
       totalSales: totalSales.toNumber(),
       totalFees: new Decimal(account.totalFees).toNumber(),
       totalPayouts: new Decimal(account.totalPayouts ?? 0).toNumber(),
+      // Backward-compat: keep flat field names that existing UI uses.
       platformFees: platformFees.toNumber(),
       paymentFees: paymentFees.toNumber(),
       shippingFees: shippingFees.toNumber(),
       refunds: refunds.toNumber(),
+      // Phase 10 — structured fees block. The flat fields above stay for
+      // backward compat; the new nested block is the canonical source going
+      // forward and matches the engineering brief.
+      //
+      // NOTE: `paymentAdjustments` was intentionally dropped from the
+      // structured response. There is no `payment_fee_adjustment`
+      // `WalletEntryType` today, so a no-op SUM field in the public
+      // surface would only confuse future readers. If/when that type
+      // is introduced, add it back here and to the WalletEntryType
+      // union in `packages/shared/src/types/orders.ts`.
+      fees: {
+        platform: platformFees.toNumber(),
+        paymentProcessing: paymentFees.toNumber(),
+        total: totalFees.toNumber(),
+      },
       netBalance: netBalance.toNumber(),
       entryCount: Number(entryCountResult?.total ?? 0),
       lastUpdated: lastEntry?.createdAt?.toISOString() ?? null,

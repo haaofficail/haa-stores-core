@@ -1511,3 +1511,52 @@
 - **Related Issues:** None
 - **Related Decisions:** Split into 4 parallel jobs (preflight, typecheck, lint, test) with `preflight` as the gate dependency. pnpm 10 matches the local dev version (10.32.1). `concurrency.cancel-in-progress: true` saves CI minutes on rapid pushes.
 - **Status History:** Requested 2026-06-15; Expanded 2026-06-15; In Progress 2026-06-15; Item 1 Done 2026-06-15.
+
+---
+
+### TASK-0030: Configurable Platform Fee Policy
+
+- **Type:** Feature / Data/DB / API / UX/UI Polish / Testing
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-16
+- **Updated:** 2026-06-16
+- **Original Request:** حوّل رسوم منصة Haa من نسبة ثابتة hardcoded مثل 2% إلى نظام إعدادات محاسبي قابل للتغيير من الأدمن، مع حفظ الرسوم المطبقة وقت إنشاء كل طلب، ومنع أي تعديل بأثر رجعي على الطلبات القديمة.
+- **Expanded Requirement:** 12-phase engineering brief. Per-store `store_billing_settings` (mode/pct/fixed/enabled/audit fields). Snapshot feeRatePct, feeFixed, feeSource onto every `platform_fee` wallet entry. Admin GET/PATCH endpoints + admin dashboard page at `/admin/store-billing`. Merchant wallet read-only surface (mode/pct/fixed/label). Structured `fees` block in summary. Audit log on every change. Tests for calc/checkout/admin/merchant.
+- **Problem:** Platform fee was hardcoded `* 0.02` in 3 places. Blocked per-store plans, promo exemptions, and auditability.
+- **Goal:** Configurable per-store platform-fee policy with immutable fee snapshots on historical orders and full audit log.
+- **Scope:** 12 phases (DB, schema, service, checkout refactor, admin API + UI, merchant read-only, summary restructure, audit, tests). 2 migrations, 9 new files, 11 modified files.
+- **Out of Scope:** Tiered billing plans, marketplace-specific fees, payment_fee_adjustment as a new WalletEntryType.
+- **Affected Areas:** packages/db, packages/wallet-core, packages/commerce-core, packages/shared, apps/api, apps/admin-dashboard, apps/merchant-dashboard, tests.
+- **Files Changed:** see CHANGELOG_INTERNAL.md 2026-06-16 entry.
+- **Skills Required:** plan-mode, test-driven-development, verification-before-completion, requesting-code-review.
+- **Skills Used:** plan-mode, test-driven-development, verification-before-completion.
+- **Acceptance Criteria:**
+  - [x] No hardcoded 0.02 platform-fee values in checkout.ts or webhooks.ts
+  - [x] `store_billing_settings` table with full schema + default 2% seed
+  - [x] `wallet_entries` fee-snapshot columns added
+  - [x] `calcPlatformFee` covers all 4 modes + edge cases (33 unit tests)
+  - [x] Checkout reads policy, snapshots to fee entry, skips when 0
+  - [x] Admin GET/PATCH `/admin/stores/:storeId/billing-settings` mounted with permission gate
+  - [x] Validation rejects negative values, mode-specific required fields
+  - [x] Merchant wallet summary includes read-only `platformFee` object
+  - [x] Merchant `Wallet.tsx` shows transparent read-only card (no edit controls)
+  - [x] Admin dashboard page at `/store-billing` with full edit form
+  - [x] `store_billing_settings_updated` audit log on every PATCH
+  - [x] Structured `fees: { platform, paymentProcessing, paymentAdjustments, total }` block in summary
+  - [x] Backward compat: flat `platformFees` / `paymentFees` fields still returned
+  - [x] 57 new tests passing, 0 regressions on typecheck + preflight
+- **Test Plan:** Unit tests for calc + validation, source-grep tests for wiring, typecheck + preflight + build all green.
+- **Test Results:**
+  - ✅ `pnpm vitest run tests/platform-fees.test.ts tests/platform-fees-wiring.test.ts` → 57/57 passing
+  - ✅ `pnpm typecheck` → all 21 packages clean
+  - ✅ `pnpm preflight` → PASSED
+  - ✅ `pnpm --filter @haa/{db,wallet-core,commerce-core,api,admin-dashboard,merchant-dashboard,storefront} build` → all green
+  - ✅ `pnpm test` → 2145 passing, 5 pre-existing branch-level failures (unrelated)
+  - ✅ `pnpm db:migrate` reports applied; SQL applied via psql as well for parity
+  - ✅ Admin route kept drizzle-orm-free (service-layer enforcement test still 14/14, not 15)
+- **Risks:** The 0050/0051 migrations ran on a branch where the drizzle journal/snapshot was stale; SQL applied via psql. Future clean-DB runs will pick them up via the normal pipeline. Documented in DECISIONS.md DECISION-0007.
+- **Related Decisions:** DECISION-0007
+- **Status History:**
+  - Requested: 2026-06-16
+  - Done: 2026-06-16

@@ -51,6 +51,7 @@
   - **Quality Pass 5 — Item 2 (Queue Scaffold) ✅ DONE** — created `apps/api/src/services/queue.ts` (~120 LOC) following the observability shim pattern: lazy `require('bullmq')` cast to `any`, noop default backend, `QUEUE_REDIS_URL`-gated, never throws at boot. TDD verified: 9/12 tests fail without impl → 12/12 with impl. 12/12 new tests pass; 0 regressions on full suite (1948 passing). 🆕
   - **Quality Pass 5 — Item 3 (Theme Package Rationalization) ✅ DONE** — created `docs/ops/THEME_RATIONALIZATION.md` (multi-step migration plan to deprecate `@haa/theme-system` → `@haa/storefront-themes`) + 3 missing theme package READMEs (storefront-themes, system-theme, theme-react). New `tests/theme-rationalization.test.ts` (7 tests) asserts: theme package structure, plan doc exists, legacy package flagged, no 7th theme package can be added silently. 7/7 new tests pass; 0 regressions on full suite (1948 passing). 🆕
   - **Quality Pass 5 — 3/3 CORE SUB-ITEMS COMPLETE → architectural contracts shipped (service-layer + queue + theme rationalization).**
+  - **Configurable Platform Fee Policy ✅ DONE (TASK-0030)** — platform fee is now read from `store_billing_settings` at order time and snapshotted onto the `platform_fee` wallet entry (feeRatePct, feeFixed, feeSource='platform_policy'). 4 modes supported (none / percentage / fixed / percentage_plus_fixed). Admin can edit at `/admin/store-billing`; merchant wallet shows it read-only. Every change records an `store_billing_settings_updated` audit entry. 2 migrations (0050 + 0051), 2 new test files (57 tests passing), 0 regressions. Backward compat preserved — flat `platformFees` / `paymentFees` fields still returned alongside the new structured `fees` block. See `DECISIONS.md` DECISION-0007. 🆕
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done
@@ -77,6 +78,7 @@
     - TASK-0027 (Quality Pass 3 — Security & Permissions) — Done (4/4 specified sub-items: CSRF + webhook idempotency + audit depth + RBAC coverage)
     - TASK-0028 (Quality Pass 4 — Operations & Quality) — Done (3/3 specified sub-items: CI/CD pipeline + observability shim + Redis rate-limiter production wiring)
     - TASK-0029 (Quality Pass 5 — Architectural Cleanup) — In Progress (3/3 core sub-items done: service-layer enforcement + queue scaffold + theme package rationalization)
+    - TASK-0030 (Configurable Platform Fee Policy) — Done (see DECISIONS.md DECISION-0007): store_billing_settings + fee-snapshot fields + 4 modes + admin/merchant UIs + 57 new tests)
 - **Known Broken Areas:**
   - Storefront root `/` hardcoded to `/s/haa-demo` redirect — works after seed ✅
   - Registration creates stores as `draft` (intentional — merchant must publish from settings)
@@ -181,3 +183,25 @@
   - Events stored in: `storage/monitoring-events.ndjson`
   - Support events stored in: `storage/support-error-events.ndjson`
   - Root Guard: preflight fails with exit code 1 from any path other than project root
+
+## Landing AI Agent — Conversational AI in Hero (2026-06-15) 🆕
+
+- **Type:** Feature / UX/UI Polish / Testing
+- **Status:** Done
+- **Scope:** Full-stack Conversational AI Agent embedded in landing-page Hero (`http://localhost:5174/`).
+- **What shipped:**
+  - `packages/commerce-core/src/landing-ai-agent/` — 7 files: `system-prompt.ts` (persona contract), `reply-bank.ts` (16 reply variants), `matcher.ts` (multi-turn aware keyword matcher), `sanitize.ts` (PII strip), `rate-limit.ts` (30 req/min/IP), `signup-gate.ts` (8 msg/IP soft cap), `engines.ts` (mock + OpenAI-compatible model adapter), `index.ts` (public surface).
+  - `apps/api/src/routes/landing-ai-agent.ts` — `POST /api/landing-ai-agent/chat` mounted in `apps/api/src/index.ts`. 200/400/429/502 contract; PII-safe; rate-limited; signup-gated.
+  - `apps/storefront/src/landing/HeroAIChat.tsx` — full UI: persona identity, multi-turn memory (sessionStorage), typewriter streaming, suggested follow-ups after every reply, soft signup gate banner, max-20 history, reset button, mobile-first RTL, accessibility (aria-live, labeled form).
+  - `apps/storefront/src/landing/aiChatContent.ts` — standalone facade (no external package import), keeps the storefront working even if the engine submodule isn't built.
+- **Wiring model API later:** set `LANDING_AI_MODEL_URL`, `LANDING_AI_MODEL_NAME`, `LANDING_AI_MODEL_KEY` env vars on the API. The engine auto-switches from mock to the real model. No code change required.
+- **Tests:** `tests/landing-ai-agent-engine.test.ts` (23 tests) + `tests/landing-ai-agent-api.test.ts` (13 tests) = **36/36 passing**. TDD red-green cycle followed; `tsc --noEmit` clean; `pnpm --filter @haa/storefront build` successful.
+- **Verification:** manual E2E via `curl` confirmed `POST /api/landing-ai-agent/chat` returns 200 with correct reply for `أبيع عطور`, `وش يميز Haa عن غيره`, etc. Rate limit triggers at 31st request per IP. Signup gate triggers at 9th message.
+- **Cleanup collateral:** removed 3 pre-existing TS6133 unused-locals in `LandingPage.tsx` (`SHIPPING_BADGES` const, `Counter` function, unused `t` prop in `PaymentSection`) and 2 unused `Search` imports in marketplace pages — these were blocking the storefront production build.
+- **Files Changed (this task only):**
+  - New: `packages/commerce-core/src/landing-ai-agent/{index,system-prompt,reply-bank,matcher,sanitize,rate-limit,signup-gate,engines}.ts`
+  - New: `apps/api/src/routes/landing-ai-agent.ts`
+  - New: `apps/storefront/src/landing/{HeroAIChat,aiChatContent}.ts`
+  - New: `tests/landing-ai-agent-engine.test.ts`, `tests/landing-ai-agent-api.test.ts`
+  - Modified: `apps/api/src/index.ts` (route mount), `apps/api/src/../packages/commerce-core/package.json` (subpath export), `apps/storefront/src/pages/LandingPage.tsx` (replaced secondary CTA with `HeroAIChat`, cleanup), `apps/storefront/src/pages/MarketplaceCheckout.tsx` / `MarketplaceSellers.tsx` (removed unused `Search` import), `apps/storefront/tsconfig.json` (paths alias).
+- **Related Decisions:** see DECISIONS.md.

@@ -26,6 +26,7 @@ export * from './integrations.js';
 export * from './marketplaces.js';
 export * from './marketplace_orders.js';
 export * from './pickup_locations.js';
+export * from './billing.js';
 export * from './payment_provider_settings.js';
 export * from './size_guides.js';
 export * from './acknowledgements.js';

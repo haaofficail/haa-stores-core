@@ -265,4 +265,18 @@ export const adminApi = {
   updatePlan: (id: number, data: Record<string, unknown>) => request<any>('PATCH', `/admin/plans/${id}`, data),
   getSettings: () => request<{ name: string; slug: string; logoUrl: string | null; faviconUrl: string | null }>('GET', '/admin/settings'),
   updateSettings: (data: { name: string; logoUrl?: string | null; faviconUrl?: string | null }) => request<any>('PUT', '/admin/settings', data),
+  getStoreBillingSettings: (storeId: number) =>
+    request<{
+      storeId: number; storeName: string;
+      settings: any | null;
+      effectivePolicy: { mode: string; pct: number | null; fixed: number | null; enabled: boolean };
+      effectivePolicyLabel: string;
+    }>('GET', `/admin/stores/${storeId}/billing-settings`),
+  updateStoreBillingSettings: (storeId: number, data: {
+    platformFeeMode?: string;
+    platformFeePct?: number | null;
+    platformFeeFixed?: number | null;
+    isPlatformFeeEnabled?: boolean | null;
+    changeReason?: string | null;
+  }) => request<any>('PATCH', `/admin/stores/${storeId}/billing-settings`, data),
 };

@@ -30,6 +30,13 @@ export const walletEntries = pgTable('wallet_entries', {
   referenceType: varchar('reference_type', { length: 50 }),
   referenceId: integer('reference_id'),
   description: text('description'),
+  // Fee-snapshot fields (nullable for non-fee entries).
+  // These capture the exact rate and fixed amount that produced this entry,
+  // so historical fee entries are immutable and traceable even if the store's
+  // billing policy changes later.
+  feeRatePct: decimal('fee_rate_pct', { precision: 8, scale: 6 }),
+  feeFixed: decimal('fee_fixed', { precision: 12, scale: 2 }),
+  feeSource: varchar('fee_source', { length: 30 }),
   metadata: jsonb('metadata'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({

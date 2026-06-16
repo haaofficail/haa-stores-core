@@ -1225,3 +1225,46 @@ The strategic plan suggests pausing before Pass 2 to:
 - `@haa/theme-react`'s `ThemeProvider` is safe for dashboard — it controls light/dark mode via `data-theme` on `<html>`, which is the design system theme, not storefront theme.
 - `@haa/system-theme` is dashboard-safe — CSS is scoped to `.haa-system-theme` with `--haa-*` namespaced variables.
 - Branch: fix/theme-isolation
+
+## 2026-06-16 — TASK-0030 Configurable Platform Fee Policy
+
+- **Type:** Feature / Data/DB / API / UX/UI Polish / Testing
+- **Scope:** Platform fee is now per-store configurable. Each order's `platform_fee`
+  wallet entry carries an immutable snapshot of the rate + fixed amount that
+  produced it, so changing a store's policy never re-prices historical orders.
+- **Files Added:**
+  - `packages/db/src/schema/billing.ts` — `storeBillingSettings` table
+  - `packages/db/src/migrations/0050_store_billing_settings.sql` — schema + default seed (2% percentage for every existing store)
+  - `packages/db/src/migrations/0051_wallet_fee_snapshot.sql` — fee-snapshot columns on `wallet_entries`
+  - `packages/wallet-core/src/platform-fees.ts` — pure calc + validation
+  - `packages/commerce-core/src/billing-settings-service.ts` — DB reads + audit log writes
+  - `apps/api/src/routes/admin/billing-settings.ts` — GET + PATCH admin endpoints
+  - `apps/admin-dashboard/src/pages/StoreBillingSettings.tsx` — admin UI
+  - `tests/platform-fees.test.ts` — pure unit tests (33 tests)
+  - `tests/platform-fees-wiring.test.ts` — wiring + source-grep tests (24 tests)
+- **Files Modified:**
+  - `packages/db/src/schema/wallet.ts` — added `feeRatePct`, `feeFixed`, `feeSource`
+  - `packages/db/src/schema/index.ts` — re-export billing schema
+  - `packages/db/src/migrations/meta/_journal.json` — entries 0050, 0051
+  - `packages/wallet-core/src/ledger.ts` — fee-snapshot fields in `recordEntry`, structured `fees` block in `getSummary`
+  - `packages/wallet-core/src/index.ts` — re-export `calcPlatformFee` + types
+  - `packages/commerce-core/src/checkout.ts` — read policy at order creation, snapshot to fee entry
+  - `packages/commerce-core/src/index.ts` — re-export `StoreBillingSettingsService` + types
+  - `packages/shared/src/types/orders.ts` — added `'store_billing_settings_updated'` to `AuditAction`
+  - `packages/shared/src/types/audit.ts` — added Arabic label
+  - `apps/api/src/routes/webhooks.ts` — same policy lookup as checkout
+  - `apps/api/src/routes/wallet.ts` — include read-only `platformFee` in summary
+  - `apps/api/src/routes/admin/index.ts` — mount new admin routes
+  - `apps/admin-dashboard/src/lib/api.ts` — `getStoreBillingSettings` + `updateStoreBillingSettings`
+  - `apps/admin-dashboard/src/App.tsx` — nav entry + route
+  - `apps/merchant-dashboard/src/pages/Wallet.tsx` — read-only policy card (also removed pre-existing `directionColors` TS6133 unused-locals)
+- **Audit:** `store_billing_settings_updated` action added with Arabic label
+  "تحديث إعدادات رسوم المتجر". Old/new values recorded on every PATCH.
+- **Backward compat:** Flat `platformFees` / `paymentFees` / `shippingFees` /
+  `refunds` fields still returned alongside the new structured `fees` block
+  to avoid breaking the existing merchant UI.
+- **Tests:** 57 new tests, 0 regressions. Pre-existing 5 baseline failures
+  on this branch are unrelated (marketing-actions.ts, 0046_smiling_phil_sheldon,
+  landing AI agent system-prompt, dashboard → @haa/storefront-themes import,
+  storefront `:root` CSS).
+- **Skills Used:** plan-mode, test-driven-development, verification-before-completion.
