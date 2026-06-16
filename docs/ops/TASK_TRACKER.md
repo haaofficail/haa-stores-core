@@ -1656,3 +1656,31 @@
 - **Status History:**
   - Requested: 2026-06-16
   - In Progress: 2026-06-16
+
+---
+
+### TASK-0034: Financial Wallet Accuracy — Phase 4-9 + Saudi PDPL
+
+- **Type:** Architecture / Refactor / Compliance
+- **Priority:** P1 High
+- **Status:** In Progress
+- **Created:** 2026-06-16
+- **Updated:** 2026-06-16
+- **Original Request:** Continue Session #2 of the master plan (TASK-0033). Owner directive: complete Phase 4-9 of the financial wallet audit + Saudi compliance add-ons.
+- **Problem:** WalletPostingService (TASK-0033) has 5 stubbed methods. 2 of 6 `recordEntry(...)` call sites still raw (checkout.ts + apps/api refund route). Audit Phases 4-9 require: gateway_fee entry, provider-aware fee calculator, refund policy per-provider, payout pending reservation, settlement reconciliation. Saudi PDPL requires data export + deletion endpoints.
+- **Goal:** Implement the 5 stub methods. Migrate the remaining 2 call sites. Add Saudi PDPL endpoints. Add gateway fee UX.
+- **Scope (Session #2 — 8 sub-items):**
+  1. `postPlatformFee` (mirrors `postCodFee`)
+  2. `postGatewayFee` + `postSettlementDifference` (new entry types)
+  3. `GatewayFeeRefundPolicy` enum (Q2: `REFUNDABLE | NON_REFUNDABLE`)
+  4. `postPayoutDebit` + `postPayoutReversal`
+  5. Migrate `apps/api/src/routes/orders.ts:131` refund to service
+  6. Migrate `checkout.ts` + `payment-webhook-service.ts` to service
+  7. PDPL: `GET /api/merchant/data-export` + `DELETE /api/merchant/account`
+  8. Gateway fee UX (Q1: "You receive X" + collapsible)
+- **Out of Scope (Session #3+):** Route Migrations 20-24, 3DS, ZATCA, deployment runbook.
+- **Skills Required:** plan-mode, test-driven-development, verification-before-completion, requesting-code-review.
+- **Acceptance Criteria:** 8 sub-items, each with RED→GREEN tests + wiring + typecheck.
+- **Status History:**
+  - Requested: 2026-06-16
+  - In Progress: 2026-06-16
