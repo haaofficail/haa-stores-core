@@ -6,6 +6,36 @@ import { isDemoStore } from '@haa/shared';
 export class SubscriptionService {
   constructor(private db: DbClient = createDbClient(), private store?: { id: number; isDemo?: boolean | null }) {}
 
+  /**
+   * Static factory: resolve the store's id + isDemo flag and
+   * return a SubscriptionService instance with the store info
+   * pre-loaded. Routes use this instead of doing their own
+   * Drizzle select on the stores table.
+   *
+   * Extracted from `apps/api/src/routes/subscriptions.ts` as
+   * part of Quality Pass 5, Route Migration 19/24. The route
+   * previously had a local `resolveStore()` helper that did
+   * a direct db.select on stores; that helper is now this
+   * factory.
+   *
+   * If no store is found for the given id, the factory still
+   * returns a configured service (with store=undefined). The
+   * downstream methods (getCurrentSubscription, checkPlanLimits)
+   * will then return null or apply non-demo-store behavior,
+   * letting the route map to a 404 / empty response as
+   * appropriate. This matches the route's prior behavior of
+   * `store ?? null` + null-checks.
+   */
+  static async forStore(storeId: number): Promise<SubscriptionService> {
+    const db = createDbClient();
+    const [store] = await db
+      .select({ id: s.stores.id, isDemo: s.stores.isDemo })
+      .from(s.stores)
+      .where(eq(s.stores.id, storeId))
+      .limit(1);
+    return new SubscriptionService(db, store ?? undefined);
+  }
+
   async getPlans() {
     return this.db.select()
       .from(s.subscriptionPlans)
