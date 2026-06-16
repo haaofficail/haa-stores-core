@@ -1,8 +1,9 @@
 // Webhook Idempotency / Deduplication — Quality Pass 3, Item 2
+// (updated for Quality Pass 5, Route Migration 18/24)
 //
-// Source-grep tests for apps/api/src/middleware/webhook-dedup.ts
-// and its usage in the two webhook route files (webhooks.ts and
-// shipping-webhooks.ts).
+// Source-grep tests for the webhook dedup helper, the
+// PaymentWebhookService that uses it, and the webhooks
+// route that delegates to the service.
 //
 // Background: payment providers (Moyasar, HyperPay, etc.) and
 // shipping providers (SMSA, OTO, Aramex) regularly re-deliver the
@@ -16,91 +17,143 @@
 // The fix: a helper that always computes an idempotency key from
 // (provider + rawBody + signature) when the provider doesn't send
 // one, ensuring idempotency regardless of provider behavior.
+//
+// As of QP5 Route Migration 18/24, the pure helper lives in
+// @haa/integration-core (packages/integration-core/src/
+// webhook-dedup.ts) so it can be reused by both the Hono
+// middleware in apps/api and the new PaymentWebhookService in
+// @haa/commerce-core. The Hono wrapper
+// (deduplicateFromContext) re-exports from there.
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const projectRoot = resolve(new URL('..', import.meta.url).pathname);
 
-const helperPath = resolve(projectRoot, 'apps/api/src/middleware/webhook-dedup.ts');
+const integrationDedupPath = resolve(projectRoot, 'packages/integration-core/src/webhook-dedup.ts');
+const integrationIndexPath = resolve(projectRoot, 'packages/integration-core/src/index.ts');
+const honoWrapperPath = resolve(projectRoot, 'apps/api/src/middleware/webhook-dedup.ts');
 const webhooksPath = resolve(projectRoot, 'apps/api/src/routes/webhooks.ts');
+const servicePath = resolve(projectRoot, 'packages/commerce-core/src/payment-webhook-service.ts');
 const shippingWebhooksPath = resolve(projectRoot, 'apps/api/src/routes/shipping-webhooks.ts');
 const paymentsSchemaPath = resolve(projectRoot, 'packages/db/src/schema/payments.ts');
 
-const helper = readFileSync(helperPath, 'utf-8');
-const webhooks = readFileSync(webhooksPath, 'utf-8');
-const shippingWebhooks = readFileSync(shippingWebhooksPath, 'utf-8');
-const paymentsSchema = readFileSync(paymentsSchemaPath, 'utf-8');
+function read(p: string): string {
+  return existsSync(p) ? readFileSync(p, 'utf-8') : '';
+}
+
+const integrationDedup = read(integrationDedupPath);
+const integrationIndex = read(integrationIndexPath);
+const honoWrapper = read(honoWrapperPath);
+const webhooks = read(webhooksPath);
+const service = read(servicePath);
+const shippingWebhooks = read(shippingWebhooksPath);
+const paymentsSchema = read(paymentsSchemaPath);
 
 describe('Webhook Idempotency / Deduplication (Quality Pass 3, Item 2)', () => {
-  describe('Helper module (webhook-dedup.ts)', () => {
-    it('exists', () => {
-      expect(helper).toBeDefined();
-      expect(helper.length).toBeGreaterThan(0);
+  describe('Helper module (integration-core/webhook-dedup.ts)', () => {
+    it('exists at the new location', () => {
+      expect(integrationDedup).toBeDefined();
+      expect(integrationDedup.length).toBeGreaterThan(0);
     });
 
     it('exports a deduplicateWebhook helper function', () => {
-      // Should export either a function or a class with the expected name
-      expect(helper).toMatch(/export.*(deduplicateWebhook|webhookDedup|checkWebhookDuplicate)/);
+      expect(integrationDedup).toMatch(/export.*(deduplicateWebhook|webhookDedup|checkWebhookDuplicate)/);
     });
 
     it('computes a fallback idempotency key from rawBody when the header is absent', () => {
-      // Must include some kind of hashing logic (sha256, crypto, etc.)
-      // OR call into a helper that does
-      expect(helper).toMatch(/sha256|crypto\.|createHash|webcrypto|hash/i);
+      expect(integrationDedup).toMatch(/sha256|crypto\.|createHash|webcrypto|hash/i);
     });
 
     it('prefers the provider-supplied x-idempotency-key header when present', () => {
-      // The function should read the header and use it if present
-      expect(helper).toMatch(/x-idempotency-key|idempotencyKey/);
+      expect(integrationDedup).toMatch(/x-idempotency-key|idempotencyKey/);
     });
 
     it('queries the paymentWebhookEvents table for the computed key', () => {
-      // Should use paymentWebhookEvents (the existing table)
-      expect(helper).toContain('paymentWebhookEvents');
+      expect(integrationDedup).toContain('paymentWebhookEvents');
     });
 
     it('returns a "duplicate" signal when an event with the same key already exists', () => {
-      // Should return some shape like { duplicate: true } or null
-      expect(helper).toMatch(/duplicate|already/i);
+      expect(integrationDedup).toMatch(/duplicate|already/i);
     });
 
     it('inserts a sentinel record with the computed key when no duplicate exists', () => {
-      // Should call .insert() on the table
-      expect(helper).toMatch(/paymentWebhookEvents.*insert|\.insert\(.*paymentWebhookEvents/);
+      expect(integrationDedup).toMatch(/paymentWebhookEvents.*insert|\.insert\(.*paymentWebhookEvents/);
+    });
+
+    it('is exported from @haa/integration-core', () => {
+      expect(integrationIndex).toMatch(/deduplicateWebhook/);
     });
   });
 
-  describe('Wiring (webhooks.ts)', () => {
-    it('imports the dedup helper', () => {
-      expect(webhooks).toMatch(/from.*webhook-dedup|require.*webhook-dedup/);
+  describe('Hono wrapper (apps/api/src/middleware/webhook-dedup.ts)', () => {
+    it('still exists as a thin re-export of the pure helper', () => {
+      expect(honoWrapper).toBeDefined();
+      // The Hono wrapper re-exports the pure helpers from
+      // @haa/integration-core (no longer re-implements them).
+      expect(honoWrapper).toMatch(/from\s+['"]@haa\/integration-core['"]/);
     });
 
-    it('calls the dedup helper AFTER signature verification (to prevent pre-poisoning by attackers)', () => {
-      // The dedup must run AFTER signature verification. Otherwise
-      // an attacker could send arbitrary bodies with bogus
-      // signatures to pre-poison the idempotency table and block
-      // legitimate deliveries.
-      // Use matchAll to find the call site (not the import).
-      const sigIdx = webhooks.search(/verifyWebhookSignature/);
-      // Find the second occurrence of the helper name (the call
-      // site, after the import).
-      const dedupMatches = [...webhooks.matchAll(/deduplicateFromContext|deduplicateWebhook/g)];
-      const dedupIdx = dedupMatches.length > 1 ? dedupMatches[1].index : dedupMatches[0]?.index ?? -1;
-      expect(sigIdx).toBeGreaterThan(-1);
-      expect(dedupIdx).toBeGreaterThan(-1);
-      expect(dedupIdx).toBeGreaterThan(sigIdx);
+    it('preserves the deduplicateFromContext helper for Hono routes', () => {
+      // Other Hono routes (e.g., shipping-webhooks.ts) still
+      // call deduplicateFromContext for the Hono-aware wrapper.
+      expect(honoWrapper).toMatch(/export\s+async\s+function\s+deduplicateFromContext/);
+    });
+  });
+
+  describe('Wiring — payment webhooks (webhooks.ts → PaymentWebhookService)', () => {
+    it('webhooks.ts does NOT call the dedup helper directly (it delegates to the service)', () => {
+      // After the migration, the route is a pure transport
+      // shell. The dedup is a business concern that lives
+      // in the service.
+      expect(webhooks).not.toMatch(/deduplicateFromContext\s*\(/);
+      expect(webhooks).not.toMatch(/deduplicateWebhook\s*\(/);
     });
 
-    it('returns 200 with duplicate_ignored when the helper reports a duplicate', () => {
-      expect(webhooks).toMatch(/duplicate_ignored|duplicate/);
+    it('webhooks.ts does NOT call verifyWebhookSignature directly (it delegates to the service)', () => {
+      // The service owns the signature-verify-then-dedup
+      // ordering to keep them atomic at the business layer.
+      expect(webhooks).not.toMatch(/verifyWebhookSignature/);
+    });
+
+    it('webhooks.ts delegates to PaymentWebhookService.process(...)', () => {
+      expect(webhooks).toMatch(/PaymentWebhookService/);
+      expect(webhooks).toMatch(/\.process\s*\(/);
+    });
+
+    it('PaymentWebhookService uses the integration-core dedup helper (not a local copy)', () => {
+      expect(service).toMatch(/from\s+['"]@haa\/integration-core['"]/);
+      expect(service).toMatch(/deduplicateWebhook/);
+    });
+
+    it('PaymentWebhookService calls dedup AFTER signature verification (to prevent pre-poisoning by attackers)', () => {
+      // Order matters: signature verify must happen first
+      // so an attacker can't pre-poison the idempotency
+      // table with arbitrary bodies.
+      //
+      // We need to find the CALL site, not the import.
+      // Use matchAll to find all occurrences and pick the
+      // first call (not the import statement).
+      const sigMatches = [...service.matchAll(/verifyWebhookSignature/g)];
+      const dedupMatches = [...service.matchAll(/deduplicateWebhook/g)];
+      // The first occurrence of each is the import; the
+      // call site is the second occurrence (or later).
+      const sigCall = sigMatches.length > 1 ? sigMatches[1].index : sigMatches[0]?.index ?? -1;
+      const dedupCall = dedupMatches.length > 1 ? dedupMatches[1].index : dedupMatches[0]?.index ?? -1;
+      expect(sigCall).toBeGreaterThan(-1);
+      expect(dedupCall).toBeGreaterThan(-1);
+      expect(dedupCall).toBeGreaterThan(sigCall);
+    });
+
+    it('PaymentWebhookService returns duplicate_ignored when the helper reports a duplicate', () => {
+      expect(service).toMatch(/duplicate_ignored/);
     });
   });
 
   describe('Wiring (shipping-webhooks.ts)', () => {
     it('imports the dedup helper', () => {
-      expect(shippingWebhooks).toMatch(/from.*webhook-dedup|require.*webhook-dedup/);
+      expect(shippingWebhooks).toMatch(/from.*webhook-dedup|require.*webhook-dedup|deduplicateFromContext/);
     });
 
     it('calls the dedup helper in the generic shipping webhook route', () => {

@@ -126,10 +126,16 @@ describe('Checkout wiring — no hardcoded platform fee', () => {
   });
 
   it('webhook payment-success path also reads the policy (not hardcoded)', () => {
-    const wh = read('apps/api/src/routes/webhooks.ts');
-    expect(wh).toContain('StoreBillingSettingsService');
-    expect(wh).toContain('calcPlatformFee');
-    expect(wh).not.toMatch(/0\.02 \* 100/);
+    // As of QP5 Route Migration 18/24, the webhook route
+    // is a thin transport shell. The platform-fee logic
+    // lives in PaymentWebhookService (commerce-core). The
+    // wiring guarantee (TASK-0030) is preserved if the
+    // service reads the policy + calls calcPlatformFee, not
+    // hardcoded constants.
+    const svc = read('packages/commerce-core/src/payment-webhook-service.ts');
+    expect(svc).toContain('StoreBillingSettingsService');
+    expect(svc).toContain('calcPlatformFee');
+    expect(svc).not.toMatch(/0\.02 \* 100/);
   });
 });
 

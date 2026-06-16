@@ -67,6 +67,8 @@ export { CustomerSegmentationService, runCustomerSegmentationSummary } from './c
 export { StoreBillingSettingsService } from './billing-settings-service.js';
 export { ShipmentsService } from './shipments-service.js';
 export type { ShipmentsResult } from './shipments-service.js';
+export { PaymentWebhookService } from './payment-webhook-service.js';
+export type { PaymentWebhookResult, PaymentWebhookInput } from './payment-webhook-service.js';
 export {
   calcPlatformFee,
   normalizePlatformFeePolicy,

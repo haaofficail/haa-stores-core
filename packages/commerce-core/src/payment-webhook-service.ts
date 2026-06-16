@@ -1,0 +1,283 @@
+import { eq } from 'drizzle-orm';
+import { createDbClient, type DbClient } from '@haa/db';
+import * as s from '@haa/db/schema';
+import {
+  PaymentService,
+  createPaymentProvider,
+  mapProviderStatus,
+} from '@haa/payment-providers';
+import { WalletLedger, calcPlatformFee, describePlatformFeePolicy } from '@haa/wallet-core';
+import { WebhookOutboxService, deduplicateWebhook } from '@haa/integration-core';
+import { NotificationService } from '@haa/notification-core';
+import type { ProviderCode } from '@haa/shared';
+import { OrdersService } from './orders.js';
+import { StoreBillingSettingsService } from './billing-settings-service.js';
+
+/**
+ * Result envelope returned by PaymentWebhookService.process.
+ * Routes consume this to map to HTTP status codes (200, 400,
+ * 401) without re-running any of the business logic.
+ *
+ * The shape matches what the route used to return before the
+ * migration, so the public API is byte-identical for clients.
+ */
+export type PaymentWebhookResult =
+  | { success: true; data: { eventType?: string; [k: string]: unknown } }
+  | { success: false; code: 'INVALID_SIGNATURE' | 'WEBHOOK_ERROR'; message: string; httpStatus: 401 | 400 };
+
+/**
+ * Input shape for PaymentWebhookService.process. The route
+ * builds this from the Hono context (raw body + signature
+ * headers) and passes it in. The service is HTTP-agnostic.
+ */
+export interface PaymentWebhookInput {
+  providerCode: ProviderCode;
+  rawBody: string;
+  signature: string;
+  /** Provider-supplied idempotency key, or undefined for the fallback hash. */
+  idempotencyKey?: string;
+}
+
+/**
+ * PaymentWebhookService — owns the business logic for
+ * processing inbound payment provider webhooks.
+ *
+ * Originally extracted from `apps/api/src/routes/webhooks.ts`
+ * as part of Quality Pass 5, Route Migration 18/24.
+ *
+ * The route used to do, inline, ~80 lines of mixed transport
+ * + business logic:
+ *   1. Signature verify
+ *   2. Dedup check (edge idempotency)
+ *   3. JSON parse + provider.handleWebhook
+ *   4. Post-payment orchestration in a single DB transaction:
+ *      - order payment status update
+ *      - order status change to 'confirmed'
+ *      - wallet credit (sale entry)
+ *      - platform fee entry with TASK-0030 snapshot fields
+ *      - outbox events (payment.succeeded, order.paid)
+ *      - notification (payment_success)
+ *   5. Failed branch: payment status + outbox + notification
+ *   6. Refund branch: payment status update only
+ *
+ * All 6 concerns now live here. The route is a thin transport
+ * shell that:
+ *   - reads c.req.text() (raw body)
+ *   - reads signature headers
+ *   - calls process(...)
+ *   - maps PaymentWebhookResult to the response envelope
+ *
+ * Pre-existing services (PaymentService, OrdersService,
+ * WalletLedger, StoreBillingSettingsService,
+ * WebhookOutboxService, NotificationService,
+ * createPaymentProvider, mapProviderStatus) are reused. We
+ * do NOT re-implement carrier/provider logic, do NOT touch
+ * the payment/order/wallet schema, and do NOT change the
+ * atomicity guarantee (everything inside one transaction).
+ *
+ * Why @haa/commerce-core and not @haa/integration-core?
+ * The service composes OrdersService (commerce-core) with
+ * payment, wallet, outbox, and notification services.
+ * commerce-core already depends on all of them; the reverse
+ * direction would be a circular dependency. This matches the
+ * convention used by ShipmentsService, DashboardService,
+ * StoreSettingsService, ProviderStatusService.
+ */
+export class PaymentWebhookService {
+  constructor(private db: DbClient = createDbClient()) {}
+
+  /**
+   * Process an inbound payment webhook. Returns a structured
+   * result envelope. The caller (route) maps to HTTP.
+   *
+   * Flow:
+   *   1. Verify signature (provider boundary)
+   *   2. Check dedup
+   *   3. Parse + provider.handleWebhook
+   *   4. If a payment was identified, run the post-payment
+   *      orchestration in a single transaction
+   */
+  async process(input: PaymentWebhookInput): Promise<PaymentWebhookResult> {
+    const { providerCode, rawBody, signature, idempotencyKey } = input;
+
+    // 1. Resolve provider + verify signature
+    const provider = createPaymentProvider(providerCode);
+
+    if (!provider.verifyWebhookSignature(rawBody, signature)) {
+      // Log invalid signature attempt — same behavior the
+      // route used to do inline.
+      try {
+        const payload = JSON.parse(rawBody);
+        await this.db.insert(s.paymentWebhookEvents).values({
+          provider: providerCode,
+          eventType: payload.type || 'unknown',
+          rawBody,
+          status: 'failed',
+        });
+      } catch { /* ignore parse errors — invalid JSON is not our problem here */ }
+      return {
+        success: false,
+        code: 'INVALID_SIGNATURE',
+        message: 'Invalid webhook signature',
+        httpStatus: 401,
+      };
+    }
+
+    // 2. Dedup — same physical delivery always produces
+    //    the same key, so replays are no-ops.
+    const dup = await deduplicateWebhook(
+      providerCode,
+      rawBody,
+      signature,
+      idempotencyKey,
+    );
+    if (dup.duplicate) {
+      return {
+        success: true,
+        data: { eventType: 'duplicate_ignored' },
+      };
+    }
+
+    // 3. Parse + delegate to provider
+    try {
+      const payload = JSON.parse(rawBody);
+      const result = await provider.handleWebhook(
+        payload as Record<string, unknown>,
+        idempotencyKey,
+        this.db,
+      );
+
+      // 4. Post-payment orchestration (if a payment was identified)
+      if (result.paymentId) {
+        await this.runPostPaymentFlow({
+          providerCode,
+          paymentId: result.paymentId,
+          eventType: result.eventType,
+        });
+      }
+
+      return { success: true, data: result as { eventType?: string; [k: string]: unknown } };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Webhook processing failed';
+      return {
+        success: false,
+        code: 'WEBHOOK_ERROR',
+        message: msg,
+        httpStatus: 400,
+      };
+    }
+  }
+
+  /**
+   * Run the post-payment orchestration in a single
+   * transaction. This is the most important atomicity
+   * guarantee of the entire webhook path — if any step
+   * fails, the whole thing rolls back.
+   *
+   * Branches:
+   *   - paid: order + wallet + platform fee + outbox + notification
+   *   - failed: order + outbox + notification
+   *   - refunded / partially_refunded: order status update only
+   */
+  private async runPostPaymentFlow(args: {
+    providerCode: ProviderCode;
+    paymentId: number;
+    eventType?: string;
+  }): Promise<void> {
+    const { providerCode, paymentId, eventType } = args;
+    const paymentService = new PaymentService(this.db);
+    const payment = await paymentService.getPayment(paymentId);
+    if (!payment || !payment.orderId) return;
+
+    const cleanEventType = eventType?.replace(/^(payment|order)\./, '') || '';
+    const internalStatus = mapProviderStatus(providerCode, cleanEventType);
+    const storeId = payment.storeId;
+
+    // Look up tenant for the outbox event payload
+    const [store] = await this.db
+      .select({ tenantId: s.stores.tenantId })
+      .from(s.stores)
+      .where(eq(s.stores.id, storeId))
+      .limit(1);
+    const tenantId = store?.tenantId ?? 0;
+
+    await this.db.transaction(async (tx) => {
+      const txPaymentService = new PaymentService(tx as any);
+      const txOrdersService = new OrdersService(tx as any);
+      const txWallet = new WalletLedger(tx as any);
+      const txOutbox = new WebhookOutboxService(tx as any);
+      const txNotif = new NotificationService(tx as any);
+      const txBilling = new StoreBillingSettingsService(tx as any);
+
+      if (internalStatus === 'paid' && payment.status !== 'paid') {
+        await txOrdersService.updatePaymentStatus(storeId, payment.orderId, 'paid', Number(payment.amount));
+        await txOrdersService.changeStatus(storeId, payment.orderId, 'confirmed');
+
+        await txWallet.recordEntry({
+          storeId, type: 'sale', direction: 'credit',
+          amount: Number(payment.amount),
+          referenceType: 'order', referenceId: payment.orderId,
+          description: `Order payment via ${providerCode}`,
+          status: 'available',
+        });
+
+        // TASK-0030: snapshot the platform-fee policy onto
+        // the fee entry. Same path as checkout.ts — read
+        // the policy, calc the fee, and check idempotency
+        // before recording. The (rate, fixed, source) tuple
+        // is the immutable proof of which policy produced
+        // this amount.
+        const platformPolicy = await txBilling.getPlatformFeePolicy(storeId);
+        const platformFee = calcPlatformFee(Number(payment.amount), platformPolicy);
+        if (platformFee > 0) {
+          const alreadyCharged = await txWallet.hasPlatformFeeForOrder(storeId, payment.orderId);
+          if (!alreadyCharged) {
+            await txWallet.recordEntry({
+              storeId, type: 'platform_fee', direction: 'debit',
+              amount: platformFee,
+              referenceType: 'order', referenceId: payment.orderId,
+              description: `رسوم منصة Haa (${describePlatformFeePolicy(platformPolicy)}) للطلب عبر ${providerCode}`,
+              status: 'available',
+              feeRatePct: platformPolicy.pct ?? null,
+              feeFixed: platformPolicy.fixed ?? null,
+              feeSource: 'platform_policy',
+              metadata: {
+                orderTotal: Number(payment.amount),
+                platformFeeMode: platformPolicy.mode,
+                platformFeePct: platformPolicy.pct ?? null,
+                platformFeeFixed: platformPolicy.fixed ?? null,
+                platformFeeLabel: describePlatformFeePolicy(platformPolicy),
+                appliedAt: new Date().toISOString(),
+              },
+            });
+          }
+        }
+
+        await txOutbox.recordEvent('payment.succeeded', storeId, tenantId, {
+          paymentId: payment.id, orderId: payment.orderId, provider: providerCode,
+        });
+        await txOutbox.recordEvent('order.paid', storeId, tenantId, {
+          orderId: payment.orderId, paidAmount: Number(payment.amount),
+        });
+        await txNotif.send(storeId, 'payment_success', {
+          orderNumber: payment.orderId.toString(),
+          amount: payment.amount.toString(),
+        });
+      } else if (internalStatus === 'failed') {
+        await txOrdersService.updatePaymentStatus(storeId, payment.orderId, 'failed');
+        await txOutbox.recordEvent('payment.failed', storeId, tenantId, {
+          paymentId: payment.id, orderId: payment.orderId, provider: providerCode,
+        });
+        await txNotif.send(storeId, 'payment_failed', {
+          orderNumber: payment.orderId.toString(),
+        });
+      } else if (internalStatus === 'refunded' || internalStatus === 'partially_refunded') {
+        await txOrdersService.updatePaymentStatus(
+          storeId,
+          payment.orderId,
+          internalStatus === 'refunded' ? 'refunded' : 'partially_refunded',
+        );
+      }
+    });
+  }
+}
