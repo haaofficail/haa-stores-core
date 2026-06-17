@@ -107,10 +107,17 @@ describe('Checkout wiring — no hardcoded platform fee', () => {
     expect(checkout).not.toMatch(/0\.02 \* 100/);
   });
 
-  it('checkout imports StoreBillingSettingsService and calcPlatformFee', () => {
+  it('checkout imports StoreBillingSettingsService and uses WalletPostingService.postPlatformFee (TASK-0034 sub-item 5)', () => {
+    // After TASK-0034 sub-item 5, the raw calcPlatformFee call moved
+    // into WalletPostingService.postPlatformFee. checkout.ts no longer
+    // imports calcPlatformFee directly — it goes through the service.
+    // The policy is still read from StoreBillingSettingsService, but
+    // the fee calculation is owned by the service.
     const checkout = read('packages/commerce-core/src/checkout.ts');
     expect(checkout).toContain('StoreBillingSettingsService');
-    expect(checkout).toContain('calcPlatformFee');
+    expect(checkout).toContain('txPosting.postPlatformFee');
+    // Should NOT import calcPlatformFee directly anymore
+    expect(checkout).not.toMatch(/import\s*\{[^}]*calcPlatformFee[^}]*\}\s*from\s*['"]@haa\/wallet-core['"]/);
   });
 
   it('checkout records the fee-snapshot fields (feeRatePct, feeFixed, feeSource)', () => {
@@ -125,16 +132,22 @@ describe('Checkout wiring — no hardcoded platform fee', () => {
     expect(checkout).toContain('txBilling.getPlatformFeePolicy(storeId)');
   });
 
-  it('webhook payment-success path also reads the policy (not hardcoded)', () => {
+  it('webhook payment-success path also reads the policy via the service (not hardcoded, not raw calcPlatformFee)', () => {
     // As of QP5 Route Migration 18/24, the webhook route
     // is a thin transport shell. The platform-fee logic
     // lives in PaymentWebhookService (commerce-core). The
     // wiring guarantee (TASK-0030) is preserved if the
-    // service reads the policy + calls calcPlatformFee, not
-    // hardcoded constants.
+    // service reads the policy + uses the posting service,
+    // not hardcoded constants.
+    // After TASK-0034 sub-item 5, calcPlatformFee is no
+    // longer called directly in this file — the
+    // WalletPostingService.postPlatformFee owns the
+    // calculation. So we assert the service is used and
+    // the raw calcPlatformFee import is gone.
     const svc = read('packages/commerce-core/src/payment-webhook-service.ts');
     expect(svc).toContain('StoreBillingSettingsService');
-    expect(svc).toContain('calcPlatformFee');
+    expect(svc).toContain('txPosting.postPlatformFee');
+    expect(svc).not.toMatch(/import\s*\{[^}]*calcPlatformFee[^}]*\}\s*from\s*['"]@haa\/wallet-core['"]/);
     expect(svc).not.toMatch(/0\.02 \* 100/);
   });
 });
