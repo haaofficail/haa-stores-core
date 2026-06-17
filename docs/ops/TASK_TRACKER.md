@@ -1761,6 +1761,48 @@
 - **Status:** Done (7 of 8 sub-items shipped across Sessions #3+#4+#5; sub-item 8 = per-tenant VAT_RATE explicitly deferred to ZATCA session; 5 live-deploy-readiness docs shipped as Session #5 deliverable)
 - **Created:** 2026-06-17
 - **Updated:** 2026-06-17 (Session #5 closure)
+
+---
+
+### TASK-0036: ZATCA E-Invoicing Phase 1+2 (الفوترة الإلكترونية)
+
+- **Type:** Compliance / Feature / Architecture
+- **Priority:** P1 High (ZATCA Phase 2 mandatory from 2023-01-01 for residents > SAR 40M revenue)
+- **Status:** Planning (Roadmap drafted in `docs/ZATCA_ROADMAP.md`)
+- **Created:** 2026-06-17
+- **Updated:** 2026-06-17
+- **Original Request:** TASK-0035 sub-item 8 deferred to ZATCA session; expanded to full ZATCA e-invoicing roadmap in `docs/ZATCA_ROADMAP.md` after owner directive.
+- **Problem:** (1) ZATCA mandates e-invoicing (FATOORAH) for B2B and B2C transactions in Saudi Arabia; Phase 1 (Generation) mandatory since 2021-12-04; Phase 2 (Integration) mandatory since 2023-01-01 for high-revenue taxpayers and expanding yearly. (2) Each tenant needs their own VAT configuration (per-tenant VAT_RATE) to support different CRs and VAT exemptions. (3) Customers expect PDF receipts with QR code. (4) Currently we generate plain order numbers but no e-invoices; ZATCA integration requires CSR/CSID management, hash chaining, real-time clearance (B2B), and batch reporting (B2C).
+- **Goal:** (1) Per-tenant VAT configuration. (2) Generate ZATCA-compliant e-invoices (XML UBL 2.1 + JSON custom + QR + hash chain + CSID). (3) Integrate with ZATCA FATOORAH APIs for real-time clearance (B2B) + batch reporting (B2C). (4) Deliver professional PDF receipts.
+- **Scope (5 sub-items, ~3.5 weeks of focused engineering):**
+  1. ⏳ **Per-tenant VAT configuration** (~4.5 days) — prerequisite for everything. Schema migrations 0055 + 0056 (`store_vat_settings`, `products.vatRateOverride`, `products.vatCategory`); update `CheckoutService` to read per-store VAT; update `WalletPostingService.postPlatformFee` to use per-store rate; merchant + admin UI for VAT settings; product VAT override UI.
+  2. ⏳ **ZATCA Phase 1 — Generation** (~6.5 days) — new `invoices` + `invoice_line_items` + `invoice_counters` tables (migration 0057); new `ZatcaInvoiceService` with hash (SHA-256) + QR TLV + XML (UBL 2.1) + JSON (ZATCA custom) + counter + hash chaining; credit note support; hook into `CheckoutService.confirm` after order finalization; invoice download endpoint; merchant dashboard UI for invoice list + cancel; admin dashboard UI for all invoices.
+  3. ⏳ **Receipt PDF** (~3.5 days) — HTML template with RTL Arabic + English + tenant branding; Puppeteer integration; store in Cloudflare R2; authenticated download endpoint.
+  4. ⏳ **Retention & Audit** (~2 days) — 6-year retention job; invoice-specific audit logging; separate encrypted backup policy.
+  5. ⏳ **ZATCA Phase 2 — Integration** (~10 days) — `ZatcaIntegrationService` with CSR generation + CSID storage (encrypted) + renewal; real-time clearance endpoint (B2B sync); batch reporting job (B2C async); retry queue with exponential backoff; webhook handler; admin UI for CSID management; sandbox testing + production validation.
+- **Out of Scope (Session #7+):** B2G (business-to-government) invoices (different spec); cross-border invoices with non-Saudia jurisdictions; invoice OCR for paper invoices; invoice factoring; deferred tax accounting.
+- **Affected Areas:** `packages/db/src/schema/` (new tables), `packages/commerce-core/src/` (new services), `apps/api/src/routes/` (new endpoints), `apps/storefront/` (invoice download UI), `apps/merchant-dashboard/` (invoice list + cancel), `apps/admin-dashboard/` (admin invoice oversight), `docs/ZATCA_ROADMAP.md` (this roadmap).
+- **Skills Required:** plan-mode, test-driven-development, verification-before-completion, systematic-debugging, requesting-code-review.
+- **Skills Used:** plan-mode, verification-before-completion (roadmap drafted).
+- **Acceptance Criteria:**
+  - [ ] Sub-item 1: per-tenant VAT config deployed + TDD tests pass
+  - [ ] Sub-item 2: e-invoice generation working (verified with ZATCA QR reader) + TDD tests pass
+  - [ ] Sub-item 3: receipt PDF renders correctly with QR + branding
+  - [ ] Sub-item 4: retention job runs without breaking existing orders
+  - [ ] Sub-item 5: ZATCA sandbox validation passes; production validation passes with test invoice
+  - [ ] No regressions to TASK-0034 / TASK-0035 work
+  - [ ] `pnpm preflight` clean throughout; full suite passes (target 2470+, +77 from TASK-0035 baseline 2393)
+- **Test Plan:** Per sub-item: TDD red→green, ZATCA sandbox integration tests for sub-items 2+5, manual review with sample invoices, sandbox-then-production validation flow.
+- **Test Results:** Sub-items all ⏳ (planning phase).
+- **Risks:** (a) ZATCA spec changes (mitigation: abstract behind `ZatcaInvoiceService` interface); (b) multi-tenant complexity (mitigation: tenant-scoped counters + isolated hash chains); (c) PDF generation slow (mitigation: queue + CDN cache); (d) CSID renewal failure (mitigation: 30-day expiry alerts); (e) ZATCA sandbox instability (mitigation: extensive sandbox testing before any production integration).
+- **Open Owner Questions:** Q1 (per-merchant CSID vs platform CSID) — recommend per-merchant; Q2 (real-time vs batch by default) — recommend real-time with queue; Q3 (cross-border VAT) — recommend 0% with manual flag; Q4 (credit note counter) — recommend separate counter; Q5 (offline mode) — recommend issue with `zatcaStatus='pending'`, batch report when online; Q6 (sandbox account) — recommend requesting from ZATCA portal (requires Saudi CR).
+- **Related Issues:** None yet.
+- **Related Decisions:** None yet (will record DECISION in DECISIONS.md at sub-item 1 kickoff after owner approves roadmap).
+- **Status History:**
+  - Requested: 2026-06-17
+  - Planning: 2026-06-17 (roadmap drafted; awaiting owner approval)
+  - **Owner next action:** Approve `docs/ZATCA_ROADMAP.md` + register sub-item 1 to start (per-tenant VAT config, ~4.5 days).
+  - Roadmap cross-referenced from: `docs/SAUDI_COMPLIANCE_CHECKLIST.md` §3 (ZATCA status updated)
 - **Original Request:** نفّذ التوصية (owner directive 2026-06-17) — Option A from the 4-session roadmap: 3DS flow (SAMA mandatory) + VAT-aware pricing.
 - **Problem:** (1) SAMA has mandated 3-D Secure for online card transactions in Saudi Arabia since 2021; without it the live deployment is rejected. (2) Merchants and customers see prices without VAT clarity, but ZATCA requires 15% VAT to be visible on tax invoices. (3) The session started with 21 uncommitted files (theme refactor + 3 new pages + UI updates + 3DS scaffold) — needs triage.
 - **Goal:** (1) Implement 3DS challenge flow for card payments (Moyasar primary, Geidea secondary) with proper status transitions. (2) Show VAT in product display + checkout summary at the platform-default 15% rate. (3) Land 3DS scaffold commit and stash the rest of the WIP safely.

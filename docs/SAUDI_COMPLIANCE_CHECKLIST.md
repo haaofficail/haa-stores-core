@@ -147,13 +147,18 @@
 
 | Requirement | Status | Reference |
 |-------------|--------|-----------|
-| Phase 1: Generate e-invoice (XML/JSON) | ⏳ | Deferred to ZATCA planning session |
-| Phase 2: Integration with ZATCA platform | ⏳ | Deferred |
-| QR code on invoice | ⏳ | Deferred |
-| Cryptographic stamp (CSID) | ⏳ | Deferred |
-| Hash chaining | ⏳ | Deferred |
+| Phase 1: Generate e-invoice (XML/JSON) | ⏳ | **Roadmap drafted** in `docs/ZATCA_ROADMAP.md` §1 (~6.5 days engineering) |
+| Phase 2: Integration with ZATCA platform | ⏳ | **Roadmap drafted** in `docs/ZATCA_ROADMAP.md` §2 (~10 days engineering) |
+| QR code on invoice | ⏳ | TLV-encoded QR per ZATCA spec; covered in roadmap §1.1.2 |
+| Cryptographic stamp (CSID) | ⏳ | Per-tenant CSID; covered in roadmap §2.2.1 |
+| Hash chaining | ⏳ | SHA-256 chain per tenant; covered in roadmap §1.2.1 |
+| Receipt PDF generation | ⏳ | Puppeteer + R2 storage; covered in roadmap §4 (~3.5 days) |
+| Per-tenant VAT configuration | ⏳ | Prerequisite for ZATCA; covered in roadmap §3 (~4.5 days) |
+| Retention (6 years per ZATCA) | ⏳ | Covered in roadmap §5 (~2 days) |
 
-> **Note:** ZATCA Phase 2 (integration) was mandatory from 2023-01-01 for most businesses. We are deferring this to a dedicated planning session (not in MVP scope).
+> **Roadmap:** Full ZATCA delivery plan with effort estimates, sequencing, risks, and open owner questions in **`docs/ZATCA_ROADMAP.md`** (~3.5 weeks total, 5 sub-tasks). Awaiting owner approval + TASK-0036 registration.
+>
+> **Note:** ZATCA Phase 2 (integration) was mandatory from 2023-01-01 for residents with revenue > SAR 40M, expanding yearly. We will defer implementation until owner approves roadmap and registers TASK-0036.
 
 ### 3.4 Per-Tenant VAT Configuration
 
