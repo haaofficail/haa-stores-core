@@ -1931,7 +1931,7 @@
 
 - **Type:** Support/Ops / Compliance / Documentation
 - **Priority:** P0 Critical (these items block commercial launch — owner action items, not engineering)
-- **Status:** Open (tracking 10 items; 0 closed as of 2026-06-17)
+- **Status:** Open (tracking 10 items; 0 closed as of 2026-06-17) — **10/10 engineering briefs shipped in Session U** (`docs/ops/OWNER_ACTION_G1_CR.md` through `G10_DR_PLAN.md`). Migration 0061 adds 26 compliance columns to `tenants` table.
 - **Created:** 2026-06-17
 - **Updated:** 2026-06-17
 - **Original Request:** Identified during TASK-0035 (3DS + VAT) Session #5 closure as the residual gap between engineering 100% and overall ~75% live-deploy readiness. Formally registered here so future sessions have a single source of truth.
@@ -1941,16 +1941,18 @@
 
 | # | Item | Owner action | Source | Blocks | Status |
 |---|---|---|---|---|---|
-| **G1** | **Commercial Registration (CR)** | Register company with MoCI | `SAUDI_COMPLIANCE_CHECKLIST.md:178` | TASK-0044 (Phase 5) | ⏳ Open |
-| **G2** | **VAT Registration** | Register with ZATCA; obtain VAT certificate | `SAUDI_COMPLIANCE_CHECKLIST.md:134` | TASK-0044 (Phase 5) + TASK-0036 (ZATCA Phase 2) | ⏳ Open |
-| **G3** | **E-Commerce License** | Apply for online sales license from MoCI | `SAUDI_COMPLIANCE_CHECKLIST.md:179` | TASK-0044 (Phase 5) | ⏳ Open |
-| **G4** | **DPO Appointment** | Hire/appoint Data Protection Officer (PDPL Article 22); publish contact | `SAUDI_COMPLIANCE_CHECKLIST.md:97-98` | TASK-0042 (Phase 3.4) + TASK-0044 (Phase 5) | ⏳ Open |
-| **G5** | **Trademark Registration** | Register "هاء متاجر" mark with SAIP | `SAUDI_COMPLIANCE_CHECKLIST.md:280` | TASK-0044 (Phase 5) | ⏳ Open |
-| **G6** | **PCI-DSS ASV Scan** | Engage approved ASV vendor (Approved Scanning Vendor) | `SAUDI_COMPLIANCE_CHECKLIST.md:43` | TASK-0044 (Phase 5) + TASK-0045 (Phase 6) | ⏳ Open |
-| **G7** | **Penetration Test** | Engage CREST-certified pen-test firm (separate from ASV) | `MARKETPLACE_HARDENING_PLAN.md` Phase 6 | TASK-0045 (Phase 6) | ⏳ Open |
-| **G8** | **KSA Hosting Decision** | Decide: launch on Dubai-now vs wait-for-KSA-region | `SAUDI_COMPLIANCE_CHECKLIST.md:208` | TASK-0044 (Phase 5) | ⏳ Open |
-| **G9** | **Tabby DPA** | Sign Data Processing Agreement with Tabby (UAE cross-border) | `SAUDI_COMPLIANCE_CHECKLIST.md:96` | TASK-0044 (Phase 5) | ⏳ Open |
-| **G10** | **Disaster Recovery Plan** | Document + test DR procedure (NCA requirement) | NCA (National Cybersecurity Authority) | TASK-0044 (Phase 5) + TASK-0045 (Phase 6) | ⏳ Open |
+| **G1** | **Commercial Registration (CR)** | Register company with MoCI | `SAUDI_COMPLIANCE_CHECKLIST.md:178` + `OWNER_ACTION_G1_CR.md` | TASK-0044 (Phase 5) | ⏳ Open 📄 |
+| **G2** | **VAT Registration** | Register with ZATCA; obtain VAT certificate | `SAUDI_COMPLIANCE_CHECKLIST.md:134` + `OWNER_ACTION_G2_VAT.md` | TASK-0044 (Phase 5) + TASK-0036 (ZATCA Phase 2) | ⏳ Open 📄 |
+| **G3** | **E-Commerce License** | Apply for online sales license from MoCI | `SAUDI_COMPLIANCE_CHECKLIST.md:179` + `OWNER_ACTION_G3_ECOMMERCE_LICENSE.md` | TASK-0044 (Phase 5) | ⏳ Open 📄 |
+| **G4** | **DPO Appointment** | Hire/appoint Data Protection Officer (PDPL Article 22); publish contact | `SAUDI_COMPLIANCE_CHECKLIST.md:97-98` + `OWNER_ACTION_G4_DPO.md` | TASK-0042 (Phase 3.4) + TASK-0044 (Phase 5) | ⏳ Open 📄 |
+| **G5** | **Trademark Registration** | Register "هاء متاجر" mark with SAIP | `SAUDI_COMPLIANCE_CHECKLIST.md:280` + `OWNER_ACTION_G5_TRADEMARK.md` | TASK-0044 (Phase 5) | ⏳ Open 📄 |
+| **G6** | **PCI-DSS ASV Scan** | Engage approved ASV vendor (Approved Scanning Vendor) | `SAUDI_COMPLIANCE_CHECKLIST.md:43` + `OWNER_ACTION_G6_PCI_ASV.md` | TASK-0044 (Phase 5) + TASK-0045 (Phase 6) | ⏳ Open 📄 |
+| **G7** | **Penetration Test** | Engage CREST-certified pen-test firm (separate from ASV) | `MARKETPLACE_HARDENING_PLAN.md` Phase 6 + `OWNER_ACTION_G7_PENTEST.md` + `PEN_TEST_VENDOR_SHORTLIST.md` | TASK-0045 (Phase 6) | ⏳ Open 📄 |
+| **G8** | **KSA Hosting Decision** | Decide: launch on Dubai-now vs wait-for-KSA-region | `SAUDI_COMPLIANCE_CHECKLIST.md:208` + `OWNER_ACTION_G8_KSA_HOSTING.md` | TASK-0044 (Phase 5) | ⏳ Open 📄 |
+| **G9** | **Tabby DPA** | Sign Data Processing Agreement with Tabby (UAE cross-border) | `SAUDI_COMPLIANCE_CHECKLIST.md:96` + `OWNER_ACTION_G9_TABBY_DPA.md` | TASK-0044 (Phase 5) | ⏳ Open 📄 |
+| **G10** | **Disaster Recovery Plan** | Document + test DR procedure (NCA requirement) | NCA (National Cybersecurity Authority) + `OWNER_ACTION_G10_DR_PLAN.md` | TASK-0044 (Phase 5) + TASK-0045 (Phase 6) | ⏳ Open 📄 |
+
+> 📄 = engineering brief in `docs/ops/OWNER_ACTION_G*.md` (Session U). Each brief contains: why-it-matters, prerequisites, step-by-step application, cost, timeline, engineering integration effort, common mistakes, references. Tenant schema columns added in migration 0061 to track compliance status per item.
 
 - **Engineering support (minimal, on-demand):**
   - Provide deploy access to test environment for vendor scans (G6, G7)

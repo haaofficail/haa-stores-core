@@ -35,7 +35,7 @@ For Haa: required by NCA (National Cybersecurity Authority) for SaaS providers s
 ### §2 Backup strategy
 
 - **Database backups:**
-  - Daily full backup → S3-compatible storage (e.g., Backblaze B2, Wasabi)
+  - Daily full backup → S3-compatible storage (Backblaze B2, Wasabi)
   - Hourly incremental → same storage
   - Retention: 30 days daily, 7 years for compliance audit
   - Encryption: AES-256 at rest, TLS in transit
