@@ -2013,6 +2013,7 @@
 ### TASK-0040: Marketplace Hardening — Phase 1 (Self-Contained P0s: demo isolation + accessToken + audit log)
 
 - **Type:** Bug Fix / Security / Compliance / Refactor
+- **Status:** Done (3 of 3 tracks shipped 2026-06-17 — Sessions H+I+J; P0-4 + P0-3 + P0-5 closed; 19 new tests across 3 test files; 1 migration 0058)
 - **Priority:** P0 Critical (closes 3 of 6 P0 launch blockers)
 - **Status:** Open (awaiting owner GO; Phase 0 complete 2026-06-17)
 - **Created:** 2026-06-17
