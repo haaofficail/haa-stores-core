@@ -1758,21 +1758,23 @@
 
 - **Type:** Feature / Architecture / Compliance / UX/UI Polish
 - **Priority:** P1 High
-- **Status:** In Progress (4 of 6 sub-items shipped in Session #3 first pass; sub-items 5+6 follow-up tracked)
+- **Status:** In Progress (5 of 6 sub-items shipped in Sessions #3+#4; sub-items 5+7 done, per-tenant VAT deferred to ZATCA session)
 - **Created:** 2026-06-17
-- **Updated:** 2026-06-17
+- **Updated:** 2026-06-17 (Session #4 first-pass closure)
 - **Original Request:** نفّذ التوصية (owner directive 2026-06-17) — Option A from the 4-session roadmap: 3DS flow (SAMA mandatory) + VAT-aware pricing.
 - **Problem:** (1) SAMA has mandated 3-D Secure for online card transactions in Saudi Arabia since 2021; without it the live deployment is rejected. (2) Merchants and customers see prices without VAT clarity, but ZATCA requires 15% VAT to be visible on tax invoices. (3) The session started with 21 uncommitted files (theme refactor + 3 new pages + UI updates + 3DS scaffold) — needs triage.
 - **Goal:** (1) Implement 3DS challenge flow for card payments (Moyasar primary, Geidea secondary) with proper status transitions. (2) Show VAT in product display + checkout summary at the platform-default 15% rate. (3) Land 3DS scaffold commit and stash the rest of the WIP safely.
-- **Scope (Session #3 first pass — 4 of 6 sub-items SHIPPED; 2 deferred to Session #4+):**
+- **Scope (Session #3 first pass + Session #4 — 5 of 6 sub-items SHIPPED; sub-item 8 = per-tenant VAT deferred to ZATCA session):**
   1. ✅ **3DS scaffold commit (commit f097cc61)** — `requires_3ds` in `InternalPaymentStatus` union + `supports3DS: boolean` in `PaymentProviderCapabilities` + provider capability flags (moyasar/geidea/fake=true, tabby/tamara=false). Typecheck now passes for `@haa/payment-providers` after rebuilding `@haa/shared` dist.
   2. ✅ **WIP triage** — kept the 3DS scaffold (useful for sub-items 4-6), reverted `tenants.ts` schema (out of scope), stashed theme refactor + 3 new pages (PlatformContact, PlatformFaq) + admin/auth UI updates as `stash@{0}` on `feature/phase-9-cod-fee-policy`.
   3. ✅ **3DS test design (TDD red → green, commit 5bdaf1f6)** — `tests/3ds-flow.test.ts` with 23 tests covering: status mapping (5), capability flags (6), `createPaymentIntent` 3DS contract (5), `handleWebhook` 3DS contract (3), storefront checkout 3DS handling (2), fake provider parity (1), idempotency regression (1).
   4. ✅ **3DS flow implementation (commit 5bdaf1f6)** — Moyasar `createPaymentIntent` reads `source.transaction_url` and returns `redirectUrl` + sets local status to `requires_3ds`; `mapProviderStatus` recognizes `'requires_3ds' | '3ds_required'`; `handleWebhook` adds `'authorized'` to the terminal-status whitelist and acknowledges `payment.requires_3ds` without changing the existing status. Storefront checkout route has 3DS documentation block. Capability flag constants re-exported from `@haa/commerce-core`.
-  5. ⏳ **3DS flow wiring (DEFERRED to Session #4)** — storefront `Checkout.tsx` redirect handling + 3DS callback endpoint. The provider layer is now production-ready; only the UI wiring remains. Will be a focused sub-item with E2E tests using the `fake` provider.
+  5. ✅ **3DS storefront wiring (commit 7e8541f0, Session #4)** — Fake provider supports `fake_3ds_challenge` payment method (returns a local `/fake-3ds-challenge` redirect URL); `CheckoutService.confirm` captures the redirectUrl from the provider and surfaces it in the result; new `awaiting_3ds` OrderStatus + `requires_3ds` PaymentStatus in the shared types; API `/confirm` forwards `redirectUrl` to the storefront; new API endpoint `POST /:slug/checkout/3ds-callback` for post-challenge verification; storefront `Checkout.tsx` redirects the customer to the 3DS challenge URL when the confirm result indicates 3DS; `CheckoutConfirm` type exposes `paymentStatus` + `redirectUrl`. 11/11 new tests in `tests/3ds-storefront-flow.test.ts`.
   6. ✅ **VAT-aware pricing (commit 3b6fea97)** — `packages/commerce-core/src/vat.ts` with 6 helpers (`priceIncVat`, `priceExVat`, `vatAmount`, `formatVatLine`, `formatPriceIncVatLabel`, `isValidVatRate`) + `DEFAULT_VAT_RATE = 0.15` (ZATCA standard); `VAT_RATE` env var in `apps/api/src/env.ts` with boot-time validation; 25 tests in `tests/vat.test.ts` (RED → GREEN); storefront `ProductCard.tsx` shows a subtle inline "شامل الضريبة" badge in emerald via the new `showVatBadge` prop on `ProductPriceBlock`. RTL-aware (`ms-2` margin-inline-start).
-- **Out of Scope (Session #4+):** ZATCA e-invoicing (Phase 2, separate session with planning), 3DS for Tabby/Tamara (they handle their own auth), per-tenant VAT_RATE (currently global env), per-tenant primaryColor (stashed as part of theme refactor), checkout OrderSummary VAT line (separate sub-item), PlatformContact/PlatformFaq pages (stashed, scope creep), Drizzle snapshot chain fix (0050-0053 missing snapshots, known gotcha documented in `memory/drizzle-migration-snapshots.md`).
-- **Affected Areas:** `packages/shared`, `packages/payment-providers`, `packages/commerce-core`, `apps/api`, `apps/api/src/env.ts`, `apps/storefront/src/components/product-card/`, `tests/`.
+  7. ✅ **Checkout VAT line (commit a9418342, Session #4)** — Checkout.tsx sidebar OrderSummary now renders subtotal (ex-VAT) + VAT line (via `formatVatLine`) + total (inc-VAT) + VAT note ("شامل ضريبة القيمة المضافة (15%) — فاتورة ضريبية مبسطة"). Imports from scoped `@haa/commerce-core/vat` subpath. Uses `i18n.language` to render Arabic or English VAT line. 5/5 tests in `tests/checkout-vat-line.test.ts`.
+  8. ⏳ **Per-tenant VAT_RATE (DEFERRED to ZATCA session)** — Currently global env (`VAT_RATE`). Per-tenant configuration (admin UI + DB column + per-store pricing) will land with the ZATCA e-invoicing session.
+- **Out of Scope (Session #5+):** ZATCA e-invoicing (Phase 2, separate session with planning), 3DS for Tabby/Tamara (they handle their own auth), per-tenant VAT_RATE (lands with ZATCA), the actual fake-3ds-challenge page UI (dev-only succeed/fail buttons — contract is in place; UI is a small follow-up), receipt PDF VAT breakdown (ZATCA), Drizzle snapshot chain fix (0050-0053 missing snapshots, known gotcha documented in `memory/drizzle-migration-snapshots.md`).
+- **Affected Areas:** `packages/shared`, `packages/payment-providers`, `packages/commerce-core`, `apps/api`, `apps/api/src/env.ts`, `apps/storefront/src/components/product-card/`, `apps/storefront/src/pages/Checkout.tsx`, `apps/storefront/tsconfig.json`, `tests/`.
 - **Skills Required:** plan-mode, test-driven-development, verification-before-completion, systematic-debugging, requesting-code-review.
 - **Skills Used:** plan-mode, test-driven-development, verification-before-completion, systematic-debugging.
 - **Acceptance Criteria:**
@@ -1780,20 +1782,26 @@
   - [x] Sub-item 2: working tree clean + preflight passing + WIP safely stashed as `stash@{0}`
   - [x] Sub-item 3: `tests/3ds-flow.test.ts` written first, RED (25 fail), then GREEN (23/23 pass)
   - [x] Sub-item 4: Moyasar `createPaymentIntent` returns `redirectUrl` when 3DS required; `handleWebhook` consumes 3DS callback event; status mapping recognizes `requires_3ds`; capability flags exported
-  - [ ] Sub-item 5: storefront `Checkout.tsx` 3DS redirect + 3DS callback endpoint (deferred to Session #4)
-  - [x] Sub-item 6: VAT helpers implemented + tests; `VAT_RATE=0.15` default; storefront product card shows "شامل الضريبة"
-  - [x] Full suite passes 2377 (+48 from Session #2 baseline 2329: 3DS=23 + VAT=25); 4 pre-existing baseline failures unchanged
+  - [x] Sub-item 5: Fake provider `fake_3ds_challenge` + CheckoutService.redirectUrl + API 3DS callback + storefront Checkout redirect (commit 7e8541f0)
+  - [x] Sub-item 6: VAT helpers + env override + product card badge (commit 3b6fea97)
+  - [x] Sub-item 7: Checkout sidebar subtotal + VAT line via formatVatLine (commit a9418342)
+  - [ ] Sub-item 8: Per-tenant VAT_RATE (lands with ZATCA)
+  - [x] Full suite passes 2393 (+64 from Session #2 baseline 2329: 3DS=23 + 3DS-storefront=11 + VAT=25 + VAT-line=5); 4 pre-existing baseline failures unchanged
   - [x] `pnpm preflight` clean; `pnpm typecheck` on all touched packages clean
 - **Test Plan:** Per sub-item: TDD red→green, `pnpm typecheck` per package, full `pnpm test` after each sub-item, `pnpm preflight` after each sub-item.
 - **Test Results:**
   - **Sub-item 1 (f097cc61):** 0 new tests (type/scaffold only); preflight typecheck now passes for `@haa/payment-providers`.
   - **Sub-item 3+4 (5bdaf1f6):** `pnpm vitest run tests/3ds-flow.test.ts` → 23/23 passing (was 12 RED → 6 RED → 0 RED across 3 cycles). Full suite: 2352 passing (+23).
   - **Sub-item 6 (3b6fea97):** `pnpm vitest run tests/vat.test.ts` → 25/25 passing (was 25 RED → 25 GREEN). Full suite: 2377 passing (+25). Storefront typecheck clean.
-  - **Session #3 cumulative:** 2377 passing (+48); 0 new regressions; preflight clean; working tree clean.
-- **Risks:** (a) Drizzle snapshot chain is broken for 0050-0053 (documented in `memory/drizzle-migration-snapshots.md`) — out of scope to fix now, will use psql for any fresh-DB verification. (b) 3DS callback URL must be added to Moyasar dashboard before live deploy — owner action item. (c) The `VAT_RATE` env override is global; per-tenant configuration will land with ZATCA. (d) The 3DS storefront UI wiring (sub-item 5) is the only open piece for a complete 3DS experience — currently the provider layer is production-ready but the customer-facing redirect flow needs a follow-up.
+  - **Sub-item 5 (7e8541f0, Session #4):** `pnpm vitest run tests/3ds-storefront-flow.test.ts` → 11/11 passing (RED → GREEN). Full suite: 2388 passing (+11).
+  - **Sub-item 7 (a9418342, Session #4):** `pnpm vitest run tests/checkout-vat-line.test.ts` → 5/5 passing (3 RED → 5 GREEN). Full suite: 2393 passing (+5). Storefront typecheck clean.
+  - **Session #3+#4 cumulative:** 2393 passing (+64); 0 new regressions; preflight clean; working tree clean.
+- **Risks:** (a) Drizzle snapshot chain is broken for 0050-0053 (documented in `memory/drizzle-migration-snapshots.md`) — out of scope to fix now, will use psql for any fresh-DB verification. (b) 3DS callback URL must be added to Moyasar dashboard before live deploy — owner action item. (c) The `VAT_RATE` env override is global; per-tenant configuration will land with ZATCA. (d) The fake-3ds-challenge UI page (a small dev-only succeed/fail page) is still TBD; the API contract and storefront redirect are in place.
 - **Related Issues:** None yet.
-- **Related Decisions:** Will record DECISION for SAMA 3DS mandate + VAT rate source in DECISIONS.md at Session #3 closure (deferred to allow time for owner review of the 3DS approach).
+- **Related Decisions:** Will record DECISION for SAMA 3DS mandate + VAT rate source in DECISIONS.md at Session #5 closure (allow time for owner review of the 3DS approach + ZATCA planning).
 - **Status History:**
   - Requested: 2026-06-17
-  - In Progress: 2026-06-17 (sub-items 1+2+3+4+6 done; sub-item 5 deferred to Session #4)
-  - WIP at session start: 21 uncommitted files (theme refactor + 3 new pages + 3DS scaffold + UI updates). Triaged: 2 source files committed (3DS scaffold + 3DS status type), 18 source files stashed (theme + 3 new pages + UI), 1 source file reverted (`tenants.ts` primaryColor). Net commits: 4. Net stashed: stash@{0}.
+  - In Progress: 2026-06-17 (sub-items 1+2+3+4+5+6+7 done; sub-item 8 deferred to ZATCA session)
+  - Session #3 (08:04-08:30): 4 commits (3DS scaffold, TASK-0035 registration, 3DS contract, VAT helpers)
+  - Session #4 (08:34-13:22, with ~4.5h break): 2 commits (3DS storefront wiring, checkout VAT line). Owner did 4 parallel commits during break (theme primary color unification, brand logo API, terms route update, runtime color refresh).
+  - WIP at session start: 21 uncommitted files. Triaged: 2 source files committed (3DS scaffold), 18 source files stashed as `stash@{0}`, 1 source file reverted (`tenants.ts` primaryColor). Net commits: 10 (6 assistant + 4 owner). Net stashed: stash@{0}.
