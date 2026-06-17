@@ -234,7 +234,7 @@ export function SignupPage() {
 
             <p className="text-center text-xs text-text-muted">
               {t('auth.signup.terms', 'بالمتابعة، توافق على')}{' '}
-              <a href="/terms" className="text-primary hover:underline">
+              <a href="/legal/terms" className="text-primary hover:underline">
                 {t('auth.signup.termsLink', 'الشروط')}
               </a>
               {' ' + t('auth.signup.privacyLink', 'والخصوصية').replace(/^وال/, 'وال')}
