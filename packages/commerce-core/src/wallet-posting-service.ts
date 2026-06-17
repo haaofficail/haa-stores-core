@@ -29,7 +29,14 @@
 //     instance dedup is the job of a future DB-level constraint.
 
 import { createDbClient, DbClient } from '@haa/db';
-import { calcCodFee, CodFeePolicy, describeCodFeePolicy } from '@haa/wallet-core';
+import {
+  calcCodFee,
+  CodFeePolicy,
+  describeCodFeePolicy,
+  calcPlatformFee,
+  PlatformFeePolicy,
+  describePlatformFeePolicy,
+} from '@haa/wallet-core';
 
 export type DedupKey = {
   storeId: number;
@@ -192,8 +199,53 @@ export class WalletPostingService {
   // surface so the type system and call sites can be designed against
   // it without YAGNI.
 
-  postPlatformFee(_input: unknown): Promise<PostResult> {
-    throw new Error('postPlatformFee not implemented in Session #1; see TASK-0034 (Session #2).');
+  /**
+   * Record a `platform_fee` wallet entry (debit) for an order.
+   * Reads the per-store `PlatformFeePolicy`, calculates the fee, and
+   * snapshots the policy onto the result. Idempotent on
+   * (storeId, orderId, 'platform_fee').
+   *
+   * Resolves audit Finding 1 (no central posting service) for the
+   * platform_fee path. Call sites in `checkout.ts` and
+   * `payment-webhook-service.ts` should use this method instead of
+   * calling `WalletLedger.recordEntry(...)` directly. The migration is
+   * tracked by TASK-0034 sub-item 5.
+   */
+  async postPlatformFee(input: {
+    storeId: number;
+    orderId: number;
+    orderTotal: number;
+    orderNumber: string;
+    policy: PlatformFeePolicy;
+  }): Promise<PostResult> {
+    const key = this.keyOf({
+      storeId: input.storeId,
+      referenceType: 'order',
+      referenceId: input.orderId,
+      type: 'platform_fee',
+    });
+    const existing = this.alreadyPosted(key);
+    if (existing) return { ...existing, dedupHit: true };
+
+    const amount = calcPlatformFee(input.orderTotal, input.policy);
+    // `policySource` indicates whether the calculated fee reflects a
+    // real configured policy (`'fetched'`) or a default-equivalent
+    // (`'default'`). Mode 'none' is treated as default — the merchant
+    // is effectively choosing "no fee", which is the same outcome as
+    // falling back to a 0% policy.
+    const policySource: PolicySource = input.policy.mode === 'none' ? 'default' : 'fetched';
+    const result: PostResult = {
+      amount,
+      entryType: 'platform_fee',
+      dedupHit: false,
+      policySource,
+      policyMode: input.policy.mode,
+      policyPct: input.policy.pct,
+      policyFixed: input.policy.fixed,
+      policyDescription: describePlatformFeePolicy(input.policy),
+    };
+    this.recordPosted(key, result);
+    return result;
   }
   postPayoutDebit(_input: unknown): Promise<PostResult> {
     throw new Error('postPayoutDebit not implemented in Session #1; see TASK-0034 (Session #2).');

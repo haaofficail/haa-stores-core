@@ -120,6 +120,117 @@ describe('WalletPostingService — postCodFee', () => {
   });
 });
 
+describe('WalletPostingService — postPlatformFee', () => {
+  it('returns 0 when policy is disabled (mode=none OR isPlatformFeeEnabled=false)', async () => {
+    const svc = new WalletPostingService({} as any);
+    const result = await svc.postPlatformFee({
+      storeId: 1,
+      orderId: 20,
+      orderTotal: 100,
+      orderNumber: 'ORD-002',
+      policy: { mode: 'none', pct: 0.02, fixed: 0, enabled: true },
+    });
+    expect(result.amount).toBe(0);
+    expect(result.entryType).toBe('platform_fee');
+    expect(result.policySource).toBe('default');
+  });
+
+  it('calculates fee from percentage policy and reports the policy source', async () => {
+    const svc = new WalletPostingService({} as any);
+    const result = await svc.postPlatformFee({
+      storeId: 1,
+      orderId: 20,
+      orderTotal: 100,
+      orderNumber: 'ORD-002',
+      policy: { mode: 'percentage', pct: 0.02, fixed: 0, enabled: true },
+    });
+    expect(result.amount).toBe(2.0);
+    expect(result.policyMode).toBe('percentage');
+    expect(result.policyPct).toBe(0.02);
+  });
+
+  it('calculates fee from fixed policy', async () => {
+    const svc = new WalletPostingService({} as any);
+    const result = await svc.postPlatformFee({
+      storeId: 1,
+      orderId: 20,
+      orderTotal: 100,
+      orderNumber: 'ORD-002',
+      policy: { mode: 'fixed', pct: null, fixed: 5, enabled: true },
+    });
+    expect(result.amount).toBe(5.0);
+  });
+
+  it('handles percentage_plus_fixed (pct + fixed)', async () => {
+    const svc = new WalletPostingService({} as any);
+    const result = await svc.postPlatformFee({
+      storeId: 1,
+      orderId: 20,
+      orderTotal: 100,
+      orderNumber: 'ORD-002',
+      policy: { mode: 'percentage_plus_fixed', pct: 0.02, fixed: 1, enabled: true },
+    });
+    expect(result.amount).toBe(3.0); // 2 + 1
+  });
+
+  it('is idempotent: same dedup key + existing entry → returns existing record (no double-write)', async () => {
+    const svc = new WalletPostingService({} as any);
+    const input = {
+      storeId: 1,
+      orderId: 20,
+      orderTotal: 100,
+      orderNumber: 'ORD-002',
+      policy: { mode: 'percentage', pct: 0.02, fixed: 0, enabled: true } as const,
+    };
+    const a = await svc.postPlatformFee(input);
+    const b = await svc.postPlatformFee(input);
+    expect(a.amount).toBe(2.0);
+    expect(b.amount).toBe(2.0);
+    expect(b.dedupHit).toBe(true);
+    expect(a.dedupHit).toBe(false);
+  });
+
+  it('returns 0 for non-positive order totals', async () => {
+    const svc = new WalletPostingService({} as any);
+    const r = await svc.postPlatformFee({
+      storeId: 1,
+      orderId: 20,
+      orderTotal: 0,
+      orderNumber: 'ORD-002',
+      policy: { mode: 'percentage', pct: 0.02, fixed: 0, enabled: true },
+    });
+    expect(r.amount).toBe(0);
+  });
+
+  it('postPlatformFee and postCodFee are independent (different dedup keys)', async () => {
+    // Both can be posted for the same order — they have different
+    // entry types so they don't dedup-hit each other.
+    const svc = new WalletPostingService({} as any);
+    const codPolicy = { mode: 'percentage', pct: 0.02, fixed: 0, enabled: true } as const;
+    const platformPolicy = { mode: 'percentage', pct: 0.02, fixed: 0, enabled: true } as const;
+    const codResult = await svc.postCodFee({
+      storeId: 1,
+      orderId: 30,
+      orderTotal: 100,
+      orderNumber: 'ORD-003',
+      policy: codPolicy,
+    });
+    const platformResult = await svc.postPlatformFee({
+      storeId: 1,
+      orderId: 30,
+      orderTotal: 100,
+      orderNumber: 'ORD-003',
+      policy: platformPolicy,
+    });
+    expect(codResult.entryType).toBe('cod_fee');
+    expect(platformResult.entryType).toBe('platform_fee');
+    expect(codResult.amount).toBe(2.0);
+    expect(platformResult.amount).toBe(2.0);
+    expect(codResult.dedupHit).toBe(false);
+    expect(platformResult.dedupHit).toBe(false);
+  });
+});
+
 describe('WalletPostingService — postSale', () => {
   it('records a sale credit and returns the amount + entryType', async () => {
     const svc = new WalletPostingService({} as any);
