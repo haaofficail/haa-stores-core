@@ -2043,7 +2043,7 @@
 
 - **Type:** Data/DB / Compliance / Feature
 - **Priority:** P0 Critical (closes 2 of 6 P0 launch blockers; P0-2 + P0-1)
-- **Status:** Open (sequenced AFTER TASK-0040; owner decision needed for migration timing)
+- **Status:** Done (2 of 2 tracks shipped 2026-06-17 — Sessions K+N; P0-2 category blocklist + P0-1 SFDA workflow closed; migration 0059 + 0060; 18 new tests across 2 test files)
 - **Created:** 2026-06-17
 - **Updated:** 2026-06-17
 - **Original Request:** `docs/ops/MARKETPLACE_HARDENING_PLAN.md` §4 (Phase 2, 3 days, sequential).
