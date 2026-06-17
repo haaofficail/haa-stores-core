@@ -21,3 +21,10 @@ export {
   MAX_COD_FEE_PCT,
 } from './cod-fees.js';
 export type { CodFeeMode, CodFeePolicy } from './cod-fees.js';
+export {
+  GATEWAY_FEE_REFUND_POLICIES,
+  DEFAULT_GATEWAY_FEE_REFUND_POLICY,
+  getProviderDefaultRefundPolicy,
+  normalizeGatewayFeeRefundPolicy,
+} from './gateway-fee-refund-policy.js';
+export type { GatewayFeeRefundPolicy } from './gateway-fee-refund-policy.js';
