@@ -25,8 +25,11 @@ const storefrontCheckout = read(storefrontCheckoutPath);
 describe('Storefront Checkout — OrderSummary VAT line (source-grep)', () => {
   it('imports the VAT helpers from @haa/commerce-core', () => {
     // The OrderSummary must use the formatVatLine + priceIncVat helpers
-    // to compute and render the VAT line + total.
-    expect(storefrontCheckout).toMatch(/from '@haa\/commerce-core'/);
+    // to compute and render the VAT line + total. Imports from the
+    // scoped subpath `@haa/commerce-core/vat` are also accepted — the
+    // storefront uses the scoped path to avoid pulling unused locals
+    // from the broader commerce-core src/ into the storefront tsc.
+    expect(storefrontCheckout).toMatch(/from '@haa\/commerce-core(\/vat)?'/);
     expect(storefrontCheckout).toMatch(/formatVatLine|priceIncVat|priceExVat/);
   });
 
