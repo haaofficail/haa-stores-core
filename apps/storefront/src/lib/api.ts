@@ -128,6 +128,10 @@ export interface HaaMarketplaceProduct extends PublicProduct {
     logoUrl: string | null;
     city: string | null;
     isDemoStore?: boolean;
+    // TASK-0038 audit P0-#3: 'متجر موثوق' badge must be backed by
+    // real KYC + business registration. Default to undefined/false.
+    // The backend should only set true after KYC + MoCI verification.
+    kycVerified?: boolean;
   };
   commissionRate: string;
   haaMarketplaceFeatured?: boolean;

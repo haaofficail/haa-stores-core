@@ -60,6 +60,10 @@ function mapProduct(row: any) {
       logoUrl: row.storeLogoUrl,
       city: row.storeCity,
       isDemoStore: demoStore,
+      // TASK-0038 audit P0-#3: gate 'متجر موثوق' on real KYC + business
+      // registration. Default false — only set true after KYC + MoCI
+      // verification. Currently no stores qualify (pre-launch).
+      kycVerified: false,
     },
     commissionRate: row.haaMarketplaceCommissionRate,
     productUrl: `/marketplace/products/${row.storeSlug}/${row.slug}`,

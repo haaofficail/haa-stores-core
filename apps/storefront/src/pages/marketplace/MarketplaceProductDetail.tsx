@@ -355,10 +355,16 @@ export default function MarketplaceProductDetail() {
             <span className="mx-auto flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gray-50 text-gray-400 ring-4 ring-gray-50">
               {product.store.logoUrl ? <img src={product.store.logoUrl} alt={product.store.name} className="h-full w-full object-cover" /> : <Icon icon={Store} size="md" />}
             </span>
-            <div className="mt-2 inline-flex items-center gap-1 rounded-lg bg-success/10 px-2 py-0.5 text-[10px] font-bold text-success">
-              <Icon icon={BadgeCheck} size="2xs" />
-              متجر موثوق
-            </div>
+            {/* Trust badge — gated by kycVerified to avoid misleading
+                visitors. Demo stores and unverified stores must NOT
+                show this badge. The backend should set kycVerified
+                only after KYC + MoCI registration is confirmed. */}
+            {product.store.kycVerified === true && !product.store.isDemoStore && (
+              <div className="mt-2 inline-flex items-center gap-1 rounded-lg bg-success/10 px-2 py-0.5 text-[10px] font-bold text-success">
+                <Icon icon={BadgeCheck} size="2xs" />
+                متجر موثوق
+              </div>
+            )}
             {product.isDemoStore && (
               <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
                 <Info className="h-3 w-3" />
