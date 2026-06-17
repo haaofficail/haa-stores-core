@@ -13024,17 +13024,11 @@
       "foreignKeys": {
         "store_billing_settings_store_id_stores_id_fk": {
           "name": "store_billing_settings_store_id_stores_id_fk",
-          "tableFrom": [
-            "public",
-            "store_billing_settings"
-          ],
+          "tableFrom": "store_billing_settings",
           "columnsFrom": [
             "store_id"
           ],
-          "tableTo": [
-            "public",
-            "stores"
-          ],
+          "tableTo": "stores",
           "columnsTo": [
             "id"
           ],
@@ -13043,17 +13037,11 @@
         },
         "store_billing_settings_updated_by_users_id_fk": {
           "name": "store_billing_settings_updated_by_users_id_fk",
-          "tableFrom": [
-            "public",
-            "store_billing_settings"
-          ],
+          "tableFrom": "store_billing_settings",
           "columnsFrom": [
             "updated_by"
           ],
-          "tableTo": [
-            "public",
-            "users"
-          ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
@@ -13086,5 +13074,5 @@
     "schemas": {},
     "tables": {}
   },
-  "lastModified": 1781694293033
+  "lastModified": 1781695300210
 }

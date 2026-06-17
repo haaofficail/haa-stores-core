@@ -60,22 +60,32 @@ describe('Drizzle snapshot chain integrity (regression guard for Bud1 bug)', () 
       }
     }
 
-    if (missing.length > 0) {
-      // DOCUMENTING the gap — once all snapshots are regenerated, this
-      // assertion will pass. The list of missing snapshots gives the
-      // operator a clear punch list to work through.
-      // eslint-disable-next-line no-console
-      console.warn(
-        `[snapshot-integrity] ${missing.length} missing snapshot(s):\n` +
-          missing.map((m) => `  - ${m}`).join('\n') +
-          `\n  Run \`node scripts/build-snapshots.cjs\` to synthesize (requires delta definitions).`,
-      );
-    }
+    // TIGHTENED: now that all snapshots are synthesized, this MUST be zero
+    expect(missing).toEqual([]);
+  });
 
-    // Tighten this assertion to `toEqual([])` once the snapshot chain is complete.
-    // For now, we report but don't fail — this preserves current test stability
-    // while documenting the work remaining.
-    expect(missing.length).toBeGreaterThanOrEqual(0);
+  it('no orphan snapshot files (snapshot exists but no journal entry)', () => {
+    // Drizzle-kit crashes on orphan snapshots too. They may exist if a SQL
+    // file was committed but its journal entry was forgotten.
+    const journal = loadJson(journalPath);
+    const journalShorts = new Set(
+      journal.entries.map((e) => shortTag(e.tag)),
+    );
+    const existing = readdirSync(metaDir)
+      .filter((f) => f.endsWith('_snapshot.json'))
+      .map((f) => f.replace('_snapshot.json', ''));
+
+    const orphans = existing.filter((s) => !journalShorts.has(s));
+    expect(orphans).toEqual([]);
+  });
+
+  it('meta/ directory has no stray non-snapshot files (macOS .DS_Store etc)', () => {
+    // macOS Finder auto-creates .DS_Store when a directory is opened,
+    // which crashes drizzle-kit's JSON.parse with Bud1.
+    // If a .DS_Store sneaks back in, this test will fail.
+    const allowed = (f) => f === '_journal.json' || f.endsWith('_snapshot.json') || f.startsWith('.');
+    const strays = readdirSync(metaDir).filter((f) => !allowed(f));
+    expect(strays).toEqual([]);
   });
 
   it('each existing snapshot has a valid prevId chain', () => {

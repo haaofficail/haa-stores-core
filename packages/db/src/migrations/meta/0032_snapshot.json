@@ -1,6 +1,6 @@
 {
-  "id": "4d6c27de-9009-4476-a367-36f363cadf51",
-  "prevId": "bfc9e2e2-00cd-44e9-8410-f410baafa24a",
+  "id": "0032",
+  "prevId": "0031",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -533,25 +533,6 @@
         "phone": {
           "name": "phone",
           "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "is_demo": {
-          "name": "is_demo",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "demo_profile": {
-          "name": "demo_profile",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "demo_seed_version": {
-          "name": "demo_seed_version",
-          "type": "varchar(50)",
           "primaryKey": false,
           "notNull": false
         },
@@ -1281,26 +1262,6 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
-        },
-        "rating": {
-          "name": "rating",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "review_count": {
-          "name": "review_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "sales_count": {
-          "name": "sales_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
         },
         "seo_title": {
           "name": "seo_title",
@@ -2774,15 +2735,15 @@
         "cart_items_variant_id_product_variants_id_fk": {
           "name": "cart_items_variant_id_product_variants_id_fk",
           "tableFrom": "cart_items",
-          "tableTo": "product_variants",
           "columnsFrom": [
             "variant_id"
           ],
+          "tableTo": "product_variants",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -12551,391 +12512,6 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
-    },
-    "public.marketing_action_logs": {
-      "name": "marketing_action_logs",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "store_id": {
-          "name": "store_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "action_id": {
-          "name": "action_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "action_fingerprint": {
-          "name": "action_fingerprint",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "action_type": {
-          "name": "action_type",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "event": {
-          "name": "event",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "metadata": {
-          "name": "metadata",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "marketing_action_logs_store_id_idx": {
-          "name": "marketing_action_logs_store_id_idx",
-          "columns": [
-            {
-              "expression": "store_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "marketing_action_logs_action_id_idx": {
-          "name": "marketing_action_logs_action_id_idx",
-          "columns": [
-            {
-              "expression": "action_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "marketing_action_logs_fingerprint_idx": {
-          "name": "marketing_action_logs_fingerprint_idx",
-          "columns": [
-            {
-              "expression": "action_fingerprint",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "marketing_action_logs_created_at_idx": {
-          "name": "marketing_action_logs_created_at_idx",
-          "columns": [
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "marketing_action_logs_store_id_stores_id_fk": {
-          "name": "marketing_action_logs_store_id_stores_id_fk",
-          "tableFrom": "marketing_action_logs",
-          "tableTo": "stores",
-          "columnsFrom": [
-            "store_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "marketing_action_logs_action_id_marketing_action_states_id_fk": {
-          "name": "marketing_action_logs_action_id_marketing_action_states_id_fk",
-          "tableFrom": "marketing_action_logs",
-          "tableTo": "marketing_action_states",
-          "columnsFrom": [
-            "action_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.marketing_action_settings": {
-      "name": "marketing_action_settings",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "store_id": {
-          "name": "store_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "key": {
-          "name": "key",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "value_json": {
-          "name": "value_json",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "marketing_action_settings_store_id_idx": {
-          "name": "marketing_action_settings_store_id_idx",
-          "columns": [
-            {
-              "expression": "store_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "marketing_action_settings_store_id_stores_id_fk": {
-          "name": "marketing_action_settings_store_id_stores_id_fk",
-          "tableFrom": "marketing_action_settings",
-          "tableTo": "stores",
-          "columnsFrom": [
-            "store_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "marketing_action_settings_store_key_unique": {
-          "name": "marketing_action_settings_store_key_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "store_id",
-            "key"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.marketing_action_states": {
-      "name": "marketing_action_states",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "store_id": {
-          "name": "store_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "action_fingerprint": {
-          "name": "action_fingerprint",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "action_type": {
-          "name": "action_type",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'active'"
-        },
-        "snoozed_until": {
-          "name": "snoozed_until",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "dismissed_at": {
-          "name": "dismissed_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "done_at": {
-          "name": "done_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "marketing_action_states_store_id_idx": {
-          "name": "marketing_action_states_store_id_idx",
-          "columns": [
-            {
-              "expression": "store_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "marketing_action_states_status_idx": {
-          "name": "marketing_action_states_status_idx",
-          "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "marketing_action_states_fingerprint_idx": {
-          "name": "marketing_action_states_fingerprint_idx",
-          "columns": [
-            {
-              "expression": "action_fingerprint",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "marketing_action_states_store_id_stores_id_fk": {
-          "name": "marketing_action_states_store_id_stores_id_fk",
-          "tableFrom": "marketing_action_states",
-          "tableTo": "stores",
-          "columnsFrom": [
-            "store_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "marketing_action_states_store_fingerprint_unique": {
-          "name": "marketing_action_states_store_fingerprint_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "store_id",
-            "action_fingerprint"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
     }
   },
   "enums": {},
@@ -12948,5 +12524,6 @@
     "columns": {},
     "schemas": {},
     "tables": {}
-  }
+  },
+  "lastModified": 1781695270086
 }
