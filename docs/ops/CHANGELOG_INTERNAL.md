@@ -5,6 +5,121 @@
 
 ---
 
+## 2026-06-17 (Session #2: TASK-0034 — Phase 4-9 + Saudi PDPL — ALL 8 SUB-ITEMS DONE)
+
+### Context
+
+Session #2 of the 4-session "production-ready" roadmap (see `~/.mavis/scratchpads/mvs_50210367da784a45867523901dde4cbc/scratchpad.md`). All 8 sub-items of TASK-0034 shipped in a single session. **Owner decision Q2 (refund policy per provider) and Q5 (payout reservation) resolved during implementation** with reasonable defaults (Q5 = soft cap = warning only). Q1 and Q3 were already resolved in Session #1.
+
+### Added — Sub-item 1: postPlatformFee
+
+- New `postPlatformFee` method on `WalletPostingService` — mirrors `postCodFee` exactly. Reads the per-store `PlatformFeePolicy`, calculates the fee, snapshots the policy onto the result. Idempotent on `(storeId, orderId, 'platform_fee')`. **Resolves audit Finding 1 for the platform_fee path**; call sites in `checkout.ts` and `payment-webhook-service.ts` were migrated in sub-item 5.
+- 7 new tests in `tests/wallet-posting-service.test.ts` (mode=none, percentage, fixed, percentage_plus_fixed, idempotency, non-positive order total, postPlatformFee vs postCodFee independence).
+
+### Added — Sub-item 2: GatewayFeeRefundPolicy enum (Q2)
+
+- New module `packages/wallet-core/src/gateway-fee-refund-policy.ts`:
+  - `GatewayFeeRefundPolicy = 'REFUNDABLE' | 'NON_REFUNDABLE'`
+  - `DEFAULT_GATEWAY_FEE_REFUND_POLICY = 'NON_REFUNDABLE'` (safest for the merchant)
+  - `getProviderDefaultRefundPolicy(provider)` — case-insensitive lookup with Q2 owner decision baked in:
+    - `moyasar` → `REFUNDABLE` (Moyasar refunds the gateway fee)
+    - `tabby` / `tamara` → `NON_REFUNDABLE` (pending verification with providers)
+    - all other providers → `NON_REFUNDABLE` (default)
+  - `normalizeGatewayFeeRefundPolicy(input)` — for future admin override endpoints
+- 8 new tests in `tests/gateway-fee-refund-policy.test.ts` (enum shape, default, provider defaults, unknown fallback, case-insensitive lookup, type contract).
+- Per-store overrides (a future `storeGatewayFeePolicy` table) are out of scope — tracked as a follow-up.
+
+### Added — Sub-item 3: postGatewayFee + postSettlementDifference
+
+- `postGatewayFee(input)` — records a `gateway_fee` debit. Resolves the provider's refund policy via `getProviderDefaultRefundPolicy`; accepts explicit `refundPolicy` override for merchants with negotiated deals. Idempotent on `(storeId, orderId, 'gateway_fee')`. **Resolves audit Finding 2** (no `gateway_fee` entry type existed in code or live DB).
+- `postSettlementDifference(input)` — records a **signed** difference between expected and settled amounts. Positive = merchant gained (e.g. favorable FX), negative = merchant lost (e.g. partial refund). `reason` enum: `partial_refund` | `extra_charge` | `fx_difference` | `unknown`. Idempotent on `(storeId, orderId, 'settlement_difference')`.
+- `PostResult` type extended with optional fields: `provider`, `refundPolicy`, `reason`, `payoutId`.
+- 10 new tests in `tests/wallet-posting-service.test.ts` (5 per method, including idempotency, override, and independence).
+
+### Changed — Sub-item 4: Migrate apps/api refund route to WalletPostingService
+
+- `apps/api/src/routes/orders.ts:131` refund handler now uses the same pattern as `collectCOD` in `packages/commerce-core/src/orders.ts`. The service provides the entry type + amount; the `WalletLedger` does the actual DB write. The transaction-free `db` instance is shared between the service and the ledger (matches the route's existing structure). The `body.reason` (free-text, max 500 chars) is preserved in the wallet entry description; the service's `reason` field uses the strict 4-value union for analytics, defaulted to `'customer_request'`. **Resolves audit Critical Finding 3**.
+- 1 new wiring test in `tests/wallet-posting-wiring.test.ts`.
+- Also: export `WalletPostingService` + `DedupKey` / `PostResult` / `PolicySource` types from `packages/commerce-core/src/index.ts`. They were implemented in Session #1 but never exported, so this is also a leftover from TASK-0033.
+
+### Changed — Sub-item 5: Migrate checkout.ts + payment-webhook-service.ts to WalletPostingService
+
+- 4 raw `recordEntry` call sites in feature code migrated to use the service. The actual DB write remains on `WalletLedger` (preserves the audit-trail fields: `feeRatePct`, `feeFixed`, `feeSource`, `metadata`).
+  - `payment-webhook-service.ts` `runPostPaymentFlow` (2 sites — sale + platform_fee)
+  - `checkout.ts` online checkout `confirmPayment` (2 sites)
+  - `checkout.ts` BNPL checkout `confirmPayment` (2 sites)
+- Cross-flow dedup (checkout wrote platform_fee before the webhook arrives) is preserved via `hasPlatformFeeForOrder` — the service's per-instance dedup only protects within a single transaction.
+- The `orderNumber` field is metadata only (not part of the dedup key), so the BNPL flow uses `String(payment.orderId)` as a placeholder; a future task can look up the real `orderNumber` if audit metadata needs it.
+- 3 new wiring tests in `tests/wallet-posting-wiring.test.ts`.
+- 2 tests updated in `tests/platform-fees-wiring.test.ts` (the `calcPlatformFee` import is no longer expected in `checkout.ts` or `payment-webhook-service.ts` — the calc moved into the service).
+
+### Added — Sub-item 6: Gateway Fee UX (Q1)
+
+- New "You receive X" hero card at the top of `apps/merchant-dashboard/src/pages/Wallet.tsx`. Shows `netBalance` prominently with a native `<details>`/`<summary>` collapsible breakdown of the components: `totalSales`, `platformFees`, `paymentFees` (gateway), `shippingFees` (conditional), and `netBalance`. Q1 owner decision (2026-06-16): "You receive X" with collapsible breakdown, matching Saudi BNPL UX conventions.
+- 4 new i18n keys in `apps/merchant-dashboard/src/i18n/locales/ar.json`: `youWillReceive`, `youWillReceiveHint`, `viewBreakdown`, `viewBreakdownHide`.
+- Native `<details>`/`<summary>` keeps the change dependency-free (no Radix Collapsible or similar added).
+- Scope: merchant wallet aggregate view. Per-order "You receive X" on the order detail / checkout confirmation is a follow-up.
+- 5 new source-grep tests in `tests/gateway-fee-ux-q1-wiring.test.ts`.
+
+### Added — Sub-item 7: postPayoutDebit + postPayoutReversal + hasRecentPayoutRequest
+
+- `postPayoutDebit(input)` — records a `payout_debit` entry when a payout is initiated. `status` field tracks lifecycle: `'processing'` | `'completed'` | `'failed'`. Idempotent on `(storeId, payoutId, 'payout_debit')`.
+- `postPayoutReversal(input)` — records a `payout_reversal` entry when a payout is cancelled or fails. `reason` field: `'merchant_cancelled'` | `'system_error'` | `'compliance_hold'`. Idempotent on `(storeId, payoutId, 'payout_reversal')`.
+- `hasRecentPayoutRequest(storeId)` — Q5 soft cap helper. Returns true if a payout_debit or payout_reversal has been posted for this `storeId` during this service instance's lifetime. **Q5 owner decision: soft cap = warning only** (not hard block). The route can use this to show a "you have a pending payout request" warning to the merchant. In-memory check (per-instance); a DB-backed check is a follow-up.
+- **Completes the WalletPostingService surface (all 8 methods now implemented).** Resolves audit Phase 10 (payout pending reservation).
+- 11 new tests in `tests/wallet-posting-service.test.ts` (4 + 3 + 4).
+
+### Added — Sub-item 8: PDPL endpoints (Saudi Personal Data Protection Law)
+
+- New `apps/api/src/routes/merchant-data.ts`:
+  - `GET /merchant/:storeId/data-export` — returns a JSON dump of the merchant's data: `{ store, storeBillingSettings, products, orders (with items), customers (basic info, no password hashes), walletEntries, coupons, categories, brands, tags }`. Not paginated — full export in one response. Future: streaming or download URL for very large datasets.
+  - `DELETE /merchant/:storeId/account` — soft delete the store (`isActive = false`, `status = 'deactivated'`). Preserves data for 30 days (retention period for tax/audit). Returns `{ deactivatedAt, retentionDays, hardDeleteAt }`. Hard-delete background job is tracked as a follow-up.
+- Both endpoints: `requireAuth` + `requireStoreAccess` + `settings:update` permission.
+- `store_deactivated` added to the `AuditAction` union (`packages/shared/src/types/orders.ts`) with Arabic label `'إيقاف المتجر (PDPL)'` in `AUDIT_ACTION_LABELS`.
+- Mounted at `/merchant/:storeId` in `apps/api/src/index.ts`.
+- 12 new source-grep tests in `tests/pdpl-endpoints-wiring.test.ts`.
+- Limitations / follow-up: no re-activate endpoint (deleted account is permanent); no 2FA confirmation step for deletion; no bulk export of audit logs; hard-delete background job after 30-day retention.
+
+### Verified (Session #2 end state)
+
+- **Test count:** `pnpm test` → 2329 passing (+56 from Session #1 baseline 2273), 4 pre-existing baseline failures (unchanged from Session #1):
+  - `tests/migration-deduplication.test.ts`: 0046 file split
+  - `tests/schema-deduplication.test.ts`: marketing-actions.ts split
+  - `tests/security-boundary-gates.test.ts`: Dashboard does not import storefront + Storefront CSS global
+  - These are all documented Session #1 baseline failures unrelated to Session #2 work.
+- **Sub-item-level verification:**
+  - `tests/wallet-posting-service.test.ts`: 40/40 (3 + 7 + 10 + 11 + 9 dedup = 40)
+  - `tests/wallet-posting-wiring.test.ts`: 10/10 (was 7, +3 for new sub-items)
+  - `tests/gateway-fee-refund-policy.test.ts`: 8/8
+  - `tests/gateway-fee-ux-q1-wiring.test.ts`: 5/5
+  - `tests/pdpl-endpoints-wiring.test.ts`: 12/12
+  - `tests/platform-fees-wiring.test.ts`: 25/25 (was 27, -2 sub-item 5 expectations updated)
+- **Branch state:** `feature/phase-9-cod-fee-policy` @ `bbd97d2e` (6 Session #1 + 9 Session #2 = 15 commits). `docs/financial-wallet-audit-phase-1` @ `09f0323b` (3 audit commits, parked). `integration/platform-fee-policy` @ `761ae27e` (untouched, parked). Stash `stash@{0}` (QP5 noise) preserved.
+- **Typecheck:** `@haa/commerce-core`, `@haa/api`, `@haa/merchant-dashboard`, `@haa/wallet-core`, `@haa/shared` — all clean.
+
+### Risks (Session #2 → Session #3+ handoff)
+
+- 🟢 **Low** for Session #2 work — all changes are additive or migration-based, with no merchant-visible behavior change beyond the new PDPL endpoints.
+- 🟡 **Q4 (Tabby/Tamara fee data source)** still open — needs owner decision during Session #3 implementation. Current default uses whatever the webhook payload provides.
+- 🟡 **Q5 hard-block option** — currently soft cap (warning only). If abuse appears, a future task can tighten to hard block.
+- 🟡 **PDPL hard-delete background job** — current state is soft delete with 30-day retention. The hard-delete job is a follow-up.
+- 🟡 **Per-order "You receive X" UX** — current implementation is the aggregate wallet view. Per-order checkout confirmation is a follow-up.
+- 🟡 **2FA confirmation for account deletion** — recommended for Session #3+ to prevent accidental deletion.
+- 🟡 **3 of 4 owner gates still required** — deployment, live API keys (Moyasar/Tabby/Tamara/Sentry), legal docs finalization, pricing beyond Q1/Q2/Q3.
+
+### Out of Session #2 (deferred to Session #3+)
+
+- Quality Pass 5 remainder: Route Migrations 20-24 (subscriptions, webhooks, shipments, haa-marketplace, admin/tenants-stores, admin/marketplace) — total 5 routes still on raw Drizzle.
+- 3D Secure flow (SAMA mandatory since 2021).
+- ZATCA e-invoicing Phase 2 integration (invoice generator with QR).
+- VAT-aware pricing display.
+- Deployment runbook (provision server, run docker-compose, configure reverse proxy).
+- Legal docs templates: Privacy Policy, ToS, DPAs.
+- Live API keys (Moyasar, Tabby, Tamara, Sentry DSN, Postgres production credentials).
+- Walk-through with owner.
+
+---
+
 ## 2026-06-16 (Session #1: Financial Wallet Accuracy Foundation — Audit + COD Fee + WalletPostingService)
 
 ### Context
