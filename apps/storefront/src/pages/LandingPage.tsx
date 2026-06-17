@@ -1,5 +1,19 @@
 /**
  * Haa Landing Page — Aurora / Glass aesthetic
+ *
+ * P2-#1 refactor note: this file is intentionally 1945 LOC and
+ * contains 31 helper + section functions. Splitting it into
+ * per-section files is documented in docs/ops/REFACTOR_PLAN_P2-1.md
+ * but is intentionally deferred because:
+ *   1. The file is stable (no recent churn).
+ *   2. The components are tightly coupled via shared helpers
+ *      (TFn, useScrollReveal, Reveal, AuroraBackground).
+ *   3. A naive split creates cross-file prop drilling for
+ *      shared state (cartCount, selectedProduct, addToCart).
+ * The right refactor is to extract state into a context provider
+ * first, then split. Tracked as a follow-up. For now, sections
+ * are organized under section headers for navigation.
+ *
  * Inspired by Linear, Stripe, Vercel. Apple-grade typography.
  * RTL Arabic, IBM Plex Sans Arabic.
  */
