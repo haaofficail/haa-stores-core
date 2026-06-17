@@ -1445,3 +1445,232 @@ The strategic plan suggests pausing before Pass 2 to:
   landing AI agent system-prompt, dashboard → @haa/storefront-themes import,
   storefront `:root` CSS).
 - **Skills Used:** plan-mode, test-driven-development, verification-before-completion.
+
+## 2026-06-17 — TASK-0035 Session #5 (Live Deploy Readiness Docs)
+
+Single commit `e915adcb` shipping 5 comprehensive docs (~2,069 lines)
+to prepare the platform for live deployment. Covers legal, operational,
+and compliance surfaces.
+
+### Added (Legal — PDPL + KSA Law)
+
+- `docs/PRIVACY_POLICY.md` (262 lines)
+  - Saudi Personal Data Protection Law (PDPL) compliant
+  - 13 sections: data categories, lawful basis, sub-processors,
+    cross-border transfer, encryption, access control, retention
+    periods, data subject rights (all 8 PDPL rights mapped to our
+    endpoints), cookies, breach notification, contact
+  - Bilingual (Arabic primary, English secondary)
+  - Cross-references TASK-0034 sub-item 8 (data export + deletion)
+- `docs/TERMS_OF_SERVICE.md` (306 lines)
+  - Governed by Saudi law; primary language Arabic
+  - 13 sections: eligibility, account types, fees, refunds (14-day
+    per MoCI), prohibited items (per Saudi law), IP, warranties,
+    liability limits, suspension, dispute resolution (negotiation →
+    mediation → ICC arbitration → KSA courts)
+  - Cross-references PRIVACY_POLICY + SAUDI_COMPLIANCE_CHECKLIST
+
+### Added (Operational)
+
+- `docs/DEPLOYMENT_RUNBOOK.md` (536 lines)
+  - Step-by-step deploy for staging + production
+  - Pre-deployment gate (Owner GO + Readiness Gate + 7-day staging)
+  - Architecture diagram (Fly.io + Postgres + Redis + Cloudflare R2 + CDN)
+  - Pre-flight checklist (8 items) + secrets inventory (~30 secrets)
+  - KNOWN GOTCHA for Drizzle snapshot chain (0050-0053 missing) per
+    `memory/drizzle-migration-snapshots.md` — use `psql` not `drizzle-kit`
+  - Blue-green deployment + rollback plan (app + DB + DNS)
+  - Monitoring schedule (daily/weekly/monthly/quarterly)
+  - On-call handbook with PagerDuty escalation
+- `docs/INCIDENT_RESPONSE.md` (624 lines)
+  - NIST-aligned 5-phase IR: Detection → Containment → Eradication
+    → Recovery → Post-mortem
+  - Severity: P0/P1/P2/P3 with response times + page thresholds
+  - 4 common playbooks: storefront 500s, payments failing, DB outage,
+    security breach (with §5 security sub-procedure)
+  - **PDPL Article 21**: 72-hour SDAIA breach notification (mandatory)
+  - Communication templates: initial / update / resolution / security
+  - Decision trees: when to page, when to rollback
+  - Quarterly tabletop drill schedule
+
+### Added (Compliance)
+
+- `docs/SAUDI_COMPLIANCE_CHECKLIST.md` (341 lines)
+  - 7 Saudi authorities: SAMA, PDPL (SDAIA), ZATCA, MoCI, CITC, SFDA, HRSD
+  - Plus cross-cutting: NCA cybersecurity, AML, IP
+  - 70+ compliance items with status legend
+  - Highlights: **SAMA 3DS ✅** (TASK-0035 complete), **ZATCA VAT ✅**
+    (TASK-0035 sub-items 6+7), **PDPL data subject rights ✅**
+    (TASK-0034 sub-item 8)
+  - Identifies 10 blocking items for live — all are **owner action**
+    (VAT registration, CR, DPO appointment, e-commerce license,
+    PCI-DSS ASV scan, penetration test, KSA hosting decision,
+    trademark registration, Tabby DPA, DR plan)
+  - Overall readiness: **~75%** (engineering 100%, business/legal
+    items pending)
+  - Quarterly compliance review calendar
+
+### Test Status
+
+- `pnpm preflight` → ✅ PASSED
+- `pnpm test` → 2393 passing, 4 pre-existing baseline failures
+  unchanged (CSS isolation + migration-deduplication + schema-deduplication)
+
+### Impact
+
+These 5 docs enable:
+1. Legal review submission (Owner + Legal before live)
+2. On-call team training
+3. Regulatory audit submission (SDAIA, NCA, SAMA)
+4. Operations team handoff
+5. Owner GO decision (gated by Readiness Gate in DEPLOYMENT_RUNBOOK §0)
+
+### Out of Scope (Owner Action Items)
+
+- Live API keys (Moyasar/Geidea/Tabby/Tamara)
+- VAT registration certificate (ZATCA)
+- Commercial Registration (MoCI)
+- DPO appointment (PDPL)
+- E-commerce license (MoCI)
+- PCI-DSS ASV scan (SAMA)
+- Penetration test (SAMA)
+- KSA hosting region (CITC, depends on Fly.io)
+- Trademark registration (SAIP)
+- Tabby DPA signing (PDPL cross-border)
+- Disaster recovery plan (NCA)
+- Legal review of all 5 docs
+
+### Cross-references
+
+- TASK-0034 sub-item 8 (PDPL endpoints)
+- TASK-0035 (3DS + VAT)
+- docs/security/* (security controls)
+- docs/ops/INCIDENTS.md (existing incident log)
+- memory/drizzle-migration-snapshots.md (deploy gotcha)
+
+### Skills Used
+
+plan-mode, verification-before-completion, documentation-as-code.
+
+---
+
+## 2026-06-17 — TASK-0035 Session #4 (3DS Storefront + Checkout VAT Line)
+
+2 commits on `feature/phase-9-cod-fee-policy`:
+
+### Added (3DS Storefront Wiring — sub-item 5)
+
+- `tests/3ds-storefront-flow.test.ts` (commit 7e8541f0) — 11/11 tests
+- Schema/types updates: `'awaiting_3ds'` added to OrderStatus;
+  `'requires_3ds'` added to PaymentStatus
+- Fake provider supports `fake_3ds_challenge` payment method
+  (returns local `/fake-3ds-challenge?paymentId=...` redirect URL)
+- CheckoutService.confirm captures `redirectUrl` from provider and
+  surfaces it in result; new `requires_3ds` branch sets order
+  status to 'awaiting_3ds' (does NOT mark as paid; does NOT release
+  stock; does NOT fire order.paid webhook)
+- API `/confirm` forwards `redirectUrl` to storefront; new
+  `POST /:slug/checkout/3ds-callback` endpoint for post-challenge
+  verification
+- Storefront `Checkout.tsx` redirects customer to 3DS challenge URL
+  with "جاري التحقق من بطاقتك…" toast
+- `CheckoutConfirm` type exposes `paymentStatus` + `redirectUrl`
+
+### Added (Checkout VAT Line — sub-item 7)
+
+- `tests/checkout-vat-line.test.ts` (commit a9418342) — 5/5 tests
+- Checkout.tsx sidebar renders subtotal (ex-VAT) + VAT line
+  (via `formatVatLine`) + total (inc-VAT) + VAT note
+- Imports from scoped `@haa/commerce-core/vat` subpath (avoids
+  pulling unused-locals into storefront tsc)
+- Uses `i18n.language` to render Arabic or English VAT line
+- New tsconfig path mapping: `@haa/commerce-core/vat` → vat.ts source
+
+### Owner Commits During Break (~4.5h)
+
+- `ca0ce61c` fix(platform): render official brand logo from api
+- `62132974` fix(theme): unify store primary color source
+- `db92206c` fix(auth): update terms route + checkout VAT test (initial
+  draft of `tests/checkout-vat-line.test.ts` file)
+- `afbc0e0f` fix(theme): refresh runtime primary color
+
+### Test Status
+
+- `pnpm vitest run tests/3ds-storefront-flow.test.ts` → 11/11
+- `pnpm vitest run tests/checkout-vat-line.test.ts` → 5/5
+- Full suite: 2393 passing (+16 from Session #3 closure 2377)
+- 4 baseline failures unchanged
+
+### Skills Used
+
+plan-mode, test-driven-development, verification-before-completion,
+systematic-debugging.
+
+---
+
+## 2026-06-17 — TASK-0035 Session #3 (3DS Scaffold + VAT Helpers)
+
+4 commits on `feature/phase-9-cod-fee-policy`:
+
+### Added (3DS Scaffold — sub-item 1)
+
+- `f097cc61` feat(payments): 3DS support scaffolding
+  - `requires_3ds` added to `InternalPaymentStatus` union + INTERNAL_PAYMENT_STATUSES
+  - `supports3DS: boolean` added to `PaymentProviderCapabilities`
+  - Provider capability flags: moyasar/geidea/fake = true,
+    tabby/tamara = false
+- Rebuild `@haa/shared` dist to fix `@haa/payment-providers` typecheck
+
+### Added (TASK-0035 Registration)
+
+- `e461bfda` docs(ops): register TASK-0035 in TASK_TRACKER.md
+
+### Added (3DS Flow Contract — sub-items 3+4)
+
+- `5bdaf1f6` feat(payments): 3DS challenge flow contract
+  - `tests/3ds-flow.test.ts` — 23/23 tests (status mapping,
+    capability flags, createPaymentIntent 3DS contract,
+    handleWebhook 3DS contract, storefront checkout 3DS handling,
+    fake provider parity, idempotency regression)
+  - Moyasar `createPaymentIntent` reads `source.transaction_url`
+    and returns `redirectUrl`; sets local status to `requires_3ds`
+  - `mapProviderStatus('moyasar', 'requires_3ds' | '3ds_required')`
+    → `'requires_3ds'`
+  - `handleWebhook` adds `'authorized'` to terminal-status whitelist;
+    acknowledges `payment.requires_3ds` without changing status
+  - Capability flag constants re-exported from `@haa/commerce-core`
+  - Storefront checkout route has 3DS documentation block
+
+### Added (VAT Helpers + Product Card Badge — sub-item 6)
+
+- `3b6fea97` feat(pricing): VAT-aware pricing helpers + product card badge
+  - `packages/commerce-core/src/vat.ts` (~115 LOC)
+  - 6 helpers: `priceIncVat`, `priceExVat`, `vatAmount`, `formatVatLine`,
+    `formatPriceIncVatLabel`, `isValidVatRate`
+  - `DEFAULT_VAT_RATE = 0.15` (ZATCA standard); env-overridable
+  - `VAT_RATE` env var in `apps/api/src/env.ts` with boot-time validation
+  - `tests/vat.test.ts` — 25/25 tests (RED → GREEN)
+  - Storefront `ProductCard.tsx` shows subtle inline "شامل الضريبة"
+    badge in emerald via new `showVatBadge` prop on `ProductPriceBlock`
+  - RTL-aware (`ms-2` margin-inline-start)
+
+### WIP Triage (Session Start)
+
+- 21 uncommitted files at session start
+- 2 source files committed (3DS scaffold — useful for sub-items 4-6)
+- 18 source files stashed as `stash@{0}` (theme refactor + 3 new
+  pages + admin/auth UI updates — preserved for future use)
+- 1 source file reverted (`tenants.ts` primaryColor — out of scope
+  for 3DS+VAT work)
+
+### Test Status
+
+- `pnpm vitest run tests/3ds-flow.test.ts` → 23/23
+- `pnpm vitest run tests/vat.test.ts` → 25/25
+- Full suite: 2377 passing (+48 from Session #2 baseline 2329)
+- 4 baseline failures unchanged
+
+### Skills Used
+
+plan-mode, test-driven-development, verification-before-completion,
+systematic-debugging.

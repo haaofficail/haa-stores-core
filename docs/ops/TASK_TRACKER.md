@@ -1758,9 +1758,9 @@
 
 - **Type:** Feature / Architecture / Compliance / UX/UI Polish
 - **Priority:** P1 High
-- **Status:** In Progress (5 of 6 sub-items shipped in Sessions #3+#4; sub-items 5+7 done, per-tenant VAT deferred to ZATCA session)
+- **Status:** Done (7 of 8 sub-items shipped across Sessions #3+#4+#5; sub-item 8 = per-tenant VAT_RATE explicitly deferred to ZATCA session; 5 live-deploy-readiness docs shipped as Session #5 deliverable)
 - **Created:** 2026-06-17
-- **Updated:** 2026-06-17 (Session #4 first-pass closure)
+- **Updated:** 2026-06-17 (Session #5 closure)
 - **Original Request:** نفّذ التوصية (owner directive 2026-06-17) — Option A from the 4-session roadmap: 3DS flow (SAMA mandatory) + VAT-aware pricing.
 - **Problem:** (1) SAMA has mandated 3-D Secure for online card transactions in Saudi Arabia since 2021; without it the live deployment is rejected. (2) Merchants and customers see prices without VAT clarity, but ZATCA requires 15% VAT to be visible on tax invoices. (3) The session started with 21 uncommitted files (theme refactor + 3 new pages + UI updates + 3DS scaffold) — needs triage.
 - **Goal:** (1) Implement 3DS challenge flow for card payments (Moyasar primary, Geidea secondary) with proper status transitions. (2) Show VAT in product display + checkout summary at the platform-default 15% rate. (3) Land 3DS scaffold commit and stash the rest of the WIP safely.
@@ -1802,6 +1802,9 @@
 - **Status History:**
   - Requested: 2026-06-17
   - In Progress: 2026-06-17 (sub-items 1+2+3+4+5+6+7 done; sub-item 8 deferred to ZATCA session)
-  - Session #3 (08:04-08:30): 4 commits (3DS scaffold, TASK-0035 registration, 3DS contract, VAT helpers)
-  - Session #4 (08:34-13:22, with ~4.5h break): 2 commits (3DS storefront wiring, checkout VAT line). Owner did 4 parallel commits during break (theme primary color unification, brand logo API, terms route update, runtime color refresh).
-  - WIP at session start: 21 uncommitted files. Triaged: 2 source files committed (3DS scaffold), 18 source files stashed as `stash@{0}`, 1 source file reverted (`tenants.ts` primaryColor). Net commits: 10 (6 assistant + 4 owner). Net stashed: stash@{0}.
+  - Done: 2026-06-17 (Sessions #3+#4+#5 complete; sub-item 8 explicitly closed with deferral note)
+  - Session #3 (08:04-08:30, 25 min focused): 4 commits (3DS scaffold, TASK-0035 registration, 3DS contract, VAT helpers + product card badge)
+  - Session #4 (08:34-13:22, with ~4.5h owner break): 2 commits (3DS storefront wiring, checkout VAT line). Owner did 4 parallel commits during break (theme primary color unification, brand logo API, terms route update, runtime color refresh).
+  - Session #5 (13:23-13:47, 24 min): 1 commit (5 live-deploy-readiness docs: PRIVACY_POLICY, TERMS_OF_SERVICE, DEPLOYMENT_RUNBOOK, SAUDI_COMPLIANCE_CHECKLIST, INCIDENT_RESPONSE — ~2069 lines)
+  - WIP at session start: 21 uncommitted files. Triaged: 2 source files committed (3DS scaffold), 18 source files stashed as `stash@{0}`, 1 source file reverted (`tenants.ts` primaryColor). Net commits across Sessions #3+#4+#5: 11 (7 assistant + 4 owner during break). Net stashed: stash@{0} (preserved for future use).
+  - Cumulative: 28 commits on `feature/phase-9-cod-fee-policy` (15 Session #2 + 6 Session #3 + 6 Session #4 + 1 Session #5). 2393 tests passing (+64 from Session #2 baseline 2329: 3DS=23 + 3DS-storefront=11 + VAT=25 + VAT-line=5). 4 pre-existing baseline failures unchanged. Preflight clean throughout.
