@@ -246,6 +246,8 @@ export type Permission =
   | 'wallet.payout.reverse'
   | 'wallet.payout.view_all'
   | 'wallet.payout.view_store'
+  | 'marketplace.review'
+  | 'marketplace.feature'
   | 'billing.platform_fee.read'
   | 'billing.platform_fee.update'
   | 'shipping:manage'

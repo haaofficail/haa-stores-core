@@ -182,8 +182,8 @@ adminRouter.get('/payments', requireAdminAuth(), paymentsRoute);
 // /marketplace/*
 adminRouter.get('/marketplace/summary', requireAdminAuth(), marketplaceSummaryRoute);
 adminRouter.get('/marketplace/products', requireAdminAuth(), marketplaceProductsRoute);
-adminRouter.patch('/marketplace/products/:id/review', requireAdminAuth(), zValidator('json', productReviewSchema), marketplaceProductReviewRoute);
-adminRouter.patch('/marketplace/products/:id/feature', requireAdminAuth(), zValidator('json', productFeatureSchema), marketplaceProductFeatureRoute);
+adminRouter.patch('/marketplace/products/:id/review', requireAdminAuth(), requireAdminPermission('marketplace.review'), zValidator('json', productReviewSchema), marketplaceProductReviewRoute);
+adminRouter.patch('/marketplace/products/:id/feature', requireAdminAuth(), requireAdminPermission('marketplace.feature'), zValidator('json', productFeatureSchema), marketplaceProductFeatureRoute);
 adminRouter.get('/marketplace/sellers', requireAdminAuth(), marketplaceSellersRoute);
 adminRouter.get('/marketplace/orders', requireAdminAuth(), marketplaceOrdersRoute);
 adminRouter.get('/marketplace/settlements', requireAdminAuth(), marketplaceSettlementsRoute);

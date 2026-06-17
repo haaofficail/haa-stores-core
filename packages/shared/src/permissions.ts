@@ -183,6 +183,10 @@ export const PERMISSION_CATALOG: PermissionInfo[] = [
   { key: 'products:export', labelAr: 'تصدير المنتجات', descriptionAr: 'تصدير قائمة المنتجات إلى ملف', category: 'products', riskLevel: 'medium', recommendedForRoles: ['owner', 'admin', 'manager'] },
   { key: 'products:import', labelAr: 'استيراد المنتجات', descriptionAr: 'استيراد منتجات من ملف', category: 'products', riskLevel: 'high', recommendedForRoles: ['owner', 'admin'] },
 
+  // ── Marketplace moderation (TASK-0043 Track 4B — P1-2) ──
+  { key: 'marketplace.review', labelAr: 'مراجعة منتج في السوق', descriptionAr: 'الموافقة أو الرفض أو تعليق منتجات السوق العام', category: 'marketplace', riskLevel: 'critical', recommendedForRoles: ['owner', 'admin'] },
+  { key: 'marketplace.feature', labelAr: 'تمييز منتج في السوق', descriptionAr: 'تمييز منتج في السوق العام (featured, sortOrder)', category: 'marketplace', riskLevel: 'high', recommendedForRoles: ['owner', 'admin'] },
+
   // ── Categories / Brands / Tags ──
   { key: 'categories:manage', labelAr: 'إدارة التصنيفات', descriptionAr: 'إضافة وتعديل وحذف التصنيفات', category: 'categories', riskLevel: 'medium', recommendedForRoles: ['owner', 'admin', 'manager'] },
   { key: 'brands:manage', labelAr: 'إدارة الماركات', descriptionAr: 'إضافة وتعديل وحذف الماركات التجارية', category: 'brands', riskLevel: 'medium', recommendedForRoles: ['owner', 'admin', 'manager'] },
@@ -379,6 +383,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'wallet.payout.reverse',
     'wallet.payout.view_all',
     'wallet.payout.view_store',
+    // TASK-0043 Track 4B — P1-2 marketplace permissions.
+    // Owners are the only role that gets these critical marketplace
+    // moderation permissions. Admin/manager roles are intentionally
+    // excluded — they have dashboard access but not marketplace
+    // moderation.
+    'marketplace.review',
+    'marketplace.feature',
     'api_keys:view',
     'api_keys:create',
     'api_keys:revoke',

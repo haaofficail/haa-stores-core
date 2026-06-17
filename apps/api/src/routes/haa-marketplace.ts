@@ -347,8 +347,10 @@ haaMarketplaceRouter.get('/sellers/:storeSlug', async (c) => {
       coverUrl: storeRow.coverUrl,
       city: storeRow.city,
       district: storeRow.district,
-      email: storeRow.email,
-      phone: storeRow.phone,
+      // TASK-0043 Track 4C — T8: do NOT leak stores.email or
+      // stores.phone in the public marketplace seller shape. Customers
+      // contact merchants via the store page's contact form (which
+      // gates by /s/:slug server-rendered HTML, not the marketplace API).
       seoTitle: storeRow.seoTitle,
       seoDescription: storeRow.seoDescription,
       isDemo: storeRow.isDemo,

@@ -103,6 +103,15 @@ const storefrontBrowseRateLimit = rateLimiter({
   message: 'تم تجاوز حد التصفح مؤقتاً. حاول لاحقاً.',
 });
 
+// TASK-0043 Track 4A — P1-9 separate rate limit on POST /marketplace/orders.
+// The browse limit (600/10min) is too generous for order creation.
+// Stricter limit prevents enumeration + spam + cost amplification.
+const marketplaceOrderRateLimit = rateLimiter({
+  windowMs: 10 * 60 * 1000,
+  maxRequests: env.NODE_ENV === 'development' ? 100 : 30,
+  message: 'تم تجاوز حد إنشاء الطلبات مؤقتاً. حاول لاحقاً.',
+});
+
 const checkoutRateLimit = rateLimiter({
   windowMs: 10 * 60 * 1000,
   maxRequests: env.NODE_ENV === 'development' ? 300 : 60,
@@ -154,6 +163,14 @@ const uploadRateLimit = rateLimiter({
 // Public rate-limited routes
 app.use('/s/*', storefrontBrowseRateLimit);
 app.use('/marketplace/*', storefrontBrowseRateLimit);
+// TASK-0043 Track 4A — P1-9: stricter rate limit on POST /marketplace/orders.
+// Order creation needs its own counter because:
+//   - Browse rate limit is generous (600/10min) — too high for orders
+//   - Phone enumeration + spam + cost amplification risks
+// Note: This applies to ALL methods on /marketplace/orders, but the
+// only mutating method is POST. GET /orders/:num uses access_token
+// (TASK-0040 Track 1B) and is acceptable at this rate.
+app.use('/marketplace/orders', marketplaceOrderRateLimit);
 app.use('/s/:slug/cart/*', checkoutRateLimit);
 app.use('/s/:slug/checkout/*', checkoutRateLimit);
 app.use('/auth/login', strictRateLimit);
