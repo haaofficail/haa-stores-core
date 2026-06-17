@@ -119,12 +119,9 @@ export default function Header() {
         <div className="min-h-[64px] grid grid-cols-[auto_1fr_auto] items-center" style={{ gap: 'var(--space-4)' }}>
           <Link to={`/s/${slug}`} className="flex min-w-0 items-center shrink-0" style={{ gap: 'var(--space-3)' }}>
             {store.logoUrl ? (
-              <img src={store.logoUrl} alt={store.name} className="h-9 w-9 object-contain" style={{ borderRadius: '8px' }} />
+              <img src={store.logoUrl} alt={store.name} className="store-logo" />
             ) : (
-              <div
-                className="h-9 w-9 flex items-center justify-center text-white font-bold text-sm bg-primary-500"
-                style={{ borderRadius: '8px' }}
-              >
+              <div className="h-9 w-9 flex items-center justify-center text-white font-bold text-sm bg-primary-500 rounded-lg shrink-0">
                 {store.name.charAt(0)}
               </div>
             )}

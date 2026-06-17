@@ -9,7 +9,7 @@ export const stores = pgTable('stores', {
   description: text('description'),
   logoUrl: varchar('logo_url', { length: 500 }),
   coverUrl: varchar('cover_url', { length: 500 }),
-  primaryColor: varchar('primary_color', { length: 20 }).default('#2563eb'),
+  primaryColor: varchar('primary_color', { length: 20 }).default('#58a1e2'),
   backgroundColor: varchar('background_color', { length: 20 }).default('#ffffff'),
   email: varchar('email', { length: 255 }),
   phone: varchar('phone', { length: 20 }),
@@ -55,7 +55,7 @@ export const storeSettings = pgTable('store_settings', {
   themeConfig: jsonb('theme_config').default({
     preset: 'minimal',
     colors: {
-      primary: '#2563eb',
+      primary: '#58a1e2',
       surface1: '#ffffff',
       surface2: '#f8f9fa',
       surface3: '#f1f3f5',

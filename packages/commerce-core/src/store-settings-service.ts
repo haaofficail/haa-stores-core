@@ -2,6 +2,7 @@ import { eq, and, count, desc } from 'drizzle-orm';
 import { createDbClient, type DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { mergeAndResolveThemeConfig, resolveActiveThemeConfig } from '@haa/theme-system/server';
+import { resolveStoreThemePrimaryColor } from '@haa/shared';
 
 /**
  * StoreSettingsService — owns the store-level configuration
@@ -85,6 +86,10 @@ export class StoreSettingsService {
       .set(cleanBody)
       .where(eq(s.stores.id, storeId))
       .returning();
+    // Keep themeConfig.colors.primary in sync with stores.primaryColor
+    if (body.primaryColor !== undefined) {
+      await this.syncPrimaryColorToThemeConfig(storeId, body.primaryColor as string);
+    }
     return updated ?? null;
   }
 
@@ -270,10 +275,30 @@ export class StoreSettingsService {
 
   async getTheme(storeId: number) {
     const [settings] = await this.db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-    return resolveActiveThemeConfig(settings?.themeConfig as any);
+    const config = resolveActiveThemeConfig(settings?.themeConfig as any);
+    // Resolve primary from stores.primaryColor — themeConfig.colors.primary is legacy
+    const [store] = await this.db
+      .select({ primaryColor: s.stores.primaryColor })
+      .from(s.stores)
+      .where(eq(s.stores.id, storeId))
+      .limit(1);
+    config.colors.primary = resolveStoreThemePrimaryColor(
+      store?.primaryColor,
+      config.colors?.primary,
+    );
+    return config;
   }
 
   async updateTheme(storeId: number, body: Record<string, unknown>): Promise<{ config: any; history: any[] }> {
+    // Normalise any incoming theme primaryColor to stores.primaryColor
+    const themePrimary = (body as any)?.colors?.primary as string | undefined;
+    if (themePrimary !== undefined) {
+      await this.db
+        .update(s.stores)
+        .set({ primaryColor: themePrimary, updatedAt: new Date() })
+        .where(eq(s.stores.id, storeId));
+    }
+
     const [existing] = await this.db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
     const existingConfig = (existing?.themeConfig as any) ?? null;
     const current = resolveActiveThemeConfig(existing?.themeConfig as any);
@@ -291,6 +316,18 @@ export class StoreSettingsService {
 
     await this.upsertStoreSettings(storeId, { themeConfig: updated });
     const { _history, ...clean } = updated;
+
+    // Resolve primary from stores.primaryColor for the response
+    const [store] = await this.db
+      .select({ primaryColor: s.stores.primaryColor })
+      .from(s.stores)
+      .where(eq(s.stores.id, storeId))
+      .limit(1);
+    clean.colors = {
+      ...(clean.colors ?? {}),
+      primary: resolveStoreThemePrimaryColor(store?.primaryColor, clean.colors?.primary),
+    };
+
     return { config: clean, history: trimmed };
   }
 
@@ -361,6 +398,17 @@ export class StoreSettingsService {
   }
 
   // ── Private helpers ──────────────────────────────────────
+
+  /**
+   * Sync stores.primaryColor into storeSettings.themeConfig.colors.primary
+   * so the legacy field stays in lockstep with the single source of truth.
+   */
+  private async syncPrimaryColorToThemeConfig(storeId: number, primaryColor: string) {
+    const [existing] = await this.db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
+    const themeConfig = (existing?.themeConfig as any) ?? {};
+    themeConfig.colors = { ...(themeConfig.colors ?? {}), primary: primaryColor };
+    await this.upsertStoreSettings(storeId, { themeConfig });
+  }
 
   /**
    * Upsert helper for storeSettings. Reads the row first, then

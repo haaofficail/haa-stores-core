@@ -76,9 +76,9 @@ export default function Footer() {
             <div className="lg:col-span-5 space-y-3">
               <div className="flex items-center gap-2">
                 {store.logoUrl ? (
-                  <img src={store.logoUrl} alt={store.name} className="h-7 w-7 rounded-lg object-cover" />
+                  <img src={store.logoUrl} alt={store.name} className="store-logo" />
                 ) : (
-                  <div className="h-7 w-7 rounded-lg bg-primary-500 flex items-center justify-center text-white font-bold text-xs">
+                  <div className="h-7 w-7 rounded-lg bg-primary-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
                     {store.name.charAt(0)}
                   </div>
                 )}

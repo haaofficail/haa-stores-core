@@ -3,6 +3,7 @@ import { getDefaultThemeConfig as resolveDefaultThemeConfig } from './activeThem
 
 const THEME_VARS = [
   '--primary', '--theme-primary', '--theme-primary-hover', '--theme-primary-soft', '--theme-primary-foreground',
+  '--store-primary',
   '--color-primary-50', '--color-primary-100', '--color-primary-500', '--color-primary-600', '--color-primary-700',
   '--surface-1', '--surface-2', '--surface-3',
   '--text-primary', '--text-secondary', '--text-tertiary',
@@ -29,7 +30,7 @@ const STOREFRONT_SCOPE_SELECTOR = '#storefront-scope';
  */
 const LEGACY_SCOPE_SELECTOR = '#theme-scope';
 
-const FALLBACK_PRIMARY = '#2563eb';
+const FALLBACK_PRIMARY = '#58a1e2';
 const FALLBACK_STATUS = {
   success: '#10b981',
   warning: '#f59e0b',
@@ -130,6 +131,7 @@ function getPrimaryScale(primary: unknown) {
 
 function applyPrimaryScaleScoped(primary: unknown, scope: HTMLElement) {
   const scale = getPrimaryScale(primary);
+  setVarScoped('--store-primary', scale[500], scope);
   setVarScoped('--primary', scale[500], scope);
   setVarScoped('--theme-primary', scale[500], scope);
   setVarScoped('--theme-primary-hover', scale[600], scope);
@@ -153,6 +155,7 @@ function applyStatusColorScoped(name: keyof typeof FALLBACK_STATUS, value: unkno
 
 function applyPrimaryScale(primary: unknown) {
   const scale = getPrimaryScale(primary);
+  setVar('--store-primary', scale[500]);
   setVar('--primary', scale[500]);
   setVar('--theme-primary', scale[500]);
   setVar('--theme-primary-hover', scale[600]);

@@ -2,6 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
+const API_TARGET = process.env.VITE_API_URL || 'http://localhost:3000';
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -24,8 +26,12 @@ export default defineConfig({
     port: 5174,
     strictPort: true,
     proxy: {
+      '/api': {
+        target: API_TARGET,
+        changeOrigin: true,
+      },
       '/s/': {
-        target: 'http://localhost:3000',
+        target: API_TARGET,
         changeOrigin: true,
         bypass: (req) => {
           if (req.headers.accept?.includes('text/html')) {
@@ -34,11 +40,11 @@ export default defineConfig({
         },
       },
       '/storage/': {
-        target: 'http://localhost:3000',
+        target: API_TARGET,
         changeOrigin: true,
       },
       '/marketplace': {
-        target: 'http://localhost:3000',
+        target: API_TARGET,
         changeOrigin: true,
         bypass: (req) => {
           if (req.headers.accept?.includes('text/html')) {

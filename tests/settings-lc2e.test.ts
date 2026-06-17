@@ -14,7 +14,7 @@ describe('LC2E — Settings & Store Setup', () => {
     });
 
     it('valid hex color passes', () => {
-      expect(/^#[0-9a-fA-F]{6}$/.test('#2563eb')).toBe(true);
+      expect(/^#[0-9a-fA-F]{6}$/.test('#58a1e2')).toBe(true);
       expect(/^#[0-9a-fA-F]{6}$/.test('#FF0000')).toBe(true);
       expect(/^#[0-9a-fA-F]{6}$/.test('#000000')).toBe(true);
     });

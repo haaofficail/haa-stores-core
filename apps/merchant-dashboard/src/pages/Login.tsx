@@ -65,13 +65,6 @@ export default function Login() {
   return (
     <div
       dir="rtl"
-      style={{
-        '--haa-primary-50': '#eef5fc',
-        '--haa-primary-100': '#d4e8fa',
-        '--haa-primary-500': '#58a1e2',
-        '--haa-primary-600': '#3d8ad4',
-        '--haa-primary-700': '#2a6fb8',
-      } as React.CSSProperties}
       className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50/30 p-6"
     >
       <div className={`mx-auto flex min-h-screen max-w-7xl items-center justify-center transition-all duration-700 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
@@ -126,7 +119,7 @@ export default function Login() {
                 <div className="mt-5 text-center">
                   <p className="text-xs text-neutral-400 mb-2.5">ليس لديك حساب؟</p>
                   <Link
-                    to="https://haa.store/signup"
+                    to={`${import.meta.env.VITE_STORE_URL || 'https://haa.store'}/signup`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 px-6 text-sm font-semibold text-white shadow-lg shadow-primary-500/25 transition-all hover:scale-[1.02] hover:shadow-xl"

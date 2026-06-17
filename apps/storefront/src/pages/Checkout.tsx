@@ -4,6 +4,10 @@ import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useSharedCart } from '@/hooks/CartContext';
 import { checkoutApi, featuresApi, pickupLocationsApi, giftOptionsApi, type ShippingRate, type PickupLocation, type GiftOptions, type PaymentMethodAvailability, type Cart } from '@/lib/api';
 import { useSEO } from '@/hooks/useSEO';
+// TASK-0035 sub-item 7: VAT-aware checkout summary
+// 15% per ZATCA. The total displayed is inc-VAT; subtotal + VAT line
+// are shown separately for transparency. See formatVatLine helper.
+import { DEFAULT_VAT_RATE, formatVatLine, priceExVat } from '@haa/commerce-core/vat';
 import {
   StoreContainer, StoreButton, StoreCard, StoreInput, StoreTextarea, StoreSkeleton,
   StoreStepIndicator, StoreAlert, StoreBadge,
@@ -35,7 +39,7 @@ function getVariantLabel(item: Cart['items'][number]): string {
 }
 
 export default function Checkout() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const couponCode = searchParams.get('coupon') || undefined;
@@ -619,6 +623,31 @@ export default function Checkout() {
                 <span>{t('checkout.total')}</span>
                 <span className="text-primary-600">{total.toFixed(2)} <SarIcon size="md" /></span>
               </div>
+              {(() => {
+                // TASK-0035 sub-item 7: VAT-aware pricing transparency
+                // The displayed `total` is inc-VAT. Show subtotal (ex-VAT)
+                // and VAT line separately so the customer sees the
+                // 15% ZATCA VAT clearly (SAMA-mandated transparency).
+                // Uses DEFAULT_VAT_RATE (or env override) from @haa/commerce-core.
+                const vatRate = DEFAULT_VAT_RATE;
+                const subtotal = priceExVat(Number(total), vatRate);
+                const locale = (i18n?.language === 'ar' ? 'ar' : 'en') as 'ar' | 'en';
+                const vatLine = formatVatLine(subtotal, vatRate, locale);
+                return (
+                  <div className="mt-2 space-y-1 text-xs text-text-tertiary">
+                    <div className="flex justify-between">
+                      <span>{t('checkout.subtotalExVat', 'المجموع قبل الضريبة')}</span>
+                      <span dir="ltr">{subtotal.toFixed(2)} <SarIcon size="sm" /></span>
+                    </div>
+                    <div className="flex justify-between" data-testid="vat-line">
+                      <span>{vatLine}</span>
+                    </div>
+                    <div className="text-[10px] text-text-tertiary leading-relaxed pt-1">
+                      {t('checkout.vatNote', 'شامل ضريبة القيمة المضافة (15%) — فاتورة ضريبية مبسطة')}
+                    </div>
+                  </div>
+                );
+              })()}
                 <div className="mt-4 flex items-center gap-2 text-xs text-text-tertiary">
                   <Icon icon={ShieldCheck} size="xs" />
                   <span>{t('checkout.securePayment', 'دفع آمن ومحمي')}</span>

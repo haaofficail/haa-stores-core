@@ -117,7 +117,7 @@ export default function LuxuryShowcaseHeader() {
           <div className="min-h-[56px] flex items-center justify-between gap-3">
             <Link to={`/s/${slug}`} className="flex items-center min-w-0 gap-2 shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--primary)] rounded">
               {store.logoUrl ? (
-                <img src={store.logoUrl} alt={store.name} className="h-7 w-7 object-contain shrink-0" />
+                <img src={store.logoUrl} alt={store.name} className="store-logo shrink-0" />
               ) : null}
               <span className="text-xs md:text-sm font-light text-[var(--text-primary)] tracking-widest truncate uppercase">
                 {store.name}

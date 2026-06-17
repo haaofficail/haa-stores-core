@@ -23,7 +23,7 @@ describe('isolation', () => {
     it('returns a complete config', () => {
       const config = getDefaultThemeConfig();
       expect(config.preset).toBe('minimal');
-      expect(config.colors.primary).toBe('#2563eb');
+      expect(config.colors.primary).toBe('#58a1e2');
       expect(config.font.family).toBe('IBM Plex Sans Arabic');
       expect(config.layout.productCardColumns).toBe(4);
     });
@@ -96,15 +96,15 @@ describe('isolation', () => {
 
     it('falls back safely for invalid primary hex', () => {
       applyTheme({ ...MOCK_CONFIG, colors: { ...MOCK_CONFIG.colors, primary: 'not-a-color' } });
-      expect(document.documentElement.style.getPropertyValue('--theme-primary')).toBe('#2563eb');
-      expect(document.documentElement.style.getPropertyValue('--color-primary-500')).toBe('#2563eb');
-      expect(document.documentElement.style.getPropertyValue('--color-primary-600')).toBe('#2157cf');
+      expect(document.documentElement.style.getPropertyValue('--theme-primary')).toBe('#58a1e2');
+      expect(document.documentElement.style.getPropertyValue('--color-primary-500')).toBe('#58a1e2');
+      expect(document.documentElement.style.getPropertyValue('--color-primary-600')).toBe('#4d8ec7');
     });
 
     it('does not throw when primary is missing', () => {
       const { primary, ...colors } = MOCK_CONFIG.colors;
       expect(() => applyTheme({ ...MOCK_CONFIG, colors } as any)).not.toThrow();
-      expect(document.documentElement.style.getPropertyValue('--theme-primary')).toBe('#2563eb');
+      expect(document.documentElement.style.getPropertyValue('--theme-primary')).toBe('#58a1e2');
     });
 
     it('adds font link element', () => {

@@ -492,7 +492,7 @@ export default function SettingsPage() {
 
   const [form, setForm] = useState({
     name: '', slug: '', description: '', status: 'active' as string,
-    logoUrl: '', primaryColor: '#2563eb', email: '', phone: '',
+    logoUrl: '', primaryColor: '#58a1e2', email: '', phone: '',
     seoTitle: '', seoDescription: '',
   });
 
@@ -504,7 +504,7 @@ export default function SettingsPage() {
         setStore(s);
         setForm({
           name: s.name ?? '', slug: s.slug ?? '', description: s.description ?? '',
-          status: s.status ?? 'active', logoUrl: s.logoUrl ?? '', primaryColor: s.primaryColor ?? '#2563eb',
+          status: s.status ?? 'active', logoUrl: s.logoUrl ?? '', primaryColor: s.primaryColor ?? '#58a1e2',
           email: s.email ?? '', phone: s.phone ?? '',
           seoTitle: s.seoTitle ?? '', seoDescription: s.seoDescription ?? '',
         });
@@ -1372,7 +1372,7 @@ export default function SettingsPage() {
           if (store) {
             setForm({
               name: store.name ?? '', slug: store.slug ?? '', description: store.description ?? '',
-              status: store.status ?? 'active', logoUrl: store.logoUrl ?? '', primaryColor: store.primaryColor ?? '#2563eb',
+              status: store.status ?? 'active', logoUrl: store.logoUrl ?? '', primaryColor: store.primaryColor ?? '#58a1e2',
               email: store.email ?? '', phone: store.phone ?? '',
               seoTitle: store.seoTitle ?? '', seoDescription: store.seoDescription ?? '',
             });

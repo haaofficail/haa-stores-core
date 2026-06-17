@@ -90,7 +90,7 @@ export default function MarketplaceSeller() {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex gap-3">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-white ring-1 ring-gray-100">
-                {seller.logoUrl ? <img src={seller.logoUrl} alt={seller.name} className="h-full w-full object-cover" /> : <Icon icon={Store} size="md" className="text-[#2563eb]" />}
+                {seller.logoUrl ? <img src={seller.logoUrl} alt={seller.name} className="h-full w-full object-cover" /> : <Icon icon={Store} size="md" className="text-primary-500" />}
               </div>
               <div className="min-w-0">
                 <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-[#16a34a]/10 px-2 py-0.5 text-[10px] font-bold text-[#16a34a]">

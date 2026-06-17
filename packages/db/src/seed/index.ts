@@ -140,7 +140,7 @@ async function seed() {
     description: 'متجر تجريبي يعرض منتجات متنوعة من إلكترونيات وملابس ومستلزمات المنزل',
     email: 'store@haa-demo.com',
     phone: '966500000002',
-    primaryColor: '#2563eb',
+    primaryColor: '#58a1e2',
     backgroundColor: '#ffffff',
     isDemo: true,
     demoProfile: 'general',

@@ -33,7 +33,7 @@ const COLOR_GROUPS = [
   },
   {
     label: 'أزرق',
-    colors: ['#0a1628', '#1e3a5f', '#1e4d8c', '#2563eb', '#3b82f6', '#60a5fa',
+    colors: ['#0a1628', '#1e3a5f', '#1e4d8c', '#58a1e2', '#8dc4f1', '#b8daf7',
       '#93c5fd', '#bfdbfe', '#dbeafe', '#eff6ff'],
   },
   {
@@ -709,7 +709,7 @@ export default function ThemeEditor() {
           <div className="bg-white rounded-2xl border border-neutral-200 p-5">
             <SectionHeader title={t('theme.brandColors', 'ألوان العلامة التجارية')} />
             <div className="grid sm:grid-cols-2 gap-3">
-              <ColorPicker label={t('theme.primary', 'اللون الأساسي')} value={colors.primary || '#2563eb'} onChange={(v) => updateConfig('colors.primary', v)} />
+              <ColorPicker label={t('theme.primary', 'اللون الأساسي')} value={colors.primary || '#58a1e2'} onChange={(v) => updateConfig('colors.primary', v)} />
             </div>
           </div>
           <div className="bg-white rounded-2xl border border-neutral-200 p-5">

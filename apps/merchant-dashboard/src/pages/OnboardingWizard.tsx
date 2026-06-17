@@ -40,7 +40,7 @@ export default function OnboardingWizard() {
   const [storeName, setStoreName] = useState('');
   const [storeDesc, setStoreDesc] = useState('');
   const [storePhone, setStorePhone] = useState('');
-  const [storeColor, setStoreColor] = useState('#6366f1');
+  const [storeColor, setStoreColor] = useState('#58a1e2');
 
   // Step 2: Products
   const [aiProducts, setAiProducts] = useState<any[]>([]);
@@ -63,7 +63,7 @@ export default function OnboardingWizard() {
       setStoreName(s.name || '');
       setStoreDesc(s.description || '');
       setStorePhone(s.phone || '');
-      setStoreColor(s.primaryColor || '#6366f1');
+      setStoreColor(s.primaryColor || '#58a1e2');
       setStoreUrl(s.slug ? `${getStorefrontOrigin()}/s/${s.slug}` : '');
     }).catch(() => {
       toast.error(t('common.error'));

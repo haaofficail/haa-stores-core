@@ -6,7 +6,7 @@ import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { buildWhatsappContactChannel, getOfficialContactEmail } from '@haa/commerce-core';
 import { resolveActiveThemeConfig } from '@haa/theme-system/server';
-import { isDemoStore } from '@haa/shared';
+import { isDemoStore, resolveStoreThemePrimaryColor } from '@haa/shared';
 import { toPublicStore } from '@haa/shared/dto/storefront-dto';
 import { resolveStore } from './_shared.js';
 
@@ -51,7 +51,15 @@ storeInfoRouter.get('/:slug/theme', async (c) => {
     .where(eq(s.storeSettings.storeId, store.id))
     .limit(1);
 
-  const config = resolveActiveThemeConfig((settingsRow as any)?.themeConfig ?? null);
+  const rawConfig = (settingsRow as any)?.themeConfig ?? null;
+  const config = resolveActiveThemeConfig(rawConfig);
+  const resolvedPrimary = resolveStoreThemePrimaryColor(
+    store.primaryColor,
+    rawConfig?.colors?.primary ?? null,
+  );
+  if (resolvedPrimary) {
+    config.colors.primary = resolvedPrimary;
+  }
   return c.json({
     success: true,
     data: {

@@ -73,7 +73,7 @@ export function ProductBadges({
         </span>
       )}
       {featured && (
-        <span className="inline-flex items-center rounded-[6px] bg-[#2563eb] px-2 py-0.5 text-[10px] font-bold text-white leading-none">
+        <span className="inline-flex items-center rounded-[6px] bg-primary-500 px-2 py-0.5 text-[10px] font-bold text-white leading-none">
           مختار
         </span>
       )}

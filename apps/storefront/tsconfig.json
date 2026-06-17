@@ -18,6 +18,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
+      "@haa/commerce-core/vat": ["../../packages/commerce-core/src/vat.ts"],
       "@haa/commerce-core/landing-ai-agent": ["../../packages/commerce-core/src/landing-ai-agent/index.ts"],
       "@haa/commerce-core/landing-ai-agent/*": ["../../packages/commerce-core/src/landing-ai-agent/*"]
     }

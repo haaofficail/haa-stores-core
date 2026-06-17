@@ -60,11 +60,11 @@ export const THEMES: ThemeDefinition[] = [
     author: 'Haa Studio', price: 0, featured: true, kind: 'config-preset',
     categories: ['أزياء', 'إلكترونيات', 'عام'],
     tags: ['خفيف', 'سريع', 'عصري'],
-    screenshotUrl: thumb({ primary: '#2563eb', surface1: '#ffffff', surface2: '#f8f9fa', surface3: '#f1f3f5', textPrimary: '#1a1a1a', textSecondary: '#6b7280', textTertiary: '#9ca3af', border: '#e5e7eb', borderHover: '#d1d5db', success: '#10b981', warning: '#f59e0b', error: '#ef4444', headerBackground: '#ffffff', headerText: '#4b5563', announcementBackground: '#2563eb', announcementText: '#ffffff' }),
+    screenshotUrl: thumb({ primary: '#58a1e2', surface1: '#ffffff', surface2: '#f8f9fa', surface3: '#f1f3f5', textPrimary: '#1a1a1a', textSecondary: '#6b7280', textTertiary: '#9ca3af', border: '#e5e7eb', borderHover: '#d1d5db', success: '#10b981', warning: '#f59e0b', error: '#ef4444', headerBackground: '#ffffff', headerText: '#4b5563', announcementBackground: '#58a1e2', announcementText: '#ffffff' }),
     demoUrl: undefined,
     config: {
       preset: 'minimal',
-      colors: { primary: '#2563eb', surface1: '#ffffff', surface2: '#f8f9fa', surface3: '#f1f3f5', textPrimary: '#1a1a1a', textSecondary: '#6b7280', textTertiary: '#9ca3af', border: '#e5e7eb', borderHover: '#d1d5db', success: '#10b981', warning: '#f59e0b', error: '#ef4444', headerBackground: '#ffffff', headerText: '#4b5563', announcementBackground: '#2563eb', announcementText: '#ffffff' },
+      colors: { primary: '#58a1e2', surface1: '#ffffff', surface2: '#f8f9fa', surface3: '#f1f3f5', textPrimary: '#1a1a1a', textSecondary: '#6b7280', textTertiary: '#9ca3af', border: '#e5e7eb', borderHover: '#d1d5db', success: '#10b981', warning: '#f59e0b', error: '#ef4444', headerBackground: '#ffffff', headerText: '#4b5563', announcementBackground: '#58a1e2', announcementText: '#ffffff' },
       font: { family: 'IBM Plex Sans Arabic', url: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap', headingsSize: '1.5rem', bodySize: '1rem' },
       layout: { ...BASE_LAYOUT }, homepage: { ...BASE_HOMEPAGE }, header: { ...BASE_HEADER }, footer: { ...BASE_FOOTER }, socialLinks: { ...BASE_SOCIAL }, customCss: '', analytics: { ...NO_ANALYTICS }, trustBadges: { ...BASE_TRUST_BADGES },
     },

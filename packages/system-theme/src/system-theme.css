@@ -7,6 +7,9 @@
 /* ── Light Mode (Default) ── */
 .haa-system-theme {
   /* Surfaces */
+  --brand-primary: #58a1e2;
+  --store-primary: var(--brand-primary, #58a1e2);
+  --store-logo-size: 20px;
   --haa-surface-1: #ffffff;
   --haa-surface-2: #f5f5f7;
   --haa-surface-3: #e8e8ed;
@@ -18,28 +21,28 @@
   --haa-text-tertiary: #aeaeb2;
   --haa-text-disabled: #c6c6c8;
   --haa-text-inverse: #f5f5f7;
-  --haa-text-link: #007aff;
-  --haa-text-link-hover: #0066d6;
+  --haa-text-link: var(--brand-primary);
+  --haa-text-link-hover: color-mix(in srgb, var(--brand-primary) 80%, #000);
 
   /* Borders */
   --haa-border: #c6c6c8;
   --haa-border-strong: #86868b;
-  --haa-border-focus: #007aff;
+  --haa-border-focus: var(--brand-primary);
   --haa-border-disabled: #e8e8ed;
   --haa-divider: #d2d2d7;
 
-  /* Primary (Haa Blue) */
-  --haa-primary-50: #f2f5ff;
-  --haa-primary-100: #e0e8ff;
-  --haa-primary-500: #007aff;
-  --haa-primary-600: #0066d6;
-  --haa-primary-700: #0055b3;
+  /* Primary (Brand) — light scale */
+  --haa-primary-50: color-mix(in srgb, var(--brand-primary) 8%, #fff);
+  --haa-primary-100: color-mix(in srgb, var(--brand-primary) 14%, #fff);
+  --haa-primary-500: var(--brand-primary);
+  --haa-primary-600: color-mix(in srgb, var(--brand-primary) 88%, #000);
+  --haa-primary-700: color-mix(in srgb, var(--brand-primary) 76%, #000);
 
   /* Semantic */
   --haa-success: #34c759;
   --haa-warning: #ff9500;
   --haa-danger: #ff3b30;
-  --haa-info: #007aff;
+  --haa-info: var(--brand-primary);
 
   /* Radius */
   --haa-radius-card: 12px;
@@ -79,28 +82,28 @@
   --haa-text-tertiary: #636366;
   --haa-text-disabled: #48484a;
   --haa-text-inverse: #1d1d1f;
-  --haa-text-link: #0a84ff;
-  --haa-text-link-hover: #409cff;
+  --haa-text-link: var(--brand-primary);
+  --haa-text-link-hover: color-mix(in srgb, var(--brand-primary) 70%, #fff);
 
   /* Borders */
   --haa-border: #38383a;
   --haa-border-strong: #48484a;
-  --haa-border-focus: #0a84ff;
+  --haa-border-focus: var(--brand-primary);
   --haa-border-disabled: #2c2c2e;
   --haa-divider: #38383a;
 
-  /* Primary (Haa Blue Dark) */
-  --haa-primary-50: #002266;
-  --haa-primary-100: #003380;
-  --haa-primary-500: #0a84ff;
-  --haa-primary-600: #409cff;
-  --haa-primary-700: #66b3ff;
+  /* Primary (Brand Dark) — inverted scale */
+  --haa-primary-50: color-mix(in srgb, var(--brand-primary) 15%, #000);
+  --haa-primary-100: color-mix(in srgb, var(--brand-primary) 25%, #000);
+  --haa-primary-500: var(--brand-primary);
+  --haa-primary-600: color-mix(in srgb, var(--brand-primary) 70%, #fff);
+  --haa-primary-700: color-mix(in srgb, var(--brand-primary) 50%, #fff);
 
   /* Semantic */
   --haa-success: #30d158;
   --haa-warning: #ffb340;
   --haa-danger: #ff453a;
-  --haa-info: #0a84ff;
+  --haa-info: var(--brand-primary);
 
   /* Shadows */
   --haa-shadow-color: rgb(0 0 0 / 0.5);
@@ -115,6 +118,14 @@
 
   /* Placeholder */
   --haa-placeholder-text: #636366;
+}
+
+/* ── Store identity utilities ── */
+.haa-system-theme .store-logo {
+  width: var(--store-logo-size, 20px);
+  height: var(--store-logo-size, 20px);
+  object-fit: contain;
+  border-radius: 4px;
 }
 
 /* ── High Contrast ── */

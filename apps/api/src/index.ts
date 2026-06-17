@@ -6,6 +6,7 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serveStatic } from 'hono/serve-static';
+import { FALLBACK_PRIMARY } from '@haa/shared';
 import { env } from './env.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -260,6 +261,19 @@ app.use('/marketplace*', async (c, next) => {
 app.route('/s', storefrontRouter);
 app.route('/marketplace', haaMarketplaceRouter);
 app.route('/api/landing-ai-agent', createLandingAIAgentRoute());
+app.get('/api/brand', async (c) => {
+  try {
+    const [tenant] = await db
+      .select({ id: s.tenants.id, name: s.tenants.name, logoUrl: s.tenants.logoUrl })
+      .from(s.tenants)
+      .where(eq(s.tenants.status, 'active'))
+      .limit(1);
+    if (!tenant) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'No active tenant' } }, 404);
+    return c.json({ success: true, data: { primaryColor: FALLBACK_PRIMARY, tenantName: tenant.name, logoUrl: tenant.logoUrl } });
+  } catch {
+    return c.json({ success: true, data: { primaryColor: FALLBACK_PRIMARY } });
+  }
+});
 app.route('/merchant/:storeId/shipments', shipmentsRouter);
 app.route('/webhooks/shipping', shippingWebhooksRouter);
 app.route('/webhooks/oto', otoWebhookRouter);
