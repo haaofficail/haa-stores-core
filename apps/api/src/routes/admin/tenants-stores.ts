@@ -53,8 +53,49 @@ export const tenantsRoutes = {
     const id = Number(c.req.param('id'));
     const body = c.req.valid('json');
     const db = createDbClient();
+    // TASK-0038 G1-G10 compliance fields. Fields that are not in the
+    // standard tenant shape (name/slug/email/phone/status) are compliance
+    // fields — log them to audit trail since they have regulatory
+    // implications (CR, VAT, ASV, pen-test, etc.).
+    const COMPLIANCE_FIELDS = new Set([
+      'commercialRegistrationNumber', 'commercialRegistrationIssuedAt',
+      'vatNumber', 'vatRegisteredAt',
+      'ecommerceLicenseNumber', 'ecommerceLicenseIssuedAt', 'ecommerceLicenseExpiresAt',
+      'dpoEmail', 'dpoPhone', 'dpoAppointedAt',
+      'trademarkNumber', 'trademarkRegisteredAt', 'trademarkExpiresAt',
+      'asvLastScanAt', 'asvVendor', 'asvCertificateUrl',
+      'pentestLastScanAt', 'pentestVendor', 'pentestReportUrl', 'pentestPass',
+      'hostingRegion', 'hostingProvider', 'hostingKsaResidency',
+      'tabbyDpaSignedAt', 'tabbyDpaUrl',
+      'drPlanDocumentedAt', 'drLastTabletopAt', 'drNextTabletopAt',
+    ]);
+    const complianceChanges: Record<string, { from: unknown; to: unknown }> = {};
+    for (const key of Object.keys(body)) {
+      if (COMPLIANCE_FIELDS.has(key)) {
+        // Read current value to capture 'from'. Single query — fine for low-volume admin path.
+        const [current] = await db.select().from(s.tenants).where(eq(s.tenants.id, id));
+        if (current) {
+          complianceChanges[key] = { from: (current as any)[key], to: (body as any)[key] };
+        }
+      }
+    }
     const [tenant] = await db.update(s.tenants).set({ ...body, updatedAt: new Date() }).where(eq(s.tenants.id, id)).returning();
     if (!tenant) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Tenant not found' } }, 404);
+    // Audit log compliance changes (best-effort; do not fail the request if log write fails)
+    if (Object.keys(complianceChanges).length > 0) {
+      try {
+        const { logAdminAction } = await import('../../services/audit-log.js');
+        await logAdminAction({
+          adminId: c.get('admin')?.id,
+          action: 'tenant.compliance.update',
+          tenantId: id,
+          changes: complianceChanges,
+          ip: c.req.header('x-forwarded-for') || c.req.header('x-real-ip'),
+        });
+      } catch (err) {
+        console.error('[audit] compliance update log failed:', err);
+      }
+    }
     return c.json({ success: true, data: tenant });
   },
 
