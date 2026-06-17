@@ -6,6 +6,7 @@
 import React, { useEffect, useRef, useState as useReactState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { getClaim, isClaimEnabled } from '@/lib/landing-claims';
 import {
   ArrowLeft,
   ArrowUp,
@@ -535,7 +536,7 @@ function Features({ t }: { t: TFn }) {
     {
       id: 'themes',
       icon: Palette,
-      stat: '4 ثيمات',
+      stat: getClaim('themeCount').text,
       title: t('landing.features.themes.title', 'ثيمات احترافية'),
       desc: t('landing.features.themes.desc', 'صمّمها مصممون محترفون. غيّر الألوان والخطوط بنقرة واحدة بدون لمس الكود.'),
       gradient: 'from-blue-600 to-indigo-700',
@@ -544,7 +545,7 @@ function Features({ t }: { t: TFn }) {
     {
       id: 'payments',
       icon: CreditCard,
-      stat: '0% عمولة',
+      stat: getClaim('zeroCommission').text,
       title: t('landing.features.payments.title', 'دفع سعودي كامل'),
       desc: t('landing.features.payments.desc', 'مدى، Apple Pay، فيزا، ماستركارد، تابي، تمارا. كل البوابات بدون عمولات خفية.'),
       gradient: 'from-blue-400 to-blue-600',
@@ -664,7 +665,7 @@ function HowItWorks({ t }: { t: TFn }) {
   const steps = [
     { n: 1, icon: MousePointerClick, time: '30 ثانية', title: t('landing.how.steps.1.title', 'سجّل حسابك'), desc: t('landing.how.steps.1.desc', 'فقط بريد إلكتروني ورقم جوال. بدون بطاقة بنكية.') },
     { n: 2, icon: ShoppingBag, time: '5 دقائق', title: t('landing.how.steps.2.title', 'ارفع منتجاتك'), desc: t('landing.how.steps.2.desc', 'صور، أوصاف، وأسعار. اسحب وأفلت مرة واحدة.') },
-    { n: 3, icon: Palette, time: 'دقيقة واحدة', title: t('landing.how.steps.3.title', 'اختر ثيمك'), desc: t('landing.how.steps.3.desc', '4 ثيمات احترافية. عدّل الألوان والخطوط بنقرة واحدة.') },
+    { n: 3, icon: Palette, time: 'دقيقة واحدة', title: t('landing.how.steps.3.title', 'اختر ثيمك'), desc: t('landing.how.steps.3.desc', `${getClaim('themeCount').text}. عدّل الألوان والخطوط بنقرة واحدة.`) },
     { n: 4, icon: Rocket, time: 'فوري', title: t('landing.how.steps.4.title', 'أطلق متجرك'), desc: t('landing.how.steps.4.desc', 'فعّل بوابة الدفع وانشر متجرك على نطاقك.') },
   ];
   return (
@@ -1064,8 +1065,8 @@ function AnimatedCounter({ value, prefix, suffix }: { value: number; prefix: str
 function MockupPreview() {
   const benefits = [
     { prefix: '< ', value: 60, suffix: ' ثانية', desc: 'إطلاق فوري' },
-    { prefix: '', value: 4, suffix: ' ثيمات', desc: 'ثيمات احترافية' },
-    { prefix: '', value: 0, suffix: '% عمولة', desc: 'دفع سعودي كامل' },
+    { prefix: '', value: getClaim('themeCount').text, suffix: '', desc: 'ثيمات احترافية' },
+    { prefix: '', value: getClaim('zeroCommission').text, suffix: '', desc: 'دفع سعودي كامل' },
   ];
   return (
     <section className="relative py-16 sm:py-24 scroll-mt-20">
@@ -1114,7 +1115,7 @@ function MockupPreview() {
                       <Icon className="h-6 w-6" strokeWidth={1.75} />
                     </div>
                     <div className="mt-4 text-2xl font-bold tracking-[-0.01em] text-text-primary">
-                      {value > 0 ? (
+                      {typeof value === 'number' && value > 0 ? (
                         <AnimatedCounter prefix={prefix} value={value} suffix={suffix} />
                       ) : (
                         <span>{prefix}{value}{suffix}</span>
@@ -1362,7 +1363,7 @@ function Pricing({ t }: { t: TFn }) {
                 </Link>
                 {/* Trust microcopy under CTA */}
                 <p className="mt-3 text-center text-[12px] text-text-tertiary">
-                  {highlight ? 'بدون بطاقة بنكية · إلغاء في أي وقت' : 'مجاني للأبد · لا حاجة لبطاقة'}
+                  {highlight ? 'بدون بطاقة بنكية · إلغاء في أي وقت' : `${getClaim('freeForever').text} · لا حاجة لبطاقة`}
                 </p>
               </li>
             );
@@ -1436,11 +1437,15 @@ function FinalCTA({ t }: { t: TFn }) {
             <h2 className="mt-7 leading-[1.15] tracking-[-0.03em]">
               <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-0">
                 <span className="text-[32px] font-bold text-white/90 sm:text-[40px] lg:text-[48px]">{'انضم لـ'}</span>
-                <span className="text-[72px] font-extrabold bg-gradient-to-br from-amber-200 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:text-[96px] lg:text-[120px] xl:text-[140px]">{'2,400+'}</span>
-                <span className="text-[32px] font-bold text-white/90 sm:text-[40px] lg:text-[48px]">{'تاجر سعودي'}</span>
+                <span className="text-[72px] font-extrabold bg-gradient-to-br from-amber-200 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:text-[96px] lg:text-[120px] xl:text-[140px]">
+                  {getClaim('merchantCount').text || 'مجتمع Haa'}
+                </span>
+                <span className="text-[32px] font-bold text-white/90 sm:text-[40px] lg:text-[48px]">
+                  {getClaim('merchantCount').status === 'verified' ? 'تاجر سعودي' : 'من التجار'}
+                </span>
               </div>
               <div className="mt-2 text-[24px] font-semibold tracking-[-0.02em] text-white/70 sm:text-[28px] lg:text-[32px]">
-                {'يبيعون على Haa اليوم'}
+                {getClaim('merchantCount').status === 'verified' ? 'يبيعون على Haa اليوم' : 'وابدأ تجارتك الإلكترونية'}
               </div>
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-[18px] leading-[1.6] text-white/85 sm:text-[20px]">
@@ -1465,7 +1470,7 @@ function FinalCTA({ t }: { t: TFn }) {
             <ul className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm font-medium text-white/80">
               <li className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white">
                 <CreditCard className="h-4 w-4 text-amber-300" />
-                {t('landing.finalCta.g1', '0% عمولة')}
+                {t('landing.finalCta.g1', getClaim('zeroCommission').text)}
               </li>
               <li className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white">
                 <Globe className="h-4 w-4 text-blue-300" />
@@ -1490,7 +1495,7 @@ function DemoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [step, setStep] = useReactState(0);
   const steps = [
     { title: 'سجّل في 30 ثانية', body: 'فقط بريد إلكتروني ورقم جوال. لا بطاقة بنكية، لا تعقيد.' },
-    { title: 'اختر ثيمك', body: '4 ثيمات احترافية. عدّل الألوان والخطوط كما تريد.' },
+    { title: 'اختر ثيمك', body: `${getClaim('themeCount').text}. عدّل الألوان والخطوط كما تريد.` },
     { title: 'أضف منتجاتك', body: 'صور وأوصاف وأسعار. اسحب وأفلت.' },
     { title: 'أطلق متجرك', body: 'فعّل الدفع، انشر، وابدأ البيع.' },
   ];
@@ -1645,6 +1650,7 @@ function Bento({ t }: { t: TFn }) {
           }}
         />
       ))}
+      {isClaimEnabled('testimonials') && (
       <StoreContainer>
         <div className="mx-auto max-w-2xl text-center">
           <span className="aurora-pill text-xs">{t('landing.bento.eyebrow', 'آراء التجار')}</span>
@@ -1812,11 +1818,12 @@ function Bento({ t }: { t: TFn }) {
                   <div className="text-xs font-semibold text-text-primary">{t('landing.bento.q7name', 'هند الغامدي')}</div>
                   <div className="text-xs text-text-tertiary">{t('landing.bento.q7role', 'منتجات عناية · الطائف')}</div>
                 </div>
-              </footer>
+               </footer>
             </div>
           </article>
         </div>
       </StoreContainer>
+      )}
     </section>
   );
 }
