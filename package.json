@@ -45,6 +45,8 @@
     "ops:monitor:tail": "node scripts/tail-monitoring-events.mjs",
     "dashboard:generate": "python3 scripts/dashboard-regenerate.py",
     "dashboard:open": "open DASHBOARD.html",
+    "roadmap:generate": "python3 scripts/roadmap-regenerate.py",
+    "roadmap:open": "open ROADMAP.html",
     "setup": "pnpm install && pnpm docker:up && pnpm db:migrate && pnpm db:seed"
   },
   "engines": {
