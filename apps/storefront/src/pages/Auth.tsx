@@ -1,17 +1,20 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, User, Phone, Store as StoreIcon, Sparkles, ArrowLeft, Loader2, Check, Eye, EyeOff, Shield, Clock, Bell } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Mail, Lock, User, Phone, Store as StoreIcon, Sparkles, ArrowLeft, Loader2, Check, Eye, EyeOff, Shield, Bell } from 'lucide-react';
 import { StoreButton, StoreContainer, StoreInput } from '@/components/ui';
 import { useSEO } from '@/hooks/useSEO';
 import { usePlatformBrand } from '@/hooks/usePlatformBrand';
+import { authApi } from '@/lib/auth';
+import { ApiClientError as ApiError } from '@/lib/api';
 
 export function LoginPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
-  const [submitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useSEO({
@@ -19,9 +22,32 @@ export function LoginPage() {
     description: t('auth.login.metaDescription', 'ادخل على لوحة تحكم متجرك.'),
   });
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(t('auth.login.comingSoon.title', 'قريبًا'));
+    setError(null);
+    setSubmitting(true);
+    try {
+      const session = await authApi.login(email.trim().toLowerCase(), password);
+      // Redirect to merchant dashboard on success.
+      const target = session.store?.slug
+        ? `/admin?store=${encodeURIComponent(session.store.slug)}`
+        : '/admin';
+      navigate(target, { replace: true });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.code === 'INVALID_CREDENTIALS') {
+          setError(t('auth.login.errors.invalidCredentials', 'البريد أو كلمة المرور غير صحيحة'));
+        } else if (err.code === 'FORBIDDEN') {
+          setError(t('auth.login.errors.noTenant', 'هذا الحساب غير مرتبط بمتجر. تواصل مع الدعم.'));
+        } else {
+          setError(err.message || t('auth.login.errors.generic', 'تعذّر تسجيل الدخول. حاول مرة ثانية.'));
+        }
+      } else {
+        setError(t('auth.login.errors.generic', 'تعذّر تسجيل الدخول. حاول مرة ثانية.'));
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -34,16 +60,9 @@ export function LoginPage() {
         />
 
         <div className="rounded-modal border border-border-subtle bg-surface p-6 shadow-card sm:p-8">
-          <ComingSoonBanner
-            eyebrow={t('auth.login.comingSoon.eyebrow', 'قريبًا')}
-            title={t('auth.login.comingSoon.title', 'بوابة الدخول قيد الإطلاق')}
-            description={t('auth.login.comingSoon.description', 'نشتغل على تجربة دخول سلسة وآمنة.')}
-            ctaLabel={t('auth.login.comingSoon.cta', 'انضم لقائمة الانتظار')}
-          />
-
           <form
             onSubmit={onSubmit}
-            className="mt-6 space-y-4"
+            className="space-y-4"
             aria-label={t('auth.login.title', 'تسجيل الدخول')}
           >
             <StoreInput
@@ -134,14 +153,16 @@ export function LoginPage() {
 
 export function SignupPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [params] = useSearchParams();
   const plan = params.get('plan') === 'pro' ? 'pro' : 'free';
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [storeName, setStoreName] = useState('');
+  const [storeSlug, setStoreSlug] = useState('');
   const [password, setPassword] = useState('');
-  const [submitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useSEO({
@@ -149,9 +170,55 @@ export function SignupPage() {
     description: t('auth.signup.metaDescription', 'أطلق متجرك مجانًا.'),
   });
 
-  const onSubmit = (e: FormEvent) => {
+  // Auto-derive slug from store name (kebab-case, ASCII fallback).
+  // User can override manually.
+  const onStoreNameChange = (value: string) => {
+    setStoreName(value);
+    if (!storeSlug) {
+      const derived = value
+        .trim()
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      setStoreSlug(derived);
+    }
+  };
+
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(t('auth.signup.comingSoon.title', 'قريبًا'));
+    setError(null);
+    setSubmitting(true);
+    try {
+      const session = await authApi.register({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+        phone: phone.trim() || undefined,
+        storeName: storeName.trim(),
+        storeSlug: storeSlug.trim().toLowerCase(),
+      });
+      // Redirect to merchant dashboard on success.
+      const target = session.store?.slug
+        ? `/admin?store=${encodeURIComponent(session.store.slug)}`
+        : '/admin';
+      navigate(target, { replace: true });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.code === 'CONFLICT') {
+          setError(t('auth.signup.errors.conflict', 'البريد أو اسم المتجر مستخدم. جرّب غيره.'));
+        } else if (err.code === 'INVALID_INPUT' || err.code === 'VALIDATION_ERROR') {
+          setError(err.message || t('auth.signup.errors.invalidInput', 'تأكد من البيانات وحاول مرة ثانية.'));
+        } else {
+          setError(err.message || t('auth.signup.errors.generic', 'تعذّر إنشاء الحساب. حاول مرة ثانية.'));
+        }
+      } else {
+        setError(t('auth.signup.errors.generic', 'تعذّر إنشاء الحساب. حاول مرة ثانية.'));
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -165,14 +232,7 @@ export function SignupPage() {
         />
 
         <div className="rounded-modal border border-border-subtle bg-surface p-6 shadow-card sm:p-8">
-          <ComingSoonBanner
-            eyebrow={t('auth.signup.comingSoon.eyebrow', 'قريبًا')}
-            title={t('auth.signup.comingSoon.title', 'التسجيل يفتح قريبًا')}
-            description={t('auth.signup.comingSoon.description', 'نعدّ تجربة تسجيل سلسة وآمنة.')}
-            ctaLabel={t('auth.signup.comingSoon.cta', 'انضم لقائمة الانتظار')}
-          />
-
-          <form onSubmit={onSubmit} className="mt-6 space-y-4" aria-label={t('auth.signup.title', 'سجّل كتاجر')}>
+          <form onSubmit={onSubmit} className="space-y-4" aria-label={t('auth.signup.title', 'سجّل كتاجر')}>
             <StoreInput
               label={t('auth.signup.nameLabel', 'الاسم الكامل')}
               autoComplete="name"
@@ -211,9 +271,21 @@ export function SignupPage() {
               label={t('auth.signup.storeNameLabel', 'اسم المتجر')}
               required
               value={storeName}
-              onChange={(e) => setStoreName(e.target.value)}
+              onChange={(e) => onStoreNameChange(e.target.value)}
               placeholder={t('auth.signup.storeNamePlaceholder', 'متجر الأناقة')}
               iconStart={<StoreIcon className="h-4 w-4" />}
+            />
+
+            <StoreInput
+              label={t('auth.signup.storeSlugLabel', 'رابط المتجر (slug)')}
+              required
+              value={storeSlug}
+              onChange={(e) => setStoreSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+              placeholder={t('auth.signup.storeSlugPlaceholder', 'elegance-store')}
+              pattern="[a-z0-9-]+"
+              minLength={3}
+              maxLength={50}
+              iconStart={<span className="text-xs text-text-muted">/s/</span>}
             />
 
             <StoreInput
@@ -420,27 +492,5 @@ function Bullet({ icon, text }: { icon: React.ReactNode; text: string }) {
       <span aria-hidden="true">{icon}</span>
       <span>{text}</span>
     </li>
-  );
-}
-
-function ComingSoonBanner({ eyebrow, title, description, ctaLabel }: { eyebrow: string; title: string; description: string; ctaLabel: string }) {
-  return (
-    <div className="relative overflow-hidden rounded-card border border-warning/20 bg-gradient-to-br from-warning-soft to-surface p-5 shadow-xs">
-      <div className="pointer-events-none absolute -end-6 -top-6 h-24 w-24 rounded-full bg-warning/8 blur-2xl" aria-hidden="true" />
-      <div className="relative flex items-start gap-4">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-warning to-warning/80 text-primary-foreground shadow-sm" aria-hidden="true">
-          <Clock className="h-5 w-5" />
-        </span>
-        <div className="flex-1 min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-warning">{eyebrow}</div>
-          <div className="mt-0.5 text-base font-semibold text-text-primary">{title}</div>
-          <p className="mt-1 text-sm leading-relaxed text-text-secondary">{description}</p>
-          <Link to="/waitlist" className="mt-3 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-semibold text-primary transition-colors hover:text-primary-600">
-            {ctaLabel}
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-          </Link>
-        </div>
-      </div>
-    </div>
   );
 }
