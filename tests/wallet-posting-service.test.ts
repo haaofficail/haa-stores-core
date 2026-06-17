@@ -403,6 +403,145 @@ describe('WalletPostingService — postSettlementDifference', () => {
   });
 });
 
+describe('WalletPostingService — postPayoutDebit', () => {
+  it('records a payout_debit entry and returns the amount + entryType + payoutId', async () => {
+    const svc = new WalletPostingService({} as any);
+    const result = await svc.postPayoutDebit({
+      storeId: 1,
+      payoutId: 100,
+      amount: 500,
+      orderNumber: 'PO-001',
+      status: 'processing',
+    });
+    expect(result.amount).toBe(500);
+    expect(result.entryType).toBe('payout_debit');
+    expect(result.dedupHit).toBe(false);
+    expect(result.payoutId).toBe(100);
+  });
+
+  it('is idempotent: same dedup key returns existing record (no double-debit)', async () => {
+    const svc = new WalletPostingService({} as any);
+    const input = {
+      storeId: 1,
+      payoutId: 101,
+      amount: 250,
+      orderNumber: 'PO-002',
+      status: 'processing' as const,
+    };
+    const a = await svc.postPayoutDebit(input);
+    const b = await svc.postPayoutDebit(input);
+    expect(b.dedupHit).toBe(true);
+    expect(b.amount).toBe(a.amount);
+  });
+
+  it('different payoutIds for the same store are independent (no cross-dedup)', async () => {
+    const svc = new WalletPostingService({} as any);
+    const a = await svc.postPayoutDebit({
+      storeId: 1, payoutId: 102, amount: 100, orderNumber: 'PO-003', status: 'processing',
+    });
+    const b = await svc.postPayoutDebit({
+      storeId: 1, payoutId: 103, amount: 200, orderNumber: 'PO-004', status: 'processing',
+    });
+    expect(a.dedupHit).toBe(false);
+    expect(b.dedupHit).toBe(false);
+    expect(a.payoutId).toBe(102);
+    expect(b.payoutId).toBe(103);
+  });
+
+  it('records no warning by default (Q5 soft cap is "warning only" — caller decides)', async () => {
+    // Q5 owner decision (2026-06-16, deferred to Session #2): payout
+    // pending reservation default = "soft cap" (warning only). The
+    // service posts the entry; the route checks hasRecentPayoutRequest
+    // and decides whether to show a warning. The service itself does
+    // not block.
+    const svc = new WalletPostingService({} as any);
+    const r = await svc.postPayoutDebit({
+      storeId: 1, payoutId: 104, amount: 100, orderNumber: 'PO-005', status: 'processing',
+    });
+    expect((r as any).warning).toBeUndefined();
+  });
+});
+
+describe('WalletPostingService — postPayoutReversal', () => {
+  it('records a payout_reversal entry and returns the amount + entryType + reason', async () => {
+    const svc = new WalletPostingService({} as any);
+    const result = await svc.postPayoutReversal({
+      storeId: 1,
+      payoutId: 100,
+      amount: 500,
+      orderNumber: 'PO-001',
+      reason: 'merchant_cancelled',
+    });
+    expect(result.amount).toBe(500);
+    expect(result.entryType).toBe('payout_reversal');
+    expect(result.dedupHit).toBe(false);
+    expect(result.payoutId).toBe(100);
+    expect((result as any).reason).toBe('merchant_cancelled');
+  });
+
+  it('is idempotent: same dedup key returns existing record', async () => {
+    const svc = new WalletPostingService({} as any);
+    const input = {
+      storeId: 1,
+      payoutId: 101,
+      amount: 250,
+      orderNumber: 'PO-002',
+      reason: 'system_error' as const,
+    };
+    const a = await svc.postPayoutReversal(input);
+    const b = await svc.postPayoutReversal(input);
+    expect(b.dedupHit).toBe(true);
+  });
+
+  it('postPayoutDebit and postPayoutReversal are independent for the same payoutId', async () => {
+    // Both can exist for the same payout (debit first, then reversal)
+    // — they have different entry types so they don't dedup-hit each
+    // other.
+    const svc = new WalletPostingService({} as any);
+    const debit = await svc.postPayoutDebit({
+      storeId: 1, payoutId: 200, amount: 300, orderNumber: 'PO-200', status: 'processing',
+    });
+    const reversal = await svc.postPayoutReversal({
+      storeId: 1, payoutId: 200, amount: 300, orderNumber: 'PO-200', reason: 'merchant_cancelled',
+    });
+    expect(debit.entryType).toBe('payout_debit');
+    expect(reversal.entryType).toBe('payout_reversal');
+    expect(debit.dedupHit).toBe(false);
+    expect(reversal.dedupHit).toBe(false);
+  });
+});
+
+describe('WalletPostingService — hasRecentPayoutRequest (Q5 soft cap)', () => {
+  it('returns false when no payout has been posted yet', async () => {
+    const svc = new WalletPostingService({} as any);
+    expect(svc.hasRecentPayoutRequest(1)).toBe(false);
+  });
+
+  it('returns true after a postPayoutDebit is posted (for the same storeId)', async () => {
+    const svc = new WalletPostingService({} as any);
+    await svc.postPayoutDebit({
+      storeId: 1, payoutId: 300, amount: 100, orderNumber: 'PO-300', status: 'processing',
+    });
+    expect(svc.hasRecentPayoutRequest(1)).toBe(true);
+  });
+
+  it('returns false for a different storeId', async () => {
+    const svc = new WalletPostingService({} as any);
+    await svc.postPayoutDebit({
+      storeId: 1, payoutId: 301, amount: 100, orderNumber: 'PO-301', status: 'processing',
+    });
+    expect(svc.hasRecentPayoutRequest(2)).toBe(false);
+  });
+
+  it('returns true after a postPayoutReversal is posted (reversals also indicate recent payout activity)', async () => {
+    const svc = new WalletPostingService({} as any);
+    await svc.postPayoutReversal({
+      storeId: 1, payoutId: 302, amount: 100, orderNumber: 'PO-302', reason: 'merchant_cancelled',
+    });
+    expect(svc.hasRecentPayoutRequest(1)).toBe(true);
+  });
+});
+
 describe('WalletPostingService — postSale', () => {
   it('records a sale credit and returns the amount + entryType', async () => {
     const svc = new WalletPostingService({} as any);

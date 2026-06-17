@@ -256,11 +256,107 @@ export class WalletPostingService {
     this.recordPosted(key, result);
     return result;
   }
-  postPayoutDebit(_input: unknown): Promise<PostResult> {
-    throw new Error('postPayoutDebit not implemented in Session #1; see TASK-0034 (Session #2).');
+  /**
+   * Record a `payout_debit` wallet entry when a payout is initiated
+   * (moves funds from available → processing). The `status` field
+   * indicates the payout's lifecycle stage (processing, completed,
+   * failed). Idempotent on (storeId, payoutId, 'payout_debit').
+   *
+   * Resolves audit Phase 10 (payout pending reservation). Combined
+   * with `hasRecentPayoutRequest`, the route can implement the Q5
+   * soft cap (warning only, not hard block).
+   */
+  async postPayoutDebit(input: {
+    storeId: number;
+    payoutId: number;
+    amount: number;
+    orderNumber: string;
+    status: 'processing' | 'completed' | 'failed';
+  }): Promise<PostResult> {
+    const key = this.keyOf({
+      storeId: input.storeId,
+      referenceType: 'payout',
+      referenceId: input.payoutId,
+      type: 'payout_debit',
+    });
+    const existing = this.alreadyPosted(key);
+    if (existing) return { ...existing, dedupHit: true };
+
+    const result: PostResult = {
+      amount: input.amount,
+      entryType: 'payout_debit',
+      dedupHit: false,
+      payoutId: input.payoutId,
+    };
+    this.recordPosted(key, result);
+    return result;
   }
-  postPayoutReversal(_input: unknown): Promise<PostResult> {
-    throw new Error('postPayoutReversal not implemented in Session #1; see TASK-0034 (Session #2).');
+
+  /**
+   * Record a `payout_reversal` wallet entry when a payout is
+   * cancelled or fails (moves funds back to available). Idempotent
+   * on (storeId, payoutId, 'payout_reversal').
+   *
+   * The `reason` field is metadata for the audit trail
+   * (`merchant_cancelled` = the merchant hit cancel; `system_error`
+   * = the payment provider failed; `compliance_hold` = the payout
+   * was blocked by compliance). Per-provider reasons (Tabby vs
+   * Tamara vs Moyasar) can be added later without changing the
+   * shape.
+   */
+  async postPayoutReversal(input: {
+    storeId: number;
+    payoutId: number;
+    amount: number;
+    orderNumber: string;
+    reason: 'merchant_cancelled' | 'system_error' | 'compliance_hold';
+  }): Promise<PostResult> {
+    const key = this.keyOf({
+      storeId: input.storeId,
+      referenceType: 'payout',
+      referenceId: input.payoutId,
+      type: 'payout_reversal',
+    });
+    const existing = this.alreadyPosted(key);
+    if (existing) return { ...existing, dedupHit: true };
+
+    const result: PostResult = {
+      amount: input.amount,
+      entryType: 'payout_reversal',
+      dedupHit: false,
+      payoutId: input.payoutId,
+      reason: input.reason,
+    };
+    this.recordPosted(key, result);
+    return result;
+  }
+
+  /**
+   * Q5 soft-cap helper. Returns true if a payout-related entry
+   * (debit or reversal) has been posted for this `storeId` during
+   * this service instance's lifetime. Used by the payout request
+   * route to show a "you have a pending payout request" warning to
+   * the merchant — but NOT to block the request. Q5 owner decision
+   * (2026-06-16): soft cap = warning only. A hard block is a
+   * follow-up if abuse appears.
+   *
+   * In-memory check. For a DB-backed check, the route can use
+   * `WalletLedger` directly. The service instance's lifetime is
+   * the request/webhook handler scope, so this only catches
+   * "already posted in this same flow".
+   */
+  hasRecentPayoutRequest(storeId: number): boolean {
+    for (const key of this.dedupMap.keys()) {
+      // key is JSON.stringify of { storeId, referenceType, referenceId, type }
+      // We only need to check storeId + type being payout_*
+      if (key.includes(`"storeId":${storeId}`) && (
+        key.includes('"type":"payout_debit"') ||
+        key.includes('"type":"payout_reversal"')
+      )) {
+        return true;
+      }
+    }
+    return false;
   }
   /**
    * Record a `gateway_fee` wallet entry (debit) for an order.
