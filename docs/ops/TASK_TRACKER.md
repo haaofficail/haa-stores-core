@@ -2092,7 +2092,7 @@
 
 - **Type:** Bug Fix / Security / Feature / Testing
 - **Priority:** P1 High (must close before public launch)
-- **Status:** Open (sequenced AFTER TASK-0040+0041; 3 parallel tracks, 3 days)
+- **Status:** Done (3 of 3 tracks shipped 2026-06-17 — Session P; P1-2 permissions + P1-9 rate limit + T5-T10 source-grep contracts; T8 caught + fixed real PII leak in /sellers/:storeSlug; 8 new tests)
 - **Created:** 2026-06-17
 - **Updated:** 2026-06-17
 - **Original Request:** `docs/ops/MARKETPLACE_HARDENING_PLAN.md` §6 (Phase 4, 3 days, 3 parallel tracks).
