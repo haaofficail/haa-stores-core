@@ -90,6 +90,9 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   employee_permission_update_unsupported: 'محاولة تعديل صلاحيات غير مدعومة',
   employee_permissions_updated: 'تحديث صلاحيات الموظف',
   store_billing_settings_updated: 'تحديث إعدادات رسوم المتجر',
+  // Marketplace admin moderation (TASK-0040 Track 1C — P0-5)
+  marketplace_product_review: 'مراجعة منتج في السوق',
+  marketplace_product_feature: 'تمييز منتج في السوق',
 };
 
 export const AUDIT_ENTITY_LABELS: Record<string, string> = {

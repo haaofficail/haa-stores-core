@@ -12,6 +12,7 @@ import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { type AdminAuthContext } from '@haa/auth-core';
 import { WalletLedger } from '@haa/wallet-core';
+import { AuditLogService } from '@haa/integration-core';
 
 // ── /marketplace/summary ───────────────────────────────────────────────────
 export async function marketplaceSummaryRoute(c: any) {
@@ -60,6 +61,13 @@ export async function marketplaceProductReviewRoute(c: any) {
   const adminAuth = c.get('adminAuth') as AdminAuthContext | undefined;
   const body = c.req.valid('json');
   const db = createDbClient();
+  // Capture the prior review status BEFORE updating so the audit log
+  // records both the old and new values (forensic completeness).
+  const [existing] = await db
+    .select({ haaMarketplaceReviewStatus: s.products.haaMarketplaceReviewStatus })
+    .from(s.products)
+    .where(eq(s.products.id, id))
+    .limit(1);
   const [product] = await db.update(s.products).set({
     haaMarketplaceReviewStatus: body.status,
     haaMarketplaceReviewNote: body.note ?? null,
@@ -68,14 +76,39 @@ export async function marketplaceProductReviewRoute(c: any) {
     updatedAt: new Date(),
   }).where(eq(s.products.id, id)).returning();
   if (!product) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } }, 404);
+  // Audit log: who reviewed which product, old + new status, optional note.
+  // P0-5 closure — TASK-0040 Track 1C.
+  await new AuditLogService().record({
+    actorUserId: adminAuth?.userId ?? null,
+    action: 'marketplace_product_review',
+    entityType: 'product',
+    entityId: product.id,
+    oldValue: { haaMarketplaceReviewStatus: existing?.haaMarketplaceReviewStatus ?? null },
+    newValue: {
+      haaMarketplaceReviewStatus: product.haaMarketplaceReviewStatus,
+      note: product.haaMarketplaceReviewNote ?? null,
+    },
+    ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
+    userAgent: c.req.header('user-agent'),
+  });
   return c.json({ success: true, data: product });
 }
 
 // ── /marketplace/products/:id/feature ─────────────────────────────────────
 export async function marketplaceProductFeatureRoute(c: any) {
   const id = Number(c.req.param('id'));
+  const adminAuth = c.get('adminAuth') as AdminAuthContext | undefined;
   const body = c.req.valid('json');
   const db = createDbClient();
+  // Capture prior feature state for forensic completeness.
+  const [existing] = await db
+    .select({
+      haaMarketplaceFeatured: s.products.haaMarketplaceFeatured,
+      haaMarketplaceFeaturedSortOrder: s.products.haaMarketplaceFeaturedSortOrder,
+    })
+    .from(s.products)
+    .where(eq(s.products.id, id))
+    .limit(1);
   const [product] = await db.update(s.products).set({
     haaMarketplaceFeatured: body.featured,
     haaMarketplaceFeaturedUntil: body.featuredUntil ? new Date(body.featuredUntil) : null,
@@ -83,6 +116,25 @@ export async function marketplaceProductFeatureRoute(c: any) {
     updatedAt: new Date(),
   }).where(eq(s.products.id, id)).returning();
   if (!product) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } }, 404);
+  // Audit log: who toggled featured state on which product, old + new values.
+  // P0-5 closure — TASK-0040 Track 1C.
+  await new AuditLogService().record({
+    actorUserId: adminAuth?.userId ?? null,
+    action: 'marketplace_product_feature',
+    entityType: 'product',
+    entityId: product.id,
+    oldValue: {
+      haaMarketplaceFeatured: existing?.haaMarketplaceFeatured ?? false,
+      haaMarketplaceFeaturedSortOrder: existing?.haaMarketplaceFeaturedSortOrder ?? 0,
+    },
+    newValue: {
+      haaMarketplaceFeatured: product.haaMarketplaceFeatured,
+      haaMarketplaceFeaturedSortOrder: product.haaMarketplaceFeaturedSortOrder,
+      featuredUntil: product.haaMarketplaceFeaturedUntil,
+    },
+    ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
+    userAgent: c.req.header('user-agent'),
+  });
   return c.json({ success: true, data: product });
 }
 

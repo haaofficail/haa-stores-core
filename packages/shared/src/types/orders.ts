@@ -200,7 +200,10 @@ export type AuditAction =
   | 'vat_number_updated'
   | 'customer_data_exported'
   | 'merchant_acknowledgement'
-  | 'store_billing_settings_updated';
+  | 'store_billing_settings_updated'
+  // Marketplace admin moderation (TASK-0040 Track 1C — P0-5)
+  | 'marketplace_product_review'
+  | 'marketplace_product_feature';
 
 export type UserRole = 'owner' | 'admin' | 'manager' | 'products_manager' | 'orders_manager' | 'accountant' | 'support' | 'viewer';
 
