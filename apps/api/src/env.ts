@@ -22,6 +22,9 @@ export interface EnvConfig {
   S3_ENDPOINT?: string;
   S3_REGION?: string;
   S3_BUCKET?: string;
+  // TASK-0038 G8: hosting region + data residency
+  HOSTING_REGION?: string;
+  DATA_RESIDENCY?: string;
   S3_ACCESS_KEY_ID?: string;
   S3_SECRET_ACCESS_KEY?: string;
   S3_PUBLIC_BASE_URL?: string;
@@ -147,6 +150,14 @@ export function loadEnv(): EnvConfig {
     CDN_PUBLIC_BASE_URL: process.env.CDN_PUBLIC_BASE_URL,
     SENTRY_DSN: process.env.SENTRY_DSN,
     OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+    // TASK-0038 G8: hosting region + data residency.
+    // HOSTING_REGION: free-form label ('ae-dubai', 'sa-riyadh', etc.)
+    //   Used by health endpoint + tenant table (migration 0061).
+    // DATA_RESIDENCY: 'in-ksa' | 'cross-border' | 'pending'.
+    //   Defaults to 'pending' until owner confirms KSA region.
+    //   CITC/NCA may require 'in-ksa' for PDPL-sensitive workloads.
+    HOSTING_REGION: optionalEnv('HOSTING_REGION', 'pending'),
+    DATA_RESIDENCY: optionalEnv('DATA_RESIDENCY', 'pending'),
     STORAGE_DRIVER: storageDriver,
     S3_ENDPOINT: process.env.S3_ENDPOINT,
     S3_REGION: process.env.S3_REGION,
