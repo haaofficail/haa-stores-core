@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { Building2, Mail, Phone } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
+import { usePlatformBrand } from '@/hooks/usePlatformBrand';
 import { PaymentLogoImg, getPaymentLogosByCategory } from '@/components/ui/trust-badges';
 
 const footerLinks = [
@@ -19,6 +21,10 @@ const footerLinks = [
 ];
 
 export function MarketplaceFooter() {
+  const [logoError, setLogoError] = useState(false);
+  const { platformLogoUrl } = usePlatformBrand();
+  const showLogo = !!platformLogoUrl && !logoError;
+
   return (
     <footer className="mt-auto border-t border-gray-100 bg-white">
       {/* Payment Logos */}
@@ -46,10 +52,16 @@ export function MarketplaceFooter() {
           {/* Brand */}
           <div className="lg:col-span-4 space-y-3">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-500 text-white">
-                <Icon icon={Building2} size="2xs" />
-              </span>
-              <span className="text-base font-bold text-black">سوق هاء</span>
+              {showLogo ? (
+                <img key={platformLogoUrl} src={platformLogoUrl!} alt="سوق هاء" className="platform-logo h-8 w-auto" onError={() => setLogoError(true)} />
+              ) : (
+                <>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-500 text-white">
+                    <Icon icon={Building2} size="2xs" />
+                  </span>
+                  <span className="text-base font-bold text-black">سوق هاء</span>
+                </>
+              )}
             </div>
             <p className="text-sm text-gray-500 leading-relaxed">
               سوق عام تسويقي يجمع المنتجات المختارة من متاجر هاء ستورز في مكان واحد.

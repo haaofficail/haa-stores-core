@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { BadgeCheck, Building2, Menu, PackageSearch, Search, ShieldCheck, ShoppingBag, Truck, X } from 'lucide-react';
 import { StoreInput } from '@/components/ui';
 import { Icon } from '@/components/ui/icon';
+import { usePlatformBrand } from '@/hooks/usePlatformBrand';
 
 export function MarketplaceHero({
   total,
@@ -17,6 +18,9 @@ export function MarketplaceHero({
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [logoError, setLogoError] = useState(false);
+  const { platformLogoUrl } = usePlatformBrand();
+  const showLogo = !!platformLogoUrl && !logoError;
 
   return (
     <section className="relative bg-white border-b border-gray-100" aria-label="سوق هاء - الصفحة الرئيسية">
@@ -24,10 +28,16 @@ export function MarketplaceHero({
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-3 min-h-[56px] sm:min-h-[60px] lg:min-h-[64px]">
           <Link to="/marketplace" className="flex items-center gap-2.5 shrink-0">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-500 text-white">
-              <Icon icon={Building2} size="2xs" />
-            </span>
-            <span className="text-base lg:text-lg font-bold leading-none text-primary-500">سوق هاء</span>
+            {showLogo ? (
+              <img key={platformLogoUrl} src={platformLogoUrl!} alt="سوق هاء" className="platform-logo h-8 w-auto" onError={() => setLogoError(true)} />
+            ) : (
+              <>
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-500 text-white">
+                  <Icon icon={Building2} size="2xs" />
+                </span>
+                <span className="text-base lg:text-lg font-bold leading-none text-primary-500">سوق هاء</span>
+              </>
+            )}
           </Link>
 
           {/* Desktop Search */}

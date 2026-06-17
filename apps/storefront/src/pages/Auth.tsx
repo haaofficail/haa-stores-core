@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, User, Phone, Store as StoreIcon, Sparkles, ArrowLeft, Loader2, Check, Eye, EyeOff, Shield, Clock, Bell } from 'lucide-react';
 import { StoreButton, StoreContainer, StoreInput } from '@/components/ui';
 import { useSEO } from '@/hooks/useSEO';
+import { usePlatformBrand } from '@/hooks/usePlatformBrand';
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -330,6 +331,10 @@ export function WaitlistPage() {
 }
 
 function AuthShell({ children }: { children: React.ReactNode }) {
+  const [logoError, setLogoError] = useState(false);
+  const { platformLogoUrl } = usePlatformBrand();
+  const showLogo = !!platformLogoUrl && !logoError;
+
   return (
     <div dir="rtl" className="min-h-screen bg-surface-2 text-text-primary">
       <a
@@ -342,10 +347,16 @@ function AuthShell({ children }: { children: React.ReactNode }) {
       <header className="border-b border-border-subtle bg-surface">
         <StoreContainer className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2" aria-label="Haa">
-            <span className="flex h-9 w-9 items-center justify-center rounded-card bg-primary text-primary-foreground" aria-hidden="true">
-              <Sparkles className="h-5 w-5" />
-            </span>
-            <span className="text-lg font-bold tracking-tight text-text-primary">Haa</span>
+            {showLogo ? (
+              <img key={platformLogoUrl} src={platformLogoUrl!} alt="Haa" className="platform-logo h-9 w-auto" onError={() => setLogoError(true)} />
+            ) : (
+              <>
+                <span className="flex h-9 w-9 items-center justify-center rounded-card bg-primary text-primary-foreground" aria-hidden="true">
+                  <Sparkles className="h-5 w-5" />
+                </span>
+                <span className="text-lg font-bold tracking-tight text-text-primary">Haa</span>
+              </>
+            )}
           </Link>
           <Link to="/" className="text-sm text-text-secondary hover:text-text-primary">
             {t_back('العودة للرئيسية')}

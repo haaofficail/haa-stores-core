@@ -32,6 +32,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useSEO } from '@/hooks/useSEO';
+import { usePlatformBrand } from '@/hooks/usePlatformBrand';
 import { StoreContainer } from '@/components/ui';
 import HeroAIChat from '@/landing/HeroAIChat';
 import { isAIPreviewEnabled } from '@/landing/aiChatContent';
@@ -99,11 +100,19 @@ function AuroraBackground() {
    NAV — fixed glass header
    ════════════════════════════════════════════════════════════════ */
 function Nav({ t }: { t: TFn }) {
+  const [logoError, setLogoError] = useReactState(false);
+  const { platformLogoUrl } = usePlatformBrand();
+  const showLogo = !!platformLogoUrl && !logoError;
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/60 backdrop-blur-2xl backdrop-saturate-150">
       <StoreContainer className="flex h-16 items-center justify-between gap-4">
         <Link to="/" aria-label={t('store.logo', 'الرئيسية')} className="flex items-center gap-2.5">
-          <img src="/assets/haa-logo.png" alt="Haa" className="h-12 w-auto" />
+          {showLogo ? (
+            <img key={platformLogoUrl} src={platformLogoUrl!} alt="Haa" className="platform-logo h-12 w-auto" onError={() => setLogoError(true)} />
+          ) : (
+            <img src="/assets/haa-logo.png" alt="Haa" className="h-12 w-auto" />
+          )}
         </Link>
 
         <nav aria-label={t('store.mainNav', 'التنقل الرئيسي')} className="hidden items-center gap-1 md:flex">
@@ -1816,13 +1825,21 @@ function Bento({ t }: { t: TFn }) {
    FOOTER — minimal glass with Saudi identity
    ════════════════════════════════════════════════════════════════ */
 function Footer({ t }: { t: TFn }) {
+  const [logoError, setLogoError] = useReactState(false);
+  const { platformLogoUrl } = usePlatformBrand();
+  const showLogo = !!platformLogoUrl && !logoError;
+
   return (
     <footer className="border-t border-white/10 bg-white/40 py-8 backdrop-blur-xl sm:py-10">
       <StoreContainer>
         <div className="flex flex-col items-center gap-4 text-center">
           {/* Brand badge */}
           <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:gap-2.5">
-            <img src="/assets/haa-logo.png" alt="Haa" className="h-12 w-auto" />
+            {showLogo ? (
+              <img key={platformLogoUrl} src={platformLogoUrl!} alt="Haa" className="platform-logo h-12 w-auto" onError={() => setLogoError(true)} />
+            ) : (
+              <img src="/assets/haa-logo.png" alt="Haa" className="h-12 w-auto" />
+            )}
             <span className="font-extrabold text-text-primary">متاجر هاء</span>
             <span className="hidden text-text-tertiary/50 sm:inline select-none" aria-hidden="true">·</span>
             <span className="flex items-center gap-1 text-sm font-medium text-emerald-700">
