@@ -36,6 +36,8 @@ import {
   calcPlatformFee,
   PlatformFeePolicy,
   describePlatformFeePolicy,
+  getProviderDefaultRefundPolicy,
+  type GatewayFeeRefundPolicy,
 } from '@haa/wallet-core';
 
 export type DedupKey = {
@@ -56,6 +58,13 @@ export type PostResult = {
   policyPct?: number | null;
   policyFixed?: number | null;
   policyDescription?: string;
+  // postGatewayFee fields
+  provider?: string;
+  refundPolicy?: GatewayFeeRefundPolicy;
+  // postSettlementDifference fields
+  reason?: string;
+  // postPayoutDebit / postPayoutReversal fields (sub-item 7)
+  payoutId?: number;
 };
 
 export class WalletPostingService {
@@ -253,10 +262,101 @@ export class WalletPostingService {
   postPayoutReversal(_input: unknown): Promise<PostResult> {
     throw new Error('postPayoutReversal not implemented in Session #1; see TASK-0034 (Session #2).');
   }
-  postGatewayFee(_input: unknown): Promise<PostResult> {
-    throw new Error('postGatewayFee not implemented in Session #1; see TASK-0034 (Session #2).');
+  /**
+   * Record a `gateway_fee` wallet entry (debit) for an order.
+   * The amount is the cut the payment processor takes (e.g. Moyasar
+   * 2.5%, plus a fixed fee). The provider's refund policy is
+   * resolved automatically from the Q2 lookup table, unless the
+   * caller passes an explicit `refundPolicy` override (for merchants
+   * with negotiated deals).
+   *
+   * Idempotent on (storeId, orderId, 'gateway_fee').
+   *
+   * Resolves audit Finding 2 (no `gateway_fee` entry type existed
+   * in code or live DB). Call sites in `checkout.ts` and
+   * `payment-webhook-service.ts` should use this method; the
+   * migration is tracked by TASK-0034 sub-item 5.
+   */
+  async postGatewayFee(input: {
+    storeId: number;
+    orderId: number;
+    amount: number;
+    orderNumber: string;
+    provider: string;
+    refundPolicy?: GatewayFeeRefundPolicy;
+  }): Promise<PostResult> {
+    const key = this.keyOf({
+      storeId: input.storeId,
+      referenceType: 'order',
+      referenceId: input.orderId,
+      type: 'gateway_fee',
+    });
+    const existing = this.alreadyPosted(key);
+    if (existing) return { ...existing, dedupHit: true };
+
+    // Defensive: a 0 or negative amount means "no fee to record".
+    // The dedup key is still recorded so subsequent calls are no-ops.
+    if (!Number.isFinite(input.amount) || input.amount <= 0) {
+      const result: PostResult = {
+        amount: 0,
+        entryType: 'gateway_fee',
+        dedupHit: false,
+        provider: input.provider,
+        refundPolicy: input.refundPolicy ?? getProviderDefaultRefundPolicy(input.provider),
+      };
+      this.recordPosted(key, result);
+      return result;
+    }
+
+    const result: PostResult = {
+      amount: input.amount,
+      entryType: 'gateway_fee',
+      dedupHit: false,
+      provider: input.provider,
+      refundPolicy: input.refundPolicy ?? getProviderDefaultRefundPolicy(input.provider),
+    };
+    this.recordPosted(key, result);
+    return result;
   }
-  postSettlementDifference(_input: unknown): Promise<PostResult> {
-    throw new Error('postSettlementDifference not implemented in Session #1; see TASK-0034 (Session #2).');
+
+  /**
+   * Record a `settlement_difference` wallet entry for an order.
+   * The amount is **signed**: positive means the merchant received
+   * more than expected (e.g. favorable FX), negative means less
+   * (e.g. partial refund, unfavorable FX). A 0 difference is a
+   * no-op (the dedup key is still recorded so subsequent calls
+   * return `dedupHit: true`).
+   *
+   * Idempotent on (storeId, orderId, 'settlement_difference').
+   *
+   * Resolves audit Finding 2 by giving the reconciliation runner
+   * (audit Phase 13) a typed posting surface for differences.
+   */
+  async postSettlementDifference(input: {
+    storeId: number;
+    orderId: number;
+    expectedAmount: number;
+    settledAmount: number;
+    orderNumber: string;
+    reason: 'partial_refund' | 'extra_charge' | 'fx_difference' | 'unknown';
+  }): Promise<PostResult> {
+    const key = this.keyOf({
+      storeId: input.storeId,
+      referenceType: 'order',
+      referenceId: input.orderId,
+      type: 'settlement_difference',
+    });
+    const existing = this.alreadyPosted(key);
+    if (existing) return { ...existing, dedupHit: true };
+
+    const amount = input.settledAmount - input.expectedAmount;
+    const result: PostResult = {
+      amount,
+      entryType: 'settlement_difference',
+      dedupHit: false,
+      reason: input.reason,
+    };
+    this.recordPosted(key, result);
+    return result;
   }
 }

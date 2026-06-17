@@ -231,6 +231,178 @@ describe('WalletPostingService — postPlatformFee', () => {
   });
 });
 
+describe('WalletPostingService — postGatewayFee', () => {
+  it('records a gateway fee debit and returns the amount + entryType + provider + refund policy', async () => {
+    const svc = new WalletPostingService({} as any);
+    const result = await svc.postGatewayFee({
+      storeId: 1,
+      orderId: 40,
+      amount: 7.5,
+      orderNumber: 'ORD-004',
+      provider: 'moyasar',
+    });
+    expect(result.amount).toBe(7.5);
+    expect(result.entryType).toBe('gateway_fee');
+    expect(result.dedupHit).toBe(false);
+    expect((result as any).provider).toBe('moyasar');
+    expect((result as any).refundPolicy).toBe('REFUNDABLE');
+  });
+
+  it('looks up refund policy from provider default (tabby → NON_REFUNDABLE)', async () => {
+    const svc = new WalletPostingService({} as any);
+    const result = await svc.postGatewayFee({
+      storeId: 1,
+      orderId: 41,
+      amount: 5,
+      orderNumber: 'ORD-005',
+      provider: 'tabby',
+    });
+    expect((result as any).refundPolicy).toBe('NON_REFUNDABLE');
+  });
+
+  it('explicit refundPolicy override wins over provider default', async () => {
+    // If a merchant has a negotiated deal with tabby that allows
+    // refund, the override should win.
+    const svc = new WalletPostingService({} as any);
+    const result = await svc.postGatewayFee({
+      storeId: 1,
+      orderId: 42,
+      amount: 5,
+      orderNumber: 'ORD-006',
+      provider: 'tabby',
+      refundPolicy: 'REFUNDABLE',
+    });
+    expect((result as any).refundPolicy).toBe('REFUNDABLE');
+  });
+
+  it('is idempotent: same dedup key returns existing record (no double-write)', async () => {
+    const svc = new WalletPostingService({} as any);
+    const input = {
+      storeId: 1,
+      orderId: 43,
+      amount: 7.5,
+      orderNumber: 'ORD-007',
+      provider: 'moyasar' as const,
+    };
+    const a = await svc.postGatewayFee(input);
+    const b = await svc.postGatewayFee(input);
+    expect(a.amount).toBe(7.5);
+    expect(b.amount).toBe(7.5);
+    expect(b.dedupHit).toBe(true);
+    expect(a.dedupHit).toBe(false);
+  });
+
+  it('returns 0 for non-positive amounts (defensive — no fee should be a no-op)', async () => {
+    const svc = new WalletPostingService({} as any);
+    const r = await svc.postGatewayFee({
+      storeId: 1,
+      orderId: 44,
+      amount: 0,
+      orderNumber: 'ORD-008',
+      provider: 'moyasar',
+    });
+    expect(r.amount).toBe(0);
+  });
+});
+
+describe('WalletPostingService — postSettlementDifference', () => {
+  it('records a positive difference when settled > expected (merchant gained)', async () => {
+    const svc = new WalletPostingService({} as any);
+    const result = await svc.postSettlementDifference({
+      storeId: 1,
+      orderId: 50,
+      expectedAmount: 100,
+      settledAmount: 102.5,
+      orderNumber: 'ORD-010',
+      reason: 'fx_difference',
+    });
+    expect(result.amount).toBe(2.5); // signed: positive = gained
+    expect(result.entryType).toBe('settlement_difference');
+    expect(result.dedupHit).toBe(false);
+    expect((result as any).reason).toBe('fx_difference');
+  });
+
+  it('records a negative difference when settled < expected (merchant lost)', async () => {
+    const svc = new WalletPostingService({} as any);
+    const result = await svc.postSettlementDifference({
+      storeId: 1,
+      orderId: 51,
+      expectedAmount: 100,
+      settledAmount: 98.0,
+      orderNumber: 'ORD-011',
+      reason: 'partial_refund',
+    });
+    expect(result.amount).toBe(-2.0); // signed: negative = lost
+    expect(result.entryType).toBe('settlement_difference');
+  });
+
+  it('returns 0 with dedupHit=true when settled === expected (no difference to record)', async () => {
+    const svc = new WalletPostingService({} as any);
+    const result = await svc.postSettlementDifference({
+      storeId: 1,
+      orderId: 52,
+      expectedAmount: 100,
+      settledAmount: 100,
+      orderNumber: 'ORD-012',
+      reason: 'unknown',
+    });
+    expect(result.amount).toBe(0);
+    // Idempotency: a 0-difference call still records its dedup key
+    // so subsequent calls for the same order are no-ops.
+    expect(result.dedupHit).toBe(false);
+    const second = await svc.postSettlementDifference({
+      storeId: 1,
+      orderId: 52,
+      expectedAmount: 100,
+      settledAmount: 100,
+      orderNumber: 'ORD-012',
+      reason: 'unknown',
+    });
+    expect(second.dedupHit).toBe(true);
+  });
+
+  it('is idempotent: same dedup key returns existing record', async () => {
+    const svc = new WalletPostingService({} as any);
+    const input = {
+      storeId: 1,
+      orderId: 53,
+      expectedAmount: 100,
+      settledAmount: 102,
+      orderNumber: 'ORD-013',
+      reason: 'fx_difference' as const,
+    };
+    const a = await svc.postSettlementDifference(input);
+    const b = await svc.postSettlementDifference(input);
+    expect(b.dedupHit).toBe(true);
+    expect(b.amount).toBe(a.amount);
+  });
+
+  it('postGatewayFee and postSettlementDifference are independent for the same order', async () => {
+    // Both can be posted for the same order — they have different
+    // entry types so they don't dedup-hit each other.
+    const svc = new WalletPostingService({} as any);
+    const gw = await svc.postGatewayFee({
+      storeId: 1,
+      orderId: 60,
+      amount: 7.5,
+      orderNumber: 'ORD-014',
+      provider: 'moyasar',
+    });
+    const diff = await svc.postSettlementDifference({
+      storeId: 1,
+      orderId: 60,
+      expectedAmount: 100,
+      settledAmount: 98,
+      orderNumber: 'ORD-014',
+      reason: 'partial_refund',
+    });
+    expect(gw.entryType).toBe('gateway_fee');
+    expect(diff.entryType).toBe('settlement_difference');
+    expect(gw.dedupHit).toBe(false);
+    expect(diff.dedupHit).toBe(false);
+  });
+});
+
 describe('WalletPostingService — postSale', () => {
   it('records a sale credit and returns the amount + entryType', async () => {
     const svc = new WalletPostingService({} as any);
