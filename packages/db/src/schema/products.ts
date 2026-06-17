@@ -34,6 +34,18 @@ export const products = pgTable('products', {
   haaMarketplaceFeatured: boolean('haa_marketplace_featured').notNull().default(false),
   haaMarketplaceFeaturedUntil: timestamp('haa_marketplace_featured_until'),
   haaMarketplaceFeaturedSortOrder: integer('haa_marketplace_featured_sort_order').notNull().default(0),
+  // TASK-0041 Phase 2 — Track 2.2 — P0-1 SFDA workflow.
+  // Saudi Food & Drug Authority compliance for regulated product
+  // categories (food, drug, medical_device, cosmetic, supplement).
+  // Format validation only (regex). Live SFDA API integration deferred
+  // to Phase 7+ (post-MVP, requires Saudi CR + government credentials).
+  // See migration 0060_product_sfda.sql for full contract.
+  requiresSfdaNumber: boolean('requires_sfda_number').notNull().default(false),
+  sfdaNumber: varchar('sfda_number', { length: 100 }),
+  sfdaLicenseType: varchar('sfda_license_type', { length: 30 }),
+  sfdaExpiryDate: timestamp('sfda_expiry_date'),
+  sfdaVerifiedAt: timestamp('sfda_verified_at'),
+  sfdaVerifiedBy: integer('sfda_verified_by'),
   brandId: integer('brand_id').references(() => brands.id, { onDelete: 'set null' }),
   marketplaceChannels: jsonb('marketplace_channels').$type<Record<string, { productId: string; url?: string; price?: string; status?: string }>>(),
   rating: integer('rating'),
@@ -50,6 +62,8 @@ export const products = pgTable('products', {
   storeBrandIdx: index('products_store_brand_idx').on(table.storeId, table.brandId),
   storeUpdatedAtIdx: index('products_store_updated_at_idx').on(table.storeId, table.updatedAt),
   haaMarketplaceIdx: index('products_haa_marketplace_idx').on(table.haaMarketplaceEnabled, table.haaMarketplaceReviewStatus, table.status, table.createdAt),
+  // SFDA verification lookup index (TASK-0041 Track 2.2).
+  sfdaVerificationIdx: index('products_sfda_verification_idx').on(table.requiresSfdaNumber, table.sfdaVerifiedAt),
 }));
 
 export const productImages = pgTable('product_images', {

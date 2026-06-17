@@ -46,6 +46,12 @@ export const createProductSchema = z.object({
   seoDescription: z.string().max(160).optional(),
   options: z.array(optionSchema).optional(),
   variants: z.array(variantSchema).optional(),
+  // TASK-0041 Phase 2 — Track 2.2 — P0-1 SFDA workflow.
+  // Format validation only — matches SFDA registration number format.
+  // Live SFDA API integration deferred to Phase 7+.
+  sfdaNumber: z.string().regex(/^[A-Z0-9-]{5,50}$/).optional().or(z.literal('')),
+  sfdaLicenseType: z.string().max(30).optional(),
+  sfdaExpiryDate: z.coerce.date().optional(),
 });
 
 export const updateProductSchema = createProductSchema.partial();

@@ -64,15 +64,31 @@ export async function marketplaceProductReviewRoute(c: any) {
   // Capture the prior review status BEFORE updating so the audit log
   // records both the old and new values (forensic completeness).
   const [existing] = await db
-    .select({ haaMarketplaceReviewStatus: s.products.haaMarketplaceReviewStatus })
+    .select({
+      haaMarketplaceReviewStatus: s.products.haaMarketplaceReviewStatus,
+      requiresSfdaNumber: s.products.requiresSfdaNumber,
+      sfdaNumber: s.products.sfdaNumber,
+      sfdaVerifiedAt: s.products.sfdaVerifiedAt,
+    })
     .from(s.products)
     .where(eq(s.products.id, id))
     .limit(1);
+  // TASK-0041 Phase 2 — Track 2.2 — P0-1 SFDA workflow.
+  // When approving a product that requires SFDA, set the verification
+  // timestamp + admin id. Admin reviews the format + manually verifies
+  // (live SFDA API integration deferred to Phase 7+).
+  const isApproving = body.status === 'approved';
+  const needsSfdaVerify = isApproving && existing?.requiresSfdaNumber === true;
   const [product] = await db.update(s.products).set({
     haaMarketplaceReviewStatus: body.status,
     haaMarketplaceReviewNote: body.note ?? null,
     haaMarketplaceReviewedAt: new Date(),
     haaMarketplaceReviewedBy: adminAuth?.userId ?? null,
+    // Auto-verify SFDA on admin approval when category requires it.
+    // Admin has visually confirmed the sfda_number format matches the
+    // merchant's submission + their KYC package.
+    sfdaVerifiedAt: needsSfdaVerify ? new Date() : undefined,
+    sfdaVerifiedBy: needsSfdaVerify ? (adminAuth?.userId ?? null) : undefined,
     updatedAt: new Date(),
   }).where(eq(s.products.id, id)).returning();
   if (!product) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } }, 404);
@@ -87,6 +103,8 @@ export async function marketplaceProductReviewRoute(c: any) {
     newValue: {
       haaMarketplaceReviewStatus: product.haaMarketplaceReviewStatus,
       note: product.haaMarketplaceReviewNote ?? null,
+      sfdaVerifiedAt: product.sfdaVerifiedAt ?? null,
+      sfdaVerifiedBy: product.sfdaVerifiedBy ?? null,
     },
     ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
     userAgent: c.req.header('user-agent'),

@@ -301,6 +301,7 @@ export class ProductsService {
     brandId?: number | null;
     categoryIds?: number[];
     tagIds?: number[];
+    sfdaNumber?: string | null;
   }) {
     if (input.brandId != null) {
       const [brand] = await tx.select({ id: s.brands.id })
@@ -313,11 +314,25 @@ export class ProductsService {
     if (input.categoryIds !== undefined) {
       const categoryIds = [...new Set(input.categoryIds)];
       if (categoryIds.length) {
-        const categories = await tx.select({ id: s.categories.id })
+        const categories = await tx.select({
+          id: s.categories.id,
+          requiresSfda: s.categories.requiresSfda,
+        })
           .from(s.categories)
           .where(and(inArray(s.categories.id, categoryIds), eq(s.categories.storeId, storeId)));
         if (categories.length !== categoryIds.length) {
           throw new ValidationError('One or more categories do not belong to this store');
+        }
+        // TASK-0041 Phase 2 — Track 2.2 — P0-1 SFDA workflow.
+        // If ANY linked category requires SFDA, product must have a
+        // valid sfdaNumber. Format validation happens in the Zod schema;
+        // this is the per-product merchant-side gate.
+        const needsSfda = categories.some((c: { requiresSfda: boolean }) => c.requiresSfda);
+        if (needsSfda && (!input.sfdaNumber || !input.sfdaNumber.trim())) {
+          throw new ValidationError(
+            'SFDA registration number required for this product (category requires SFDA). ' +
+            'Provide a valid sfdaNumber matching [A-Z0-9-]{5,50}.'
+          );
         }
       }
     }
@@ -364,6 +379,14 @@ export class ProductsService {
         haaMarketplaceEnabled: input.haaMarketplaceEnabled ?? false,
         haaMarketplaceCommissionRate: input.haaMarketplaceCommissionRate?.toString() ?? '0.05',
         brandId: input.brandId ?? null,
+        // TASK-0041 Phase 2 — Track 2.2 — P0-1 SFDA workflow.
+        // Pass through to products row. requiresSfdaNumber is
+        // auto-derived from category.requiresSfda (set when admin
+        // marks the category as regulated). sfdaNumber is the
+        // format-validated [A-Z0-9-]{5,50} string from the merchant.
+        sfdaNumber: input.sfdaNumber && input.sfdaNumber !== '' ? input.sfdaNumber : null,
+        sfdaLicenseType: input.sfdaLicenseType ?? null,
+        sfdaExpiryDate: input.sfdaExpiryDate ?? null,
         seoTitle: input.seoTitle ?? null,
         seoDescription: input.seoDescription ?? null,
         salesCount: input.salesCount ?? 0,

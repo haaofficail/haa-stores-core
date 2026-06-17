@@ -19,6 +19,11 @@ export const categories = pgTable('categories', {
   // cosmetic/supplement/weapon/adult/counterfeit). Used by SFDA workflow
   // (Track 2.2). Nullable for categories that aren't regulated.
   regulatedCategory: varchar('regulated_category', { length: 50 }),
+  // TASK-0041 Phase 2 — Track 2.2 — P0-1 SFDA workflow.
+  // When true, products in this category REQUIRE a valid sfda_number
+  // to be published. Drives the merchant-side validation in
+  // ProductsService.validateProductRelations.
+  requiresSfda: boolean('requires_sfda').notNull().default(false),
   // prohibitedInMarketplace: when true, marketplace queries exclude all
   // products in this category. Default false (visible). Admin toggles
   // per category via the admin UI (added in Track 2.2 admin pass).
