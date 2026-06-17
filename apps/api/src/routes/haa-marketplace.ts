@@ -107,12 +107,15 @@ haaMarketplaceRouter.get('/products', async (c) => {
     conditions.push(or(ilike(s.products.name, term), ilike(s.stores.name, term))!);
   }
   if (category) {
+    // TASK-0041 Phase 2 — Track 2.1 — P0-2 category blocklist.
+    // Exclude prohibited categories from marketplace browse.
     conditions.push(sql`EXISTS (
       SELECT 1
       FROM ${s.productCategories}
       INNER JOIN ${s.categories} ON ${s.categories.id} = ${s.productCategories.categoryId}
       WHERE ${s.productCategories.productId} = ${s.products.id}
         AND ${s.categories.slug} = ${category}
+        AND ${s.categories.prohibitedInMarketplace} = false
     )` as any);
   }
   if (storeSlug) {
@@ -160,6 +163,7 @@ haaMarketplaceRouter.get('/products', async (c) => {
       FROM ${s.productCategories}
       INNER JOIN ${s.categories} ON ${s.categories.id} = ${s.productCategories.categoryId}
       WHERE ${s.productCategories.productId} = ${s.products.id}
+        AND ${s.categories.prohibitedInMarketplace} = false
       ORDER BY ${s.categories.sortOrder} ASC
       LIMIT 1
     )`,
@@ -168,6 +172,7 @@ haaMarketplaceRouter.get('/products', async (c) => {
       FROM ${s.productCategories}
       INNER JOIN ${s.categories} ON ${s.categories.id} = ${s.productCategories.categoryId}
       WHERE ${s.productCategories.productId} = ${s.products.id}
+        AND ${s.categories.prohibitedInMarketplace} = false
       ORDER BY ${s.categories.sortOrder} ASC
       LIMIT 1
     )`,
@@ -234,6 +239,7 @@ haaMarketplaceRouter.get('/products/:storeSlug/:productSlug', async (c) => {
       FROM ${s.productCategories}
       INNER JOIN ${s.categories} ON ${s.categories.id} = ${s.productCategories.categoryId}
       WHERE ${s.productCategories.productId} = ${s.products.id}
+        AND ${s.categories.prohibitedInMarketplace} = false
       ORDER BY ${s.categories.sortOrder} ASC
       LIMIT 1
     )`,
@@ -242,6 +248,7 @@ haaMarketplaceRouter.get('/products/:storeSlug/:productSlug', async (c) => {
       FROM ${s.productCategories}
       INNER JOIN ${s.categories} ON ${s.categories.id} = ${s.productCategories.categoryId}
       WHERE ${s.productCategories.productId} = ${s.products.id}
+        AND ${s.categories.prohibitedInMarketplace} = false
       ORDER BY ${s.categories.sortOrder} ASC
       LIMIT 1
     )`,
@@ -445,6 +452,9 @@ haaMarketplaceRouter.get('/categories', async (c) => {
       eq(s.stores.status, 'active'),
       eq(s.stores.isActive, true),
       eq(s.stores.publishStatus, 'published'),
+      // TASK-0041 Phase 2 — Track 2.1 — P0-2 category blocklist.
+      // Exclude prohibited categories from the marketplace category list.
+      eq(s.categories.prohibitedInMarketplace, false),
       or(
         and(eq(s.stores.isDemo, false), eq(s.products.haaMarketplaceEnabled, true), eq(s.products.haaMarketplaceReviewStatus, 'approved')),
         and(eq(s.stores.isDemo, true), sql`${s.stores.demoProfile} IN ('main', 'perfume')`),
