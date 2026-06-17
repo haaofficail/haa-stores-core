@@ -1850,3 +1850,334 @@
   - Session #5 (13:23-13:47, 24 min): 1 commit (5 live-deploy-readiness docs: PRIVACY_POLICY, TERMS_OF_SERVICE, DEPLOYMENT_RUNBOOK, SAUDI_COMPLIANCE_CHECKLIST, INCIDENT_RESPONSE — ~2069 lines)
   - WIP at session start: 21 uncommitted files. Triaged: 2 source files committed (3DS scaffold), 18 source files stashed as `stash@{0}`, 1 source file reverted (`tenants.ts` primaryColor). Net commits across Sessions #3+#4+#5: 11 (7 assistant + 4 owner during break). Net stashed: stash@{0} (preserved for future use).
   - Cumulative: 28 commits on `feature/phase-9-cod-fee-policy` (15 Session #2 + 6 Session #3 + 6 Session #4 + 1 Session #5). 2393 tests passing (+64 from Session #2 baseline 2329: 3DS=23 + 3DS-storefront=11 + VAT=25 + VAT-line=5). 4 pre-existing baseline failures unchanged. Preflight clean throughout.
+
+
+---
+
+### TASK-0037: Public Marketplace Hardening Initiative (Master)
+
+- **Type:** Architecture / Compliance / Security / Strategic Initiative
+- **Priority:** P0 Critical (commercial launch blocker; see `docs/ops/PUBLIC_MARKETPLACE_AUDIT.md` — 6 P0 launch blockers)
+- **Status:** Planning (Phase 0 documentation drift correction COMPLETE 2026-06-17; Phase 1+ engineering awaiting owner GO)
+- **Created:** 2026-06-17
+- **Updated:** 2026-06-17 (Phase 0 closure: TASK-0039 done)
+- **Original Request:** Owner directive 2026-06-17 — register the marketplace hardening roadmap from `docs/ops/MARKETPLACE_HARDENING_PLAN.md` as tracked tasks. Plan is read-only documentation; this task formalizes the work as 8 phase tasks (TASK-0039–0045) with a master initiative here.
+- **Problem:** Public marketplace audit (`docs/ops/PUBLIC_MARKETPLACE_AUDIT.md`, 642 lines) found **6 P0 launch blockers + 9 P1 must-fix-before-public-launch + 11 P2 + 6 P3** findings. Marketplace is demo-ready (~38% commercial readiness) but cannot launch to general public without closing P0-1 (SFDA), P0-2 (category blocklist), P0-3 (phone enumeration), P0-4 (demo isolation contract), P0-5 (admin audit log), P0-6 (legal copy).
+- **Goal:** Take marketplace from "demo-ready" to "controlled-beta launch safe" by closing all 6 P0s and 9 P1s, then run external pen-test, then invite-only beta launch with 10-20 handpicked merchants.
+- **Scope (8 sub-tasks, ~16-19 engineering days, ~4-5 calendar weeks):**
+  - **Phase 0** (TASK-0039, 0.5 day, ✅ DONE 2026-06-17) — Documentation drift correction. SAUDI_COMPLIANCE_CHECKLIST §6.2 corrected, CURRENT_STATE updated, TASK_TRACKER has 9 new entries (TASK-0037 + 0038 + 0039-0045), Phase 0 audit report (`docs/ops/MARKETPLACE_PHASE0_AUDIT.md`) created.
+  - **Phase 1** (TASK-0040, 2 days, 3 parallel tracks) — Self-contained P0s:
+    - Track 1A (P0-4): Replace raw `sql\`${s.stores.demoProfile} IS NOT NULL\`` in `haa-marketplace.ts` (4 sites: lines 92, 263, 400, 448) with shared `shouldShowInMarketplace` helper. Seed `demoProfile: 'general'` → 'main'.
+    - Track 1B (P0-3): Add `accessToken` column (uuid) to `marketplace_orders` + migration 0058. Replace `?phone=` with `?access_token=` in `GET /marketplace/orders/:num` + storefront `MarketplaceOrderTrack.tsx`. Mirror R-0014 support-ticket pattern.
+    - Track 1C (P0-5): Add audit calls to `admin/marketplace.ts` for `marketplaceProductReviewRoute` (line 58) + `marketplaceProductFeatureRoute` (line 75). Extend `AuditAction` union with `'marketplace_product_review'` + `'marketplace_product_feature'`.
+  - **Phase 2** (TASK-0041, 3 days, sequential) — Compliance infrastructure:
+    - 2.1 (P0-2): Migration 0059 adds `regulated_category` + `prohibited_in_marketplace` to `categories`; admin UI to toggle; marketplace queries filter `eq(categories.prohibitedInMarketplace, false)`.
+    - 2.2 (P0-1): Migration 0060 adds `requires_sfda_number`, `sfda_number`, `sfda_license_type`, `sfda_expiry_date`, `sfda_verified_at`, `sfda_verified_by` to `products`; merchant publish validation; admin verification UI.
+  - **Phase 3** (TASK-0042, 1 day engineering + 1-2 weeks owner legal, parallel with Phase 2) — Legal copy:
+    - 3.1: PRIVACY_POLICY §2.4 "السوق العام" (multi-merchant data flow + marketplace analytics + seller disclosure).
+    - 3.2: TERMS_OF_SERVICE §8 "البائعون المستقلون" (independent seller relationship + Haa's liability cap + dispute escalation + KYC scope + right to suspend).
+    - 3.3: New `docs/SFDA_DISCLAIMER.md` (merchant SFDA responsibility disclaimer).
+    - 3.4: Owner action — DPO appointment (PDPL Article 22) + contact published in PRIVACY_POLICY header.
+  - **Phase 4** (TASK-0043, 3 days, 3 parallel tracks) — P1 fixes + integration tests T5-T10:
+    - Track 4A: P1-1 (CSRF guest endpoint test) + P1-9 (separate rate limit on POST `/marketplace/orders` = 30/10min).
+    - Track 4B: P1-2 (permission granularity: `marketplace.review` + `marketplace.feature`) + P1-3 (admin pagination).
+    - Track 4C: T5-T10 integration tests (admin review writes audit / non-published stores excluded / non-active products excluded / seller email/phone not leaked / search perf 10k products / XSS sanitization).
+  - **Phase 5** (TASK-0044, 1-2 weeks calendar, out of engineering scope) — Owner-only gates. Tracked in **TASK-0038 (Live-Deploy Readiness Tracker)**: CR + VAT + E-commerce license + DPO + Trademark + PCI-DSS ASV + KSA hosting decision + Tabby DPA + DR plan.
+  - **Phase 6** (TASK-0045, 5-7 days, 1-2 weeks calendar) — Pre-pen-test smoke + External pen-test by CREST-certified firm + Findings triage + Controlled-beta launch (10-20 handpicked merchants with KYC verified).
+- **Out of Scope (explicit deferrals, tracked as P2/P3 backlog):** P2-7/P2-8 (real payment methods wired at marketplace checkout — separate sprint), P2-10 (VAT badge visual verification), P2-11 (Schema.org JSON-LD), P1-4 (search FTS), P1-5 (subquery refactor), customer-side "report product", bulk moderation UI.
+- **Affected Areas:**
+  - `apps/api/src/routes/haa-marketplace.ts` (P0-4, P0-3, P0-2 query rewrites)
+  - `apps/api/src/routes/admin/marketplace.ts` (P0-5 audit calls, P1-2 permission gates, P1-3 pagination)
+  - `packages/db/src/schema/marketplace_orders.ts` (P0-3 accessToken column)
+  - `packages/db/src/schema/products.ts` (P0-1 SFDA columns)
+  - `packages/db/src/schema/categories.ts` (P0-1 + P0-2 category columns)
+  - `packages/db/src/migrations/` (0058, 0059, 0060)
+  - `packages/shared/src/demo/demo-rules.ts` (P0-4 whitelist)
+  - `packages/shared/src/types/audit.ts` (P0-5 audit action union extension)
+  - `packages/shared/src/permissions.ts` (P1-2 marketplace.review/feature permissions)
+  - `packages/db/src/seed/index.ts` (P0-4 demoProfile change)
+  - `apps/storefront/src/pages/Marketplace*.tsx` (P0-3 accessToken UX, P1-7 seller disclosure copy)
+  - `apps/admin-dashboard/src/pages/Marketplace.tsx` (P1-2/P1-3 admin UI, P0-1 SFDA verify UI, P0-2 prohibited category UI)
+  - `docs/PRIVACY_POLICY.md` (P0-6 §2.4 marketplace)
+  - `docs/TERMS_OF_SERVICE.md` (P0-6 §8 independent sellers)
+  - `docs/SFDA_DISCLAIMER.md` (new, Phase 3.3)
+- **Skills Required:** plan-mode, systematic-debugging, test-driven-development, verification-before-completion, requesting-code-review, brainstorming-2 (for legal copy).
+- **Skills Used:** plan-mode (Phase 0 audit + registration).
+- **Acceptance Criteria:**
+  - [x] Phase 0 (TASK-0039): Documentation drift correction done
+  - [ ] Phase 1 (TASK-0040): All 3 P0 fixes merged + tests green
+  - [ ] Phase 2 (TASK-0041): Categories + SFDA columns added + merchant validation
+  - [ ] Phase 3 (TASK-0042): PRIVACY_POLICY + TERMS + SFDA_DISCLAIMER published + DPO appointed
+  - [ ] Phase 4 (TASK-0043): All 9 P1s fixed + T5-T10 tests green
+  - [ ] Phase 5 (TASK-0044): All 10 owner action items closed (tracked in TASK-0038)
+  - [ ] Phase 6 (TASK-0045): Pen-test PASS + controlled-beta launched with 10-20 merchants
+  - [ ] No regressions to TASK-0034 / TASK-0035 work
+  - [ ] `pnpm preflight` clean throughout; full suite passes (target 2470+)
+- **Test Plan:** Per phase: TDD red→green; HTTP-level tests for marketplace public routes; source-grep tests for audit/permission/rate-limit wiring; ZATCA-equivalent: live SFDA portal integration test in Phase 6 (owner-coordinated).
+- **Test Results:** Phase 0 = no test changes (read-only). Phase 1+ = TBD per sub-task.
+- **Risks:** See `docs/ops/MARKETPLACE_HARDENING_PLAN.md` §9 (RR-1 to RR-10) — cumulative risk register. Top 3: owner legal delays (RR-1), pen-test findings requiring migration (RR-2), merchant category visibility loss (RR-3).
+- **Open Owner Questions:** None for Phase 0. Phase 1+ may surface decisions (e.g., P0-4 seed: change to 'main' OR whitelist 'general' — recommend 'main' per plan §3 Track 1A).
+- **Related Issues:** None yet (will register ISSUE-0042 in `docs/ops/ISSUE_KNOWLEDGE_BASE.md` when P0-4 fix lands).
+- **Related Decisions:** None yet (DECISION-XXXX will record at TASK-0040 Track 1A seed choice).
+- **Status History:**
+  - Requested: 2026-06-17
+  - Planning: 2026-06-17 (Phase 0 documentation drift correction done)
+  - **Owner next action:** Approve Phase 1 (TASK-0040) kickoff to begin 2-day parallel implementation. The 10 owner action items in TASK-0038 are NOT blockers for engineering — they become blockers at TASK-0044.
+- **Related files:** `docs/ops/MARKETPLACE_HARDENING_PLAN.md` (658 lines, the canonical plan), `docs/ops/PUBLIC_MARKETPLACE_AUDIT.md` (642 lines, the audit), `docs/ops/MARKETPLACE_PHASE0_AUDIT.md` (Phase 0 closure).
+
+---
+
+### TASK-0038: Live-Deploy Readiness Tracker
+
+- **Type:** Support/Ops / Compliance / Documentation
+- **Priority:** P0 Critical (these items block commercial launch — owner action items, not engineering)
+- **Status:** Open (tracking 10 items; 0 closed as of 2026-06-17)
+- **Created:** 2026-06-17
+- **Updated:** 2026-06-17
+- **Original Request:** Identified during TASK-0035 (3DS + VAT) Session #5 closure as the residual gap between engineering 100% and overall ~75% live-deploy readiness. Formally registered here so future sessions have a single source of truth.
+- **Problem:** Engineering has shipped all 8 WalletPostingService methods, 3DS flow, VAT-aware pricing, KYC + compliance infrastructure, +5 live-deploy-readiness docs (Session #5). However, **commercial launch to general public requires 10 owner-coordinated actions** that cannot be done by engineering (legal registrations, government appointments, vendor engagements, business decisions). Without tracking them explicitly, they become invisible in the engineering backlog.
+- **Goal:** Single source of truth for the 10 owner action items + visibility into progress. Each item has: source citation, owner action, blocking task, current status.
+- **Scope (10 items — each is owner-coordinated, not engineering):**
+
+| # | Item | Owner action | Source | Blocks | Status |
+|---|---|---|---|---|---|
+| **G1** | **Commercial Registration (CR)** | Register company with MoCI | `SAUDI_COMPLIANCE_CHECKLIST.md:178` | TASK-0044 (Phase 5) | ⏳ Open |
+| **G2** | **VAT Registration** | Register with ZATCA; obtain VAT certificate | `SAUDI_COMPLIANCE_CHECKLIST.md:134` | TASK-0044 (Phase 5) + TASK-0036 (ZATCA Phase 2) | ⏳ Open |
+| **G3** | **E-Commerce License** | Apply for online sales license from MoCI | `SAUDI_COMPLIANCE_CHECKLIST.md:179` | TASK-0044 (Phase 5) | ⏳ Open |
+| **G4** | **DPO Appointment** | Hire/appoint Data Protection Officer (PDPL Article 22); publish contact | `SAUDI_COMPLIANCE_CHECKLIST.md:97-98` | TASK-0042 (Phase 3.4) + TASK-0044 (Phase 5) | ⏳ Open |
+| **G5** | **Trademark Registration** | Register "هاء متاجر" mark with SAIP | `SAUDI_COMPLIANCE_CHECKLIST.md:280` | TASK-0044 (Phase 5) | ⏳ Open |
+| **G6** | **PCI-DSS ASV Scan** | Engage approved ASV vendor (Approved Scanning Vendor) | `SAUDI_COMPLIANCE_CHECKLIST.md:43` | TASK-0044 (Phase 5) + TASK-0045 (Phase 6) | ⏳ Open |
+| **G7** | **Penetration Test** | Engage CREST-certified pen-test firm (separate from ASV) | `MARKETPLACE_HARDENING_PLAN.md` Phase 6 | TASK-0045 (Phase 6) | ⏳ Open |
+| **G8** | **KSA Hosting Decision** | Decide: launch on Dubai-now vs wait-for-KSA-region | `SAUDI_COMPLIANCE_CHECKLIST.md:208` | TASK-0044 (Phase 5) | ⏳ Open |
+| **G9** | **Tabby DPA** | Sign Data Processing Agreement with Tabby (UAE cross-border) | `SAUDI_COMPLIANCE_CHECKLIST.md:96` | TASK-0044 (Phase 5) | ⏳ Open |
+| **G10** | **Disaster Recovery Plan** | Document + test DR procedure (NCA requirement) | NCA (National Cybersecurity Authority) | TASK-0044 (Phase 5) + TASK-0045 (Phase 6) | ⏳ Open |
+
+- **Engineering support (minimal, on-demand):**
+  - Provide deploy access to test environment for vendor scans (G6, G7)
+  - Provide technical documentation for pen-test firm (G7)
+  - Be available for clarification calls with legal/DPO (G4)
+  - Triage and fix any pen-test findings (G7) — estimate 2-5 days depending on findings count
+- **Out of Scope:** Engineering cannot drive these items. They require the founder/owner to interact with government agencies, vendors, and legal counsel directly. Engineering provides supporting artifacts (docs, env, test access) only.
+- **Affected Areas:**
+  - `docs/SAUDI_COMPLIANCE_CHECKLIST.md` (source of truth for G1-G6, G8-G9)
+  - `docs/INCIDENT_RESPONSE.md` (related to G10 DR plan)
+  - `docs/PRIVACY_POLICY.md` (DPO contact after G4)
+  - `docs/MARKETPLACE_HARDENING_PLAN.md` Phase 5 (gating items)
+- **Skills Required:** none (pure tracking).
+- **Skills Used:** documentation-as-code (this entry).
+- **Acceptance Criteria:**
+  - [ ] G1: CR issued by MoCI
+  - [ ] G2: VAT certificate issued by ZATCA
+  - [ ] G3: E-commerce license issued by MoCI
+  - [ ] G4: DPO appointed + PRIVACY_POLICY.md header updated with contact
+  - [ ] G5: Trademark registered with SAIP
+  - [ ] G6: PCI-DSS ASV scan PASS report received
+  - [ ] G7: Pen-test PASS report received (or all Critical/High findings fixed)
+  - [ ] G8: KSA hosting decision documented in `docs/DEPLOYMENT_RUNBOOK.md`
+  - [ ] G9: Tabby DPA signed
+  - [ ] G10: DR plan documented + tabletop exercise run successfully
+- **Test Plan:** N/A (no code). Each item closes via owner confirmation + reference to the issued certificate/contract/report.
+- **Test Results:** 0/10 closed as of 2026-06-17. Will be updated as items close.
+- **Risks:**
+  - G2 (VAT) blocks ZATCA Phase 2 (TASK-0036) entirely — without VAT certificate, no ZATCA integration possible
+  - G4 (DPO) is hiring-dependent, calendar risk 1-2 weeks (per plan §3 Task 3.4)
+  - G7 (pen-test) findings could require 2-5 days engineering to triage + fix, may delay beta launch
+  - G8 (KSA hosting) — Dubai acceptable for MVP but documented migration plan required
+- **Related Tasks:** TASK-0036 (ZATCA gated by G2), TASK-0042 (Phase 3.4 gated by G4), TASK-0044 (Phase 5 gated by G1-G6, G8-G10), TASK-0045 (Phase 6 gated by G6, G7, G10).
+- **Related Decisions:** None yet.
+- **Status History:**
+  - Created: 2026-06-17 (registered from Session #5 closure gap analysis)
+
+---
+
+### TASK-0039: Marketplace Hardening — Phase 0 (Documentation Drift Correction)
+
+- **Type:** Documentation / Support/Ops
+- **Priority:** P1 High
+- **Status:** Done (2026-06-17)
+- **Created:** 2026-06-17
+- **Updated:** 2026-06-17
+- **Original Request:** TASK-0037 master + `docs/ops/MARKETPLACE_HARDENING_PLAN.md` §2.
+- **Scope:** Documentation drift correction only — no code, no migration, no schema. (1) SAUDI_COMPLIANCE_CHECKLIST §6.2 SFDA status corrected to ❌ Not Started (deferred to TASK-0041 Phase 2). (2) CURRENT_STATE.md updated with marketplace initiative entry. (3) TASK_TRACKER has 9 new entries (TASK-0037 + 0038 + 0039-0045). (4) Phase 0 audit report (`docs/ops/MARKETPLACE_PHASE0_AUDIT.md`) created.
+- **Acceptance Criteria:**
+  - [x] SAUDI_COMPLIANCE_CHECKLIST §6.2 reflects actual code state (deferred to TASK-0041)
+  - [x] CURRENT_STATE.md references audit + 6 P0 findings
+  - [x] TASK_TRACKER has 9 new tasks (TASK-0037 master + TASK-0038 readiness tracker + TASK-0039–0045 phases)
+  - [x] Phase 0 audit report created
+  - [x] `git diff --stat` shows ONLY docs changes
+- **Test Results:** Phase 0 audit acceptance: PASS (see `docs/ops/MARKETPLACE_PHASE0_AUDIT.md` §7).
+- **Status History:** Done 2026-06-17.
+
+---
+
+### TASK-0040: Marketplace Hardening — Phase 1 (Self-Contained P0s: demo isolation + accessToken + audit log)
+
+- **Type:** Bug Fix / Security / Compliance / Refactor
+- **Priority:** P0 Critical (closes 3 of 6 P0 launch blockers)
+- **Status:** Open (awaiting owner GO; Phase 0 complete 2026-06-17)
+- **Created:** 2026-06-17
+- **Updated:** 2026-06-17
+- **Original Request:** `docs/ops/MARKETPLACE_HARDENING_PLAN.md` §3 (Phase 1, 2 days, 3 parallel tracks).
+- **Scope:**
+  - **Track 1A (P0-4, ~4 hours):** Replace raw `sql\`${s.stores.demoProfile} IS NOT NULL\`` in `apps/api/src/routes/haa-marketplace.ts` (4 sites: lines 92, 263, 400, 448) with shared `shouldShowInMarketplace` helper. Seed `demoProfile: 'general'` → 'main' (recommendation) OR add 'general' to whitelist (alternative). TDD: HTTP test asserts `GET /marketplace/products` returns ZERO products for a store with `demoProfile='unknown'`.
+  - **Track 1B (P0-3, ~1.5 days):** Add `accessToken` column (uuid, notNull, defaultRandom, unique index) to `marketplace_orders`. Migration `0058_marketplace_order_access_token.sql`. Modify `POST /orders` (line 477) to return `accessToken` ONCE in response; modify `GET /orders/:num` (line 625) to require `?access_token=` instead of `?phone=` (or both for legacy compat). Update storefront `MarketplaceOrderTrack.tsx` to use token. Add audit log on every successful order view. Mirror R-0014 pattern from support tickets.
+  - **Track 1C (P0-5, ~0.5 day):** Add `audit.record(...)` calls to `admin/marketplace.ts` for `marketplaceProductReviewRoute` (line 58) + `marketplaceProductFeatureRoute` (line 75). Extend `AuditAction` union with `'marketplace_product_review'` + `'marketplace_product_feature'`. Add Arabic labels in `packages/shared/src/schemas/audit.ts`. Source-grep test prevents regression.
+- **Acceptance Criteria:**
+  - [ ] Track 1A: New HTTP test passes; existing `tests/marketplace-demo.test.ts` still passes; `shouldShowInMarketplace` is the only path for demo visibility
+  - [ ] Track 1B: `accessToken` is uuid (122-bit entropy); token returned ONCE at creation; audit log written on every successful view
+  - [ ] Track 1C: Every PATCH `/admin/marketplace/products/:id/review` writes 1 audit log; every PATCH feature writes 1 audit log; source-grep test prevents regression
+  - [ ] `pnpm preflight` green
+  - [ ] `pnpm typecheck` green
+  - [ ] `pnpm test` green (all new + existing 2411 tests)
+  - [ ] 3 commits, each TDD red→green
+  - [ ] Documentation updated: TASK-0040 status flipped to Done
+- **Skills Required:** plan-mode, systematic-debugging, test-driven-development, verification-before-completion.
+- **Skills Used:** (filled at execution time)
+- **Risks:** R1 (perf regression if `haa-marketplace.ts` query restructured), R2 (legacy `?phone=` compat during transition).
+- **Status History:** Open as of 2026-06-17 (Phase 0 closed, awaiting owner GO).
+
+---
+
+### TASK-0041: Marketplace Hardening — Phase 2 (Compliance Infrastructure: category blocklist + SFDA)
+
+- **Type:** Data/DB / Compliance / Feature
+- **Priority:** P0 Critical (closes 2 of 6 P0 launch blockers; P0-2 + P0-1)
+- **Status:** Open (sequenced AFTER TASK-0040; owner decision needed for migration timing)
+- **Created:** 2026-06-17
+- **Updated:** 2026-06-17
+- **Original Request:** `docs/ops/MARKETPLACE_HARDENING_PLAN.md` §4 (Phase 2, 3 days, sequential).
+- **Scope:**
+  - **2.1 (P0-2, ~1.5 days):** Migration `0059_category_compliance.sql` adds to `categories`: `regulated_category` (varchar 50) + `prohibited_in_marketplace` (boolean, default false). `RegulatedCategory` enum: 'food' | 'drug' | 'medical_device' | 'cosmetic' | 'supplement' | 'weapon' | 'adult' | 'counterfeit'. Marketplace queries filter `eq(categories.prohibitedInMarketplace, false)` (4 sites: lines 95-101, 261-265, 371-381, 396-406, 441-450). Admin UI to toggle `prohibited_in_marketplace`.
+  - **2.2 (P0-1, ~1.5 days, AFTER 2.1):** Migration `0060_product_sfda.sql` adds to `products`: `requires_sfda_number` (boolean) + `sfda_number` (varchar 100) + `sfda_license_type` + `sfda_expiry_date` + `sfda_verified_at` + `sfda_verified_by`. Adds to `categories`: `requires_sfda` (boolean). Zod validation `sfdaNumber: z.string().regex(/^[A-Z0-9-]{5,50}$/).optional()`. Merchant products route: when `requires_sfda && !sfda_number`, reject publish (400). Admin UI to verify SFDA numbers. No live SFDA API integration (format check only) — document as known limitation.
+- **Acceptance Criteria:**
+  - [ ] Categories audit completed; ~5 high-risk categories (drugs, weapons, adult, counterfeit, etc.) marked prohibited
+  - [ ] Products in prohibited categories invisible in marketplace
+  - [ ] Products in regulated categories REQUIRE + display SFDA number
+  - [ ] Admin can mark SFDA verified (sets `sfda_verified_at`)
+  - [ ] All P0-2 + P0-1 tests green (new `tests/category-blocklist.test.ts` + `tests/sfda-workflow.test.ts`)
+  - [ ] Migration applied to dev + test DB without errors
+- **Skills Required:** plan-mode, test-driven-development, verification-before-completion.
+- **Risks:** R1 (existing products in now-prohibited categories may become invisible overnight — owner communication required before migration); R2 (merchants may put fake SFDA numbers — admin verification step catches this).
+- **Status History:** Open as of 2026-06-17.
+
+---
+
+### TASK-0042: Marketplace Hardening — Phase 3 (Legal Copy: PRIVACY_POLICY + TERMS + SFDA_DISCLAIMER)
+
+- **Type:** Documentation / Compliance / Legal
+- **Priority:** P0 Critical (closes P0-6 launch blocker)
+- **Status:** Open (parallel with TASK-0041; owner legal review required)
+- **Created:** 2026-06-17
+- **Updated:** 2026-06-17
+- **Original Request:** `docs/ops/MARKETPLACE_HARDENING_PLAN.md` §5 (Phase 3, 1 day engineering + 1-2 weeks owner legal).
+- **Scope:**
+  - 3.1: PRIVACY_POLICY §2.4 "السوق العام" — multi-merchant data flow + marketplace analytics + seller disclosure.
+  - 3.2: TERMS_OF_SERVICE §8 "البائعون المستقلون" — independent seller relationship + Haa's liability cap + dispute escalation + KYC scope + right to suspend.
+  - 3.3: New `docs/SFDA_DISCLAIMER.md` — merchant SFDA responsibility disclaimer; format validation + admin verification only, NOT live SFDA API.
+  - 3.4: **Owner action** — DPO appointment (PDPL Article 22). Engineering: 0 effort. Calendar: 1-2 weeks (hiring + paperwork). Tracked in TASK-0038 G4.
+- **Acceptance Criteria:**
+  - [ ] PRIVACY_POLICY §2.4 added and reviewed by DPO/legal
+  - [ ] TERMS_OF_SERVICE §8 added and reviewed by DPO/legal
+  - [ ] SFDA_DISCLAIMER.md created
+  - [ ] DPO appointed + contact published in PRIVACY_POLICY header (TASK-0038 G4 closed)
+  - [ ] All three docs cross-reference each other
+- **Skills Required:** brainstorming-2 (for legal copy design), documentation-as-code.
+- **Risks:** Legal review is unpredictable (LOW confidence in plan §15) — could be 1 day or 2 weeks. Mitigation: draft copy in engineering session, queue for legal review in parallel.
+- **Status History:** Open as of 2026-06-17.
+
+---
+
+### TASK-0043: Marketplace Hardening — Phase 4 (P1 fixes + Integration Tests T5-T10)
+
+- **Type:** Bug Fix / Security / Feature / Testing
+- **Priority:** P1 High (must close before public launch)
+- **Status:** Open (sequenced AFTER TASK-0040+0041; 3 parallel tracks, 3 days)
+- **Created:** 2026-06-17
+- **Updated:** 2026-06-17
+- **Original Request:** `docs/ops/MARKETPLACE_HARDENING_PLAN.md` §6 (Phase 4, 3 days, 3 parallel tracks).
+- **Scope:**
+  - **Track 4A (security/rate-limit, ~0.75 day):**
+    - P1-1: New `tests/csrf-origin-marketplace.test.ts` — assert marketplace guest endpoints accept without Origin (server-to-server) but reject with mismatched Origin (browser cross-site).
+    - P1-9: New `marketplaceOrderRateLimit = rateLimiter({ windowMs: 10min, maxRequests: env.NODE_ENV === 'development' ? 100 : 30 })` mounted BEFORE broader `/marketplace/*` rate limit. Source-grep test: `marketplace/orders` POST has stricter rate limit than browse.
+  - **Track 4B (admin moderation, ~1 day):**
+    - P1-2: Add `marketplace.review` + `marketplace.feature` permissions to `packages/shared/src/permissions.ts`. Wire into `admin/index.ts:185-186`: `requireAdminPermission('marketplace.review')` on `PATCH /marketplace/products/:id/review`. Owner/Manager roles get both. Source-grep test.
+    - P1-3: Add `paginationSchema` query param to `GET /admin/marketplace/products` (replace hardcoded `limit(200)` at line 48) + `GET /admin/marketplace/orders` (line 118). Update admin UI to use new pagination.
+  - **Track 4C (integration tests T5-T10, ~1 day):**
+    - T5: Admin review writes audit_logs (covered by TASK-0040 P0-5, write HTTP-level test).
+    - T6: Public marketplace excludes non-`published` stores.
+    - T7: Public marketplace excludes non-`active` products.
+    - T8: Public `/sellers/:slug` does not leak `email` or `phone`.
+    - T9: Search performance at 10k products (manual benchmark with `EXPLAIN ANALYZE`, optional).
+    - T10: XSS sanitization in product name / description / notes.
+    - All in new `tests/marketplace-public-safety.test.ts`.
+- **Acceptance Criteria:**
+  - [ ] All P1-1, P1-2, P1-3, P1-9 fixes merged
+  - [ ] T1-T10 all green
+  - [ ] `pnpm ci:local` green (expect ~2440 tests now)
+  - [ ] Source-grep tests prevent regression
+  - [ ] All P0/P1 tasks in TASK_TRACKER marked Done (or scheduled)
+- **Skills Required:** test-driven-development, verification-before-completion.
+- **Risks:** None significant; mostly additive + defensive code.
+- **Status History:** Open as of 2026-06-17.
+
+---
+
+### TASK-0044: Marketplace Hardening — Phase 5 (Owner-Only Gates Closure)
+
+- **Type:** Support/Ops / Compliance
+- **Priority:** P0 Critical (gates Phase 6 launch)
+- **Status:** Open (depends on TASK-0038 owner action items closing)
+- **Created:** 2026-06-17
+- **Updated:** 2026-06-17
+- **Original Request:** `docs/ops/MARKETPLACE_HARDENING_PLAN.md` §7 (Phase 5, 1-2 weeks calendar, out of engineering scope).
+- **Scope:** **NOT engineering tasks.** These are owner-coordinated items tracked in **TASK-0038 (Live-Deploy Readiness Tracker)**. This task (TASK-0044) closes when ALL 10 owner items in TASK-0038 are marked Done: G1 CR + G2 VAT + G3 E-commerce license + G4 DPO + G5 Trademark + G6 PCI-DSS ASV + G8 KSA hosting decision + G9 Tabby DPA + G10 DR plan.
+- **Acceptance Criteria:**
+  - [ ] TASK-0038 G1 closed: CR issued by MoCI
+  - [ ] TASK-0038 G2 closed: VAT certificate issued by ZATCA
+  - [ ] TASK-0038 G3 closed: E-commerce license issued by MoCI
+  - [ ] TASK-0038 G4 closed: DPO appointed + PRIVACY_POLICY header updated
+  - [ ] TASK-0038 G5 closed: Trademark registered with SAIP
+  - [ ] TASK-0038 G6 closed: PCI-DSS ASV scan PASS report received
+  - [ ] TASK-0038 G8 closed: KSA hosting decision documented
+  - [ ] TASK-0038 G9 closed: Tabby DPA signed
+  - [ ] TASK-0038 G10 closed: DR plan documented + tabletop exercise run
+- **Engineering support (minimal, on-demand):**
+  - Provide deploy access to test environment for vendor scans (G6)
+  - Provide technical documentation for pen-test firm (G7 — see TASK-0045)
+  - Be available for clarification calls with legal/DPO (G4)
+- **Skills Required:** none (pure tracking).
+- **Risks:** Owner-track is LOW confidence per plan §15 — could be 2 weeks or 2 months. Mitigation: don't gate Phase 4 (engineering) on Phase 5 (owner); run them in parallel.
+- **Status History:** Open as of 2026-06-17.
+
+---
+
+### TASK-0045: Marketplace Hardening — Phase 6 (Pen-Test + Controlled Beta Launch)
+
+- **Type:** Security / Support/Ops / Feature
+- **Priority:** P0 Critical (final gate before live beta)
+- **Status:** Open (depends on TASK-0040–0044 + TASK-0038 closure)
+- **Created:** 2026-06-17
+- **Updated:** 2026-06-17
+- **Original Request:** `docs/ops/MARKETPLACE_HARDENING_PLAN.md` §8 (Phase 6, 5-7 days engineering, 1-2 weeks calendar).
+- **Scope:**
+  - 8.1 (0.5 day eng): Pre-pen-test smoke — `curl` smoke tests verifying marketplace returns only approved/published/active products; demo stores appear (only 'main' profile after P0-4 fix); order tracking requires accessToken; admin route requires auth; prohibited category products hidden.
+  - 8.2 (1 week calendar): External pen-test by CREST-certified firm (TASK-0038 G7). Scope: public marketplace endpoints + admin moderation endpoints + tenant isolation + XSS in product/store content + rate limit bypass + order tracking enumeration resistance + demo store visibility + SFDA field workflow.
+  - 8.3 (2-5 days eng): Pen-test findings triage. Critical (P0) → fix before launch. High (P1) → fix within 2 weeks of launch. Medium (P2) → backlog. Low (P3) → backlog.
+  - 8.4 (0.5 day): Controlled beta launch — invite 10-20 handpicked merchants (KYC verified); soft-launch via shared link; monitor 1 week; have rollback plan ready (`MARKETPLACE_PUBLIC_ENABLED=false` env flag).
+- **Acceptance Criteria:**
+  - [ ] All 6 P0s closed + tests green
+  - [ ] All 9 P1s closed + tests green
+  - [ ] All 10 critical tests (T1-T10) passing
+  - [ ] Owner legal copy (PRIVACY_POLICY §2.4, TERMS §8, SFDA_DISCLAIMER) published (TASK-0042 done)
+  - [ ] DPO appointed + contact published (TASK-0038 G4 closed)
+  - [ ] CR + VAT + E-commerce license obtained (TASK-0038 G1, G2, G3 closed)
+  - [ ] External pen-test report PASS or all Critical/High findings fixed
+  - [ ] DR plan documented and tested (TASK-0038 G10 closed)
+  - [ ] Rollback plan documented (`MARKETPLACE_PUBLIC_ENABLED=false` env flag)
+  - [ ] Monitoring dashboards configured (ops:monitor + marketplace-specific alerts)
+  - [ ] Incident response runbook reviewed for marketplace-specific scenarios
+  - [ ] 10-20 handpicked merchants onboarded with KYC verified
+  - [ ] Beta cohort agreed to feedback loop (weekly sync for first month)
+- **Skills Required:** plan-mode, verification-before-completion, requesting-code-review.
+- **Risks:** Pen-test findings can range from 0 to dozens; triage effort varies wildly (LOW confidence per plan §15).
+- **Status History:** Open as of 2026-06-17.
