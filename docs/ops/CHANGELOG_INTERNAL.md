@@ -1674,3 +1674,143 @@ systematic-debugging.
 
 plan-mode, test-driven-development, verification-before-completion,
 systematic-debugging.
+
+---
+
+## 2026-06-17 — TASK-0035 Sessions #6 through #10 (ZATCA Roadmap + Drizzle Snapshot Chain Rebuilt + Geidea 3DS + Fake3DS UI)
+
+5 sessions, 5 commits (`54d1df67` → `4c6deacf`) closing the final
+loose ends of TASK-0035 and laying the foundation for TASK-0036 (ZATCA
+e-invoicing). Closes the Sessions #3-#5 closure header to reflect 8/8
+sub-items done.
+
+### Session #6 (`54d1df67`) — ZATCA E-Invoicing Roadmap
+
+**Doc-only session** registering TASK-0036 in Planning status with the
+owner decision matrix.
+
+- `docs/ZATCA_ROADMAP.md` (~430 lines)
+  - 5 sub-items: per-merchant CSID issuance, invoice generation +
+    signing + UBL 2.1 XML, QR code rendering (TLV), B2B clearance
+    (online portal), B2C reporting (daily batch)
+  - 6 owner decisions identified (Q1 per-merchant CSID, Q2 real-time
+    vs batch, Q3 cross-border VAT, Q4 credit note counter, Q5 offline
+    mode, Q6 sandbox account)
+  - ~3.5 weeks engineering estimate
+  - Out-of-scope: B2G (different spec), cross-border non-Saudia,
+    invoice OCR, invoice factoring, deferred tax accounting
+- `docs/SAUDI_COMPLIANCE_CHECKLIST.md` §3 updated to add ZATCA
+  e-invoicing track (TASK-0036) with status legend for sub-items
+- `docs/ops/TASK_TRACKER.md` updated: TASK-0036 registered in
+  Planning status, 6 owner decisions logged
+
+### Sessions #7-#8 (`6fbbb0f1` + `ff778284` + `9e5f6966`) — Drizzle Snapshot Chain Rebuilt
+
+**Major infrastructure fix.** The Drizzle snapshot chain was broken
+(missing 4 snapshots: 0050, 0051, 0052, 0053) after manual SQL repairs
+during Sessions #1-#2. `drizzle-kit generate` and `drizzle-kit migrate`
+both failed with `SyntaxError: Unexpected token Bud1` in
+`prepareMigrationFolder`. This was the deploy-blocking known gotcha
+flagged in `DEPLOYMENT_RUNBOOK.md`.
+
+**Root cause:** When a migration is hand-edited or added without
+`drizzle-kit generate`, the corresponding `*_snapshot.json` is not
+created. Drizzle infers the snapshot filename from the journal entry's
+`tag` field, and `validateWithReport` fails when it tries to load
+missing files.
+
+**Workaround (synthesize snapshots from previous):**
+- New `scripts/build-snapshots.cjs` (~140 LOC) — reads each
+  migration's `_journal.json`, finds the prior snapshot in the
+  filesystem, applies the migration's `sql` statements as structural
+  diff (table create/alter, index create/drop, FK add/drop), and
+  emits the new snapshot. Uses STRING FK format
+  (`tableFrom: 'name'`) matching Drizzle's expected output
+  (NOT array format).
+- Run result: 21 snapshots synthesized, 0 orphan, 0 stray files.
+  Chain complete from `0000_snapshot.json` to `0053_snapshot.json`.
+- 2 real bugs caught during synthesis:
+  - **Snapshot 0052** had been previously committed with FK format
+    `tableFrom: ['name']` (array). Test caught the deviation from
+    Drizzle's expected STRING format. Re-emitted with correct format.
+  - **Snapshot 0049** had `prevId: 'previous_uuid'` pointing to a
+    wrong/missing snapshot. Test caught the broken prevId chain.
+    Re-linked to the correct previous snapshot UUID.
+
+**Regression guards (5 new tests, all green):**
+- `tests/drizzle-snapshot-integrity.test.ts` (7 tests)
+  1. All journal entries have matching `*_snapshot.json` files
+  2. All snapshot files parse as valid JSON
+  3. All snapshots have required fields (`id`, `prevId`, `version`,
+     `dialect`, `tables`, `enums`, `schemas`)
+  4. All FK `tableFrom` values are STRING (not array)
+  5. All `prevId` values resolve to existing snapshot IDs
+  6. Snapshot chain forms a single connected sequence from `0000`
+  7. No snapshot file in `meta/` is unreferenced by any journal entry
+- `tests/drizzle-kit-generate-smoke.test.ts` (5 tests)
+  1. `drizzle-kit generate` exits 0 on clean working tree
+  2. `drizzle-kit generate` exits 0 after a no-op schema change
+  3. `drizzle-kit migrate --dry` succeeds (or fails only on
+     expected connection errors in CI without DB)
+  4. Journal entry count matches snapshot count
+  5. All snapshot `prevId` values form a valid chain
+
+**Memory update:** `memory/drizzle-migration-snapshots.md` updated
+with the synthesize-from-previous workaround + 0052 FK array-format
+bug + 0049 prevId-UUID bug.
+
+### Session #9 (`8f842418`) — Geidea 3DS Contract Verification
+
+Verified Geidea provider honors the same 3DS contract as Moyasar
+(sub-item 5 second provider).
+
+- `tests/geidea-3ds.test.ts` (6 tests, all green)
+  1. `supports3DS: true` in `GEIDEA_CAPABILITIES`
+  2. Geidea `createPaymentIntent` returns `redirectUrl` for 3DS
+  3. Geidea `createPaymentIntent` sets
+     `paymentStatus: 'requires_3ds'`
+  4. Geidea `handleWebhook` acknowledges `3ds_required` without
+     changing status
+  5. Geidea `mapProviderStatus` maps `3ds_required` →
+     `requires_3ds` (same as Moyasar)
+  6. Geidea 3DS integration tested against `payment.requires_3ds`
+     webhook event parity with Moyasar
+- No code changes — confirmed Session #3 scaffold + Session #4
+  flow are provider-agnostic and work for both Moyasar and Geidea
+- **TASK-0035 sub-item 5 now fully done** for both providers
+
+### Session #10 (`4c6deacf`) — Fake3DS Challenge Page UI
+
+Dev-only SAMA 3-D Secure challenge simulation page for local testing
+of the 3DS redirect flow without a real bank authentication.
+
+- `apps/storefront/src/pages/Fake3DSChallenge.tsx` (~140 LOC)
+  - Bilingual RTL Arabic/English labels
+  - Bank-style dark blue gradient + brand header
+  - "OTP" input field pre-filled with `123456` (dev only)
+  - "تأكيد" (succeed) + "إلغاء" (fail) buttons
+  - Calls `checkoutApi.complete3DSChallenge(slug, paymentId, success)`
+    on submit
+  - Shows order summary from URL params
+- `apps/storefront/src/lib/api.ts` — new `complete3DSChallenge`:
+  `POST /s/{slug}/checkout/3ds-callback?paymentId=...` (calls API
+  endpoint from Session #4)
+- `apps/storefront/src/App.tsx` — top-level `/fake-3ds-challenge`
+  route registered OUTSIDE `/s/:slug` Layout (it's a simulation
+  page, not part of merchant storefront)
+- Lazy-imported for code-split
+- Typecheck clean
+
+### Test Status
+
+- `pnpm vitest run tests/drizzle-snapshot-integrity.test.ts` → 7/7
+- `pnpm vitest run tests/drizzle-kit-generate-smoke.test.ts` → 5/5
+- `pnpm vitest run tests/geidea-3ds.test.ts` → 6/6
+- Full suite: **2411 passing (+18 from Session #5 closure 2393)**
+- 4 baseline failures unchanged
+- Preflight: ✅ CLEAN (typecheck + all critical checks)
+
+### Skills Used
+
+plan-mode, systematic-debugging, test-driven-development,
+verification-before-completion, documentation-as-code.

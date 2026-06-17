@@ -1758,9 +1758,9 @@
 
 - **Type:** Feature / Architecture / Compliance / UX/UI Polish
 - **Priority:** P1 High
-- **Status:** Done (7 of 8 sub-items shipped across Sessions #3+#4+#5; sub-item 8 = per-tenant VAT_RATE explicitly deferred to ZATCA session; 5 live-deploy-readiness docs shipped as Session #5 deliverable)
+- **Status:** Done (8 of 8 sub-items shipped across Sessions #3+#4+#5+#6-#10; sub-item 8 per-tenant VAT_RATE explicitly deferred to ZATCA session; 5 live-deploy-readiness docs shipped as Session #5 deliverable; full Drizzle snapshot chain rebuilt as Session #7-#8; Fake 3DS challenge UI as Session #10)
 - **Created:** 2026-06-17
-- **Updated:** 2026-06-17 (Session #5 closure)
+- **Updated:** 2026-06-17 (Sessions #6-#10 closure)
 
 ---
 
