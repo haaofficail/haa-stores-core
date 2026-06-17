@@ -161,6 +161,75 @@ export default function WalletPage() {
           </Button>
         </div>
 
+        {/* Q1 — Gateway Fee UX (TASK-0034 sub-item 6):
+            "You receive X" hero card with collapsible breakdown.
+            Owner decision (2026-06-16): show the net amount prominently
+            with a collapsible breakdown, matching Saudi BNPL UX
+            conventions. The native <details>/<summary> is used to keep
+            the change dependency-free (no Radix Collapsible or similar). */}
+        <div className="bg-gradient-to-br from-primary-50 to-emerald-50/50 border border-primary-200/60 rounded-3xl p-5 shadow-card">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
+              <p className="text-sm text-neutral-600">
+                {t('wallet.youWillReceive', 'ستحصل على')}
+              </p>
+              <p className="text-3xl font-bold text-primary-700 mt-1">
+                {fmt(summary?.netBalance)} {t('common.sar')}
+              </p>
+              <p className="text-xs text-neutral-500 mt-1">
+                {t('wallet.youWillReceiveHint', 'صافي رصيدك بعد خصم رسوم المنصة ورسوم معالجة الدفع ورسوم الشحن')}
+              </p>
+            </div>
+            <details className="text-sm group">
+              <summary className="cursor-pointer text-primary-600 hover:text-primary-700 font-medium select-none inline-flex items-center gap-1.5">
+                <span>{t('wallet.viewBreakdown', 'عرض التفاصيل')}</span>
+                <ChevronLeft className="h-3.5 w-3.5 transition-transform group-open:rotate-90" />
+              </summary>
+              <div className="mt-3 bg-white/70 backdrop-blur rounded-2xl border border-white/60 p-4 space-y-2 min-w-[280px]">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-neutral-600 text-xs">{t('wallet.totalSales')}</span>
+                  <span className="tabular-nums text-sm text-emerald-700">
+                    <span className="text-neutral-400 me-1">+</span>
+                    {fmt(summary?.totalSales)} {t('common.sar')}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-neutral-600 text-xs">{t('wallet.platformFees')}</span>
+                  <span className="tabular-nums text-sm text-rose-600">
+                    <span className="text-neutral-400 me-1">−</span>
+                    {fmt(summary?.platformFees)} {t('common.sar')}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-neutral-600 text-xs">{t('wallet.paymentFees')}</span>
+                  <span className="tabular-nums text-sm text-orange-600">
+                    <span className="text-neutral-400 me-1">−</span>
+                    {fmt(summary?.paymentFees)} {t('common.sar')}
+                  </span>
+                </div>
+                {Number(summary?.shippingFees ?? 0) > 0 && (
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-neutral-600 text-xs">{t('wallet.shippingFees')}</span>
+                    <span className="tabular-nums text-sm text-purple-600">
+                      <span className="text-neutral-400 me-1">−</span>
+                      {fmt(summary?.shippingFees)} {t('common.sar')}
+                    </span>
+                  </div>
+                )}
+                <div className="border-t border-neutral-200 pt-2 mt-2">
+                  <div className="flex items-center justify-between gap-3 font-bold">
+                    <span className="text-neutral-900 text-xs">{t('wallet.netBalance')}</span>
+                    <span className="tabular-nums text-sm text-primary-700">
+                      <span className="text-neutral-400 me-1">=</span>
+                      {fmt(summary?.netBalance)} {t('common.sar')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           <SummaryCard
             title={t('wallet.totalSales')}
