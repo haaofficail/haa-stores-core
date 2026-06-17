@@ -7,19 +7,11 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #f7f5f0;
-  --card: #ffffff;
-  --line: #e9e3d6;
-  --line-soft: #f1ece1;
-  --text: #14171e;
-  --muted: #7c7a72;
-  --subtle: #a8a59b;
-  --primary: #2f6f5e;
-  --primary-soft: rgba(47, 111, 94, 0.08);
-  --warn: #c97b3f;
-  --warn-soft: rgba(201, 123, 63, 0.1);
-  --danger: #b06367;
-  --danger-soft: rgba(176, 99, 103, 0.1);
+  --bg: #f7f5f0; --card: #ffffff; --line: #e9e3d6; --line-soft: #f1ece1;
+  --text: #14171e; --muted: #7c7a72; --subtle: #a8a59b;
+  --primary: #2f6f5e; --primary-soft: rgba(47, 111, 94, 0.08);
+  --warn: #c97b3f; --warn-soft: rgba(201, 123, 63, 0.1);
+  --danger: #b06367; --danger-soft: rgba(176, 99, 103, 0.1);
 }
 * { box-sizing: border-box; }
 body {
@@ -38,72 +30,29 @@ h1 {
 h1 .accent { color: var(--primary); font-style: italic; }
 .subtitle { color: var(--muted); font-size: 17px; max-width: 640px; margin: 0 0 40px; line-height: 1.5; }
 section { margin-top: 56px; }
-.section-num {
-  font-family: 'JetBrains Mono', monospace; font-size: 11px;
-  color: var(--subtle); letter-spacing: 0.1em; margin-bottom: 8px;
-}
-h2 {
-  font-family: 'DM Serif Display', serif; font-weight: 400;
-  font-size: 28px; line-height: 1.2; margin: 0 0 8px;
-}
+.section-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--subtle); letter-spacing: 0.1em; margin-bottom: 8px; }
+h2 { font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 28px; line-height: 1.2; margin: 0 0 8px; }
 h2 .accent { color: var(--primary); }
-.section-sub {
-  color: var(--muted); font-size: 14px; max-width: 640px;
-  margin: 0 0 24px; line-height: 1.5;
-}
-
-/* HERO STATS */
-.hero-stats {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
-}
+.section-sub { color: var(--muted); font-size: 14px; max-width: 640px; margin: 0 0 24px; line-height: 1.5; }
+.hero-stats { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .hero-stat { padding: 20px 0; text-align: start; border-inline-start: 1px solid var(--line); }
 .hero-stat:first-child { border-inline-start: 0; }
-.hero-stat-num {
-  font-family: 'DM Serif Display', serif; font-size: 32px;
-  line-height: 1; margin-bottom: 4px;
-}
+.hero-stat-num { font-family: 'DM Serif Display', serif; font-size: 32px; line-height: 1; margin-bottom: 4px; }
 .hero-stat-num.primary { color: var(--primary); }
 .hero-stat-label { font-size: 12px; color: var(--muted); }
-
-/* MILESTONES */
-.milestones {
-  display: grid; grid-template-columns: repeat(6, 1fr);
-  gap: 8px; margin-top: 24px;
-}
-.m {
-  background: var(--card); border: 1px solid var(--line);
-  border-radius: 10px; padding: 16px 12px;
-  position: relative; min-height: 110px;
-}
+.milestones { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 24px; }
+.m { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 12px; min-height: 110px; }
 .m.done { background: var(--primary-soft); border-color: var(--primary); }
-.m.current {
-  background: var(--warn-soft); border-color: var(--warn);
-  border-width: 2px;
-}
-.m-tag {
-  font-size: 9px; font-weight: 600; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--subtle); margin-bottom: 6px;
-}
+.m.current { background: var(--warn-soft); border-color: var(--warn); border-width: 2px; }
+.m-tag { font-size: 9px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--subtle); margin-bottom: 6px; }
 .m.done .m-tag { color: var(--primary); }
 .m.current .m-tag { color: var(--warn); }
 .m-code { font-family: 'DM Serif Display', serif; font-size: 22px; line-height: 1.1; margin-bottom: 4px; }
 .m-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
 .m-desc { font-size: 11px; color: var(--muted); line-height: 1.3; }
-
-/* LANES */
-.lanes {
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
-  margin-top: 24px;
-}
-.lane {
-  background: var(--card); border: 1px solid var(--line);
-  border-radius: 12px; padding: 20px;
-}
-.lane-head {
-  padding-bottom: 12px; margin-bottom: 12px;
-  border-bottom: 1px solid var(--line-soft);
-}
+.lanes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 24px; }
+.lane { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+.lane-head { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--line-soft); }
 .lane-title { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
 .lane-sub { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
 .lane-progress { display: flex; align-items: center; gap: 8px; }
@@ -111,77 +60,32 @@ h2 .accent { color: var(--primary); }
 .lane-bar-fill { height: 100%; background: var(--primary); border-radius: 2px; }
 .lane-pct { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
 .lane-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
-.lane-item {
-  font-size: 12px; line-height: 1.4; display: flex; gap: 6px; align-items: flex-start;
-}
+.lane-item { font-size: 12px; line-height: 1.4; display: flex; gap: 6px; align-items: flex-start; }
 .lane-item.done { color: var(--subtle); text-decoration: line-through; }
+.lane-item.active { color: var(--text); font-weight: 500; }
 .lane-item .icon { flex-shrink: 0; margin-top: 1px; }
-.lane-item .task-id {
-  font-family: 'JetBrains Mono', monospace; font-size: 10px;
-  color: var(--subtle); background: var(--bg);
-  padding: 1px 5px; border-radius: 3px; margin-inline-start: 4px;
-}
-
-/* P0 PROGRESS */
-.p0-grid {
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
-  margin-top: 24px;
-}
-.p0 {
-  background: var(--card); border: 1px solid var(--line);
-  border-radius: 10px; padding: 16px;
-  border-inline-start: 4px solid var(--subtle);
-}
+.lane-item .task-id { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--subtle); background: var(--bg); padding: 1px 5px; border-radius: 3px; margin-inline-start: 4px; }
+.lane-item .item-sub { font-size: 10px; color: var(--muted); margin-inline-start: 4px; }
+.p0-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 24px; }
+.p0 { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; border-inline-start: 4px solid var(--subtle); }
 .p0.done { border-inline-start-color: var(--primary); }
 .p0.open { border-inline-start-color: var(--warn); }
-.p0-code {
-  font-family: 'JetBrains Mono', monospace; font-size: 11px;
-  font-weight: 600; color: var(--subtle); margin-bottom: 4px;
-}
+.p0-code { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; color: var(--subtle); margin-bottom: 4px; }
 .p0.done .p0-code { color: var(--primary); }
 .p0.open .p0-code { color: var(--warn); }
 .p0-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; line-height: 1.3; }
 .p0-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
-
-/* ACTIVE */
-.active-card {
-  background: linear-gradient(135deg, var(--primary) 0%, #1f5547 100%);
-  color: white; border-radius: 14px; padding: 28px;
-  margin-top: 24px;
-}
-.active-label {
-  font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
-  text-transform: uppercase; opacity: 0.7; margin-bottom: 8px;
-}
-.active-title {
-  font-family: 'DM Serif Display', serif; font-size: 24px;
-  line-height: 1.2; margin-bottom: 8px;
-}
+.active-card { background: linear-gradient(135deg, var(--primary) 0%, #1f5547 100%); color: white; border-radius: 14px; padding: 28px; margin-top: 24px; }
+.active-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; margin-bottom: 8px; }
+.active-title { font-family: 'DM Serif Display', serif; font-size: 24px; line-height: 1.2; margin-bottom: 8px; }
 .active-sub { font-size: 14px; opacity: 0.85; line-height: 1.5; }
-
-/* CTA */
-.cta-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-  margin-top: 16px;
-}
-.cta {
-  background: var(--card); border: 1px solid var(--line);
-  border-radius: 10px; padding: 14px 16px;
-}
-.cta-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
-}
+.cta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.cta { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.cta-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 .cta-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
 .cta-body { font-size: 12px; color: var(--muted); line-height: 1.4; }
-
-footer {
-  margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
-  display: flex; justify-content: space-between;
-  font-size: 11px; color: var(--muted);
-}
+footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
 .mono { font-family: 'JetBrains Mono', monospace; }
-
 @media (max-width: 768px) {
   .container { padding: 32px 16px 64px; }
   h1 { font-size: 36px; }
@@ -198,84 +102,69 @@ footer {
 </head>
 <body>
 <div class="container">
-
-  <!-- HERO -->
   <header>
     <h1>من هنا إلى <span class="accent">"مبروك"</span></h1>
-    <p class="subtitle">خريطة الإطلاق التجاري الكاملة. 6 معالم · 3 مسارات متوازية · 6 حاصرات P0 · 10 قرارات ملكية. <strong>أنت هنا:</strong> M2 (Marketplace P0).</p>
+    <p class="subtitle">خريطة الإطلاق التجاري. 6 معالم · 3 مسارات متوازية · 6 حاصرات P0 · 10 قرارات ملكية. <strong>أنت هنا:</strong> M2 (Marketplace P0).</p>
     <div class="hero-stats">
-      <div class="hero-stat"><div class="hero-stat-num primary">50</div><div class="hero-stat-label">commits على الـ branch</div></div>
-      <div class="hero-stat"><div class="hero-stat-num">2440</div><div class="hero-stat-label">test passing</div></div>
-      <div class="hero-stat"><div class="hero-stat-num primary">4/6</div><div class="hero-stat-label">P0 closed (67%)</div></div>
-      <div class="hero-stat"><div class="hero-stat-num">~4-5w</div><div class="hero-stat-label">للإطلاق (تقويمي)</div></div>
+      <div class="hero-stat"><div class="hero-stat-num primary">51</div><div class="hero-stat-label">commits</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">2440</div><div class="hero-stat-label">tests passing</div></div>
+      <div class="hero-stat"><div class="hero-stat-num primary">4/6</div><div class="hero-stat-label">P0 closed (66%)</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">8d28266b</div><div class="hero-stat-label">feat(scripts): roadmap:generate — rebuil</div></div>
     </div>
   </header>
 
-  <!-- MILESTONES -->
   <section>
     <div class="section-num">01 / المعالم</div>
     <h2>ست نقاط تحول من <span class="accent">الآن</span> إلى "مبروك"</h2>
     <p class="section-sub">كل milestone يفتح الـ lane اللي بعده. M5 = invite-only beta مع 10-20 تاجر يدوياً.</p>
-    <div class="milestones">
-      <div class="m done"><div class="m-tag">✅</div><div class="m-code">M0</div><div class="m-name">Foundation</div><div class="m-desc">Quality Pass 1-5</div></div>
-      <div class="m done"><div class="m-tag">✅</div><div class="m-code">M1</div><div class="m-name">Compliance</div><div class="m-desc">3DS + VAT (TASK-0035)</div></div>
-      <div class="m current"><div class="m-tag">→</div><div class="m-code">M2</div><div class="m-name">Marketplace P0</div><div class="m-desc">Phase 1 + 2 (P0-2/3/4/5)</div></div>
-      <div class="m pending"><div class="m-tag"> </div><div class="m-code">M3</div><div class="m-name">Marketplace P1</div><div class="m-desc">Phase 3 + 4 (Legal + P1 fixes)</div></div>
-      <div class="m pending"><div class="m-tag"> </div><div class="m-code">M4</div><div class="m-name">Owner Gates</div><div class="m-desc">Phase 5 (TASK-0038 closure)</div></div>
-      <div class="m pending"><div class="m-tag">مبروك 🎉</div><div class="m-code">M5</div><div class="m-name">Beta Live</div><div class="m-desc">Phase 6 (pen-test + 20 merchants)</div></div>
-    </div>
+    <div class="milestones"><div class="m pending"><div class="m-tag"></div><div class="m-code">M0</div><div class="m-name">Foundation</div><div class="m-desc">Quality Pass 1-5</div></div>
+      <div class="m done"><div class="m-tag">✅</div><div class="m-code">M1</div><div class="m-name">Compliance</div><div class="m-desc">3DS + VAT</div></div>
+      <div class="m current"><div class="m-tag">→</div><div class="m-code">M2</div><div class="m-name">Marketplace P0</div><div class="m-desc">Phase 1+2: 6 P0s closed</div></div>
+      <div class="m pending"><div class="m-tag"></div><div class="m-code">M3</div><div class="m-name">Marketplace P1</div><div class="m-desc">Phase 3+4: Legal + P1 fixes</div></div>
+      <div class="m pending"><div class="m-tag"></div><div class="m-code">M4</div><div class="m-name">Owner Gates</div><div class="m-desc">Phase 5: TASK-0038 closure</div></div>
+      <div class="m pending"><div class="m-tag"></div><div class="m-code">M5</div><div class="m-name">Beta Live</div><div class="m-desc">Phase 6: pen-test + 20 merchants</div></div></div>
   </section>
 
-  <!-- 3 LANES -->
   <section>
     <div class="section-num">02 / المسارات</div>
     <h2>ثلاث مسارات متوازية — <span class="accent">كلها</span> لازم تكمل قبل "مبروك"</h2>
     <p class="section-sub">كل lane عندها progress مستقل. الـ bottlenecks: Owner track (CR/VAT/DPO) + External (pen-test firm).</p>
-    <div class="lanes">
-      <div class="lane"><div class="lane-head"><div class="lane-title">Engineering</div><div class="lane-sub">16-19 eng days · parallel tracks</div><div class="lane-progress"><div class="lane-bar"><div class="lane-bar-fill" style="width:33%"></div></div><div class="lane-pct">2/6</div></div></div><ul class="lane-list"><li class="lane-item done"><span class="icon">✓</span><span>Quality Pass 1-5 <span class="task-id">TASK-0025-0029</span></span></li><li class="lane-item done"><span class="icon">✓</span><span>3DS + VAT <span class="task-id">TASK-0035</span></span></li><li class="lane-item done"><span class="icon">✓</span><span>Marketplace Phase 1 <span class="task-id">TASK-0040 (3 P0 closed)</span></span></li><li class="lane-item active"><span class="icon">→</span><span>Marketplace Phase 2 <span class="task-id">TASK-0041 (1/2 done)</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>Phase 3 — Legal copy <span class="task-id">TASK-0042</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>Phase 4 — P1 + tests <span class="task-id">TASK-0043</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>Phase 6 — Pen-test triage <span class="task-id">TASK-0045 §8.3</span></span></li></ul></div>
-      <div class="lane"><div class="lane-head"><div class="lane-title">Owner / Legal</div><div class="lane-sub">10 action items · 1-3 weeks calendar</div><div class="lane-progress"><div class="lane-bar"><div class="lane-bar-fill" style="width:0%"></div></div><div class="lane-pct">0/10</div></div></div><ul class="lane-list"><li class="lane-item pending"><span class="icon">○</span><span>CR (MoCI) <span class="task-id">G1 — TASK-0038</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>VAT cert (ZATCA) <span class="task-id">G2 — blocks TASK-0036</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>E-commerce license <span class="task-id">G3</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>DPO (PDPL Art. 22) <span class="task-id">G4 — blocks TASK-0042</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>Trademark (SAIP) <span class="task-id">G5</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>PCI-DSS ASV scan <span class="task-id">G6</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>Pen-test firm <span class="task-id">G7</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>KSA hosting decision <span class="task-id">G8</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>Tabby DPA <span class="task-id">G9</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>DR plan + tabletop <span class="task-id">G10</span></span></li></ul></div>
-      <div class="lane"><div class="lane-head"><div class="lane-title">External / Vendor</div><div class="lane-sub">Pen-test firm · 1-2 weeks calendar</div><div class="lane-progress"><div class="lane-bar"><div class="lane-bar-fill" style="width:0%"></div></div><div class="lane-pct">0/3</div></div></div><ul class="lane-list"><li class="lane-item pending"><span class="icon">○</span><span>PCI-DSS ASV <span class="task-id">G6</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>Pen-test firm engage <span class="task-id">G7</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>Pen-test report PASS <span class="task-id">Phase 6 §8.2</span></span></li></ul></div>
-    </div>
+    <div class="lanes"><div class="lane"><div class="lane-head"><div class="lane-title">Engineering</div><div class="lane-sub">16-19 eng days · parallel</div><div class="lane-progress"><div class="lane-bar"><div class="lane-bar-fill" style="width:20%"></div></div><div class="lane-pct">1/5</div></div></div><ul class="lane-list"><li class="lane-item done"><span class="icon">✓</span><span>Marketplace Phase 1 ✅<span class="task-id">TASK-0040</span><span class="item-sub">— 3 P0s closed</span></span></li><li class="lane-item active"><span class="icon">→</span><span>Marketplace Phase 2<span class="task-id">TASK-0041</span><span class="item-sub">— 1 of 2 tracks done</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>Phase 3 — Legal copy<span class="task-id">TASK-0042</span><span class="item-sub">— PRIVACY + TERMS + SFDA</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>Phase 4 — P1 + tests<span class="task-id">TASK-0043</span><span class="item-sub">— T5-T10 integration</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>Phase 6 — Pen-test + Beta<span class="task-id">TASK-0045</span><span class="item-sub">— 20 merchants</span></span></li></ul></div>
+      <div class="lane"><div class="lane-head"><div class="lane-title">Owner / Legal</div><div class="lane-sub">10 items · 1-3 weeks</div><div class="lane-progress"><div class="lane-bar"><div class="lane-bar-fill" style="width:0%"></div></div><div class="lane-pct">0/10</div></div></div><ul class="lane-list"><li class="lane-item pending"><span class="icon">○</span><span>G1: CR (MoCI)<span class="task-id">TASK-0038</span><span class="item-sub">— السجل التجاري</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>G2: VAT cert (ZATCA)<span class="task-id">TASK-0038</span><span class="item-sub">— فاتورة ضريبية</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>G3: E-commerce license<span class="task-id">TASK-0038</span><span class="item-sub">— ترخيص مبيعات</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>G4: DPO (PDPL Art. 22)<span class="task-id">TASK-0038</span><span class="item-sub">— حماية البيانات</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>G5: Trademark (SAIP)<span class="task-id">TASK-0038</span><span class="item-sub">— تسجيل علامة</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>G6: PCI-DSS ASV scan<span class="task-id">TASK-0038</span><span class="item-sub">— مورد معتمد</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>G7: Pen-test firm<span class="task-id">TASK-0038</span><span class="item-sub">— CREST certified</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>G8: KSA hosting<span class="task-id">TASK-0038</span><span class="item-sub">— قرار استضافة</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>G9: Tabby DPA<span class="task-id">TASK-0038</span><span class="item-sub">— اتفاقية معالجة</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>G10: DR plan<span class="task-id">TASK-0038</span><span class="item-sub">— إجراءات الكوارث</span></span></li></ul></div>
+      <div class="lane"><div class="lane-head"><div class="lane-title">External / Vendor</div><div class="lane-sub">Pen-test firm</div><div class="lane-progress"><div class="lane-bar"><div class="lane-bar-fill" style="width:0%"></div></div><div class="lane-pct">0/3</div></div></div><ul class="lane-list"><li class="lane-item pending"><span class="icon">○</span><span>PCI-DSS ASV scan<span class="task-id">TASK-0045</span><span class="item-sub">— approved vendor</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>Pen-test firm engage<span class="task-id">TASK-0045</span><span class="item-sub">— CREST certified</span></span></li><li class="lane-item pending"><span class="icon">○</span><span>Pen-test report PASS<span class="task-id">TASK-0045</span><span class="item-sub">— 1 week calendar</span></span></li></ul></div></div>
   </section>
 
-  <!-- P0 PROGRESS -->
   <section>
     <div class="section-num">03 / حاصرات P0</div>
     <h2>ست حاصرات P0 — <span class="accent">4 مغلقة</span>، 2 مفتوحة</h2>
-    <p class="section-sub">من docs/ops/PUBLIC_MARKETPLACE_AUDIT.md. الـ P0 المنجزة = المنجز من Phase 1+2. الـ المتبقي = P0-1 (SFDA) + P0-6 (legal).</p>
-    <div class="p0-grid">
-      <div class="p0 done"><div class="p0-code">P0-4 · ✅ Done</div><div class="p0-title">Demo isolation contract</div><div class="p0-desc">استبدال raw SQL بـ whitelist. seed 'general' → 'main'.</div></div>
-      <div class="p0 done"><div class="p0-code">P0-3 · ✅ Done</div><div class="p0-title">Order tracking via accessToken</div><div class="p0-desc">uuid token بدل ?phone=. يحل phone enumeration + PDPL leak.</div></div>
-      <div class="p0 done"><div class="p0-code">P0-5 · ✅ Done</div><div class="p0-title">Audit log on admin moderation</div><div class="p0-desc">audit.record على review + feature endpoints. PDPL Art. 17.</div></div>
+    <p class="section-sub">من docs/ops/PUBLIC_MARKETPLACE_AUDIT.md. الـ status يحدّث تلقائياً من git log (commits مع P0-X keyword) + TASK_TRACKER.md.</p>
+    <div class="p0-grid"><div class="p0 open"><div class="p0-code">P0-1 · ⏳ Open</div><div class="p0-title">SFDA field + workflow</div><div class="p0-desc">Migration + Zod regex + service validation + admin verification UI.</div></div>
       <div class="p0 done"><div class="p0-code">P0-2 · ✅ Done</div><div class="p0-title">Category blocklist</div><div class="p0-desc">prohibited_in_marketplace column + 5 query filter sites.</div></div>
-      <div class="p0 open"><div class="p0-code">P0-1 · ⏳ Open</div><div class="p0-title">SFDA field + workflow</div><div class="p0-desc">Migration + Zod regex + service validation. يحتاج owner decision.</div></div>
-      <div class="p0 open"><div class="p0-code">P0-6 · ⏳ Open</div><div class="p0-title">Legal copy (PRIVACY + TERMS + SFDA_DISCLAIMER)</div><div class="p0-desc">ينعمل في TASK-0042 Phase 3 + owner legal review.</div></div>
-    </div>
+      <div class="p0 done"><div class="p0-code">P0-3 · ✅ Done</div><div class="p0-title">Order tracking via accessToken</div><div class="p0-desc">uuid token بدل ?phone=. يحل phone enumeration + PDPL leak.</div></div>
+      <div class="p0 done"><div class="p0-code">P0-4 · ✅ Done</div><div class="p0-title">Demo isolation contract</div><div class="p0-desc">استبدال raw SQL بـ whitelist. seed 'general' → 'main'.</div></div>
+      <div class="p0 done"><div class="p0-code">P0-5 · ✅ Done</div><div class="p0-title">Audit log on admin moderation</div><div class="p0-desc">audit.record على review + feature endpoints. PDPL Art. 17.</div></div>
+      <div class="p0 open"><div class="p0-code">P0-6 · ⏳ Open</div><div class="p0-title">Legal copy (PRIVACY + TERMS + SFDA_DISCLAIMER)</div><div class="p0-desc">PRIVACY_POLICY §2.4 + TERMS §8 + SFDA_DISCLAIMER. owner legal review.</div></div></div>
   </section>
 
-  <!-- ACTIVE -->
   <section>
     <div class="section-num">04 / الآن</div>
     <h2>المهمة الحالية</h2>
-    <p class="section-sub">Track 2.1 (P0-2) ✅ مغلق في Session K. الباقي: Track 2.2 (P0-1 SFDA) يحتاج owner decision.</p>
+    <p class="section-sub">Track 2.1 (P0-2) ✅ Done. Track 2.2 (P0-1 SFDA) يحتاج owner decision.</p>
     <div class="active-card">
-      <div class="active-label">TASK-0041 — Marketplace Phase 2</div>
-      <div class="active-title">Category blocklist ✅ + SFDA workflow ⏳</div>
-      <div class="active-sub">5 query sites filter prohibited_in_marketplace + migration 0059 + 7 TDD tests. الـ track 2.2 (P0-1 SFDA) يحتاج: (a) verification timing — review-time vs publish-time, (b) format validation only vs live API. بدون decisions = تخمين.</div>
+      <div class="active-label">TASK-0041</div>
+      <div class="active-title">Marketplace Hardening — Phase 2 (Compliance Infrastructure: category blocklist + SFDA)</div>
+      <div class="active-sub">5 query sites filter prohibited_in_marketplace + migration 0059 + 7 TDD tests.</div>
     </div>
   </section>
 
-  <!-- CTA -->
   <section>
     <div class="section-num">05 / الخطوة التالية</div>
     <h2>وش تسوي الحين</h2>
     <p class="section-sub">4 خيارات واضحة. اختر واحدة أو اكتب scope مختلف.</p>
-    <div class="cta-grid">
-      <div class="cta"><div class="cta-label">إذا قلت "MARKETPLACE"</div><div class="cta-title">نبدأ TASK-0040 أو 0041 (Phase 2)</div><div class="cta-body">engineering — يحبسك GO واحد فقط.</div></div>
+    <div class="cta-grid"><div class="cta"><div class="cta-label">إذا قلت "MARKETPLACE"</div><div class="cta-title">نبدأ TASK-0041 Track 2.2 أو Phase جديدة</div><div class="cta-body">engineering — يحبسك GO واحد.</div></div>
       <div class="cta"><div class="cta-label">إذا قلت "ZATCA"</div><div class="cta-title">أعرض الـ 6 decisions بالتفصيل</div><div class="cta-body">TASK-0036 gated على 6 owner questions.</div></div>
       <div class="cta"><div class="cta-label">إذا قلت "G1 أو G2"</div><div class="cta-title">أجهّز checklist + خطوات عملية</div><div class="cta-body">CR/VAT أبسط البداية للـ owner track.</div></div>
-      <div class="cta"><div class="cta-label">إذا قلت "قف"</div><div class="cta-title">أوقف، الـ branch جاهز 100%</div><div class="cta-body">DASHBOARD + ROADMAP + preflight clean.</div></div>
-    </div>
+      <div class="cta"><div class="cta-label">إذا قلت "قف"</div><div class="cta-title">أوقف، الـ branch جاهز 100%</div><div class="cta-body">ROADMAP + DASHBOARD + preflight clean.</div></div></div>
   </section>
 
   <footer>

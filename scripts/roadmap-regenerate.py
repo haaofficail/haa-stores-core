@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Haa Stores — Master Roadmap (rebuilt 2026-06-17, simpler + Arabic-first)
+Haa Stores — Master Roadmap (LIVE-DATA rebuild 2026-06-17)
 
-Replaces the original MASTER_ROADMAP.html. Same data, simpler design:
-- 6 sections (Hero + Milestones + Lanes + P0 Progress + Active + CTA)
-- Arabic RTL with proper layout (previous version had alignment issues)
-- Founder-friendly: no marketing fluff, direct + readable
-- Generated from TASK_TRACKER.md + CURRENT_STATE.md + git log
+Reads live data from:
+  - git log (commits + latest message + commit messages for P0 detection)
+  - TASK_TRACKER.md (task statuses)
+  - CURRENT_STATE.md (tests passing + last updated)
+
+Hardcoded only the static descriptions (P0 names, milestone names,
+CTA options) — everything that can change is detected at runtime.
 
 Usage:
   pnpm roadmap:generate
@@ -25,95 +27,49 @@ TASK_TRACKER = REPO_ROOT / "docs" / "ops" / "TASK_TRACKER.md"
 CURRENT_STATE = REPO_ROOT / "docs" / "ops" / "CURRENT_STATE.md"
 OUTPUT = REPO_ROOT / "ROADMAP.html"
 
-# P0 progress (4 of 6 closed as of 2026-06-17 Session K)
-P0_LIST = [
-    ("P0-4", "Demo isolation contract", "Done",
-     "استبدال raw SQL بـ whitelist. seed 'general' → 'main'."),
-    ("P0-3", "Order tracking via accessToken", "Done",
-     "uuid token بدل ?phone=. يحل phone enumeration + PDPL leak."),
-    ("P0-5", "Audit log on admin moderation", "Done",
-     "audit.record على review + feature endpoints. PDPL Art. 17."),
-    ("P0-2", "Category blocklist", "Done",
-     "prohibited_in_marketplace column + 5 query filter sites."),
-    ("P0-1", "SFDA field + workflow", "Open",
-     "Migration + Zod regex + service validation. يحتاج owner decision."),
-    ("P0-6", "Legal copy (PRIVACY + TERMS + SFDA_DISCLAIMER)", "Open",
-     "ينعمل في TASK-0042 Phase 3 + owner legal review."),
+# Static: only descriptions that don't change frequently
+P0_INFO = {
+    "P0-1": "SFDA field + workflow",
+    "P0-2": "Category blocklist",
+    "P0-3": "Order tracking via accessToken",
+    "P0-4": "Demo isolation contract",
+    "P0-5": "Audit log on admin moderation",
+    "P0-6": "Legal copy (PRIVACY + TERMS + SFDA_DISCLAIMER)",
+}
+
+P0_DESCRIPTIONS = {
+    "P0-1": "Migration + Zod regex + service validation + admin verification UI.",
+    "P0-2": "prohibited_in_marketplace column + 5 query filter sites.",
+    "P0-3": "uuid token بدل ?phone=. يحل phone enumeration + PDPL leak.",
+    "P0-4": "استبدال raw SQL بـ whitelist. seed 'general' → 'main'.",
+    "P0-5": "audit.record على review + feature endpoints. PDPL Art. 17.",
+    "P0-6": "PRIVACY_POLICY §2.4 + TERMS §8 + SFDA_DISCLAIMER. owner legal review.",
+}
+
+MILESTONES_STATIC = [
+    ("M0", "Foundation", "Quality Pass 1-5", "TASK-0025-0029"),
+    ("M1", "Compliance", "3DS + VAT", "TASK-0035"),
+    ("M2", "Marketplace P0", "Phase 1+2: 6 P0s closed", "TASK-0040 + 0041"),
+    ("M3", "Marketplace P1", "Phase 3+4: Legal + P1 fixes", "TASK-0042 + 0043"),
+    ("M4", "Owner Gates", "Phase 5: TASK-0038 closure", "TASK-0044"),
+    ("M5", "Beta Live", "Phase 6: pen-test + 20 merchants", "TASK-0045"),
 ]
 
-# Milestones
-MILESTONES = [
-    ("M0", "Foundation", "Quality Pass 1-5", "done", "✅"),
-    ("M1", "Compliance", "3DS + VAT (TASK-0035)", "done", "✅"),
-    ("M2", "Marketplace P0", "Phase 1 + 2 (P0-2/3/4/5)", "current", "→"),
-    ("M3", "Marketplace P1", "Phase 3 + 4 (Legal + P1 fixes)", "pending", ""),
-    ("M4", "Owner Gates", "Phase 5 (TASK-0038 closure)", "pending", ""),
-    ("M5", "Beta Live", "Phase 6 (pen-test + 20 merchants)", "pending", "مبروك 🎉"),
-]
-
-# 3 lanes with current state
-LANES = [
-    {
-        "id": "eng",
-        "title": "Engineering",
-        "sub": "16-19 eng days · parallel tracks",
-        "done": 2, "total": 6,
-        "items": [
-            ("done", "Quality Pass 1-5", "TASK-0025-0029"),
-            ("done", "3DS + VAT", "TASK-0035"),
-            ("done", "Marketplace Phase 1", "TASK-0040 (3 P0 closed)"),
-            ("active", "Marketplace Phase 2", "TASK-0041 (1/2 done)"),
-            ("pending", "Phase 3 — Legal copy", "TASK-0042"),
-            ("pending", "Phase 4 — P1 + tests", "TASK-0043"),
-            ("pending", "Phase 6 — Pen-test triage", "TASK-0045 §8.3"),
-        ],
-    },
-    {
-        "id": "owner",
-        "title": "Owner / Legal",
-        "sub": "10 action items · 1-3 weeks calendar",
-        "done": 0, "total": 10,
-        "items": [
-            ("pending", "CR (MoCI)", "G1 — TASK-0038"),
-            ("pending", "VAT cert (ZATCA)", "G2 — blocks TASK-0036"),
-            ("pending", "E-commerce license", "G3"),
-            ("pending", "DPO (PDPL Art. 22)", "G4 — blocks TASK-0042"),
-            ("pending", "Trademark (SAIP)", "G5"),
-            ("pending", "PCI-DSS ASV scan", "G6"),
-            ("pending", "Pen-test firm", "G7"),
-            ("pending", "KSA hosting decision", "G8"),
-            ("pending", "Tabby DPA", "G9"),
-            ("pending", "DR plan + tabletop", "G10"),
-        ],
-    },
-    {
-        "id": "external",
-        "title": "External / Vendor",
-        "sub": "Pen-test firm · 1-2 weeks calendar",
-        "done": 0, "total": 3,
-        "items": [
-            ("pending", "PCI-DSS ASV", "G6"),
-            ("pending", "Pen-test firm engage", "G7"),
-            ("pending", "Pen-test report PASS", "Phase 6 §8.2"),
-        ],
-    },
-]
-
-# CTA options
 CTAS = [
-    ("MARKETPLACE", "نبدأ TASK-0040 أو 0041 (Phase 2)",
-     "engineering — يحبسك GO واحد فقط."),
+    ("MARKETPLACE", "نبدأ TASK-0041 Track 2.2 أو Phase جديدة",
+     "engineering — يحبسك GO واحد."),
     ("ZATCA", "أعرض الـ 6 decisions بالتفصيل",
      "TASK-0036 gated على 6 owner questions."),
     ("G1 أو G2", "أجهّز checklist + خطوات عملية",
      "CR/VAT أبسط البداية للـ owner track."),
     ("قف", "أوقف، الـ branch جاهز 100%",
-     "DASHBOARD + ROADMAP + preflight clean."),
+     "ROADMAP + DASHBOARD + preflight clean."),
 ]
 
 
-def get_git_data() -> tuple[int, str, str]:
-    """Returns (commits_on_branch, latest_commit, branch_name)."""
+def get_git_data() -> dict:
+    """Returns dict with commits, latest, branch, p0_commits."""
+    result = {"commits": 0, "latest": "", "branch": "(unknown)", "p0_commits": set()}
     for ref in ("main", "master", "origin/main", "origin/master"):
         try:
             count_out = subprocess.check_output(
@@ -122,22 +78,60 @@ def get_git_data() -> tuple[int, str, str]:
             ).strip()
             count = len(count_out.splitlines()) if count_out else 0
             if count:
+                result["commits"] = count
+                # Latest commit
                 latest = subprocess.check_output(
                     ["git", "log", "-1", "--pretty=format:%h %s"],
                     cwd=REPO_ROOT, stderr=subprocess.DEVNULL, text=True,
                 ).strip()
+                result["latest"] = latest
+                # Branch name
                 branch = subprocess.check_output(
                     ["git", "branch", "--show-current"],
                     cwd=REPO_ROOT, stderr=subprocess.DEVNULL, text=True,
                 ).strip()
-                return count, latest, branch or "(detached)"
+                result["branch"] = branch or "(detached)"
+                # All commit messages (full) for P0 detection
+                msgs = subprocess.check_output(
+                    ["git", "log", f"{ref}..HEAD", "--pretty=format:%s"],
+                    cwd=REPO_ROOT, stderr=subprocess.DEVNULL, text=True,
+                )
+                for m in re.findall(r"P0-[1-6]", msgs):
+                    result["p0_commits"].add(m)
+                return result
         except subprocess.CalledProcessError:
             continue
-    return 0, "", "(unknown)"
+    return result
+
+
+def extract_task_statuses() -> dict:
+    """Parse TASK_TRACKER.md → dict of task_id → status (lowercase, short)."""
+    result = {}
+    if not TASK_TRACKER.exists():
+        return result
+    text = TASK_TRACKER.read_text(encoding="utf-8")
+    pattern = re.compile(
+        r"###\s+(TASK-\d{4}):\s*([^\n]+)\n[\s\S]*?\*\*Status:\*\*\s*([^\n]+)",
+        re.MULTILINE,
+    )
+    for m in pattern.finditer(text):
+        tid = m.group(1)
+        status_raw = m.group(3).strip().lower()
+        # Normalize: "Done" → done, "Open" → open, etc.
+        if status_raw.startswith("done"):
+            result[tid] = "done"
+        elif status_raw.startswith("open"):
+            result[tid] = "open"
+        elif "in progress" in status_raw:
+            result[tid] = "in_progress"
+        elif status_raw.startswith("planning"):
+            result[tid] = "planning"
+        else:
+            result[tid] = status_raw.split()[0] if status_raw else "unknown"
+    return result
 
 
 def extract_state() -> dict:
-    """Extract Last Updated + tests passing from CURRENT_STATE.md."""
     result = {"last_updated": "", "tests_passing": 0}
     if not CURRENT_STATE.exists():
         return result
@@ -151,21 +145,186 @@ def extract_state() -> dict:
     return result
 
 
+def compute_p0_statuses(git_p0_commits: set, task_statuses: dict) -> list:
+    """Returns list of (code, status, description) for P0-1..P0-6.
+
+    A P0 is "Done" if either:
+    - Its commit message appears in git log (P0-X keyword)
+    - OR the corresponding task is marked Done in TASK_TRACKER
+
+    Mapping:
+      P0-1 (SFDA)         → not yet a TASK in tracker; relies on commit
+      P0-2 (Category)     → TASK-0041 (Phase 2)
+      P0-3 (accessToken)  → TASK-0040 (Phase 1)
+      P0-4 (Demo)         → TASK-0040 (Phase 1)
+      P0-5 (Audit)        → TASK-0040 (Phase 1)
+      P0-6 (Legal)        → TASK-0042 (Phase 3)
+    """
+    # P0 → relevant TASK mapping
+    p0_task_map = {
+        "P0-1": [],  # No dedicated task yet (Track 2.2 pending)
+        "P0-2": ["TASK-0041"],
+        "P0-3": ["TASK-0040"],
+        "P0-4": ["TASK-0040"],
+        "P0-5": ["TASK-0040"],
+        "P0-6": ["TASK-0042"],
+    }
+    statuses = []
+    for code in ["P0-1", "P0-2", "P0-3", "P0-4", "P0-5", "P0-6"]:
+        closed = False
+        # Check git commit messages
+        if code in git_p0_commits:
+            closed = True
+        # Check task statuses
+        for tid in p0_task_map[code]:
+            if task_statuses.get(tid) == "done":
+                closed = True
+                break
+        statuses.append((code, "done" if closed else "open", P0_DESCRIPTIONS[code]))
+    return statuses
+
+
+def compute_milestone_statuses(task_statuses: dict) -> list:
+    """Compute status for each milestone based on task statuses."""
+    # M0: TASK-0025 + TASK-0026 + TASK-0027 + TASK-0028 + TASK-0029 all Done
+    m0_done = all(
+        task_statuses.get(f"TASK-00{n}") == "done"
+        for n in [25, 26, 27, 28, 29]
+    )
+    # M1: TASK-0035 Done
+    m1_done = task_statuses.get("TASK-0035") == "done"
+    # M2: TASK-0040 Done + TASK-0041 Done (Phase 1+2)
+    m2_done = (
+        task_statuses.get("TASK-0040") == "done"
+        and task_statuses.get("TASK-0041") == "done"
+    )
+    m2_current = (
+        task_statuses.get("TASK-0040") == "done"
+        and task_statuses.get("TASK-0041") != "done"
+    )
+    # M3: TASK-0042 + TASK-0043 Done
+    m3_done = (
+        task_statuses.get("TASK-0042") == "done"
+        and task_statuses.get("TASK-0043") == "done"
+    )
+    m3_current = (
+        m2_done
+        and not m3_done
+        and (task_statuses.get("TASK-0042") != "done" or task_statuses.get("TASK-0043") != "done")
+    )
+    # M4: TASK-0044 Done (which requires TASK-0038 closed — owner actions)
+    m4_done = task_statuses.get("TASK-0044") == "done"
+    m4_current = m3_done and not m4_done
+    # M5: TASK-0045 Done
+    m5_done = task_statuses.get("TASK-0045") == "done"
+    m5_current = m4_done and not m5_done
+
+    return [
+        ("done" if m0_done else "pending", m0_done),
+        ("done" if m1_done else "pending", m1_done),
+        ("done" if m2_done else "current" if m2_current else "pending", m2_done),
+        ("done" if m3_done else "current" if m3_current else "pending", m3_done),
+        ("done" if m4_done else "current" if m4_current else "pending", m4_done),
+        ("done" if m5_done else "current" if m5_current else "pending", m5_done),
+    ]
+
+
+def compute_lane_progress(task_statuses: dict, p0_statuses: list) -> list:
+    """Returns lane progress: (lane_id, done_count, total_count, items)."""
+    # Engineering: TASK-0040, 0041, 0042, 0043, 0045 + ZATCA-style TASK-0036 (optional)
+    eng_tasks = [
+        ("TASK-0040", "Marketplace Phase 1", "3 P0s closed"),
+        ("TASK-0041", "Marketplace Phase 2", "1 of 2 tracks done"),
+        ("TASK-0042", "Phase 3 — Legal copy", "PRIVACY + TERMS + SFDA"),
+        ("TASK-0043", "Phase 4 — P1 + tests", "T5-T10 integration"),
+        ("TASK-0045", "Phase 6 — Pen-test + Beta", "20 merchants"),
+    ]
+    eng_items = []
+    eng_done = 0
+    for tid, name, sub in eng_tasks:
+        status = task_statuses.get(tid, "unknown")
+        if status == "done":
+            eng_items.append(("done", f"{name} ✅", tid, sub))
+            eng_done += 1
+        elif status in ("in_progress", "open", "planning"):
+            # Mark active if it's the first non-Done
+            if not any(i[0] == "active" for i in eng_items):
+                eng_items.append(("active", name, tid, sub))
+            else:
+                eng_items.append(("pending", name, tid, sub))
+        else:
+            eng_items.append(("pending", name, tid, sub))
+
+    # Owner: TASK-0038 — count its closed items (placeholder, hardcoded for now)
+    owner_items = [
+        ("TASK-0038", "G1: CR (MoCI)", "السجل التجاري"),
+        ("TASK-0038", "G2: VAT cert (ZATCA)", "فاتورة ضريبية"),
+        ("TASK-0038", "G3: E-commerce license", "ترخيص مبيعات"),
+        ("TASK-0038", "G4: DPO (PDPL Art. 22)", "حماية البيانات"),
+        ("TASK-0038", "G5: Trademark (SAIP)", "تسجيل علامة"),
+        ("TASK-0038", "G6: PCI-DSS ASV scan", "مورد معتمد"),
+        ("TASK-0038", "G7: Pen-test firm", "CREST certified"),
+        ("TASK-0038", "G8: KSA hosting", "قرار استضافة"),
+        ("TASK-0038", "G9: Tabby DPA", "اتفاقية معالجة"),
+        ("TASK-0038", "G10: DR plan", "إجراءات الكوارث"),
+    ]
+    # Owner items all pending — tracked in TASK-0038 separately
+    owner_done_count = 0  # TODO: count from a checklist when available
+
+    # External: pen-test firm + ASV scan
+    ext_items = [
+        ("TASK-0045", "PCI-DSS ASV scan", "approved vendor"),
+        ("TASK-0045", "Pen-test firm engage", "CREST certified"),
+        ("TASK-0045", "Pen-test report PASS", "1 week calendar"),
+    ]
+
+    lanes = [
+        {
+            "id": "eng", "title": "Engineering", "sub": "16-19 eng days · parallel",
+            "done": eng_done, "total": len(eng_tasks),
+            "items": [(s, n, t, sub) for s, n, t, sub in eng_items],
+        },
+        {
+            "id": "owner", "title": "Owner / Legal", "sub": "10 items · 1-3 weeks",
+            "done": owner_done_count, "total": 10,
+            "items": [("pending", n, t, sub) for t, n, sub in owner_items],
+        },
+        {
+            "id": "ext", "title": "External / Vendor", "sub": "Pen-test firm",
+            "done": 0, "total": 3,
+            "items": [("pending", n, t, sub) for t, n, sub in ext_items],
+        },
+    ]
+    return lanes
+
+
+def find_current_task(task_statuses: dict) -> tuple[str, str]:
+    """Find the current active task (earliest non-Done in TASK-0040+)."""
+    priority_ids = ["TASK-0040", "TASK-0041", "TASK-0042", "TASK-0043", "TASK-0044", "TASK-0045"]
+    for tid in priority_ids:
+        if task_statuses.get(tid) != "done":
+            # Read the title from tracker
+            if TASK_TRACKER.exists():
+                text = TASK_TRACKER.read_text(encoding="utf-8")
+                m = re.search(
+                    rf"###\s+{tid}:\s*([^\n]+)", text
+                )
+                if m:
+                    title = m.group(1).strip()
+                    return (tid, title)
+            return (tid, "—")
+    return ("—", "كل المهام مكتملة أو مغلقة")
+
+
+# ----------------- HTML template (same as before) -----------------
+
 CSS = r"""
 :root {
-  --bg: #f7f5f0;
-  --card: #ffffff;
-  --line: #e9e3d6;
-  --line-soft: #f1ece1;
-  --text: #14171e;
-  --muted: #7c7a72;
-  --subtle: #a8a59b;
-  --primary: #2f6f5e;
-  --primary-soft: rgba(47, 111, 94, 0.08);
-  --warn: #c97b3f;
-  --warn-soft: rgba(201, 123, 63, 0.1);
-  --danger: #b06367;
-  --danger-soft: rgba(176, 99, 103, 0.1);
+  --bg: #f7f5f0; --card: #ffffff; --line: #e9e3d6; --line-soft: #f1ece1;
+  --text: #14171e; --muted: #7c7a72; --subtle: #a8a59b;
+  --primary: #2f6f5e; --primary-soft: rgba(47, 111, 94, 0.08);
+  --warn: #c97b3f; --warn-soft: rgba(201, 123, 63, 0.1);
+  --danger: #b06367; --danger-soft: rgba(176, 99, 103, 0.1);
 }
 * { box-sizing: border-box; }
 body {
@@ -184,72 +343,29 @@ h1 {
 h1 .accent { color: var(--primary); font-style: italic; }
 .subtitle { color: var(--muted); font-size: 17px; max-width: 640px; margin: 0 0 40px; line-height: 1.5; }
 section { margin-top: 56px; }
-.section-num {
-  font-family: 'JetBrains Mono', monospace; font-size: 11px;
-  color: var(--subtle); letter-spacing: 0.1em; margin-bottom: 8px;
-}
-h2 {
-  font-family: 'DM Serif Display', serif; font-weight: 400;
-  font-size: 28px; line-height: 1.2; margin: 0 0 8px;
-}
+.section-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--subtle); letter-spacing: 0.1em; margin-bottom: 8px; }
+h2 { font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 28px; line-height: 1.2; margin: 0 0 8px; }
 h2 .accent { color: var(--primary); }
-.section-sub {
-  color: var(--muted); font-size: 14px; max-width: 640px;
-  margin: 0 0 24px; line-height: 1.5;
-}
-
-/* HERO STATS */
-.hero-stats {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
-}
+.section-sub { color: var(--muted); font-size: 14px; max-width: 640px; margin: 0 0 24px; line-height: 1.5; }
+.hero-stats { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .hero-stat { padding: 20px 0; text-align: start; border-inline-start: 1px solid var(--line); }
 .hero-stat:first-child { border-inline-start: 0; }
-.hero-stat-num {
-  font-family: 'DM Serif Display', serif; font-size: 32px;
-  line-height: 1; margin-bottom: 4px;
-}
+.hero-stat-num { font-family: 'DM Serif Display', serif; font-size: 32px; line-height: 1; margin-bottom: 4px; }
 .hero-stat-num.primary { color: var(--primary); }
 .hero-stat-label { font-size: 12px; color: var(--muted); }
-
-/* MILESTONES */
-.milestones {
-  display: grid; grid-template-columns: repeat(6, 1fr);
-  gap: 8px; margin-top: 24px;
-}
-.m {
-  background: var(--card); border: 1px solid var(--line);
-  border-radius: 10px; padding: 16px 12px;
-  position: relative; min-height: 110px;
-}
+.milestones { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 24px; }
+.m { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 12px; min-height: 110px; }
 .m.done { background: var(--primary-soft); border-color: var(--primary); }
-.m.current {
-  background: var(--warn-soft); border-color: var(--warn);
-  border-width: 2px;
-}
-.m-tag {
-  font-size: 9px; font-weight: 600; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--subtle); margin-bottom: 6px;
-}
+.m.current { background: var(--warn-soft); border-color: var(--warn); border-width: 2px; }
+.m-tag { font-size: 9px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--subtle); margin-bottom: 6px; }
 .m.done .m-tag { color: var(--primary); }
 .m.current .m-tag { color: var(--warn); }
 .m-code { font-family: 'DM Serif Display', serif; font-size: 22px; line-height: 1.1; margin-bottom: 4px; }
 .m-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
 .m-desc { font-size: 11px; color: var(--muted); line-height: 1.3; }
-
-/* LANES */
-.lanes {
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
-  margin-top: 24px;
-}
-.lane {
-  background: var(--card); border: 1px solid var(--line);
-  border-radius: 12px; padding: 20px;
-}
-.lane-head {
-  padding-bottom: 12px; margin-bottom: 12px;
-  border-bottom: 1px solid var(--line-soft);
-}
+.lanes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 24px; }
+.lane { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+.lane-head { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--line-soft); }
 .lane-title { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
 .lane-sub { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
 .lane-progress { display: flex; align-items: center; gap: 8px; }
@@ -257,77 +373,32 @@ h2 .accent { color: var(--primary); }
 .lane-bar-fill { height: 100%; background: var(--primary); border-radius: 2px; }
 .lane-pct { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
 .lane-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
-.lane-item {
-  font-size: 12px; line-height: 1.4; display: flex; gap: 6px; align-items: flex-start;
-}
+.lane-item { font-size: 12px; line-height: 1.4; display: flex; gap: 6px; align-items: flex-start; }
 .lane-item.done { color: var(--subtle); text-decoration: line-through; }
+.lane-item.active { color: var(--text); font-weight: 500; }
 .lane-item .icon { flex-shrink: 0; margin-top: 1px; }
-.lane-item .task-id {
-  font-family: 'JetBrains Mono', monospace; font-size: 10px;
-  color: var(--subtle); background: var(--bg);
-  padding: 1px 5px; border-radius: 3px; margin-inline-start: 4px;
-}
-
-/* P0 PROGRESS */
-.p0-grid {
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
-  margin-top: 24px;
-}
-.p0 {
-  background: var(--card); border: 1px solid var(--line);
-  border-radius: 10px; padding: 16px;
-  border-inline-start: 4px solid var(--subtle);
-}
+.lane-item .task-id { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--subtle); background: var(--bg); padding: 1px 5px; border-radius: 3px; margin-inline-start: 4px; }
+.lane-item .item-sub { font-size: 10px; color: var(--muted); margin-inline-start: 4px; }
+.p0-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 24px; }
+.p0 { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; border-inline-start: 4px solid var(--subtle); }
 .p0.done { border-inline-start-color: var(--primary); }
 .p0.open { border-inline-start-color: var(--warn); }
-.p0-code {
-  font-family: 'JetBrains Mono', monospace; font-size: 11px;
-  font-weight: 600; color: var(--subtle); margin-bottom: 4px;
-}
+.p0-code { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; color: var(--subtle); margin-bottom: 4px; }
 .p0.done .p0-code { color: var(--primary); }
 .p0.open .p0-code { color: var(--warn); }
 .p0-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; line-height: 1.3; }
 .p0-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
-
-/* ACTIVE */
-.active-card {
-  background: linear-gradient(135deg, var(--primary) 0%, #1f5547 100%);
-  color: white; border-radius: 14px; padding: 28px;
-  margin-top: 24px;
-}
-.active-label {
-  font-size: 11px; font-weight: 600; letter-spacing: 0.1em;
-  text-transform: uppercase; opacity: 0.7; margin-bottom: 8px;
-}
-.active-title {
-  font-family: 'DM Serif Display', serif; font-size: 24px;
-  line-height: 1.2; margin-bottom: 8px;
-}
+.active-card { background: linear-gradient(135deg, var(--primary) 0%, #1f5547 100%); color: white; border-radius: 14px; padding: 28px; margin-top: 24px; }
+.active-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; margin-bottom: 8px; }
+.active-title { font-family: 'DM Serif Display', serif; font-size: 24px; line-height: 1.2; margin-bottom: 8px; }
 .active-sub { font-size: 14px; opacity: 0.85; line-height: 1.5; }
-
-/* CTA */
-.cta-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-  margin-top: 16px;
-}
-.cta {
-  background: var(--card); border: 1px solid var(--line);
-  border-radius: 10px; padding: 14px 16px;
-}
-.cta-label {
-  font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
-}
+.cta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.cta { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.cta-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 .cta-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
 .cta-body { font-size: 12px; color: var(--muted); line-height: 1.4; }
-
-footer {
-  margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
-  display: flex; justify-content: space-between;
-  font-size: 11px; color: var(--muted);
-}
+footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
 .mono { font-family: 'JetBrains Mono', monospace; }
-
 @media (max-width: 768px) {
   .container { padding: 32px 16px 64px; }
   h1 { font-size: 36px; }
@@ -353,69 +424,54 @@ HTML = """<!DOCTYPE html>
 </head>
 <body>
 <div class="container">
-
-  <!-- HERO -->
   <header>
     <h1>من هنا إلى <span class="accent">"مبروك"</span></h1>
-    <p class="subtitle">خريطة الإطلاق التجاري الكاملة. 6 معالم · 3 مسارات متوازية · 6 حاصرات P0 · 10 قرارات ملكية. <strong>أنت هنا:</strong> M2 (Marketplace P0).</p>
+    <p class="subtitle">خريطة الإطلاق التجاري. 6 معالم · 3 مسارات متوازية · 6 حاصرات P0 · 10 قرارات ملكية. <strong>أنت هنا:</strong> __CURRENT_MARKER__.</p>
     <div class="hero-stats">
-      <div class="hero-stat"><div class="hero-stat-num primary">__COMMITS__</div><div class="hero-stat-label">commits على الـ branch</div></div>
-      <div class="hero-stat"><div class="hero-stat-num">__TESTS__</div><div class="hero-stat-label">test passing</div></div>
-      <div class="hero-stat"><div class="hero-stat-num primary">4/6</div><div class="hero-stat-label">P0 closed (67%)</div></div>
-      <div class="hero-stat"><div class="hero-stat-num">~4-5w</div><div class="hero-stat-label">للإطلاق (تقويمي)</div></div>
+      <div class="hero-stat"><div class="hero-stat-num primary">__COMMITS__</div><div class="hero-stat-label">commits</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">__TESTS__</div><div class="hero-stat-label">tests passing</div></div>
+      <div class="hero-stat"><div class="hero-stat-num primary">__P0_DONE__/6</div><div class="hero-stat-label">P0 closed (__P0_PCT__%)</div></div>
+      <div class="hero-stat"><div class="hero-stat-num">__LATEST_HASH__</div><div class="hero-stat-label">__LATEST_MSG__</div></div>
     </div>
   </header>
 
-  <!-- MILESTONES -->
   <section>
     <div class="section-num">01 / المعالم</div>
     <h2>ست نقاط تحول من <span class="accent">الآن</span> إلى "مبروك"</h2>
     <p class="section-sub">كل milestone يفتح الـ lane اللي بعده. M5 = invite-only beta مع 10-20 تاجر يدوياً.</p>
-    <div class="milestones">
-      __MILESTONES__
-    </div>
+    <div class="milestones">__MILESTONES__</div>
   </section>
 
-  <!-- 3 LANES -->
   <section>
     <div class="section-num">02 / المسارات</div>
     <h2>ثلاث مسارات متوازية — <span class="accent">كلها</span> لازم تكمل قبل "مبروك"</h2>
     <p class="section-sub">كل lane عندها progress مستقل. الـ bottlenecks: Owner track (CR/VAT/DPO) + External (pen-test firm).</p>
-    <div class="lanes">
-      __LANES__
-    </div>
+    <div class="lanes">__LANES__</div>
   </section>
 
-  <!-- P0 PROGRESS -->
   <section>
     <div class="section-num">03 / حاصرات P0</div>
-    <h2>ست حاصرات P0 — <span class="accent">4 مغلقة</span>، 2 مفتوحة</h2>
-    <p class="section-sub">من docs/ops/PUBLIC_MARKETPLACE_AUDIT.md. الـ P0 المنجزة = المنجز من Phase 1+2. الـ المتبقي = P0-1 (SFDA) + P0-6 (legal).</p>
-    <div class="p0-grid">
-      __P0_LIST__
-    </div>
+    <h2>ست حاصرات P0 — <span class="accent">__P0_DONE__ مغلقة</span>، __P0_OPEN__ مفتوحة</h2>
+    <p class="section-sub">من docs/ops/PUBLIC_MARKETPLACE_AUDIT.md. الـ status يحدّث تلقائياً من git log (commits مع P0-X keyword) + TASK_TRACKER.md.</p>
+    <div class="p0-grid">__P0_LIST__</div>
   </section>
 
-  <!-- ACTIVE -->
   <section>
     <div class="section-num">04 / الآن</div>
     <h2>المهمة الحالية</h2>
-    <p class="section-sub">Track 2.1 (P0-2) ✅ مغلق في Session K. الباقي: Track 2.2 (P0-1 SFDA) يحتاج owner decision.</p>
+    <p class="section-sub">__CURRENT_DETAIL__</p>
     <div class="active-card">
-      <div class="active-label">TASK-0041 — Marketplace Phase 2</div>
-      <div class="active-title">Category blocklist ✅ + SFDA workflow ⏳</div>
-      <div class="active-sub">5 query sites filter prohibited_in_marketplace + migration 0059 + 7 TDD tests. الـ track 2.2 (P0-1 SFDA) يحتاج: (a) verification timing — review-time vs publish-time, (b) format validation only vs live API. بدون decisions = تخمين.</div>
+      <div class="active-label">__CURRENT_TASK_ID__</div>
+      <div class="active-title">__CURRENT_TASK_TITLE__</div>
+      <div class="active-sub">__CURRENT_TASK_NOTE__</div>
     </div>
   </section>
 
-  <!-- CTA -->
   <section>
     <div class="section-num">05 / الخطوة التالية</div>
     <h2>وش تسوي الحين</h2>
     <p class="section-sub">4 خيارات واضحة. اختر واحدة أو اكتب scope مختلف.</p>
-    <div class="cta-grid">
-      __CTAS__
-    </div>
+    <div class="cta-grid">__CTAS__</div>
   </section>
 
   <footer>
@@ -428,13 +484,14 @@ HTML = """<!DOCTYPE html>
 """
 
 
-def render_milestones() -> str:
+def render_milestones(milestone_statuses) -> str:
     cards = []
-    for code, name, desc, status, marker in MILESTONES:
+    for (code, name, desc, _tasks), (status, _) in zip(MILESTONES_STATIC, milestone_statuses):
         cls = "m " + status
+        marker = {"done": "✅", "current": "→", "pending": ""}[status]
         cards.append(
             f'<div class="{cls}">'
-            f'<div class="m-tag">{marker or " "}</div>'
+            f'<div class="m-tag">{marker}</div>'
             f'<div class="m-code">{code}</div>'
             f'<div class="m-name">{name}</div>'
             f'<div class="m-desc">{desc}</div>'
@@ -443,22 +500,20 @@ def render_milestones() -> str:
     return "\n      ".join(cards)
 
 
-def render_lanes() -> str:
+def render_lanes(lanes) -> str:
     cards = []
-    for lane in LANES:
+    for lane in lanes:
         items = []
-        for status, name, task_id in lane["items"]:
-            icon = {
-                "done": "✓",
-                "active": "→",
-                "pending": "○",
-            }.get(status, "○")
+        for status, name, tid, sub in lane["items"]:
+            icon = {"done": "✓", "active": "→", "pending": "○"}.get(status, "○")
             cls = "lane-item " + status
             items.append(
                 f'<li class="{cls}">'
                 f'<span class="icon">{icon}</span>'
-                f'<span>{name} <span class="task-id">{task_id}</span></span>'
-                f'</li>'
+                f'<span>{name}'
+                f'<span class="task-id">{tid}</span>'
+                f'<span class="item-sub">— {sub}</span>'
+                f'</span></li>'
             )
         pct = int((lane["done"] / lane["total"]) * 100) if lane["total"] else 0
         cards.append(
@@ -476,15 +531,15 @@ def render_lanes() -> str:
     return "\n      ".join(cards)
 
 
-def render_p0() -> str:
+def render_p0(p0_statuses) -> str:
     cards = []
-    for code, title, status, desc in P0_LIST:
-        cls = "p0 " + status.lower()
-        badge = "✅ Done" if status == "Done" else "⏳ Open"
+    for code, status, desc in p0_statuses:
+        cls = "p0 " + status
+        badge = "✅ Done" if status == "done" else "⏳ Open"
         cards.append(
             f'<div class="{cls}">'
             f'<div class="p0-code">{code} · {badge}</div>'
-            f'<div class="p0-title">{title}</div>'
+            f'<div class="p0-title">{P0_INFO[code]}</div>'
             f'<div class="p0-desc">{desc}</div>'
             f'</div>'
         )
@@ -505,30 +560,80 @@ def render_ctas() -> str:
 
 
 def main() -> int:
-    print("Reading source of truth...")
-    commits, latest, branch = get_git_data()
+    print("Reading live data...")
+    git = get_git_data()
+    task_statuses = extract_task_statuses()
     state = extract_state()
-    print(f"  Branch: {branch} ({commits} commits)")
-    print(f"  Tests passing: {state['tests_passing']}")
+    print(f"  Commits: {git['commits']}, Branch: {git['branch']}")
+    print(f"  Tests: {state['tests_passing']}")
+    print(f"  Tasks parsed: {len(task_statuses)}")
+
+    # Compute live values
+    p0_statuses = compute_p0_statuses(git["p0_commits"], task_statuses)
+    p0_done = sum(1 for _, s, _ in p0_statuses if s == "done")
+    p0_pct = int((p0_done / 6) * 100)
+    milestone_statuses = compute_milestone_statuses(task_statuses)
+    lanes = compute_lane_progress(task_statuses, p0_statuses)
+    current_task_id, current_task_title = find_current_task(task_statuses)
+
+    # Current marker (which milestone are we at)
+    current_marker = "M0-M1 (Done) → M2-M5 (pending)"
+    for (code, name, _, _), (status, _) in zip(MILESTONES_STATIC, milestone_statuses):
+        if status == "current":
+            current_marker = f"{code} ({name})"
+            break
+
+    # Current task detail
+    if current_task_id.startswith("TASK-0041"):
+        current_detail = "Track 2.1 (P0-2) ✅ Done. Track 2.2 (P0-1 SFDA) يحتاج owner decision."
+        current_note = "5 query sites filter prohibited_in_marketplace + migration 0059 + 7 TDD tests."
+    elif current_task_id.startswith("TASK-0040"):
+        current_detail = "Phase 1 closed 2026-06-17 — P0-4/3/5 closed in Sessions H/I/J."
+        current_note = "3 tracks closed: demo isolation + accessToken + audit log."
+    else:
+        current_detail = f"See TASK_TRACKER.md for {current_task_id} details."
+        current_note = "—"
+
+    # Latest commit short
+    latest_hash = ""
+    latest_msg = "—"
+    if git["latest"]:
+        parts = git["latest"].split(" ", 1)
+        latest_hash = parts[0] if parts else ""
+        latest_msg = parts[1][:40] if len(parts) > 1 else "—"
 
     html = HTML
     replacements = {
         "__CSS__": CSS,
-        "__COMMITS__": str(commits),
+        "__COMMITS__": str(git["commits"]),
         "__TESTS__": str(state["tests_passing"] or 0),
-        "__MILESTONES__": render_milestones(),
-        "__LANES__": render_lanes(),
-        "__P0_LIST__": render_p0(),
+        "__P0_DONE__": str(p0_done),
+        "__P0_PCT__": str(p0_pct),
+        "__P0_OPEN__": str(6 - p0_done),
+        "__LATEST_HASH__": latest_hash,
+        "__LATEST_MSG__": latest_msg,
+        "__MILESTONES__": render_milestones(milestone_statuses),
+        "__LANES__": render_lanes(lanes),
+        "__P0_LIST__": render_p0(p0_statuses),
+        "__CURRENT_MARKER__": current_marker,
+        "__CURRENT_DETAIL__": current_detail,
+        "__CURRENT_TASK_ID__": current_task_id,
+        "__CURRENT_TASK_TITLE__": current_task_title,
+        "__CURRENT_TASK_NOTE__": current_note,
         "__CTAS__": render_ctas(),
         "__TODAY__": datetime.now().strftime("%Y-%m-%d"),
-        "__BRANCH__": branch,
+        "__BRANCH__": git["branch"],
     }
     for placeholder, value in replacements.items():
         html = html.replace(placeholder, value)
 
     OUTPUT.write_text(html, encoding="utf-8")
     print(f"\n✓ Wrote {OUTPUT}")
-    print(f"  Size: {len(html):,} bytes ({html.count(chr(10))} lines)")
+    print(f"  P0 status: {p0_done}/6 closed (auto-detected)")
+    print(f"  Milestones: {sum(1 for s, _ in milestone_statuses if s == 'done')}/6 done")
+    print(f"  Engineering: {lanes[0]['done']}/{lanes[0]['total']} tasks done")
+    print(f"  Current task: {current_task_id}")
+    print(f"  Size: {len(html):,} bytes")
     return 0
 
 
