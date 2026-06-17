@@ -43,6 +43,8 @@
     "ops:monitor": "pnpm ops:health && pnpm ops:synthetic && pnpm ops:errors",
     "ops:monitor:report": "node scripts/generate-monitoring-report.mjs",
     "ops:monitor:tail": "node scripts/tail-monitoring-events.mjs",
+    "roadmap:generate": "python3 scripts/roadmap-regenerate.py",
+    "roadmap:open": "open MASTER_ROADMAP.html",
     "setup": "pnpm install && pnpm docker:up && pnpm db:migrate && pnpm db:seed"
   },
   "engines": {
