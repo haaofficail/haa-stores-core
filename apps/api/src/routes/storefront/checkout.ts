@@ -1,4 +1,18 @@
 // Shipping, checkout, payment, orders routes for the public storefront.
+//
+// 3DS handling (SAMA mandatory):
+// - Card payments (moyasar, geidea) that require 3-D Secure go through the
+//   storefront Checkout.tsx which calls the provider directly with the
+//   publishable key. When the provider returns a 3DS challenge URL
+//   (`source.transaction_url` for Moyasar), the storefront redirects the
+//   customer to the issuer's challenge page.
+// - After 3DS completion, the customer is redirected back to the storefront.
+//   The storefront then calls the relevant confirm endpoint, which is
+//   responsible for updating the local payment status from 'requires_3ds'
+//   to 'paid' (or 'failed') based on the provider's response.
+// - For BNPL payments (tabby, tamara), there is no 3DS — the BNPL provider
+//   handles its own authentication. The `payment-session` endpoint below
+//   returns a `redirectUrl` for the BNPL redirect, separate from the 3DS flow.
 
 import { Hono } from 'hono';
 import { z } from 'zod';

@@ -15,7 +15,11 @@ interface MoyasarPaymentResponse {
   amount: number;
   currency: string;
   description?: string;
-  source: Record<string, unknown>;
+  source: {
+    type?: string;
+    transaction_url?: string; // 3DS challenge URL (SAMA-mandated flow)
+    [key: string]: unknown;
+  };
   created_at?: string;
   fee?: number;
   refunded?: number;
@@ -114,6 +118,20 @@ export class MoyasarSandboxProvider implements PaymentProvider {
       status: mapProviderStatus('moyasar', moyasarPayment.status),
       metadata: metadata ?? null,
     }).returning();
+
+    // 3DS challenge: if Moyasar returned a transaction_url on the source
+    // (SAMA-mandated flow for online card transactions in Saudi Arabia),
+    // surface it to the storefront as redirectUrl and mark the local
+    // payment as `requires_3ds`. The storefront will redirect the customer
+    // to the issuer's challenge page, and the post-challenge webhook
+    // transitions the status to `paid` (or `failed`).
+    const redirectUrl = moyasarPayment.source?.transaction_url;
+    if (redirectUrl) {
+      await d.update(s.payments)
+        .set({ status: 'requires_3ds', updatedAt: new Date() })
+        .where(eq(s.payments.id, payment.id));
+      return { paymentId: payment.id, providerPaymentId: moyasarPayment.id, redirectUrl };
+    }
 
     return { paymentId: payment.id, providerPaymentId: moyasarPayment.id };
   }
@@ -240,10 +258,16 @@ export class MoyasarSandboxProvider implements PaymentProvider {
         .where(eq(s.payments.providerPaymentId, moyasarPaymentId)).limit(1);
       if (existingPayment) {
         const status = mapProviderStatus('moyasar', eventType.replace('payment.', ''));
-        if (status === 'paid' || status === 'failed' || status === 'refunded') {
+        // 3DS challenge callbacks: 'payment.requires_3ds' is informational
+        // (the local payment is already in 'requires_3ds' from
+        // createPaymentIntent). We acknowledge but don't change status.
+        // 'payment.authorized' is the post-3DS success state. We treat it
+        // like 'paid' for downstream wallet + order flows.
+        if (status === 'paid' || status === 'failed' || status === 'refunded' || status === 'authorized') {
           await d.update(s.payments).set({ status, updatedAt: new Date() })
             .where(eq(s.payments.id, existingPayment.id));
         }
+        // For 'requires_3ds' we keep the existing status (it's already set).
         return { success: true, eventType, paymentId: existingPayment.id };
       }
     }

@@ -97,6 +97,7 @@ export function mapProviderStatus(provider: ProviderCode, providerStatus: string
   }
   if (provider === 'moyasar') {
     if (providerStatus === 'initiated') return 'initiated';
+    if (providerStatus === 'requires_3ds' || providerStatus === '3ds_required') return 'requires_3ds';
     if (providerStatus === 'authorized') return 'authorized';
     if (providerStatus === 'paid' || providerStatus === 'captured') return 'paid';
     if (providerStatus === 'failed') return 'failed';

@@ -30,7 +30,12 @@ export type { MarketplaceProvider, MarketplaceProviderResolver, AutoPublishInput
 export { StoreSettingsService, storeSettingsService } from './store-settings-service.js';
 export { DashboardService, dashboardService } from './dashboard-service.js';
 export type { DashboardSummary, ReadinessIssue, RecentActionableOrder } from './dashboard-service.js';
-export { FakePaymentProvider, GeideaPaymentProvider, MoyasarSandboxProvider, TabbyProvider, TamaraProvider, PaymentService, createGeideaSignature, createPaymentProvider, getPaymentProviderStatus, getAvailablePaymentMethods, mapProviderStatus, mapProviderError, verifyGeideaCallbackSignature } from '@haa/payment-providers';
+export {
+  FakePaymentProvider, GeideaPaymentProvider, MoyasarSandboxProvider, TabbyProvider, TamaraProvider,
+  PaymentService, createGeideaSignature, createPaymentProvider, getPaymentProviderStatus,
+  getAvailablePaymentMethods, mapProviderStatus, mapProviderError, verifyGeideaCallbackSignature,
+  FAKE_CAPABILITIES, MOYASAR_CAPABILITIES, GEIDEA_CAPABILITIES, TABBY_CAPABILITIES, TAMARA_CAPABILITIES,
+} from '@haa/payment-providers';
 export type { PaymentProvider } from '@haa/payment-providers';
 export { buildLocalWhatsappQrDataUrl, buildWhatsappContactChannel, buildWhatsappLink, getOfficialContactEmail, isValidWhatsappPhone, normalizeWhatsappPhone } from './contact-channels.js';
 export { PaymentProviderSettingsService, getTabbyBaseUrl, getTamaraBaseUrl, validateTabbyCredentials, validateTamaraCredentials, redactCredential } from './payment-settings.js';
