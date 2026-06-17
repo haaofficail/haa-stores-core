@@ -35,7 +35,12 @@ import {
 import { useSEO } from '@/hooks/useSEO';
 import { usePlatformBrand } from '@/hooks/usePlatformBrand';
 import { StoreContainer } from '@/components/ui';
-import HeroAIChat from '@/landing/HeroAIChat';
+// P2-#10: lazy-load the AI chat to reduce initial bundle size.
+// The chat is below-the-fold and only renders for users with the
+// feature flag enabled, so we lazy-load it. The Suspense boundary
+// renders nothing while the chunk loads.
+const HeroAIChatLazy = React.lazy(() => import('@/landing/HeroAIChat'));
+
 import { isAIPreviewEnabled } from '@/landing/aiChatContent';
 
 type TFn = (key: string, fallback?: string) => string;
@@ -298,8 +303,14 @@ function Hero({ t }: { t: TFn; onDemoOpen?: () => void }) {
             </Link>
           </div>
 
-          {/* AI Preview Chat — replaces the old "شاهد العرض التوضيحي" secondary CTA */}
-          {isAIPreviewEnabled() && <HeroAIChat />}
+          {/* AI Preview Chat — replaces the old "شاهد العرض التوضيحي" secondary CTA.
+              P2-#10: lazy-loaded via React.lazy to keep the initial bundle smaller.
+              The Suspense fallback renders nothing while the chunk is fetched. */}
+          {isAIPreviewEnabled() && (
+            <React.Suspense fallback={null}>
+              <HeroAIChatLazy />
+            </React.Suspense>
+          )}
 
           {/* Trust microcopy */}
           <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[13px] font-medium text-text-secondary">

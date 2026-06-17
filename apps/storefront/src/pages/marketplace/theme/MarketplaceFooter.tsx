@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
-import { Building2, Mail, Phone } from 'lucide-react';
+import { Mail, Phone } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { usePlatformBrand } from '@/hooks/usePlatformBrand';
 import { PaymentLogoImg, getPaymentLogosByCategory } from '@/components/ui/trust-badges';
@@ -55,12 +55,10 @@ export function MarketplaceFooter() {
               {showLogo ? (
                 <img key={platformLogoUrl} src={platformLogoUrl!} alt="سوق هاء" className="platform-logo h-8 w-auto" onError={() => setLogoError(true)} />
               ) : (
-                <>
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-500 text-white">
-                    <Icon icon={Building2} size="2xs" />
-                  </span>
+                <div className="flex items-center gap-2">
+                  <img src="/assets/haa-logo.png" alt="سوق هاء" className="h-5 w-auto" />
                   <span className="text-base font-bold text-black">سوق هاء</span>
-                </>
+                </div>
               )}
             </div>
             <p className="text-sm text-gray-500 leading-relaxed">
@@ -106,8 +104,9 @@ export function MarketplaceFooter() {
         <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 py-2">
           <p className="text-xs text-gray-400 text-center">
             &copy; {new Date().getFullYear()} سوق هاء. جميع الحقوق محفوظة.
+            {' '}· سوق هاء منصة وسيطة · البائع في كل طلبية هو المتجر صاحب المنتج.
             <span className="mx-1.5">&middot;</span>
-            <span>مدعوم بواسطة هاء متاجر</span>
+            <span>مدعوم بواسطة <a href="https://haasoft.com" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:text-primary-600 transition-colors">haasoft.com</a></span>
           </p>
         </div>
       </div>

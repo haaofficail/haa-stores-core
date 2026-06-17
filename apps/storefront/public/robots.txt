@@ -1,0 +1,31 @@
+# P2-#9: Robots.txt for Haa storefront
+#
+# Block crawlers from indexing internal routes (admin, auth, cart)
+# and allow them to index marketplace and landing pages.
+# Sitemap location: /sitemap.xml
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /auth
+Disallow: /auth/*
+Disallow: /waitlist
+Disallow: /cart
+Disallow: /checkout
+Disallow: /api
+Disallow: /internal
+Disallow: /merchant/
+Disallow: /s/*/admin
+Disallow: /s/*/cart
+Disallow: /s/*/checkout
+
+# Marketplace public pages
+Allow: /marketplace
+Allow: /marketplace/products/*
+Allow: /marketplace/sellers
+
+# Landing
+Allow: /
+
+Sitemap: https://haastores.sa/sitemap.xml

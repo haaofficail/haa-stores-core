@@ -60,6 +60,7 @@ import { feedsRouter } from './routes/feeds.js';
 import { aiRouter } from './routes/ai-agent.js';
 import { marketplacesRouter } from './routes/marketplaces.js';
 import { haaMarketplaceRouter } from './routes/haa-marketplace.js';
+import { sitemapRouter } from './routes/sitemap.js';
 import { createLandingAIAgentRoute } from './routes/landing-ai-agent.js';
 import { paymentSettingsRouter } from './routes/payment-settings.js';
 import { providerStatusRouter } from './routes/provider-status.js';
@@ -277,6 +278,7 @@ app.use('/marketplace*', async (c, next) => {
 // Storefront API routes (JSON responses)
 app.route('/s', storefrontRouter);
 app.route('/marketplace', haaMarketplaceRouter);
+app.route('/', sitemapRouter);
 app.route('/api/landing-ai-agent', createLandingAIAgentRoute());
 app.get('/api/brand', async (c) => {
   try {

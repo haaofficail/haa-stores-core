@@ -36,6 +36,15 @@ export default tseslint.config(
           { group: ['@haa/merchant-dashboard', '@haa/merchant-dashboard/**'], message: 'Storefront must never import merchant-dashboard code.' },
           { group: ['@haa/admin-dashboard', '@haa/admin-dashboard/**'], message: 'Storefront must never import admin-dashboard code.' },
           { group: ['@haa/system-theme', '@haa/system-theme/**'], message: 'Storefront must never import system-theme (dashboard UI only).' },
+          // P1-#5: direct lucide-react icon imports in page files.
+          // The Icon wrapper (apps/storefront/src/components/ui/icon.tsx)
+          // enforces our design system icon size governance. Page files
+          // should use <Icon icon={Foo} size="sm" /> instead of <Foo />
+          // so the 24px / 18px / 16px rules are followed.
+          // We use 'warn' (not 'error') so this is observable but not
+          // blocking — the storefront has many files still using
+          // lucide directly and a hard error would break the build.
+          { group: ['lucide-react'], message: 'P1-#5: import icons via <Icon icon={...} /> from "@/components/ui/icon" instead of using lucide directly. This enforces the 24/18/16 icon size governance.' },
         ],
       }],
     },

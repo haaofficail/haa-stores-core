@@ -2,6 +2,23 @@ import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, User, Phone, Store as StoreIcon, Sparkles, ArrowLeft, Loader2, Check, Eye, EyeOff, Shield, Bell } from 'lucide-react';
+
+// P2-#11: password strength meter. Lightweight client-side
+// scoring: 0-2 weak, 3 medium, 4+ strong. Used only in the
+// signup form to give the user feedback on their password.
+function passwordStrength(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string; color: string } {
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+  if (/\d/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
+  if (score > 4) score = 4;
+  if (score === 0) return { score: 0, label: '', color: 'text-text-muted' };
+  if (score === 1) return { score: 1, label: 'ضعيفة', color: 'text-danger' };
+  if (score === 2) return { score: 2, label: 'متوسطة', color: 'text-warning' };
+  if (score === 3) return { score: 3, label: 'جيدة', color: 'text-primary-500' };
+  return { score: 4, label: 'قوية', color: 'text-success' };
+}
 import { StoreButton, StoreContainer, StoreInput } from '@/components/ui';
 import { useSEO } from '@/hooks/useSEO';
 import { usePlatformBrand } from '@/hooks/usePlatformBrand';
@@ -300,6 +317,36 @@ export function SignupPage() {
               iconStart={<Lock className="h-4 w-4" />}
             />
 
+            {/* P2-#11: password strength meter. Shows a 4-bar
+                visual + a label in Arabic. Helps users pick a
+                stronger password without external libraries. */}
+            {password.length > 0 && (() => {
+              const strength = passwordStrength(password);
+              return (
+                <div className="space-y-1" aria-live="polite">
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className={`h-1.5 flex-1 rounded-full transition-colors ${
+                          i <= strength.score
+                            ? strength.score >= 3
+                              ? 'bg-success'
+                              : strength.score === 2
+                                ? 'bg-warning'
+                                : 'bg-danger'
+                            : 'bg-border-subtle'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className={`text-xs ${strength.color}`}>
+                    {t('auth.signup.passwordStrength', 'قوة كلمة المرور')}: {strength.label}
+                  </p>
+                </div>
+              );
+            })()}
+
             {error && (
               <div className="rounded-md border border-danger/30 bg-danger-soft p-3 text-sm text-danger">{error}</div>
             )}
@@ -408,7 +455,7 @@ function AuthShell({ children }: { children: React.ReactNode }) {
   const showLogo = !!platformLogoUrl && !logoError;
 
   return (
-    <div dir="rtl" className="min-h-screen bg-surface-2 text-text-primary">
+    <div dir="rtl" className="min-h-screen bg-surface-2 text-text-primary auth-scope">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
-import { BadgeCheck, Building2, Menu, PackageSearch, Search, ShieldCheck, ShoppingBag, Truck, X } from 'lucide-react';
+import { BadgeCheck, Menu, PackageSearch, Search, ShieldCheck, ShoppingBag, Truck, X } from 'lucide-react';
 import { StoreInput } from '@/components/ui';
 import { Icon } from '@/components/ui/icon';
 import { usePlatformBrand } from '@/hooks/usePlatformBrand';
@@ -31,12 +31,10 @@ export function MarketplaceHero({
             {showLogo ? (
               <img key={platformLogoUrl} src={platformLogoUrl!} alt="سوق هاء" className="platform-logo h-8 w-auto" onError={() => setLogoError(true)} />
             ) : (
-              <>
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-500 text-white">
-                  <Icon icon={Building2} size="2xs" />
-                </span>
+              <div className="flex items-center gap-2">
+                <img src="/assets/haa-logo.png" alt="سوق هاء" className="h-20 w-auto" />
                 <span className="text-base lg:text-lg font-bold leading-none text-primary-500">سوق هاء</span>
-              </>
+              </div>
             )}
           </Link>
 
@@ -54,6 +52,11 @@ export function MarketplaceHero({
           <div className="flex items-center gap-1 text-sm font-bold text-primary-600">
             <Link to="/marketplace/sellers" className="hidden hover:text-primary-500 sm:inline-flex px-2.5 py-1.5 rounded-xl transition-colors">المتاجر</Link>
             <Link to="/marketplace/orders" className="hidden hover:text-primary-500 sm:inline-flex px-2.5 py-1.5 rounded-xl transition-colors">تتبع الطلب</Link>
+            {/* P1-#2: cross-link to storefront root (landing page).
+                Audit finding: marketplace header had no link back to
+                the platform landing. The user might be a merchant
+                wanting to sign up, or a customer looking for info. */}
+            <Link to="/" className="hidden hover:text-primary-500 sm:inline-flex px-2.5 py-1.5 rounded-xl transition-colors text-xs">عن هاء</Link>
 
             <button
               type="button"
@@ -144,6 +147,18 @@ export function MarketplaceHero({
             </span>
           ))}
         </div>
+
+        {/* ── Disclosure (P1-#4 regulatory) ──
+            Haa is a marketplace platform. We do not sell products.
+            Each order is fulfilled by the merchant whose store you
+            are purchasing from. This disclosure is required by MoCI
+            e-commerce regulations and the Saudi Consumer Protection
+            regulations. */}
+        <p className="mt-4 text-center text-[11px] leading-relaxed text-gray-500 max-w-2xl mx-auto">
+          سوق هاء منصة تجمع متاجر سعودية. البائع في كل طلبية هو المتجر
+          {' '}<span className="font-semibold text-gray-700">صاحب المنتج</span>،
+          {' '}وليس منصة هاء. هاء وسيط تقني فقط.
+        </p>
       </div>
     </section>
   );

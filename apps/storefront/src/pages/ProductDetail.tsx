@@ -282,13 +282,25 @@ export default function ProductDetail() {
   const ProductPageComponent = components?.ProductPage ?? BaseElegantProductPage;
 
   return (
-    <ProductPageComponent
-      store={store}
-      product={product}
-      slug={slug!}
-      theme={theme}
-      features={features}
-      quantity={quantity}
+    <>
+      {/* P1-#6: marketplace → merchant navigation clarity.
+          When the user arrives from /marketplace, show a clear
+          banner explaining they are now on the merchant's own
+          storefront. P1-#4 disclosure is reinforced: the merchant
+          is the seller, not Haa. */}
+      {cartSource === 'haa_marketplace' && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center text-xs sm:text-sm text-amber-900" role="status">
+          <span className="font-semibold">جاي من سوق هاء؟</span>
+          {' '}أنت الآن في متجر التاجر. الطلب من هذا المتجر مباشرةً، وليس من منصة هاء.
+        </div>
+      )}
+      <ProductPageComponent
+        store={store}
+        product={product}
+        slug={slug!}
+        theme={theme}
+        features={features}
+        quantity={quantity}
       selectedOptions={selectedOptions}
       alsoBought={alsoBought}
       relatedProducts={relatedProducts}
@@ -335,5 +347,6 @@ export default function ProductDetail() {
       giftWrapPriceDisplay={giftWrapPriceDisplay}
       recentlyViewed={recentlyViewed}
     />
+    </>
   );
 }
