@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Haa Stores Core - Local MVP e-commerce platform",
   "scripts": {
+    "prepare": "husky",
     "dev": "pnpm --filter @haa/api dev",
     "dev:api": "pnpm --filter @haa/api dev",
     "dev:dashboard": "pnpm --filter @haa/merchant-dashboard dev",
@@ -14,8 +15,15 @@
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:smoke": "vitest run tests/pre-launch-smoke.test.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "quality": "pnpm typecheck && pnpm test:smoke && pnpm test:e2e",
+    "quality:dashboard": "tsx scripts/generate-quality-dashboard.ts",
+    "deps:audit": "pnpm audit --prod",
     "db:generate": "pnpm --filter @haa/db generate",
     "db:migrate": "pnpm --filter @haa/db migrate",
     "db:seed": "pnpm --filter @haa/db seed",
@@ -55,9 +63,14 @@
     "pnpm": ">=9.0.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.60.0",
+    "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^10.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
     "typescript-eslint": "^8.61.0",
     "vitest": "4.1.8"
   },

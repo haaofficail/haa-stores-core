@@ -1,0 +1,17 @@
+/**
+ * Lint-staged config
+ *
+ * Apple-level discipline: only lint/format files that are staged.
+ * Skip typecheck (slow) on commit; let CI handle it.
+ *
+ * Note: ESLint --no-warn-ignored because some config files match
+ * .gitignore patterns. We still want to format them.
+ */
+module.exports = {
+  '*.{ts,tsx,js,jsx}': [
+    'eslint --fix --max-warnings 0 --no-warn-ignored',
+  ],
+  '*.{json,md,yml,yaml,css}': [
+    'prettier --write',
+  ],
+};

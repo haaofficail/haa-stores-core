@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+# Pre-commit hook — Apple-level quality gate
+# Runs:
+#   1. lint-staged (ESLint + Prettier on changed files)
+#   2. typecheck (full project, blocks on errors)
+#
+# Tests are NOT run here — they're slow and the developer should run
+# `pnpm test:smoke` or `pnpm quality` before pushing.
+# This is the standard pattern used by Vercel, Linear, Stripe.
+#
+# Skip with: git commit --no-verify (NOT recommended)
+# Required for production releases.
+
+set -e
+
+echo "🔍 [pre-commit] Running lint-staged..."
+pnpm exec lint-staged
+
+echo "🔍 [pre-commit] Running typecheck..."
+pnpm typecheck
+
+echo "✅ [pre-commit] All checks passed."

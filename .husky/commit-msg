@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# Commit-msg hook — validate commit message format
+# Apple-level discipline: every commit follows Conventional Commits.
+
+pnpm exec commitlint --edit "$1"
