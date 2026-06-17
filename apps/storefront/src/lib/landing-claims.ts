@@ -45,12 +45,16 @@ function getOverrides(): Record<string, ClaimStatus> {
   return {};
 }
 
-function resolveStatus(_localKey: string): ClaimStatus {
+function resolveStatus(localKey: string): ClaimStatus {
   // If env is a JSON object, use per-claim override if present.
-  // Otherwise, env is a global keyword.
+  // Otherwise, env is a global keyword that overrides the per-claim
+  // default. The per-claim default is the safe fallback (e.g.,
+  // testimonials = 'disabled').
   const overrides = getOverrides();
-  if (overrides[_localKey]) return overrides[_localKey];
-  return getGlobalStatus();
+  if (overrides[localKey]) return overrides[localKey];
+  const global = getGlobalStatus();
+  if (global !== 'unverified') return global; // explicit global override wins
+  return DEFAULT_STATUS[localKey as keyof typeof LANDING_CLAIMS] ?? 'unverified';
 }
 
 export const LANDING_CLAIMS = {
@@ -89,7 +93,32 @@ export const LANDING_CLAIMS = {
     fallback: '',
     verified: 'enabled',
   } satisfies Omit<ClaimConfig, 'status'>,
+
+  // Government trust logos (وزارة التجارة, Maroof, ZATCA, etc.)
+  // TASK-0038 audit P0-#9: each logo's right-to-use must be verified.
+  // Until MoCI registration (G1) + Maroof (G2/G3) + ZATCA (G2) are
+  // all approved, the logos MUST NOT display.
+  // Default 'disabled' (not just 'unverified') because there is no
+  // honest middle ground for government-issued logos — you either
+  // have the right to use them or you don't.
+  govLogos: {
+    fallback: '',
+    verified: 'enabled',
+  } satisfies Omit<ClaimConfig, 'status'>,
 } as const;
+
+// Default status per claim. The audit requires several claims to be
+// 'disabled' by default (testimonials, live ticker, govLogos) because
+// there is no qualified middle ground for them.
+const DEFAULT_STATUS: Record<keyof typeof LANDING_CLAIMS, ClaimStatus> = {
+  merchantCount: 'unverified',
+  zeroCommission: 'unverified',
+  freeForever: 'unverified',
+  themeCount: 'unverified',
+  liveTicker: 'disabled',
+  testimonials: 'disabled',
+  govLogos: 'disabled',
+};
 
 // Helper: returns the right text for a claim, applying its status.
 export function getClaim(

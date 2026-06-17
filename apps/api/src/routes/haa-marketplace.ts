@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
-import { paginationSchema } from '@haa/shared';
+import { paginationSchema, validateProductForMarketplace, type SfdaValidation } from '@haa/shared';
 import {
   isDemoStore,
   shouldShowInMarketplace,
@@ -33,6 +33,21 @@ function mapProduct(row: any) {
     ? row.images.map((img: any) => img?.url ?? img?.thumbUrl ?? '').filter(Boolean)
     : [];
   const demoStore = row.storeIsDemo === true;
+  // TASK-0038 audit P0-#6: SFDA + restricted categories enforcement.
+  // Products in hard-prohibited categories are never listed.
+  // Products in SFDA-gated categories need a valid, non-expired,
+  // admin-verified SFDA number. We compute the validation here so
+  // we can filter the row out before it ever reaches the DTO.
+  const categorySlugs: string[] = row.categorySlug ? [row.categorySlug] : [];
+  const sfdaCheck: SfdaValidation = validateProductForMarketplace({
+    categorySlugs,
+    sfdaNumber: row.sfdaNumber,
+    sfdaExpiryDate: row.sfdaExpiryDate,
+    sfdaVerifiedAt: row.sfdaVerifiedAt,
+  });
+  if (!sfdaCheck.allowed) {
+    return null; // Caller must filter out nulls.
+  }
   return {
     id: row.id,
     name: row.name,
@@ -93,6 +108,10 @@ haaMarketplaceRouter.get('/products', async (c) => {
   const demoStoreCondition = and(
     eq(s.stores.isDemo, true),
     eq(s.products.status, 'active'),
+    // TASK-0038 audit P0-#7: demo stores must explicitly opt in to
+    // marketplace. They get the same haaMarketplaceEnabled=true gate
+    // as real stores so demo content does not bypass moderation.
+    eq(s.products.haaMarketplaceEnabled, true),
     // Use shared shouldShowInMarketplace whitelist (demo-rules.ts).
     // Recognized profiles: 'main', 'perfume'. Anything else is rejected.
     sql`${s.stores.demoProfile} IN ('main', 'perfume')`,
@@ -157,6 +176,10 @@ haaMarketplaceRouter.get('/products', async (c) => {
     salesCount: s.products.salesCount,
     haaMarketplaceCommissionRate: s.products.haaMarketplaceCommissionRate,
     haaMarketplaceFeatured: s.products.haaMarketplaceFeatured,
+    // TASK-0038 audit P0-#6: SFDA fields for restricted-category gate
+    sfdaNumber: s.products.sfdaNumber,
+    sfdaExpiryDate: s.products.sfdaExpiryDate,
+    sfdaVerifiedAt: s.products.sfdaVerifiedAt,
     storeName: s.stores.name,
     storeSlug: s.stores.slug,
     storeLogoUrl: s.stores.logoUrl,
@@ -201,7 +224,7 @@ haaMarketplaceRouter.get('/products', async (c) => {
   return c.json({
     success: true,
     data: {
-      data: rows.map(mapProduct),
+      data: rows.map(mapProduct).filter((p: any): p is NonNullable<typeof p> => p !== null),
       total: Number(total),
       page: query.page,
       limit: query.limit,
@@ -233,6 +256,10 @@ haaMarketplaceRouter.get('/products/:storeSlug/:productSlug', async (c) => {
     salesCount: s.products.salesCount,
     haaMarketplaceCommissionRate: s.products.haaMarketplaceCommissionRate,
     haaMarketplaceFeatured: s.products.haaMarketplaceFeatured,
+    // TASK-0038 audit P0-#6: SFDA fields
+    sfdaNumber: s.products.sfdaNumber,
+    sfdaExpiryDate: s.products.sfdaExpiryDate,
+    sfdaVerifiedAt: s.products.sfdaVerifiedAt,
     storeName: s.stores.name,
     storeSlug: s.stores.slug,
     storeLogoUrl: s.stores.logoUrl,
@@ -282,7 +309,11 @@ haaMarketplaceRouter.get('/products/:storeSlug/:productSlug', async (c) => {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'المنتج غير موجود في سوق هاء.' } }, 404);
   }
 
-  return c.json({ success: true, data: mapProduct(row) });
+  const mapped = mapProduct(row);
+  if (!mapped) {
+    return c.json({ success: false, error: { code: 'PROHIBITED_CATEGORY', message: 'Product is in a restricted category' } }, 403);
+  }
+  return c.json({ success: true, data: mapped });
 });
 
 haaMarketplaceRouter.get('/sellers/:storeSlug', async (c) => {

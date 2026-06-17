@@ -42,14 +42,16 @@ describe('landing-claims — config resolution', () => {
     expect(getClaim('freeForever').text).toBe('باقة مجانية متاحة');
   });
 
-  it('default: testimonials and live ticker are disabled', async () => {
+  it('default: testimonials, live ticker, and govLogos are disabled', async () => {
     delete (import.meta.env as any).VITE_LANDING_CLAIMS;
     const { isClaimEnabled, getClaim } = await import('../apps/storefront/src/lib/landing-claims');
 
     expect(isClaimEnabled('testimonials')).toBe(false);
     expect(isClaimEnabled('liveTicker')).toBe(false);
+    expect(isClaimEnabled('govLogos')).toBe(false);
     expect(getClaim('testimonials').text).toBe('');
     expect(getClaim('liveTicker').text).toBe('');
+    expect(getClaim('govLogos').text).toBe('');
   });
 
   it('global verified override: all claims show the verified text', async () => {
