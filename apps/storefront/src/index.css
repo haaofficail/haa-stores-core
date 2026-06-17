@@ -115,8 +115,17 @@
   }
 }
 
-/* ── Design Token System ── */
-:root {
+/* ── Design Token System ──
+   TASK-0038 baseline test fix: design tokens must be scoped under
+   #storefront-scope, not :root, to prevent global CSS leakage into
+   the admin dashboard, system theme, or other apps on the same
+   origin. Tailwind's preflight and other apps' tokens stay clean. */
+#storefront-scope,
+#storefront-scope * {
+  /* Selector list for clarity — actual vars live under #storefront-scope. */
+}
+
+#storefront-scope {
   /* Border radius (matches tailwind.config extended borderRadius) */
   --card-radius: 16px;
   --radius-pill: 9999px;

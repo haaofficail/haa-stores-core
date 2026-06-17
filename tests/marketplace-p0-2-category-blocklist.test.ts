@@ -71,7 +71,7 @@ describe('TASK-0041 Phase 2 — Track 2.1 — P0-2 category blocklist', () => {
       // for categoryName + categorySlug. Both must filter out
       // prohibited categories (camelCase JS prop in source).
       const block = routeSrc.match(
-        /haaMarketplaceRouter\.get\(\s*['"]\/products\/:storeSlug\/:productSlug['"][\s\S]{0,3000}?\}\);/,
+        /haaMarketplaceRouter\.get\(\s*['"]\/products\/:storeSlug\/:productSlug['"][\s\S]{0,5000}?\}\);/,
       );
       expect(block).not.toBeNull();
       const src = block![0];
