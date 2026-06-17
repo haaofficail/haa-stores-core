@@ -90,6 +90,7 @@ export const SAFE_PAYMENT_MODES: PaymentMode[] = ['fake', 'sandbox'];
 export type InternalPaymentStatus =
   | 'initiated'
   | 'pending'
+  | 'requires_3ds'
   | 'authorized'
   | 'paid'
   | 'failed'
@@ -100,7 +101,7 @@ export type InternalPaymentStatus =
   | 'disputed';
 
 export const INTERNAL_PAYMENT_STATUSES: InternalPaymentStatus[] = [
-  'initiated', 'pending', 'authorized', 'paid', 'failed',
+  'initiated', 'pending', 'requires_3ds', 'authorized', 'paid', 'failed',
   'cancelled', 'expired', 'refunded', 'partially_refunded', 'disputed',
 ];
 
@@ -113,6 +114,7 @@ export interface PaymentProviderCapabilities {
   supportsBankTransfer: boolean;
   supportsStcPay: boolean;
   supportsBNPL: boolean;
+  supports3DS: boolean;
 }
 
 export type WebhookEventType =

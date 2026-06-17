@@ -28,6 +28,7 @@ export const FAKE_CAPABILITIES: PaymentProviderCapabilitiesT = {
   supportsBankTransfer: true,
   supportsStcPay: false,
   supportsBNPL: false,
+  supports3DS: true, // fake supports 3DS for testing
 };
 
 export const MOYASAR_CAPABILITIES: PaymentProviderCapabilitiesT = {
@@ -39,6 +40,7 @@ export const MOYASAR_CAPABILITIES: PaymentProviderCapabilitiesT = {
   supportsBankTransfer: false,
   supportsStcPay: true,
   supportsBNPL: false,
+  supports3DS: true, // Moyasar supports 3DS (SAMA mandatory)
 };
 
 export const GEIDEA_CAPABILITIES: PaymentProviderCapabilitiesT = {
@@ -50,6 +52,7 @@ export const GEIDEA_CAPABILITIES: PaymentProviderCapabilitiesT = {
   supportsBankTransfer: false,
   supportsStcPay: false,
   supportsBNPL: false,
+  supports3DS: true, // Geidea supports 3DS
 };
 
 export const TABBY_CAPABILITIES: PaymentProviderCapabilitiesT = {
@@ -61,6 +64,7 @@ export const TABBY_CAPABILITIES: PaymentProviderCapabilitiesT = {
   supportsBankTransfer: false,
   supportsStcPay: false,
   supportsBNPL: true,
+  supports3DS: false, // BNPL doesn't need 3DS (Tabby handles its own auth)
 };
 
 export const TAMARA_CAPABILITIES: PaymentProviderCapabilitiesT = {
@@ -72,6 +76,7 @@ export const TAMARA_CAPABILITIES: PaymentProviderCapabilitiesT = {
   supportsBankTransfer: false,
   supportsStcPay: false,
   supportsBNPL: true,
+  supports3DS: false, // BNPL doesn't need 3DS
 };
 
 // ── Status mapping ───────────────────────────────────
