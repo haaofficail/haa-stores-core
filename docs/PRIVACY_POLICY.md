@@ -64,6 +64,35 @@
 | Session cookies | Authentication | Strictly necessary |
 | Analytics events (page views, etc.) | Product improvement, merchant analytics | Consent |
 
+### 2.4 بيانات السوق العام (Public Marketplace Data)
+
+> **TASK-0042 Phase 3 — P0-6 marketplace disclosure.** Engineering
+> draft; subject to Data Protection Officer (DPO) and legal review
+> before publication. See `docs/SFDA_DISCLAIMER.md` for SFDA-specific
+> disclaimers.
+
+When you use the Haa public marketplace (`/marketplace/*`), additional data flows occur:
+
+| Data | Purpose | Legal basis | Shared with |
+|------|---------|-------------|-------------|
+| Unified marketplace order number | Order tracking across multiple merchants | Contract performance | All merchants in your cart |
+| Customer name + phone + shipping address | Order fulfillment per merchant | Contract performance | Each merchant in your order |
+| Marketplace search history | Product discovery, recommendations | Consent | Aggregated, anonymized only |
+| Marketplace analytics events | Platform improvement, fraud detection | Legitimate interest | None (Haa internal only) |
+| Order tracking accessToken | Secure order lookup (replaces phone-based enumeration) | Contract performance | None (proof of ownership only) |
+
+**Multi-merchant disclosure:**
+
+When you place a marketplace order, your data (name, phone, shipping address, order items) is shared with **EACH independent merchant** in your cart. Each merchant becomes a separate data controller for their portion of the order. Haa is the platform operator and unified order creator; merchants are responsible for their own data handling.
+
+**Marketplace seller disclosure:**
+
+Products on the Haa public marketplace are sold by **INDEPENDENT MERCHANTS**, not by Haa Stores directly. Haa is the platform operator and is **not a party** to the sale contract between you and the merchant. The merchant is the seller of record.
+
+**Aggregated analytics exclusion:**
+
+Demo stores (per `docs/CURRENT_STATE.md` and `packages/shared/src/demo/demo-rules.ts`) are excluded from marketplace analytics to avoid polluting KPIs with synthetic data.
+
 ---
 
 ## 3. كيف نستخدم البيانات (How We Use Data)
@@ -254,6 +283,9 @@ https://sdaia.gov.sa
 - `docs/security/LOGGING_PRIVACY_AUDIT.md` — PII handling in logs
 - `docs/SAUDI_COMPLIANCE_CHECKLIST.md` — overall Saudi compliance status
 - TASK-0034 (sub-item 8) — PDPL data export + account deletion endpoints
+- TASK-0042 — marketplace data flows (§2.4) and SFDA disclaimers
+- `docs/SFDA_DISCLAIMER.md` — SFDA-specific disclaimers (regulated products)
+- `docs/TERMS_OF_SERVICE.md §8.5` — independent sellers on Haa Marketplace
 
 ---
 

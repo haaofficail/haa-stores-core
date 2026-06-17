@@ -198,6 +198,27 @@
 - انتهاك حقوق البيانات الشخصية (PDPL — قد يفرض غرامات أعلى)
 - المسؤولية التي لا يمكن استبعادها بموجب القانون السعودي
 
+### 8.5 البائعون المستقلون في السوق العام (Independent Sellers on Haa Marketplace)
+
+> **TASK-0042 Phase 3 — P0-6 independent sellers disclosure.** Engineering
+> draft; subject to Data Protection Officer (DPO) and legal review
+> before publication. See `docs/SFDA_DISCLAIMER.md` for SFDA-specific
+> disclaimers and `docs/PRIVACY_POLICY.md §2.4` for data sharing details.
+
+The Haa public marketplace allows independent merchants to list products for sale to the public. By using the marketplace, you acknowledge and agree that:
+
+**8.5.1 Independent seller relationship.** Each product on the marketplace is sold by an independent merchant. Haa Stores operates the platform only and is **NOT a party** to the sale contract between you and the merchant. The merchant is the seller of record.
+
+**8.5.2 Merchant responsibility.** The merchant is responsible for: product authenticity, accurate descriptions, shipping, returns, refunds, customer support, and any warranty. Haa's role is limited to: order aggregation, payment processing, dispute escalation (see §8.5.4), and platform moderation.
+
+**8.5.3 Haa's liability.** To the maximum extent permitted by Saudi law, Haa is **not liable** for: product defects, shipping delays, merchant bankruptcy, merchant misrepresentation, or unauthorized charges by the merchant. Haa's total liability for marketplace transactions is **capped at the platform fee** charged for that transaction.
+
+**8.5.4 Dispute escalation.** If you have a dispute with a merchant, first contact the merchant directly via their store page. If unresolved within **14 days**, escalate to Haa at `disputes@haastores.sa`. Haa may mediate but is not obligated to refund.
+
+**8.5.5 Verification of merchants.** Haa performs KYC verification (CR + VAT + bank account) on all merchants before they can sell. Haa does **NOT** verify product-level compliance (e.g., SFDA registration for food/cosmetic products) — see `SFDA_DISCLAIMER.md` for the merchant's responsibility.
+
+**8.5.6 Right to suspend.** Haa reserves the right to suspend any merchant or product that violates Saudi law, MoCI regulations, or Haa's marketplace policies.
+
 ---
 
 ## 9. التعليق والإغلاق (Suspension and Termination)
@@ -298,6 +319,9 @@
 - `docs/SAUDI_COMPLIANCE_CHECKLIST.md` — الامتثال السعودي
 - `docs/INCIDENT_RESPONSE.md` — في حالة اختراق أو عطل
 - TASK-0034 (sub-item 8) — PDPL endpoints
+- TASK-0042 — marketplace independent sellers (§8.5) and SFDA disclaimers
+- `docs/SFDA_DISCLAIMER.md` — SFDA-specific disclaimers (regulated products)
+- `docs/PRIVACY_POLICY.md §2.4` — marketplace data flows
 
 ---
 
