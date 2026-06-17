@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Package, Search, Store } from 'lucide-react';
+import { Copy, Package, Search, Store } from 'lucide-react';
 import { haaMarketplaceApi, type MarketplaceOrder } from '@/lib/api';
 import { StoreAlert, StoreButton, StoreCard, StoreContainer, StoreInput, StoreSkeleton } from '@/components/ui';
 import { Icon } from '@/components/ui/icon';
@@ -27,46 +27,78 @@ function statusLabel(status: string) {
   return labels[status] ?? status;
 }
 
+// TASK-0040 Track 1B — P0-3. Persist the access token per-order in
+// localStorage so customers don't have to re-enter it on every visit.
+// Keyed by marketplaceOrderNumber to keep tokens isolated per order.
+const TOKEN_STORAGE_PREFIX = 'haa.marketplace.order.token.';
+
 export default function MarketplaceOrderTrack() {
   const { orderNumber } = useParams<{ orderNumber: string }>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [lookupOrderNumber, setLookupOrderNumber] = useState(orderNumber ?? '');
-  const [phone, setPhone] = useState(searchParams.get('phone') ?? '');
+  // Prefer ?access_token= query param; fall back to localStorage; fall
+  // back to legacy ?phone= (deprecated, see Plan §3 Track 1B).
+  const initialToken =
+    searchParams.get('access_token') ??
+    (orderNumber ? localStorage.getItem(TOKEN_STORAGE_PREFIX + orderNumber) : null);
+  const [accessToken, setAccessToken] = useState(initialToken ?? '');
+  const [legacyPhone] = useState(searchParams.get('phone') ?? '');
   const [order, setOrder] = useState<MarketplaceOrder | null>(null);
-  const [loading, setLoading] = useState(Boolean(orderNumber && phone));
+  const [loading, setLoading] = useState(Boolean(orderNumber && (initialToken || legacyPhone)));
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   useSEO({ title: `تتبع طلب سوق هاء ${orderNumber ?? ''}`, noIndex: true });
 
-  const load = useCallback(async (nextPhone = phone) => {
-    if (!orderNumber || !nextPhone.trim()) return;
+  const load = useCallback(async (nextToken = accessToken, nextPhone = legacyPhone) => {
+    if (!orderNumber) return;
+    if (!nextToken.trim() && !nextPhone.trim()) return;
     setLoading(true);
     setError('');
     try {
-      const result = await haaMarketplaceApi.getOrder(orderNumber, nextPhone.trim());
+      // Prefer token; fall back to legacy phone during transition window.
+      const result = nextToken.trim()
+        ? await haaMarketplaceApi.getOrder(orderNumber, nextToken.trim())
+        : await haaMarketplaceApi.getOrderLegacy(orderNumber, nextPhone.trim());
       setOrder(result);
+      // Persist token for future visits (one-time read from API response
+      // OR from URL query on first navigation).
+      if (result.accessToken && orderNumber) {
+        localStorage.setItem(TOKEN_STORAGE_PREFIX + orderNumber, result.accessToken);
+      }
       const next = new URLSearchParams();
-      next.set('phone', nextPhone.trim());
+      if (result.accessToken) next.set('access_token', result.accessToken);
       setSearchParams(next, { replace: true });
     } catch {
       setOrder(null);
-      setError('لم يتم العثور على طلب سوق بهذا الرقم والجوال.');
+      setError('لم يتم العثور على طلب سوق بهذا الرقم.');
     } finally {
       setLoading(false);
     }
-  }, [orderNumber, phone, setSearchParams]);
+  }, [orderNumber, accessToken, legacyPhone, setSearchParams]);
 
   useEffect(() => {
-    if (orderNumber && phone) load(phone);
-  }, [orderNumber, phone, load]);
+    if (orderNumber && (initialToken || legacyPhone)) load(initialToken ?? '', legacyPhone);
+  }, [orderNumber, initialToken, legacyPhone, load]);
 
   const submitLookup = () => {
-    if (!lookupOrderNumber.trim() || !phone.trim()) {
-      setError('أدخل رقم طلب السوق ورقم الجوال للاستعلام.');
+    if (!lookupOrderNumber.trim() || !accessToken.trim()) {
+      setError('أدخل رقم طلب السوق ورمز الدخول للاستعلام.');
       return;
     }
-    navigate(`/marketplace/order/${encodeURIComponent(lookupOrderNumber.trim())}?phone=${encodeURIComponent(phone.trim())}`);
+    navigate(`/marketplace/order/${encodeURIComponent(lookupOrderNumber.trim())}?access_token=${encodeURIComponent(accessToken.trim())}`);
+  };
+
+  const copyToken = async () => {
+    if (!order?.accessToken) return;
+    try {
+      await navigator.clipboard.writeText(order.accessToken);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API may be blocked; user can still copy manually.
+    }
   };
 
   return (
@@ -76,7 +108,7 @@ export default function MarketplaceOrderTrack() {
           <div>
             <h1 className="text-2xl font-bold text-text-primary">استعلام وتتبع طلبات سوق هاء</h1>
             <p className="mt-1 text-sm text-text-secondary">
-              {orderNumber || 'أدخل رقم طلب السوق والجوال لعرض الطلبات التي تمت من السوق.'}
+              {orderNumber || 'أدخل رقم طلب السوق ورمز الدخول لعرض الطلبات التي تمت من السوق.'}
             </p>
           </div>
           <StoreButton href="/marketplace" variant="outline">العودة للسوق</StoreButton>
@@ -93,10 +125,10 @@ export default function MarketplaceOrderTrack() {
               className="text-start"
             />
             <StoreInput
-              label="رقم الجوال"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="05xxxxxxxx"
+              label="رمز الدخول"
+              value={accessToken}
+              onChange={(e) => setAccessToken(e.target.value)}
+              placeholder="UUID من رسالة التأكيد"
               dir="ltr"
               className="text-start"
             />
@@ -106,6 +138,9 @@ export default function MarketplaceOrderTrack() {
           </div>
           <StoreAlert variant="info" title="دور السوق بعد الطلب" className="mt-4">
             سوق هاء يستعلم ويتابع الطلبات التي تمت من طرفه فقط. بعد الشراء يتحول كل جزء إلى طلب تاجر عادي وتكتمل إجراءاته من المتجر.
+          </StoreAlert>
+          <StoreAlert variant="warning" title="احتفظ برمز الدخول" className="mt-2">
+            رمز الدخول يُعرض مرة واحدة عند إنشاء الطلب. إذا فقدته، تواصل مع دعم التاجر لإعادة الإرسال.
           </StoreAlert>
         </StoreCard>
 
@@ -172,6 +207,25 @@ export default function MarketplaceOrderTrack() {
                 <StoreAlert variant="info" title="دور سوق هاء">
                   السوق يعرض المنتجات ويجمع الطلب فقط. بعد إنشاء الطلب يتحول كل جزء إلى طلب تاجر عادي ويكتمل بنفس مسار المتجر.
                 </StoreAlert>
+                {order.accessToken && (
+                  <div className="rounded-[8px] border border-border bg-surface-2 p-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs text-text-tertiary">رمز الدخول</p>
+                        <p className="mt-1 truncate font-mono text-xs">{order.accessToken}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={copyToken}
+                        className="flex items-center gap-1 rounded-[6px] bg-primary-600 px-2 py-1 text-xs text-white hover:bg-primary-700"
+                        aria-label="نسخ رمز الدخول"
+                      >
+                        <Icon icon={Copy} size="xs" />
+                        {copied ? 'تم النسخ' : 'نسخ'}
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-text-secondary">رقم الطلب</span>
                   <span className="font-semibold">{order.marketplaceOrderNumber}</span>

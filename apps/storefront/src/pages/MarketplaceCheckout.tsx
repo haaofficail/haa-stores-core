@@ -38,6 +38,7 @@ export default function MarketplaceCheckout() {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [marketplaceOrderNumber, setMarketplaceOrderNumber] = useState('');
+  const [marketplaceAccessToken, setMarketplaceAccessToken] = useState('');
   const [orders, setOrders] = useState<Array<{ storeName: string; storeSlug: string; orderNumber: string }>>([]);
 
   const groups = useMemo(() => groupByStore(items), [items]);
@@ -123,6 +124,15 @@ export default function MarketplaceCheckout() {
 
       marketplaceCart.clear();
       setMarketplaceOrderNumber(marketplaceOrder.marketplaceOrderNumber);
+      // TASK-0040 Track 1B — P0-3. Capture accessToken for tracking link.
+      // The MarketplaceOrderTrack page also reads from API response.
+      if (marketplaceOrder.accessToken) {
+        setMarketplaceAccessToken(marketplaceOrder.accessToken);
+        localStorage.setItem(
+          `haa.marketplace.order.token.${marketplaceOrder.marketplaceOrderNumber}`,
+          marketplaceOrder.accessToken,
+        );
+      }
       setOrders(createdOrders);
       toast.success('تم إنشاء طلبات السوق بنجاح');
     } catch (error: any) {
@@ -156,7 +166,7 @@ export default function MarketplaceCheckout() {
               ))}
             </div>
             <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
-              <StoreButton href={`/marketplace/order/${marketplaceOrderNumber}?phone=${encodeURIComponent(customer.phone)}`}>تتبع الطلب الموحد</StoreButton>
+              <StoreButton href={`/marketplace/order/${marketplaceOrderNumber}${marketplaceAccessToken ? `?access_token=${encodeURIComponent(marketplaceAccessToken)}` : ''}`}>تتبع الطلب الموحد</StoreButton>
               <StoreButton href="/marketplace" variant="outline">العودة لسوق هاء</StoreButton>
             </div>
           </StoreCard>

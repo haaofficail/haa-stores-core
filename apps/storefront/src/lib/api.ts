@@ -446,8 +446,15 @@ export const haaMarketplaceApi = {
     paymentMethod?: string;
     notes?: string;
     subOrders: Array<{ storeSlug: string; orderNumber: string }>;
-  }) => request<MarketplaceOrder>(`/marketplace/orders`, { method: 'POST', body: JSON.stringify(data) }),
-  getOrder: (marketplaceOrderNumber: string, phone: string) =>
+  }) =>     request<MarketplaceOrder>(`/marketplace/orders`, { method: 'POST', body: JSON.stringify(data) }),
+  // TASK-0040 Track 1B — P0-3. Use accessToken (returned once at
+  // POST /orders) instead of phone (PII + enumeration vector).
+  getOrder: (marketplaceOrderNumber: string, accessToken: string) =>
+    request<MarketplaceOrder>(`/marketplace/orders/${marketplaceOrderNumber}?access_token=${encodeURIComponent(accessToken)}`),
+  // Legacy: kept for backward compat with old links in the wild during
+  // the deprecation window. Will be removed once all customers have
+  // re-fetched via accessToken. Plan: docs/ops/MARKETPLACE_HARDENING_PLAN.md §3 Track 1B.
+  getOrderLegacy: (marketplaceOrderNumber: string, phone: string) =>
     request<MarketplaceOrder>(`/marketplace/orders/${marketplaceOrderNumber}?phone=${encodeURIComponent(phone)}`),
 };
 
@@ -459,11 +466,15 @@ export interface HaaMarketplaceCategory {
 
 export interface MarketplaceOrder {
   marketplaceOrderNumber: string;
+  // TASK-0040 Track 1B — P0-3. Cryptographically-random token returned
+  // ONCE at order creation. UI must save it (clipboard) for later tracking.
+  accessToken?: string;
   status: string;
   paymentStatus: string;
   fulfillmentStatus: string;
   customerName?: string;
-  customerPhone?: string;
+  // Phone no longer returned in tracking response (PII leak). The
+  // accessToken IS the proof of ownership now.
   subtotal: string;
   shippingTotal: string;
   total: string;

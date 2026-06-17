@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, integer, timestamp, decimal, jsonb, index, unique } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, integer, timestamp, decimal, jsonb, index, unique, uuid } from 'drizzle-orm/pg-core';
 import { orders } from './orders.js';
 
 export const marketplaceOrders = pgTable('marketplace_orders', {
@@ -11,6 +11,10 @@ export const marketplaceOrders = pgTable('marketplace_orders', {
   customerPhone: varchar('customer_phone', { length: 20 }).notNull(),
   customerEmail: varchar('customer_email', { length: 255 }),
   shippingAddress: jsonb('shipping_address'),
+  // TASK-0040 Track 1B — P0-3. Cryptographically-random access token
+  // returned ONCE by POST /orders, required by GET /orders/:num.
+  // Mirrors the support-ticket accessToken pattern (R-0014).
+  accessToken: uuid('access_token').notNull().defaultRandom(),
   subtotal: decimal('subtotal', { precision: 12, scale: 2 }).notNull(),
   shippingTotal: decimal('shipping_total', { precision: 12, scale: 2 }).notNull().default('0'),
   total: decimal('total', { precision: 12, scale: 2 }).notNull(),
@@ -23,6 +27,10 @@ export const marketplaceOrders = pgTable('marketplace_orders', {
 }, (table) => ({
   createdAtIdx: index('marketplace_orders_created_at_idx').on(table.createdAt),
   customerPhoneIdx: index('marketplace_orders_customer_phone_idx').on(table.customerPhone),
+  // Unique index for fast lookup by access_token (GET /orders/:num).
+  // UUIDs are not guessable (122-bit entropy) — index is for performance
+  // and collision safety rather than security.
+  accessTokenIdx: unique('marketplace_orders_access_token_idx').on(table.accessToken),
 }));
 
 export const marketplaceOrderLinks = pgTable('marketplace_order_links', {

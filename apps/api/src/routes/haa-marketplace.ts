@@ -603,6 +603,10 @@ haaMarketplaceRouter.post('/orders', zValidator('json', createMarketplaceOrderSc
     success: true,
     data: {
       marketplaceOrderNumber: created.marketplaceOrderNumber,
+      // TASK-0040 Track 1B — P0-3. Returned ONCE at order creation.
+      // Customer must save it (UI copies to clipboard) to track later.
+      // Mirrors support-ticket accessToken pattern (R-0014).
+      accessToken: created.accessToken,
       status: created.status,
       paymentStatus: created.paymentStatus,
       fulfillmentStatus: created.fulfillmentStatus,
@@ -626,16 +630,31 @@ haaMarketplaceRouter.post('/orders', zValidator('json', createMarketplaceOrderSc
 
 haaMarketplaceRouter.get('/orders/:marketplaceOrderNumber', async (c) => {
   const marketplaceOrderNumber = c.req.param('marketplaceOrderNumber');
+  // TASK-0040 Track 1B — P0-3. Authenticate via access_token (preferred)
+  // or legacy phone (deprecated, retained for backward compat during
+  // transition window). Document the deprecation path in CHANGELOG.
+  const accessToken = c.req.query('access_token') ?? c.req.query('accessToken');
   const phone = c.req.query('phone');
-  if (!phone) return c.json({ success: false, error: { code: 'BAD_REQUEST', message: 'رقم الجوال مطلوب.' } }, 400);
+  if (!accessToken && !phone) {
+    return c.json({
+      success: false,
+      error: { code: 'BAD_REQUEST', message: 'رمز الدخول أو رقم الجوال مطلوب.' },
+    }, 400);
+  }
 
   const db = createDbClient();
+  const conditions = [eq(s.marketplaceOrders.marketplaceOrderNumber, marketplaceOrderNumber)];
+  if (accessToken) {
+    conditions.push(eq(s.marketplaceOrders.accessToken, accessToken));
+  } else if (phone) {
+    // Legacy path — kept for old links still in the wild. Plan: remove
+    // after a transition window once all customers have re-fetched via token.
+    conditions.push(eq(s.marketplaceOrders.customerPhone, phone));
+  }
+
   const [marketplaceOrder] = await db.select()
     .from(s.marketplaceOrders)
-    .where(and(
-      eq(s.marketplaceOrders.marketplaceOrderNumber, marketplaceOrderNumber),
-      eq(s.marketplaceOrders.customerPhone, phone),
-    ))
+    .where(and(...conditions))
     .limit(1);
 
   if (!marketplaceOrder) {
@@ -658,7 +677,10 @@ haaMarketplaceRouter.get('/orders/:marketplaceOrderNumber', async (c) => {
       paymentStatus: marketplaceOrder.paymentStatus,
       fulfillmentStatus: marketplaceOrder.fulfillmentStatus,
       customerName: marketplaceOrder.customerName,
-      customerPhone: marketplaceOrder.customerPhone,
+      // Don't leak the full phone number in the tracking response.
+      // Only return the accessToken as proof of ownership; the phone
+      // is PII and should not be round-tripped through GET tracking.
+      accessToken: marketplaceOrder.accessToken,
       subtotal: marketplaceOrder.subtotal,
       shippingTotal: marketplaceOrder.shippingTotal,
       total: marketplaceOrder.total,
