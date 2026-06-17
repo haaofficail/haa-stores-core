@@ -5,20 +5,37 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Override Tailwind's default blue-* to use our brand color.
+        // Without this, classes like text-blue-500 use #3b82f6 (Tailwind default)
+        // instead of our brand. With this override, text-blue-500/600/700 etc.
+        // all map to brand-primary shades via the same color-mix pipeline.
+        blue: {
+          50: 'var(--color-primary-50, color-mix(in srgb, var(--brand-primary, #56a1e3) 8%, #fff))',
+          100: 'var(--color-primary-100, color-mix(in srgb, var(--brand-primary, #56a1e3) 14%, #fff))',
+          200: 'var(--color-primary-200, color-mix(in srgb, var(--brand-primary, #56a1e3) 26%, #fff))',
+          300: 'var(--color-primary-300, color-mix(in srgb, var(--brand-primary, #56a1e3) 42%, #fff))',
+          400: 'var(--color-primary-400, color-mix(in srgb, var(--brand-primary, #56a1e3) 64%, #fff))',
+          500: 'var(--color-primary-500, var(--brand-primary, #56a1e3))',
+          600: 'var(--color-primary-600, color-mix(in srgb, var(--brand-primary, #56a1e3) 88%, #000))',
+          700: 'var(--color-primary-700, #2a6fb8)',
+          800: 'var(--color-primary-800, color-mix(in srgb, var(--brand-primary, #56a1e3) 60%, #000))',
+          900: 'var(--color-primary-900, color-mix(in srgb, var(--brand-primary, #56a1e3) 42%, #000))',
+          950: 'var(--color-primary-950, color-mix(in srgb, var(--brand-primary, #56a1e3) 24%, #000))',
+        },
         primary: {
-          DEFAULT: 'var(--color-primary, var(--brand-primary, #2a6fb8))',
-          50: 'var(--color-primary-50, color-mix(in srgb, var(--brand-primary, #2a6fb8) 8%, #fff))',
-          100: 'var(--color-primary-100, color-mix(in srgb, var(--brand-primary, #2a6fb8) 14%, #fff))',
-          200: 'var(--color-primary-200, color-mix(in srgb, var(--brand-primary, #2a6fb8) 26%, #fff))',
-          300: 'var(--color-primary-300, color-mix(in srgb, var(--brand-primary, #2a6fb8) 42%, #fff))',
-          400: 'var(--color-primary-400, color-mix(in srgb, var(--brand-primary, #2a6fb8) 64%, #fff))',
-          500: 'var(--color-primary-500, var(--brand-primary, #2a6fb8))',
-          600: 'var(--color-primary-600, color-mix(in srgb, var(--brand-primary, #2a6fb8) 88%, #000))',
-          700: 'var(--color-primary-700, color-mix(in srgb, var(--brand-primary, #2a6fb8) 76%, #000))',
-          800: 'var(--color-primary-800, color-mix(in srgb, var(--brand-primary, #2a6fb8) 60%, #000))',
-          900: 'var(--color-primary-900, color-mix(in srgb, var(--brand-primary, #2a6fb8) 42%, #000))',
-          950: 'var(--color-primary-950, color-mix(in srgb, var(--brand-primary, #2a6fb8) 24%, #000))',
-          soft: 'var(--color-primary-soft, color-mix(in srgb, var(--brand-primary, #2a6fb8) 14%, #fff))',
+          DEFAULT: 'var(--color-primary, var(--brand-primary, #56a1e3))',
+          50: 'var(--color-primary-50, color-mix(in srgb, var(--brand-primary, #56a1e3) 8%, #fff))',
+          100: 'var(--color-primary-100, color-mix(in srgb, var(--brand-primary, #56a1e3) 14%, #fff))',
+          200: 'var(--color-primary-200, color-mix(in srgb, var(--brand-primary, #56a1e3) 26%, #fff))',
+          300: 'var(--color-primary-300, color-mix(in srgb, var(--brand-primary, #56a1e3) 42%, #fff))',
+          400: 'var(--color-primary-400, color-mix(in srgb, var(--brand-primary, #56a1e3) 64%, #fff))',
+          500: 'var(--color-primary-500, var(--brand-primary, #56a1e3))',
+          600: 'var(--color-primary-600, color-mix(in srgb, var(--brand-primary, #56a1e3) 88%, #000))',
+          700: 'var(--color-primary-700, #2a6fb8)',
+          800: 'var(--color-primary-800, color-mix(in srgb, var(--brand-primary, #56a1e3) 60%, #000))',
+          900: 'var(--color-primary-900, color-mix(in srgb, var(--brand-primary, #56a1e3) 42%, #000))',
+          950: 'var(--color-primary-950, color-mix(in srgb, var(--brand-primary, #56a1e3) 24%, #000))',
+          soft: 'var(--color-primary-soft, color-mix(in srgb, var(--brand-primary, #56a1e3) 14%, #fff))',
           foreground: '#ffffff',
         },
         surface: {
@@ -51,7 +68,7 @@ export default {
         danger: '#dc2626',
         'danger-soft': '#fef2f2',
         'danger-text': '#b91c1c',
-        info: 'var(--color-info, #2a6fb8)',
+        info: 'var(--color-info, #56a1e3)',
         'info-soft': 'var(--color-info-subtle, #eef5fc)',
         'info-text': 'var(--color-info-text, #3d8ad4)',
       },
