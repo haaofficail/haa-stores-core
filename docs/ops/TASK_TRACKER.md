@@ -1751,3 +1751,44 @@
   - In Progress: 2026-06-16
   - Session #2 Done: 2026-06-17
   - In Progress: 2026-06-16
+
+---
+
+### TASK-0035: 3DS Flow (SAMA Mandatory) + VAT-Aware Pricing
+
+- **Type:** Feature / Architecture / Compliance / UX/UI Polish
+- **Priority:** P1 High
+- **Status:** In Progress
+- **Created:** 2026-06-17
+- **Updated:** 2026-06-17
+- **Original Request:** نفّذ التوصية (owner directive 2026-06-17) — Option A from the 4-session roadmap: 3DS flow (SAMA mandatory) + VAT-aware pricing.
+- **Problem:** (1) SAMA has mandated 3-D Secure for online card transactions in Saudi Arabia since 2021; without it the live deployment is rejected. (2) Merchants and customers see prices without VAT clarity, but ZATCA requires 15% VAT to be visible on tax invoices. (3) The session started with 21 uncommitted files (theme refactor + 3 new pages + UI updates + 3DS scaffold) — needs triage.
+- **Goal:** (1) Implement 3DS challenge flow for card payments (Moyasar primary, Geidea secondary) with proper status transitions. (2) Show VAT in product display + checkout summary at the platform-default 15% rate. (3) Land 3DS scaffold commit and stash the rest of the WIP safely.
+- **Scope (Session #3, ~5-6 hours, 6 sub-items planned):**
+  1. ✅ **3DS scaffold commit** — `requires_3ds` in `InternalPaymentStatus` union + `supports3DS: boolean` in `PaymentProviderCapabilities` + provider capability flags (moyasar/geidea/fake=true, tabby/tamara=false). Typecheck now passes for `@haa/payment-providers` after rebuilding `@haa/shared` dist.
+  2. ✅ **WIP triage** — kept the 3DS scaffold (useful for sub-items 4-6), reverted `tenants.ts` schema (out of scope), stashed theme refactor + 3 new pages (PlatformContact, PlatformFaq) + admin/auth UI updates as `stash@{0}` on `feature/phase-9-cod-fee-policy`.
+  3. ⏳ **3DS test design (TDD red)** — design the 3DS challenge flow test contract: `createPaymentIntent` returns `requires_3ds` status + `redirectUrl`; webhook callback on `requires_3ds` transitions to `authorized`; `handleWebhook` for `payment.captured` after 3DS marks `paid`; challenge failure path marks `failed`; provider without `supports3DS` skips 3DS entirely.
+  4. ⏳ **3DS flow implementation (TDD green)** — Moyasar provider returns `redirectUrl` from `createPaymentIntent` when 3DS is required; new helper `parse3dsCallback(provider, body)` extracts status + provider reference; `handleWebhook` consumes the 3DS callback event. Same for Geidea. Tabby/Tamara paths unchanged.
+  5. ⏳ **3DS flow wiring** — checkout flow surfaces `requires_3ds` status to the storefront as a redirect to the issuer's challenge URL; storefront `Checkout.tsx` shows a "Verifying your card…" spinner during the redirect-back; the 3DS callback endpoint updates the order + payment status atomically via `WalletPostingService.hasExistingEntry` dedup.
+  6. ⏳ **VAT-aware pricing** — `packages/commerce-core/src/vat.ts` (helpers: `priceExVat`, `priceIncVat`, `formatVatLine`); env var `VAT_RATE` default `0.15` (ZATCA standard); `VAT_RATE` plumbed through `env.ts`; storefront `ProductCard.tsx` shows "شامل الضريبة" badge; checkout `OrderSummary.tsx` shows VAT line + VAT-inclusive total.
+- **Out of Scope (Session #4+):** ZATCA e-invoicing (Phase 2, separate session with planning), 3DS for Tabby/Tamara (they handle their own auth), merchant-configurable VAT rate per tenant (will land with ZATCA), Drizzle snapshot chain fix (0050-0053 missing snapshots, known gotcha documented in memory), Tenant primaryColor (stashed as part of theme refactor), PlatformContact/PlatformFaq pages (stashed, scope creep).
+- **Affected Areas:** `packages/shared`, `packages/payment-providers`, `packages/commerce-core`, `apps/api`, `apps/api/src/env.ts`, `apps/storefront/src/pages/Checkout.tsx`, `apps/storefront/src/components/ProductCard.tsx`, `apps/storefront/src/pages/OrderSummary`, `tests/`.
+- **Skills Required:** plan-mode, test-driven-development, verification-before-completion, systematic-debugging, requesting-code-review.
+- **Skills Used:** plan-mode, test-driven-development, verification-before-completion, systematic-debugging.
+- **Acceptance Criteria:**
+  - [x] Sub-item 1: 3DS scaffold commit on `feature/phase-9-cod-fee-policy` (commit hash: 16f... see git log)
+  - [x] Sub-item 2: working tree clean + preflight passing + WIP safely stashed as `stash@{0}`
+  - [ ] Sub-item 3: `tests/3ds-flow.test.ts` written first, RED, then GREEN
+  - [ ] Sub-item 4: Moyasar + Geidea `createPaymentIntent` returns `redirectUrl` when 3DS required; `handleWebhook` consumes 3DS callback event
+  - [ ] Sub-item 5: checkout flow handles `requires_3ds` → storefront redirect → callback endpoint → status update (atomic via WalletPostingService dedup)
+  - [ ] Sub-item 6: VAT helpers implemented + tests; `VAT_RATE=0.15` default; storefront shows "شامل الضريبة" + checkout shows VAT line
+  - [ ] Full suite passes (target 2350+, +21 from Session #2 baseline 2329); 4 pre-existing baseline failures unchanged
+  - [ ] `pnpm preflight` clean; `pnpm typecheck` on all touched packages clean
+- **Test Plan:** Per sub-item: TDD red→green, `pnpm typecheck` per package, full `pnpm test` after each sub-item, `pnpm preflight` after each sub-item, `pnpm ops:monitor` at session end.
+- **Test Results:** Sub-items 1+2 verified: preflight clean, working tree clean, 3DS scaffold committed. Sub-items 3-6 pending execution.
+- **Risks:** (a) Drizzle snapshot chain is broken for 0050-0053 (documented in `memory/drizzle-migration-snapshots.md`) — out of scope to fix now, will use psql for any fresh-DB verification. (b) 3DS callback URL must be added to Moyasar dashboard before live deploy — owner action item. (c) The `requires_3ds` status is added to the union but `INTERNAL_PAYMENT_STATUSES` may need API exposure updates — will check during sub-item 4. (d) 3DS flow touches the payment webhook which has dedup middleware — must verify dedup key includes the 3DS callback signature, not just the transaction id.
+- **Related Issues:** None yet.
+- **Related Decisions:** None yet (will record DECISION for SAMA 3DS mandate + VAT rate source in DECISIONS.md at session end).
+- **Status History:**
+  - Requested: 2026-06-17
+  - In Progress: 2026-06-17 (sub-items 1+2 complete; sub-items 3-6 queued)
