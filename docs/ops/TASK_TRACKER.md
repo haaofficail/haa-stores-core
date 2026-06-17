@@ -2156,7 +2156,7 @@
 
 - **Type:** Security / Support/Ops / Feature
 - **Priority:** P0 Critical (final gate before live beta)
-- **Status:** Open (depends on TASK-0040–0044 + TASK-0038 closure)
+- **Status:** In Progress (engineering prepared 2026-06-17; pre-pen-test smoke + vendor shortlist + triage template + launch checklist + monitoring guide shipped in Sessions Q+R+S; awaiting owner actions — vendor engagement + TASK-0038 G1-G10 closure)
 - **Created:** 2026-06-17
 - **Updated:** 2026-06-17
 - **Original Request:** `docs/ops/MARKETPLACE_HARDENING_PLAN.md` §8 (Phase 6, 5-7 days engineering, 1-2 weeks calendar).
