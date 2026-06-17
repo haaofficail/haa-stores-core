@@ -143,7 +143,7 @@ async function seed() {
     primaryColor: '#58a1e2',
     backgroundColor: '#ffffff',
     isDemo: true,
-    demoProfile: 'general',
+    demoProfile: 'main',
     demoSeedVersion: '2026-06-initial-v1',
     publishStatus: 'published',
     policies: {

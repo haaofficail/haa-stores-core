@@ -89,7 +89,9 @@ haaMarketplaceRouter.get('/products', async (c) => {
   const demoStoreCondition = and(
     eq(s.stores.isDemo, true),
     eq(s.products.status, 'active'),
-    sql`${s.stores.demoProfile} IS NOT NULL`,
+    // Use shared shouldShowInMarketplace whitelist (demo-rules.ts).
+    // Recognized profiles: 'main', 'perfume'. Anything else is rejected.
+    sql`${s.stores.demoProfile} IN ('main', 'perfume')`,
   );
 
   const conditions = [
@@ -260,7 +262,7 @@ haaMarketplaceRouter.get('/products/:storeSlug/:productSlug', async (c) => {
       eq(s.stores.publishStatus, 'published'),
       or(
         and(eq(s.stores.isDemo, false), eq(s.products.haaMarketplaceEnabled, true), eq(s.products.haaMarketplaceReviewStatus, 'approved')),
-        and(eq(s.stores.isDemo, true), sql`${s.stores.demoProfile} IS NOT NULL`),
+        and(eq(s.stores.isDemo, true), sql`${s.stores.demoProfile} IN ('main', 'perfume')`),
       )!,
     ))
     .limit(1);
@@ -397,7 +399,7 @@ haaMarketplaceRouter.get('/sellers', async (c) => {
     .innerJoin(s.products, eq(s.products.storeId, s.stores.id))
     .where(and(
       eq(s.stores.isDemo, true),
-    sql`${s.stores.demoProfile} IS NOT NULL`,
+    sql`${s.stores.demoProfile} IN ('main', 'perfume')`,
       eq(s.products.status, 'active'),
       eq(s.stores.status, 'active'),
       eq(s.stores.isActive, true),
@@ -445,7 +447,7 @@ haaMarketplaceRouter.get('/categories', async (c) => {
       eq(s.stores.publishStatus, 'published'),
       or(
         and(eq(s.stores.isDemo, false), eq(s.products.haaMarketplaceEnabled, true), eq(s.products.haaMarketplaceReviewStatus, 'approved')),
-        and(eq(s.stores.isDemo, true), sql`${s.stores.demoProfile} IS NOT NULL`),
+        and(eq(s.stores.isDemo, true), sql`${s.stores.demoProfile} IN ('main', 'perfume')`),
       )!,
     ))
     .groupBy(s.categories.name, s.categories.slug)
