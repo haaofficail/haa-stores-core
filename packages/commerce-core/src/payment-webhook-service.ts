@@ -6,12 +6,13 @@ import {
   createPaymentProvider,
   mapProviderStatus,
 } from '@haa/payment-providers';
-import { WalletLedger, calcPlatformFee, describePlatformFeePolicy } from '@haa/wallet-core';
+import { WalletLedger, describePlatformFeePolicy } from '@haa/wallet-core';
 import { WebhookOutboxService, deduplicateWebhook } from '@haa/integration-core';
 import { NotificationService } from '@haa/notification-core';
 import type { ProviderCode } from '@haa/shared';
 import { OrdersService } from './orders.js';
 import { StoreBillingSettingsService } from './billing-settings-service.js';
+import { WalletPostingService } from './wallet-posting-service.js';
 
 /**
  * Result envelope returned by PaymentWebhookService.process.
@@ -208,33 +209,57 @@ export class PaymentWebhookService {
       const txOutbox = new WebhookOutboxService(tx as any);
       const txNotif = new NotificationService(tx as any);
       const txBilling = new StoreBillingSettingsService(tx as any);
+      const txPosting = new WalletPostingService(tx as any);
 
       if (internalStatus === 'paid' && payment.status !== 'paid') {
         await txOrdersService.updatePaymentStatus(storeId, payment.orderId, 'paid', Number(payment.amount));
         await txOrdersService.changeStatus(storeId, payment.orderId, 'confirmed');
 
+        // Centralize wallet entry creation via WalletPostingService
+        // (TASK-0033 + TASK-0034 sub-item 5). The service provides
+        // the entry type + amount; the actual DB write is delegated
+        // to WalletLedger. The 'orderNumber' field is metadata only
+        // (not part of the dedup key), so the String(orderId)
+        // placeholder is safe — a future task can look up the real
+        // orderNumber if audit metadata needs it.
+        const saleResult = await txPosting.postSale({
+          storeId,
+          orderId: payment.orderId,
+          orderTotal: Number(payment.amount),
+          orderNumber: String(payment.orderId),
+          method: 'online',
+        });
         await txWallet.recordEntry({
-          storeId, type: 'sale', direction: 'credit',
-          amount: Number(payment.amount),
+          storeId, type: saleResult.entryType, direction: 'credit',
+          amount: saleResult.amount,
           referenceType: 'order', referenceId: payment.orderId,
           description: `Order payment via ${providerCode}`,
           status: 'available',
         });
 
-        // TASK-0030: snapshot the platform-fee policy onto
-        // the fee entry. Same path as checkout.ts — read
-        // the policy, calc the fee, and check idempotency
-        // before recording. The (rate, fixed, source) tuple
-        // is the immutable proof of which policy produced
-        // this amount.
+        // TASK-0030: snapshot the platform-fee policy onto the
+        // fee entry. The service now owns the calculation; the
+        // ledger write still attaches the audit-trail fields
+        // (feeRatePct / feeFixed / feeSource / metadata) so the
+        // existing wallet summary UI and admin reporting continue
+        // to work. Cross-flow idempotency (checkout wrote the
+        // platform_fee before the webhook arrived) is preserved
+        // via hasPlatformFeeForOrder — the service's per-instance
+        // dedup only protects within a single transaction.
         const platformPolicy = await txBilling.getPlatformFeePolicy(storeId);
-        const platformFee = calcPlatformFee(Number(payment.amount), platformPolicy);
-        if (platformFee > 0) {
+        const platformResult = await txPosting.postPlatformFee({
+          storeId,
+          orderId: payment.orderId,
+          orderTotal: Number(payment.amount),
+          orderNumber: String(payment.orderId),
+          policy: platformPolicy,
+        });
+        if (platformResult.amount > 0) {
           const alreadyCharged = await txWallet.hasPlatformFeeForOrder(storeId, payment.orderId);
           if (!alreadyCharged) {
             await txWallet.recordEntry({
-              storeId, type: 'platform_fee', direction: 'debit',
-              amount: platformFee,
+              storeId, type: platformResult.entryType, direction: 'debit',
+              amount: platformResult.amount,
               referenceType: 'order', referenceId: payment.orderId,
               description: `رسوم منصة Haa (${describePlatformFeePolicy(platformPolicy)}) للطلب عبر ${providerCode}`,
               status: 'available',

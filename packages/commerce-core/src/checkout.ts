@@ -6,7 +6,7 @@ import { OrdersService } from './orders.js';
 import { CouponsService } from './coupons.js';
 import { PaymentService, createPaymentProvider, FakePaymentProvider } from '@haa/payment-providers';
 import type { PaymentProvider } from '@haa/payment-providers';
-import { WalletLedger, calcPlatformFee, describePlatformFeePolicy } from '@haa/wallet-core';
+import { WalletLedger, describePlatformFeePolicy } from '@haa/wallet-core';
 import type { PlatformFeePolicy } from '@haa/wallet-core';
 import { StoreBillingSettingsService } from './billing-settings-service.js';
 import { WebhookOutboxService } from '@haa/integration-core';
@@ -16,6 +16,7 @@ import { NotificationService } from '@haa/notification-core';
 import { CustomersService } from './customers.js';
 import { acquireLock, releaseLock } from './redis.js';
 import { isDemoStore } from '@haa/shared';
+import { WalletPostingService } from './wallet-posting-service.js';
 
 export class CheckoutService {
   private cartService: CartService;
@@ -318,10 +319,24 @@ export class CheckoutService {
               .where(eq(s.products.id, item.product.id));
           }
 
+          // Centralize wallet entry creation via WalletPostingService
+          // (TASK-0033 + TASK-0034 sub-item 5). The service provides
+          // the entry type + amount; the actual DB write is delegated
+          // to WalletLedger. The order.orderNumber is available here
+          // (already looked up above) so it's used for the service's
+          // metadata field.
+          const txPosting = new WalletPostingService(tx as any);
           const txWallet = new WalletLedger(tx as any);
+          const saleResult = await txPosting.postSale({
+            storeId,
+            orderId: order.id,
+            orderTotal: Number(order.total),
+            orderNumber: order.orderNumber,
+            method: order.paymentMethod === 'cash_on_delivery' ? 'cod' : 'online',
+          });
           await txWallet.recordEntry({
-            storeId, type: 'sale', direction: 'credit',
-            amount: Number(order.total),
+            storeId, type: saleResult.entryType, direction: 'credit',
+            amount: saleResult.amount,
             referenceType: 'order', referenceId: order.id,
             description: `Order ${order.orderNumber} payment`,
             status: 'available',
@@ -330,21 +345,31 @@ export class CheckoutService {
           // Phase 4: read the store's configurable platform-fee policy and
           // snapshot the rate + fixed amount onto the fee entry. The policy
           // is locked to this order — changing the policy later never
-          // re-prices this order.
+          // re-prices this order. The service now owns the calculation;
+          // the ledger write still attaches the audit-trail fields
+          // (feeRatePct / feeFixed / feeSource / metadata) so the
+          // existing wallet summary UI and admin reporting continue
+          // to work.
           const txBilling = new StoreBillingSettingsService(tx as any);
           const platformPolicy = await txBilling.getPlatformFeePolicy(storeId);
-          const platformFee = calcPlatformFee(Number(order.total), platformPolicy);
-          if (platformFee > 0) {
+          const platformResult = await txPosting.postPlatformFee({
+            storeId,
+            orderId: order.id,
+            orderTotal: Number(order.total),
+            orderNumber: order.orderNumber,
+            policy: platformPolicy,
+          });
+          if (platformResult.amount > 0) {
             // Idempotency: skip if a platform_fee entry already exists for
-            // this order (e.g. retry of the same checkout session or
-            // accidental double-invocation). Safe because the natural
-            // unique key (store + type + reference) is exactly the
-            // ordering the idempotency check enforces.
+            // this order (e.g. webhook replay or accidental double-
+            // invocation). Cross-flow dedup is the responsibility of
+            // hasPlatformFeeForOrder — the service's per-instance dedup
+            // only protects within a single transaction.
             const alreadyCharged = await txWallet.hasPlatformFeeForOrder(storeId, order.id);
             if (!alreadyCharged) {
               await txWallet.recordEntry({
-                storeId, type: 'platform_fee', direction: 'debit',
-                amount: platformFee,
+                storeId, type: platformResult.entryType, direction: 'debit',
+                amount: platformResult.amount,
                 referenceType: 'order', referenceId: order.id,
                 description: `رسوم منصة Haa (${describePlatformFeePolicy(platformPolicy)}) للطلب ${order.orderNumber}`,
                 status: 'available',
@@ -713,10 +738,24 @@ export class CheckoutService {
             .where(eq(s.products.id, item.productId));
         }
 
+        // Centralize wallet entry creation via WalletPostingService
+        // (TASK-0033 + TASK-0034 sub-item 5). Same pattern as the
+        // regular checkout flow above and collectCOD in orders.ts.
+        // The BNPL flow doesn't have the order looked up at the
+        // call site, so orderNumber is a placeholder (String(orderId))
+        // — the dedup key is unaffected since orderNumber is metadata.
+        const txPosting = new WalletPostingService(tx as any);
         const txWallet = new WalletLedger(tx as any);
+        const saleResult = await txPosting.postSale({
+          storeId,
+          orderId: payment.orderId,
+          orderTotal: Number(payment.amount),
+          orderNumber: String(payment.orderId),
+          method: 'online',
+        });
         await txWallet.recordEntry({
-          storeId, type: 'sale', direction: 'credit',
-          amount: Number(payment.amount),
+          storeId, type: saleResult.entryType, direction: 'credit',
+          amount: saleResult.amount,
           referenceType: 'order', referenceId: payment.orderId,
           description: `Order payment (BNPL)`,
           status: 'available',
@@ -724,15 +763,21 @@ export class CheckoutService {
         // Phase 4: same configurable policy path as the regular checkout.
         const txBilling = new StoreBillingSettingsService(tx as any);
         const platformPolicy = await txBilling.getPlatformFeePolicy(storeId);
-        const platformFee = calcPlatformFee(Number(payment.amount), platformPolicy);
-        if (platformFee > 0) {
+        const platformResult = await txPosting.postPlatformFee({
+          storeId,
+          orderId: payment.orderId,
+          orderTotal: Number(payment.amount),
+          orderNumber: String(payment.orderId),
+          policy: platformPolicy,
+        });
+        if (platformResult.amount > 0) {
           // Idempotency: skip if a platform_fee entry already exists for
           // this order (e.g. webhook replay).
           const alreadyCharged = await txWallet.hasPlatformFeeForOrder(storeId, payment.orderId);
           if (!alreadyCharged) {
             await txWallet.recordEntry({
-              storeId, type: 'platform_fee', direction: 'debit',
-              amount: platformFee,
+              storeId, type: platformResult.entryType, direction: 'debit',
+              amount: platformResult.amount,
               referenceType: 'order', referenceId: payment.orderId,
               description: `رسوم منصة Haa (${describePlatformFeePolicy(platformPolicy)})`,
               status: 'available',

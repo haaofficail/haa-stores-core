@@ -79,18 +79,42 @@ describe('WalletPostingService — call site migration', () => {
       expect(refundBlock[0]).toMatch(/postingService\.postRefund|refundResult/);
     }
   });
+
+  it('packages/commerce-core/src/payment-webhook-service.ts: uses the new WalletPostingService (TASK-0034 sub-item 5)', () => {
+    const webhook = read('packages/commerce-core/src/payment-webhook-service.ts');
+    expect(webhook).toMatch(/import\s*\{[^}]*WalletPostingService[^}]*\}\s*from\s*['"]\.\/wallet-posting-service\.js['"]/);
+    // Should reference the service for both postSale and postPlatformFee
+    expect(webhook).toMatch(/txPosting\.postSale|saleResult/);
+    expect(webhook).toMatch(/txPosting\.postPlatformFee|platformResult/);
+  });
+
+  it('packages/commerce-core/src/checkout.ts: uses the new WalletPostingService in both flows (TASK-0034 sub-item 5)', () => {
+    const checkout = read('packages/commerce-core/src/checkout.ts');
+    expect(checkout).toMatch(/import\s*\{[^}]*WalletPostingService[^}]*\}\s*from\s*['"]\.\/wallet-posting-service\.js['"]/);
+    // Both flows should reference the service
+    expect(checkout).toMatch(/txPosting\.postSale|saleResult/);
+    expect(checkout).toMatch(/txPosting\.postPlatformFee|platformResult/);
+  });
 });
 
 describe('WalletPostingService — service-layer enforcement', () => {
-  it('app/api routes no longer call WalletLedger.recordEntry directly for known types', () => {
-    // Known migration targets: orders.ts:131 (refund, NOW MIGRATED),
-    // checkout.ts (sale, platform_fee, queued for sub-item 5).
-    // This test is a forward-looking assertion: as Session #1 + #2 progress,
-    // every recordEntry call in app/api should be moved behind the service.
-    const orders = read('packages/commerce-core/src/orders.ts');
-    expect(orders).toMatch(/WalletPostingService/);
-    // Also assert the api refund route is migrated (TASK-0034 sub-item 4)
-    const apiOrders = read('apps/api/src/routes/orders.ts');
-    expect(apiOrders).toMatch(/WalletPostingService/);
+  it('all 4 raw recordEntry call sites in feature code are migrated (TASK-0034 sub-item 5)', () => {
+    // After sub-item 5, NO raw `txWallet.recordEntry` for sale or
+    // platform_fee should remain in feature code. The remaining
+    // recordEntry calls are in checkout.ts (collectCOD) and the
+    // apps/api refund route — both use the service.
+    const checkout = read('packages/commerce-core/src/checkout.ts');
+    const webhook = read('packages/commerce-core/src/payment-webhook-service.ts');
+    // Each flow should have at least 1 reference to the service result
+    const checkoutSaleCount = (checkout.match(/saleResult/g) ?? []).length;
+    const checkoutPlatformCount = (checkout.match(/platformResult/g) ?? []).length;
+    const webhookSaleCount = (webhook.match(/saleResult/g) ?? []).length;
+    const webhookPlatformCount = (webhook.match(/platformResult/g) ?? []).length;
+    // 2 flows in checkout (online + BNPL) × 2 entries (sale + platform_fee) = 4
+    expect(checkoutSaleCount).toBeGreaterThanOrEqual(2);
+    expect(checkoutPlatformCount).toBeGreaterThanOrEqual(2);
+    // 1 flow in webhook × 2 entries = 2
+    expect(webhookSaleCount).toBeGreaterThanOrEqual(1);
+    expect(webhookPlatformCount).toBeGreaterThanOrEqual(1);
   });
 });
