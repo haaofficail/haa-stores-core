@@ -66,16 +66,31 @@ describe('WalletPostingService — call site migration', () => {
       expect(codFeeBlock[0]).not.toMatch(/\*\s*0\.02/);
     }
   });
+
+  it('apps/api/src/routes/orders.ts: refund route uses the new WalletPostingService (TASK-0034 sub-item 4)', () => {
+    const apiOrders = read('apps/api/src/routes/orders.ts');
+    // The refund handler should import and use WalletPostingService,
+    // not call WalletLedger.recordEntry directly with type: 'refund'.
+    expect(apiOrders).toMatch(/import\s*\{[^}]*WalletPostingService[^}]*\}\s*from\s*['"]@haa\/commerce-core['"]/);
+    // The refund block should reference postingService.postRefund
+    const refundBlock = apiOrders.match(/postRefund[\s\S]{0,2000}/);
+    expect(refundBlock).not.toBeNull();
+    if (refundBlock) {
+      expect(refundBlock[0]).toMatch(/postingService\.postRefund|refundResult/);
+    }
+  });
 });
 
 describe('WalletPostingService — service-layer enforcement', () => {
   it('app/api routes no longer call WalletLedger.recordEntry directly for known types', () => {
-    // Known migration targets: orders.ts:131 (refund), checkout.ts (sale, platform_fee)
+    // Known migration targets: orders.ts:131 (refund, NOW MIGRATED),
+    // checkout.ts (sale, platform_fee, queued for sub-item 5).
     // This test is a forward-looking assertion: as Session #1 + #2 progress,
     // every recordEntry call in app/api should be moved behind the service.
-    // For Session #1, we assert the service is the documented place.
     const orders = read('packages/commerce-core/src/orders.ts');
-    // Either orders uses the service, or it documents the future migration
     expect(orders).toMatch(/WalletPostingService/);
+    // Also assert the api refund route is migrated (TASK-0034 sub-item 4)
+    const apiOrders = read('apps/api/src/routes/orders.ts');
+    expect(apiOrders).toMatch(/WalletPostingService/);
   });
 });

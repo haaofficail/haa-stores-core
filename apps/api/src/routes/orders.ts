@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { OrdersService, PaymentService, createPaymentProvider } from '@haa/commerce-core';
+import { OrdersService, PaymentService, createPaymentProvider, WalletPostingService } from '@haa/commerce-core';
 import { WalletLedger } from '@haa/wallet-core';
 import { AuditLogService } from '@haa/integration-core';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
@@ -126,13 +126,31 @@ ordersRouter.post('/:orderId/refund', requirePermission('orders:refund'), zValid
       const isFullRefund = refundAmount >= Number(paidPayment.amount);
       await new OrdersService(db).updatePaymentStatus(storeId, orderId, isFullRefund ? 'refunded' : 'partially_refunded');
 
-      // Record wallet reversal
+      // Centralize wallet entry creation via WalletPostingService
+      // (TASK-0033 + TASK-0034 sub-item 4). This replaces the previous
+      // inline `recordEntry` call site — the last one in apps/api.
+      // The service gives us the entry type + amount; the actual DB
+      // write is delegated to WalletLedger (preserves the
+      // status='available' + description semantics the rest of the
+      // codebase uses).
+      const postingService = new WalletPostingService(db as any);
       const walletLedger = new WalletLedger(db);
+      const refundResult = await postingService.postRefund({
+        storeId,
+        orderId,
+        amount: refundAmount,
+        orderNumber: order.orderNumber,
+        // body.reason is free-text (max 500 chars). The service's
+        // `reason` field is a strict 4-value union for analytics; we
+        // map to 'customer_request' as the safe default and preserve
+        // the original wording in the wallet entry description below.
+        reason: 'customer_request',
+      });
       await walletLedger.recordEntry({
         storeId,
-        type: 'refund',
+        type: refundResult.entryType,
         direction: 'debit',
-        amount: refundAmount,
+        amount: refundResult.amount,
         referenceType: 'order',
         referenceId: orderId,
         description: body.reason || `Refund for order ${order.orderNumber}`,

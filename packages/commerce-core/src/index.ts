@@ -8,6 +8,12 @@ export { CustomersService } from './customers.js';
 export { CartService } from './cart.js';
 export { OrdersService } from './orders.js';
 export { CheckoutService } from './checkout.js';
+export { WalletPostingService } from './wallet-posting-service.js';
+export type {
+  DedupKey,
+  PostResult,
+  PolicySource,
+} from './wallet-posting-service.js';
 export { AuthFlowService, authFlowService } from './auth-flow.js';
 export type {
   RegisterInput,
