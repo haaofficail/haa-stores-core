@@ -281,17 +281,27 @@ export class CheckoutService {
       // Phase 2: Payment (External API - OUTSIDE Transaction)
       let paymentStatus = 'unpaid';
       let paymentMessage = '';
+      let redirectUrl: string | undefined; // 3DS challenge URL (SAMA mandatory)
 
       if (order.paymentMethod !== 'bank_transfer' && order.paymentMethod !== 'cash_on_delivery') {
         const session = await this.db.select().from(s.checkoutSessions).where(eq(s.checkoutSessions.id, order.checkoutSessionId!)).limit(1);
-        
+
         const payment = await this.paymentProvider.createPaymentIntent(order.id, Number(session[0].total), {
           paymentMethod: order.paymentMethod,
         });
-        const confirmResult = await this.paymentProvider.confirmPayment(payment.paymentId);
-        
-        paymentStatus = confirmResult.status;
-        paymentMessage = confirmResult.message ?? '';
+        // 3DS challenge: if the provider returned a redirectUrl, the
+        // payment is in 'requires_3ds' and the storefront must redirect
+        // the customer to the issuer's challenge page. We skip the
+        // synchronous confirmPayment — the 3DS callback (webhook or
+        // storefront callback) will trigger confirmation later.
+        if (payment.redirectUrl) {
+          paymentStatus = 'requires_3ds';
+          redirectUrl = payment.redirectUrl;
+        } else {
+          const confirmResult = await this.paymentProvider.confirmPayment(payment.paymentId);
+          paymentStatus = confirmResult.status;
+          paymentMessage = confirmResult.message ?? '';
+        }
       } else if (order.paymentMethod === 'bank_transfer') {
         paymentStatus = 'paid'; // Auto-paid for bank transfer
       } else {
@@ -422,6 +432,27 @@ export class CheckoutService {
             const txOutbox = new WebhookOutboxService(tx as any);
             await txOutbox.recordEvent('order.created', storeId, 0, { orderId: order.id, orderNumber: order.orderNumber, total: Number(order.total) });
           }
+        } else if (paymentStatus === 'requires_3ds') {
+          // 3DS challenge: the order is created and the payment is in
+          // 'requires_3ds'. The customer is now at the issuer's challenge
+          // page; the 3DS callback (webhook or storefront redirect) will
+          // finalize the payment later. We do NOT mark the order as paid,
+          // do NOT fire 'order.paid' webhook, and do NOT release stock
+          // (stock stays reserved until 3DS completes).
+          await txOrdersService.updatePaymentStatus(storeId, order.id, 'requires_3ds', Number(order.total));
+          await txOrdersService.changeStatus(storeId, order.id, 'awaiting_3ds', actorUserId);
+
+          await tx.insert(s.marketingEvents).values({
+            storeId, sessionId: `order-${order.orderNumber}`, orderId: order.id,
+            eventType: 'order_created', cartId: session.cartId ?? null,
+            path: '/checkout/confirm',
+            metadata: { orderNumber: order.orderNumber, paymentMethod: order.paymentMethod, status: 'requires_3ds' },
+          });
+
+          if (!this.isDemo) {
+            const txOutbox = new WebhookOutboxService(tx as any);
+            await txOutbox.recordEvent('order.created', storeId, 0, { orderId: order.id, orderNumber: order.orderNumber, total: Number(order.total) });
+          }
         } else {
           // Payment failed or pending
           await txOrdersService.changeStatus(storeId, order.id, 'payment_failed', actorUserId);
@@ -487,7 +518,7 @@ export class CheckoutService {
       }
 
       const refreshedOrder = await this.ordersService.getById(storeId, order.id);
-      return { order: refreshedOrder ?? order, paymentStatus, paymentMessage };
+      return { order: refreshedOrder ?? order, paymentStatus, paymentMessage, redirectUrl };
 
     } finally {
       await releaseLock(lockKey);

@@ -2,6 +2,7 @@ export type OrderStatus =
   | 'draft'
   | 'checkout_started'
   | 'pending_payment'
+  | 'awaiting_3ds' // 3DS challenge in progress (SAMA mandatory)
   | 'payment_failed'
   | 'confirmed'
   | 'processing'
@@ -19,6 +20,7 @@ export type OrderStatus =
 export type PaymentStatus =
   | 'unpaid'
   | 'pending'
+  | 'requires_3ds' // 3DS challenge in progress (SAMA mandatory)
   | 'authorized'
   | 'paid'
   | 'failed'

@@ -196,6 +196,20 @@ export default function Checkout() {
       }
 
       const result = await checkoutApi.confirm(slug, session.id);
+      // 3DS challenge (SAMA mandatory): if the payment provider returned
+      // a redirectUrl, the customer must complete the issuer's challenge
+      // before the payment is confirmed. Navigate to the challenge URL;
+      // the issuer will redirect the customer back to a callback that
+      // finalizes the payment.
+      if (result.paymentStatus === 'requires_3ds' && result.redirectUrl) {
+        clearLocalCart();
+        tracker.trackPurchase(slug, result.order.id, cart.id, { orderNumber: result.order.orderNumber, paymentMethod: '3ds_pending' });
+        toast.info(t('checkout.threeDsRedirect', 'جاري التحقق من بطاقتك…'));
+        // Use a relative path for the fake provider's local 3DS page;
+        // for real providers, redirectUrl is an absolute issuer URL.
+        window.location.href = result.redirectUrl;
+        return;
+      }
       clearLocalCart();
       tracker.trackPurchase(slug, result.order.id, cart.id, { orderNumber: result.order.orderNumber });
       if (couponCode) {

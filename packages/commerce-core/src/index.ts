@@ -1,5 +1,11 @@
 export const COMMERCE_CORE_VERSION = '0.1.0';
 
+// VAT helpers (ZATCA 15% standard; env-overridable for future jurisdictions)
+export {
+  DEFAULT_VAT_RATE, isValidVatRate, priceIncVat, priceExVat, vatAmount,
+  formatVatLine, formatPriceIncVatLabel,
+} from './vat.js';
+
 export { ProductsService } from './products.js';
 export { CategoriesService } from './categories.js';
 export { BrandsService, createBrandSchema } from './brands.js';

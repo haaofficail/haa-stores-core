@@ -251,6 +251,9 @@ export interface CheckoutConfirm {
     customerPhone: string;
   };
   walletEntry: any;
+  paymentStatus: string;
+  paymentMessage?: string;
+  redirectUrl?: string; // 3DS challenge URL (SAMA mandatory for Saudi card payments)
 }
 
 export interface PickupLocation {

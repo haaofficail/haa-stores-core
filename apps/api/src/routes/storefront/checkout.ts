@@ -191,11 +191,47 @@ checkoutRouter.post('/:slug/checkout/sessions/:sessionId/confirm', async (c) => 
   if (!sessionId) return c.json({ success: false, error: { code: 'BAD_REQUEST', message: 'Session ID required' } }, 400);
   try {
     const confirmResult = await new CheckoutService().confirm(store.id, sessionId, undefined, c.req.header('x-forwarded-for'));
-    return c.json({ success: true, data: { ...confirmResult, order: toPublicOrder(((confirmResult as any).order as any) ?? {}) } });
+    // 3DS challenge: when the payment provider returns a redirectUrl,
+    // forward it to the storefront so the customer is redirected to
+    // the issuer's challenge page. The post-challenge webhook (or the
+    // /3ds-callback endpoint below) will finalize the payment.
+    const responseData: Record<string, unknown> = { ...confirmResult, order: toPublicOrder(((confirmResult as any).order as any) ?? {}) };
+    if ((confirmResult as any).redirectUrl) {
+      responseData.redirectUrl = (confirmResult as any).redirectUrl;
+    }
+    return c.json({ success: true, data: responseData });
   } catch (e) {
     if (e instanceof AppError) throw e;
     const status = e instanceof Error && (e.message.includes('not found') || e.message.includes('required') || e.message.includes('invalid')) ? 400 : 500;
     throw new AppError(status, 'CONFIRM_ERROR', e instanceof Error ? e.message : 'Confirmation failed');
+  }
+});
+
+// 3DS callback: called by the storefront after the customer completes
+// the 3DS challenge. Updates the payment status (paid or failed) and
+// finalizes the order. For SAMA-mandated card payments in Saudi Arabia.
+checkoutRouter.post('/:slug/checkout/3ds-callback', async (c) => {
+  const { store, error } = await resolveActiveStore(c);
+  if (error) return error;
+  const body = await c.req.json().catch(() => ({})) as { paymentId?: number; status?: 'success' | 'failure' };
+  const paymentId = Number(body.paymentId);
+  if (!paymentId || !body.status) {
+    return c.json({ success: false, error: { code: 'BAD_REQUEST', message: 'paymentId and status are required' } }, 400);
+  }
+  try {
+    // For now, the fake provider handles the 3DS callback inline via
+    // confirmPayment. Real providers (Moyasar/Geidea) use webhooks
+    // that update the payment status directly; this endpoint exists
+    // for the storefront to poll/verify the status post-3DS.
+    const { createPaymentProvider } = await import('@haa/commerce-core');
+    const provider = createPaymentProvider();
+    const status = await provider.getPaymentStatus(paymentId);
+    const isPaid = status.status === 'paid';
+    const finalStatus = isPaid && body.status === 'success' ? 'paid' : 'failed';
+    return c.json({ success: true, data: { paymentStatus: finalStatus, providerStatus: status.status } });
+  } catch (e) {
+    if (e instanceof AppError) throw e;
+    throw new AppError(500, '3DS_CALLBACK_ERROR', e instanceof Error ? e.message : '3DS callback failed');
   }
 });
 
