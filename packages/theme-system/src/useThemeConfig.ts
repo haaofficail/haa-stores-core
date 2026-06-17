@@ -5,9 +5,7 @@ import { applyStoreTheme } from './isolation';
 import { resolveActiveThemeConfig } from './activeThemeResolver';
 import { type ThemeConfig } from './types';
 
-let cachedConfig: ThemeConfig | null = null;
-let cachedSlug: string | null = null;
-let pending: Promise<void> | null = null;
+let pendingSlug: string | null = null;
 let apiBase = '';
 
 function isPreviewMode(): boolean {
@@ -39,14 +37,13 @@ export async function fetchThemeConfig(slug: string): Promise<ThemeConfig> {
   return json.data as ThemeConfig;
 }
 
-export function loadTheme(config: ThemeConfig, slug?: string) {
-  cachedConfig = config;
-  cachedSlug = slug ?? cachedSlug;
+/** @deprecated Module-level cache removed — use useThemeConfig() hook instead. */
+export function loadTheme(config: ThemeConfig, _slug?: string) {
   applyStoreTheme(config);
 }
 
 export function useThemeConfig(slug: string | undefined) {
-  const [config, setConfig] = useState<ThemeConfig | null>(() => (cachedSlug === slug ? cachedConfig : null));
+  const [config, setConfig] = useState<ThemeConfig | null>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -57,34 +54,28 @@ export function useThemeConfig(slug: string | undefined) {
         if (!allowedOrigins.has(e.origin)) return;
         if (e.data?.type === 'theme-preview' && e.data?.config) {
           const nextConfig = resolveActiveThemeConfig(e.data.config);
-          cachedConfig = nextConfig;
-          cachedSlug = slug;
           setConfig(nextConfig);
           applyStoreTheme(nextConfig);
         }
       };
       window.addEventListener('message', handler);
-      if (cachedConfig && cachedSlug === slug) {
-        applyStoreTheme(cachedConfig);
-        setConfig(cachedConfig);
-      } else {
-        fetchThemeConfig(slug).then((nextConfig) => {
-          if (cachedSlug && cachedSlug !== slug) return;
-          loadTheme(nextConfig, slug);
-          setConfig(nextConfig);
-        }).catch((err: unknown) => {
-          console.warn('[ThemeSystem] Failed to fetch theme config for slug "%s":', slug, err instanceof Error ? err.message : err);
-        });
-      }
+      fetchThemeConfig(slug).then((nextConfig) => {
+        applyStoreTheme(nextConfig);
+        setConfig(nextConfig);
+      }).catch((err: unknown) => {
+        console.warn('[ThemeSystem] Failed to fetch theme config for slug "%s":', slug, err instanceof Error ? err.message : err);
+      });
       return () => window.removeEventListener('message', handler);
     }
 
-    if (cachedConfig && cachedSlug === slug) { applyStoreTheme(cachedConfig); setConfig(cachedConfig); return; }
-    if (pending) { pending.then(() => { if (cachedConfig && cachedSlug === slug) { applyStoreTheme(cachedConfig); setConfig(cachedConfig); } }); return; }
-    pending = fetchThemeConfig(slug).then((nextConfig) => { loadTheme(nextConfig, slug); setConfig(nextConfig); }).catch((err: unknown) => {
+    if (pendingSlug === slug) return;
+    pendingSlug = slug;
+    fetchThemeConfig(slug).then((nextConfig) => {
+      applyStoreTheme(nextConfig);
+      setConfig(nextConfig);
+    }).catch((err: unknown) => {
       console.warn('[ThemeSystem] Failed to fetch theme config for slug "%s":', slug, err instanceof Error ? err.message : err);
     });
-    return () => { pending = null; };
   }, [slug]);
 
   return config;
