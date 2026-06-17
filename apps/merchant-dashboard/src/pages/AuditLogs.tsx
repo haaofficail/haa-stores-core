@@ -228,7 +228,7 @@ export default function AuditLogs() {
         <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
           <Filter className="h-4 w-4 ml-2" />
           {t('audit.filters', 'الفلاتر')}
-          {hasFilters && <Badge className="mr-2 bg-blue-500 text-white border-0 h-5 w-5 p-0 flex items-center justify-center text-[10px]">!</Badge>}
+          {hasFilters && <Badge className="mr-2 bg-blue-500 text-white border-0 h-5 w-5 p-0 flex items-center justify-center text-xs">!</Badge>}
         </Button>
       </div>
 
@@ -324,7 +324,7 @@ export default function AuditLogs() {
                         </span>
                       </div>
                       <DiffView oldValue={log.oldValue} newValue={log.newValue} />
-                      <div className="flex items-center gap-3 mt-2 text-[11px] text-neutral-400">
+                      <div className="flex items-center gap-3 mt-2 text-xs text-neutral-400">
                         <span>{new Date(log.createdAt).toLocaleString('ar-SA')}</span>
                         {log.ipAddress && <span>{t('audit.ip', 'IP')}: {log.ipAddress}</span>}
                         {log.actorUserId && <span>{t('audit.actorLabel', 'بواسطة')}: #{log.actorUserId}</span>}

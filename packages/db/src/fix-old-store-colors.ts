@@ -3,7 +3,7 @@ import { createDbClient } from './index.js';
 import * as s from './schema/index.js';
 import { eq } from 'drizzle-orm';
 
-const NEW_DEFAULT = '#58a1e2';
+const NEW_DEFAULT = '#56a1e3';
 const OLD_DEFAULT = '#2563eb';
 
 async function main() {

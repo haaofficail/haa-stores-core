@@ -193,11 +193,11 @@ export function PermissionCheckboxMatrix({
                         {perm.descriptionAr}
                       </span>
                     </div>
-                    <span className="text-[10px] uppercase text-neutral-300 font-mono shrink-0">
+                    <span className="text-xs uppercase text-neutral-300 font-mono shrink-0">
                       {perm.key}
                     </span>
                     {(!canGrant && !isOwner) && (
-                      <span className="text-[10px] text-amber-500 shrink-0">لا يمكنك منحها</span>
+                      <span className="text-xs text-amber-500 shrink-0">لا يمكنك منحها</span>
                     )}
                   </label>
                 );

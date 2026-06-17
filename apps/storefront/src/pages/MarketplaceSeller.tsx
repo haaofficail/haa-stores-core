@@ -93,13 +93,13 @@ export default function MarketplaceSeller() {
                 {seller.logoUrl ? <img src={seller.logoUrl} alt={seller.name} className="h-full w-full object-cover" /> : <Icon icon={Store} size="md" className="text-primary-500" />}
               </div>
               <div className="min-w-0">
-                <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-[#16a34a]/10 px-2 py-0.5 text-[10px] font-bold text-[#16a34a]">
+                <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-[#16a34a]/10 px-2 py-0.5 text-xs font-bold text-[#16a34a]">
                   <Icon icon={Building2} size="2xs" />
                   بائع في سوق هاء
                 </div>
                 <h1 className="text-lg font-bold text-black sm:text-xl">{seller.name}</h1>
                 {seller.description && <p className="mt-0.5 max-w-xl text-xs leading-5 text-gray-500">{seller.description}</p>}
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] text-gray-500">
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                   {(seller.city || seller.district) && (
                     <span className="inline-flex items-center gap-0.5"><Icon icon={MapPin} size="2xs" />{[seller.city, seller.district].filter(Boolean).join(' - ')}</span>
                   )}
@@ -115,8 +115,8 @@ export default function MarketplaceSeller() {
               </div>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              <StoreButton href="/marketplace/cart" variant="outline" className={`min-h-[32px] px-2 text-[10px] ${marketplaceTheme.outlineButton}`} iconStart={<Icon icon={ShoppingBag} size="2xs" />}>سلة السوق</StoreButton>
-              <StoreButton href={seller.storefrontUrl} variant="outline" className={`min-h-[32px] px-2 text-[10px] ${marketplaceTheme.outlineButton}`}>زيارة متجره</StoreButton>
+              <StoreButton href="/marketplace/cart" variant="outline" className={`min-h-[32px] px-2 text-xs ${marketplaceTheme.outlineButton}`} iconStart={<Icon icon={ShoppingBag} size="2xs" />}>سلة السوق</StoreButton>
+              <StoreButton href={seller.storefrontUrl} variant="outline" className={`min-h-[32px] px-2 text-xs ${marketplaceTheme.outlineButton}`}>زيارة متجره</StoreButton>
             </div>
           </div>
         </StoreContainer>

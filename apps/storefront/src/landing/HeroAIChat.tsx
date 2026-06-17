@@ -278,7 +278,7 @@ export default function HeroAIChat({
                   <button
                     type="button"
                     onClick={resetConversation}
-                    className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium text-text-tertiary transition-colors hover:bg-text-primary/5 hover:text-text-primary"
+                    className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium text-text-tertiary transition-colors hover:bg-text-primary/5 hover:text-text-primary"
                     aria-label="إعادة بدء المحادثة"
                   >
                     إعادة
@@ -288,7 +288,7 @@ export default function HeroAIChat({
               <p className="mt-1 text-[13px] leading-relaxed text-text-secondary sm:text-sm">
                 {description}
               </p>
-              <p className="mt-1 text-[11px] font-medium text-blue-600/80">
+              <p className="mt-1 text-xs font-medium text-blue-600/80">
                 <Sparkles className="inline h-3 w-3 align-text-bottom" aria-hidden="true" /> {personaName} · {PERSONA_TAGLINE}
               </p>
             </div>
@@ -409,7 +409,7 @@ export default function HeroAIChat({
           </div>
 
           {/* Meta line */}
-          <p className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-[11px] text-text-tertiary">
+          <p className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-xs text-text-tertiary">
             <span>تجريبي · لا يطلب تسجيل · لا يجمع بيانات شخصية</span>
             {usedFallback && (
               <>

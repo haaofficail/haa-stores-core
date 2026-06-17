@@ -52,7 +52,7 @@ export default function LuxuryProductFeatureBanner({
         </div>
         <div className="flex w-full flex-col items-start justify-center px-6 py-8 sm:w-1/2 sm:px-10">
           {subtitle && (
-            <span className="mb-2 text-[11px] font-light uppercase tracking-[0.2em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
+            <span className="mb-2 text-xs font-light uppercase tracking-[0.2em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
               {subtitle}
             </span>
           )}

@@ -538,7 +538,7 @@ export default function Orders() {
                       <div className="flex items-center gap-1.5">
                         <StatusBadge status={o.paymentStatus} colors={paymentStatusColors} label={t(`orders.payment_${o.paymentStatus}`)} />
                         {isCOD && o.paymentStatus !== 'paid' && (
-                          <span className="text-[10px] text-amber-600 font-medium bg-amber-50 px-1.5 py-0.5 rounded-full">{t('orders.cod_short', 'COD')}</span>
+                          <span className="text-xs text-amber-600 font-medium bg-amber-50 px-1.5 py-0.5 rounded-full">{t('orders.cod_short', 'COD')}</span>
                         )}
                       </div>
                     </TableCell>

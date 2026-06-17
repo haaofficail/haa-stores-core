@@ -17,12 +17,12 @@
   --haa-text-tertiary: #94a3b8;
   --haa-text-disabled: #cbd5e1;
   --haa-text-inverse: #ffffff;
-  --haa-text-link: #58a1e2;
+  --haa-text-link: #56a1e3;
 
   /* ── Borders ── */
   --haa-border: #e2e8f0;
   --haa-border-strong: #cbd5e1;
-  --haa-border-focus: #58a1e2;
+  --haa-border-focus: #56a1e3;
   --haa-border-disabled: #e2e8f0;
   --haa-divider: #f1f5f9;
 
@@ -32,7 +32,7 @@
   --haa-primary-200: #b8daf7;
   --haa-primary-300: #8dc4f1;
   --haa-primary-400: #6aafea;
-  --haa-primary-500: #58a1e2;
+  --haa-primary-500: #56a1e3;
   --haa-primary-600: #3d8ad4;
   --haa-primary-700: #2a6fb8;
 
@@ -58,7 +58,7 @@
   --haa-warning-text: #b45309;
   --haa-danger: #dc2626;
   --haa-danger-subtle: #fef2f2;
-  --haa-info: #58a1e2;
+  --haa-info: #56a1e3;
 
   /* ── Shadows ── */
   --haa-shadow-color: rgba(15, 23, 42, 0.04);
@@ -145,7 +145,7 @@
     font-family: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-size: 14px;
+    font-size: 15px; /* merchant: between storefront (16) and admin (14) — data density */
     line-height: 1.6;
   }
 

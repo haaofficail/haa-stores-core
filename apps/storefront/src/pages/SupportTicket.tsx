@@ -172,7 +172,7 @@ export default function SupportTicket() {
                 </span>
               </div>
               <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-              <p className="text-[11px] text-text-tertiary mt-1">{new Date(msg.createdAt).toLocaleString('ar-SA')}</p>
+              <p className="text-xs text-text-tertiary mt-1">{new Date(msg.createdAt).toLocaleString('ar-SA')}</p>
             </div>
           </div>
         ))}

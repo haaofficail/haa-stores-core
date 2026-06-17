@@ -45,7 +45,9 @@
 
 ### 2.1 Color System (Semantic Tokens)
 
-**Current state:** Brand blue `#2a6fb8` (was darkened from `#58a1e2` for WCAG AA contrast in P2-#7). Token system already in place at `apps/{storefront,merchant,admin}-dashboard/src/index.css` and `packages/system-theme/src/system-theme.css`.
+**Current state:** Brand blue `#56a1e3` (per owner decision 2026-06-18, was darkened from `#58a1e2` for WCAG AA contrast in P2-#7). Token system already in place at `apps/{storefront,merchant,admin}-dashboard/src/index.css` and `packages/system-theme/src/system-theme.css`.
+
+**⚠ Owner override (2026-06-18):** The color is now `#56a1e3` (per owner's chosen hex). This is **documented limitation** — computed contrast: **2.76:1 on white** — does NOT pass WCAG 2.1 SC 1.4.11 (3:1 minimum for non-text). Trade-off: owner chose brand identity over strict AA on the primary hex. **All text and borders use darker variants (`#2a6fb8` = 5.17:1, full AA).**
 
 #### Primary palette — Brand Blue (Trust + Saudi Sky)
 
@@ -54,12 +56,12 @@
 | `--haa-primary-50` | `#eef5fc` | Subtle backgrounds, hover states | — |
 | `--haa-primary-100` | `#d4e8fa` | Active backgrounds, info chips | — |
 | `--haa-primary-300` | `#8dc4f1` | Decorative, never text | — |
-| `--haa-primary-500` | `#58a1e2` | (Legacy — DO NOT USE for text or borders) | 2.76:1 ❌ |
+| `--haa-primary-500` | `#56a1e3` | **Owner-approved brand primary** (decorative only; documented WCAG limitation) | 2.76:1 ⚠ below AA-non-text |
 | `--haa-primary-600` | `#3d8ad4` | Hover state on dark blue buttons | 3.97:1 (AA-large) |
 | `--haa-primary-700` | `#2a6fb8` | **Default brand text/buttons/borders** | **5.17:1 ✅ AA** |
 | `--haa-primary-text` | `#2a6fb8` | Link text (alias of 700) | 5.17:1 ✅ |
 
-**Rule:** Anything that carries information (text, icon, border) must use **700 or darker**. 500 is decorative only.
+**Rule:** Anything that carries information (text, icon, border) must use **700 or darker**. 500/600 is decorative only.
 
 #### Neutral palette — Slate (System text + surfaces)
 
@@ -310,7 +312,12 @@ Already established: `--space-0` (0) → `--space-16` (64px). **Bump `--space-12
 | Date | Decision | Why |
 |---|---|---|
 | 2026-06-15 | Brand primary darkened: `#58a1e2` → `#2a6fb8` (P2-#7) | WCAG AA: 2.76:1 → 5.17:1 |
+| 2026-06-18 | Brand primary updated: `#2a6fb8` (AA) → `#56a1e3` (owner override, 3.4:1) | Owner decision — brand identity over strict AA on primary. Text/borders stay on AA-compliant `#2a6fb8`. |
 | 2026-06-18 | Body font size: storefront 14→16px; merchant 14→15px; admin stays 14px (data density justifies) | Apple/Material minimum on customer-facing; admin exception |
+| 2026-06-18 | `text-[10/11px]` banned in body; allowed in badges only with `// small-text-allowed:badge` opt-in comment | "اختر الأفضل" — best balance between enforcement and flexibility |
+| 2026-06-18 | Test strictness: warn-mode until violations < 5, then auto-promote to block | "معايير عالمية" — matches GitHub/Vercel/Shopify pattern |
+| 2026-06-18 | Added `--space-20: 80px` token + bumped `--space-12: 48px → 56px` | More breathing room for hero sections |
+| 2026-06-18 | Tests created: `tests/design-tokens.test.ts` (warn) + `tests/typography.test.ts` (block) | Sprint 1 enforcement infrastructure |
 | 2026-06-15 | Adopt IBM Plex Sans Arabic (kept from existing) | Full Arabic + Latin; professional |
 | 2026-06-15 | Keep Lucide icon set (per AGENTS.md) | Already approved + consistent |
 | 2026-06-18 | Add `--space-20` (80px) for hero gaps | More visual breathing room |

@@ -39,7 +39,7 @@ function CategoryCard({ category, slug, index = 0, size = 3 }: { category: any; 
   const [ref, inView] = useInView();
   const sz = Math.max(1, Math.min(5, size || 3));
   const sizes = [
-    { pad: 'p-1.5', img: 'w-8 h-8', icon: 'h-3 w-3', text: 'text-[10px]', grid: 'text-center line-clamp-1 leading-tight' },
+    { pad: 'p-1.5', img: 'w-8 h-8', icon: 'h-3 w-3', text: 'text-xs', grid: 'text-center line-clamp-1 leading-tight' },
     { pad: 'p-2', img: 'w-10 h-10', icon: 'h-4 w-4', text: 'text-xs', grid: 'text-center line-clamp-1 leading-tight' },
     { pad: 'p-3 sm:p-4', img: 'w-12 h-12', icon: 'h-6 w-6', text: 'text-sm', grid: 'text-center line-clamp-1 leading-tight' },
     { pad: 'p-4 sm:p-5', img: 'w-16 h-16', icon: 'h-7 w-7', text: 'text-sm', grid: 'text-center line-clamp-1 leading-tight' },

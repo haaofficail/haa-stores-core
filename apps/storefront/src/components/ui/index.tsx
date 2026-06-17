@@ -284,7 +284,7 @@ const badgeVariantClasses: Record<BadgeVariant, string> = {
 };
 
 const badgeSizeClasses: Record<BadgeSize, string> = {
-  sm: 'text-[10px] leading-none',
+  sm: 'text-xs leading-none',
   md: 'text-xs leading-none',
 };
 

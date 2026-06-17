@@ -85,7 +85,7 @@ export function LuxuryShowcaseProductPage(props: ProductPageProps) {
       >
         <nav
           aria-label="Breadcrumb"
-          className="mb-4 flex items-center gap-2 text-[11px] font-light tracking-wide"
+          className="mb-4 flex items-center gap-2 text-xs font-light tracking-wide"
           style={{ color: 'var(--lux-muted, #756B61)' }}
         >
           <Link to={`/s/${slug}`} className="transition hover:text-[var(--lux-text)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]">

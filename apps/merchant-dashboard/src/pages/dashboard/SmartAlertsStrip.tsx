@@ -70,7 +70,7 @@ export function SmartAlertsStrip({ alerts, dismissingIds, onDismiss }: Props) {
               <span className="text-xs font-bold text-neutral-900 whitespace-nowrap">
                 {alert.title}
               </span>
-              <span className="text-[11px] text-neutral-500 truncate max-w-[160px]">
+              <span className="text-xs text-neutral-500 truncate max-w-[160px]">
                 {alert.description}
               </span>
               <button

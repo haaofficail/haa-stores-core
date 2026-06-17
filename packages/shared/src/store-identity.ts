@@ -5,7 +5,7 @@
  * Every fallback lives here — components must NOT inline fallback logic.
  */
 
-export const FALLBACK_PRIMARY = '#58a1e2';
+export const FALLBACK_PRIMARY = '#56a1e3';
 
 /**
  * Resolve the effective store theme primary colour.
@@ -13,7 +13,7 @@ export const FALLBACK_PRIMARY = '#58a1e2';
  * Precedence:
  *   1. stores.primaryColor        (single source of truth)
  *   2. themeConfig.colors.primary (legacy fallback for backward compatibility)
- *   3. FALLBACK_PRIMARY           (#58a1e2 — platform default)
+ *   3. FALLBACK_PRIMARY           (#56a1e3 — platform default)
  *
  * Architectural decision: stores.primaryColor is the authoritative field.
  * themeConfig.colors.primary must NEVER override it.

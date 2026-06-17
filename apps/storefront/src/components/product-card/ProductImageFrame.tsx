@@ -68,22 +68,22 @@ export function ProductBadges({
   return (
     <div className={`absolute top-2 end-2 z-10 flex flex-col gap-1.5 ${className}`}>
       {hasDiscount && (
-        <span className="inline-flex items-center rounded-[6px] bg-[#dc2626] px-2 py-0.5 text-[10px] font-bold text-white leading-none">
+        <span className="inline-flex items-center rounded-[6px] bg-[#dc2626] px-2 py-0.5 text-xs font-bold text-white leading-none">
           -{discountPercent}%
         </span>
       )}
       {featured && (
-        <span className="inline-flex items-center rounded-[6px] bg-primary-500 px-2 py-0.5 text-[10px] font-bold text-white leading-none">
+        <span className="inline-flex items-center rounded-[6px] bg-primary-500 px-2 py-0.5 text-xs font-bold text-white leading-none">
           مختار
         </span>
       )}
       {showLowStock && (
-        <span className="inline-flex items-center rounded-[6px] bg-[#f59e0b] px-2 py-0.5 text-[10px] font-bold text-white leading-none">
+        <span className="inline-flex items-center rounded-[6px] bg-[#f59e0b] px-2 py-0.5 text-xs font-bold text-white leading-none">
           مخزون قليل
         </span>
       )}
       {isOutOfStock && (
-        <span className="inline-flex items-center rounded-[6px] bg-gray-500 px-2 py-0.5 text-[10px] font-bold text-white leading-none">
+        <span className="inline-flex items-center rounded-[6px] bg-gray-500 px-2 py-0.5 text-xs font-bold text-white leading-none">
           نفد المخزون
         </span>
       )}
@@ -100,7 +100,7 @@ export function OutOfStockOverlay({ isOutOfStock }: OutOfStockOverlayProps) {
   
   return (
     <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
-      <span className="rounded-full bg-white px-3 py-1 text-[10px] font-bold text-black">
+      <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-black">
         نفد المخزون
       </span>
     </div>

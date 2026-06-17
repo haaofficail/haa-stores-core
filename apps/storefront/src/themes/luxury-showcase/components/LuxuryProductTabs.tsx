@@ -59,7 +59,7 @@ export function LuxuryProductTabs({
     <div className={`${LUXURY_THEME_CLASS} grid gap-6 lg:grid-cols-3 lg:gap-0 lg:divide-x rtl:lg:divide-x-reverse`} style={{ borderColor: 'var(--lux-border, #E6D8C6)' }}>
       {hasDetails && (
         <div className="py-4 lg:px-8 lg:py-0">
-          <h3 className="mb-4 text-[11px] font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
+          <h3 className="mb-4 text-xs font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
             {t('product.details', 'التفاصيل')}
           </h3>
           <div className="text-sm font-light leading-7" style={{ color: 'var(--lux-muted, #756B61)' }}>
@@ -70,13 +70,13 @@ export function LuxuryProductTabs({
 
       {hasSpecs && (
         <div className="py-4 lg:px-8 lg:py-0">
-          <h3 className="mb-4 text-[11px] font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
+          <h3 className="mb-4 text-xs font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
             {t('product.specs', 'المواصفات')}
           </h3>
           <dl className="space-y-3">
             {specs.map(([key, value]) => (
               <div key={key} className="grid grid-cols-[100px_1fr] gap-2">
-                <dt className="text-[11px] font-medium uppercase tracking-[0.1em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
+                <dt className="text-xs font-medium uppercase tracking-[0.1em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
                   {key}
                 </dt>
                 <dd className="text-sm font-light" style={{ color: 'var(--lux-text, #2B2520)' }}>{value}</dd>
@@ -89,18 +89,18 @@ export function LuxuryProductTabs({
       <div className="py-4 lg:px-8 lg:py-0">
         {reviews.length > 0 ? (
           <>
-            <h3 className="mb-4 text-[11px] font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
+            <h3 className="mb-4 text-xs font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
               {t('product.reviews', 'التقييمات')} ({reviews.length})
             </h3>
             <div className="space-y-4">
               {reviews.slice(0, 3).map((review, index) => (
                 <article key={review.id || index} className="border-b pb-4 last:border-b-0 last:pb-0" style={{ borderColor: 'var(--lux-border, #E6D8C6)' }}>
                   <div className="mb-1 flex items-center gap-2">
-                    <span className="text-[11px] font-medium" style={{ color: 'var(--lux-text, #2B2520)' }}>
+                    <span className="text-xs font-medium" style={{ color: 'var(--lux-text, #2B2520)' }}>
                       {review.name || review.customerName || t('product.customer', 'عميل')}
                     </span>
                     {review.rating ? (
-                      <span className="text-[11px]" style={{ color: 'var(--lux-primary, #B88A3D)' }} aria-label={`${review.rating} من 5`}>
+                      <span className="text-xs" style={{ color: 'var(--lux-primary, #B88A3D)' }} aria-label={`${review.rating} من 5`}>
                         {'★'.repeat(Math.round(Number(review.rating)))}
                         {'☆'.repeat(5 - Math.round(Number(review.rating)))}
                       </span>
@@ -117,7 +117,7 @@ export function LuxuryProductTabs({
           </>
         ) : (
           <>
-            <h3 className="mb-4 text-[11px] font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
+            <h3 className="mb-4 text-xs font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
               {t('product.trustedExperience', 'تجربة شراء موثوقة')}
             </h3>
             <div className="space-y-4">

@@ -26,10 +26,10 @@ export function RatingStars({ rating, count, size = '3xs', showValue = true, sho
         ))}
       </div>
       {showValue && rating != null && (
-        <span className="text-[10px] font-bold text-gray-600">{rating.toFixed(1)}</span>
+        <span className="text-xs font-bold text-gray-600">{rating.toFixed(1)}</span>
       )}
       {showCount && count != null && count > 0 && (
-        <span className="text-[9px] text-gray-400">({count})</span>
+        <span className="text-xs text-gray-400">({count})</span>
       )}
     </div>
   );

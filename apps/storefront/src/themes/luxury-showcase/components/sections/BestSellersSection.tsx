@@ -27,7 +27,7 @@ export default function BestSellersSection({
       <div className="mx-auto max-w-[var(--container-max-width,1440px)] px-4 sm:px-6 lg:px-8">
         <div className="mb-10 text-center sm:mb-12">
           <p
-            className="mb-3 text-[10px] font-light uppercase tracking-[0.32em]"
+            className="mb-3 text-xs font-light uppercase tracking-[0.32em]"
             style={{ color: 'var(--lux-primary, #B88A3D)' }}
           >
             Most loved

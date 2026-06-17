@@ -99,7 +99,7 @@ export function RecentActionableOrders({ orders, t }: Props) {
                   >
                     {statusLabel}
                   </span>
-                  <span className="text-[10px] text-neutral-300">|</span>
+                  <span className="text-xs text-neutral-300">|</span>
                   <span
                     className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${
                       order.fulfillmentType === "local_pickup"
@@ -109,7 +109,7 @@ export function RecentActionableOrders({ orders, t }: Props) {
                   >
                     {fulfillmentLabel}
                   </span>
-                  <span className="text-[10px] text-neutral-300">|</span>
+                  <span className="text-xs text-neutral-300">|</span>
                   <span
                     className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${
                       order.paymentMethod === "cash_on_delivery" &&
@@ -129,7 +129,7 @@ export function RecentActionableOrders({ orders, t }: Props) {
                 <span className="text-sm font-bold tabular-nums text-neutral-900">
                   {formatCurrency(order.total)} {t("common.sar", "ر.س")}
                 </span>
-                <span className="text-[10px] text-neutral-400">
+                <span className="text-xs text-neutral-400">
                   {nextAction}
                 </span>
               </div>

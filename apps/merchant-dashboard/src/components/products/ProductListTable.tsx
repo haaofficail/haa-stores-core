@@ -142,7 +142,7 @@ export function ProductListTable({
                   <div className="flex flex-col gap-0.5">
                     <span className="text-sm font-semibold text-neutral-900 tabular-nums">{formatCurrency(p.price ?? 0)} {t('common.sar')}</span>
                     {p.compareAtPrice && Number(p.compareAtPrice) > Number(p.price) && (
-                      <span className="text-[10px] text-red-500 font-medium">
+                      <span className="text-xs text-red-500 font-medium">
                         -{Math.round((1 - Number(p.price) / Number(p.compareAtPrice)) * 100)}%
                         <span className="line-through text-neutral-300 mr-1">{formatCurrency(p.compareAtPrice)} ر.س</span>
                       </span>

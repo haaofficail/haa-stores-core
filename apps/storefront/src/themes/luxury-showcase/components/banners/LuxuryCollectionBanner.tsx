@@ -47,7 +47,7 @@ export default function LuxuryCollectionBanner({
       <div className="relative z-10 flex h-full flex-col justify-end p-6">
         <h3 className="text-lg font-light text-white">{name}</h3>
         {description && <p className="mt-1 text-xs font-light text-white/70">{description}</p>}
-        <span className="mt-2 text-[11px] font-light uppercase tracking-[0.15em] text-white/80">
+        <span className="mt-2 text-xs font-light uppercase tracking-[0.15em] text-white/80">
           استكشف
         </span>
       </div>

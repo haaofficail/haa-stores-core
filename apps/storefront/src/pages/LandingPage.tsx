@@ -814,7 +814,7 @@ function StoreHeader({ cartCount, onCartClick, t }: { cartCount: number; onCartC
   return (
     <header className="sticky top-0 z-10 bg-white/95 backdrop-blur-xl border-b border-neutral-100">
       {/* Status bar */}
-      <div className="flex items-center justify-between px-4 py-1 text-[10px] font-medium text-neutral-500">
+      <div className="flex items-center justify-between px-4 py-1 text-xs font-medium text-neutral-500">
         <span>9:41</span>
         <div className="flex items-center gap-1">
           <span className="h-2 w-3 rounded-sm border border-neutral-400 relative">
@@ -826,7 +826,7 @@ function StoreHeader({ cartCount, onCartClick, t }: { cartCount: number; onCartC
       </div>
       <div className="flex items-center justify-between px-4 h-12">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-[10px] font-bold shadow-md">هـ</div>
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold shadow-md">هـ</div>
           <span className="text-sm font-bold text-neutral-900">متجر الهدايا</span>
         </div>
         <div className="flex items-center gap-0.5">
@@ -836,7 +836,7 @@ function StoreHeader({ cartCount, onCartClick, t }: { cartCount: number; onCartC
           <button type="button" aria-label={t('landing.demoCart', 'السلة')} onClick={onCartClick} className="relative min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 transition-colors">
             <ShoppingCart className="h-4 w-4" />
             {cartCount > 0 && (
-              <span className="absolute -top-0.5 -end-0.5 h-3.5 w-3.5 rounded-full bg-blue-500 text-white text-[8px] font-bold flex items-center justify-center ring-2 ring-white">
+              <span className="absolute -top-0.5 -end-0.5 h-3.5 w-3.5 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center ring-2 ring-white">
                 {cartCount > 9 ? '٩+' : cartCount}
               </span>
             )}
@@ -853,13 +853,13 @@ function StoreHero() {
       <div className="flex flex-col items-center px-4 py-6 gap-4 text-center">
         <div className="inline-flex items-center gap-1.5 rounded-full bg-green-50 border border-green-200 px-3 py-1">
           <Truck className="h-3 w-3 text-green-600" />
-          <span className="text-[10px] font-semibold text-green-700">توصيل في نفس اليوم</span>
+          <span className="text-xs font-semibold text-green-700">توصيل في نفس اليوم</span>
         </div>
         <div>
           <h3 className="text-xl font-black text-neutral-900 leading-tight">متجر الهدايا</h3>
           <p className="text-xs text-neutral-500 mt-1">أفكار هدايا مميزة بأسعار مناسبة</p>
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-neutral-600">
+        <div className="flex items-center gap-2 text-xs text-neutral-600">
           <div className="flex items-center gap-1">
             <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
             <span>٤.٨</span>
@@ -879,7 +879,7 @@ function StoreCategories() {
     <section className="px-4 py-4">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-xs font-black text-neutral-900">الأكثر مبيعًا</h4>
-        <span className="text-[10px] text-blue-600 font-semibold cursor-pointer">عرض الكل</span>
+        <span className="text-xs text-blue-600 font-semibold cursor-pointer">عرض الكل</span>
       </div>
       <div className="grid grid-cols-4 gap-2">
         {MOCK_CATEGORIES.slice(0, 4).map((cat) => (
@@ -887,7 +887,7 @@ function StoreCategories() {
             <div className="w-full aspect-square rounded-2xl overflow-hidden bg-neutral-50 ring-1 ring-neutral-100 group-hover:ring-2 group-hover:ring-blue-200 transition-all">
               <img src={cat.image} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
             </div>
-            <span className="text-[9px] font-semibold text-neutral-700 text-center leading-tight">{cat.name}</span>
+            <span className="text-xs font-semibold text-neutral-700 text-center leading-tight">{cat.name}</span>
           </div>
         ))}
       </div>
@@ -912,7 +912,7 @@ function StoreProductCard({ product, onAddToCart, onClick }: { product: Product;
       <div className="relative aspect-square overflow-hidden rounded-2xl bg-neutral-100 mb-2 shadow-sm group-hover:shadow-lg transition-shadow">
         <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
         {badge && (
-          <span className={`absolute top-2 start-2 px-2 py-0.5 rounded-full text-[8px] font-bold ${BADGE_STYLES[badge] || 'bg-neutral-800 text-white'}`}>
+          <span className={`absolute top-2 start-2 px-2 py-0.5 rounded-full text-xs font-bold ${BADGE_STYLES[badge] || 'bg-neutral-800 text-white'}`}>
             {badge}
           </span>
         )}
@@ -922,8 +922,8 @@ function StoreProductCard({ product, onAddToCart, onClick }: { product: Product;
           <ShoppingCart className="h-3.5 w-3.5" />
         </button>
       </div>
-      <h4 className="text-[11px] font-semibold text-neutral-900 leading-tight line-clamp-1">{product.name}</h4>
-      <p className="text-[11px] font-black text-neutral-900 mt-0.5">{product.price}</p>
+      <h4 className="text-xs font-semibold text-neutral-900 leading-tight line-clamp-1">{product.name}</h4>
+      <p className="text-xs font-black text-neutral-900 mt-0.5">{product.price}</p>
     </div>
   );
 }
@@ -933,7 +933,7 @@ function StoreProducts({ onAddToCart, onProductClick }: { onAddToCart: (p: Produ
     <section className="px-4 py-4">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-xs font-black text-neutral-900">مجموعة هدايا فاخرة</h4>
-        <span className="text-[10px] text-blue-600 font-semibold cursor-pointer">عرض الكل</span>
+        <span className="text-xs text-blue-600 font-semibold cursor-pointer">عرض الكل</span>
       </div>
       <div className="grid grid-cols-2 gap-3">
         {MOCK_PRODUCTS.slice(0, 4).map((p) => (
@@ -998,8 +998,8 @@ function StoreCartDrawer({ items, onClose, onRemove, total }: { items: CartItem[
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-neutral-900 truncate">{item.product.name}</p>
-                    <p className="text-[11px] font-bold text-neutral-700 mt-0.5">{item.product.price}</p>
-                    <p className="text-[10px] text-neutral-400">الكمية: {item.quantity}</p>
+                    <p className="text-xs font-bold text-neutral-700 mt-0.5">{item.product.price}</p>
+                    <p className="text-xs text-neutral-400">الكمية: {item.quantity}</p>
                   </div>
                   <button type="button" onClick={() => onRemove(item.product)} className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-colors">
                     <Trash2 className="h-3.5 w-3.5" />
@@ -1038,7 +1038,7 @@ function StoreBottomNav() {
             <div className={`flex items-center justify-center rounded-xl transition-all duration-200 ${active ? 'bg-blue-50' : ''}`} style={{ padding: '4px 10px' }}>
               <Icon className={`h-[18px] w-[18px] ${active ? 'text-blue-600' : 'text-neutral-400'}`} strokeWidth={active ? 2.5 : 1.5} />
             </div>
-            <span className={`text-[10px] font-semibold leading-none ${active ? 'text-blue-600' : 'text-neutral-400'}`}>{label}</span>
+            <span className={`text-xs font-semibold leading-none ${active ? 'text-blue-600' : 'text-neutral-400'}`}>{label}</span>
           </button>
         ))}
       </div>
@@ -1053,7 +1053,7 @@ function StoreBottomNav() {
 function StoreFooter() {
   return (
     <div className="px-4 py-4 text-center">
-      <p className="text-[9px] text-neutral-400">© 2026 متجر هاء</p>
+      <p className="text-xs text-neutral-400">© 2026 متجر هاء</p>
     </div>
   );
 }
@@ -1376,7 +1376,7 @@ function Pricing({ t }: { t: TFn }) {
                     : ['كل المميزات', 'دعم مخصص', 'استضافة خاصة']
                   ).map((f) => (
                     <li key={f} className="flex items-center gap-2">
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-600">✓</span>
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">✓</span>
                       {f}
                     </li>
                   ))}

@@ -57,7 +57,7 @@ export function StatsCards({ stats, showOnMobile }: Props) {
               </div>
               {s.trendValue && (
                 <div
-                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded-xl font-bold text-[10px] ${
+                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded-xl font-bold text-xs ${
                     s.trend === "up"
                       ? "text-emerald-600 bg-emerald-50"
                       : s.trend === "down"

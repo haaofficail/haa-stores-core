@@ -100,7 +100,7 @@ export default function Header() {
         {t('store.skipToContent', 'تخطى إلى المحتوى')}
       </a>
       {isDemo && (
-        <div className="bg-amber-100 text-amber-900 text-center py-1 text-[11px] sm:text-xs font-medium border-b border-amber-200">
+        <div className="bg-amber-100 text-amber-900 text-center py-1 text-xs sm:text-xs font-medium border-b border-amber-200">
           <div className="container-store flex items-center justify-center gap-1.5">
             <AlertTriangle className="w-3 h-3 inline-block" />
             <span>متجر تجريبي — جميع المنتجات لأغراض العرض والتجربة</span>
@@ -109,7 +109,7 @@ export default function Header() {
       )}
       <header className={`${stickyHeader ? 'sticky top-0' : 'relative'} z-sticky border-b border-border/70 backdrop-blur-xl`} style={{ backgroundColor: 'var(--header-background)', color: 'var(--header-text)' }}>
       {showAnnouncementBar && announcementText && (
-        <div className="text-center py-1.5 sm:py-2 text-[11px] sm:text-xs font-medium leading-relaxed" style={{ backgroundColor: 'var(--announcement-background)', color: 'var(--announcement-text)' }}>
+        <div className="text-center py-1.5 sm:py-2 text-xs sm:text-xs font-medium leading-relaxed" style={{ backgroundColor: 'var(--announcement-background)', color: 'var(--announcement-text)' }}>
           <div className="container-store">
             {announcementText}
           </div>
@@ -190,7 +190,7 @@ export default function Header() {
             >
               <Icon icon={ShoppingCart} size="sm" />
               {itemCount > 0 && (
-                <span className="absolute -top-0.5 -start-0.5 bg-primary-500 text-white text-[11px] font-bold min-w-[16px] h-[16px] rounded-full flex items-center justify-center px-1">
+                <span className="absolute -top-0.5 -start-0.5 bg-primary-500 text-white text-xs font-bold min-w-[16px] h-[16px] rounded-full flex items-center justify-center px-1">
                   {itemCount > 99 ? '99+' : itemCount}
                 </span>
               )}

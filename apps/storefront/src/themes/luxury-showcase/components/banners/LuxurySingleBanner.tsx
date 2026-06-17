@@ -56,7 +56,7 @@ export default function LuxurySingleBanner({
         )}
         <div className="relative z-10 mx-auto flex w-full max-w-[var(--container-max-width,1440px)] flex-col items-center justify-center px-6 text-center sm:px-10">
           {subtitle && (
-            <span className="mb-2 text-[11px] font-light uppercase tracking-[0.2em]" style={{ color: hasImage ? 'rgba(255,255,255,0.7)' : 'var(--lux-muted, #756B61)' }}>
+            <span className="mb-2 text-xs font-light uppercase tracking-[0.2em]" style={{ color: hasImage ? 'rgba(255,255,255,0.7)' : 'var(--lux-muted, #756B61)' }}>
               {subtitle}
             </span>
           )}

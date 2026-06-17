@@ -45,7 +45,7 @@ export function LowStockList({
         <h3 className="font-bold text-sm sm:text-base text-neutral-900 flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 text-amber-500" />
           <span>{t("dashboard.lowStock", "مخزون منخفض")}</span>
-          <span className="text-[11px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">
+          <span className="text-xs font-bold text-white bg-red-500 px-1.5 py-0.5 rounded-full">
             {products.length}
           </span>
         </h3>
@@ -79,7 +79,7 @@ export function LowStockList({
                   onUpdateStock(p.id, (p.stockQuantity || 0) + 1)
                 }
                 disabled={updatingStockId === p.id}
-                className="px-2 py-0.5 text-[11px] font-bold text-emerald-600 bg-white hover:bg-emerald-50 rounded-lg border border-emerald-200 transition-colors disabled:opacity-50"
+                className="px-2 py-0.5 text-xs font-bold text-emerald-600 bg-white hover:bg-emerald-50 rounded-lg border border-emerald-200 transition-colors disabled:opacity-50"
               >
                 +1
               </button>

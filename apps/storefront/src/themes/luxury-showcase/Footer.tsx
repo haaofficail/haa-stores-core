@@ -64,18 +64,18 @@ export default function LuxuryShowcaseFooter() {
               ) : null}
             </div>
             <nav className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1" aria-label="سياسات المتجر">
-              <Link to={`/s/${slug}/policies/terms`} className="text-[11px] font-light transition-colors hover:text-[var(--lux-text)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]" style={{ color: 'var(--lux-muted, #756B61)' }}>{t('footer.termsOfService', 'شروط الاستخدام')}</Link>
-              <span className="text-[10px]" style={{ color: 'var(--lux-muted, #756B61)' }}>·</span>
-              <Link to={`/s/${slug}/policies/privacy`} className="text-[11px] font-light transition-colors hover:text-[var(--lux-text)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]" style={{ color: 'var(--lux-muted, #756B61)' }}>{t('footer.privacyPolicy', 'سياسة الخصوصية')}</Link>
-              <span className="text-[10px]" style={{ color: 'var(--lux-muted, #756B61)' }}>·</span>
-              <Link to={`/s/${slug}/policies/shipping`} className="text-[11px] font-light transition-colors hover:text-[var(--lux-text)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]" style={{ color: 'var(--lux-muted, #756B61)' }}>{t('footer.shippingPolicy', 'سياسة الشحن')}</Link>
-              <span className="text-[10px]" style={{ color: 'var(--lux-muted, #756B61)' }}>·</span>
-              <Link to={`/s/${slug}/policies/returns`} className="text-[11px] font-light transition-colors hover:text-[var(--lux-text)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]" style={{ color: 'var(--lux-muted, #756B61)' }}>{t('footer.returnPolicy', 'سياسة الاسترجاع')}</Link>
+              <Link to={`/s/${slug}/policies/terms`} className="text-xs font-light transition-colors hover:text-[var(--lux-text)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]" style={{ color: 'var(--lux-muted, #756B61)' }}>{t('footer.termsOfService', 'شروط الاستخدام')}</Link>
+              <span className="text-xs" style={{ color: 'var(--lux-muted, #756B61)' }}>·</span>
+              <Link to={`/s/${slug}/policies/privacy`} className="text-xs font-light transition-colors hover:text-[var(--lux-text)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]" style={{ color: 'var(--lux-muted, #756B61)' }}>{t('footer.privacyPolicy', 'سياسة الخصوصية')}</Link>
+              <span className="text-xs" style={{ color: 'var(--lux-muted, #756B61)' }}>·</span>
+              <Link to={`/s/${slug}/policies/shipping`} className="text-xs font-light transition-colors hover:text-[var(--lux-text)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]" style={{ color: 'var(--lux-muted, #756B61)' }}>{t('footer.shippingPolicy', 'سياسة الشحن')}</Link>
+              <span className="text-xs" style={{ color: 'var(--lux-muted, #756B61)' }}>·</span>
+              <Link to={`/s/${slug}/policies/returns`} className="text-xs font-light transition-colors hover:text-[var(--lux-text)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]" style={{ color: 'var(--lux-muted, #756B61)' }}>{t('footer.returnPolicy', 'سياسة الاسترجاع')}</Link>
             </nav>
           </div>
 
           <div className="flex flex-col items-center md:items-end gap-1">
-            <p className="text-[11px] font-light" style={{ color: 'var(--lux-muted, #756B61)' }}>
+            <p className="text-xs font-light" style={{ color: 'var(--lux-muted, #756B61)' }}>
               &copy; {new Date().getFullYear()} {store.name} —{' '}
               <Link
                 to="/signup"

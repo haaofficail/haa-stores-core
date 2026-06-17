@@ -78,7 +78,7 @@ export default function LuxuryHeroSlider({
             <div className="relative z-10 mx-auto flex w-full max-w-[var(--container-max-width,1440px)] flex-col items-start justify-center px-6 sm:px-10 lg:px-12">
               {slide.title && (
                 <span
-                  className="mb-4 inline-flex items-center text-[10px] font-light uppercase tracking-[0.32em]"
+                  className="mb-4 inline-flex items-center text-xs font-light uppercase tracking-[0.32em]"
                   style={{ color: hasImage ? 'rgba(255,255,255,0.85)' : 'var(--lux-primary, #B88A3D)' }}
                 >
                   {t('hero.eyebrow', 'مدعوم من هاء ستورز')}

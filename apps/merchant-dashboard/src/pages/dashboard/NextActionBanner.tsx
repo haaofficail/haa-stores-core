@@ -45,7 +45,7 @@ export function NextActionBanner({ items, t }: Props) {
           <h2 className="font-bold text-sm sm:text-base text-neutral-900">
             {t("dashboard.actionCenter.title", "مركز الإجراءات")}
           </h2>
-          <p className="text-[11px] text-neutral-500 mt-0.5">
+          <p className="text-xs text-neutral-500 mt-0.5">
             {t(
               "dashboard.actionCenter.subtitle",
               "أهم الأشياء التي تحتاج تصرفك الآن",

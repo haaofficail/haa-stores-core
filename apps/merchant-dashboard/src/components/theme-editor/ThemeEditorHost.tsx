@@ -43,17 +43,17 @@ export function ThemeEditorHost({
             <p className="text-sm text-neutral-600">{preview.descriptionAr}</p>
             <div className="flex flex-wrap gap-2">
               {preview.sampleStoreType && (
-                <span className="text-[11px] bg-neutral-100 text-neutral-600 rounded-full px-2.5 py-0.5">
+                <span className="text-xs bg-neutral-100 text-neutral-600 rounded-full px-2.5 py-0.5">
                   {preview.sampleStoreType}
                 </span>
               )}
               {capsule?.category && (
-                <span className="text-[11px] bg-primary-50 text-primary-700 rounded-full px-2.5 py-0.5">
+                <span className="text-xs bg-primary-50 text-primary-700 rounded-full px-2.5 py-0.5">
                   {capsule.category}
                 </span>
               )}
               {capsule?.version && (
-                <span className="text-[11px] text-neutral-400 font-mono">
+                <span className="text-xs text-neutral-400 font-mono">
                   v{capsule.version}
                 </span>
               )}

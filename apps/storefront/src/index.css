@@ -13,8 +13,9 @@
     --space-6: 24px;
     --space-8: 32px;
     --space-10: 40px;
-    --space-12: 48px;
+    --space-12: 56px;
     --space-16: 64px;
+    --space-20: 80px; /* NEW (T1.4) — hero-level vertical separation */
     --font-sans: 'IBM Plex Sans Arabic', system-ui, sans-serif;
     --text-2xs: 10px;
     --text-lg: 18px;
@@ -145,7 +146,7 @@
      shade, and the original light blue is preserved as
      --brand-primary-soft for backgrounds/borders only. */
   --brand-primary: #2a6fb8;
-  --brand-primary-soft: #58a1e2;
+  --brand-primary-soft: #56a1e3;
   --brand-primary-text: #2a6fb8;
   --store-primary: var(--color-primary-500, var(--brand-primary, #2a6fb8));
   --store-logo-size: 20px;
@@ -467,7 +468,7 @@
 .skip-link:focus,
 .skip-link:focus-visible {
   transform: translateY(0);
-  outline: 3px solid #58a1e2;
+  outline: 3px solid #56a1e3;
   outline-offset: 2px;
 }
    The /login, /signup, /waitlist pages are system-level pages
@@ -506,7 +507,7 @@
 #storefront-scope textarea:focus-visible,
 #storefront-scope [role="button"]:focus-visible,
 #storefront-scope [tabindex]:focus-visible {
-  outline: 2px solid var(--brand-primary, #58a1e2);
+  outline: 2px solid var(--brand-primary, #56a1e3);
   outline-offset: 2px;
   border-radius: 4px;
 }

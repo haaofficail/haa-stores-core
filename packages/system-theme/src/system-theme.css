@@ -7,8 +7,8 @@
 /* ── Light Mode (Default) ── */
 .haa-system-theme {
   /* Surfaces */
-  --brand-primary: #58a1e2;
-  --store-primary: var(--brand-primary, #58a1e2);
+  --brand-primary: #56a1e3;
+  --store-primary: var(--brand-primary, #56a1e3);
   --store-logo-size: 20px;
   --haa-surface-1: #ffffff;
   --haa-surface-2: #f5f5f7;

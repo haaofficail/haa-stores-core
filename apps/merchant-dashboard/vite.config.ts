@@ -44,6 +44,7 @@ export default defineConfig({
       '/api': {
         target: API_TARGET,
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
       },
       '/storage': {
         target: API_TARGET,

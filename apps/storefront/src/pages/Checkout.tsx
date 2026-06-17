@@ -642,7 +642,7 @@ export default function Checkout() {
                     <div className="flex justify-between" data-testid="vat-line">
                       <span>{vatLine}</span>
                     </div>
-                    <div className="text-[10px] text-text-tertiary leading-relaxed pt-1">
+                    <div className="text-xs text-text-tertiary leading-relaxed pt-1">
                       {t('checkout.vatNote', 'شامل ضريبة القيمة المضافة (15%) — فاتورة ضريبية مبسطة')}
                     </div>
                   </div>

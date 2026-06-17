@@ -34,7 +34,7 @@ export function SubscriptionBadge({ subscription, t }: Props) {
       </span>
       <span
         className={cn(
-          "font-bold px-1.5 py-0.5 rounded-full text-[10px]",
+          "font-bold px-1.5 py-0.5 rounded-full text-xs",
           subscription.status === "active"
             ? "bg-emerald-50 text-emerald-600"
             : subscription.status === "trialing"

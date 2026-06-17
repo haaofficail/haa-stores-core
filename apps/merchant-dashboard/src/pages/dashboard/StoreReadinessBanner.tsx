@@ -46,7 +46,7 @@ export function StoreReadinessBanner({ readiness, t }: Props) {
               "{{count}} مشاكل تحتاج حل",
             ).replace("{{count}}", String(readiness.issues.length))}
       </span>
-      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-500 tabular-nums shrink-0">
+      <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-500 tabular-nums shrink-0">
         {readiness.score}%
       </span>
       <ChevronDown className="h-3 w-3 text-neutral-400 shrink-0" />

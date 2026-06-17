@@ -77,7 +77,7 @@ export default function JournalSection() {
       <div className="mb-6 flex items-baseline justify-between gap-4 sm:mb-8">
         <div>
           <p
-            className="mb-2 text-[10px] font-light uppercase tracking-[0.3em]"
+            className="mb-2 text-xs font-light uppercase tracking-[0.3em]"
             style={{ color: 'var(--lux-primary, #B88A3D)' }}
           >
             From the Journal
@@ -95,7 +95,7 @@ export default function JournalSection() {
         </div>
         <a
           href="/s/demo-perfumes/journal"
-          className="hidden text-[10px] font-light uppercase tracking-[0.2em] transition-opacity hover:opacity-70 sm:inline-flex sm:items-center sm:gap-1.5"
+          className="hidden text-xs font-light uppercase tracking-[0.2em] transition-opacity hover:opacity-70 sm:inline-flex sm:items-center sm:gap-1.5"
           style={{ color: 'var(--lux-primary, #B88A3D)' }}
         >
           View All Articles
@@ -114,7 +114,7 @@ export default function JournalSection() {
             <JournalThumbnail />
             <div className="mt-4 flex flex-col gap-1">
               <p
-                className="text-[10px] font-light uppercase tracking-[0.2em]"
+                className="text-xs font-light uppercase tracking-[0.2em]"
                 style={{ color: 'var(--lux-primary, #B88A3D)' }}
               >
                 {article.category}
@@ -132,7 +132,7 @@ export default function JournalSection() {
                 {article.title}
               </h3>
               <span
-                className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-light uppercase tracking-[0.2em] transition-opacity group-hover:opacity-70"
+                className="mt-2 inline-flex items-center gap-1.5 text-xs font-light uppercase tracking-[0.2em] transition-opacity group-hover:opacity-70"
                 style={{ color: 'var(--lux-primary, #B88A3D)' }}
               >
                 Read Article

@@ -127,7 +127,7 @@ export function ProductCard({
             <RatingStars rating={product.rating ?? null} count={product.reviewCount ?? null} size="3xs" />
           )}
           {showSalesCount && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-gray-500 leading-none">
+            <span className="inline-flex items-center gap-0.5 text-xs font-medium text-gray-500 leading-none">
               <TrendingUp className="h-3 w-3" />
               {product.salesCount != null && product.salesCount > 0 ? product.salesCount : 0}+
             </span>

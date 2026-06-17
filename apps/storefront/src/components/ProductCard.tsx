@@ -19,7 +19,7 @@ interface ProductCardProps {
 }
 
 const CARD_SIZE_CLASSES: Record<number, { padding: string; title: string }> = {
-  1: { padding: 'p-2', title: 'text-[11px]' },
+  1: { padding: 'p-2', title: 'text-xs' },
   2: { padding: 'p-2.5', title: 'text-xs' },
   3: { padding: 'p-3', title: 'text-product-title' },
   4: { padding: 'p-4', title: 'text-base' },
@@ -97,7 +97,7 @@ export default function ProductCard({ product, slug, onAddToCart, compact, produ
           )}
 
           {showDiscountBadge && hasDiscount && (
-            <span className="absolute top-2 start-2 z-10 bg-error text-error-text text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <span className="absolute top-2 start-2 z-10 bg-error text-error-text text-xs font-bold px-2 py-0.5 rounded-full">
               -{discountPercent}%
             </span>
           )}

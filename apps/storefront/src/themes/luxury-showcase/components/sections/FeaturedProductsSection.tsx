@@ -24,7 +24,7 @@ export default function FeaturedProductsSection({
           <div className="h-px flex-1 max-w-[80px]" style={{ backgroundColor: 'var(--lux-border, #E6D8C6)' }} />
           <div>
             <p
-              className="mb-1 text-[10px] font-light uppercase tracking-[0.32em]"
+              className="mb-1 text-xs font-light uppercase tracking-[0.32em]"
               style={{ color: 'var(--lux-primary, #B88A3D)' }}
             >
               Selected for you

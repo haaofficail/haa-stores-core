@@ -93,7 +93,7 @@ export function QuickStatsGrid({
                 <p className="text-sm font-bold text-neutral-900 leading-none">
                   {item.count}
                 </p>
-                <p className="text-[11px] text-neutral-500 mt-0.5">
+                <p className="text-xs text-neutral-500 mt-0.5">
                   {item.label}
                 </p>
               </div>

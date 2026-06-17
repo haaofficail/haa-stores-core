@@ -33,7 +33,7 @@ const COLOR_GROUPS = [
   },
   {
     label: 'أزرق',
-    colors: ['#0a1628', '#1e3a5f', '#1e4d8c', '#58a1e2', '#8dc4f1', '#b8daf7',
+    colors: ['#0a1628', '#1e3a5f', '#1e4d8c', '#56a1e3', '#8dc4f1', '#b8daf7',
       '#93c5fd', '#bfdbfe', '#dbeafe', '#eff6ff'],
   },
   {
@@ -199,7 +199,7 @@ function ColorPicker({ label, value, onChange }: { label: string; value: string;
             <div className="mt-3 border-t border-neutral-100 pt-3 max-h-44 overflow-y-auto space-y-2">
               {COLOR_GROUPS.map((g) => (
                 <div key={g.label}>
-                  <p className="text-[10px] font-medium text-neutral-400 mb-1">{g.label}</p>
+                  <p className="text-xs font-medium text-neutral-400 mb-1">{g.label}</p>
                   <div className="flex gap-1 flex-wrap">
                     {g.colors.map((c) => (
                       <button
@@ -604,7 +604,7 @@ export default function ThemeEditor() {
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-neutral-900">{t('theme.title', 'محرر الثيم')}</h1>
               {isDirty && (
-                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 border border-amber-100">
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 border border-amber-100">
                   غير محفوظ
                 </span>
               )}
@@ -709,7 +709,7 @@ export default function ThemeEditor() {
           <div className="bg-white rounded-2xl border border-neutral-200 p-5">
             <SectionHeader title={t('theme.brandColors', 'ألوان العلامة التجارية')} />
             <div className="grid sm:grid-cols-2 gap-3">
-              <ColorPicker label={t('theme.primary', 'اللون الأساسي')} value={colors.primary || '#58a1e2'} onChange={(v) => updateConfig('colors.primary', v)} />
+              <ColorPicker label={t('theme.primary', 'اللون الأساسي')} value={colors.primary || '#56a1e3'} onChange={(v) => updateConfig('colors.primary', v)} />
             </div>
           </div>
           <div className="bg-white rounded-2xl border border-neutral-200 p-5">
@@ -1129,7 +1129,7 @@ export default function ThemeEditor() {
                               <Label className="text-xs font-medium text-neutral-700 mb-1 block">{urlLabel}</Label>
                               <Input value={badge?.verificationUrl || ''} onChange={(e) => updateConfig(`trustBadges.${key}.verificationUrl`, e.target.value)} placeholder="https://" dir="ltr" />
                             </div>
-                            <p className="text-[11px] text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg">هذا الخيار قديم (legacy). إذا كانت منصة الأعمال مفعلة، ستكون هي شارة التوثيق الأساسية.</p>
+                            <p className="text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg">هذا الخيار قديم (legacy). إذا كانت منصة الأعمال مفعلة، ستكون هي شارة التوثيق الأساسية.</p>
                           </>
                         )}
                         {key === 'saudiMade' && (

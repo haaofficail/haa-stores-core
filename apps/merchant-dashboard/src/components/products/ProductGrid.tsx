@@ -20,28 +20,28 @@ interface Props {
 function StockIndicator({ quantity, trackInventory }: { quantity: number | null; trackInventory: boolean }) {
   if (!trackInventory) {
     return (
-      <span className="text-[10px] font-medium text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded-full">
+      <span className="text-xs font-medium text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded-full">
         غير متتبع
       </span>
     );
   }
   if (quantity === null || quantity <= 0) {
     return (
-      <span className="text-[10px] font-medium text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">
+      <span className="text-xs font-medium text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">
         نفذ
       </span>
     );
   }
   if (quantity <= 5) {
     return (
-      <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+      <span className="text-xs font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
         متبقي {quantity}
       </span>
     );
   }
   if (quantity <= 20) {
     return (
-      <span className="text-[10px] font-medium text-amber-700 bg-amber-50/50 px-1.5 py-0.5 rounded-full">
+      <span className="text-xs font-medium text-amber-700 bg-amber-50/50 px-1.5 py-0.5 rounded-full">
         {quantity}
       </span>
     );
@@ -81,20 +81,20 @@ export function ProductGrid({ products, selectedIds, onSelect, onEdit, onArchive
             <div className="flex-1 p-3 space-y-2">
               <div className="min-w-0">
                 <p className="min-h-[2.5rem] text-sm font-medium text-neutral-900 leading-tight line-clamp-2">{p.name}</p>
-                {p.sku && <p className="text-[10px] text-neutral-400 font-mono truncate dir-ltr mt-0.5">{p.sku}</p>}
+                {p.sku && <p className="text-xs text-neutral-400 font-mono truncate dir-ltr mt-0.5">{p.sku}</p>}
               </div>
 
               <div className="flex items-center gap-1.5 flex-wrap min-h-5">
                 {p.status === 'active' ? (
-                  <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full">نشط</span>
+                  <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full">نشط</span>
                 ) : p.status === 'draft' ? (
-                  <span className="text-[10px] font-medium text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded-full">مسودة</span>
+                  <span className="text-xs font-medium text-neutral-600 bg-neutral-100 px-1.5 py-0.5 rounded-full">مسودة</span>
                 ) : (
-                  <span className="text-[10px] font-medium text-neutral-400 bg-neutral-50 px-1.5 py-0.5 rounded-full">مؤرشف</span>
+                  <span className="text-xs font-medium text-neutral-400 bg-neutral-50 px-1.5 py-0.5 rounded-full">مؤرشف</span>
                 )}
                 <StockIndicator quantity={p.stockQuantity} trackInventory={p.trackInventory} />
                 {hasVariants && (
-                  <span className="text-[10px] font-medium text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5">
+                  <span className="text-xs font-medium text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5">
                     <Layers className="h-2.5 w-2.5" />
                     متغيرات
                   </span>
@@ -102,13 +102,13 @@ export function ProductGrid({ products, selectedIds, onSelect, onEdit, onArchive
               </div>
 
               {p.categories?.[0]?.name && (
-                <p className="text-[11px] text-neutral-500 truncate">{p.categories[0].name}</p>
+                <p className="text-xs text-neutral-500 truncate">{p.categories[0].name}</p>
               )}
 
               <div className="min-h-[38px]">
                 <p className="text-sm font-bold text-neutral-900">{formatCurrency(p.price ?? 0)} {t('common.sar')}</p>
                 {p.compareAtPrice && Number(p.compareAtPrice) > Number(p.price) && (
-                  <p className="text-[10px] text-red-500 font-medium">
+                  <p className="text-xs text-red-500 font-medium">
                     -{Math.round((1 - Number(p.price) / Number(p.compareAtPrice)) * 100)}%
                     <span className="line-through text-neutral-300 ms-1">{formatCurrency(p.compareAtPrice)} {t('common.sar')}</span>
                   </p>

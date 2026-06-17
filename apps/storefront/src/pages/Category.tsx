@@ -124,7 +124,7 @@ function ListProductCard({ product, slug }: { product: PublicProduct; slug: stri
             </span>
           )}
           {(
-            <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-gray-500 leading-none">
+            <span className="inline-flex items-center gap-0.5 text-xs font-medium text-gray-500 leading-none">
               <TrendingUp className="h-3 w-3" />
               {product.salesCount != null && product.salesCount > 0 ? product.salesCount : 0}+
             </span>
@@ -368,7 +368,7 @@ export default function Category() {
           >
             {t('category.filters', 'الفلاتر')}
             {activeFilterCount > 0 && (
-              <span className="bg-white/20 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+              <span className="bg-white/20 text-white text-xs font-bold px-1.5 py-0.5 rounded-full leading-none">
                 {activeFilterCount}
               </span>
             )}

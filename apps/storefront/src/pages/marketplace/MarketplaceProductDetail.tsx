@@ -153,7 +153,7 @@ export default function MarketplaceProductDetail() {
               <Link to="/marketplace/cart" className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200">
                 <Icon icon={ShoppingBag} size="2xs" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-500 px-1 text-[9px] text-white">{cartCount}</span>
+                  <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-500 px-1 text-xs text-white">{cartCount}</span>
                 )}
               </Link>
             </nav>
@@ -163,7 +163,7 @@ export default function MarketplaceProductDetail() {
 
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
         {/* ── Breadcrumb ── */}
-        <div className="mb-3 flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] font-bold text-gray-400">
+        <div className="mb-3 flex min-w-0 flex-wrap items-center gap-1.5 text-xs font-bold text-gray-400">
           <Link to="/marketplace" className="hover:text-primary-500 transition-colors">الرئيسية</Link>
           <ChevronRight className="h-3 w-3" />
           <Link to="/marketplace" className="hover:text-primary-500 transition-colors">سوق هاء</Link>
@@ -212,7 +212,7 @@ export default function MarketplaceProductDetail() {
                 )}
               </div>
               {galleryImages.length > 1 && (
-                <span className="absolute bottom-3 start-3 rounded-lg bg-black/60 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
+                <span className="absolute bottom-3 start-3 rounded-lg bg-black/60 px-2 py-1 text-xs font-bold text-white backdrop-blur-sm">
                   {selectedImage + 1} / {galleryImages.length}
                 </span>
               )}
@@ -238,13 +238,13 @@ export default function MarketplaceProductDetail() {
           <div className="min-w-0 space-y-3">
             <div className="flex flex-wrap items-center gap-1.5">
               {hasDiscount && (
-                <span className="rounded-lg bg-[#dc2626] px-2 py-0.5 text-[10px] font-bold text-white">خصم {discount}%</span>
+                <span className="rounded-lg bg-[#dc2626] px-2 py-0.5 text-xs font-bold text-white">خصم {discount}%</span>
               )}
               {product.categoryName && (
-                <span className="rounded-lg bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500">{product.categoryName}</span>
+                <span className="rounded-lg bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-500">{product.categoryName}</span>
               )}
               {product.haaMarketplaceFeatured && (
-                <span className="rounded-lg bg-primary-500 px-2 py-0.5 text-[10px] font-bold text-white">مختار للسوق</span>
+                <span className="rounded-lg bg-primary-500 px-2 py-0.5 text-xs font-bold text-white">مختار للسوق</span>
               )}
             </div>
 
@@ -254,7 +254,7 @@ export default function MarketplaceProductDetail() {
               {product.rating != null && product.rating > 0 && (
                 <RatingStars rating={product.rating} count={product.reviewCount} size="3xs" />
               )}
-              <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-[11px] font-bold text-gray-600 ring-1 ring-gray-100">
+              <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs font-bold text-gray-600 ring-1 ring-gray-100">
                 <TrendingUp className="h-3 w-3 text-emerald-600" />
                 {product.salesCount != null && product.salesCount > 0 ? product.salesCount : 0}+ مبيع
               </span>
@@ -276,24 +276,24 @@ export default function MarketplaceProductDetail() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <p className="text-xs font-extrabold text-black">خذها الآن</p>
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700 ring-1 ring-emerald-100">بدون فوائد</span>
+                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-extrabold text-emerald-700 ring-1 ring-emerald-100">بدون فوائد</span>
                     </div>
-                    <p className="mt-0.5 text-[11px] font-bold text-gray-500">قسّمها على 4 دفعات مع تابي أو تمارا</p>
+                    <p className="mt-0.5 text-xs font-bold text-gray-500">قسّمها على 4 دفعات مع تابي أو تمارا</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="rounded-lg bg-white px-2.5 py-1.5 text-center ring-1 ring-gray-100">
-                      <p className="text-[10px] font-bold leading-none text-gray-500">ادفع الآن فقط</p>
+                      <p className="text-xs font-bold leading-none text-gray-500">ادفع الآن فقط</p>
                       <CurrencyAmount amount={installmentAmount} size="lg" weight="bold" decimals={2} className="mt-1" />
                     </div>
                     <BNPLBadges size="md" />
                   </div>
                 </div>
-                <p className="mt-1 text-[10px] leading-4 text-gray-400">
+                <p className="mt-1 text-xs leading-4 text-gray-400">
                   يتم تأكيد الأهلية وجدولة الدفعات عند الدفع.
                 </p>
               </div>
             </div>
-            <p className="text-[11px] font-medium text-gray-400">
+            <p className="text-xs font-medium text-gray-400">
               يُضاف إلى سلة سوق هاء الموحدة.
             </p>
 
@@ -343,7 +343,7 @@ export default function MarketplaceProductDetail() {
             </div>
             <Link
               to={product.merchantProductUrl ?? `/s/${product.store.slug}/p/${product.slug}?source=haa_marketplace`}
-              className="inline-flex text-[11px] font-bold text-primary-500 hover:text-primary-600"
+              className="inline-flex text-xs font-bold text-primary-500 hover:text-primary-600"
             >
               عرض في متجر التاجر
             </Link>
@@ -360,19 +360,19 @@ export default function MarketplaceProductDetail() {
                 show this badge. The backend should set kycVerified
                 only after KYC + MoCI registration is confirmed. */}
             {product.store.kycVerified === true && !product.store.isDemoStore && (
-              <div className="mt-2 inline-flex items-center gap-1 rounded-lg bg-success/10 px-2 py-0.5 text-[10px] font-bold text-success">
+              <div className="mt-2 inline-flex items-center gap-1 rounded-lg bg-success/10 px-2 py-0.5 text-xs font-bold text-success">
                 <Icon icon={BadgeCheck} size="2xs" />
                 متجر موثوق
               </div>
             )}
             {product.isDemoStore && (
-              <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+              <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-bold text-amber-700">
                 <Info className="h-3 w-3" />
                 متجر تجريبي
               </div>
             )}
             <h2 className="mt-1.5 text-sm font-bold text-black">{product.store.name}</h2>
-            <p className="mt-0.5 text-[11px] font-medium text-gray-500">{product.store.city ?? 'المملكة العربية السعودية'}</p>
+            <p className="mt-0.5 text-xs font-medium text-gray-500">{product.store.city ?? 'المملكة العربية السعودية'}</p>
               <StoreButton href={`/marketplace/sellers/${product.store.slug}`} className="mt-3 w-full min-h-[44px] rounded-xl bg-primary-500 text-white hover:bg-primary-600 text-xs font-bold transition-colors">
               جميع منتجات البائع
             </StoreButton>
@@ -402,7 +402,7 @@ export default function MarketplaceProductDetail() {
               <Icon icon={item.icon} size="2xs" className={`shrink-0 ${item.color}`} />
               <div className="min-w-0">
                 <p className="text-xs font-bold text-black leading-tight">{item.title}</p>
-                <p className="text-[10px] text-gray-500 leading-tight">{item.text}</p>
+                <p className="text-xs text-gray-500 leading-tight">{item.text}</p>
               </div>
             </div>
           ))}
@@ -444,8 +444,8 @@ export default function MarketplaceProductDetail() {
                 ].map((item) => (
                   <div key={item.title} className="grid grid-cols-[16px_56px_1fr] items-start gap-1.5 py-1.5 first:pt-0 last:pb-0">
                     <Icon icon={item.icon} size="2xs" className="mt-0.5 shrink-0 text-primary-500" />
-                    <p className="text-[11px] font-bold leading-5 text-black">{item.title}</p>
-                    <p className="text-[11px] leading-5 text-gray-500">{item.text}</p>
+                    <p className="text-xs font-bold leading-5 text-black">{item.title}</p>
+                    <p className="text-xs leading-5 text-gray-500">{item.text}</p>
                   </div>
                 ))}
               </div>
@@ -459,13 +459,13 @@ export default function MarketplaceProductDetail() {
                 )}
               </div>
               <div className="mt-1.5 flex items-start gap-2 rounded-lg bg-gray-50 px-2.5 py-1.5">
-                <p className="min-w-0 flex-1 text-[11px] leading-5 text-gray-500">
+                <p className="min-w-0 flex-1 text-xs leading-5 text-gray-500">
                   {product.reviewCount && product.reviewCount > 0
                     ? `متوسط التقييم ${product.rating?.toFixed(1)} من ${product.reviewCount} مراجعة، مع ${product.salesCount != null && product.salesCount > 0 ? product.salesCount : 0}+ مبيع.`
                     : 'لا توجد مراجعات تفصيلية منشورة لهذا المنتج حتى الآن.'}
                 </p>
                 {product.reviewCount && product.reviewCount > 0 ? (
-                  <div className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-bold text-black ring-1 ring-gray-100">
+                  <div className="shrink-0 rounded-full bg-white px-2 py-1 text-xs font-bold text-black ring-1 ring-gray-100">
                     {product.reviewCount} مراجعة
                   </div>
                 ) : null}
@@ -479,7 +479,7 @@ export default function MarketplaceProductDetail() {
           <section className="mt-5">
             <div className="mb-3 flex items-center justify-between gap-2">
               <h2 className="text-sm font-bold text-black">منتجات مشابهة</h2>
-              <Link to="/marketplace" className="text-[11px] font-bold text-primary-500 hover:text-primary-600 transition-colors">عرض الكل</Link>
+              <Link to="/marketplace" className="text-xs font-bold text-primary-500 hover:text-primary-600 transition-colors">عرض الكل</Link>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 items-stretch">
               {similarProducts.map((item) => (

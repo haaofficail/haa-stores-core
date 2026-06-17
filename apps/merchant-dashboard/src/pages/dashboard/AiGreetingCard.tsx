@@ -32,7 +32,7 @@ export function AiGreetingCard({ greeting, t }: Props) {
             <span className="text-sm font-bold text-blue-900">
               {t("dashboard.aiAssistant", "المساعد الذكي")}
             </span>
-            <span className="flex items-center gap-1 text-[10px] text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full font-medium">
+            <span className="flex items-center gap-1 text-xs text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full font-medium">
               <Sparkles className="h-2.5 w-2.5" />
               {t("dashboard.aiPowered", "AI")}
             </span>

@@ -101,7 +101,7 @@ export default function HeroSlider({ slides, slug }: { slides: Slide[]; slug: st
                 <div className={`absolute inset-0 ${hasImage ? 'bg-gradient-to-l from-[var(--text-primary)]/70 via-[var(--text-primary)]/20 to-transparent' : 'hidden'}`} />
                 <div className="relative z-10 mx-auto flex w-full max-w-[var(--container-max-width,1440px)] flex-col justify-center px-4 sm:px-6 lg:px-8">
                   {slide.title && (
-                    <span className="mb-2 text-[11px] font-light uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
+                    <span className="mb-2 text-xs font-light uppercase tracking-[0.2em] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
                       {slide.title}
                     </span>
                   )}

@@ -182,9 +182,9 @@ export default function SupportKb() {
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-neutral-900 truncate">{article.title}</h3>
                   {article.isPublished ? (
-                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[11px] font-medium">{t('support.kb.published', 'منشور')}</span>
+                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">{t('support.kb.published', 'منشور')}</span>
                   ) : (
-                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-500 text-[11px] font-medium">{t('support.kb.draft', 'مسودة')}</span>
+                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-500 text-xs font-medium">{t('support.kb.draft', 'مسودة')}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-3 text-xs text-neutral-500 mt-1">

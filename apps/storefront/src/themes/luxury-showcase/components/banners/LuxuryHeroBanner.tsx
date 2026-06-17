@@ -82,14 +82,14 @@ export default function LuxuryHeroBanner({
         <div className="relative z-10 mx-auto flex w-full max-w-[var(--container-max-width,1440px)] flex-col items-start justify-center px-6 sm:px-10 lg:px-12">
           {/* Eyebrow — small uppercase label that anchors the brand */}
           <span
-            className="mb-4 inline-flex items-center text-[10px] font-light uppercase tracking-[0.32em]"
+            className="mb-4 inline-flex items-center text-xs font-light uppercase tracking-[0.32em]"
             style={{ color: hasImage ? 'rgba(255,255,255,0.85)' : 'var(--lux-primary, #B88A3D)' }}
           >
             {t('hero.eyebrow', 'مدعوم من هاء ستورز')}
           </span>
           {subtitle && (
             <span
-              className="mb-2 text-[11px] font-light uppercase tracking-[0.2em]"
+              className="mb-2 text-xs font-light uppercase tracking-[0.2em]"
               style={{ color: hasImage ? 'rgba(255,255,255,0.7)' : 'var(--lux-muted, #756B61)' }}
             >
               {subtitle}

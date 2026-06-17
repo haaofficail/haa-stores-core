@@ -143,7 +143,7 @@ export default function Fake3DSChallengePage() {
           </div>
 
           {/* Footer */}
-          <div className="text-center text-[11px] text-slate-400 pt-3 border-t border-slate-100 space-y-1">
+          <div className="text-center text-xs text-slate-400 pt-3 border-t border-slate-100 space-y-1">
             <p>تأمين SAMA 3-D Secure — يحمي بياناتك ضد الاحتيال</p>
             <p>SAMA-compliant 3DS protection against fraud</p>
             <Link to="/" className="text-blue-600 hover:underline">

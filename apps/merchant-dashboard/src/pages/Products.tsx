@@ -689,9 +689,9 @@ export default function Products() {
                   <p className="text-sm font-medium text-neutral-900">المتجر</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     {publishProductData?.status === 'active' ? (
-                      <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">منشور</span>
+                      <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">منشور</span>
                     ) : (
-                      <span className="text-[10px] text-neutral-400">غير منشور</span>
+                      <span className="text-xs text-neutral-400">غير منشور</span>
                     )}
                   </div>
                 </div>
@@ -718,9 +718,9 @@ export default function Products() {
                       <p className="text-sm font-medium text-neutral-900">{p.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         {isPublished ? (
-                          <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">منشور</span>
+                          <span className="text-xs font-medium text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">منشور</span>
                         ) : (
-                          <span className="text-[10px] text-neutral-400">غير منشور</span>
+                          <span className="text-xs text-neutral-400">غير منشور</span>
                         )}
                       </div>
                     </div>

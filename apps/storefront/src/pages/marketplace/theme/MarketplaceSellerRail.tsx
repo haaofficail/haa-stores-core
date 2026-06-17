@@ -10,7 +10,7 @@ export function MarketplaceSellerRail({ stores }: { stores: HaaMarketplaceProduc
     <div className="mt-4 border-t border-gray-100 pt-4">
       <div className="mb-2 flex items-center justify-between gap-2">
         <h2 className="text-sm font-bold text-black">متاجر مختارة</h2>
-        <Link to="/marketplace/sellers" className="text-[10px] font-bold text-primary-500 hover:text-primary-600 transition-colors duration-200">عرض الكل</Link>
+        <Link to="/marketplace/sellers" className="text-xs font-bold text-primary-500 hover:text-primary-600 transition-colors duration-200">عرض الكل</Link>
       </div>
       <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: 'touch' }}>
         {stores.map((store) => (
@@ -20,7 +20,7 @@ export function MarketplaceSellerRail({ stores }: { stores: HaaMarketplaceProduc
             </span>
             <span className="min-w-0">
               <span className="block truncate text-black">{store.name}</span>
-              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#16a34a]">
+              <span className="inline-flex items-center gap-0.5 text-xs font-bold text-[#16a34a]">
                 <Icon icon={BadgeCheck} size="2xs" />
                 موثوق
               </span>

@@ -59,7 +59,7 @@ function PermissionsPreview() {
           <div key={cat} className="bg-neutral-50 rounded-lg p-3 text-center border border-neutral-100">
             <div className="text-xs font-semibold text-neutral-600">{categoryLabels[cat as keyof typeof categoryLabels] || cat}</div>
             <div className="text-lg font-bold text-neutral-800 mt-1">{count}</div>
-            <div className="text-[10px] text-neutral-400">صلاحية</div>
+            <div className="text-xs text-neutral-400">صلاحية</div>
           </div>
         );
       })}
@@ -271,7 +271,7 @@ export default function EmployeesPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 justify-end">
                         {emp.role === 'owner' && ownerCount <= 1 ? (
-                          <span className="text-[10px] text-amber-500 flex items-center gap-1" title="لا يمكن تعديل أو حذف آخر مالك">
+                          <span className="text-xs text-amber-500 flex items-center gap-1" title="لا يمكن تعديل أو حذف آخر مالك">
                             <ShieldAlert className="h-3 w-3" />
                             آخر مالك
                           </span>

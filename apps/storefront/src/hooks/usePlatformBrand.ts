@@ -14,7 +14,7 @@ export function usePlatformBrand(): PlatformBrand {
   const [data, setData] = useState<PlatformBrand>({
     platformLogoUrl: null,
     platformName: 'سوق هاء',
-    primaryColor: '#58a1e2',
+    primaryColor: '#56a1e3',
     isLoading: true,
     error: false,
   });
@@ -27,7 +27,7 @@ export function usePlatformBrand(): PlatformBrand {
           setData({
             platformLogoUrl: json.data.logoUrl ?? null,
             platformName: json.data.tenantName ?? 'سوق هاء',
-            primaryColor: json.data.primaryColor ?? '#58a1e2',
+            primaryColor: json.data.primaryColor ?? '#56a1e3',
             isLoading: false,
             error: false,
           });

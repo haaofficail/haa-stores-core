@@ -91,7 +91,7 @@ export function LuxuryProductInfoPanel({
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             {category ? (
-              <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.24em]" style={{ color: 'var(--lux-primary, #B88A3D)' }}>
+              <p className="mb-3 text-xs font-medium uppercase tracking-[0.24em]" style={{ color: 'var(--lux-primary, #B88A3D)' }}>
                 {category}
               </p>
             ) : null}
@@ -146,7 +146,7 @@ export function LuxuryProductInfoPanel({
             if (!optionName || values.length === 0) return null;
             return (
               <div key={optionKey}>
-                <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
+                <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
                   {optionName}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -178,7 +178,7 @@ export function LuxuryProductInfoPanel({
           })}
 
           <div>
-            <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
+            <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em]" style={{ color: 'var(--lux-muted, #756B61)' }}>
               {t('product.quantity', 'الكمية')}
             </p>
             <div className="inline-flex items-center overflow-hidden rounded-lg border" style={{ borderColor: 'var(--lux-border, #E6D8C6)' }}>
@@ -281,7 +281,7 @@ export function LuxuryProductInfoPanel({
               strokeWidth={1.5}
               aria-hidden="true"
             />
-            <span className="text-[10px] font-light leading-tight" style={{ color: 'var(--lux-muted, #756B61)' }}>
+            <span className="text-xs font-light leading-tight" style={{ color: 'var(--lux-muted, #756B61)' }}>
               <span className="block" style={{ color: 'var(--lux-text, #2B2520)' }}>
                 {t('product.freeShipping', 'شحن مجاني')}
               </span>
@@ -295,7 +295,7 @@ export function LuxuryProductInfoPanel({
               strokeWidth={1.5}
               aria-hidden="true"
             />
-            <span className="text-[10px] font-light leading-tight" style={{ color: 'var(--lux-muted, #756B61)' }}>
+            <span className="text-xs font-light leading-tight" style={{ color: 'var(--lux-muted, #756B61)' }}>
               <span className="block" style={{ color: 'var(--lux-text, #2B2520)' }}>
                 {t('product.warranty', 'ضمان سنتين')}
               </span>
@@ -309,7 +309,7 @@ export function LuxuryProductInfoPanel({
               strokeWidth={1.5}
               aria-hidden="true"
             />
-            <span className="text-[10px] font-light leading-tight" style={{ color: 'var(--lux-muted, #756B61)' }}>
+            <span className="text-xs font-light leading-tight" style={{ color: 'var(--lux-muted, #756B61)' }}>
               <span className="block" style={{ color: 'var(--lux-text, #2B2520)' }}>
                 {t('product.returnsDays', 'استرجاع 30 يوم')}
               </span>

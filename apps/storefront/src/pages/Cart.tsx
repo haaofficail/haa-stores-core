@@ -217,7 +217,7 @@ export default function Cart() {
                       <button
                         onClick={() => handleSaveForLater(item)}
                         disabled={updating === item.id}
-                        className="p-1.5 rounded-lg text-text-tertiary hover:text-primary-600 hover:bg-primary-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:opacity-40 text-[11px]"
+                        className="p-1.5 rounded-lg text-text-tertiary hover:text-primary-600 hover:bg-primary-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:opacity-40 text-xs"
                         aria-label={t('cart.saveForLater', 'حفظ لوقت لاحق')}
                       >
                         {t('cart.saveForLater', 'حفظ')}
@@ -369,7 +369,7 @@ export default function Cart() {
                 </div>
               )}
               {couponError && (
-                <p className="text-[11px] text-danger mt-1.5">{couponError}</p>
+                <p className="text-xs text-danger mt-1.5">{couponError}</p>
               )}
             </StoreCard>
 
@@ -417,7 +417,7 @@ export default function Cart() {
                     <span className="font-medium text-primary-600">-{Number(couponData.discount).toFixed(2)} <SarIcon size="md" /></span>
                   </div>
                 )}
-                <p className="text-[11px] text-text-tertiary text-start">{t('cart.shippingCalculated', 'سيتم حساب الشحن عند إتمام الطلب')}</p>
+                <p className="text-xs text-text-tertiary text-start">{t('cart.shippingCalculated', 'سيتم حساب الشحن عند إتمام الطلب')}</p>
               </div>
 
               <div className="pt-3 mt-3 border-t border-border">

@@ -115,7 +115,7 @@ export default function LuxuryProductCard({
         )}
         {hasDiscount && discountPercent > 0 && (
           <span
-            className="absolute top-2 start-2 text-[10px] font-medium leading-none px-1.5 py-0.5"
+            className="absolute top-2 start-2 text-xs font-medium leading-none px-1.5 py-0.5"
             style={{
               color: '#FAF7F1',
               backgroundColor: 'var(--lux-primary, #B88A3D)',
@@ -127,7 +127,7 @@ export default function LuxuryProductCard({
         )}
         {showStockBadge !== false && isLowStock && (
           <span
-            className="absolute top-2 end-2 text-[9px] font-medium leading-none px-1.5 py-0.5 backdrop-blur-sm"
+            className="absolute top-2 end-2 text-xs font-medium leading-none px-1.5 py-0.5 backdrop-blur-sm"
             style={{
               color: 'var(--lux-muted, #756B61)',
               border: '1px solid var(--lux-border, #E6D8C6)',
@@ -151,7 +151,7 @@ export default function LuxuryProductCard({
         </Link>
 
         {productType && (
-          <p className="text-[11px] font-light mt-0.5" style={{ color: 'var(--lux-muted, #756B61)' }}>
+          <p className="text-xs font-light mt-0.5" style={{ color: 'var(--lux-muted, #756B61)' }}>
             {productType}
           </p>
         )}
@@ -162,14 +162,14 @@ export default function LuxuryProductCard({
               {'★'.repeat(Math.round(Number(product.rating)))}
               {'☆'.repeat(5 - Math.round(Number(product.rating)))}
               {product.reviewCount != null && product.reviewCount > 0 && (
-                <span className="text-[10px] font-light mr-1" style={{ color: 'var(--lux-muted, #756B61)' }}>
+                <span className="text-xs font-light mr-1" style={{ color: 'var(--lux-muted, #756B61)' }}>
                   ({product.reviewCount})
                 </span>
               )}
             </span>
           )}
           {showSalesCount !== false && product.salesCount != null && product.salesCount > 0 && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] font-light leading-none" style={{ color: 'var(--lux-muted, #756B61)' }}>
+            <span className="inline-flex items-center gap-0.5 text-xs font-light leading-none" style={{ color: 'var(--lux-muted, #756B61)' }}>
               <TrendingUp className="h-3 w-3" />
               {t('product.soldCount', 'تم بيع {{count}}', { count: product.salesCount })}
             </span>
@@ -181,7 +181,7 @@ export default function LuxuryProductCard({
             {formatCurrency(Number(product.price))} <SarIcon size="sm" />
           </span>
           {hasDiscount && (
-            <span className="text-[11px] font-light line-through" style={{ color: 'var(--lux-muted, #756B61)' }}>
+            <span className="text-xs font-light line-through" style={{ color: 'var(--lux-muted, #756B61)' }}>
               {formatCurrency(Number(product.compareAtPrice))} <SarIcon size="xs" />
             </span>
           )}

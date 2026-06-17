@@ -53,7 +53,7 @@ export default function LuxuryTwoColumnBanners({
               <div className="relative z-10 flex flex-col items-center justify-center p-6 text-center">
                 {b.title && <h3 className="text-lg font-light text-white">{b.title}</h3>}
                 {b.subtitle && <p className="mt-1 text-xs font-light text-white/70">{b.subtitle}</p>}
-                {b.ctaLabel && <span className="mt-2 text-[11px] font-light uppercase tracking-[0.15em] text-white/80">{b.ctaLabel}</span>}
+                {b.ctaLabel && <span className="mt-2 text-xs font-light uppercase tracking-[0.15em] text-white/80">{b.ctaLabel}</span>}
               </div>
             </Link>
           );

@@ -154,7 +154,7 @@ export function MarketplaceHero({
             are purchasing from. This disclosure is required by MoCI
             e-commerce regulations and the Saudi Consumer Protection
             regulations. */}
-        <p className="mt-4 text-center text-[11px] leading-relaxed text-gray-500 max-w-2xl mx-auto">
+        <p className="mt-4 text-center text-xs leading-relaxed text-gray-500 max-w-2xl mx-auto">
           سوق هاء منصة تجمع متاجر سعودية. البائع في كل طلبية هو المتجر
           {' '}<span className="font-semibold text-gray-700">صاحب المنتج</span>،
           {' '}وليس منصة هاء. هاء وسيط تقني فقط.

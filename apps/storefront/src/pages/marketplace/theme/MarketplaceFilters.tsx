@@ -34,7 +34,7 @@ export function MarketplaceCategoryTabs({
             }`}
           >
             <span>{category.name}</span>
-            <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">{category.count}</span>
+            <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-xs">{category.count}</span>
           </button>
         ))}
       </div>
@@ -58,7 +58,7 @@ export function MarketplaceFilterBar({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1.5">
-        <span className="text-[10px] font-bold text-gray-500">من</span>
+        <span className="text-xs font-bold text-gray-500">من</span>
         <input
           value={minPrice}
           onChange={(e) => onSetFilter('minPrice', e.target.value)}
@@ -71,7 +71,7 @@ export function MarketplaceFilterBar({
       </div>
 
       <div className="flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1.5">
-        <span className="text-[10px] font-bold text-gray-500">إلى</span>
+        <span className="text-xs font-bold text-gray-500">إلى</span>
         <input
           value={maxPrice}
           onChange={(e) => onSetFilter('maxPrice', e.target.value)}

@@ -11,7 +11,7 @@ interface CurrencyAmountProps {
 }
 
 const sizeMap = {
-  xs: 'text-[11px]',
+  xs: 'text-xs',
   sm: 'text-sm',
   md: 'text-lg',
   lg: 'text-xl',
@@ -51,7 +51,7 @@ interface CurrencyStrikeProps {
 }
 
 const strikeSizeMap = {
-  xs: 'text-[10px]',
+  xs: 'text-xs',
   sm: 'text-xs',
   md: 'text-sm',
   lg: 'text-base',

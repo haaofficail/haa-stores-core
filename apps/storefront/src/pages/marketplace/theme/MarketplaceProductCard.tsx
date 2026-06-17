@@ -58,14 +58,14 @@ export function MarketplaceProductCard({
 
       <div className="flex flex-1 flex-col gap-0.5 p-1.5">
         {showCategory && product.categoryName && (
-          <p className="truncate text-[10px] font-bold text-gray-500">{product.categoryName}</p>
+          <p className="truncate text-xs font-bold text-gray-500">{product.categoryName}</p>
         )}
 
         <ProductTitle name={product.name} href={product.productUrl} lines={2} size="sm" weight="bold" color="text-black" className="min-h-[30px]" />
 
         <div className="flex h-[20px] items-center justify-between gap-1 overflow-hidden">
           {product.isDemoStore ? (
-            <span className="inline-flex h-[18px] shrink-0 items-center gap-0.5 rounded-md bg-amber-50 border border-amber-200 px-1.5 text-[10px] font-bold text-amber-700 leading-none">
+            <span className="inline-flex h-[18px] shrink-0 items-center gap-0.5 rounded-md bg-amber-50 border border-amber-200 px-1.5 text-xs font-bold text-amber-700 leading-none">
               <Info className="h-2.5 w-2.5" />
               متجر تجريبي
             </span>
@@ -75,7 +75,7 @@ export function MarketplaceProductCard({
           <div className="flex min-w-0 shrink items-center justify-end gap-1 overflow-hidden">
             <RatingStars rating={product.rating} count={product.reviewCount} size="3xs" />
             {showSalesCount && (
-              <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-gray-500 leading-none">
+              <span className="inline-flex items-center gap-0.5 text-xs font-medium text-gray-500 leading-none">
                 <TrendingUp className="h-3 w-3" />
                 {product.salesCount != null && product.salesCount > 0 ? product.salesCount : 0}+
               </span>
@@ -90,7 +90,7 @@ export function MarketplaceProductCard({
                 <span className="inline-flex h-[20px] min-w-[76px] items-center justify-center rounded-md bg-red-50 px-1.5">
                   <CurrencyStrike amount={compareAt!} size="xs" decimals={0} />
                 </span>
-                <SavingsBadge value={compareAt! - currentPrice} className="h-[20px] w-[82px] text-[11px]" />
+                <SavingsBadge value={compareAt! - currentPrice} className="h-[20px] w-[82px] text-xs" />
               </>
             ) : (
               <span aria-hidden="true" className="h-[20px]" />

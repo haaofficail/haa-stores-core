@@ -105,7 +105,7 @@ export default function LuxuryShowcaseHeader() {
       </a>
 
       {announcementText && (
-        <div className="text-center py-1 text-[10px] font-light tracking-wider leading-relaxed bg-[var(--surface-2)] text-[var(--text-secondary)]">
+        <div className="text-center py-1 text-xs font-light tracking-wider leading-relaxed bg-[var(--surface-2)] text-[var(--text-secondary)]">
           <div className="max-w-[var(--container-max-width,1440px)] mx-auto px-4 sm:px-6 lg:px-8">
             {announcementText}
           </div>
@@ -123,7 +123,7 @@ export default function LuxuryShowcaseHeader() {
                 {store.name}
               </span>
               {store.isDemo && (
-                <span className="text-[9px] font-medium text-[var(--text-secondary)] border border-[var(--border)] rounded-sm px-1.5 py-0.5 leading-none tracking-wider whitespace-nowrap">
+                <span className="text-xs font-medium text-[var(--text-secondary)] border border-[var(--border)] rounded-sm px-1.5 py-0.5 leading-none tracking-wider whitespace-nowrap">
                   {t('store.demo', 'تجريبي')}
                 </span>
               )}
@@ -137,7 +137,7 @@ export default function LuxuryShowcaseHeader() {
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="min-h-[36px] inline-flex items-center px-2.5 text-[11px] font-light text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider uppercase transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--primary)]"
+                  className="min-h-[36px] inline-flex items-center px-2.5 text-xs font-light text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider uppercase transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--primary)]"
                 >
                   {link.label}
                 </Link>
@@ -154,7 +154,7 @@ export default function LuxuryShowcaseHeader() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder={t('store.search')}
-                      className="w-32 lg:w-36 px-2.5 py-1.5 text-[11px] bg-transparent outline-none text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
+                      className="w-32 lg:w-36 px-2.5 py-1.5 text-xs bg-transparent outline-none text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
                       onBlur={() => !searchQuery && setSearchOpen(false)}
                       aria-label={t('store.search', 'بحث')}
                     />
@@ -196,7 +196,7 @@ export default function LuxuryShowcaseHeader() {
               </Link>
               <Link
                 to="/signup"
-                className="hidden md:inline-flex min-h-[32px] items-center gap-1.5 px-3 text-[10px] font-light tracking-[0.12em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--primary)] rounded-sm whitespace-nowrap"
+                className="hidden md:inline-flex min-h-[32px] items-center gap-1.5 px-3 text-xs font-light tracking-[0.12em] uppercase transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--primary)] rounded-sm whitespace-nowrap"
                 style={{ backgroundColor: 'var(--lux-primary, #B88A3D)', color: '#FFFFFF' }}
                 title={t('store.buildYourStore', 'ابنِ متجرك')}
                 aria-label={t('store.buildYourStore', 'ابنِ متجرك')}
@@ -212,7 +212,7 @@ export default function LuxuryShowcaseHeader() {
                 <ShoppingCart className="w-3.5 h-3.5" strokeWidth={ICON_STROKE} />
                 {itemCount > 0 && (
                   <span
-                    className="absolute -top-0.5 -start-0.5 min-w-[13px] h-[13px] rounded-full flex items-center justify-center text-[9px] font-medium text-[var(--surface-1)] bg-[var(--text-primary)]"
+                    className="absolute -top-0.5 -start-0.5 min-w-[13px] h-[13px] rounded-full flex items-center justify-center text-xs font-medium text-[var(--surface-1)] bg-[var(--text-primary)]"
                     style={{ padding: '0 2px' }}
                   >
                     {itemCount > 99 ? '99+' : itemCount}

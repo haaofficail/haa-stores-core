@@ -33,7 +33,7 @@ export default {
           secondary: '#4b5563',
           tertiary: '#6b7280',
           disabled: '#d1d5db',
-          link: 'var(--text-link, #58a1e2)',
+          link: 'var(--text-link, #56a1e3)',
         },
         border: {
           subtle: 'var(--border-subtle)',

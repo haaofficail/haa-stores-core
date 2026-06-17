@@ -63,7 +63,7 @@ export default function Support() {
             {ticketUrl}
           </a>
           <div className="rounded-lg border border-border-primary bg-white p-3">
-            <p className="text-[11px] uppercase tracking-wide text-text-tertiary">Access code</p>
+            <p className="text-xs uppercase tracking-wide text-text-tertiary">Access code</p>
             <code className="mt-1 block break-all text-sm font-semibold text-text-primary">{ticket.accessToken}</code>
           </div>
         </div>

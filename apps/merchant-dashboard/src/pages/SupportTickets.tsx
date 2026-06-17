@@ -95,7 +95,7 @@ export default function SupportTickets() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold text-neutral-900 truncate">{ticket.subject}</h3>
-                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-[11px] font-medium ${statusColors[ticket.status] || ''}`}>
+                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[ticket.status] || ''}`}>
                       {statusLabels[ticket.status] || ticket.status}
                     </span>
                   </div>

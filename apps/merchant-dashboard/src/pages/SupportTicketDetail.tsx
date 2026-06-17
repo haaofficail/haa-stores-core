@@ -140,7 +140,7 @@ export default function SupportTicketDetail() {
                 </span>
               </div>
               <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.message}</p>
-              <p className="text-[11px] text-neutral-400 mt-1.5">{new Date(msg.createdAt).toLocaleString('ar-SA')}</p>
+              <p className="text-xs text-neutral-400 mt-1.5">{new Date(msg.createdAt).toLocaleString('ar-SA')}</p>
             </div>
           </div>
         ))}

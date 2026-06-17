@@ -50,20 +50,20 @@ function ThemeCard({ theme, active, onApply }: { theme: ThemeManifest; active: b
         </div>
         <p className="text-sm text-neutral-600 leading-relaxed mb-4 line-clamp-2">{theme.descriptionAr}</p>
         <div className="flex gap-1.5 flex-wrap mb-3">
-          <span className="px-2 py-0.5 text-[11px] rounded-full" style={{ background: theme.defaultConfig.colors.primary + '20', color: theme.defaultConfig.colors.primary }}>
+          <span className="px-2 py-0.5 text-xs rounded-full" style={{ background: theme.defaultConfig.colors.primary + '20', color: theme.defaultConfig.colors.primary }}>
             {theme.defaultConfig.font.family}
           </span>
-          <span className="px-2 py-0.5 text-[11px] rounded-full bg-neutral-100 text-neutral-600">
+          <span className="px-2 py-0.5 text-xs rounded-full bg-neutral-100 text-neutral-600">
             {theme.defaultConfig.layout.productCardColumns} أعمدة
           </span>
-          <span className="px-2 py-0.5 text-[11px] rounded-full bg-neutral-100 text-neutral-600">
+          <span className="px-2 py-0.5 text-xs rounded-full bg-neutral-100 text-neutral-600">
             {theme.status}
           </span>
         </div>
         {theme.categories && theme.categories.length > 0 && (
           <div className="flex gap-1 flex-wrap mb-3">
             {theme.categories.map(c => (
-              <span key={c} className="px-1.5 py-0.5 text-[10px] rounded-md bg-primary-50 text-primary-600">{c}</span>
+              <span key={c} className="px-1.5 py-0.5 text-xs rounded-md bg-primary-50 text-primary-600">{c}</span>
             ))}
           </div>
         )}
