@@ -47,6 +47,7 @@
     "dashboard:open": "open DASHBOARD.html",
     "roadmap:generate": "python3 scripts/roadmap-regenerate.py",
     "roadmap:open": "open ROADMAP.html",
+    "preflight:pentest": "bash scripts/pre-pentest-smoke.sh",
     "setup": "pnpm install && pnpm docker:up && pnpm db:migrate && pnpm db:seed"
   },
   "engines": {
