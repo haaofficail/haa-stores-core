@@ -69,6 +69,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   import_products: 'استيراد المنتجات',
   refund_processed: 'معالجة استرداد',
   payout_requested: 'طلب سحب أرباح',
+  store_deactivated: 'إيقاف المتجر (PDPL)',
   kyc_reviewed: 'مراجعة بيانات التحقق',
   compliance_check_failed: 'فشل فحص الامتثال',
   policy_updated: 'تحديث سياسة',

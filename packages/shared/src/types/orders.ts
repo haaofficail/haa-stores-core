@@ -174,6 +174,8 @@ export type AuditAction =
   | 'import_products'
   | 'refund_processed'
   | 'payout_requested'
+  // PDPL — merchant self-service data export + account deletion
+  | 'store_deactivated'
   // Employee management
   | 'employee_invited'
   | 'employee_role_changed'
