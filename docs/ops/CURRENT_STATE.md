@@ -4,7 +4,7 @@
 
 ---
 
-- **Last Updated:** 2026-06-17 (Marketplace Phase 2 closure — TASK-0041 2/2 tracks DONE ✅. P0-2 category blocklist (Session K, 7 tests + migration 0059). P0-1 SFDA workflow (Session N, 11 tests + migration 0060). **49 commits on `feature/phase-9-cod-fee-policy`. 2458 tests passing (+47 from Session F baseline 2411). 4 pre-existing baseline failures unchanged. 🎉 5 of 6 P0 launch blockers closed (only P0-6 legal copy remains, gated on owner legal review). Preflight clean throughout.**)
+- **Last Updated:** 2026-06-17 (Marketplace Phase 3 closure — TASK-0042 DONE ✅ engineering drafts. PRIVACY §2.4 + TERMS §8.5 + SFDA_DISCLAIMER.md created. 🎉 ALL 6 P0 LAUNCH BLOCKERS CLOSED (engineering side). Pending owner/DPO/legal review of drafts before publication. **51 commits on `feature/phase-9-cod-fee-policy`. 2458 tests passing. Preflight clean throughout.**)
 - **Current Phase:** **Quality Pass 5 — Architectural Cleanup CLOSED + Drizzle Snapshot Chain REBUILT.** All 3 core QP5 sub-items done. TASK-0035 (3DS + VAT) Done (8/8 sub-items). Drizzle snapshot chain complete (21 synthesized + 2 real bugs caught). TASK-0029 housekeeping complete.
 - **Active Audit:** Financial Wallet Accuracy Pass — **PHASE 1-9 ALL DONE.** Phase 1 diagnostic (TASK-0031) + Phase 2-3 WalletPostingService foundation (TASK-0033) + Phase 4-9 implementation (TASK-0034 Session #2, 8/8 sub-items). All 5 owner questions resolved: Q1 (gateway fee UX ✅), Q2 (refund policy per provider ✅), Q3 (COD fee ✅ TASK-0032), Q4 (Tabby/Tamara fee data ✅, NON_REFUNDABLE enum), Q5 (payout reservation ✅, soft cap default).
 - **Active Strategic Initiatives (NEW 2026-06-17):**

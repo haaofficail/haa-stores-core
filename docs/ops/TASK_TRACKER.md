@@ -2067,7 +2067,7 @@
 
 - **Type:** Documentation / Compliance / Legal
 - **Priority:** P0 Critical (closes P0-6 launch blocker)
-- **Status:** Open (parallel with TASK-0041; owner legal review required)
+- **Status:** Done (engineering drafts shipped 2026-06-17 — Session O; PRIVACY §2.4 + TERMS §8.5 + SFDA_DISCLAIMER.md created; cross-references added; pending owner/DPO/legal review before publication)
 - **Created:** 2026-06-17
 - **Updated:** 2026-06-17
 - **Original Request:** `docs/ops/MARKETPLACE_HARDENING_PLAN.md` §5 (Phase 3, 1 day engineering + 1-2 weeks owner legal).
