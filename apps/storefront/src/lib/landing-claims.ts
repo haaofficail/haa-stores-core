@@ -123,6 +123,7 @@ const DEFAULT_STATUS: Record<keyof typeof LANDING_CLAIMS, ClaimStatus> = {
 // Helper: returns the right text for a claim, applying its status.
 export function getClaim(
   key: keyof typeof LANDING_CLAIMS,
+  liveValue?: number,
 ): { text: string; status: ClaimStatus } {
   const claim = LANDING_CLAIMS[key];
   const status = resolveStatus(key);
@@ -130,6 +131,14 @@ export function getClaim(
     return { text: '', status: 'disabled' };
   }
   if (status === 'verified') {
+    // TASK-0038 audit P1-#3: for merchantCount, prefer a live value
+    // (real tenant count from /marketplace/stats) over the hardcoded
+    // '2,400+' string when one is supplied. This lets owner flip the
+    // claim to 'verified' once they're confident the live count is
+    // representative, but the page still shows real data.
+    if (key === 'merchantCount' && typeof liveValue === 'number' && liveValue > 0) {
+      return { text: `${liveValue.toLocaleString('ar-SA')}+`, status: 'verified' };
+    }
     return { text: claim.verified, status: 'verified' };
   }
   return { text: claim.fallback, status: 'unverified' };

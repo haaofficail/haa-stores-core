@@ -785,7 +785,7 @@ const MOCK_PRODUCTS: Product[] = [
    STOREFRONT COMPONENTS — header, hero, categories, products, cart, footer
    ════════════════════════════════════════════════════════════════ */
 
-function StoreHeader({ cartCount, onCartClick }: { cartCount: number; onCartClick: () => void }) {
+function StoreHeader({ cartCount, onCartClick, t }: { cartCount: number; onCartClick: () => void; t: TFn }) {
   return (
     <header className="sticky top-0 z-10 bg-white/95 backdrop-blur-xl border-b border-neutral-100">
       {/* Status bar */}
@@ -805,10 +805,10 @@ function StoreHeader({ cartCount, onCartClick }: { cartCount: number; onCartClic
           <span className="text-sm font-bold text-neutral-900">متجر الهدايا</span>
         </div>
         <div className="flex items-center gap-0.5">
-          <button type="button" className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 transition-colors">
+          <button type="button" aria-label={t('landing.demoSearch', 'بحث في المتجر')} className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 transition-colors">
             <Search className="h-4 w-4" />
           </button>
-          <button type="button" onClick={onCartClick} className="relative min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 transition-colors">
+          <button type="button" aria-label={t('landing.demoCart', 'السلة')} onClick={onCartClick} className="relative min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 transition-colors">
             <ShoppingCart className="h-4 w-4" />
             {cartCount > 0 && (
               <span className="absolute -top-0.5 -end-0.5 h-3.5 w-3.5 rounded-full bg-blue-500 text-white text-[8px] font-bold flex items-center justify-center ring-2 ring-white">
@@ -919,11 +919,11 @@ function StoreProducts({ onAddToCart, onProductClick }: { onAddToCart: (p: Produ
   );
 }
 
-function StoreProductModal({ product, onClose, onAddToCart }: { product: Product; onClose: () => void; onAddToCart: (p: Product) => void }) {
+function StoreProductModal({ product, onClose, onAddToCart, t }: { product: Product; onClose: () => void; onAddToCart: (p: Product) => void; t: TFn }) {
   return (
     <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
       <div className="relative bg-white rounded-2xl mx-4 max-w-sm w-full shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <button type="button" onClick={onClose} className="absolute top-3 end-3 z-10 min-h-[32px] min-w-[32px] rounded-full bg-white/90 shadow flex items-center justify-center text-neutral-600 hover:text-neutral-900 transition-colors">
+        <button type="button" aria-label={t('common.close', 'إغلاق')} onClick={onClose} className="absolute top-3 end-3 z-10 min-h-[32px] min-w-[32px] rounded-full bg-white/90 shadow flex items-center justify-center text-neutral-600 hover:text-neutral-900 transition-colors">
           <X className="h-4 w-4" />
         </button>
         <div className="aspect-square bg-neutral-100">
@@ -1220,7 +1220,7 @@ function StorefrontPreview({ t }: { t: TFn }) {
               {/* Screen */}
               <div className="overflow-hidden rounded-[34px] bg-white flex flex-col" dir="rtl" style={{ aspectRatio: '9/19.5' }}>
                 <div className="flex-1 overflow-y-auto">
-                  <StoreHeader cartCount={cartCount} onCartClick={() => setCartOpen(true)} />
+                  <StoreHeader cartCount={cartCount} onCartClick={() => setCartOpen(true)} t={t} />
                   <StoreHero />
                   <StoreCategories />
                   <StoreProducts onAddToCart={addToCart} onProductClick={setSelectedProduct} />
@@ -1228,7 +1228,7 @@ function StorefrontPreview({ t }: { t: TFn }) {
                 </div>
                 <StoreBottomNav />
                 {selectedProduct && (
-                  <StoreProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onAddToCart={addToCart} />
+                  <StoreProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onAddToCart={addToCart} t={t} />
                 )}
                 {cartOpen && (
                   <StoreCartDrawer items={cartItems} onClose={() => setCartOpen(false)} onRemove={removeFromCart} total={total} />

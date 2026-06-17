@@ -439,6 +439,12 @@ export const haaMarketplaceApi = {
     const qs = q.toString();
     return request<HaaMarketplaceProductListResult>(`/marketplace/products${qs ? `?${qs}` : ''}`);
   },
+  // TASK-0038 audit P1-#3: live stats for the landing page.
+  getStats: () => request<{
+    merchantCount: number;
+    productCount: number;
+    asOf: string;
+  }>('/marketplace/stats'),
   listCategories: () => request<HaaMarketplaceCategory[]>(`/marketplace/categories`),
   listSellers: () => request<HaaMarketplaceSeller[]>(`/marketplace/sellers`),
   getSeller: (storeSlug: string) => request<HaaMarketplaceSeller>(`/marketplace/sellers/${storeSlug}`),

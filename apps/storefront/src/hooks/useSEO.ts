@@ -6,9 +6,15 @@ interface SEOProps {
   ogImage?: string;
   ogType?: string;
   noIndex?: boolean;
+  // TASK-0038 audit P1-#7: canonical URL. When set, useSEO sets
+  // <link rel="canonical" href={canonical}> and removes any prior
+  // canonical link. If omitted, any prior canonical is removed
+  // (so pages that don't set one are still self-canonical, which
+  // is the safer default than a stale leftover).
+  canonical?: string;
 }
 
-export function useSEO({ title = '', description, ogImage, ogType = 'website', noIndex }: SEOProps) {
+export function useSEO({ title = '', description, ogImage, ogType = 'website', noIndex, canonical }: SEOProps) {
   useEffect(() => {
     if (!title) return;
     document.title = title;
@@ -81,4 +87,20 @@ export function useSEO({ title = '', description, ogImage, ogType = 'website', n
       el.remove();
     }
   }, [noIndex]);
+
+  // TASK-0038 audit P1-#7: canonical link.
+  useEffect(() => {
+    let el = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (canonical) {
+      if (!el) {
+        el = document.createElement('link');
+        el.rel = 'canonical';
+        document.head.appendChild(el);
+      }
+      el.href = canonical;
+    } else if (el) {
+      // No canonical for this page — remove any stale leftover.
+      el.remove();
+    }
+  }, [canonical]);
 }

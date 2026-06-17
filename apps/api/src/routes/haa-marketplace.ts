@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { and, count, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm';
+import { and, count, countDistinct, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { createDbClient } from '@haa/db';
@@ -85,6 +85,44 @@ function mapProduct(row: any) {
     merchantProductUrl: `/s/${row.storeSlug}/p/${row.slug}?source=haa_marketplace`,
   };
 }
+
+// TASK-0038 audit P1-#3: public stats endpoint for the landing page.
+// Returns the actual count of tenants in the platform so the
+// marketing claim "X+ merchants" can be backed by real data.
+// The landing page is expected to call this and only display the
+// hardcoded claim if the count is consistent with the copy.
+haaMarketplaceRouter.get('/stats', async (c) => {
+  const db = createDbClient();
+  // Count distinct tenants (merchants) that have at least one
+  // store, excluding demo accounts.
+  const [{ merchantCount }] = await db
+    .select({ merchantCount: countDistinct(s.tenants.id) })
+    .from(s.tenants)
+    .innerJoin(s.stores, eq(s.stores.tenantId, s.tenants.id))
+    .where(eq(s.stores.isDemo, false));
+
+  // Total active products in marketplace
+  const [{ productCount }] = await db
+    .select({ productCount: count() })
+    .from(s.products)
+    .innerJoin(s.stores, eq(s.products.storeId, s.stores.id))
+    .where(and(
+      eq(s.products.haaMarketplaceEnabled, true),
+      eq(s.products.haaMarketplaceReviewStatus, 'approved'),
+      eq(s.products.status, 'active'),
+      eq(s.stores.isDemo, false),
+    ));
+
+  return c.json({
+    success: true,
+    data: {
+      merchantCount,
+      productCount,
+      // ISO timestamp of when these stats were computed
+      asOf: new Date().toISOString(),
+    },
+  });
+});
 
 haaMarketplaceRouter.get('/products', async (c) => {
   const query = paginationSchema.parse(c.req.query());
