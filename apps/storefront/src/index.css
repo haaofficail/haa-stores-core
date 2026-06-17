@@ -138,9 +138,16 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.06), 0 4px 6px -4px rgb(0 0 0 / 0.05);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.06), 0 8px 10px -6px rgb(0 0 0 / 0.05);
 
-  /* Primary palette — derived from brand-primary */
-  --brand-primary: #58a1e2;
-  --store-primary: var(--color-primary-500, var(--brand-primary, #58a1e2));
+  /* Primary palette — derived from brand-primary.
+     P2-#7 color contrast: #58a1e2 is too light for any text use
+     (2.76:1 on white, below AA-large 3:1). #2a6fb8 (5.17:1)
+     passes AA-normal text. We make --brand-primary the darker
+     shade, and the original light blue is preserved as
+     --brand-primary-soft for backgrounds/borders only. */
+  --brand-primary: #2a6fb8;
+  --brand-primary-soft: #58a1e2;
+  --brand-primary-text: #2a6fb8;
+  --store-primary: var(--color-primary-500, var(--brand-primary, #2a6fb8));
   --store-logo-size: 20px;
   --color-primary-50: color-mix(in srgb, var(--brand-primary) 8%, #fff);
   --color-primary-100: color-mix(in srgb, var(--brand-primary) 14%, #fff);
@@ -176,14 +183,18 @@
   --border-focus: var(--brand-primary);
   --border-disabled: #f3f4f6;
 
-  /* Status colors (matches tailwind.config extended colors) */
-  --color-success: #16a34a;
+  /* Status colors (matches tailwind.config extended colors).
+     P2-#7 contrast: warning #f59e0b on white was 2.15:1
+     (below AA-large 3:1). We split into:
+     - color-warning:  #f59e0b (backgrounds, borders, icons only)
+     - color-warning-text: #b45309 (text only, 4.62:1 AA normal) */
+  --color-success: #15803d;
   --color-success-subtle: #f0fdf4;
   --color-success-text: #15803d;
   --color-warning: #f59e0b;
   --color-warning-subtle: #fffbeb;
   --color-warning-text: #b45309;
-  --color-danger: #dc2626;
+  --color-danger: #b91c1c;
   --color-danger-subtle: #fef2f2;
   --color-danger-text: #b91c1c;
   --color-info: var(--brand-primary);
@@ -481,3 +492,21 @@
 .auth-scope .text-text-muted { color: var(--haa-text-muted) !important; }
 .auth-scope .text-text-tertiary { color: var(--haa-text-muted) !important; }
 .auth-scope .border-border-subtle { border-color: var(--haa-border-subtle) !important; }
+
+/* ── P2-#6: focus-visible everywhere ──────────────────────────────
+   Global rule so every interactive element (a, button, input,
+   select, textarea) shows a visible focus ring when keyboard-
+   focused. WCAG 2.4.7 (Focus Visible) Level AA. The :focus-visible
+   pseudo-class targets keyboard navigation only, so mouse users
+   don't see the ring (cleaner UX). */
+#storefront-scope a:focus-visible,
+#storefront-scope button:focus-visible,
+#storefront-scope input:focus-visible,
+#storefront-scope select:focus-visible,
+#storefront-scope textarea:focus-visible,
+#storefront-scope [role="button"]:focus-visible,
+#storefront-scope [tabindex]:focus-visible {
+  outline: 2px solid var(--brand-primary, #58a1e2);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
