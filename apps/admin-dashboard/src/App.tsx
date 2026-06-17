@@ -17,6 +17,7 @@ const AuditLogs = lazy(() => import('./pages/AuditLogs'));
 const Plans = lazy(() => import('./pages/Plans'));
 const Settings = lazy(() => import('./pages/Settings'));
 const StoreBillingSettings = lazy(() => import('./pages/StoreBillingSettings'));
+const Compliance = lazy(() => import('./pages/Compliance'));
 
 function PageSkeleton() {
   return (
@@ -53,6 +54,7 @@ const navItems = [
   { path: '/payments/settlements', label: 'التسويات' },
   { path: '/audit', label: 'سجل التدقيق' },
   { path: '/plans', label: 'الباقات' },
+  { path: '/compliance', label: 'الامتثال' },
   { path: '/settings', label: 'الإعدادات' },
 ];
 
@@ -147,6 +149,7 @@ export default function App() {
               <Route path="/plans" element={<Plans />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/store-billing" element={<StoreBillingSettings />} />
+              <Route path="/compliance" element={<Compliance />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
