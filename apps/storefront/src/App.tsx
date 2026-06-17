@@ -21,6 +21,11 @@ const Contact = lazy(() => import('@/pages/Contact'));
 const PolicyPage = lazy(() => import('@/pages/PolicyPage'));
 const LegalPage = lazy(() => import('@/pages/LegalPage'));
 const StoreNotFound = lazy(() => import('@/pages/StoreNotFound'));
+// TASK-0035 sub-item 5: dev-only fake 3-D Secure challenge page
+// Renders a bank-style challenge UI for the FakePaymentProvider's
+// `fake_3ds_challenge` flow. Real providers (Moyasar/Geidea) redirect
+// to their own hosted challenge pages instead.
+const Fake3DSChallenge = lazy(() => import('@/pages/Fake3DSChallenge'));
 const Support = lazy(() => import('@/pages/Support'));
 const SupportTicket = lazy(() => import('@/pages/SupportTicket'));
 const KnowledgeBase = lazy(() => import('@/pages/KnowledgeBase'));
@@ -90,6 +95,10 @@ export default function App() {
           <Route path="/marketplace/products/:storeSlug/:productSlug" element={<MarketplaceProductDetail />} />
           <Route path="/marketplace/sellers" element={<MarketplaceSellers />} />
           <Route path="/marketplace/sellers/:storeSlug" element={<MarketplaceSeller />} />
+          {/* TASK-0035 sub-item 5: Fake 3-D Secure challenge (dev-only).
+              Real providers (Moyasar/Geidea) redirect to their own hosted
+              challenge pages; the fake provider redirects here. */}
+          <Route path="/fake-3ds-challenge" element={<Fake3DSChallenge />} />
           <Route path="/legal/:legalSlug" element={<LegalPage />} />
           <Route path="*" element={<StoreNotFound />} />
         </Routes>

@@ -552,6 +552,14 @@ export const checkoutApi = {
   }) => request<CheckoutSession>(`/s/${slug}/checkout/sessions`, { method: 'POST', body: JSON.stringify(data) }),
   confirm: (slug: string, sessionId: string) =>
     request<CheckoutConfirm>(`/s/${slug}/checkout/sessions/${sessionId}/confirm`, { method: 'POST' }),
+  // TASK-0035 sub-item 5: 3DS challenge callback (FakePaymentProvider flow)
+  // Called by the Fake3DSChallenge page after the customer clicks
+  // succeed/fail. Returns the final payment status + redirect URL.
+  complete3DSChallenge: (slug: string, paymentId: number, success: boolean) =>
+    request<{ paymentStatus: string; providerStatus: string; redirectUrl?: string }>(
+      `/s/${slug}/checkout/3ds-callback`,
+      { method: 'POST', body: JSON.stringify({ paymentId, status: success ? 'success' : 'failure' }) },
+    ),
   getPaymentMethods: (slug: string, cartId?: string) =>
     request<{ methods: PaymentMethodAvailability[] }>(
       `/s/${slug}/payment-methods${cartId ? `?cartId=${cartId}` : ''}`,
