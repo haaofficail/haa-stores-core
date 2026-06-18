@@ -29,23 +29,13 @@ import { getClaim, isClaimEnabled } from '@/lib/landing-claims';
 import {
   ArrowLeft,
   ArrowUp,
-  ExternalLink,
   Heart,
-  MessageCircle,
   Quote,
-  Shield,
   Sparkles,
   X,
 } from 'lucide-react';
 import { useSEO } from '@/hooks/useSEO';
 import { StoreContainer } from '@/components/ui';
-// P2-#10: lazy-load the AI chat to reduce initial bundle size.
-// The chat is below-the-fold and only renders for users with the
-// feature flag enabled, so we lazy-load it. The Suspense boundary
-// renders nothing while the chunk loads.
-const HeroAIChatLazy = React.lazy(() => import('@/landing/HeroAIChat'));
-
-import { isAIPreviewEnabled } from '@/landing/aiChatContent';
 
 // Extracted sections (P2-#1 refactor)
 import { Nav } from '@/landing/sections/Nav';
@@ -58,6 +48,7 @@ import { HowItWorks } from '@/landing/sections/HowItWorks';
 import { MockupPreview, StorefrontPreview } from '@/landing/sections/StorefrontMockup';
 import { Pricing } from '@/landing/sections/Pricing';
 import { FinalCTA } from '@/landing/sections/FinalCTA';
+import { Hero } from '@/landing/sections/Hero';
 import type { TFn } from '@/landing/sections/types';
 
 /* ════════════════════════════════════════════════════════════════
@@ -114,175 +105,6 @@ function AuroraBackground() {
         }}
       />
     </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   HERO — animated gradient title + floating product mock
-   ════════════════════════════════════════════════════════════════ */
-function CountdownTimer() {
-  const startRef = useRef(Date.now());
-  const [seconds, setSeconds] = useReactState(60);
-
-  useEffect(() => {
-    startRef.current = Date.now();
-    const id = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - startRef.current) / 1000);
-      const remaining = Math.max(0, 60 - elapsed);
-      setSeconds(remaining);
-      if (remaining === 0) {
-        startRef.current = Date.now();
-      }
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const r = 26;
-  const c = 2 * Math.PI * r;
-  const p = seconds / 60;
-
-  return (
-    <span className="inline-flex items-center gap-2 align-middle" dir="ltr">
-      <svg width="64" height="64" viewBox="0 0 64 64" className="-rotate-90 shrink-0" aria-hidden="true">
-        <circle cx="32" cy="32" r={r} fill="none" stroke="currentColor" strokeWidth="3" className="text-blue-200/60" />
-        <circle
-          cx="32" cy="32" r={r} fill="none" stroke="currentColor" strokeWidth="3"
-          className="text-blue-500"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - p)}
-          strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 0.3s linear' }}
-        />
-      </svg>
-      <span className="text-5xl font-black text-blue-600 tabular-nums leading-none sm:text-7xl lg:text-8xl">{seconds}</span>
-    </span>
-  );
-}
-
-function Hero({ t }: { t: TFn; onDemoOpen?: () => void }) {
-  return (
-    <section className="relative overflow-hidden pb-16 pt-20 sm:pb-20 sm:pt-24 lg:pb-24 lg:pt-28">
-      {/* Decorative background glow */}
-      <div aria-hidden="true" className="absolute left-1/2 top-0 -z-10 h-[600px] w-[800px] -translate-x-1/2 rounded-pill bg-gradient-to-b from-blue-100/40 via-indigo-100/20 to-transparent blur-3xl" />
-      <StoreContainer className="relative">
-        <div className="mx-auto max-w-4xl text-center">
-          {/* Eyebrow */}
-          <span className="aurora-pill text-xs !border-emerald-200 !bg-transparent !text-emerald-700">
-            <img src="/assets/saudi-map.png" alt="" className="inline-block h-[1.1em] w-auto align-middle" aria-hidden="true" />
-            {' '}
-            {t('landing.hero.badge', 'منصة سعودية')}
-          </span>
-
-          {/* H1 */}
-          <h1 className="mt-7 text-[44px] font-extrabold leading-[1.1] tracking-[-0.04em] text-text-primary sm:text-[60px] lg:text-[76px] xl:text-[84px]">
-            <div className="flex flex-col items-center gap-1 sm:gap-2">
-              <span>أطلق متجرك الإلكتروني خلال</span>
-              <span className="inline-flex items-center gap-2">
-                <CountdownTimer />
-                <span>ثانية</span>
-              </span>
-            </div>
-          </h1>
-
-          {/* Subtitle */}
-          <p className="mx-auto mt-6 max-w-3xl text-[18px] leading-[1.65] text-text-secondary sm:text-[20px]">
-            {t(
-              'landing.hero.subtitle',
-              'ثيمات جاهزة، بوابات دفع سعودية، شحن مدمج، ولوحة تحكم كاملة لإدارة متجرك.'
-            )}
-          </p>
-
-          {/* Payment logos */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-            {[
-              { src: '/assets/payment-logos/mada.svg', alt: 'مدى', h: '24px' },
-              { src: '/assets/payment-logos/apple-pay.svg', alt: 'Apple Pay', h: '20px' },
-              { src: '/assets/payment-logos/visa.svg', alt: 'Visa', h: '16px' },
-              { src: '/assets/payment-logos/mastercard.svg', alt: 'Mastercard', h: '20px' },
-              { src: '/assets/payment-logos/stc-pay.svg', alt: 'STC Pay', h: '20px' },
-              { src: '/assets/payment-logos/tabby.svg', alt: 'تابي', h: '20px' },
-              { src: '/assets/payment-logos/tamara.svg', alt: 'تمارا', h: '20px' },
-            ].map(({ src, alt, h }) => (
-              <img
-                key={alt}
-                src={src}
-                alt={alt}
-                className="w-auto transition-all duration-300"
-                style={{ height: h }}
-                loading="lazy"
-              />
-            ))}
-          </div>
-
-          {/* Shipping logos */}
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-            <img src="/assets/shipping-logos/saudi-post.svg" alt="سبل" style={{ height: '22px' }} className="w-auto transition-all duration-300" />
-            <img src="/assets/shipping-logos/aramex.svg" alt="Aramex" style={{ height: '20px' }} className="w-auto transition-all duration-300" />
-            <img src="/assets/shipping-logos/naqel.svg" alt="ناقل" style={{ height: '22px' }} className="w-auto transition-all duration-300" />
-            <img src="/assets/shipping-logos/dhl.svg" alt="DHL" style={{ height: '16px' }} className="w-auto transition-all duration-300" />
-              <img src="/assets/shipping-logos/redbox.svg" alt="ريد بوكس" style={{ height: '24px' }} className="w-auto transition-all duration-300" />
-          </div>
-
-          {/* Government trust logos — gated by isClaimEnabled('govLogos').
-              TASK-0038 audit P0-#9: each logo implies a government
-              registration we may not yet have. Until G1 (MoCI) + G2
-              (ZATCA VAT) + G3 (e-commerce license) are all approved,
-              these logos MUST be hidden. */}
-          {isClaimEnabled('govLogos') && (
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
-              <img src="/assets/payment-logos/ministry-of-commerce.svg" alt="وزارة التجارة" style={{ height: '48px' }} className="w-auto transition-all duration-300" />
-              <img src="/assets/payment-logos/saudi-business-center.svg" alt="منصة الأعمال" style={{ height: '92px' }} className="w-auto transition-all duration-300" />
-              <img src="/assets/payment-logos/maroof.svg" alt="معروف" style={{ height: '42px' }} className="w-auto transition-all duration-300" />
-              <img src="/assets/payment-logos/saudi-made.svg" alt="صنع في السعودية" style={{ height: '48px' }} className="w-auto transition-all duration-300" />
-              <img src="/assets/payment-logos/zatca.svg" alt="هيئة الزكاة والضريبة والجمارك" style={{ height: '42px' }} className="w-auto transition-all duration-300" />
-            </div>
-          )}
-
-          {/* CTAs */}
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-            <Link
-              to="/signup?ref=hero"
-              className="aurora-btn-primary group inline-flex h-14 min-h-[56px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 px-8 text-[17px] font-bold text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:!text-white sm:w-auto"
-            >
-              {t('landing.hero.primaryCta', 'سجّل كتاجر — مجانًا')}
-              <ArrowLeft className="h-5 w-5 transition-transform duration-300 group-hover:-translate-x-1 rtl:group-hover:translate-x-1" />
-            </Link>
-            <Link
-              to="/s/demo"
-              className="group inline-flex h-14 min-h-[56px] w-full items-center justify-center gap-2 rounded-full border border-white/30 bg-white/50 px-8 text-[16px] font-semibold text-text-secondary shadow-sm backdrop-blur-sm transition-all duration-300 hover:scale-[1.03] hover:border-white/60 hover:text-text-primary sm:w-auto"
-            >
-              {'شاهد متجرًا حقيقيًا'}
-              <ExternalLink className="h-4 w-4" />
-            </Link>
-          </div>
-
-          {/* AI Preview Chat — replaces the old "شاهد العرض التوضيحي" secondary CTA.
-              P2-#10: lazy-loaded via React.lazy to keep the initial bundle smaller.
-              The Suspense fallback renders nothing while the chunk is fetched. */}
-          {isAIPreviewEnabled() && (
-            <React.Suspense fallback={null}>
-              <HeroAIChatLazy />
-            </React.Suspense>
-          )}
-
-          {/* Trust microcopy */}
-          <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-[13px] font-medium text-text-secondary">
-            {[
-              { icon: Shield, text: t('landing.hero.trust1', 'بدون بطاقة بنكية') },
-              { icon: X, text: t('landing.hero.trust2', 'إلغاء في أي وقت') },
-              { icon: MessageCircle, text: t('landing.hero.trust3', 'دعم بالعربي 24/7') },
-            ].map(({ icon: Icon, text }) => (
-              <li key={text} className="flex items-center gap-1.5">
-                <Icon className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-
-      </StoreContainer>
-    </section>
   );
 }
 
