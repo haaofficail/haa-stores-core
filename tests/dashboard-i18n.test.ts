@@ -224,8 +224,9 @@ describe('Sidebar renders translated text (not raw keys)', () => {
 
 describe('Orders page StatusBadge uses translated labels', () => {
   it('StatusBadge component accepts label prop and uses getDisplayLabel', async () => {
+    // T2.5: StatusBadge extracted to orders/orderHelpers.tsx
     const fs = await import('fs');
-    const content = fs.readFileSync('apps/merchant-dashboard/src/pages/Orders.tsx', 'utf-8');
+    const content = fs.readFileSync('apps/merchant-dashboard/src/pages/orders/orderHelpers.tsx', 'utf-8');
     expect(content).toContain('label?');
     expect(content).toContain('getDisplayLabel(status, label)');
   });
