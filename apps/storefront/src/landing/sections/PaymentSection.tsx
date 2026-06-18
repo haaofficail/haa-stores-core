@@ -28,7 +28,7 @@ export function PaymentSection(_props: { t: import('./types').TFn }) {
           {/* Hero icon - big SAMA */}
           <div className="mt-8 flex justify-center">
             <div className="relative flex items-center justify-center">
-              <img src="/assets/saudi-riyal-symbol.svg" alt="" className="relative h-32 w-auto sm:h-40 lg:h-48" aria-hidden="true" style={{ filter: 'brightness(0.12) saturate(0.8)' }} />
+              <img src="/assets/saudi-riyal-symbol.svg" alt="" loading="lazy" className="relative h-32 w-auto sm:h-40 lg:h-48" aria-hidden="true" style={{ filter: 'brightness(0.12) saturate(0.8)' }} />
             </div>
           </div>
           <div className="mt-6">

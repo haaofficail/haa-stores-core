@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Store } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { StoreButton } from '@/components/ui';

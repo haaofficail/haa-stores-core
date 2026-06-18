@@ -214,7 +214,7 @@ function StoreProductModal({ product, onClose, onAddToCart, t }: { product: Prod
           <X className="h-4 w-4" />
         </button>
         <div className="aspect-square bg-neutral-100">
-          <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+          <img src={product.image} alt={product.name} loading="lazy" className="w-full h-full object-cover" />
         </div>
         <div className="p-4">
           <div className="flex items-center gap-1 mb-1">
@@ -256,7 +256,7 @@ function StoreCartDrawer({ items, onClose, onRemove, total }: { items: CartItem[
               {items.map((item, i) => (
                 <div key={i} className="flex items-center gap-3 py-3">
                   <div className="w-12 h-12 rounded-xl object-cover bg-neutral-100 shrink-0 overflow-hidden">
-                    <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                    <img src={item.product.image} alt={item.product.name} loading="lazy" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-neutral-900 truncate">{item.product.name}</p>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Minus, Package, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { StoreButton, StoreContainer, StoreEmptyState, StoreIconButton } from '@/components/ui';
 import { Icon } from '@/components/ui/icon';
@@ -25,7 +26,7 @@ export default function MarketplaceCart() {
 
   if (items.length === 0) {
     return (
-      <main className="min-h-screen bg-surface-2">
+      <main className="min-h-screen bg-surface-2 overflow-x-hidden">
         <StoreContainer className="py-10">
           <StoreEmptyState
             icon={ShoppingBag}
@@ -39,7 +40,7 @@ export default function MarketplaceCart() {
   }
 
   return (
-    <main className="min-h-screen bg-surface-2">
+    <main className="min-h-screen bg-surface-2 overflow-x-hidden">
       <StoreContainer className="py-6">
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>

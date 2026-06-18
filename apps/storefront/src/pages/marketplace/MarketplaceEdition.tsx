@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { ShoppingBag } from 'lucide-react';
 import { haaMarketplaceApi, type HaaMarketplaceCategory, type HaaMarketplaceProduct } from '@/lib/api';
 import { StoreEmptyState } from '@/components/ui';
@@ -92,7 +93,7 @@ export default function MarketplaceEdition() {
   };
 
   return (
-    <main className="min-h-screen bg-white text-black">
+    <main className="min-h-screen bg-white text-black overflow-x-hidden">
       <MarketplaceHero total={total} cartCount={cartCount} searchInput={searchInput} onSearchInputChange={setSearchInput} />
 
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8">

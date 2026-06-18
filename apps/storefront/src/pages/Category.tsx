@@ -15,6 +15,7 @@ import { useSEO } from '@/hooks/useSEO';
 import { breadcrumbJSONLD } from '@/lib/jsonld';
 import { useStore } from '@/hooks/useStore';
 import FilterSidebar, { defaultFilters, filtersToParams, getActiveFilterCount, type FilterState } from '@/components/FilterSidebar';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Package, X, LayoutGrid, List, Check, ShoppingCart, Star, BadgeCheck, Percent, SlidersHorizontal, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -337,7 +338,7 @@ export default function Category() {
   ] as const;
 
   return (
-    <div className="animate-fade-in" id="main-content">
+    <div className="animate-fade-in overflow-x-hidden" id="main-content">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJSON }} />
       <section className="bg-surface-1 border-b border-border/30">
         <StoreContainer className="py-4 sm:py-5">

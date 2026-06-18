@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { MapPin, Store } from 'lucide-react';
 import { haaMarketplaceApi, type HaaMarketplaceSeller } from '@/lib/api';
 import { StoreButton, StoreContainer, StoreEmptyState, StoreSkeleton } from '@/components/ui';
@@ -20,7 +21,7 @@ export default function MarketplaceSellers() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-surface-2">
+    <main className="min-h-screen bg-surface-2 overflow-x-hidden">
       <section className="border-b border-border bg-surface-1">
         <StoreContainer className="py-8">
           <div className="flex flex-wrap items-center justify-between gap-3">

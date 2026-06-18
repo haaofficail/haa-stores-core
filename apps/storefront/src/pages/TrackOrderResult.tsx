@@ -6,6 +6,7 @@ import {
   StoreContainer, StoreCard, StoreInput, StoreButton, StoreBadge,
   StoreSkeleton,
 } from '@/components/ui';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Package, Truck, CheckCircle, Clock, ArrowLeft, MapPin, CreditCard, ShoppingBag, Store, Gift, Phone, FileText } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { SarIcon } from '@/components/ui/SarIcon';
@@ -81,7 +82,7 @@ export default function TrackOrderResult() {
   if (loading) {
     return (
       <StoreContainer className="py-8">
-        <div id="main-content" className="max-w-2xl mx-auto space-y-4">
+        <div id="main-content" className="max-w-2xl mx-auto space-y-4 overflow-x-hidden">
           <StoreSkeleton className="h-8 w-48" />
           <StoreSkeleton className="h-40 w-full" />
           <StoreSkeleton className="h-60 w-full" />

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { ArrowRight, BookOpen, Search, ChevronLeft, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supportApi, type KbArticle, type KbListResult } from '@/lib/api';
@@ -36,7 +37,7 @@ export default function KnowledgeBase() {
 
   if (loading) {
     return (
-      <div className="container-store py-8 space-y-6">
+      <div className="container-store py-8 space-y-6 overflow-x-hidden">
         <div className="h-10 w-48 bg-surface-2 rounded animate-pulse" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-surface-2 rounded-2xl animate-pulse" />)}
@@ -47,7 +48,7 @@ export default function KnowledgeBase() {
 
   if (loadError && !article) {
     return (
-      <div className="container-store py-12 max-w-2xl mx-auto text-center">
+      <div className="container-store py-12 max-w-2xl mx-auto text-center overflow-x-hidden">
         <AlertTriangle className="h-12 w-12 text-warning mx-auto mb-4" />
         <p className="text-text-secondary">{loadError}</p>
       </div>
@@ -56,7 +57,7 @@ export default function KnowledgeBase() {
 
   if (article) {
     return (
-      <div className="container-store py-8 sm:py-12 max-w-3xl mx-auto">
+      <div className="container-store py-8 sm:py-12 max-w-3xl mx-auto overflow-x-hidden">
         <Link to={`/s/${slug}/support/kb`} className={`inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-primary-600 transition-colors mb-6 ${FOCUS_VISIBLE}`}>
           <ChevronLeft className="h-4 w-4" />
           {t('support.kb.back', 'العودة للمقالات')}
@@ -82,7 +83,7 @@ export default function KnowledgeBase() {
   ) || [];
 
   return (
-    <div className="container-store py-8 sm:py-12 max-w-4xl mx-auto">
+    <div className="container-store py-8 sm:py-12 max-w-4xl mx-auto overflow-x-hidden">
       <Link to={`/s/${slug}`} className={`inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-primary-600 transition-colors mb-8 ${FOCUS_VISIBLE}`}>
         <ArrowRight className="h-4 w-4" />
         {t('store.home')}

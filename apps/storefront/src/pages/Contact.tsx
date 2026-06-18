@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useStore } from '@/hooks/useStore';
 import { useSEO } from '@/hooks/useSEO';
 import { StoreContainer, StoreCard } from '@/components/ui';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Mail, Phone, MapPin, Clock, MessageCircle } from 'lucide-react';
 
 export default function Contact() {
@@ -15,7 +16,7 @@ export default function Contact() {
 
   if (loading || !store) {
     return (
-      <div id="main-content" className="container-store py-8 space-y-8">
+      <div id="main-content" className="container-store py-8 space-y-8 overflow-x-hidden">
         <div className="text-center space-y-4">
           <div className="h-10 w-48 bg-surface-2 rounded animate-pulse mx-auto" />
           <div className="h-5 w-64 bg-surface-2 rounded animate-pulse mx-auto" />
@@ -38,7 +39,7 @@ export default function Contact() {
   }
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in overflow-x-hidden">
       <section className="bg-gradient-to-bl from-primary-50 via-white to-primary-50/30 py-12 sm:py-16">
         <StoreContainer className="text-center">
           <h1 className="text-2xl sm:text-3xl font-bold text-text-primary mb-4">{t('contact.title')}</h1>

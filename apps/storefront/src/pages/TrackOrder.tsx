@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { StoreContainer, StoreCard, StoreInput, StoreButton } from '@/components/ui';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Truck, Package, ArrowLeft } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { useSEO } from '@/hooks/useSEO';
@@ -22,7 +23,7 @@ export default function TrackOrder() {
   };
 
   return (
-    <div id="main-content" className="animate-fade-in">
+    <div id="main-content" className="animate-fade-in overflow-x-hidden">
       <section className="bg-gradient-to-bl from-primary-50 via-white to-primary-50/30 py-12 sm:py-16">
         <StoreContainer className="text-center">
           <div className="w-8 h-8 rounded-xl bg-primary-100 flex items-center justify-center mx-auto mb-3">

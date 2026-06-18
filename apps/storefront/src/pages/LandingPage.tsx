@@ -26,6 +26,7 @@ import React, { useEffect, useRef, useState as useReactState, useCallback } from
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { getClaim } from '@/lib/landing-claims';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import {
   ArrowLeft,
   ArrowUp,

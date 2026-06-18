@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { ArrowRight, FileText, Calendar, Clock } from 'lucide-react';
 
 interface LegalDocumentSection {
@@ -94,7 +95,7 @@ const LEGAL_DOCUMENTS: Record<string, LegalDocument> = {
 
 function LegalPageContent({ doc }: { doc: LegalDocument }) {
   return (
-    <div className="container-store py-8 sm:py-12 max-w-4xl mx-auto">
+    <div className="container-store py-8 sm:py-12 max-w-4xl mx-auto overflow-x-hidden">
       <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-primary-600 transition-colors mb-8">
         <ArrowRight className="h-4 w-4" />
         العودة للمتجر

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { ArrowLeft, CheckCircle2, CreditCard, Package, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { cartApi, checkoutApi, haaMarketplaceApi, type CheckoutConfirm } from '@/lib/api';
@@ -144,7 +145,7 @@ export default function MarketplaceCheckout() {
 
   if (orders.length > 0) {
     return (
-      <main className="min-h-screen bg-surface-2">
+      <main className="min-h-screen bg-surface-2 overflow-x-hidden">
         <StoreContainer className="py-10">
           <StoreCard className="mx-auto max-w-2xl p-6 text-center">
             <Icon icon={CheckCircle2} size="xl" className="mx-auto text-success" />
@@ -177,7 +178,7 @@ export default function MarketplaceCheckout() {
 
   if (items.length === 0) {
     return (
-      <main className="min-h-screen bg-surface-2">
+      <main className="min-h-screen bg-surface-2 overflow-x-hidden">
         <StoreContainer className="py-10">
           <StoreAlert variant="warning" title="السلة فارغة">أضف منتجات من سوق هاء قبل إتمام الطلب.</StoreAlert>
           <StoreButton href="/marketplace" className="mt-4">العودة للسوق</StoreButton>
@@ -187,7 +188,7 @@ export default function MarketplaceCheckout() {
   }
 
   return (
-    <main className="min-h-screen bg-surface-2">
+    <main className="min-h-screen bg-surface-2 overflow-x-hidden">
       <StoreContainer className="py-6">
         <div className="mb-5 flex items-center gap-3">
           <Link to="/marketplace/cart" className="flex h-10 w-10 items-center justify-center rounded-[8px] hover:bg-surface-1" aria-label="رجوع">

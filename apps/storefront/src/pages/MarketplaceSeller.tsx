@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Building2, MapPin, Search, ShoppingBag, Star, Store } from 'lucide-react';
 import { haaMarketplaceApi, type HaaMarketplaceProduct, type HaaMarketplaceSeller } from '@/lib/api';
 import { StoreButton, StoreContainer, StoreEmptyState, StoreInput, StoreSkeleton } from '@/components/ui';
@@ -57,7 +58,7 @@ export default function MarketplaceSeller() {
 
   if (loading) {
     return (
-      <main className={`min-h-screen ${marketplaceTheme.shell}`}>
+      <main className={`min-h-screen ${marketplaceTheme.shell} overflow-x-hidden`}>
         <StoreContainer className="py-3">
           <StoreSkeleton className="h-24" />
           <div className="mt-3 grid grid-cols-2 gap-3 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
@@ -70,7 +71,7 @@ export default function MarketplaceSeller() {
 
   if (!seller) {
     return (
-      <main className={`min-h-screen ${marketplaceTheme.shell}`}>
+      <main className={`min-h-screen ${marketplaceTheme.shell} overflow-x-hidden`}>
         <StoreContainer className="py-6">
           <StoreEmptyState icon={Store} title="البائع غير موجود" description="لم يتم العثور على بائع نشط في سوق هاء بهذا الرابط." action={<StoreButton href="/marketplace">العودة للسوق</StoreButton>} />
         </StoreContainer>
@@ -79,7 +80,7 @@ export default function MarketplaceSeller() {
   }
 
   return (
-    <main className={`min-h-screen ${marketplaceTheme.shell}`}>
+      <main className={`min-h-screen ${marketplaceTheme.shell} overflow-x-hidden`}>
       <section className="bg-white">
         {seller.coverUrl && (
           <div className="h-24 w-full overflow-hidden bg-[#dbeafe] sm:h-32">

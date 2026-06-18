@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Copy, Package, Search, Store } from 'lucide-react';
 import { haaMarketplaceApi, type MarketplaceOrder } from '@/lib/api';
 import { StoreAlert, StoreButton, StoreCard, StoreContainer, StoreInput, StoreSkeleton } from '@/components/ui';
@@ -102,7 +103,7 @@ export default function MarketplaceOrderTrack() {
   };
 
   return (
-    <main className="min-h-screen bg-surface-2">
+    <main className="min-h-screen bg-surface-2 overflow-x-hidden">
       <StoreContainer className="py-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>

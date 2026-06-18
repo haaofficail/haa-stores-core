@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Mail, Phone } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { usePlatformBrand } from '@/hooks/usePlatformBrand';

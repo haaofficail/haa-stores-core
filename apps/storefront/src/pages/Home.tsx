@@ -8,6 +8,7 @@ import { productsApi, categoriesApi, type PublicProduct, type PublicCategory } f
 import { StoreContainer, StoreButton } from '@/components/ui';
 import { Icon } from '@/components/ui/icon';
 import { useSEO } from '@/hooks/useSEO';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { getStorefrontThemeComponents, resolveStorefrontThemeKey } from '@haa/storefront-themes';
@@ -57,36 +58,42 @@ export default function Home() {
 
   if (storeError) {
     return (
-      <StoreContainer className="py-16 text-center">
-        <Icon icon={AlertTriangle} size="lg" className="mx-auto mb-3 text-warning" />
-        <h2 className="text-xl font-bold mb-2">{t('home.loadError')}</h2>
-        <StoreButton onClick={() => window.location.reload()}>{t('common.retry')}</StoreButton>
-      </StoreContainer>
+      <div className="overflow-x-hidden">
+        <StoreContainer className="py-16 text-center">
+          <Icon icon={AlertTriangle} size="lg" className="mx-auto mb-3 text-warning" />
+          <h2 className="text-xl font-bold mb-2">{t('home.loadError')}</h2>
+          <StoreButton onClick={() => window.location.reload()}>{t('common.retry')}</StoreButton>
+        </StoreContainer>
+      </div>
     );
   }
 
   if (storeLoading || !store) {
     return (
-      <StoreContainer className="py-8">
-        <div className="space-y-6">
-          <div className="h-12 w-3/4 bg-surface-2 rounded animate-pulse" />
-          <div className="h-6 w-1/2 bg-surface-2 rounded animate-pulse" />
-          <div className="flex gap-3">
-            <div className="h-12 w-36 bg-surface-2 rounded-card animate-pulse" />
-            <div className="h-12 w-36 bg-surface-2 rounded-card animate-pulse" />
+      <div className="overflow-x-hidden">
+        <StoreContainer className="py-8">
+          <div className="space-y-6">
+            <div className="h-12 w-3/4 bg-surface-2 rounded animate-pulse" />
+            <div className="h-6 w-1/2 bg-surface-2 rounded animate-pulse" />
+            <div className="flex gap-3">
+              <div className="h-12 w-36 bg-surface-2 rounded-card animate-pulse" />
+              <div className="h-12 w-36 bg-surface-2 rounded-card animate-pulse" />
+            </div>
           </div>
-        </div>
-      </StoreContainer>
+        </StoreContainer>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <StoreContainer className="py-16 text-center">
-        <Icon icon={AlertTriangle} size="lg" className="mx-auto mb-3 text-warning" />
-        <h2 className="text-xl font-bold mb-2">{t('home.loadError')}</h2>
-        <StoreButton onClick={() => window.location.reload()}>{t('common.retry')}</StoreButton>
-      </StoreContainer>
+      <div className="overflow-x-hidden">
+        <StoreContainer className="py-16 text-center">
+          <Icon icon={AlertTriangle} size="lg" className="mx-auto mb-3 text-warning" />
+          <h2 className="text-xl font-bold mb-2">{t('home.loadError')}</h2>
+          <StoreButton onClick={() => window.location.reload()}>{t('common.retry')}</StoreButton>
+        </StoreContainer>
+      </div>
     );
   }
 
@@ -97,14 +104,16 @@ export default function Home() {
   const HomePageComponent = components?.HomePage ?? BaseElegantHomePage;
 
   return (
-    <HomePageComponent
-      store={store}
-      slug={slug!}
-      theme={theme}
-      products={products}
-      categories={categories}
-      sections={sections}
-      onAddToCart={handleAddToCart}
-    />
+    <div className="overflow-x-hidden">
+      <HomePageComponent
+        store={store}
+        slug={slug!}
+        theme={theme}
+        products={products}
+        categories={categories}
+        sections={sections}
+        onAddToCart={handleAddToCart}
+      />
+    </div>
   );
 }

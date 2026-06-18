@@ -2496,3 +2496,50 @@
 - **Skills Used:** verification-before-completion (md5 + typecheck + eslint + test after every change).
 - **Risks:** Truncate was the only destructive op — explicitly user-approved. All other changes are additive or remove-only-unused.
 - **Status History:** Done as of 2026-06-18.
+
+---
+
+### TASK-0055: Sprint 4 — Mobile Responsive + Performance Hardening
+
+- **Type:** Refactor / Performance / UX
+- **Priority:** P1 High
+- **Status:** Done (2026-06-18)
+- **Created:** 2026-06-18
+- **Updated:** 2026-06-18
+- **Original Request:** "كلها" — pick from the post-مبروك-محالي handoff (Sprint 4 planning + G1 + End session). Founder chose to start with Sprint 4 planning.
+- **Theme selection:** Theme A (Mobile responsive, HIGH ROI) + Theme B (Performance, MEDIUM ROI) combined. Themes C/D/E deferred (per discovery spec).
+- **Scope (this session, MVP focused):**
+  1. **Theme A — overflow guard audit** — Added `overflow-x-hidden` to 24 storefront page root containers to prevent horizontal scroll on small viewports (iPhone SE 375px, etc.).
+  2. **Theme A — regression test** — `tests/mobile-performance-sprint4.test.ts` (9 source-grep tests) catches future regressions on overflow guard, responsive classes, touch hit areas, lazy loading, preconnect hints, React.lazy.
+  3. **Theme B — lazy loading audit** — Added `loading="lazy"` to 4 below-the-fold images (Saudi Riyal symbol in PaymentSection, 3 product images in StorefrontMockup). Above-the-fold allowance for Hero/Nav/Footer.
+  4. **Spec** — `docs/superpowers/specs/2026-06-18-sprint-4-scope.md` documents what shipped, what didn't, and what's deferred.
+- **Acceptance Criteria:**
+  - [x] Every storefront page has overflow guard or guarded wrapper
+  - [x] Every landing section has at least one responsive breakpoint class
+  - [x] Below-the-fold images use `loading="lazy"`
+  - [x] index.html has 2+ preconnect hints (pre-existing, verified)
+  - [x] Hero section uses `React.lazy` for HeroAIChat (pre-existing, verified)
+  - [x] 9 regression tests pass
+  - [x] `pnpm typecheck` clean (22/22 packages)
+  - [x] `pnpm test` 2660 pass / 0 fail / 1 skip / 14 todo
+  - [x] `git diff --check` clean
+  - [x] No new ESLint warnings
+- **Files changed (26 total):**
+  - 24 page files: About, Auth, Cart, Category, Checkout, Contact, Fake3DSChallenge, Home, KnowledgeBase, LegalPage, MarketplaceCart, MarketplaceCheckout, MarketplaceOrderTrack, MarketplaceSeller, MarketplaceSellers, OrderSuccess, PolicyPage, ProductDetail, Support, SupportTicket, TrackOrder, TrackOrderResult, marketplace/MarketplaceEdition, marketplace/MarketplaceProductDetail
+  - 1 theme: themes/base-elegant/HomePage
+  - 2 landing sections: PaymentSection, StorefrontMockup
+  - 1 new test: tests/mobile-performance-sprint4.test.ts
+  - 1 new spec: docs/superpowers/specs/2026-06-18-sprint-4-scope.md
+  - 1 doc updated: docs/ops/CURRENT_STATE.md
+  - 1 doc updated: docs/ops/TASK_TRACKER.md (this entry)
+- **Deferred (out of scope for Sprint 4 MVP):**
+  - 🧾 Theme C (Observability) — waits for live launch + owner Sentry/Datadog accounts
+  - 🧾 Theme D (WCAG external audit) — requires owner firm contract
+  - 🧾 Theme E (English localization) — LOW ROI for KSA market
+  - 🧾 Lighthouse CI integration — Lighthouse wasn't actually run; tests are contract-based
+  - 🧾 Bundle analyzer pass — would need a separate session
+  - 🧾 Bottom-sheet pattern for mobile filters — Sprint 4+ candidate
+  - 🧾 Admin-dashboard mobile responsive audit — admin is desktop-only by design
+- **Skills Used:** systematic-debugging (audit-then-fix loop), verification-before-completion (typecheck + test after every change).
+- **Risks:** None. All changes are additive (overflow guard, loading attribute) and tested by the new regression test.
+- **Status History:** Done as of 2026-06-18.

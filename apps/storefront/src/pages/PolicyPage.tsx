@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { ArrowRight, FileText, Clock, AlertTriangle } from 'lucide-react';
 import { policiesApi, type StorePolicy } from '@/lib/api';
 import { useStore } from '@/hooks/useStore';
@@ -25,7 +26,7 @@ export default function PolicyPage() {
 
   if (storeLoading || loading) {
     return (
-      <div className="container-store py-8 space-y-6">
+      <div className="container-store py-8 space-y-6 overflow-x-hidden">
         <div className="h-10 w-48 bg-surface-2 rounded animate-pulse" />
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
@@ -38,7 +39,7 @@ export default function PolicyPage() {
 
   if (notFound) {
     return (
-      <div className="container-store py-8 sm:py-12 max-w-4xl mx-auto text-center">
+      <div className="container-store py-8 sm:py-12 max-w-4xl mx-auto text-center overflow-x-hidden">
         <div className="w-16 h-16 rounded-2xl bg-warning-soft flex items-center justify-center mx-auto mb-4">
           <AlertTriangle className="h-8 w-8 text-warning" />
         </div>
@@ -59,7 +60,7 @@ export default function PolicyPage() {
   }
 
   return (
-    <div className="container-store py-8 sm:py-12 max-w-4xl mx-auto">
+    <div className="container-store py-8 sm:py-12 max-w-4xl mx-auto overflow-x-hidden">
       <Link
         to={`/s/${slug}`}
         className="inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-primary-600 transition-colors mb-8"

@@ -6,6 +6,7 @@ import {
   StoreContainer, StoreButton, StoreCard, StoreSkeleton, StoreEmptyState, StoreQuantitySelector, StoreBadge, StoreInput, StoreIconButton,
 } from '@/components/ui';
 import { Icon } from '@/components/ui/icon';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { ShoppingCart, Trash2, Package, ArrowLeft, ShoppingBag, Check, Tag, X, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 import { SarIcon } from '@/components/ui/SarIcon';
@@ -156,7 +157,7 @@ export default function Cart() {
   const subtotal = Number(cart.subtotal);
 
   return (
-    <div className="animate-fade-in motion-reduce:animate-none" id="main-content">
+    <div className="animate-fade-in motion-reduce:animate-none overflow-x-hidden" id="main-content">
       <StoreContainer className="py-3 sm:py-4">
         <h1 className="text-lg sm:text-xl font-bold text-text-primary mb-4">{t('cart.title')}</h1>
 

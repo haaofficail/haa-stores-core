@@ -6,6 +6,7 @@ import {
   StoreContainer, StoreButton, StoreCard, StoreBadge, StoreSkeleton,
   StoreInput,
 } from '@/components/ui';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { CheckCircle, Package, Truck, ArrowLeft, MapPin, Clock, CreditCard, ShoppingBag, Store, Gift, Phone, FileText } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { SarIcon } from '@/components/ui/SarIcon';
@@ -97,7 +98,7 @@ export default function OrderSuccess() {
   if (loading) {
     return (
       <StoreContainer className="py-12">
-        <div id="main-content" className="max-w-2xl mx-auto space-y-4">
+        <div id="main-content" className="max-w-2xl mx-auto space-y-4 overflow-x-hidden">
           <StoreSkeleton className="h-20 w-full" />
           <StoreSkeleton className="h-40 w-full" />
         </div>

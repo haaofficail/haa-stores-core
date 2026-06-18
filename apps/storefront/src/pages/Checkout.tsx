@@ -13,6 +13,7 @@ import {
   StoreStepIndicator, StoreAlert, StoreBadge,
 } from '@/components/ui';
 import { toast } from 'sonner';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Package, ArrowLeft, ArrowRight, CreditCard, Building, Banknote, ShieldCheck, MapPin, Truck, Gift, Phone, Clock } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { SarIcon } from '@/components/ui/SarIcon';
@@ -284,7 +285,7 @@ export default function Checkout() {
   ];
 
   return (
-    <div className="animate-fade-in" id="main-content">
+    <div className="animate-fade-in overflow-x-hidden" id="main-content">
       <StoreContainer className="py-3 sm:py-4">
         <div className="flex items-center gap-3 mb-6">
           <Link to={`/s/${slug}/cart`} className="p-2 rounded-lg hover:bg-surface-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400" aria-label={t('common.back')}>

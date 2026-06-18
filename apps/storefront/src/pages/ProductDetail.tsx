@@ -9,6 +9,7 @@ import { Icon } from '@/components/ui/icon';
 import { useSEO } from '@/hooks/useSEO';
 import { useStore } from '@/hooks/useStore';
 import { useStorefrontTheme } from '@/hooks/useTheme';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { AlertTriangle, ArrowLeft, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { getStorefrontThemeComponents, resolveStorefrontThemeKey } from '@haa/storefront-themes';
@@ -282,6 +283,7 @@ export default function ProductDetail() {
   const ProductPageComponent = components?.ProductPage ?? BaseElegantProductPage;
 
   return (
+    <div className="overflow-x-hidden">
     <>
       {/* P1-#6: marketplace → merchant navigation clarity.
           When the user arrives from /marketplace, show a clear
@@ -348,5 +350,6 @@ export default function ProductDetail() {
       recentlyViewed={recentlyViewed}
     />
     </>
+    </div>
   );
 }

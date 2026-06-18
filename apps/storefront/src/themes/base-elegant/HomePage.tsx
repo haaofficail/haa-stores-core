@@ -7,6 +7,7 @@ import ThemedProductCard from '@/components/ThemedProductCard';
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import { AutoScroll } from '@splidejs/splide-extension-auto-scroll';
 import '@splidejs/react-splide/css/core';
+// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { ArrowLeft, BadgeCheck, ChevronLeft, ChevronRight, ChevronDown, Ruler, Package } from 'lucide-react';
 import { TrustBadgesSection } from '@/components/ui/trust-badges';
 import { organizationJSONLD } from '@/lib/jsonld';
@@ -456,7 +457,7 @@ export default function BaseElegantHomePage(props: HomePageProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="animate-fade-in" id="main-content">
+    <div className="animate-fade-in overflow-x-hidden" id="main-content">
       <h1 className="sr-only">{props.store.name}</h1>
       {props.store && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: organizationJSONLD(props.store.name, props.store.logoUrl || '', `${window.location.origin}/s/${props.slug}`) }} />}
       {props.sections.filter((s: any) => s.enabled !== false).map((section: any) => {
