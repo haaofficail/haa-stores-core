@@ -1,6 +1,6 @@
 import { Context, ErrorHandler } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { AppError, getUserFriendlyMessage } from '@haa/shared'
+import { AppError, getUserFriendlyMessage, getFullErrorMessage } from '@haa/shared'
 import { reportSupportError } from '../services/support-error-log.js'
 
 export interface ErrorMonitor {
@@ -96,7 +96,7 @@ const errorHandler: ErrorHandler = async (err: Error, c: Context) => {
     error: {
       code: 'API-001',
       message: isProduction
-        ? getUserFriendlyMessage('INTERNAL_ERROR', 'تعذر تنفيذ العملية حاليًا.')
+        ? getFullErrorMessage('API-001', 'تعذر تنفيذ العملية حاليًا.')
         : err.message,
       correlationId: requestId,
     },
