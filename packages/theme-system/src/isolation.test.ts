@@ -87,7 +87,13 @@ describe('isolation', () => {
     });
 
     it('does not throw when status colors are missing', () => {
-      const { success, warning, error, ...colors } = MOCK_CONFIG.colors;
+      // Strip the three status keys explicitly so ESLint sees them as used.
+      const colors = {
+        ...MOCK_CONFIG.colors,
+        success: undefined,
+        warning: undefined,
+        error: undefined,
+      };
       expect(() => applyTheme({ ...MOCK_CONFIG, colors } as any)).not.toThrow();
       expect(document.documentElement.style.getPropertyValue('--theme-success')).toBe('#10b981');
       expect(document.documentElement.style.getPropertyValue('--theme-warning')).toBe('#f59e0b');
@@ -102,7 +108,8 @@ describe('isolation', () => {
     });
 
     it('does not throw when primary is missing', () => {
-      const { primary, ...colors } = MOCK_CONFIG.colors;
+      // Drop the primary key explicitly so ESLint sees it as used.
+      const colors = { ...MOCK_CONFIG.colors, primary: undefined };
       expect(() => applyTheme({ ...MOCK_CONFIG, colors } as any)).not.toThrow();
       expect(document.documentElement.style.getPropertyValue('--theme-primary')).toBe('#56a1e3');
     });
