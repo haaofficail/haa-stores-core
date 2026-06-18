@@ -136,7 +136,7 @@ export class WalletLedger {
         }
       }
 
-      const [entry] = await tx.insert(s.walletEntries).values({
+      const values = {
         storeId: input.storeId,
         walletAccountId: account.id,
         type: input.type,
@@ -152,7 +152,33 @@ export class WalletLedger {
         feeFixed: input.feeFixed != null ? input.feeFixed.toString() : null,
         feeSource: input.feeSource ?? null,
         metadata: input.metadata ?? null,
-      }).returning();
+      };
+
+      // DB-level idempotency for platform fees: at most one platform_fee per
+      // (store, order). The partial unique index (migration 0062) makes a
+      // duplicate impossible even under webhook replay / concurrency. On
+      // conflict we do a no-op insert and return the EXISTING entry WITHOUT
+      // touching balances (the original entry already moved them) — so a
+      // replay can never double-charge or double-count the balance.
+      const isPlatformFeeOrder =
+        input.type === 'platform_fee' && input.referenceType === 'order' && input.referenceId != null;
+
+      const [entry] = isPlatformFeeOrder
+        ? await tx.insert(s.walletEntries).values(values).onConflictDoNothing({
+            target: [s.walletEntries.storeId, s.walletEntries.referenceId],
+            where: sql`type = 'platform_fee' AND reference_type = 'order'`,
+          }).returning()
+        : await tx.insert(s.walletEntries).values(values).returning();
+
+      if (isPlatformFeeOrder && !entry) {
+        const [existing] = await tx.select().from(s.walletEntries).where(and(
+          eq(s.walletEntries.storeId, input.storeId),
+          eq(s.walletEntries.type, 'platform_fee'),
+          eq(s.walletEntries.referenceType, 'order'),
+          eq(s.walletEntries.referenceId, input.referenceId!),
+        )).limit(1);
+        return existing;
+      }
 
       await tx.update(s.walletAccounts).set({
         balance: balanceAfter.toString(),
@@ -793,7 +819,7 @@ export class WalletLedger {
       .orderBy(desc(s.paymentProviderTransactions.createdAt));
   }
 
-  async getSettlementBatches(storeId: number) {
+  async getSettlementBatches(_storeId: number) {
     return this.db.select().from(s.settlementBatches)
       .orderBy(desc(s.settlementBatches.createdAt));
   }
