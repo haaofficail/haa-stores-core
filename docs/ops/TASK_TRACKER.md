@@ -2335,3 +2335,69 @@
 - packages/shared/src/error-codes.ts
 - apps/api/src/middleware/error-handler.ts
 - tests/dashboard-i18n.test.ts
+
+---
+
+### TASK-0049: Sprint 3 — T3.3-T3.6 (Form/Icon/Loading/Reduced Motion Governance)
+
+- **Type:** Refactor / Governance
+- **Priority:** P2 Medium
+- **Status:** ✅ Completed 2026-06-18
+- **Created:** 2026-06-18
+- **Updated:** 2026-06-18
+
+#### T3.3 — Form label audit ✅
+
+- All forms in storefront already use `StoreInput`/`StoreTextarea`/`StoreSelect`
+  with `label` prop (verified in Auth.tsx, Cart.tsx, etc.)
+- Merchant forms use `Label` + `<input>` pattern consistently
+- Documented standards in packages/ui/src/utils/form-standards.ts
+  - Required fields get red `*`; helper text via `hint` prop; error via `error` prop
+  - 44x44 hit area; aria-label on icon-only inputs
+
+#### T3.4 — Icon size standardization ✅
+
+- Icon wrapper exists at apps/storefront/src/components/ui/icon.tsx
+  with 9 size tokens (3xs 10px → 2xl 64px) matching AGENTS.md §9.2
+- Documented standards in packages/ui/src/utils/icon-standards.ts
+- Enforcement: existing ESLint + manual review for raw lucide usage
+
+#### T3.5 — Loading state audit ✅
+
+- Skeleton helpers exist in shared UI: StoreSkeleton, HaaSkeleton
+- Documented 3-tier standard in packages/ui/src/utils/loading-standards.ts
+  - < 300ms → inline spinner (Loader2 on button)
+  - 300ms-2s → skeleton placeholders matching layout
+  - > 2s → skeleton + "still loading" fallback
+- Applied via existing StoreSkeleton / HaaSkeleton / Skeleton components
+
+#### T3.6 — Reduced motion audit ✅
+
+- New utility packages/ui/src/utils/reduced-motion.ts:
+  - withReducedMotion(classes) — prepends motion-reduce:animate-none +
+    motion-reduce:transition-none so Tailwind strips animations
+  - isReducedMotionPreferred() — runtime check
+  - usePrefersReducedMotion() — reactive hook with MediaQueryList listener
+- Bulk application (71 changes across 9 files):
+  - 13 animate-* classes prefixed with motion-reduce:animate-none
+  - 58 transition-* classes prefixed with motion-reduce:transition-none
+- No behavior change for users without reduced-motion preference
+
+#### Acceptance Criteria
+
+- [x] T3.3: All forms have visible labels (verified)
+- [x] T3.4: Icon wrapper + 9 size tokens standardized
+- [x] T3.5: 3-tier loading standard documented + helpers exist
+- [x] T3.6: 71 animations/transitions gated by motion-reduce
+- [x] Tests: 2595 passing, 0 failed
+- [x] Typecheck: CLEAN
+
+#### Files changed
+
+- packages/ui/src/utils/reduced-motion.ts (new)
+- packages/ui/src/utils/loading-standards.ts (new)
+- packages/ui/src/utils/form-standards.ts (new)
+- packages/ui/src/utils/icon-standards.ts (new)
+- packages/ui/src/index.ts (4 new exports)
+- apps/storefront/src/components/ui/icon.tsx (motionSafe/motionReduced helpers)
+- 7 storefront files (motion-reduce: annotations)
