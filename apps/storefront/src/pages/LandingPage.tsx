@@ -29,13 +29,10 @@ import { getClaim, isClaimEnabled } from '@/lib/landing-claims';
 import {
   ArrowLeft,
   ArrowUp,
-  CreditCard,
   ExternalLink,
-  Globe,
   Heart,
   MessageCircle,
   Quote,
-  Rocket,
   Shield,
   Sparkles,
   X,
@@ -59,6 +56,8 @@ import { Features } from '@/landing/sections/Features';
 import { PaymentSection } from '@/landing/sections/PaymentSection';
 import { HowItWorks } from '@/landing/sections/HowItWorks';
 import { MockupPreview, StorefrontPreview } from '@/landing/sections/StorefrontMockup';
+import { Pricing } from '@/landing/sections/Pricing';
+import { FinalCTA } from '@/landing/sections/FinalCTA';
 import type { TFn } from '@/landing/sections/types';
 
 /* ════════════════════════════════════════════════════════════════
@@ -282,241 +281,6 @@ function Hero({ t }: { t: TFn; onDemoOpen?: () => void }) {
         </div>
 
 
-      </StoreContainer>
-    </section>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   PRICING — 3 tiers with Pro highlighted
-   ════════════════════════════════════════════════════════════════ */
-function Pricing({ t }: { t: TFn }) {
-  const [yearly, setYearly] = useReactState(false);
-  // Plan data follows the Apple "3 tier with middle highlighted" pattern.
-  // Pro plan has graduated monthly/yearly to encourage annual commitment.
-  const plans = [
-    { key: 'free', name: t('landing.pricing.free.name', 'مجاني'), price: '0', period: '', desc: t('landing.pricing.free.desc', 'للتجار الذين يبدأون رحلتهم بميزانية محدودة.'), highlight: false, cta: t('landing.pricing.free.cta', 'ابدأ مجانًا') },
-    {
-      key: 'pro',
-      name: t('landing.pricing.pro.name', 'احترافي'),
-      monthly: '199',
-      yearly: '169',
-      period: t('landing.pricing.perMonth', '/شهريًا'),
-      desc: t('landing.pricing.pro.desc', 'للتجار الذين يريدون التوسّع بثقة.'),
-      highlight: true,
-      cta: t('landing.pricing.pro.cta', 'ابدأ تجربة 14 يوم'),
-    },
-    { key: 'enterprise', name: t('landing.pricing.ent.name', 'مؤسسي'), price: t('landing.pricing.ent.price', 'تواصل'), period: '', desc: t('landing.pricing.ent.desc', 'للفِرَق والعلامات الكبيرة باحتياجات مخصصة.'), highlight: false, cta: t('landing.pricing.ent.cta', 'تواصل مع المبيعات') },
-  ];
-  return (
-    <section id="pricing" className="relative py-16 sm:py-24 scroll-mt-20">
-      <StoreContainer>
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="aurora-pill text-xs">{t('landing.pricing.eyebrow', 'الأسعار')}</span>
-          {/* H2 scale: 36/48/60 */}
-          <h2 className="mt-6 text-[36px] font-bold leading-[1.15] tracking-[-0.02em] text-text-primary sm:text-[48px]">
-            {t('landing.pricing.title', 'باقات تناسب كل تاجر')}
-          </h2>
-            <p className="mt-6 text-[18px] leading-[1.6] text-text-secondary sm:text-[20px]">
-              {t('landing.pricing.subtitle', 'ابدأ مجانًا، وكبّر متجرك مع نمو أعمالك. بدون مفاجآت.')}
-            </p>
-
-          {/* Glass billing toggle: 40px height buttons, 14px font */}
-          <div role="group" aria-label="اختر دورة الفوترة" className="mt-8 inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/60 p-1 shadow-sm backdrop-blur-xl">
-            <button
-              type="button"
-              onClick={() => setYearly(false)}
-              aria-pressed={!yearly}
-              className={`min-h-[40px] rounded-full px-5 py-1.5 text-sm font-semibold transition-all duration-300 ${!yearly ? 'bg-text-primary text-white shadow-md' : 'text-text-secondary hover:text-text-primary'}`}
-            >
-              {t('landing.pricing.monthly', 'شهريًا')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setYearly(true)}
-              aria-pressed={yearly}
-              className={`inline-flex min-h-[40px] items-center gap-2 rounded-full px-5 py-1.5 text-sm font-semibold transition-all duration-300 ${yearly ? 'bg-text-primary text-white shadow-md' : 'text-text-secondary hover:text-text-primary'}`}
-            >
-              {t('landing.pricing.yearly', 'سنويًا')}
-              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold uppercase tracking-[0.08em] transition-colors ${yearly ? 'bg-white text-text-primary' : 'bg-success-soft text-success-text'}`}>
-                {t('landing.pricing.save', 'وفّر 15%')}
-              </span>
-            </button>
-          </div>
-        </div>
-        {/* Grid: 1 col mobile, 3 col desktop. gap 24px. */}
-        <ul className="mt-12 grid gap-6 lg:grid-cols-3">
-          {plans.map((p) => {
-            const { key, name, desc, highlight, cta } = p;
-            const price = 'price' in p ? p.price : (yearly ? p.yearly : p.monthly);
-            const period = p.period;
-            return (
-              // Card: 32px padding, 24px radius, layered shadow. Pro card has 2px border (visual lift).
-              <li
-                key={key}
-                className={`aurora-card relative overflow-hidden rounded-3xl p-8 transition-all duration-500 hover:-translate-y-2 sm:p-10 ${
-                  highlight
-                    ? 'border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-2xl shadow-blue-500/20'
-                    : 'border border-white/40 bg-white/70 backdrop-blur-xl hover:shadow-xl'
-                }`}
-              >
-                {highlight && (
-                  <span className="absolute top-6 end-6 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-white shadow-lg">
-                    <Sparkles className="h-3 w-3" />
-                    {t('landing.pricing.popular', 'الأكثر شيوعًا')}
-                  </span>
-                )}
-                {/* Plan name: 11px font-bold uppercase tracking-[0.12em] — eyebrow style */}
-                <div className="text-xs font-bold uppercase tracking-eyebrow text-text-tertiary">{name}</div>
-                {/* Price: 56px font-black (Linear convention for hero price)
-                    If highlight, gradient text; otherwise slate-900 */}
-                <div className="mt-5 flex items-baseline gap-1">
-                  <span className={`text-[56px] font-black leading-none tracking-[-0.04em] ${highlight ? 'aurora-text-gradient' : 'text-text-primary'}`}>{price}</span>
-                  {period &&               <span className="text-sm font-medium text-text-tertiary">{period}</span>}
-                </div>
-                {/* Description: 15px line-height 1.6 */}
-                <p className="mt-4 text-base leading-[1.6] text-text-secondary">{desc}</p>
-                {/* Feature highlights */}
-                <ul className="mt-5 space-y-2 text-sm text-text-secondary">
-                  {(key === 'free'
-                    ? ['متجر كامل', 'منتجات غير محدودة', 'دعم بالبريد']
-                    : key === 'pro'
-                    ? ['متجر كامل', 'ثيمات جاهزة', 'دفع وشحن', 'دعم عربي']
-                    : ['كل المميزات', 'دعم مخصص', 'استضافة خاصة']
-                  ).map((f) => (
-                    <li key={f} className="flex items-center gap-2">
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">✓</span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                {/* CTA: 48px height, 17px font-semibold, 28px horizontal padding, 100% width on mobile, full */}
-                <Link
-                  to={key === 'enterprise' ? '/contact' : '/signup' + (key === 'pro' ? '?plan=pro' : '')}
-                  className={`mt-8 inline-flex h-12 min-h-[48px] w-full items-center justify-center rounded-full text-base font-semibold transition-all ${
-                    highlight
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 hover:scale-[1.02] hover:shadow-xl hover:!text-white'
-                      : 'border border-border bg-surface text-text-primary hover:border-text-primary'
-                  }`}
-                >
-                  {cta}
-                </Link>
-                {/* Trust microcopy under CTA */}
-                <p className="mt-3 text-center text-[12px] text-text-tertiary">
-                  {highlight ? 'بدون بطاقة بنكية · إلغاء في أي وقت' : `${getClaim('freeForever').text} · لا حاجة لبطاقة`}
-                </p>
-              </li>
-            );
-          })}
-        </ul>
-      </StoreContainer>
-    </section>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   FINAL CTA — full-bleed glassy gradient
-   ════════════════════════════════════════════════════════════════ */
-function HighlightNumbers({ text, size = 'inherit' }: { text: string; size?: string }) {
-  const parts = text.split(/(\d[\d,]*\+?)/g);
-  return (
-    <>
-      {parts.map((part, i) =>
-        /^\d[\d,]*\+?$/.test(part)
-          ? <span key={i} className={`inline-block bg-gradient-to-br from-amber-200 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(251,191,36,0.4)] ${size}`}>{part}</span>
-          : <span key={i}>{part}</span>
-      )}
-    </>
-  );
-}
-
-function FinalCTA({ t }: { t: TFn }) {
-  const particles = Array.from({ length: 20 }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    size: Math.random() * 4 + 2,
-    delay: Math.random() * 8,
-    duration: Math.random() * 6 + 6,
-  }));
-  return (
-    <section className="relative py-16 sm:py-24">
-      <StoreContainer>
-        <div className="aurora-cta relative overflow-hidden rounded-[2.5rem] px-6 py-16 text-center shadow-2xl sm:px-12 sm:py-20">
-          {/* Animated gradient orbs */}
-          <div aria-hidden="true" className="absolute -end-32 -top-32 h-96 w-96 rounded-pill bg-blue-400/40 blur-3xl animate-pulse" style={{ animationDuration: '6s' }} />
-          <div aria-hidden="true" className="absolute -bottom-32 -start-32 h-96 w-96 rounded-pill bg-indigo-400/30 blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
-          <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-pill bg-violet-400/20 blur-3xl animate-pulse" style={{ animationDuration: '10s' }} />
-          {/* Floating particles */}
-          {particles.map((p) => (
-            <div
-              key={p.id}
-              aria-hidden="true"
-              className="absolute rounded-pill bg-white/20 aurora-float"
-              style={{
-                left: `${p.x}%`,
-                top: `${p.y}%`,
-                width: p.size,
-                height: p.size,
-                animation: `auroraFloat ${p.duration}s ease-in-out ${p.delay}s infinite`,
-              }}
-            />
-          ))}
-          <div aria-hidden="true" className="absolute inset-0 bg-white/5 backdrop-blur-sm" />
-          <div className="relative mx-auto max-w-4xl">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-eyebrow text-white/90 backdrop-blur-sm">
-              <span className="h-1.5 w-1.5 rounded-pill bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.8)] animate-pulse" />
-              {t('landing.finalCta.eyebrow', 'جاهز تبدأ؟')}
-            </span>
-            <h2 className="mt-7 leading-[1.15] tracking-[-0.03em]">
-              <div className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-0">
-                <span className="text-[32px] font-bold text-white/90 sm:text-[40px] lg:text-[48px]">{'انضم لـ'}</span>
-                <span className="text-[72px] font-extrabold bg-gradient-to-br from-amber-200 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:text-[96px] lg:text-[120px] xl:text-[140px]">
-                  {getClaim('merchantCount').text || 'مجتمع Haa'}
-                </span>
-                <span className="text-[32px] font-bold text-white/90 sm:text-[40px] lg:text-[48px]">
-                  {getClaim('merchantCount').status === 'verified' ? 'تاجر سعودي' : 'من التجار'}
-                </span>
-              </div>
-              <div className="mt-2 text-[24px] font-semibold tracking-[-0.02em] text-white/70 sm:text-[28px] lg:text-[32px]">
-                {getClaim('merchantCount').status === 'verified' ? 'يبيعون على Haa اليوم' : 'وابدأ تجارتك الإلكترونية'}
-              </div>
-            </h2>
-            <p className="mx-auto mt-6 max-w-xl text-[18px] leading-[1.6] text-white/85 sm:text-[20px]">
-              <HighlightNumbers text={t('landing.finalCta.subtitle', 'سجّل كتاجر مجانًا. لا حاجة لبطاقة بنكية. ألغِ في أي وقت بدون أسئلة.')} size="text-[1.15em]" />
-            </p>
-            <div className="mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:gap-4">
-              <Link
-                to="/signup?ref=final-cta"
-                className="group inline-flex h-14 min-h-[56px] w-full items-center justify-center gap-2 rounded-full bg-white px-8 text-[17px] font-semibold text-blue-700 shadow-xl transition-all duration-300 hover:scale-[1.04] hover:shadow-2xl sm:w-auto"
-              >
-                {t('landing.finalCta.primaryCta', 'سجّل كتاجر — مجانًا')}
-                <ArrowLeft className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
-              </Link>
-              <Link
-                to="/contact"
-                className="group inline-flex h-14 min-h-[56px] w-full items-center justify-center gap-2 rounded-full border border-white/40 bg-white/10 px-7 text-[17px] font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:scale-[1.04] hover:bg-white/20 hover:!text-white sm:w-auto"
-              >
-                <MessageCircle className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-                {t('landing.finalCta.secondaryCta', 'تواصل مع المبيعات')}
-              </Link>
-            </div>
-            <ul className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm font-medium text-white/80">
-              <li className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white">
-                <CreditCard className="h-4 w-4 text-amber-300" />
-                {t('landing.finalCta.g1', getClaim('zeroCommission').text)}
-              </li>
-              <li className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white">
-                <Globe className="h-4 w-4 text-blue-300" />
-                {t('landing.finalCta.g2', 'دومين فرعي مجاني')}
-              </li>
-              <li className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white">
-                <Rocket className="h-4 w-4 text-indigo-300" />
-                <HighlightNumbers text={t('landing.finalCta.g3', 'إعداد في 60 ثانية')} size="text-[1.1em]" />
-              </li>
-            </ul>
-          </div>
-        </div>
       </StoreContainer>
     </section>
   );
