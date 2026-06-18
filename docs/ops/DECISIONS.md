@@ -360,3 +360,28 @@ regressions.
 
 ### Skills Used
 plan-mode, test-driven-development, verification-before-completion.
+
+---
+
+## Reconciliation: P1/P2/P3 hardening merged onto phase-9 main (2026-06-18)
+
+A parallel session built P1/P2/P3 remediation on the OLD `main` base (diverged
+from this line). Rather than two divergent mains, the GENUINELY-ADDITIVE hardening
+was reconciled onto THIS line (the canonical main) on branch
+`integration/hardening-onto-phase9`:
+
+- **Batch 2 — Financial integrity** (migrations 0062/0063 + ledger onConflictDoNothing):
+  DB-level platform_fee idempotency + append-only wallet triggers. phase-9 lacked these.
+- **Batch 3 — Queue health** (resolveQueueStatus + /health queue block + startup log).
+- **Batch 6 — Fresh-DB bootstrap** (pnpm db:bootstrap + setup uses it + name derivation).
+- **Batch 1 — Platform brand color**: owner decision #5c9cd5 (retiring #56a1e3). phase-9
+  ALREADY had an admin-controllable platform brand (GET /api/brand + usePlatformBrand),
+  so this was a SURGICAL platform-color migration (FALLBACK_PRIMARY + platform shell CSS),
+  NOT a duplicate platform_settings port. Store defaults left untouched.
+
+DROPPED as redundant (phase-9 already had them): the dead-file cleanups, the QP5 route
+migrations, and a duplicate platform-brand system.
+
+Verified: full `pnpm -r typecheck` GREEN (22/22); ported wiring/unit tests pass; a fresh
+phase-9 DB bootstrap carries the new financial guards. Full 2673-test suite re-run is
+pending a phase-9-state local DB. No push; phase-9 + old main preserved by tags.
