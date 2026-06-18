@@ -1,18 +1,23 @@
 /**
  * Haa Landing Page — Aurora / Glass aesthetic
  *
- * P2-#1 refactor note: this file is intentionally 1945 LOC and
- * contains 31 helper + section functions. Splitting it into
- * per-section files is documented in docs/ops/REFACTOR_PLAN_P2-1.md
- * but is intentionally deferred because:
- *   1. The file is stable (no recent churn).
- *   2. The components are tightly coupled via shared helpers
- *      (TFn, useScrollReveal, Reveal, AuroraBackground).
- *   3. A naive split creates cross-file prop drilling for
- *      shared state (cartCount, selectedProduct, addToCart).
- * The right refactor is to extract state into a context provider
- * first, then split. Tracked as a follow-up. For now, sections
- * are organized under section headers for navigation.
+ * This file is the orchestrator. Each section is in
+ * src/landing/sections/<Name>.tsx (P2-#1 refactor, in progress).
+ *
+ * Sections (split across files):
+ *   - Nav (62 lines)
+ *   - Hero (242 lines) - next
+ *   - AboutSection (53 lines)
+ *   - LiveTicker (36 lines)
+ *   - Features (75 lines)
+ *   - HowItWorks (119 lines)
+ *   - PaymentSection (65 lines)
+ *   - StorefrontPreview (92 lines)
+ *   - MockupPreview (96 lines)
+ *   - Bento (209 lines)
+ *   - Pricing (133 lines)
+ *   - FinalCTA (95 lines)
+ *   - Footer (43 lines)
  *
  * Inspired by Linear, Stripe, Vercel. Apple-grade typography.
  * RTL Arabic, IBM Plex Sans Arabic.
@@ -57,7 +62,10 @@ const HeroAIChatLazy = React.lazy(() => import('@/landing/HeroAIChat'));
 
 import { isAIPreviewEnabled } from '@/landing/aiChatContent';
 
-type TFn = (key: string, fallback?: string) => string;
+// Extracted sections (P2-#1 refactor)
+import { Nav } from '@/landing/sections/Nav';
+import { Footer } from '@/landing/sections/Footer';
+import type { TFn } from '@/landing/sections/types';
 
 /* ════════════════════════════════════════════════════════════════
    SCROLL REVEAL — fade-in-slide-up on intersection
@@ -113,68 +121,6 @@ function AuroraBackground() {
         }}
       />
     </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   NAV — fixed glass header
-   ════════════════════════════════════════════════════════════════ */
-function Nav({ t }: { t: TFn }) {
-  const [logoError, setLogoError] = useReactState(false);
-  const { platformLogoUrl } = usePlatformBrand();
-  const showLogo = !!platformLogoUrl && !logoError;
-
-  return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/60 backdrop-blur-2xl backdrop-saturate-150">
-      <StoreContainer className="flex h-16 items-center justify-between gap-4">
-        <Link to="/" aria-label={t('store.logo', 'الرئيسية')} className="flex items-center gap-2.5">
-          {showLogo ? (
-            <img key={platformLogoUrl} src={platformLogoUrl!} alt="Haa" className="platform-logo h-12 w-auto" onError={() => setLogoError(true)} />
-          ) : (
-            <img src="/assets/haa-logo.png" alt="Haa" className="h-12 w-auto" />
-          )}
-        </Link>
-
-        <nav aria-label={t('store.mainNav', 'التنقل الرئيسي')} className="hidden items-center gap-1 md:flex">
-          {[
-            { label: t('landing.nav.features', 'الميزات'), href: '#features' },
-            { label: t('landing.nav.howItWorks', 'كيف نعمل'), href: '#how' },
-            { label: 'تعرف علينا', href: '#about' },
-            { label: t('landing.nav.pricing', 'الأسعار'), href: '#pricing' },
-          ].map(({ label, href }) => (
-            <a
-              key={href}
-              href={href}
-              className="min-h-[44px] rounded-full px-3 text-sm font-medium text-text-secondary transition-colors hover:bg-white/60 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-            >
-              {label}
-            </a>
-          ))}
-          <Link
-            to="/marketplace"
-            className="min-h-[44px] rounded-full px-3 text-sm font-medium text-text-secondary transition-colors hover:bg-white/60 hover:text-text-primary"
-          >
-            السوق
-          </Link>
-        </nav>
-
-        <div className="flex items-center gap-2">
-          <Link
-            to="/login?ref=nav"
-            className="hidden min-h-[40px] items-center rounded-full px-3 text-[15px] font-medium text-text-secondary transition-colors hover:text-text-primary sm:inline-flex"
-          >
-            {t('landing.nav.login', 'تسجيل الدخول')}
-          </Link>
-          <Link
-            to="/signup?ref=nav"
-            className="aurora-btn inline-flex h-10 min-h-[40px] items-center gap-2 rounded-full bg-text-primary px-5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/30 hover:!text-white"
-          >
-            {t('landing.nav.signup', 'سجّل كتاجر')}
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </div>
-      </StoreContainer>
-    </header>
   );
 }
 
@@ -1856,49 +1802,6 @@ function Bento({ t }: { t: TFn }) {
       </StoreContainer>
       )}
     </section>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   FOOTER — minimal glass with Saudi identity
-   ════════════════════════════════════════════════════════════════ */
-function Footer({ t }: { t: TFn }) {
-  const [logoError, setLogoError] = useReactState(false);
-  const { platformLogoUrl } = usePlatformBrand();
-  const showLogo = !!platformLogoUrl && !logoError;
-
-  return (
-    <footer className="border-t border-white/10 bg-white/40 py-8 backdrop-blur-xl sm:py-10">
-      <StoreContainer>
-        <div className="flex flex-col items-center gap-4 text-center">
-          {/* Brand badge */}
-          <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:gap-2.5">
-            {showLogo ? (
-              <img key={platformLogoUrl} src={platformLogoUrl!} alt="Haa" className="platform-logo h-12 w-auto" onError={() => setLogoError(true)} />
-            ) : (
-              <img src="/assets/haa-logo.png" alt="Haa" className="h-12 w-auto" />
-            )}
-            <span className="font-extrabold text-text-primary">متاجر هاء</span>
-            <span className="hidden text-text-tertiary/50 sm:inline select-none" aria-hidden="true">·</span>
-            <span className="flex items-center gap-1 text-sm font-medium text-emerald-700">
-              <span>صنع في السعودية</span>
-              <img
-                src="/assets/saudi-map.png"
-                alt=""
-                className="h-5 w-auto"
-                aria-hidden="true"
-              />
-            </span>
-          </div>
-          {/* Divider */}
-          <div className="h-px w-16 bg-border/50" aria-hidden="true" />
-          {/* Copyright */}
-          <p className="text-sm text-text-tertiary">
-            {t('landing.footer.copyright', '© 2026 هاء سوفت')}
-          </p>
-        </div>
-      </StoreContainer>
-    </footer>
   );
 }
 
