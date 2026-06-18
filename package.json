@@ -26,6 +26,7 @@
     "deps:audit": "pnpm audit --prod",
     "db:generate": "pnpm --filter @haa/db generate",
     "db:migrate": "pnpm --filter @haa/db migrate",
+    "db:bootstrap": "bash scripts/bootstrap-fresh-db.sh",
     "db:seed": "pnpm --filter @haa/db seed",
     "db:test:setup": "bash scripts/db-test-setup.sh",
     "db:studio": "pnpm --filter @haa/db studio",
@@ -56,7 +57,7 @@
     "roadmap:generate": "python3 scripts/roadmap-regenerate.py",
     "roadmap:open": "open ROADMAP.html",
     "preflight:pentest": "bash scripts/pre-pentest-smoke.sh",
-    "setup": "pnpm install && pnpm docker:up && pnpm db:migrate && pnpm db:seed"
+    "setup": "pnpm install && pnpm docker:up && pnpm db:bootstrap && pnpm db:seed"
   },
   "engines": {
     "node": ">=20.0.0",

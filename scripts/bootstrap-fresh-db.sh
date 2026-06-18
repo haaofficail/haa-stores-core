@@ -29,11 +29,10 @@
 
 set -euo pipefail
 
+# Optional <db_name> arg. If omitted, the DB name is derived from DATABASE_URL
+# so `pnpm db:bootstrap` / `pnpm setup` work with zero args for the project DB.
+# Pass an explicit name only to bootstrap a DIFFERENT throwaway/test database.
 DB_NAME="${1:-}"
-if [ -z "$DB_NAME" ]; then
-  echo "usage: $0 <db_name>" >&2
-  exit 1
-fi
 
 # Load env (DB URL, password) without leaking the password to ps.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -43,6 +42,14 @@ if [ -f "$PROJECT_DIR/.env" ]; then
   # shellcheck disable=SC1091
   source "$PROJECT_DIR/.env"
   set +a
+fi
+
+if [ -z "$DB_NAME" ]; then
+  DB_NAME="$(node -e "const u=new URL(process.env.DATABASE_URL); process.stdout.write(u.pathname.replace(/^\//,''))" 2>/dev/null || true)"
+fi
+if [ -z "$DB_NAME" ]; then
+  echo "usage: $0 [db_name]   (or set DATABASE_URL so the name can be derived)" >&2
+  exit 1
 fi
 
 DB_URL="${DATABASE_URL:-postgres://haa:haa_secret_2024@localhost:5432/haastores}"
