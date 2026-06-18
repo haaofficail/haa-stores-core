@@ -21,6 +21,10 @@
     "./landing-ai-agent": {
       "import": "./dist/landing-ai-agent/index.js",
       "types": "./dist/landing-ai-agent/index.d.ts"
+    },
+    "./vat": {
+      "import": "./dist/vat.js",
+      "types": "./dist/vat.d.ts"
     }
   },
   "scripts": {

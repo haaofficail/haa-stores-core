@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@haa/commerce-core": "workspace:*",
     "@haa/storefront-themes": "workspace:*",
     "@haa/theme-system": "workspace:*",
     "@haa/tokens": "workspace:*",

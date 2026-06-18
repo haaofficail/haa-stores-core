@@ -2543,3 +2543,53 @@
 - **Skills Used:** systematic-debugging (audit-then-fix loop), verification-before-completion (typecheck + test after every change).
 - **Risks:** None. All changes are additive (overflow guard, loading attribute) and tested by the new regression test.
 - **Status History:** Done as of 2026-06-18.
+
+---
+
+### TASK-0056: Sprint 4+ Round 2 — Bundle Baseline + Pre-existing Build Fixes
+
+- **Type:** Refactor / Performance / Bug Fix
+- **Priority:** P1 High
+- **Status:** Done (2026-06-18)
+- **Created:** 2026-06-18
+- **Updated:** 2026-06-18
+- **Original Request:** "١" (Option 1 from post-Sprint-4 handoff) — Round 2 of Sprint 4, Theme B continuation.
+- **Theme selection:** Theme B (Performance) extended — bundle baseline + budget test. No new dependencies installed (per Rule 5: install packages requires owner approval).
+- **Scope (this session):**
+  1. **Pre-existing build fixes** — `pnpm -r build` was BROKEN before this round:
+     - Added `./vat` subpath export to `packages/commerce-core/package.json` (was missing since TASK-0035 sub-item 7)
+     - Added `@haa/commerce-core` to `apps/storefront` dependencies (was missing entirely)
+     - `pnpm -r build` now builds storefront, dashboard, admin successfully
+  2. **Bundle baseline captured** — storefront 404 KB JS / dashboard 1.4 MB JS / admin 380 KB JS
+  3. **Bundle budget regression test** — `tests/bundle-budget.test.ts` (13 tests) enforces:
+     - Total JS ≤ 1.5/5/1.5 MB
+     - Max single chunk ≤ 500 KB
+     - CSS ≤ 200 KB per app
+     - All apps declare `chunkSizeWarningLimit` in vite config
+  4. **Spec** — `docs/superpowers/specs/2026-06-18-sprint-4-round-2-scope.md`
+- **Acceptance Criteria:**
+  - [x] `pnpm -r build` exits 0 (was BROKEN)
+  - [x] All 3 frontend apps have dist/ outputs
+  - [x] Bundle budget test passes against current builds
+  - [x] `pnpm typecheck` clean (22/22 packages)
+  - [x] `pnpm test` 2673 pass / 0 fail / 1 skip / 14 todo
+  - [x] `git diff --check` clean
+  - [x] No new dependencies added (Rule 5: install packages requires owner approval)
+- **Files changed (6 total):**
+  - Modified: `packages/commerce-core/package.json` (added `./vat` subpath)
+  - Modified: `apps/storefront/package.json` (added `@haa/commerce-core` dep)
+  - New: `tests/bundle-budget.test.ts` (13 tests)
+  - New: `docs/superpowers/specs/2026-06-18-sprint-4-round-2-scope.md`
+  - Modified: `docs/ops/CURRENT_STATE.md`
+  - Modified: `docs/ops/TASK_TRACKER.md` (this entry)
+- **Deferred (out of scope for Round 2):**
+  - 🧾 Lighthouse CI integration — would require new dev dependency + CI config
+  - 🧾 Bundle analyzer (rollup-plugin-visualizer) — would require new dev dependency
+  - 🧾 Reduce dashboard JS to < 500 KB — replace recharts with lighter library or dynamic-import
+  - 🧾 Convert saudi-map.png + haa-logo.png to WebP/AVIF
+  - 🧾 Theme C (Observability) — waits for live launch + owner accounts
+  - 🧾 Theme D (WCAG external audit) — requires owner firm contract
+  - 🧾 Theme E (English localization) — LOW ROI for KSA market
+- **Skills Used:** systematic-debugging (build failures root cause), verification-before-completion (typecheck + test + build after every change).
+- **Risks:** None. All changes are additive (export declaration, dep declaration, new test file).
+- **Status History:** Done as of 2026-06-18.
