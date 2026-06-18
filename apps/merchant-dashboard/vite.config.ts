@@ -30,7 +30,10 @@ export default defineConfig({
             '@radix-ui/react-toast',
             '@radix-ui/react-tooltip',
           ],
-          'vendor-charts': ['recharts'],
+          // Sprint 4+ Round 3 (TASK-0057): recharts removed from manual
+          // chunks. Now lazy-imported via React.lazy() in AnalyticsSection
+          // and only loads when the analytics section is expanded.
+          // (Previously a 400 KB vendor-charts chunk in the initial bundle.)
           'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
         },
       },

@@ -98,3 +98,7 @@ export function CategoryPieChart({ orderStatusDist, t }: Props) {
     </div>
   );
 }
+
+// Default export for React.lazy() dynamic import (Round 3 - recharts
+// bundle reduction). The named export is kept for static imports elsewhere.
+export default CategoryPieChart;

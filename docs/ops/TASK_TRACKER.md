@@ -2593,3 +2593,54 @@
 - **Skills Used:** systematic-debugging (build failures root cause), verification-before-completion (typecheck + test + build after every change).
 - **Risks:** None. All changes are additive (export declaration, dep declaration, new test file).
 - **Status History:** Done as of 2026-06-18.
+
+---
+
+### TASK-0057: Sprint 4+ Round 3 — Recharts Dynamic Import
+
+- **Type:** Performance / Refactor
+- **Priority:** P1 High
+- **Status:** Done (2026-06-18)
+- **Created:** 2026-06-18
+- **Updated:** 2026-06-18
+- **Original Request:** "1.📋 Sprint 4+ Round 3 (Theme B continuation): reduce dashboard JS (recharts dynamic-import)"
+- **Theme selection:** Theme B (Performance) — recharts dynamic import
+- **Scope (this session):**
+  1. **Round 2 baseline identified**: `vendor-charts.js` = 404 KB in initial bundle (recharts library)
+  2. **Removed `vendor-charts` from manualChunks** in `apps/merchant-dashboard/vite.config.ts`
+  3. **Added `export default` to chart files** (kept named exports for static imports)
+  4. **Replaced static imports with `React.lazy()`** in `AnalyticsSection.tsx`
+  5. **Added `ChartSkeleton` fallback** (h-64 bg-white/80 animate-pulse + motion-reduce)
+  6. **Wrapped charts in `<Suspense>`** boundaries
+- **Acceptance Criteria:**
+  - [x] `pnpm --filter @haa/merchant-dashboard build` exits 0
+  - [x] `vendor-charts.js` no longer in initial chunks
+  - [x] `generateCategoricalChart.js` (recharts + CategoryPieChart) is a separate lazy chunk
+  - [x] `SalesChart.js` is a separate lazy chunk
+  - [x] `pnpm typecheck` clean (22/22 packages)
+  - [x] `pnpm test` 2673 pass / 0 fail
+  - [x] `pnpm exec eslint` on changed files: 0 errors
+  - [x] `git diff --check` clean
+- **Bundle delta (before → after):**
+  - Initial JS: 1.4 MB → 687 KB (**−713 KB, −51%**)
+  - vendor-charts (404 KB) → removed
+  - 3 new lazy chunks: generateCategoricalChart (351 KB) + SalesChart (31 KB) + CategoryPieChart (27 KB)
+- **Files changed (5 total):**
+  - Modified: `apps/merchant-dashboard/vite.config.ts` (removed vendor-charts)
+  - Modified: `apps/merchant-dashboard/src/pages/dashboard/CategoryPieChart.tsx` (added default export)
+  - Modified: `apps/merchant-dashboard/src/pages/dashboard/SalesChart.tsx` (added default export)
+  - Modified: `apps/merchant-dashboard/src/pages/dashboard/AnalyticsSection.tsx` (React.lazy + Suspense + ChartSkeleton)
+  - New: `docs/superpowers/specs/2026-06-18-sprint-4-round-3-scope.md`
+  - Modified: `docs/ops/CURRENT_STATE.md`
+  - Modified: `docs/ops/TASK_TRACKER.md` (this entry)
+- **Trade-offs:**
+  - Tiny TTI delay on first chart expansion (~200ms broadband, ~1s 3G)
+  - Skeleton rendered immediately to prevent layout shift
+- **Deferred (out of scope for Round 3):**
+  - 🧾 Further code-split chart internals (Tooltip as separate chunk)
+  - 🧾 Lighthouse CI integration (needs new dev dep + owner approval)
+  - 🧾 Replace recharts with lighter library (visx, lightweight-charts)
+  - 🧾 Theme C/D/E — all blocked on owner-side
+- **Skills Used:** verification-before-completion (bundle size before/after measurement).
+- **Risks:** None. All changes are additive (default export + React.lazy wrapper). Visual fidelity preserved via ChartSkeleton.
+- **Status History:** Done as of 2026-06-18.
