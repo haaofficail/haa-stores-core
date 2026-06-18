@@ -2227,3 +2227,44 @@
   3. Product/CartItem interfaces co-located with StorefrontMockup (only used there)
   4. Each extraction required TS6133 cleanup (orphaned lucide imports after section removal)
   5. Some sections had orphaned comment blocks (e.g. dead "COUNT UP — Counter variant" note) that needed manual removal
+
+---
+
+### TASK-0047: Sprint 2 — T2.2 ProductCard Consolidation
+
+- **Type:** Refactor / Architecture
+- **Priority:** P2 Medium
+- **Status:** ✅ Completed 2026-06-18
+- **Created:** 2026-06-18
+- **Updated:** 2026-06-18
+- **Original Request:** "كمل" — start Sprint 2 T2.2 after T2.1 LandingPage completion.
+- **Expanded Requirement:** Consolidate 3 ProductCard implementations (legacy + canonical + standalone marketplace) into 1 canonical + 1 thin wrapper.
+- **Before:**
+  - `apps/storefront/src/components/ProductCard.tsx` (199 LOC, theme-aware)
+  - `apps/storefront/src/components/product-card/ProductCard.tsx` (169 LOC, 4 variants)
+  - `apps/storefront/src/pages/marketplace/theme/MarketplaceProductCard.tsx` (126 LOC)
+- **After:**
+  - `apps/storefront/src/components/product-card/ProductCard.tsx` (~270 LOC, theme-aware + 4 variants + ProductLike type)
+  - `apps/storefront/src/components/product-card/MarketplaceProductCard.tsx` (~60 LOC, thin wrapper)
+- **Files modified:** 16 (1 canonical rewrite + 1 wrapper + 1 deletion + 6 importers + 2 test updates + 1 theme-registry + 1 HomePage + 2 ProductImageFrame + Category)
+- **Lines net:** -52 LOC (-388 removed, +336 added across all files)
+- **Acceptance Criteria:**
+  - [x] Single canonical ProductCard.tsx under `product-card/` (theme-aware + 4 variants)
+  - [x] Legacy `apps/storefront/src/components/ProductCard.tsx` deleted
+  - [x] Standalone `MarketplaceProductCard.tsx` deleted; thin wrapper in `product-card/` instead
+  - [x] All 3 importers updated (MarketplaceProductDetail, MarketplaceEdition, MarketplaceSeller)
+  - [x] theme-registry.ts imports canonical
+  - [x] ThemedProductCard falls back to canonical
+  - [x] All 5 layout flags migrated: showCategory, showRating, showStockBadge, showSalesCount, showDiscountBadge, showCountdown
+  - [x] CountdownTimer integration preserved
+  - [x] Tests: 2595 passing, 0 failed
+  - [x] Typecheck: CLEAN
+  - [x] Regression tests updated and passing (card-visual-consistency, products-qa-regression)
+- **Key Decisions:**
+  1. **Canonical owns theme integration** — reads `useStorefrontTheme()` and resolves layout flags internally. Callers pass `null` to defer to theme defaults, `true`/`false` to override.
+  2. **Legacy `compact` prop supported** — backward-compatible with `category.tsx` + `homepage.tsx`. Maps to `variant='compact'`.
+  3. **Legacy `productCardSize` removed** — size-driven compact decision moved to callers (HomePage) which compute `compact={(productCardSize ?? 3) <= 2}`.
+  4. **MarketplaceProductCard as thin wrapper** — preserves marketplace-specific behaviors (`marketplaceCart.add()`, isDemoStore badge overlay) without polluting canonical.
+  5. **ProductLike type with index signature** — accepts any product shape with `name`+`slug`+`price`+optional fields; callers with strict shapes (PublicProduct) cast via `as unknown as Parameters<typeof ProductCard>[0]['product']` where needed.
+- **Open follow-ups:**
+  - T2.3 (DashboardHome 1599 LOC), T2.4 (Settings 1490 LOC), T2.5 (Orders 1394 LOC) still pending in Sprint 2
