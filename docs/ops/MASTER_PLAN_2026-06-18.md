@@ -233,19 +233,22 @@ NOW ────────► Investigate 6 P0 alerts
 
 ## 📊 Status summary
 
-| Stream                                 | Status                                                              | Next Action                               |
-| -------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------- |
-| Quality Passes                         | ✅ DONE                                                             | None                                      |
-| Design System (Sprint 1-3)             | ✅ DONE                                                             | Path C (housekeeping)                     |
-| Marketplace Phase 0-3                  | ✅ DONE                                                             | Path A (TASK-0043)                        |
-| Marketplace Phase 4                    | ✅ DONE (TASK-0043 — 3 tracks: rate limit, permissions, pagination) | Path A (start Phase 5 eng prep)           |
-| Marketplace Phase 5 eng prep           | ✅ DONE (TASK-0044 A1-A4 — 3 docs)                                  | Path A (founder engages vendor)           |
-| Marketplace Phase 5 owner gates        | 🔴 OPEN (G1-G10 — owner execution)                                  | Owner parallel                            |
-| Marketplace Phase 6 (pen-test + beta)  | 🟡 PENDING                                                          | Path A (depends on G1-G10 + Phase 5 prep) |
-| Owner Actions G1-G10                   | 🔴 OPEN                                                             | Owner execution (no eng)                  |
-| Compliance Tracks (3DS, ZATCA, Wallet) | 🟢 Independent                                                      | Can run in parallel                       |
-| Sprint 4+                              | 📋 PLANNING                                                         | Path B (separate session)                 |
-| P0 Alerts Investigation                | 🐛 OPEN                                                             | Path D (separate session)                 |
+| Stream                                                 | Status                                                                                          | Next Action                               |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Quality Passes                                         | ✅ DONE                                                                                         | None                                      |
+| Design System (Sprint 1-3)                             | ✅ DONE                                                                                         | None                                      |
+| Marketplace Phase 0-3                                  | ✅ DONE                                                                                         | None                                      |
+| Marketplace Phase 4                                    | ✅ DONE (TASK-0043 — 3 tracks: rate limit, permissions, pagination)                             | None                                      |
+| Marketplace Phase 5 eng prep                           | ✅ DONE (TASK-0044 A1-A4 — 3 docs)                                                              | None                                      |
+| Marketplace Phase 5 owner gates                        | 🔴 OPEN (G1-G10 — owner execution)                                                              | Owner parallel                            |
+| Marketplace Phase 6 (pen-test + beta)                  | 🟡 PENDING                                                                                      | Path A (depends on G1-G10 + Phase 5 prep) |
+| Owner Actions G1-G10                                   | 🔴 OPEN                                                                                         | Owner execution (no eng)                  |
+| Compliance Tracks (3DS, ZATCA, Wallet)                 | 🟢 Independent                                                                                  | Can run in parallel                       |
+| **Sprint 4 (Theme A+B mobile + perf)**                 | ✅ **DONE (TASK-0055)** — overflow guards × 24 + lazy loading × 4 + 9 regression tests          | None                                      |
+| **Sprint 4+ Round 2 (bundle baseline)**                | ✅ **DONE (TASK-0056)** — pre-existing build fixes + 13 regression tests + 1.5/5/1.5 MB budgets | None                                      |
+| **Sprint 4+ Round 3 (recharts dynamic)**               | ✅ **DONE (TASK-0057)** — initial dashboard JS reduced 51% (1.4 MB → 687 KB)                    | None                                      |
+| **P0 Alerts Investigation (INC-001..005 + 6 API-001)** | ✅ **DONE (TASK-0053)** — Vite HMR transient + missing billing seed guard                       | None                                      |
+| **Branch Cleanup**                                     | ✅ **DONE (TASK-0054)** — 4 ESLint warnings fixed, 14 todo placeholders reclassified            | None                                      |
 
 ---
 
