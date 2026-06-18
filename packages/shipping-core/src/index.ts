@@ -14,6 +14,8 @@ export type {
 export { ManualShippingProvider } from "./manual.js";
 export { HaaMockShippingProvider } from "./mock.js";
 export { OtoShippingProvider } from "./oto.js";
+export { AramexShippingProvider } from "./aramex.js";
+export { SmsaShippingProvider } from "./smsa.js";
 export { createShippingProvider, getShippingProviderStatus } from "./factory.js";
 export { ShippingService } from "./shipping.js";
 export { LabelService } from "./labels.js";

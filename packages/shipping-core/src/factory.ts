@@ -3,6 +3,8 @@ import type { ShippingProvider } from "./provider.js";
 import { ManualShippingProvider } from "./manual.js";
 import { HaaMockShippingProvider } from "./mock.js";
 import { OtoShippingProvider } from "./oto.js";
+import { AramexShippingProvider } from "./aramex.js";
+import { SmsaShippingProvider } from "./smsa.js";
 
 export function createShippingProvider(
   providerCode?: ShippingProviderCode,
@@ -23,13 +25,10 @@ export function createShippingProvider(
     );
   }
 
-  if (resolvedProvider === "haa_mock") {
-    return new HaaMockShippingProvider();
-  }
-
-  if (resolvedProvider === "oto") {
-    return new OtoShippingProvider();
-  }
+  if (resolvedProvider === "haa_mock") return new HaaMockShippingProvider();
+  if (resolvedProvider === "oto") return new OtoShippingProvider();
+  if (resolvedProvider === "aramex") return new AramexShippingProvider();
+  if (resolvedProvider === "smsa") return new SmsaShippingProvider();
 
   return new ManualShippingProvider();
 }
@@ -39,6 +38,8 @@ export function getShippingProviderStatus(): {
   activeMode: ShippingMode;
   otoConfigured: boolean;
   otoAvailable: boolean;
+  aramexConfigured: boolean;
+  smsaConfigured: boolean;
   liveBlocked: boolean;
 } {
   const mode = (process.env.SHIPPING_MODE as ShippingMode) || "manual";
@@ -51,6 +52,8 @@ export function getShippingProviderStatus(): {
     activeMode: mode,
     otoConfigured: hasOtoKeys,
     otoAvailable: provider === "oto" && hasOtoKeys,
+    aramexConfigured: !!(process.env.ARAMEX_USERNAME && process.env.ARAMEX_ACCOUNT_NUMBER),
+    smsaConfigured: !!(process.env.SMSA_PASS_KEY && process.env.SMSA_SENDER_ID),
     liveBlocked: true,
   };
 }

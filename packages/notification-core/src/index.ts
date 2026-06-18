@@ -1,4 +1,8 @@
-export const NOTIFICATION_CORE_VERSION = '0.2.0';
+export const NOTIFICATION_CORE_VERSION = '0.3.0';
+
+export { ResendEmailProvider } from './providers/resend.js';
+export { UnifoncSmsProvider, UnifoncWhatsAppProvider } from './providers/unifonic.js';
+export { TaqnyatSmsProvider } from './providers/taqnyat.js';
 
 export interface NotificationMessage {
   recipient: string;
@@ -32,13 +36,41 @@ import { eq, desc, and } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { isDemoStore } from '@haa/shared';
+import { ResendEmailProvider } from './providers/resend.js';
+import { UnifoncSmsProvider, UnifoncWhatsAppProvider } from './providers/unifonic.js';
+import { TaqnyatSmsProvider } from './providers/taqnyat.js';
+
+/**
+ * Auto-wire real providers from env vars.
+ * Falls back to ConsoleNotificationProvider when no env var is set.
+ * Priority: Resend > console (email), Unifonic > Taqnyat (sms), Unifonic (whatsapp).
+ */
+function buildDefaultProviders(): NotificationProvider[] {
+  const providers: NotificationProvider[] = [];
+
+  // Email
+  const resend = new ResendEmailProvider();
+  providers.push(resend.isAvailable ? resend : new ConsoleNotificationProvider());
+
+  // SMS — prefer Unifonic; fall back to Taqnyat if configured
+  const unifoncSms = new UnifoncSmsProvider();
+  const taqnyat = new TaqnyatSmsProvider();
+  if (unifoncSms.isAvailable) providers.push(unifoncSms);
+  else if (taqnyat.isAvailable) providers.push(taqnyat);
+
+  // WhatsApp
+  const unifoncWa = new UnifoncWhatsAppProvider();
+  if (unifoncWa.isAvailable) providers.push(unifoncWa);
+
+  return providers;
+}
 
 export class NotificationService {
   private providers: NotificationProvider[];
   private isDemoProvider: boolean;
 
   constructor(private db: DbClient = createDbClient(), private store?: { id: number; isDemo?: boolean | null }) {
-    this.providers = [new ConsoleNotificationProvider()];
+    this.providers = buildDefaultProviders();
     this.isDemoProvider = isDemoStore(store as any) ?? false;
   }
 

@@ -156,6 +156,95 @@ authRouter.get('/me', requireAuth(), async (c) => {
   });
 });
 
+// GET /auth/google — redirect to Google OAuth
+authRouter.get('/google', (c) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) return c.json({ success: false, error: { code: 'NOT_CONFIGURED', message: 'Google OAuth not configured' } }, 503);
+
+  const redirectUri = `${process.env.API_BASE_URL || ''}/api/auth/google/callback`;
+  const scope = 'openid email profile';
+  const state = Buffer.from(Math.random().toString(36)).toString('base64');
+
+  const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+  url.searchParams.set('client_id', clientId);
+  url.searchParams.set('redirect_uri', redirectUri);
+  url.searchParams.set('response_type', 'code');
+  url.searchParams.set('scope', scope);
+  url.searchParams.set('state', state);
+  url.searchParams.set('access_type', 'offline');
+
+  return c.redirect(url.toString());
+});
+
+// GET /auth/google/callback — handle Google OAuth callback
+authRouter.get('/google/callback', async (c) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    return c.json({ success: false, error: { code: 'NOT_CONFIGURED', message: 'Google OAuth not configured' } }, 503);
+  }
+
+  const code = c.req.query('code');
+  const error = c.req.query('error');
+  if (error || !code) {
+    return c.json({ success: false, error: { code: 'OAUTH_DENIED', message: error || 'No code received' } }, 400);
+  }
+
+  const redirectUri = `${process.env.API_BASE_URL || ''}/api/auth/google/callback`;
+
+  // Exchange code for tokens
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code' }).toString(),
+  });
+  if (!tokenRes.ok) {
+    return c.json({ success: false, error: { code: 'TOKEN_EXCHANGE_FAILED', message: 'Google token exchange failed' } }, 400);
+  }
+  const tokens = await tokenRes.json() as { access_token?: string; id_token?: string };
+
+  // Get user profile
+  const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: `Bearer ${tokens.access_token}` },
+  });
+  if (!profileRes.ok) {
+    return c.json({ success: false, error: { code: 'PROFILE_FETCH_FAILED', message: 'Could not fetch Google profile' } }, 400);
+  }
+  const profile = await profileRes.json() as { sub?: string; email?: string; name?: string; picture?: string };
+
+  if (!profile.email) {
+    return c.json({ success: false, error: { code: 'NO_EMAIL', message: 'Google account has no email' } }, 400);
+  }
+
+  const service = new AuthFlowService();
+  const result = await service.loginOrRegisterWithOAuth({
+    provider: 'google',
+    providerId: profile.sub || '',
+    email: profile.email,
+    name: profile.name || profile.email.split('@')[0],
+  });
+
+  if ('kind' in result) {
+    return c.json({ success: false, error: { code: result.kind.toUpperCase(), message: result.message } }, 400);
+  }
+
+  // Mint JWT (same pattern as password login)
+  const oauthRole = result.role as UserRole;
+  const oauthPermissions = getPermissionsForRole(oauthRole);
+  const oauthToken = signToken({
+    userId: result.userId,
+    tenantId: result.tenantId,
+    activeStoreId: result.storeId,
+    tokenVersion: result.userTokenVersion,
+    roles: [result.role],
+    permissions: oauthPermissions,
+  });
+
+  // Redirect to merchant dashboard with token in query (frontend stores in localStorage)
+  const dashboardUrl = process.env.MERCHANT_DASHBOARD_URL || '/';
+  return c.redirect(`${dashboardUrl}?access_token=${oauthToken}`);
+});
+
 // POST /auth/logout
 authRouter.post('/logout', requireAuth(), async (c) => {
   const auth = getAuth(c)!;

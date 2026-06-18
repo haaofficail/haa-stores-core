@@ -305,6 +305,76 @@ export class AuthFlowService {
       .set({ tokenVersion: sql`${s.users.tokenVersion} + 1` })
       .where(eq(s.users.id, userId));
   }
+
+  /**
+   * Find or create a user from an OAuth provider (Google, Apple, etc.).
+   * Returns LoginPayload on success (same shape as password login).
+   * Returns LoginError if the account cannot be resolved.
+   */
+  async loginOrRegisterWithOAuth(input: {
+    provider: 'google' | 'apple';
+    providerId: string;
+    email: string;
+    name: string;
+  }): Promise<LoginPayload | LoginError> {
+    // Look up existing user by email
+    const [existingUser] = await this.db
+      .select()
+      .from(s.users)
+      .where(eq(s.users.email, input.email))
+      .limit(1);
+
+    let userId: number;
+
+    if (existingUser) {
+      userId = existingUser.id;
+    } else {
+      // Auto-register: create user + tenant + store scaffold
+      const randomSlug = `store-${input.providerId.slice(0, 8)}-${Math.random().toString(36).slice(2, 6)}`;
+      const registerResult = await this.register({
+        name: input.name,
+        email: input.email,
+        password: `oauth:${input.provider}:${input.providerId}`,
+        storeName: `${input.name}'s Store`,
+        storeSlug: randomSlug,
+      });
+
+      if ('kind' in registerResult) {
+        return { kind: 'invalid_credentials', message: registerResult.message };
+      }
+      userId = registerResult.userId;
+    }
+
+    // Resolve tenant + store
+    const [tenantUser] = await this.db
+      .select()
+      .from(s.tenantUsers)
+      .where(eq(s.tenantUsers.userId, userId))
+      .limit(1);
+
+    if (!tenantUser) return { kind: 'no_tenant', message: 'No tenant found for user' };
+
+    const [store] = await this.db
+      .select()
+      .from(s.stores)
+      .where(eq(s.stores.tenantId, tenantUser.tenantId))
+      .limit(1);
+
+    const [user] = await this.db.select().from(s.users).where(eq(s.users.id, userId)).limit(1);
+
+    return {
+      userId: user.id,
+      userName: user.name,
+      userEmail: user.email,
+      userPhone: user.phone ?? null,
+      userTokenVersion: user.tokenVersion,
+      tenantId: tenantUser.tenantId,
+      storeId: store?.id ?? 0,
+      storeName: store?.name ?? null,
+      storeSlug: store?.slug ?? null,
+      role: tenantUser.role,
+    };
+  }
 }
 
 /** Shared default instance for ad-hoc callers (most code uses DI). */

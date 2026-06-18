@@ -1,8 +1,8 @@
-export type ShippingProviderCode = 'manual' | 'haa_mock' | 'oto';
+export type ShippingProviderCode = 'manual' | 'haa_mock' | 'oto' | 'aramex' | 'smsa';
 
 export type ShippingMode = 'manual' | 'mock' | 'sandbox' | 'live';
 
-export const SHIPPING_PROVIDER_CODES: ShippingProviderCode[] = ['manual', 'haa_mock', 'oto'];
+export const SHIPPING_PROVIDER_CODES: ShippingProviderCode[] = ['manual', 'haa_mock', 'oto', 'aramex', 'smsa'];
 export const SHIPPING_MODES: ShippingMode[] = ['manual', 'mock', 'sandbox', 'live'];
 export const SAFE_SHIPPING_MODES: ShippingMode[] = ['manual', 'mock', 'sandbox'];
 
@@ -70,6 +70,28 @@ export const OTO_CAPABILITIES: ShippingProviderCapabilities = {
   supportsPickup: true,
   supportsInternational: true,
   supportsWebhook: true,
+};
+
+export const ARAMEX_CAPABILITIES: ShippingProviderCapabilities = {
+  supportsRates: true,
+  supportsLabels: true,
+  supportsTracking: true,
+  supportsReturns: true,
+  supportsCOD: true,
+  supportsPickup: true,
+  supportsInternational: true,
+  supportsWebhook: true,
+};
+
+export const SMSA_CAPABILITIES: ShippingProviderCapabilities = {
+  supportsRates: true,
+  supportsLabels: true,
+  supportsTracking: true,
+  supportsReturns: true,
+  supportsCOD: true,
+  supportsPickup: true,
+  supportsInternational: false,
+  supportsWebhook: false,
 };
 
 export const SHIPPING_STATUS_LABELS: Record<UnifiedShipmentStatus, string> = {
