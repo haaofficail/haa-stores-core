@@ -1,27 +1,50 @@
 # LandingPage Refactor — Extraction Cookbook
 
-> **Status:** Sprint 1/13 + 2/13 done (Nav, Footer extracted)
+> **Status:** ✅ **DONE — all 13 sprints complete**
 > **Branch:** `feature/phase-9-cod-fee-policy`
 > **Started:** 2026-06-18
-> **Source:** 1983 → 1886 lines (−97 in 2 extractions)
+> **Completed:** 2026-06-18
+> **Source:** 1983 → **318 lines** (−1665, −84%)
+> **Sections extracted:** 13/13
 
 ## Progress
 
-| Sprint | Section           | Lines | Status  | Commit        |
-| ------ | ----------------- | ----: | ------- | ------------- |
-| 1/13   | Nav               |    62 | ✅      | `7fa372ed`    |
-| 2/13   | Footer            |    43 | ✅      | (next commit) |
-| 3/13   | LiveTicker        |    36 | ⏳ TODO | —             |
-| 4/13   | AboutSection      |    53 | ⏳ TODO | —             |
-| 5/13   | Features          |    75 | ⏳ TODO | —             |
-| 6/13   | PaymentSection    |    65 | ⏳ TODO | —             |
-| 7/13   | HowItWorks        |   119 | ⏳ TODO | —             |
-| 8/13   | StorefrontPreview |    92 | ⏳ TODO | —             |
-| 9/13   | MockupPreview     |    96 | ⏳ TODO | —             |
-| 10/13  | Bento             |   209 | ⏳ TODO | —             |
-| 11/13  | Pricing           |   133 | ⏳ TODO | —             |
-| 12/13  | FinalCTA          |    95 | ⏳ TODO | —             |
-| 13/13  | Hero              |   242 | ⏳ TODO | —             |
+| Sprint | Section            | Lines | Status | Commit        |
+| ------ | ------------------ | ----: | ------ | ------------- |
+| 1/13   | Nav                |    62 | ✅     | `7fa372ed`    |
+| 2/13   | Footer             |    43 | ✅     | `2aa45013`    |
+| 3/13   | LiveTicker         |    36 | ✅     | `3fdeb388`    |
+| 4/13   | AboutSection       |    53 | ✅     | `45855335`    |
+| 5/13   | Features           |    75 | ✅     | `45855335`    |
+| 6/13   | PaymentSection     |    65 | ✅     | `5a8b3382`    |
+| 7/13   | HowItWorks         |   119 | ✅     | `5a8b3382`    |
+| 8/13   | StorefrontPreview  |    92 | ✅     | `151e5b1d`    |
+| 9/13   | MockupPreview      |    96 | ✅     | `151e5b1d`    |
+| 10/13  | Bento              |   209 | ✅     | `f8425dd0`    |
+| 11/13  | Pricing            |   133 | ✅     | `9b59e78a`    |
+| 12/13  | FinalCTA           |    95 | ✅     | `9b59e78a`    |
+| 13/13  | Hero               |   242 | ✅     | `7a4653c4`    |
+
+## Final state
+
+| Metric                          |       Value |
+| ------------------------------- | ----------: |
+| LandingPage.tsx (line count)    | **318** (was 1983) |
+| Sections files                  |     **13** (+ types.ts) |
+| Lines in sections/ total        |       ~1800 |
+| Tests                           |   2595 passing, 0 failed |
+| Typecheck                       |         CLEAN |
+| Lint                            |         CLEAN |
+| Branch                          |  ready for PR |
+
+## Key learnings
+
+1. **MockupPreview + StorefrontPreview must stay together** — they share the entire `Store*` sub-component tree + mock data + types. Splitting them into 2 files would force cross-file imports between tightly-coupled co-tenants. Kept as one `StorefrontMockup.tsx`.
+2. **HighlightNumbers is local to FinalCTA** — moved into `FinalCTA.tsx` as a private function rather than promoting to shared utils.
+3. **CountdownTimer is local to Hero** — same pattern. Kept private to Hero since it's used in exactly one place.
+4. **Product/CartItem interfaces co-located with StorefrontMockup** — they're only used inside that module, no need to export globally.
+5. **PaymentSection + HowItWorks imports needed cleanup** — removing the section also removed usages of `MousePointerClick`, `ShoppingBag` etc. Required import pruning (TS6133) after each extraction.
+6. **Orphaned comment blocks must be removed** — when extracting a function, the `/* ═══ SECTION ═══ */` header goes with it. But sometimes orphaned comments (like the dead `COUNT UP — Counter variant` note) need manual cleanup.
 
 ## Extraction recipe (mechanical, ~15 min per section)
 

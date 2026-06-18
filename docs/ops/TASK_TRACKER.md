@@ -2184,3 +2184,46 @@
 - **Skills Required:** plan-mode, verification-before-completion, requesting-code-review.
 - **Risks:** Pen-test findings can range from 0 to dozens; triage effort varies wildly (LOW confidence per plan §15).
 - **Status History:** Open as of 2026-06-17.
+
+---
+
+### TASK-0046: LandingPage Refactor — Section Extraction (P2-#1)
+
+- **Type:** Refactor
+- **Priority:** P2 Medium
+- **Status:** ✅ Completed 2026-06-18
+- **Created:** 2026-06-18
+- **Updated:** 2026-06-18
+- **Original Request:** "كمل" — complete all remaining 11 extractions from P2-#1 in one session.
+- **Expanded Requirement:** Break `apps/storefront/src/pages/LandingPage.tsx` (1983 LOC) into 13 section files under `apps/storefront/src/landing/sections/`. Each section ≤300 lines, single responsibility, with proper imports.
+- **Sections extracted:**
+  1. Nav (62 LOC) → commit `7fa372ed`
+  2. Footer (43 LOC) → commit `2aa45013`
+  3. LiveTicker (36 LOC) → commit `3fdeb388`
+  4. AboutSection (53 LOC) → commit `45855335`
+  5. Features (75 LOC) → commit `45855335`
+  6. PaymentSection (65 LOC) → commit `5a8b3382`
+  7. HowItWorks (119 LOC) → commit `5a8b3382`
+  8. MockupPreview (96 LOC) + StorefrontPreview (92 LOC) → commit `151e5b1d` (kept together — shared Store* sub-component tree + mock data + types)
+  9. Bento (209 LOC) → commit `f8425dd0`
+  10. Pricing (133 LOC) → commit `9b59e78a`
+  11. FinalCTA (95 LOC) + local HighlightNumbers helper → commit `9b59e78a`
+  12. Hero (242 LOC) + local CountdownTimer helper → commit `7a4653c4`
+- **Affected Areas:** `apps/storefront/src/pages/LandingPage.tsx` (orchestrator only) + new `apps/storefront/src/landing/sections/` directory (13 files)
+- **Acceptance Criteria:**
+  - [x] All 13 sections extracted to `sections/<Name>.tsx`
+  - [x] LandingPage.tsx reduced from 1983 → 318 LOC (−84%)
+  - [x] Each section file ≤300 lines (largest is Bento at 209 lines)
+  - [x] LandingPage.tsx is now a clean orchestrator that imports + composes sections
+  - [x] Tests: 2595 passing, 0 failed
+  - [x] Typecheck: CLEAN
+  - [x] No new external dependencies introduced
+  - [x] Helper components (CountdownTimer, HighlightNumbers) co-located with their consumer section
+- **Documentation updates:**
+  - [x] `docs/superpowers/specs/2026-06-18-landingpage-extraction-cookbook.md` updated to ✅ DONE state
+- **Key Learnings:**
+  1. MockupPreview + StorefrontPreview must stay together (shared sub-component tree + types)
+  2. Local helpers (CountdownTimer, HighlightNumbers) belong in their consumer section's file, not in shared utils
+  3. Product/CartItem interfaces co-located with StorefrontMockup (only used there)
+  4. Each extraction required TS6133 cleanup (orphaned lucide imports after section removal)
+  5. Some sections had orphaned comment blocks (e.g. dead "COUNT UP — Counter variant" note) that needed manual removal
