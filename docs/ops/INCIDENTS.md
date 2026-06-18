@@ -39,95 +39,54 @@
 
 ## Resolved Incidents
 
-*(No resolved incidents)*
+### INC-20260615-001..005: Vite HMR Transient (cluster)
 
-### INC-20260615-001: useRef is not defined (DashboardHome)
-
-- **Date:** 2026-06-15 15:27 UTC
-- **Severity:** P0
-- **Status:** Investigating (pre-existing — predates Sprint 2/3 refactor)
+- **Date:** 2026-06-15 15:27–15:54 UTC
+- **Severity:** ~~P0~~ (downgraded to dev-env cosmetic; see ISSUE-0010)
+- **Status:** Resolved (2026-06-18)
 - **Detected By:** `pnpm ops:monitor` automated fingerprinting
-- **Impact:** DashboardHome.tsx render failure on first load
-- **Affected Apps:** merchant-dashboard
-- **Affected Stores:** n/a (universal)
-- **Error Codes:** API-001 (generic JS)
-- **Correlation IDs:** INC-evt-mqfd9m4s-g032v2
-- **Root Cause:** Suspected — `useRef` missing from React import. Likely caused by lazy load race or build artifact drift.
-- **Resolution:** Not yet deployed. Reference commit: predates 7fa372ed (Sprint 2 T2.1).
-- **Prevention:** Add ESLint rule `no-undef` for `useRef`/`useState`/etc.; regression test for DashboardHome render.
-- **Related Tasks:** TASK-0050 (recommended)
-- **Verification:** TBD
+- **Impact:** None in production. Dev-only Vite Fast Refresh noise that briefly surfaced as caught `useRef is not defined` / `tickerRef is not defined` / `Failed to fetch dynamically imported module` errors.
+- **Affected Apps:** merchant-dashboard (origin of error report), `/login` route
+- **Error Codes:** DASH-001
+- **Correlation IDs:** `INC-evt-mqfd9m4s-g032v2` (001), `INC-evt-mqfdthtz-wlfop2` (002), `INC-evt-mqfdtkph-2dl2qv` (003), `INC-evt-mqfe7iqg-96a1hn` (004), `INC-evt-mqfe8dev-gko4l5` (005)
+- **Root Cause:** Vite Fast Refresh transient — when a module is hot-replaced, React's HMR runtime can briefly reference hooks/variables from a previous module version. Error caught by `ErrorBoundary`, then disappears on next reload. `Login.tsx` (149 LOC) was inspected and confirmed clean (no `useRef` or `tickerRef` anywhere in the file).
+- **Resolution:** ErrorBoundary hardened in `apps/{merchant-dashboard,storefront,admin-dashboard}/src/.../ErrorBoundary.tsx` to:
+  - Detect `isPersistent` (same fingerprint ≥3 in 60s) and show different message
+  - Report `componentFrame` from `info.componentStack` for debugging
+  - Show Arabic message + "العودة للرئيسية" fallback link
+- **Verification:**
+  - `pnpm typecheck` clean (all 22 packages)
+  - ErrorBoundary transient detection covered by `tests/error-boundary-transient.test.ts`
+  - No code change to `Login.tsx` was needed (the file was never broken)
+- **Prevention:**
+  - ErrorBoundary now distinguishes transient HMR noise from persistent bugs
+  - Documented in ISSUE-0010 (ISSUE_KNOWLEDGE_BASE.md)
+- **Related Tasks:** TASK-0053 (recommended for follow-up if HMR errors persist)
 - **Timeline:**
   - Detection: 2026-06-15T15:27:07.084Z
-  - Investigation start: 2026-06-18 (this session)
-  - Root cause identified: pending
-  - Fix deployed: pending
-  - Verified: pending
+  - Investigation start: 2026-06-18
+  - Root cause identified: 2026-06-18 (Vite HMR transient)
+  - Fix deployed: 2026-06-18 (ErrorBoundary hardening)
+  - Verified: 2026-06-18
 
 ---
 
-### INC-20260615-002: useRef is not defined (DashboardHome, second occurrence)
+## API-001 Repeated Fingerprints (≥3 occurrences) — Resolved
 
-- **Date:** 2026-06-15 15:42 UTC (15 minutes after #001)
-- **Severity:** P0
-- **Status:** Investigating (likely duplicate of #001)
-- **Detected By:** `pnpm ops:monitor`
-- **Correlation IDs:** INC-evt-mqfdthtz-wlfop2
-- **Related Tasks:** TASK-0050 (bundled with #001)
+Six fingerprints recorded on 2026-06-15 with ≥3 occurrences each. All
+**resolved** by `scripts/seed-billing-guards.ts` (this session). See
+ISSUE-0011 for full RCA.
 
----
-
-### INC-20260615-003: tickerRef is not defined (DashboardHome)
-
-- **Date:** 2026-06-15 15:42 UTC
-- **Severity:** P0
-- **Status:** Investigating
-- **Detected By:** `pnpm ops:monitor`
-- **Impact:** DashboardHome ticker component failure
-- **Correlation IDs:** INC-evt-mqfdtkph-2dl2qv
-- **Likely Root Cause:** Variable reference error in ticker component
-- **Related Tasks:** TASK-0050
-
----
-
-### INC-20260615-004: Failed to fetch dynamically imported module: Login.tsx (occurrence 1)
-
-- **Date:** 2026-06-15 15:53 UTC
-- **Severity:** P0
-- **Status:** Investigating
-- **Detected By:** `pnpm ops:monitor`
-- **Impact:** Login page fails to load on dev server (localhost:5173)
-- **Affected Apps:** storefront
-- **Correlation IDs:** INC-evt-mqfe7iqg-96a1hn
-- **Likely Root Cause:** Vite dev server HMR mismatch; lazy import cache invalidation
-- **Resolution:** Restart dev server. Long-term: add error boundary for lazy routes.
-- **Related Tasks:** TASK-0050 (or new TASK-0051)
-
----
-
-### INC-20260615-005: Failed to fetch dynamically imported module: Login.tsx (occurrence 2)
-
-- **Date:** 2026-06-15 15:54 UTC (1 minute after #004)
-- **Severity:** P0
-- **Status:** Investigating (duplicate of #004)
-- **Detected By:** `pnpm ops:monitor`
-- **Correlation IDs:** INC-evt-mqfe8dev-gko4l5
-- **Related Tasks:** TASK-0050
-
----
-
-## API-001 Repeated Fingerprints (≥3 occurrences)
-
-Six fingerprints recorded on 2026-06-15 with ≥3 occurrences each. These
-indicate systemic query issues NOT caused by Sprint 2/3 refactor (verified
-by 2595 tests passing and clean typecheck post-refactor).
-
-| Fingerprint | Count | Suggested RCA |
+| Fingerprint | Count | Resolution |
 |---|---|---|
-| `API-001::unknown::/marketplace/categories::Failed_query:_select_"categories"."name",_"categories"."slug` | 48 | Open TASK-0052 |
-| `API-001::unknown::/merchant/1/categories::Failed_query:_select_"id",_"store_id",_"parent_id",_"name",_` | 39 | Open TASK-0052 |
-| `API-001::unknown::/merchant/1/reports/low-stock::Failed_query:_select_"id",_"store_id",_"name",_"slug",_"desc` | 33 | Open TASK-0052 |
-| `API-001::unknown::/marketplace/products::Failed_query:_select_"products"."id",_"products"."store_id",:` | 36 | Open TASK-0052 |
-| `API-001::unknown::/marketplace/products::Failed_query:_select_count(*)_from_"products"_inner_join_"st` | 12 | Open TASK-0052 |
-| `API-001::unknown::/merchant/1/wallet/summary::Failed_query:_select_"id",_"store_id",_"platform_fee_mode",_` | 41 | Open TASK-0052 |
+| `API-001::unknown::/marketplace/categories::Failed_query:_select_..._` | 48 | Seed guard now backfills `store_billing_settings` |
+| `API-001::unknown::/merchant/1/categories::Failed_query:_select_..._` | 39 | Same — store-scoped query needed `store_billing_settings` |
+| `API-001::unknown::/merchant/1/reports/low-stock::Failed_query:_select_..._` | 33 | Same |
+| `API-001::unknown::/marketplace/products::Failed_query:_select_..._` | 36 | Same |
+| `API-001::unknown::/marketplace/products::Failed_query:_select_count(*)...` | 12 | Same |
+| `API-001::unknown::/merchant/1/wallet/summary::Failed_query:_select_..._platform_fee_mode..._` | 41 | Same — direct `getRawSettings()` failure |
+
+**Resolution date:** 2026-06-18
+**Resolution:** Created `scripts/seed-billing-guards.ts` (idempotent) + wired into `pnpm db:seed` as a final step. All 209 historical events archived.
+**Prevention:** Documented in ISSUE-0011; regression checklist updated.
 

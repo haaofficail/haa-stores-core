@@ -10,17 +10,47 @@ interface State {
   hasError: boolean;
   error: Error | null;
   correlationId: string;
+  isPersistent: boolean;
 }
 
 function generateCorrelationId(): string {
   return 'req_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
+/**
+ * Detect whether this is a transient HMR/dev-server error vs. a persistent
+ * production bug. If the same fingerprint has been caught 3+ times in the
+ * last 60 seconds, we mark the error as persistent and show a more
+ * actionable message ("contact support"). Otherwise we treat it as
+ * transient and ask the user to reload (typical Vite HMR issue).
+ */
+function detectPersistent(errorMessage: string): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const key = `errorboundary:transient:${errorMessage.slice(0, 60)}`;
+    const now = Date.now();
+    const stored = window.sessionStorage.getItem(key);
+    const recent = stored ? JSON.parse(stored) : [];
+    recent.push(now);
+    const cutoff = now - 60_000;
+    const recentOnly = recent.filter((t: number) => t > cutoff);
+    window.sessionStorage.setItem(key, JSON.stringify(recentOnly));
+    return recentOnly.length >= 3;
+  } catch {
+    return false;
+  }
+}
+
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false, error: null, correlationId: '' };
+  state: State = { hasError: false, error: null, correlationId: '', isPersistent: false };
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    return { hasError: true, error, correlationId: generateCorrelationId() };
+    return {
+      hasError: true,
+      error,
+      correlationId: generateCorrelationId(),
+      isPersistent: detectPersistent(error.message),
+    };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
@@ -30,6 +60,9 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error(`[ErrorBoundary] ${errorCode} | ${correlationId}`, error, info.componentStack);
 
     const BASE_URL = (import.meta as any).env?.VITE_API_URL || '';
+
+    // Extract the top frame of the stack (filename:line) for debugging
+    const firstFrame = (info.componentStack || '').split('\n')[1]?.trim() ?? null;
 
     fetch(`${BASE_URL}/internal/support-errors/report`, {
       method: 'POST',
@@ -42,6 +75,8 @@ export class ErrorBoundary extends Component<Props, State> {
         app: 'storefront',
         origin: 'storefront',
         handled: true,
+        isPersistent: this.state.isPersistent,
+        componentFrame: firstFrame,
         tags: ['error-boundary', 'react-runtime'],
       }),
     }).catch(() => {
@@ -53,6 +88,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       const errorCode = this.props.errorCode || 'STORE-001';
       const correlationId = this.state.correlationId;
+      const isPersistent = this.state.isPersistent;
 
       if (this.props.fallback) {
         return this.props.fallback;
@@ -64,18 +100,35 @@ export class ErrorBoundary extends Component<Props, State> {
             <svg className="h-16 w-16 mx-auto text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
             </svg>
-            <h2 className="text-xl font-bold text-neutral-900">تعذر تحميل الصفحة حاليًا</h2>
+            <h2 className="text-xl font-bold text-neutral-900">
+              {isPersistent
+                ? 'نواجه مشكلة في تحميل الصفحة'
+                : 'تعذر تحميل الصفحة حاليًا'}
+            </h2>
             <p className="text-sm text-neutral-500">
-              رمز الخطأ: {errorCode}<br />
+              {isPersistent
+                ? 'يبدو أن المشكلة متكررة. يرجى إعادة تحميل الصفحة، وإذا استمرت تواصل مع المتجر.'
+                : 'يرجى المحاولة مرة أخرى بتحديث الصفحة.'}
+            </p>
+            <p className="text-xs text-neutral-400">
+              رمز الخطأ: {errorCode}
+              <br />
               رقم التتبع: {correlationId}
             </p>
-            <p className="text-sm text-neutral-500">يرجى المحاولة لاحقًا.</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors inline-block"
-            >
-              تحديث الصفحة
-            </button>
+            <div className="flex flex-col gap-2 items-center">
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors inline-block"
+              >
+                تحديث الصفحة
+              </button>
+              <a
+                href="/"
+                className="text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors"
+              >
+                العودة للرئيسية
+              </a>
+            </div>
           </div>
         </div>
       );

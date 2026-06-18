@@ -908,6 +908,39 @@ async function seed() {
   }
   console.log(`  ✓ ${templates.length} Notification Templates created`);
 
+  // ── Billing Settings Guards (TASK-0053 / ISSUE-0011) ──────────
+  // For every store in the DB, ensure a `store_billing_settings` row exists
+  // with sensible defaults. Idempotent — uses onConflictDoNothing on the
+  // unique store_id index. Prevents API-001 `Failed_query` events on:
+  //   /merchant/:storeId/wallet/summary
+  //   /merchant/:storeId/reports/low-stock
+  //   /marketplace/categories, /marketplace/products
+  //   /merchant/:storeId/categories
+  // by ensuring every store has a billing row the queries can read.
+  const allStores = await db.select({ id: s.stores.id }).from(s.stores);
+  let billingInserted = 0;
+  let billingSkipped = 0;
+  for (const store of allStores) {
+    const inserted = await db
+      .insert(s.storeBillingSettings)
+      .values({
+        storeId: store.id,
+        platformFeeMode: 'percentage',
+        platformFeePct: '0.02',
+        platformFeeFixed: null,
+        isPlatformFeeEnabled: true,
+        codFeeMode: 'percentage',
+        codFeePct: '0.02',
+        codFeeFixed: null,
+        isCodFeeEnabled: true,
+      })
+      .onConflictDoNothing({ target: s.storeBillingSettings.storeId })
+      .returning({ id: s.storeBillingSettings.id });
+    if (inserted.length > 0) billingInserted += 1;
+    else billingSkipped += 1;
+  }
+  console.log(`  ✓ Billing settings: ${billingInserted} inserted, ${billingSkipped} already present (of ${allStores.length} stores)`);
+
   console.log('\n✅ Seed completed successfully!');
   console.log('\n📋 Login credentials:');
   console.log('   haa-demo merchant:    merchant.haa-demo@example.com / Test@123456 (admin)');

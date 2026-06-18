@@ -5,6 +5,77 @@
 
 ---
 
+### ISSUE-0010: Vite HMR Transient Errors Surfacing as DASH-001 P0 (INC-20260615-001..005)
+
+- **ID:** ISSUE-0010
+- **Date:** 2026-06-18
+- **Severity:** Low (cosmetic dev-env noise; was misclassified as P0)
+- **Area:** Merchant Dashboard / Dev environment / Error capture
+- **Related Error Codes:** DASH-001
+- **Related Tasks:** INC-20260615-001..005
+- **Symptoms:** `pnpm ops:monitor` reported 5 P0 incidents on 2026-06-15 (15:27–15:54 UTC) for `apps/merchant-dashboard/src/pages/Login.tsx`:
+  - INC-001 + INC-002: `useRef is not defined` (15:27 + 15:42)
+  - INC-003: `tickerRef is not defined` (15:42)
+  - INC-004 + INC-005: `Failed to fetch dynamically imported module: http://localhost:5173/src/pages/Login.tsx?t=<timestamp>` (15:53 + 15:54)
+- **Expected:** Either (a) real React/JS errors in production code, or (b) no errors at all.
+- **Actual:** `apps/merchant-dashboard/src/pages/Login.tsx` (149 LOC) imports `useState, useEffect` from 'react' (correct). No `useRef` or `tickerRef` anywhere in the file. The reported `route` was `/login` (the Login page itself), not `/dashboard` as initially suspected. The dashboard was the **origin of the error report**, not the source of the error.
+- **Root Cause:** Vite Fast Refresh transient — when a module is hot-replaced, React's HMR runtime can briefly hold a stale closure that references hooks (`useRef`) or local variables (`tickerRef`) from a previous module version. The error surfaces once, gets caught by `ErrorBoundary`, and disappears after the next reload. The error message itself is React telling us "this name is not defined in the current module scope", which is true *temporarily* during HMR.
+- **Why they were flagged as P0:** `pnpm ops:monitor` escalates any 3+ same-fingerprint as P0. Five near-identical events within 30 min tripped that threshold. The classification was correct by rule but the rule was overly aggressive for dev-only HMR noise.
+- **Fix:**
+  1. **ErrorBoundary hardening** (this session) — `apps/{merchant-dashboard,storefront,admin-dashboard}/src/.../ErrorBoundary.tsx` now adds:
+     - `isPersistent` detection (same fingerprint ≥3 in 60s)
+     - `componentFrame` from `info.componentStack` for better debugging
+     - Persistent/transient user messaging in Arabic
+     - "العودة للرئيسية" fallback link
+  2. **Verification** — `pnpm typecheck` clean, ErrorBoundary code path covered by `tests/error-boundary-transient.test.ts` (new).
+  3. **No production code change needed** — `Login.tsx` was never broken; the P0 flag was a false positive.
+- **Prevention:**
+  - Vite HMR transient errors will continue to fire during development. The new ErrorBoundary `isPersistent` flag distinguishes them from real production bugs.
+  - For ops:monitor P0 classification, consider lowering the dev-env auto-escalation threshold OR adding a tag-based filter (`tags: ["hmr","dev-transient"]` is now reserved for future use).
+  - Re-running `pnpm ops:monitor` on a clean dev session (no Vite HMR) should produce zero P0.
+- **Regression Checklist Update:** See REGRESSION_CHECKLIST.md → Dynamic Error Capture → added "ErrorBoundary reports `isPersistent` and `componentFrame` for every caught error".
+- **Status:** Resolved (2026-06-18) — dev-env noise properly classified; no production fix needed.
+
+---
+
+### ISSUE-0011: Missing `store_billing_settings` Row Causes 6 API-001 Fingerprints
+
+- **ID:** ISSUE-0011
+- **Date:** 2026-06-18
+- **Severity:** Medium (dev data gap, not code bug)
+- **Area:** Database / Seed / Wallet / Marketplace
+- **Related Error Codes:** API-001
+- **Related Tasks:** TASK-0053 (recommend)
+- **Symptoms:** `pnpm ops:errors` reported 6 repeated fingerprints (≥3 occurrences each, total ~209 events) for `Failed_query:_select_..._platform_fee_mode..._cod_fee_mode...` on:
+  - `/marketplace/categories` (48 events)
+  - `/merchant/1/categories` (39)
+  - `/merchant/1/reports/low-stock` (33)
+  - `/marketplace/products` (36 + 12)
+  - `/merchant/1/wallet/summary` (41)
+- **Expected:** Every store should have a `store_billing_settings` row (1:1) so `StoreBillingSettingsService.getPlatformFeePolicy()` and `getCodFeePolicy()` return values, not throw.
+- **Actual:** `pnpm db:seed` (`packages/db/src/seed/index.ts`) creates `tenants`, `users`, `stores`, `products`, `categories`, etc. but **does NOT insert a `store_billing_settings` row** for the demo stores. The `getPlatformFeePolicy` helper returns the `DEFAULT_PLATFORM_FEE_POLICY` when no row exists — so checkout does not break — but `getRawSettings()` and certain code paths call `select *` on the table and fail if the row is absent.
+- **Root Cause:** Seed drift — `store_billing_settings` (migration 0050) was added later than the seed script was last updated. The seed was never extended to backfill the new table.
+- **Fix:** Created `scripts/seed-billing-guards.ts` (this session) — idempotent script that:
+  1. Reads every `storeId` from `stores` table
+  2. For each storeId, checks if a `store_billing_settings` row exists
+  3. If missing, inserts a default row (`mode: 'percentage'`, `pct: 2`, `enabled: true`)
+  4. Logs progress + final summary
+  5. Wired into `pnpm db:seed` as a final step (idempotent)
+- **Verification:**
+  - `pnpm tsx scripts/seed-billing-guards.ts` (or auto via `pnpm db:seed`) — every store now has a row.
+  - `tests/seed-billing-guards.test.ts` (new) — source-grep test that asserts:
+    1. Script file exists
+    2. Script uses `onConflictDoNothing()` for idempotency
+    3. Script iterates all stores
+    4. Seed script calls/imports the guards script
+- **Prevention:**
+  - Every new `store_*` table added by future migration MUST be backfilled by `seed-billing-guards.ts` (or a sibling guards script) or the seed script directly. Add this as a checklist item in `REGRESSION_CHECKLIST.md` → Database section.
+  - Consider a `scripts/verify-seed-coverage.ts` that asserts every store has a row in every per-store table.
+- **Regression Checklist Update:** Added "Every per-store table has a seed guards script" under Database.
+- **Status:** Fixed (2026-06-18) — seed gap closed, 209 historical events archived.
+
+---
+
 ### ISSUE-0009: Demo Support KB Table Missing After Migration Drift
 
 - **ID:** ISSUE-0009
