@@ -17,24 +17,24 @@
   --haa-text-tertiary: #94a3b8;
   --haa-text-disabled: #cbd5e1;
   --haa-text-inverse: #ffffff;
-  --haa-text-link: #56a1e3;
+  --haa-text-link: #5c9cd5;
 
   /* ── Borders ── */
   --haa-border: #e2e8f0;
   --haa-border-strong: #cbd5e1;
-  --haa-border-focus: #56a1e3;
+  --haa-border-focus: #5c9cd5;
   --haa-border-disabled: #e2e8f0;
   --haa-divider: #f1f5f9;
 
   /* ── Primary — Brand Blue ── */
-  --haa-primary-50: #eef5fc;
-  --haa-primary-100: #d4e8fa;
-  --haa-primary-200: #b8daf7;
-  --haa-primary-300: #8dc4f1;
-  --haa-primary-400: #6aafea;
-  --haa-primary-500: #56a1e3;
-  --haa-primary-600: #3d8ad4;
-  --haa-primary-700: #2a6fb8;
+  --haa-primary-50: #eff5fb;
+  --haa-primary-100: #deebf7;
+  --haa-primary-200: #bed7ee;
+  --haa-primary-300: #9dc4e6;
+  --haa-primary-400: #7db0dd;
+  --haa-primary-500: #5c9cd5;
+  --haa-primary-600: #5189bb;
+  --haa-primary-700: #44739e;
 
   /* ── Neutral (Slate) ── */
   --color-neutral-50: #f8fafc;
@@ -58,7 +58,7 @@
   --haa-warning-text: #b45309;
   --haa-danger: #dc2626;
   --haa-danger-subtle: #fef2f2;
-  --haa-info: #56a1e3;
+  --haa-info: #5c9cd5;
 
   /* ── Shadows ── */
   --haa-shadow-color: rgba(15, 23, 42, 0.04);
