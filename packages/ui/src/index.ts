@@ -36,3 +36,15 @@ export {
   isReducedMotionPreferred,
   usePrefersReducedMotion,
 } from './utils/reduced-motion'
+
+// Loading standards (T3.5)
+export {
+  LOADING_DELAYS,
+} from './utils/loading-standards'
+export type { LoadingVariant } from './utils/loading-standards'
+
+// Form standards (T3.3)
+export { FORM_STANDARDS_VERSION } from './utils/form-standards'
+
+// Icon standards (T3.4)
+export { ICON_STANDARDS_VERSION } from './utils/icon-standards'
