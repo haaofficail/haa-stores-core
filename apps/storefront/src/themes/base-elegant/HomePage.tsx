@@ -148,9 +148,9 @@ function ProductCarousel({ products, slug, title, onAddToCart, slider, productCa
         >
           {products.map(product => (
             <SplideSlide key={product.id}>
-              <div className={`${getCardWidth(productCardSize)} pb-2`}>
-                <ThemedProductCard product={product} slug={slug} onAddToCart={onAddToCart} productCardSize={productCardSize} />
-              </div>
+          <div className={`${getCardWidth(productCardSize)} pb-2`}>
+            <ThemedProductCard product={product} slug={slug} onAddToCart={onAddToCart} compact={(productCardSize ?? 3) <= 2} />
+          </div>
             </SplideSlide>
           ))}
         </Splide>
@@ -320,7 +320,7 @@ function renderProductGrid(products: any[], slug: string, onAddToCart: (p: any) 
   return (
     <div className={`grid ${getGridCols(productCardSize)} gap-3 sm:gap-4 items-stretch`}>
       {products.map((product) => (
-        <ThemedProductCard key={product.id} product={product} slug={slug} onAddToCart={onAddToCart} productCardSize={productCardSize} />
+        <ThemedProductCard key={product.id} product={product} slug={slug} onAddToCart={onAddToCart} compact={(productCardSize ?? 3) <= 2} />
       ))}
     </div>
   );
@@ -336,7 +336,7 @@ function renderHorizontalScroll(products: any[], slug: string, onAddToCart: (p: 
       <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
         {products.map((product) => (
           <div key={product.id} className={`${getCardWidth(productCardSize)} shrink-0`}>
-            <ThemedProductCard product={product} slug={slug} onAddToCart={onAddToCart} productCardSize={productCardSize} />
+            <ThemedProductCard product={product} slug={slug} onAddToCart={onAddToCart} compact={(productCardSize ?? 3) <= 2} />
           </div>
         ))}
       </div>

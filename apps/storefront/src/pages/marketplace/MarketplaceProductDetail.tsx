@@ -7,12 +7,11 @@ import {
 import { haaMarketplaceApi, type HaaMarketplaceProduct } from '@/lib/api';
 import { StoreButton, StoreEmptyState, StoreSkeleton } from '@/components/ui';
 import { Icon } from '@/components/ui/icon';
-import { BNPLBadges, CurrencyAmount, CurrencyStrike, SavingsBadge } from '@/components/product-card';
+import { BNPLBadges, CurrencyAmount, CurrencyStrike, SavingsBadge, MarketplaceProductCard } from '@/components/product-card';
 import { useSEO } from '@/hooks/useSEO';
 import { marketplaceCart } from '@/lib/marketplace-cart';
 import { toast } from 'sonner';
 import { RatingStars } from '@/components/product-card';
-import { MarketplaceProductCard } from './theme/MarketplaceProductCard';
 import { MarketplaceFooter } from './theme/MarketplaceFooter';
 
 const trustItems = [

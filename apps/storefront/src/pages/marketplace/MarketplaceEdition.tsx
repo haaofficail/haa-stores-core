@@ -8,7 +8,7 @@ import { marketplaceCart } from '@/lib/marketplace-cart';
 import { MarketplaceHero } from './theme/MarketplaceHero';
 import { MarketplaceSellerRail } from './theme/MarketplaceSellerRail';
 import { MarketplaceCategoryTabs, MarketplaceFilterBar } from './theme/MarketplaceFilters';
-import { MarketplaceProductCard } from './theme/MarketplaceProductCard';
+import { MarketplaceProductCard } from '@/components/product-card';
 import { ProductCardSkeleton } from './theme/ProductCardSkeleton';
 import { MarketplaceFooter } from './theme/MarketplaceFooter';
 

@@ -9,14 +9,13 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 const CARD_FILES = [
-  'apps/storefront/src/components/ProductCard.tsx',
   'apps/storefront/src/components/product-card/ProductCard.tsx',
+  'apps/storefront/src/components/product-card/MarketplaceProductCard.tsx',
   'apps/storefront/src/components/product-card/ProductImageFrame.tsx',
   'apps/storefront/src/components/product-card/ProductPriceBlock.tsx',
   'apps/storefront/src/components/product-card/ProductTitle.tsx',
   'apps/storefront/src/components/ProductGrid.tsx',
   'apps/storefront/src/components/ThemedProductCard.tsx',
-  'apps/storefront/src/pages/marketplace/theme/MarketplaceProductCard.tsx',
   'apps/storefront/src/pages/marketplace/theme/MarketplaceSellerRail.tsx',
 ];
 
@@ -42,13 +41,14 @@ describe('P2-#4: product/store card visual consistency', () => {
   });
 
   it('marketplace card uses rounded-2xl/3xl/xl OR rounded-[Npx] (8/12/16 px scale)', () => {
+    // T2.2 consolidation: MarketplaceProductCard is now a thin wrapper around
+    // the canonical ProductCard (variant='marketplace'). The variant's
+    // rounded-2xl class lives in the canonical file, so we check there.
     const path = resolve(
-      __dirname, '..', 'apps/storefront/src/pages/marketplace/theme/MarketplaceProductCard.tsx',
+      __dirname, '..', 'apps/storefront/src/components/product-card/ProductCard.tsx',
     );
     const content = readFileSync(path, 'utf-8');
-    // Accept tailwind utility classes OR arbitrary px values
-    // that fall on the design system scale (8/12/16 px).
-    expect(content).toMatch(/rounded-(2xl|3xl|xl|lg|md|sm|\[\d+px\])/);
+    expect(content).toMatch(/marketplace:\s*['"]rounded-2xl/);
   });
 
   it('storefront product card uses rounded-2xl/3xl/xl OR rounded-[Npx] (8/12/16 px scale)', () => {

@@ -6,7 +6,7 @@ import { StoreButton, StoreContainer, StoreEmptyState, StoreInput, StoreSkeleton
 import { Icon } from '@/components/ui/icon';
 import { useSEO } from '@/hooks/useSEO';
 import { marketplaceTheme } from './marketplace/theme/tokens';
-import { MarketplaceProductCard } from './marketplace/theme/MarketplaceProductCard';
+import { MarketplaceProductCard } from '@/components/product-card';
 
 export default function MarketplaceSeller() {
   const { storeSlug } = useParams<{ storeSlug: string }>();

@@ -151,7 +151,8 @@ describe('Products QA regression', () => {
     const marketplaceEntry = readSource('apps/storefront/src/pages/HaaMarketplace.tsx');
     const marketplacePage = readSource('apps/storefront/src/pages/marketplace/MarketplaceEdition.tsx');
     const marketplaceHero = readSource('apps/storefront/src/pages/marketplace/theme/MarketplaceHero.tsx');
-    const marketplaceProductCard = readSource('apps/storefront/src/pages/marketplace/theme/MarketplaceProductCard.tsx');
+    // T2.2: MarketplaceProductCard is now a thin wrapper under product-card/.
+    const marketplaceProductCard = readSource('apps/storefront/src/components/product-card/MarketplaceProductCard.tsx');
     const marketplaceProductDetail = readSource('apps/storefront/src/pages/marketplace/MarketplaceProductDetail.tsx');
     const productForm = readSource('apps/merchant-dashboard/src/components/products/ProductFormDialog.tsx');
     const dashboardSidebar = readSource('apps/merchant-dashboard/src/components/layout/Sidebar.tsx');

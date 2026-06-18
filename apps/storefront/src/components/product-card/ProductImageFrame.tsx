@@ -45,9 +45,9 @@ interface ProductBadgesProps {
   discountPercent?: number | null;
   isOutOfStock?: boolean;
   lowStockThreshold?: number;
-  stockQuantity?: number;
-  trackInventory?: boolean;
-  featured?: boolean;
+  stockQuantity?: number | null;
+  trackInventory?: boolean | null;
+  featured?: boolean | null;
   className?: string;
 }
 

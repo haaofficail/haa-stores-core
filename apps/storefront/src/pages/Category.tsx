@@ -545,7 +545,7 @@ export default function Category() {
                 {viewMode === 'grid' ? (
                   <div className={`grid ${gridCols} gap-3 sm:gap-4 items-stretch`}>
                     {products.map((product) => (
-                      <ThemedProductCard key={product.id} product={product} slug={slug!} compact={columns >= 4} onAddToCart={async (p) => { await addItem(p.id, 1); }} />
+                      <ThemedProductCard key={product.id} product={product as unknown as Parameters<typeof ThemedProductCard>[0]['product']} slug={slug!} compact={columns >= 4} onAddToCart={async (p) => { await addItem(p.id, 1); }} />
                     ))}
                   </div>
                 ) : (

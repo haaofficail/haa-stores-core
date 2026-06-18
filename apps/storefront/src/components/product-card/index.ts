@@ -7,3 +7,4 @@ export { ProductTitle } from './ProductTitle';
 export { AddToCartButton } from './AddToCartButton';
 export { RatingStars } from './RatingStars';
 export { BNPLBadges } from './BNPLBadges';
+export { MarketplaceProductCard } from './MarketplaceProductCard';
