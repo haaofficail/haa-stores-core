@@ -138,3 +138,101 @@ export function getQueue(): QueueProducer {
 export function _resetQueue(): void {
   _queue = null;
 }
+// ── Queue mode / reliability (Batch 3, Path A) ────────────────────────────
+//
+// Make the queue mode explicit and visible so an operator can never be
+// silently running on the in-memory noop backend in staging/production.
+//
+//   persistent — bullmq is active (durable; survives restart)
+//   degraded   — QUEUE_REDIS_URL is set (persistent was INTENDED) but the
+//                queue fell back to noop (bullmq missing / failed to load).
+//                This is the silent-fallback hole and is always unsafe.
+//   noop       — no QUEUE_REDIS_URL; the in-memory scaffold. Safe in
+//                dev/local only. In staging/production it requires an
+//                explicit ALLOW_NOOP_QUEUE=true opt-in (and is still flagged).
+
+export type QueueMode = 'persistent' | 'noop' | 'degraded';
+
+export interface QueueStatus {
+  /** Resolved queue mode. */
+  mode: QueueMode;
+  /** Active backend implementation. */
+  backend: 'bullmq' | 'noop';
+  /** Whether QUEUE_REDIS_URL is configured. BOOLEAN ONLY — never the value. */
+  redisConfigured: boolean;
+  /** Whether noop is explicitly permitted in this environment. */
+  allowNoop: boolean;
+  /** Whether the current mode is safe for the running environment. */
+  safe: boolean;
+  /** Health signal for the /health endpoint. */
+  health: 'ok' | 'warn' | 'error';
+  /** Human-readable explanation (safe to log / expose; no secrets). */
+  reason: string;
+}
+
+function isProdLike(nodeEnv: string): boolean {
+  return nodeEnv === 'production' || nodeEnv === 'staging';
+}
+
+/**
+ * Pure classifier for the queue mode. No I/O, no secrets — takes the already
+ * resolved inputs so it is fully unit-testable.
+ */
+export function resolveQueueStatus(input: {
+  backend: 'bullmq' | 'noop';
+  nodeEnv: string;
+  redisConfigured: boolean;
+  allowNoop: boolean;
+}): QueueStatus {
+  const { backend, nodeEnv, redisConfigured, allowNoop } = input;
+  const base = { backend, redisConfigured, allowNoop };
+
+  if (backend === 'bullmq') {
+    return { ...base, mode: 'persistent', safe: true, health: 'ok',
+      reason: 'Persistent BullMQ queue is active (durable across restarts).' };
+  }
+
+  // backend === 'noop' from here on.
+  if (redisConfigured) {
+    // QUEUE_REDIS_URL is set, so persistence was intended, but we are on noop.
+    return { ...base, mode: 'degraded', safe: false, health: 'error',
+      reason: 'QUEUE_REDIS_URL is set but the queue fell back to the in-memory noop backend (bullmq missing or failed to connect). Jobs are NOT durable.' };
+  }
+
+  if (!isProdLike(nodeEnv)) {
+    return { ...base, mode: 'noop', safe: true, health: 'warn',
+      reason: 'In-memory noop queue (no QUEUE_REDIS_URL). Acceptable in dev/local; jobs are lost on restart.' };
+  }
+
+  // prod/staging on noop.
+  if (allowNoop) {
+    return { ...base, mode: 'noop', safe: false, health: 'warn',
+      reason: 'In-memory noop queue explicitly permitted via ALLOW_NOOP_QUEUE in a prod-like environment. Jobs are NOT durable — operator owns this risk.' };
+  }
+  return { ...base, mode: 'noop', safe: false, health: 'error',
+    reason: 'In-memory noop queue in a prod-like environment without ALLOW_NOOP_QUEUE. Configure QUEUE_REDIS_URL + bullmq, or set ALLOW_NOOP_QUEUE=true to acknowledge the risk.' };
+}
+
+/** Resolve the live queue status from the active backend + process env. */
+export function getQueueStatus(): QueueStatus {
+  return resolveQueueStatus({
+    backend: getQueue().backend,
+    nodeEnv: process.env.NODE_ENV || 'development',
+    redisConfigured: !!process.env.QUEUE_REDIS_URL,
+    allowNoop: process.env.ALLOW_NOOP_QUEUE === 'true',
+  });
+}
+
+/**
+ * Emit a SINGLE clear queue-mode line at startup (no per-enqueue spam).
+ * error → stderr, warn → stderr, ok → stdout. Never prints secrets.
+ */
+export function logQueueStartupStatus(): void {
+  const s = getQueueStatus();
+  const line = `[queue] mode=${s.mode} backend=${s.backend} redisConfigured=${s.redisConfigured} health=${s.health} — ${s.reason}\n`;
+  if (s.health === 'ok') {
+    process.stdout.write(line);
+  } else {
+    process.stderr.write(line);
+  }
+}
