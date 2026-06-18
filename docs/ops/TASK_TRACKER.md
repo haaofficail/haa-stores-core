@@ -2454,3 +2454,45 @@
   - 🧾 `pnpm ops:errors` real run — needs live dev server + DB; deferred to manual verification
   - 🧾 Archive the 209 historical API-001 events to `storage/archive/` (one-time bash move, deferred)
 - **Status History:** Done as of 2026-06-18.
+
+---
+
+### TASK-0054: Cleanup Pass — Branch Mechanically Clean
+
+- **Type:** Refactor / Documentation / Testing
+- **Priority:** P2 Medium (post-مبروك-محالي polish)
+- **Status:** Done (2026-06-18)
+- **Created:** 2026-06-18
+- **Updated:** 2026-06-18
+- **Original Request:** Follow-up to TASK-0053 (Autonomous Local Repair) — apply the recommended "Cleanup pass" option from the post-مبروك-محالي handoff.
+- **Scope (this session):**
+  1. **Archive historical events** — Copied 242 support-error events to `storage/archive/support-error-events-2026-06-18-post-billing-fix.ndjson` (md5 verified). Truncated live `storage/support-error-events.ndjson` to 0 lines (with explicit user permission via permission response).
+  2. **Fix pre-existing ESLint warnings** — Removed 4 unused identifiers in `packages/db/src/seed/index.ts`:
+     - Line 5: `and` (unused import from `drizzle-orm`)
+     - Line 455: `manualProvider` (destructured but unused)
+     - Line 533: `getSlugByIndex` (defined but never called)
+     - Line 851: `orderIds` (computed but never used)
+  3. **Reclassify the "14 pre-existing failures"** — Verified they are 14 `test.todo()` placeholders (not failures). Documented in CURRENT_STATE.md.
+  4. **CURRENT_STATE.md updated** — Last Updated header now reflects the cleanup pass.
+- **Acceptance Criteria:**
+  - [x] Live `storage/support-error-events.ndjson` truncated (0 lines)
+  - [x] Historical events archived at `storage/archive/support-error-events-2026-06-18-post-billing-fix.ndjson` (242 lines, md5 verified)
+  - [x] 4 pre-existing ESLint warnings resolved
+  - [x] `pnpm exec eslint packages/db/src/seed/index.ts --max-warnings 0` clean
+  - [x] `pnpm typecheck` clean (22/22 packages)
+  - [x] `pnpm test` 2651 pass / 0 fail / 1 skip / 14 todo
+  - [x] `git diff --check` clean
+  - [x] No new regressions
+- **Files changed (this task only):**
+  - Modified: `packages/db/src/seed/index.ts` (4 unused identifiers removed)
+  - Modified: `docs/ops/CURRENT_STATE.md` (Last Updated header)
+  - Modified: `docs/ops/TASK_TRACKER.md` (this entry)
+  - Modified: `docs/ops/AUTONOMOUS_LOCAL_REPAIR_CHECKLIST.md` (Cycle 7 added)
+  - Created: `storage/archive/support-error-events-2026-06-18-post-billing-fix.ndjson` (242 lines, archive copy)
+  - Truncated: `storage/support-error-events.ndjson` (242 → 0 lines, with permission)
+- **Pre-existing items kept as-is (out of scope):**
+  - 🧾 14 `test.todo()` placeholders in `checkout.test.ts` (9), `checkout-chaos.test.ts` (2), `wallet.test.ts` (1), `shipping.test.ts` (1) — intentional future-work reminders
+  - 🧾 1 `it.skip` in `marketplace-t5-t10-integration.test.ts:119` — `pg_trgm` perf placeholder
+- **Skills Used:** verification-before-completion (md5 + typecheck + eslint + test after every change).
+- **Risks:** Truncate was the only destructive op — explicitly user-approved. All other changes are additive or remove-only-unused.
+- **Status History:** Done as of 2026-06-18.

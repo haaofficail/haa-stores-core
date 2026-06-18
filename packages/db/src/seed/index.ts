@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { createDbClient } from '../index.js';
 import * as s from '../schema/index.js';
 import { hashPassword } from '@haa/auth-core';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 async function seed() {
   const db = createDbClient();
@@ -452,7 +452,7 @@ async function seed() {
   console.log(`  ✓ ${customerData.length} Customers created`);
 
   // ── Shipping Setup (must be before orders/shipments) ──
-  const [manualProvider] = await db.insert(s.shippingProviders).values({
+  await db.insert(s.shippingProviders).values({
     name: 'شحن يدوي',
     code: 'manual',
     isActive: true,
@@ -529,8 +529,6 @@ async function seed() {
     { status: 'cancelled', paymentStatus: 'unpaid', fulfillmentStatus: 'unfulfilled', daysAgo: 5, customer: 5, items: [16], city: 'الخبر' },
     { status: 'returned', paymentStatus: 'refunded', fulfillmentStatus: 'returned', daysAgo: 12, customer: 0, items: [3], city: 'الرياض' },
   ];
-
-  const getSlugByIndex = (i: number) => productsData[i].slug;
 
   for (let oi = 0; oi < orderStates.length; oi++) {
     const os = orderStates[oi];
@@ -848,7 +846,6 @@ async function seed() {
   // ── Update customer stats ──────────────────────────
   for (let ci = 0; ci < customerRecords.length; ci++) {
     const customerOrders = orderStates.filter(o => o.customer === ci);
-    const orderIds = customerOrders.map((_, oi) => orderStates.filter((_, idx) => oi === idx).length > 0);
     const customerTotal = customerOrders.reduce((sum, os) => {
       let s = 0;
       for (const idx of os.items) s += Number(productsData[idx].price);

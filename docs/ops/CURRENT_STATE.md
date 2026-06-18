@@ -4,7 +4,7 @@
 
 ---
 
-- **Last Updated:** 2026-06-18 (Autonomous Local Repair session — **مبروك محلي ACHIEVED**). ISSUE-0010 + ISSUE-0011 documented in `docs/ops/ISSUE_KNOWLEDGE_BASE.md`. INC-20260615-001..005 + 6 API-001 fingerprints marked Resolved in `docs/ops/INCIDENTS.md`. 3 ErrorBoundary files hardened (transient detection + componentFrame + Arabic persistent/transient messages + "العودة للرئيسية" fallback). Inline `Billing Settings Guard` added to `packages/db/src/seed/index.ts` (idempotent, scans all stores, inserts default `store_billing_settings` row, onConflictDoNothing on unique storeId). 2 new test files: `tests/error-boundary-transient.test.ts` (24 tests) + `tests/seed-billing-guards.test.ts` (6 tests). **Test count: 2651 passing / 162 test files / 0 failed / 1 skipped / 14 todo** (was 2620 baseline, +31 new). `pnpm typecheck` clean (22/22 packages). `pnpm preflight` PASSED. **System reaches "مبروك محلي" state: project runs locally with stability, core tests pass, typecheck clean, no P0 errors blocking local run, all 14 pre-existing baseline failures documented + unchanged, no new regressions.**)
+- **Last Updated:** 2026-06-18 (Cleanup Pass — **fully clean state**). Follow-up to Autonomous Local Repair session. (1) Archived 242 historical support-error events to `storage/archive/support-error-events-2026-06-18-post-billing-fix.ndjson`; truncated live log to 0. (2) Fixed 4 pre-existing ESLint warnings in `packages/db/src/seed/index.ts` (removed unused imports/vars: `and`, `manualProvider`, `getSlugByIndex`, `orderIds`). (3) Reclassified the so-called "14 pre-existing baseline failures" — they are actually **14 `test.todo()` placeholders** in `checkout.test.ts` (9), `checkout-chaos.test.ts` (2), `wallet.test.ts` (1), `shipping.test.ts` (1). These are intentional reminders for future work, NOT failures. **0 actual test failures.** Plus 1 `it.skip` in `marketplace-t5-t10-integration.test.ts:119` (pg_trgm perf placeholder). `pnpm typecheck` clean (22/22). `pnpm eslint packages/db/src/seed/index.ts --max-warnings 0` clean (0 warnings). `pnpm test` 2651 pass / 0 fail / 1 skip / 14 todo. **Branch is now mechanically clean.**)
 - **Current Phase:** **Quality Pass 5 — Architectural Cleanup CLOSED + Drizzle Snapshot Chain REBUILT.** All 3 core QP5 sub-items done. TASK-0035 (3DS + VAT) Done (8/8 sub-items). Drizzle snapshot chain complete (21 synthesized + 2 real bugs caught). TASK-0029 housekeeping complete.
 - **Active Audit:** Financial Wallet Accuracy Pass — **PHASE 1-9 ALL DONE.** Phase 1 diagnostic (TASK-0031) + Phase 2-3 WalletPostingService foundation (TASK-0033) + Phase 4-9 implementation (TASK-0034 Session #2, 8/8 sub-items). All 5 owner questions resolved: Q1 (gateway fee UX ✅), Q2 (refund policy per provider ✅), Q3 (COD fee ✅ TASK-0032), Q4 (Tabby/Tamara fee data ✅, NON_REFUNDABLE enum), Q5 (payout reservation ✅, soft cap default).
 - **Active Strategic Initiatives (NEW 2026-06-17):**
@@ -66,6 +66,7 @@
   - **Owner Decisions Resolved (2026-06-16, Session #1 + 2026-06-17 Sessions #2-#5):** Q1 (gateway fee UX) → "You receive X" with collapsible breakdown (TASK-0034 sub-item 8); Q2 (refund policy per provider) → per-provider enum, default NON_REFUNDABLE, Moyasar=REFUNDABLE, Tabby/Tamara=NON_REFUNDABLE pending verification (TASK-0034 sub-item 3); Q3 (COD fee) → DONE in TASK-0032 (per-store policy, default 2%, decoupled from platform fee). Q4 (Tabby/Tamara fee data source) + Q5 (payout pending reservation) → resolved during TASK-0034 (Q5 = soft cap default, owner gate to switch to hard block). All 5 owner questions resolved. 🆕
   - **TASK-0034 — Phase 4-9 + Saudi PDPL (Session #2) ✅ DONE (2026-06-17)** — all 8 sub-items shipped: (1) `postPlatformFee`, (2) `GatewayFeeRefundPolicy` enum (Q2), (3) `postGatewayFee` + `postSettlementDifference`, (4) migrated `apps/api/src/routes/orders.ts:131` refund, (5) migrated `checkout.ts` + `payment-webhook-service.ts` (6 raw call sites), (6) gateway fee UX (Q1: "You receive X" + collapsible breakdown in merchant Wallet.tsx), (7) `postPayoutDebit` + `postPayoutReversal` + `hasRecentPayoutRequest` (Q5 soft cap), (8) PDPL endpoints (`GET /merchant/:storeId/data-export` + `DELETE /merchant/:storeId/account`). All 8 WalletPostingService methods now implemented. 56 new tests added (+75 across 5 new test files + 1 updated). See `CHANGELOG_INTERNAL.md` for the full Session #2 entry. **Owner decisions remaining for Session #3+:** Q4 (Tabby/Tamara fee data source), Q5 hard-block option (currently soft cap). **Owner gates still required:** deployment, live API keys, legal docs, pricing beyond Q1/Q2/Q3. 🆕
   - **Owner Decisions Resolved (2026-06-16, Session #1):** Q1 (gateway fee UX) → "You receive X" with collapsible breakdown (TASK-0034 sub-item 8); Q2 (refund policy per provider) → per-provider enum, default NON_REFUNDABLE, Moyasar=REFUNDABLE, Tabby/Tamara=NON_REFUNDABLE pending verification (TASK-0034 sub-item 3); Q3 (COD fee) → DONE in TASK-0032 (per-store policy, default 2%, decoupled from platform fee). 🆕
+
 - **Open Tasks:**
   - TASK-0001 (Development OS) — Done
   - TASK-0002 (System Health OS) — Done
@@ -79,32 +80,32 @@
   - TASK-0010 (RBAC Pass 1 Implementation) — Done
   - TASK-0011 (RBAC Pass 2 — Dashboard Frontend Guards) — Done
   - TASK-0012 (RBAC Pass 3 — Employee Management UI) — Done
-   - TASK-0013 (RBAC Pass 4 — Employee Management API + Wire) — Done
-   - TASK-0014 (RBAC Pass 5 — Employee Audit Logs + Invite Safety) — Done
-   - TASK-0015 (Haa Public Marketplace) — Done
-   - TASK-0018 (Marketplace Blocker Closure) — Done
-   - TASK-0019 (Marketing Events Insert Repair) — Done
-   - TASK-0020 (Marketplace Product Detail Page Visual Upgrade) — Done
-   - TASK-0021 (Marketplace Theme System Polish) — Done
-    - TASK-0022 (Marketplace Product Detail Completion) — Done
-    - TASK-0023 (Demo Support KB Repair) — Done
-    - TASK-0024 (Marketplace Product Detail Trust Section Density) — Done
-    - TASK-0027 (Quality Pass 3 — Security & Permissions) — Done (4/4 specified sub-items: CSRF + webhook idempotency + audit depth + RBAC coverage)
-    - TASK-0028 (Quality Pass 4 — Operations & Quality) — Done (3/3 specified sub-items: CI/CD pipeline + observability shim + Redis rate-limiter production wiring)
-    - TASK-0029 (Quality Pass 5 — Architectural Cleanup) — **Done (2026-06-17)** (3/3 core sub-items done: service-layer enforcement + queue scaffold + theme package rationalization; Quality Pass 1-5 FULLY CLOSED)
-    - TASK-0035 (3DS Flow + VAT-Aware Pricing) — **Done (2026-06-17)** (7/8 sub-items shipped across Sessions #3+#4+#5; sub-item 8 per-tenant VAT_RATE explicitly deferred to ZATCA session)
-    - TASK-0030 (Configurable Platform Fee Policy) — Done (see DECISIONS.md DECISION-0007): store_billing_settings + fee-snapshot fields + 4 modes + admin/merchant UIs + 57 new tests)
-    - TASK-0031 (Financial Wallet Accuracy Pass — Phase 1 audit) — Done (diagnostic only; 5 findings + 14-phase plan; Q1+Q2 deferred to TASK-0034, Q3 done in TASK-0032)
-    - TASK-0032 (Phase 9: COD Fee Policy, Q3 owner decision) — Done (per-store policy in store_billing_settings; cod-fees.ts module; orders.ts:321 policy-driven; fresh-DB verified; admin/merchant UI for COD deferred)
-    - TASK-0033 (Phase 2-3: WalletPostingService foundation) — Session #1 Done (8 methods declared, 3 implemented, dedup centralized, 2 of 6 call sites refactored; remaining 4 call sites + 5 stub methods = Session #2 / TASK-0034)
-    - TASK-0034 (Phase 4-9 + Saudi PDPL — Session #2) — Done (8/8 sub-items shipped; 56 new tests; 0 new regressions; see CHANGELOG)
+  - TASK-0013 (RBAC Pass 4 — Employee Management API + Wire) — Done
+  - TASK-0014 (RBAC Pass 5 — Employee Audit Logs + Invite Safety) — Done
+  - TASK-0015 (Haa Public Marketplace) — Done
+  - TASK-0018 (Marketplace Blocker Closure) — Done
+  - TASK-0019 (Marketing Events Insert Repair) — Done
+  - TASK-0020 (Marketplace Product Detail Page Visual Upgrade) — Done
+  - TASK-0021 (Marketplace Theme System Polish) — Done
+  - TASK-0022 (Marketplace Product Detail Completion) — Done
+  - TASK-0023 (Demo Support KB Repair) — Done
+  - TASK-0024 (Marketplace Product Detail Trust Section Density) — Done
+  - TASK-0027 (Quality Pass 3 — Security & Permissions) — Done (4/4 specified sub-items: CSRF + webhook idempotency + audit depth + RBAC coverage)
+  - TASK-0028 (Quality Pass 4 — Operations & Quality) — Done (3/3 specified sub-items: CI/CD pipeline + observability shim + Redis rate-limiter production wiring)
+  - TASK-0029 (Quality Pass 5 — Architectural Cleanup) — **Done (2026-06-17)** (3/3 core sub-items done: service-layer enforcement + queue scaffold + theme package rationalization; Quality Pass 1-5 FULLY CLOSED)
+  - TASK-0035 (3DS Flow + VAT-Aware Pricing) — **Done (2026-06-17)** (7/8 sub-items shipped across Sessions #3+#4+#5; sub-item 8 per-tenant VAT_RATE explicitly deferred to ZATCA session)
+  - TASK-0030 (Configurable Platform Fee Policy) — Done (see DECISIONS.md DECISION-0007): store_billing_settings + fee-snapshot fields + 4 modes + admin/merchant UIs + 57 new tests)
+  - TASK-0031 (Financial Wallet Accuracy Pass — Phase 1 audit) — Done (diagnostic only; 5 findings + 14-phase plan; Q1+Q2 deferred to TASK-0034, Q3 done in TASK-0032)
+  - TASK-0032 (Phase 9: COD Fee Policy, Q3 owner decision) — Done (per-store policy in store_billing_settings; cod-fees.ts module; orders.ts:321 policy-driven; fresh-DB verified; admin/merchant UI for COD deferred)
+  - TASK-0033 (Phase 2-3: WalletPostingService foundation) — Session #1 Done (8 methods declared, 3 implemented, dedup centralized, 2 of 6 call sites refactored; remaining 4 call sites + 5 stub methods = Session #2 / TASK-0034)
+  - TASK-0034 (Phase 4-9 + Saudi PDPL — Session #2) — Done (8/8 sub-items shipped; 56 new tests; 0 new regressions; see CHANGELOG)
 - **Known Broken Areas:**
   - Storefront root `/` hardcoded to `/s/haa-demo` redirect — works after seed ✅
   - Registration creates stores as `draft` (intentional — merchant must publish from settings)
   - All 2329 tests pass against isolated test DB (+56 from Session #2 baseline 2273) — 4 pre-existing baseline failures (migration-deduplication / schema-deduplication / security-boundary-gates CSS isolation) unrelated to Session #2 work
 - **Known Risks:**
   - Duplicate project folders on Desktop causing path confusion ⚠️
-  - CI/CD pipeline shipped (Quality Pass 4 Item 1) ✅ — runs on push to main + quality-pass-* and on PR
+  - CI/CD pipeline shipped (Quality Pass 4 Item 1) ✅ — runs on push to main + quality-pass-\* and on PR
   - Dev servers must be running for HTTP-level synthetic checks
   - Repeated local `API-001` on `/s/haa-demo/events` marketing event inserts — FIXED by TASK-0019 / ISSUE-0008 ✅
   - Customer route uses read permission for write operations (R-0011) — FIXED in RBAC Pass 1 ✅
@@ -141,9 +142,9 @@
   - RBAC Pass 1: permission catalog with Arabic labels & risk levels, 8 roles, frontend guards (usePermissions + PermissionGate), backend enforcement, customer permission fix, subscription/dashboard route protection, 10 boundary tests, 1350 tests total across 68 files, all typechecks & ops checks passing ✅
   - Test DB Isolation committed: working tree clean, RBAC Pass 1 complete ✅
   - RBAC Pass 2 — Dashboard Frontend Guards: sidebar filtering, route-level PermissionRoute guards, action button PermissionGate wrappers, UnauthorizedState component, 6 boundary tests, 1356 total tests across 69 files, all typechecks & ops checks passing ✅
-     - RBAC Pass 3 — Employee Management UI: Employees page, PermissionCheckboxMatrix (from PERMISSION_CATALOG), EmployeeFormDialog, role presets (from ROLE_PERMISSIONS), last-owner safety, API contract doc, 25 boundary tests, 1381 total tests across 70 files, all typechecks & ops checks passing ✅
-   - RBAC Pass 4 — Employee Management API: employees.ts route with CRUD endpoints, all safety rules enforced (last owner, self-downgrade, duplicate email, invalid role, self-delete, permission grant limits), 501 for custom permissions, 28 boundary tests (employee-management-api.test.ts), all checks passing ✅
-   - Wire Employee UI to API: Employees page fetches from employeesApi.list with loading/error/empty states, create/invite/update/delete wired to actual API calls, EmployeeFormDialog save enabled with onSave callback, custom permissions warning preserved, refetch after mutation, 10 API-wire boundary tests (employee-ui-api-wire.test.ts), all checks passing ✅
+    - RBAC Pass 3 — Employee Management UI: Employees page, PermissionCheckboxMatrix (from PERMISSION_CATALOG), EmployeeFormDialog, role presets (from ROLE_PERMISSIONS), last-owner safety, API contract doc, 25 boundary tests, 1381 total tests across 70 files, all typechecks & ops checks passing ✅
+  - RBAC Pass 4 — Employee Management API: employees.ts route with CRUD endpoints, all safety rules enforced (last owner, self-downgrade, duplicate email, invalid role, self-delete, permission grant limits), 501 for custom permissions, 28 boundary tests (employee-management-api.test.ts), all checks passing ✅
+  - Wire Employee UI to API: Employees page fetches from employeesApi.list with loading/error/empty states, create/invite/update/delete wired to actual API calls, EmployeeFormDialog save enabled with onSave callback, custom permissions warning preserved, refetch after mutation, 10 API-wire boundary tests (employee-ui-api-wire.test.ts), all checks passing ✅
   - RBAC Pass 5 — Employee Audit Logs + Invite Safety Baseline: Added 9 employee audit actions to AuditAction type (orders.ts) + AUDIT_ACTION_LABELS (audit.ts) + AUDIT_ENTITY_LABELS, imported AuditLogService in employees.ts, created auditMeta() helper, added 9 audit.record() calls across all CRUD endpoints + safety blocks (invite success, duplicate rejection, self-restriction block, last-owner block, role change, status toggle, delete, 501 attempt), verified password safety (client-generated random, hashed server-side, not in response, masked by maskObject in audit), added invite clarity info banner in create dialog, 12 audit boundary tests added, 1493 tests passing across 74 files, all typechecks & ops checks passing ✅
   - Haa Public Marketplace Backbone: merchant product opt-in + platform commission fields, public `/marketplace` browse/cart/checkout/tracking/seller pages, category/search/price/availability/sort filters with no city filter, seller profile pages, unified marketplace order records with per-store suborders, normal merchant-order handoff for all post-order procedures, admin marketplace review/feature/seller/order/settlement/deep-report console, 13 marketplace/product QA regression tests passing, and full `pnpm test` passing (1570 passed, 14 todo, 1 skipped) ✅
 - **Security Findings Summary:**
@@ -184,7 +185,7 @@
   - preflight is now a hardened Node script (`scripts/preflight.mjs`) that fails with exit code 1 from wrong directory
   - System Map is at `docs/system-map/SYSTEM_MAP.md` and `docs/system-map/ERROR_FLOW_MAP.md`
   - Security docs are at `docs/security/`
-   - Tests run against isolated `haastores_test` DB — 2273 passing (+18 from Session #1 baseline 2255), 4 pre-existing baseline failures unrelated — run `pnpm db:test:setup` after schema changes
+  - Tests run against isolated `haastores_test` DB — 2273 passing (+18 from Session #1 baseline 2255), 4 pre-existing baseline failures unrelated — run `pnpm db:test:setup` after schema changes
   - Test DB setup script: `scripts/db-test-setup.sh`
   - Test env override: `tests/setup.ts` overrides DATABASE_URL automatically
   - **Session #2 scratchpad (handoff):** `~/.mavis/scratchpads/mvs_50210367da784a45867523901dde4cbc/scratchpad.md` — full 4-session roadmap + owner decision log + audit reference
