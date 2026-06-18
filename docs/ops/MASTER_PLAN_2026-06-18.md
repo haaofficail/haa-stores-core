@@ -42,23 +42,23 @@
 
 All 5 quality passes completed before this session.
 
-| Pass | TASK | Status |
-|---|---|---|
-| Quality Pass 1 — System Health | TASK-0025 | ✅ |
-| Quality Pass 2 — Component Unification | TASK-0026 | ✅ (11 files refactored) |
-| Quality Pass 3 — Security & Permissions | TASK-0027 | ✅ (CSRF + RBAC) |
-| Quality Pass 4 — Operations & Quality | TASK-0028 | ✅ (CI/CD + observability shim) |
-| Quality Pass 5 — Architectural Cleanup | TASK-0029 | ✅ (Service layer + Queue + Theme) |
+| Pass                                    | TASK      | Status                             |
+| --------------------------------------- | --------- | ---------------------------------- |
+| Quality Pass 1 — System Health          | TASK-0025 | ✅                                 |
+| Quality Pass 2 — Component Unification  | TASK-0026 | ✅ (11 files refactored)           |
+| Quality Pass 3 — Security & Permissions | TASK-0027 | ✅ (CSRF + RBAC)                   |
+| Quality Pass 4 — Operations & Quality   | TASK-0028 | ✅ (CI/CD + observability shim)    |
+| Quality Pass 5 — Architectural Cleanup  | TASK-0029 | ✅ (Service layer + Queue + Theme) |
 
 ---
 
 ## ✅ Stream 2: Design System (DONE in this session)
 
-| Sprint | Items | Status | Result |
-|---|---|---|---|
-| Sprint 1: Foundations | T1.1-T1.4 | ✅ | Color migration #58a1e2 → #56a1e3 + tokens |
-| Sprint 2: Pages | T2.1-T2.5 | ✅ | LandingPage, ProductCard, DashboardHome, Settings, Orders (−5636 LOC) |
-| Sprint 3: Polish | T3.1-T3.6 | ✅ | EmptyState, Error messages, Form/Icon/Loading standards, 71 motion-reduce annotations |
+| Sprint                | Items     | Status | Result                                                                                |
+| --------------------- | --------- | ------ | ------------------------------------------------------------------------------------- |
+| Sprint 1: Foundations | T1.1-T1.4 | ✅     | Color migration #58a1e2 → #56a1e3 + tokens                                            |
+| Sprint 2: Pages       | T2.1-T2.5 | ✅     | LandingPage, ProductCard, DashboardHome, Settings, Orders (−5636 LOC)                 |
+| Sprint 3: Polish      | T3.1-T3.6 | ✅     | EmptyState, Error messages, Form/Icon/Loading standards, 71 motion-reduce annotations |
 
 **Net result:** 11 commits / session, 0 regressions, 2595 tests green, typecheck CLEAN.
 
@@ -70,20 +70,20 @@ All 5 quality passes completed before this session.
 
 ### Phase 1: Foundation (DONE)
 
-| Phase | TASK | Status | Outcome |
-|---|---|---|---|
-| Phase 0 | TASK-0039 | ✅ DONE | Documentation drift correction |
+| Phase   | TASK      | Status  | Outcome                                                       |
+| ------- | --------- | ------- | ------------------------------------------------------------- |
+| Phase 0 | TASK-0039 | ✅ DONE | Documentation drift correction                                |
 | Phase 1 | TASK-0040 | ✅ DONE | Self-contained P0s (demo isolation + accessToken + audit log) |
-| Phase 2 | TASK-0041 | ✅ DONE | Compliance (category blocklist + SFDA workflow) |
-| Phase 3 | TASK-0042 | ✅ DONE | Legal copy (PRIVACY_POLICY + TERMS + SFDA_DISCLAIMER) |
+| Phase 2 | TASK-0041 | ✅ DONE | Compliance (category blocklist + SFDA workflow)               |
+| Phase 3 | TASK-0042 | ✅ DONE | Legal copy (PRIVACY_POLICY + TERMS + SFDA_DISCLAIMER)         |
 
 ### Phase 2: Engineered + Awaiting (PENDING)
 
-| Phase | TASK | Scope | Owner Gate |
-|---|---|---|---|
-| **Phase 4** | **TASK-0043** | P1 fixes (10 items) + Integration Tests T5-T10 | Engineering can start; no owner gate |
-| **Phase 5** | **TASK-0044** | Owner-only gates closure (depends on TASK-0038 G1-G10) | BLOCKED on owner |
-| **Phase 6** | **TASK-0045** | Pre-pen-test smoke + External pen-test + Triage + Beta launch | BLOCKED on Phase 5 |
+| Phase       | TASK          | Scope                                                         | Owner Gate                           |
+| ----------- | ------------- | ------------------------------------------------------------- | ------------------------------------ |
+| **Phase 4** | **TASK-0043** | P1 fixes (10 items) + Integration Tests T5-T10                | Engineering can start; no owner gate |
+| **Phase 5** | **TASK-0044** | Owner-only gates closure (depends on TASK-0038 G1-G10)        | BLOCKED on owner                     |
+| **Phase 6** | **TASK-0045** | Pre-pen-test smoke + External pen-test + Triage + Beta launch | BLOCKED on Phase 5                   |
 
 ---
 
@@ -91,18 +91,18 @@ All 5 quality passes completed before this session.
 
 **TASK-0038 (Live-Deploy Readiness Tracker)** — 10 owner-coordinated actions:
 
-| Gate | Action | Documented in | Phase Block |
-|---|---|---|---|
-| **G1** | Commercial Registration (CR) — MoCI | `OWNER_ACTION_G1_CR.md` | Phase 5 |
-| **G2** | VAT Registration — ZATCA | `OWNER_ACTION_G2_VAT.md` | Phase 5 + ZATCA Phase 2 |
-| **G3** | E-Commerce License — MoCI | `OWNER_ACTION_G3_ECOMMER_LICENSE.md` | Phase 5 |
-| **G4** | DPO Appointment (PDPL Art. 22) | `OWNER_ACTION_G4_DPO.md` | Phase 3.4 + Phase 5 |
-| **G5** | Trademark Registration — SAIP | `OWNER_ACTION_G5_TRADEMARK.md` | Phase 5 |
-| **G6** | PCI-DSS ASV scan | `OWNER_ACTION_G6_PCI_ASV.md` | Phase 5 |
-| **G7** | External Pen-Test (CREST firm) | `OWNER_ACTION_G7_PENTEST.md` | Phase 6 |
-| **G8** | KSA Hosting decision | `OWNER_ACTION_G8_KSA_HOSTING.md` | Phase 5 |
-| **G9** | Tabby DPA | `OWNER_ACTION_G9_TABBY_DPA.md` | Phase 5 |
-| **G10** | DR Plan + tabletop exercise | `OWNER_ACTION_G10_DR_PLAN.md` | Phase 5 |
+| Gate    | Action                              | Documented in                        | Phase Block             |
+| ------- | ----------------------------------- | ------------------------------------ | ----------------------- |
+| **G1**  | Commercial Registration (CR) — MoCI | `OWNER_ACTION_G1_CR.md`              | Phase 5                 |
+| **G2**  | VAT Registration — ZATCA            | `OWNER_ACTION_G2_VAT.md`             | Phase 5 + ZATCA Phase 2 |
+| **G3**  | E-Commerce License — MoCI           | `OWNER_ACTION_G3_ECOMMER_LICENSE.md` | Phase 5                 |
+| **G4**  | DPO Appointment (PDPL Art. 22)      | `OWNER_ACTION_G4_DPO.md`             | Phase 3.4 + Phase 5     |
+| **G5**  | Trademark Registration — SAIP       | `OWNER_ACTION_G5_TRADEMARK.md`       | Phase 5                 |
+| **G6**  | PCI-DSS ASV scan                    | `OWNER_ACTION_G6_PCI_ASV.md`         | Phase 5                 |
+| **G7**  | External Pen-Test (CREST firm)      | `OWNER_ACTION_G7_PENTEST.md`         | Phase 6                 |
+| **G8**  | KSA Hosting decision                | `OWNER_ACTION_G8_KSA_HOSTING.md`     | Phase 5                 |
+| **G9**  | Tabby DPA                           | `OWNER_ACTION_G9_TABBY_DPA.md`       | Phase 5                 |
+| **G10** | DR Plan + tabletop exercise         | `OWNER_ACTION_G10_DR_PLAN.md`        | Phase 5                 |
 
 **⚠️ Phase 5 cannot start until G1, G2, G3, G4, G5, G6, G8, G9, G10 are closed.**
 
@@ -110,12 +110,12 @@ All 5 quality passes completed before this session.
 
 ## 🟢 Stream 5: Compliance Tracks (Independent from launch)
 
-| TASK | Title | Scope | Dependency |
-|---|---|---|---|
-| TASK-0033 | Financial Wallet Phase 2-3 | WalletPostingService | None (engineering) |
-| TASK-0034 | Financial Wallet Phase 4-9 + PDPL | Reconciliation + audit + retention | Depends on G2 (VAT) |
-| TASK-0035 | 3DS Flow + VAT-Aware Pricing | SAMA mandatory 3DS + ZATCA integration | Depends on G2 |
-| TASK-0036 | ZATCA E-Invoicing Phase 1+2 | الفوترة الإلكترونية | Depends on G2 |
+| TASK      | Title                             | Scope                                  | Dependency          |
+| --------- | --------------------------------- | -------------------------------------- | ------------------- |
+| TASK-0033 | Financial Wallet Phase 2-3        | WalletPostingService                   | None (engineering)  |
+| TASK-0034 | Financial Wallet Phase 4-9 + PDPL | Reconciliation + audit + retention     | Depends on G2 (VAT) |
+| TASK-0035 | 3DS Flow + VAT-Aware Pricing      | SAMA mandatory 3DS + ZATCA integration | Depends on G2       |
+| TASK-0036 | ZATCA E-Invoicing Phase 1+2       | الفوترة الإلكترونية                    | Depends on G2       |
 
 **These can run in parallel with Phase 5/6 from the engineering side.**
 
@@ -125,16 +125,16 @@ All 5 quality passes completed before this session.
 
 Deferred from Sprint 2/3 follow-ups + new initiatives:
 
-| Item | Source | Estimated Effort |
-|---|---|---|
-| T2.4 remaining Settings tabs (info, contact, general, payment, shipping, wallet, features, sizes, gift, pickup) | TASK-0048 follow-ups | 1-2 hours |
-| T3.5 application — apply `MerchantEmptyState` to 5 dashboard sub-components | TASK-0048 follow-ups | 30-45 min |
-| Mobile-responsive refactor (Sprint 4 candidate) | New | TBD |
-| Performance optimization (Lighthouse, bundle splitting) | New | TBD |
-| Observability maturity (Datadog/Sentry after live) | New | TBD |
-| Redis integration (currently deferred per `PRODUCTION_READINESS.md:53`) | TASK-0029 follow-up | TBD |
-| WCAG 2.1 AA audit (deferred per `RELEASE_1_REPORT.md:78`) | Compliance | TBD |
-| Load testing (deferred per `RELEASE_1_REPORT.md:79`) | Operations | TBD |
+| Item                                                                                                            | Source               | Estimated Effort |
+| --------------------------------------------------------------------------------------------------------------- | -------------------- | ---------------- |
+| T2.4 remaining Settings tabs (info, contact, general, payment, shipping, wallet, features, sizes, gift, pickup) | TASK-0048 follow-ups | 1-2 hours        |
+| T3.5 application — apply `MerchantEmptyState` to 5 dashboard sub-components                                     | TASK-0048 follow-ups | 30-45 min        |
+| Mobile-responsive refactor (Sprint 4 candidate)                                                                 | New                  | TBD              |
+| Performance optimization (Lighthouse, bundle splitting)                                                         | New                  | TBD              |
+| Observability maturity (Datadog/Sentry after live)                                                              | New                  | TBD              |
+| Redis integration (currently deferred per `PRODUCTION_READINESS.md:53`)                                         | TASK-0029 follow-up  | TBD              |
+| WCAG 2.1 AA audit (deferred per `RELEASE_1_REPORT.md:78`)                                                       | Compliance           | TBD              |
+| Load testing (deferred per `RELEASE_1_REPORT.md:79`)                                                            | Operations           | TBD              |
 
 ---
 
@@ -142,12 +142,12 @@ Deferred from Sprint 2/3 follow-ups + new initiatives:
 
 6 old fingerprints from 2026-06-15 (3 days before this session). Investigate separately:
 
-| Fingerprint | Count | Suggested Action |
-|---|---|---|
-| `useRef is not defined` | ×2 | Record in `INCIDENTS.md` + RCA |
-| `tickerRef is not defined` | ×1 | Record in `INCIDENTS.md` + RCA |
-| `Failed to fetch dynamically imported module: Login.tsx` | ×2 | Record in `INCIDENTS.md` + RCA |
-| `API-001::Failed_query` (various) | ×6 | Open RCA for each |
+| Fingerprint                                              | Count | Suggested Action               |
+| -------------------------------------------------------- | ----- | ------------------------------ |
+| `useRef is not defined`                                  | ×2    | Record in `INCIDENTS.md` + RCA |
+| `tickerRef is not defined`                               | ×1    | Record in `INCIDENTS.md` + RCA |
+| `Failed to fetch dynamically imported module: Login.tsx` | ×2    | Record in `INCIDENTS.md` + RCA |
+| `API-001::Failed_query` (various)                        | ×6    | Open RCA for each              |
 
 **No regressions from Sprint 2/3 changes** — verified by clean test suite + typecheck.
 
@@ -163,11 +163,11 @@ NOW ────────► TASK-0043 (Phase 4: P1 fixes + integration tests
                   ├── Phase 5 GATE: Wait for G1-G10 from owner
                   │
                   ▼ (after G1-G10 closed)
-                  
+
               TASK-0044 (Phase 5: confirm all gates + build deploy artifacts)
                   │
                   ▼
-                  
+
               TASK-0045 (Phase 6: pre-pen-test smoke → pen-test → triage → beta)
 ```
 
@@ -183,7 +183,7 @@ NOW ────────► Sprint 4 Discovery
                   ├── Identify top 5-7 items with ROI
                   │
                   ▼
-                  
+
               Sprint 4 Execution (1 week)
 ```
 
@@ -197,7 +197,7 @@ NOW ────────► Complete deferred Sprint 2/3 follow-ups
                   ├── T3.5: apply MerchantEmptyState to 5 components
                   │
                   ▼
-                  
+
               Open PR (manual — repo has no remote)
 ```
 
@@ -233,16 +233,19 @@ NOW ────────► Investigate 6 P0 alerts
 
 ## 📊 Status summary
 
-| Stream | Status | Next Action |
-|---|---|---|
-| Quality Passes | ✅ DONE | None |
-| Design System (Sprint 1-3) | ✅ DONE | Path C (housekeeping) |
-| Marketplace Phase 0-3 | ✅ DONE | Path A (TASK-0043) |
-| Marketplace Phase 4-6 | 🟡 PENDING | Path A (start Phase 4 now) |
-| Owner Actions G1-G10 | 🔴 OPEN | Owner execution (no eng) |
-| Compliance Tracks (3DS, ZATCA, Wallet) | 🟢 Independent | Can run in parallel |
-| Sprint 4+ | 📋 PLANNING | Path B (separate session) |
-| P0 Alerts Investigation | 🐛 OPEN | Path D (separate session) |
+| Stream                                 | Status                                                              | Next Action                               |
+| -------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------- |
+| Quality Passes                         | ✅ DONE                                                             | None                                      |
+| Design System (Sprint 1-3)             | ✅ DONE                                                             | Path C (housekeeping)                     |
+| Marketplace Phase 0-3                  | ✅ DONE                                                             | Path A (TASK-0043)                        |
+| Marketplace Phase 4                    | ✅ DONE (TASK-0043 — 3 tracks: rate limit, permissions, pagination) | Path A (start Phase 5 eng prep)           |
+| Marketplace Phase 5 eng prep           | ✅ DONE (TASK-0044 A1-A4 — 3 docs)                                  | Path A (founder engages vendor)           |
+| Marketplace Phase 5 owner gates        | 🔴 OPEN (G1-G10 — owner execution)                                  | Owner parallel                            |
+| Marketplace Phase 6 (pen-test + beta)  | 🟡 PENDING                                                          | Path A (depends on G1-G10 + Phase 5 prep) |
+| Owner Actions G1-G10                   | 🔴 OPEN                                                             | Owner execution (no eng)                  |
+| Compliance Tracks (3DS, ZATCA, Wallet) | 🟢 Independent                                                      | Can run in parallel                       |
+| Sprint 4+                              | 📋 PLANNING                                                         | Path B (separate session)                 |
+| P0 Alerts Investigation                | 🐛 OPEN                                                             | Path D (separate session)                 |
 
 ---
 

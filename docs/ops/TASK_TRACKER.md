@@ -49,30 +49,30 @@
 - **Test Results:**
   - **Item 2.6 (DashboardHome decomposition) — COMPLETED 2026-06-15:** Decomposed `DashboardHome.tsx` (2743 LOC) incrementally across 22 commits. 22 sub-components + 1 constants file extracted to `apps/merchant-dashboard/src/pages/dashboard/`:
 
-    | File | LOC | Role |
-    |---|---|---|
-    | `constants.ts` | ~170 | Pure helpers (no React) |
-    | `StatsCards.tsx` | ~92 | 5-tile extended KPI grid |
-    | `SalesChart.tsx` | ~124 | AreaChart of last-30-days sales |
-    | `CategoryPieChart.tsx` | ~98 | Donut chart + top-5 legend |
-    | `NextActionBanner.tsx` | ~102 | Action Center strip |
-    | `DashboardHeader.tsx` | ~78 | Top bar (title + last-updated + notifications) |
-    | `SubscriptionBadge.tsx` | ~77 | Subscription status pill |
-    | `PrimaryKpiCards.tsx` | ~97 | 2 always-visible KPI tiles |
-    | `RecentActionableOrders.tsx` | ~157 | Recent orders list (max 3) |
-    | `StoreReadinessBanner.tsx` | ~57 | Red readiness alert banner |
-    | `LowStockList.tsx` | ~102 | Low-stock products with +1 button |
-    | `RecentSoldProducts.tsx` | ~124 | Recent sold products list |
-    | `AiGreetingCard.tsx` | ~47 | AI greeting one-liner |
-    | `RecentCustomersList.tsx` | ~108 | Recent customers list |
-    | `QuickActionsGrid.tsx` | ~88 | 4-button quick action grid |
-    | `SmartAlertsStrip.tsx` | ~94 | Critical alert chips (max 3) |
-    | `WelcomeBanner.tsx` | ~66 | Onboarding celebration banner |
-    | `TopProductsList.tsx` | ~122 | Top products by revenue |
-    | `QuickStatsGrid.tsx` | ~115 | Brands/tags/categories/products/orders tiles |
-    | `ShowMoreKpiToggle.tsx` | ~45 | Mobile KPI expand toggle |
-    | `AnalyticsSection.tsx` | ~93 | Collapsible analytics wrapper |
-    | `MoreSection.tsx` | ~85 | Collapsible "more" wrapper |
+    | File                         | LOC  | Role                                           |
+    | ---------------------------- | ---- | ---------------------------------------------- |
+    | `constants.ts`               | ~170 | Pure helpers (no React)                        |
+    | `StatsCards.tsx`             | ~92  | 5-tile extended KPI grid                       |
+    | `SalesChart.tsx`             | ~124 | AreaChart of last-30-days sales                |
+    | `CategoryPieChart.tsx`       | ~98  | Donut chart + top-5 legend                     |
+    | `NextActionBanner.tsx`       | ~102 | Action Center strip                            |
+    | `DashboardHeader.tsx`        | ~78  | Top bar (title + last-updated + notifications) |
+    | `SubscriptionBadge.tsx`      | ~77  | Subscription status pill                       |
+    | `PrimaryKpiCards.tsx`        | ~97  | 2 always-visible KPI tiles                     |
+    | `RecentActionableOrders.tsx` | ~157 | Recent orders list (max 3)                     |
+    | `StoreReadinessBanner.tsx`   | ~57  | Red readiness alert banner                     |
+    | `LowStockList.tsx`           | ~102 | Low-stock products with +1 button              |
+    | `RecentSoldProducts.tsx`     | ~124 | Recent sold products list                      |
+    | `AiGreetingCard.tsx`         | ~47  | AI greeting one-liner                          |
+    | `RecentCustomersList.tsx`    | ~108 | Recent customers list                          |
+    | `QuickActionsGrid.tsx`       | ~88  | 4-button quick action grid                     |
+    | `SmartAlertsStrip.tsx`       | ~94  | Critical alert chips (max 3)                   |
+    | `WelcomeBanner.tsx`          | ~66  | Onboarding celebration banner                  |
+    | `TopProductsList.tsx`        | ~122 | Top products by revenue                        |
+    | `QuickStatsGrid.tsx`         | ~115 | Brands/tags/categories/products/orders tiles   |
+    | `ShowMoreKpiToggle.tsx`      | ~45  | Mobile KPI expand toggle                       |
+    | `AnalyticsSection.tsx`       | ~93  | Collapsible analytics wrapper                  |
+    | `MoreSection.tsx`            | ~85  | Collapsible "more" wrapper                     |
 
   - Result: DashboardHome.tsx 2743 → 1599 LOC (-41.7%, -1144 lines). 22 commits, each verified independently with typecheck + build + 144 dashboard tests. DashboardHome is now a clean orchestrator — every section comment is followed by 1-3 lines of component calls.
   - The remaining ~1500 LOC inside DashboardHome is all hooks, state, API orchestration, and computed values (the `useEffect`, `useMemo`, `handleStockUpdate`, `visibleAlerts`, `acItems`, `topProducts`, `salesData`, etc.) — that stays because moving it would require introducing a custom hook layer or context, which is out of scope for Item 2.6 (which is about visual structure, not state architecture).
@@ -99,6 +99,7 @@
     - `pnpm --filter @haa/storefront build` passed.
     - `pnpm --filter @haa/merchant-dashboard build` passed.
     - Storefront route split is the only sub-item closed in this entry. Other sub-items (2.3–2.6) remain open.
+
 - **Risks:**
   - Large refactor with potential for regressions — must test after each sub-item
   - 29 child tables of stores reference storeId — splitting admin requires care
@@ -448,7 +449,7 @@
 - **Goal:** Dashboard, storefront, and API should use fixed local ports and monitoring should report the correct service on each port.
 - **Scope:** Merchant dashboard `5173`, storefront `5174`, admin dashboard `5175`, API `3000`, health/synthetic scripts.
 - **Out of Scope:** Database migrations, feature work, production deployment.
-- **Affected Areas:** apps/*/vite.config.ts, scripts/monitor-health.mjs, scripts/synthetic-checks.mjs
+- **Affected Areas:** apps/\*/vite.config.ts, scripts/monitor-health.mjs, scripts/synthetic-checks.mjs
 - **Files Changed:** `apps/merchant-dashboard/vite.config.ts`, `apps/storefront/vite.config.ts`, `apps/admin-dashboard/vite.config.ts`, `scripts/monitor-health.mjs`, `scripts/synthetic-checks.mjs`
 - **Acceptance Criteria:** Vite apps fail fast if assigned port is occupied; monitoring checks dashboard on `5173` and storefront on `5174`; `pnpm ops:monitor` and `pnpm typecheck` pass.
 - **Test Plan:** `pnpm ops:monitor`, `pnpm typecheck`
@@ -463,28 +464,28 @@
 
 ## Status Values
 
-| Status | Meaning |
-|--------|---------|
-| Requested | Task received from user |
-| Expanded | Request converted to professional brief |
-| Planned | Scope, plan, and acceptance criteria defined |
-| In Progress | Implementation active |
-| Implemented | Code changes complete |
-| In Verification | Testing and review in progress |
-| Done | Meets Definition of Done |
-| Blocked | Waiting on decision, info, or environment |
-| Reopened | Failed verification or problem returned |
-| Cancelled | Cancelled with clear reason |
+| Status          | Meaning                                      |
+| --------------- | -------------------------------------------- |
+| Requested       | Task received from user                      |
+| Expanded        | Request converted to professional brief      |
+| Planned         | Scope, plan, and acceptance criteria defined |
+| In Progress     | Implementation active                        |
+| Implemented     | Code changes complete                        |
+| In Verification | Testing and review in progress               |
+| Done            | Meets Definition of Done                     |
+| Blocked         | Waiting on decision, info, or environment    |
+| Reopened        | Failed verification or problem returned      |
+| Cancelled       | Cancelled with clear reason                  |
 
 ## Priority Values
 
-| Priority | Meaning |
-|----------|---------|
-| P0 Critical | Blocks all work or represents production risk |
-| P1 High | Important for current phase or blocking other tasks |
-| P2 Medium | Standard task |
-| P3 Low | Nice-to-have or debt |
-| P4 Debt | Technical debt, cleanup |
+| Priority    | Meaning                                             |
+| ----------- | --------------------------------------------------- |
+| P0 Critical | Blocks all work or represents production risk       |
+| P1 High     | Important for current phase or blocking other tasks |
+| P2 Medium   | Standard task                                       |
+| P3 Low      | Nice-to-have or debt                                |
+| P4 Debt     | Technical debt, cleanup                             |
 
 ---
 
@@ -506,8 +507,8 @@
 - **Affected Areas:**
 - **Files to Inspect:**
 - **Files Changed:**
-- **Skills Required:** *(pre-declared skills for this task)*
-- **Skills Used:** *(filled during/after execution per sub-task)*
+- **Skills Required:** _(pre-declared skills for this task)_
+- **Skills Used:** _(filled during/after execution per sub-task)_
 - **Acceptance Criteria:**
 - **Test Plan:**
 - **Test Results:**
@@ -525,6 +526,7 @@
 - **Final Notes:**
 
 > **Mandatory Skill Selection Rule (AGENTS.md §14):**
+>
 > - Every new task must have `**Skills Required:**` filled before status changes to `In Progress`.
 > - Every sub-task action must complete the 4-step Pre-Action Skill Gate (STATE → SELECT → STATE WHY → LOAD).
 > - `**Skills Used:**` must be filled before status changes to `Done`.
@@ -844,7 +846,7 @@
   - storage/monitoring-events.ndjson, support-error-events.ndjson
   - docs/ops/MONITORING_PLAYBOOK.md, HEALTH_CHECKS.md, SYNTHETIC_CHECKS.md, ALERT_RULES.md, INCIDENTS.md, LATEST_MONITORING_REPORT.md
   - docs/support/ERROR_CATALOG.md, SUPPORT_PLAYBOOK.md, ESCALATION_GUIDE.md, ERROR_CODE_TAXONOMY.md
-  - package.json ops:* scripts
+  - package.json ops:\* scripts
   - AGENTS.md section 11 (System Health)
 - **Out of Scope:**
   - Bug fixes
@@ -866,7 +868,7 @@
   - Tail shows last N events
   - All Ops and Support docs created with correct content
   - AGENTS.md updated with System Health section
-  - package.json has all ops:* scripts
+  - package.json has all ops:\* scripts
   - pnpm preflight passes
   - pnpm typecheck passes
   - All ops commands run without throwing
@@ -905,11 +907,11 @@
 - **Expanded Requirement:** Create comprehensive methodology, ops documentation, process enforcement, and quality gates for any agent or developer working on this project
 - **Problem:** Development is inconsistent, path-confused, undocumented, untested, and session-isolated
 - **Goal:** Establish a repeatable, trackable, testable, documented development process
-- **Scope:** AGENTS.md rewrite, docs/ops/* creation, package.json preflight script
+- **Scope:** AGENTS.md rewrite, docs/ops/\* creation, package.json preflight script
 - **Out of Scope:** Any code change, bug fix, feature, theme, API, DB, UI work
-- **Affected Areas:** AGENTS.md, docs/ops/*, package.json
+- **Affected Areas:** AGENTS.md, docs/ops/\*, package.json
 - **Files to Inspect:** Current AGENTS.md, package.json, existing docs/
-- **Files Changed:** AGENTS.md, package.json, docs/ops/* (18 files)
+- **Files Changed:** AGENTS.md, package.json, docs/ops/\* (18 files)
 - **Acceptance Criteria:**
   - AGENTS.md contains full constitution with all required sections
   - All 15 docs/ops/ files created with correct content
@@ -1048,7 +1050,6 @@
   - Done: 2026-06-13
 - **Final Notes:** All 3 apps verified serving correctly. Theme registry works (base-elegant + luxury-showcase). Fallback works. Branch: fix/theme-isolation
 
-
 ---
 
 ### TASK-0010: RBAC Pass 1 Implementation
@@ -1082,7 +1083,7 @@
   - Audit log UI
   - Production deployment config
 - **Affected Areas:** packages/shared, packages/types, apps/api, apps/merchant-dashboard, apps/storefront, tests/
-- **Files Changed:** packages/shared/src/permissions.ts, packages/types/src/orders.ts, apps/api/src/middleware/*, apps/api/src/routes/*, apps/merchant-dashboard/src/hooks/*, apps/merchant-dashboard/src/components/*, tests/rbac-permission-catalog.test.ts
+- **Files Changed:** packages/shared/src/permissions.ts, packages/types/src/orders.ts, apps/api/src/middleware/_, apps/api/src/routes/_, apps/merchant-dashboard/src/hooks/_, apps/merchant-dashboard/src/components/_, tests/rbac-permission-catalog.test.ts
 - **Acceptance Criteria:**
   - PERMISSION_CATALOG defined with Arabic labels and risk levels
   - 8 roles mapped in ROLE_PERMISSIONS
@@ -1155,7 +1156,7 @@
   - `/employees` route exists and guarded by `employees:view`
   - Sidebar shows employees nav item for those with permission
   - Employee list shows name, email, role, status, last login, permissions count
-  - Add/edit/delete buttons guarded by employees:* permissions
+  - Add/edit/delete buttons guarded by employees:\* permissions
   - PermissionCheckboxMatrix built from PERMISSION_CATALOG grouped by category
   - Role presets fill checkboxes from ROLE_PERMISSIONS
   - High-risk permissions marked with warning badge
@@ -1356,7 +1357,6 @@
 - **Final Notes:** Employee audit logging completes RBAC Pass 5. Password is client-generated random (Math.random), hashed server-side, never returned in response, masked by maskObject in audit logs. Info banner added to create dialog to clarify email invite is not active.
 
 ---
-
 
 ### TASK-0027: Quality Pass 3 — Security & Permissions (CSRF Origin Check)
 
@@ -1851,7 +1851,6 @@
   - WIP at session start: 21 uncommitted files. Triaged: 2 source files committed (3DS scaffold), 18 source files stashed as `stash@{0}`, 1 source file reverted (`tenants.ts` primaryColor). Net commits across Sessions #3+#4+#5: 11 (7 assistant + 4 owner during break). Net stashed: stash@{0} (preserved for future use).
   - Cumulative: 28 commits on `feature/phase-9-cod-fee-policy` (15 Session #2 + 6 Session #3 + 6 Session #4 + 1 Session #5). 2393 tests passing (+64 from Session #2 baseline 2329: 3DS=23 + 3DS-storefront=11 + VAT=25 + VAT-line=5). 4 pre-existing baseline failures unchanged. Preflight clean throughout.
 
-
 ---
 
 ### TASK-0037: Public Marketplace Hardening Initiative (Master)
@@ -1867,7 +1866,7 @@
 - **Scope (8 sub-tasks, ~16-19 engineering days, ~4-5 calendar weeks):**
   - **Phase 0** (TASK-0039, 0.5 day, ✅ DONE 2026-06-17) — Documentation drift correction. SAUDI_COMPLIANCE_CHECKLIST §6.2 corrected, CURRENT_STATE updated, TASK_TRACKER has 9 new entries (TASK-0037 + 0038 + 0039-0045), Phase 0 audit report (`docs/ops/MARKETPLACE_PHASE0_AUDIT.md`) created.
   - **Phase 1** (TASK-0040, 2 days, 3 parallel tracks) — Self-contained P0s:
-    - Track 1A (P0-4): Replace raw `sql\`${s.stores.demoProfile} IS NOT NULL\`` in `haa-marketplace.ts` (4 sites: lines 92, 263, 400, 448) with shared `shouldShowInMarketplace` helper. Seed `demoProfile: 'general'` → 'main'.
+    - Track 1A (P0-4): Replace raw `sql\`${s.stores.demoProfile} IS NOT NULL\``in`haa-marketplace.ts`(4 sites: lines 92, 263, 400, 448) with shared`shouldShowInMarketplace`helper. Seed`demoProfile: 'general'` → 'main'.
     - Track 1B (P0-3): Add `accessToken` column (uuid) to `marketplace_orders` + migration 0058. Replace `?phone=` with `?access_token=` in `GET /marketplace/orders/:num` + storefront `MarketplaceOrderTrack.tsx`. Mirror R-0014 support-ticket pattern.
     - Track 1C (P0-5): Add audit calls to `admin/marketplace.ts` for `marketplaceProductReviewRoute` (line 58) + `marketplaceProductFeatureRoute` (line 75). Extend `AuditAction` union with `'marketplace_product_review'` + `'marketplace_product_feature'`.
   - **Phase 2** (TASK-0041, 3 days, sequential) — Compliance infrastructure:
@@ -1939,18 +1938,18 @@
 - **Goal:** Single source of truth for the 10 owner action items + visibility into progress. Each item has: source citation, owner action, blocking task, current status.
 - **Scope (10 items — each is owner-coordinated, not engineering):**
 
-| # | Item | Owner action | Source | Blocks | Status |
-|---|---|---|---|---|---|
-| **G1** | **Commercial Registration (CR)** | Register company with MoCI | `SAUDI_COMPLIANCE_CHECKLIST.md:178` + `OWNER_ACTION_G1_CR.md` | TASK-0044 (Phase 5) | ⏳ Open 📄 |
-| **G2** | **VAT Registration** | Register with ZATCA; obtain VAT certificate | `SAUDI_COMPLIANCE_CHECKLIST.md:134` + `OWNER_ACTION_G2_VAT.md` | TASK-0044 (Phase 5) + TASK-0036 (ZATCA Phase 2) | ⏳ Open 📄 |
-| **G3** | **E-Commerce License** | Apply for online sales license from MoCI | `SAUDI_COMPLIANCE_CHECKLIST.md:179` + `OWNER_ACTION_G3_ECOMMERCE_LICENSE.md` | TASK-0044 (Phase 5) | ⏳ Open 📄 |
-| **G4** | **DPO Appointment** | Hire/appoint Data Protection Officer (PDPL Article 22); publish contact | `SAUDI_COMPLIANCE_CHECKLIST.md:97-98` + `OWNER_ACTION_G4_DPO.md` | TASK-0042 (Phase 3.4) + TASK-0044 (Phase 5) | ⏳ Open 📄 |
-| **G5** | **Trademark Registration** | Register "هاء متاجر" mark with SAIP | `SAUDI_COMPLIANCE_CHECKLIST.md:280` + `OWNER_ACTION_G5_TRADEMARK.md` | TASK-0044 (Phase 5) | ⏳ Open 📄 |
-| **G6** | **PCI-DSS ASV Scan** | Engage approved ASV vendor (Approved Scanning Vendor) | `SAUDI_COMPLIANCE_CHECKLIST.md:43` + `OWNER_ACTION_G6_PCI_ASV.md` | TASK-0044 (Phase 5) + TASK-0045 (Phase 6) | ⏳ Open 📄 |
-| **G7** | **Penetration Test** | Engage CREST-certified pen-test firm (separate from ASV) | `MARKETPLACE_HARDENING_PLAN.md` Phase 6 + `OWNER_ACTION_G7_PENTEST.md` + `PEN_TEST_VENDOR_SHORTLIST.md` | TASK-0045 (Phase 6) | ⏳ Open 📄 |
-| **G8** | **KSA Hosting Decision** | Decide: launch on Dubai-now vs wait-for-KSA-region | `SAUDI_COMPLIANCE_CHECKLIST.md:208` + `OWNER_ACTION_G8_KSA_HOSTING.md` | TASK-0044 (Phase 5) | ⏳ Open 📄 |
-| **G9** | **Tabby DPA** | Sign Data Processing Agreement with Tabby (UAE cross-border) | `SAUDI_COMPLIANCE_CHECKLIST.md:96` + `OWNER_ACTION_G9_TABBY_DPA.md` | TASK-0044 (Phase 5) | ⏳ Open 📄 |
-| **G10** | **Disaster Recovery Plan** | Document + test DR procedure (NCA requirement) | NCA (National Cybersecurity Authority) + `OWNER_ACTION_G10_DR_PLAN.md` | TASK-0044 (Phase 5) + TASK-0045 (Phase 6) | ⏳ Open 📄 |
+| #       | Item                             | Owner action                                                            | Source                                                                                                  | Blocks                                          | Status     |
+| ------- | -------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ---------- |
+| **G1**  | **Commercial Registration (CR)** | Register company with MoCI                                              | `SAUDI_COMPLIANCE_CHECKLIST.md:178` + `OWNER_ACTION_G1_CR.md`                                           | TASK-0044 (Phase 5)                             | ⏳ Open 📄 |
+| **G2**  | **VAT Registration**             | Register with ZATCA; obtain VAT certificate                             | `SAUDI_COMPLIANCE_CHECKLIST.md:134` + `OWNER_ACTION_G2_VAT.md`                                          | TASK-0044 (Phase 5) + TASK-0036 (ZATCA Phase 2) | ⏳ Open 📄 |
+| **G3**  | **E-Commerce License**           | Apply for online sales license from MoCI                                | `SAUDI_COMPLIANCE_CHECKLIST.md:179` + `OWNER_ACTION_G3_ECOMMERCE_LICENSE.md`                            | TASK-0044 (Phase 5)                             | ⏳ Open 📄 |
+| **G4**  | **DPO Appointment**              | Hire/appoint Data Protection Officer (PDPL Article 22); publish contact | `SAUDI_COMPLIANCE_CHECKLIST.md:97-98` + `OWNER_ACTION_G4_DPO.md`                                        | TASK-0042 (Phase 3.4) + TASK-0044 (Phase 5)     | ⏳ Open 📄 |
+| **G5**  | **Trademark Registration**       | Register "هاء متاجر" mark with SAIP                                     | `SAUDI_COMPLIANCE_CHECKLIST.md:280` + `OWNER_ACTION_G5_TRADEMARK.md`                                    | TASK-0044 (Phase 5)                             | ⏳ Open 📄 |
+| **G6**  | **PCI-DSS ASV Scan**             | Engage approved ASV vendor (Approved Scanning Vendor)                   | `SAUDI_COMPLIANCE_CHECKLIST.md:43` + `OWNER_ACTION_G6_PCI_ASV.md`                                       | TASK-0044 (Phase 5) + TASK-0045 (Phase 6)       | ⏳ Open 📄 |
+| **G7**  | **Penetration Test**             | Engage CREST-certified pen-test firm (separate from ASV)                | `MARKETPLACE_HARDENING_PLAN.md` Phase 6 + `OWNER_ACTION_G7_PENTEST.md` + `PEN_TEST_VENDOR_SHORTLIST.md` | TASK-0045 (Phase 6)                             | ⏳ Open 📄 |
+| **G8**  | **KSA Hosting Decision**         | Decide: launch on Dubai-now vs wait-for-KSA-region                      | `SAUDI_COMPLIANCE_CHECKLIST.md:208` + `OWNER_ACTION_G8_KSA_HOSTING.md`                                  | TASK-0044 (Phase 5)                             | ⏳ Open 📄 |
+| **G9**  | **Tabby DPA**                    | Sign Data Processing Agreement with Tabby (UAE cross-border)            | `SAUDI_COMPLIANCE_CHECKLIST.md:96` + `OWNER_ACTION_G9_TABBY_DPA.md`                                     | TASK-0044 (Phase 5)                             | ⏳ Open 📄 |
+| **G10** | **Disaster Recovery Plan**       | Document + test DR procedure (NCA requirement)                          | NCA (National Cybersecurity Authority) + `OWNER_ACTION_G10_DR_PLAN.md`                                  | TASK-0044 (Phase 5) + TASK-0045 (Phase 6)       | ⏳ Open 📄 |
 
 > 📄 = engineering brief in `docs/ops/OWNER_ACTION_G*.md` (Session U). Each brief contains: why-it-matters, prerequisites, step-by-step application, cost, timeline, engineering integration effort, common mistakes, references. Tenant schema columns added in migration 0061 to track compliance status per item.
 
@@ -2022,7 +2021,7 @@
 - **Updated:** 2026-06-17
 - **Original Request:** `docs/ops/MARKETPLACE_HARDENING_PLAN.md` §3 (Phase 1, 2 days, 3 parallel tracks).
 - **Scope:**
-  - **Track 1A (P0-4, ~4 hours):** Replace raw `sql\`${s.stores.demoProfile} IS NOT NULL\`` in `apps/api/src/routes/haa-marketplace.ts` (4 sites: lines 92, 263, 400, 448) with shared `shouldShowInMarketplace` helper. Seed `demoProfile: 'general'` → 'main' (recommendation) OR add 'general' to whitelist (alternative). TDD: HTTP test asserts `GET /marketplace/products` returns ZERO products for a store with `demoProfile='unknown'`.
+  - **Track 1A (P0-4, ~4 hours):** Replace raw `sql\`${s.stores.demoProfile} IS NOT NULL\``in`apps/api/src/routes/haa-marketplace.ts`(4 sites: lines 92, 263, 400, 448) with shared`shouldShowInMarketplace`helper. Seed`demoProfile: 'general'`→ 'main' (recommendation) OR add 'general' to whitelist (alternative). TDD: HTTP test asserts`GET /marketplace/products`returns ZERO products for a store with`demoProfile='unknown'`.
   - **Track 1B (P0-3, ~1.5 days):** Add `accessToken` column (uuid, notNull, defaultRandom, unique index) to `marketplace_orders`. Migration `0058_marketplace_order_access_token.sql`. Modify `POST /orders` (line 477) to return `accessToken` ONCE in response; modify `GET /orders/:num` (line 625) to require `?access_token=` instead of `?phone=` (or both for legacy compat). Update storefront `MarketplaceOrderTrack.tsx` to use token. Add audit log on every successful order view. Mirror R-0014 pattern from support tickets.
   - **Track 1C (P0-5, ~0.5 day):** Add `audit.record(...)` calls to `admin/marketplace.ts` for `marketplaceProductReviewRoute` (line 58) + `marketplaceProductFeatureRoute` (line 75). Extend `AuditAction` union with `'marketplace_product_review'` + `'marketplace_product_feature'`. Add Arabic labels in `packages/shared/src/schemas/audit.ts`. Source-grep test prevents regression.
 - **Acceptance Criteria:**
@@ -2151,6 +2150,15 @@
 - **Skills Required:** none (pure tracking).
 - **Risks:** Owner-track is LOW confidence per plan §15 — could be 2 weeks or 2 months. Mitigation: don't gate Phase 4 (engineering) on Phase 5 (owner); run them in parallel.
 - **Status History:** Open as of 2026-06-17.
+- **2026-06-18 update — engineering-side prep completed (does NOT depend on G1-G10):**
+  - **A1.** Audited existing pen-test/beta/ASV/marketplace docs ✅
+  - **A2.** `docs/ops/PHASE_5_DEPLOY_RUNBOOK.md` (vendor-facing pen-test env provisioning, 1-2 days) ✅
+  - **A3.** `docs/ops/PHASE_6_TECHNICAL_BRIEF.md` (self-contained brief for the pen-test firm) ✅
+  - **A4.** `docs/ops/BETA_LAUNCH_TECHNICAL_CHECKLIST.md` (engineering-only launch gates, 12 sections) ✅
+  - **A5.** Commit `c0afa3a6` + bundle refresh ✅
+  - All 3 deliverables are pre-pen-test prep that does NOT depend on G1-G10 owner gates. They unblock the founder to engage a vendor (TASK-0038 G7) without waiting on the engineering side.
+  - Checklist: `docs/ops/TASK_PROGRESS_CHECKLIST.md`
+  - See: `docs/ops/MASTER_PLAN_2026-06-18.md` Path A1-A4
 
 ---
 
@@ -2204,7 +2212,7 @@
   5. Features (75 LOC) → commit `45855335`
   6. PaymentSection (65 LOC) → commit `5a8b3382`
   7. HowItWorks (119 LOC) → commit `5a8b3382`
-  8. MockupPreview (96 LOC) + StorefrontPreview (92 LOC) → commit `151e5b1d` (kept together — shared Store* sub-component tree + mock data + types)
+  8. MockupPreview (96 LOC) + StorefrontPreview (92 LOC) → commit `151e5b1d` (kept together — shared Store\* sub-component tree + mock data + types)
   9. Bento (209 LOC) → commit `f8425dd0`
   10. Pricing (133 LOC) → commit `9b59e78a`
   11. FinalCTA (95 LOC) + local HighlightNumbers helper → commit `9b59e78a`
@@ -2379,8 +2387,8 @@
   - isReducedMotionPreferred() — runtime check
   - usePrefersReducedMotion() — reactive hook with MediaQueryList listener
 - Bulk application (71 changes across 9 files):
-  - 13 animate-* classes prefixed with motion-reduce:animate-none
-  - 58 transition-* classes prefixed with motion-reduce:transition-none
+  - 13 animate-\* classes prefixed with motion-reduce:animate-none
+  - 58 transition-\* classes prefixed with motion-reduce:transition-none
 - No behavior change for users without reduced-motion preference
 
 #### Acceptance Criteria
