@@ -2268,3 +2268,70 @@
   5. **ProductLike type with index signature** — accepts any product shape with `name`+`slug`+`price`+optional fields; callers with strict shapes (PublicProduct) cast via `as unknown as Parameters<typeof ProductCard>[0]['product']` where needed.
 - **Open follow-ups:**
   - T2.3 (DashboardHome 1599 LOC), T2.4 (Settings 1490 LOC), T2.5 (Orders 1394 LOC) still pending in Sprint 2
+
+---
+
+### TASK-0048: Sprint 2 (T2.3-T2.5) + Sprint 3 (T3.1, T3.2) — Dashboard/Settings/Orders/EmptyState/ErrorMessages
+
+- **Type:** Refactor / Feature
+- **Priority:** P2 Medium
+- **Status:** ✅ Completed 2026-06-18
+- **Created:** 2026-06-18
+- **Updated:** 2026-06-18
+
+#### Sprint 2 remaining (T2.3, T2.4, T2.5)
+
+- **T2.3 DashboardHome hooks** — 1599 → 184 LOC (-88%)
+  - 3 custom hooks: useDashboardData (398 LOC), useSmartAlerts (1097 LOC), useDashboardComputed (145 LOC)
+  - DashboardHome.tsx becomes a 184-line orchestrator that just composes the hooks
+
+- **T2.4 Settings sections** — 1490 → 1090 LOC (-27%)
+  - 3 sections extracted: PaymentStatusSection, ReadinessChecklist, PublishSection
+  - 8 tabs (info, contact, general, payment, shipping, wallet, features, sizes, gift, pickup) deferred to follow-up (state intertwining makes them harder)
+
+- **T2.5 Orders helpers** — 1394 → 1295 LOC (-7%)
+  - Pure lookup tables + small UI primitives extracted to orders/orderHelpers.tsx
+  - Tests/dashboard-i18n.test.ts updated to point at new location
+
+#### Sprint 3 (T3.1, T3.2)
+
+- **T3.1 EmptyState library (merchant-dashboard)** — Added MerchantEmptyState + MerchantErrorState
+  - Mirrors storefront StoreEmptyState API with compact variant for mobile
+  - 5 dashboard sub-components flagged for follow-up adoption
+
+- **T3.2 Error message library (Arabic)** — Extended packages/shared/src/error-codes.ts
+  - All 14 canonical error codes now follow "السبب + الحل" (Cause + Remedy) pattern
+  - Added getFullErrorMessage(code) and getErrorRemedy(code) helpers
+  - apps/api/middleware/error-handler.ts updated to use getFullErrorMessage for 500 responses
+
+#### Sprint 3 remaining (T3.3, T3.4, T3.5, T3.6)
+
+- T3.3 Form label audit — pending (5-10 forms)
+- T3.4 Icon size standardization — pending (10 components)
+- T3.5 Loading state audit — pending (89 pages)
+- T3.6 Reduced motion audit — pending (20-30 components)
+
+#### Acceptance Criteria
+
+- [x] All Sprint 2 items (T2.1-T2.5) completed
+- [x] T3.1: MerchantEmptyState added to merchant-dashboard
+- [x] T3.2: Error messages follow cause+remedy pattern
+- [x] Tests: 2595 passing, 0 failed
+- [x] Typecheck: CLEAN
+
+#### Files changed
+
+- apps/merchant-dashboard/src/pages/DashboardHome.tsx
+- apps/merchant-dashboard/src/pages/dashboard/hooks/useDashboardData.ts (new)
+- apps/merchant-dashboard/src/pages/dashboard/hooks/useSmartAlerts.ts (new)
+- apps/merchant-dashboard/src/pages/dashboard/hooks/useDashboardComputed.ts (new)
+- apps/merchant-dashboard/src/pages/Settings.tsx
+- apps/merchant-dashboard/src/pages/settings/sections/PaymentStatusSection.tsx (new)
+- apps/merchant-dashboard/src/pages/settings/sections/ReadinessChecklist.tsx (new)
+- apps/merchant-dashboard/src/pages/settings/sections/PublishSection.tsx (new)
+- apps/merchant-dashboard/src/pages/Orders.tsx
+- apps/merchant-dashboard/src/pages/orders/orderHelpers.tsx (new)
+- apps/merchant-dashboard/src/components/ui/MerchantEmptyState.tsx (new)
+- packages/shared/src/error-codes.ts
+- apps/api/src/middleware/error-handler.ts
+- tests/dashboard-i18n.test.ts
