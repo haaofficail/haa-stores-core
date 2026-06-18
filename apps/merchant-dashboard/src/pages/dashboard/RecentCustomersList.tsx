@@ -15,6 +15,7 @@
 import { useNavigate } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
 import type { TFunction } from "i18next";
+import { MerchantEmptyState } from "@/components/ui/MerchantEmptyState";
 
 export type RecentCustomer = {
   id: number;
@@ -46,14 +47,11 @@ export function RecentCustomersList({ customers, t }: Props) {
       </div>
       <div className="p-3">
         {customers.length === 0 ? (
-          <div className="text-center py-4">
-            <div className="inline-flex p-2 rounded-xl bg-neutral-100 mb-1.5">
-              <ShoppingCart className="h-5 w-5 text-neutral-400" />
-            </div>
-            <p className="text-xs text-neutral-500">
-              {t("dashboard.noCustomers", "لا يوجد عملاء")}
-            </p>
-          </div>
+          <MerchantEmptyState
+            icon={ShoppingCart}
+            title={t("dashboard.noCustomers", "لا يوجد عملاء")}
+            compact
+          />
         ) : (
           <div className="space-y-1">
             {customers.slice(0, 5).map((c) => (

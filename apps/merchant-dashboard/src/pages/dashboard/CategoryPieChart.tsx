@@ -19,8 +19,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { ShoppingBag } from "lucide-react";
 import type { TFunction } from "i18next";
 import { CHART_COLORS } from "./constants";
+import { MerchantEmptyState } from "@/components/ui/MerchantEmptyState";
 
 type Props = {
   orderStatusDist: Array<{ status: string; count: number }>;
@@ -87,9 +89,11 @@ export function CategoryPieChart({ orderStatusDist, t }: Props) {
           </div>
         </div>
       ) : (
-        <div className="h-[200px] flex items-center justify-center text-sm text-neutral-400">
-          {t("dashboard.noOrders", "لا توجد طلبات")}
-        </div>
+        <MerchantEmptyState
+          icon={ShoppingBag}
+          title={t("dashboard.noOrders", "لا توجد طلبات")}
+          compact
+        />
       )}
     </div>
   );

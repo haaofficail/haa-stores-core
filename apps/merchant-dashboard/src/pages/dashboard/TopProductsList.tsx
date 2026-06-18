@@ -16,8 +16,10 @@
 // - empty state: neutral-400 text, "no data" message
 
 import type { TFunction } from "i18next";
+import { Package } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 import { CHART_COLORS } from "./constants";
+import { MerchantEmptyState } from "@/components/ui/MerchantEmptyState";
 
 export type TopProduct = {
   productId: number;
@@ -48,9 +50,11 @@ export function TopProductsList({ products, t }: Props) {
             {t("dashboard.byRevenue", "(حسب الإيرادات)")}
           </span>
         </h3>
-        <p className="text-sm text-neutral-400 text-center py-6">
-          {t("common.noData", "لا توجد بيانات كافية")}
-        </p>
+        <MerchantEmptyState
+          icon={Package}
+          title={t("common.noData", "لا توجد بيانات كافية")}
+          compact
+        />
       </div>
     );
   }

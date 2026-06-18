@@ -14,8 +14,10 @@
 //   right locale, mirroring the original behavior.
 
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { TrendingUp } from "lucide-react";
 import type { TFunction } from "i18next";
 import { formatNumber } from "@/lib/utils";
+import { MerchantEmptyState } from "@/components/ui/MerchantEmptyState";
 
 type Props = {
   // The full sales response from reportsApi.salesSummary().
@@ -115,9 +117,11 @@ export function SalesChart({ salesData, t, i18nLanguage }: Props) {
           </AreaChart>
         </ResponsiveContainer>
       ) : (
-        <div className="h-[220px] flex items-center justify-center text-sm text-neutral-400">
-          {t("dashboard.noSalesData", "لا توجد بيانات مبيعات كافية")}
-        </div>
+        <MerchantEmptyState
+          icon={TrendingUp}
+          title={t("dashboard.noSalesData", "لا توجد بيانات مبيعات كافية")}
+          compact
+        />
       )}
     </div>
   );

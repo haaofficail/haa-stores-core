@@ -19,6 +19,7 @@ import { ShoppingCart, Image as ImageIcon } from "lucide-react";
 import type { TFunction } from "i18next";
 import { handleImageError, formatCurrency } from "@/lib/utils";
 import { formatTimeAgo } from "./constants";
+import { MerchantEmptyState } from "@/components/ui/MerchantEmptyState";
 
 type RecentItem = {
   id: number;
@@ -59,14 +60,11 @@ export function RecentSoldProducts({ orders, t }: Props) {
       </div>
       <div className="p-4">
         {orders.length === 0 ? (
-          <div className="text-center py-6">
-            <div className="inline-flex p-3 rounded-xl bg-neutral-100 mb-2">
-              <ShoppingCart className="h-6 w-6 text-neutral-400" />
-            </div>
-            <p className="text-sm text-neutral-500">
-              {t("dashboard.noProductsSold", "لا توجد منتجات مباعة بعد")}
-            </p>
-          </div>
+          <MerchantEmptyState
+            icon={ShoppingCart}
+            title={t("dashboard.noProductsSold", "لا توجد منتجات مباعة بعد")}
+            compact
+          />
         ) : (
           <div className="divide-y divide-neutral-100">
             {orders.flatMap((order) =>
