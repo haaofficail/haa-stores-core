@@ -80,7 +80,7 @@ export default function DashboardHome() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 max-w-7xl mx-auto animate-fade-in px-3 sm:px-4 md:px-6">
+    <div className="space-y-3 sm:space-y-4 max-w-7xl mx-auto animate-fade-in motion-reduce:animate-none px-3 sm:px-4 md:px-6">
       {/* ── Header ──────────────────────────────────────────────── */}
       <DashboardHeader
         t={t}

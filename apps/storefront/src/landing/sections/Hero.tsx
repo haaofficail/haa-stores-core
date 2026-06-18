@@ -99,7 +99,7 @@ export function Hero({ t }: { t: TFn; onDemoOpen?: () => void }) {
                 key={alt}
                 src={src}
                 alt={alt}
-                className="w-auto transition-all duration-300"
+                className="w-auto transition-all motion-reduce:transition-none duration-300"
                 style={{ height: h }}
                 loading="lazy"
               />
@@ -108,11 +108,11 @@ export function Hero({ t }: { t: TFn; onDemoOpen?: () => void }) {
 
           {/* Shipping logos */}
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
-            <img src="/assets/shipping-logos/saudi-post.svg" alt="سبل" style={{ height: '22px' }} className="w-auto transition-all duration-300" />
-            <img src="/assets/shipping-logos/aramex.svg" alt="Aramex" style={{ height: '20px' }} className="w-auto transition-all duration-300" />
-            <img src="/assets/shipping-logos/naqel.svg" alt="ناقل" style={{ height: '22px' }} className="w-auto transition-all duration-300" />
-            <img src="/assets/shipping-logos/dhl.svg" alt="DHL" style={{ height: '16px' }} className="w-auto transition-all duration-300" />
-              <img src="/assets/shipping-logos/redbox.svg" alt="ريد بوكس" style={{ height: '24px' }} className="w-auto transition-all duration-300" />
+            <img src="/assets/shipping-logos/saudi-post.svg" alt="سبل" style={{ height: '22px' }} className="w-auto transition-all motion-reduce:transition-none duration-300" />
+            <img src="/assets/shipping-logos/aramex.svg" alt="Aramex" style={{ height: '20px' }} className="w-auto transition-all motion-reduce:transition-none duration-300" />
+            <img src="/assets/shipping-logos/naqel.svg" alt="ناقل" style={{ height: '22px' }} className="w-auto transition-all motion-reduce:transition-none duration-300" />
+            <img src="/assets/shipping-logos/dhl.svg" alt="DHL" style={{ height: '16px' }} className="w-auto transition-all motion-reduce:transition-none duration-300" />
+              <img src="/assets/shipping-logos/redbox.svg" alt="ريد بوكس" style={{ height: '24px' }} className="w-auto transition-all motion-reduce:transition-none duration-300" />
           </div>
 
           {/* Government trust logos — gated by isClaimEnabled('govLogos').
@@ -122,11 +122,11 @@ export function Hero({ t }: { t: TFn; onDemoOpen?: () => void }) {
               these logos MUST be hidden. */}
           {isClaimEnabled('govLogos') && (
             <div className="mt-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
-              <img src="/assets/payment-logos/ministry-of-commerce.svg" alt="وزارة التجارة" style={{ height: '48px' }} className="w-auto transition-all duration-300" />
-              <img src="/assets/payment-logos/saudi-business-center.svg" alt="منصة الأعمال" style={{ height: '92px' }} className="w-auto transition-all duration-300" />
-              <img src="/assets/payment-logos/maroof.svg" alt="معروف" style={{ height: '42px' }} className="w-auto transition-all duration-300" />
-              <img src="/assets/payment-logos/saudi-made.svg" alt="صنع في السعودية" style={{ height: '48px' }} className="w-auto transition-all duration-300" />
-              <img src="/assets/payment-logos/zatca.svg" alt="هيئة الزكاة والضريبة والجمارك" style={{ height: '42px' }} className="w-auto transition-all duration-300" />
+              <img src="/assets/payment-logos/ministry-of-commerce.svg" alt="وزارة التجارة" style={{ height: '48px' }} className="w-auto transition-all motion-reduce:transition-none duration-300" />
+              <img src="/assets/payment-logos/saudi-business-center.svg" alt="منصة الأعمال" style={{ height: '92px' }} className="w-auto transition-all motion-reduce:transition-none duration-300" />
+              <img src="/assets/payment-logos/maroof.svg" alt="معروف" style={{ height: '42px' }} className="w-auto transition-all motion-reduce:transition-none duration-300" />
+              <img src="/assets/payment-logos/saudi-made.svg" alt="صنع في السعودية" style={{ height: '48px' }} className="w-auto transition-all motion-reduce:transition-none duration-300" />
+              <img src="/assets/payment-logos/zatca.svg" alt="هيئة الزكاة والضريبة والجمارك" style={{ height: '42px' }} className="w-auto transition-all motion-reduce:transition-none duration-300" />
             </div>
           )}
 
@@ -134,14 +134,14 @@ export function Hero({ t }: { t: TFn; onDemoOpen?: () => void }) {
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
             <Link
               to="/signup?ref=hero"
-              className="aurora-btn-primary group inline-flex h-14 min-h-[56px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 px-8 text-[17px] font-bold text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:!text-white sm:w-auto"
+              className="aurora-btn-primary group inline-flex h-14 min-h-[56px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 px-8 text-[17px] font-bold text-white shadow-lg shadow-blue-500/30 transition-all motion-reduce:transition-none duration-300 hover:scale-[1.03] hover:shadow-xl hover:!text-white sm:w-auto"
             >
               {t('landing.hero.primaryCta', 'سجّل كتاجر — مجانًا')}
-              <ArrowLeft className="h-5 w-5 transition-transform duration-300 group-hover:-translate-x-1 rtl:group-hover:translate-x-1" />
+              <ArrowLeft className="h-5 w-5 transition-transform motion-reduce:transition-none duration-300 group-hover:-translate-x-1 rtl:group-hover:translate-x-1" />
             </Link>
             <Link
               to="/s/demo"
-              className="group inline-flex h-14 min-h-[56px] w-full items-center justify-center gap-2 rounded-full border border-white/30 bg-white/50 px-8 text-[16px] font-semibold text-text-secondary shadow-sm backdrop-blur-sm transition-all duration-300 hover:scale-[1.03] hover:border-white/60 hover:text-text-primary sm:w-auto"
+              className="group inline-flex h-14 min-h-[56px] w-full items-center justify-center gap-2 rounded-full border border-white/30 bg-white/50 px-8 text-[16px] font-semibold text-text-secondary shadow-sm backdrop-blur-sm transition-all motion-reduce:transition-none duration-300 hover:scale-[1.03] hover:border-white/60 hover:text-text-primary sm:w-auto"
             >
               {'شاهد متجرًا حقيقيًا'}
               <ExternalLink className="h-4 w-4" />

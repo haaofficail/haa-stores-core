@@ -95,19 +95,19 @@ export default function Footer() {
                 <div>
                   <h4 className="font-bold text-black mb-2 text-sm">{t('footer.quickLinks')}</h4>
                   <ul className="space-y-1.5">
-                    <li><Link to={`/s/${slug}`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('store.home')}</Link></li>
-                    <li><Link to={`/s/${slug}/c/all`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('store.categories')}</Link></li>
-                    <li><Link to={`/s/${slug}/about`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('store.about')}</Link></li>
-                    <li><Link to={`/s/${slug}/contact`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('store.contact')}</Link></li>
+                    <li><Link to={`/s/${slug}`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors motion-reduce:transition-none">{t('store.home')}</Link></li>
+                    <li><Link to={`/s/${slug}/c/all`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors motion-reduce:transition-none">{t('store.categories')}</Link></li>
+                    <li><Link to={`/s/${slug}/about`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors motion-reduce:transition-none">{t('store.about')}</Link></li>
+                    <li><Link to={`/s/${slug}/contact`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors motion-reduce:transition-none">{t('store.contact')}</Link></li>
                   </ul>
                 </div>
                 <div>
                   <h4 className="font-bold text-black mb-2 text-sm">{t('footer.customerService')}</h4>
                   <ul className="space-y-1.5">
-                    <li><Link to={`/s/${slug}/track`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('store.trackOrder')}</Link></li>
-                    <li><Link to={`/s/${slug}/policies/returns`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('footer.returnPolicy')}</Link></li>
-                    <li><Link to={`/s/${slug}/policies/privacy`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('footer.privacyPolicy')}</Link></li>
-                    <li><Link to={`/s/${slug}/policies/terms`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors">{t('footer.termsOfService')}</Link></li>
+                    <li><Link to={`/s/${slug}/track`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors motion-reduce:transition-none">{t('store.trackOrder')}</Link></li>
+                    <li><Link to={`/s/${slug}/policies/returns`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors motion-reduce:transition-none">{t('footer.returnPolicy')}</Link></li>
+                    <li><Link to={`/s/${slug}/policies/privacy`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors motion-reduce:transition-none">{t('footer.privacyPolicy')}</Link></li>
+                    <li><Link to={`/s/${slug}/policies/terms`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors motion-reduce:transition-none">{t('footer.termsOfService')}</Link></li>
                   </ul>
                 </div>
               </div>
@@ -119,18 +119,18 @@ export default function Footer() {
               <ul className="space-y-1.5">
                 <li className="flex items-center gap-2">
                   <Icon icon={Mail} size="xs" className="text-gray-400" />
-                  <a href={`mailto:${contactEmail}`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors" dir="ltr">{contactEmail}</a>
+                  <a href={`mailto:${contactEmail}`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors motion-reduce:transition-none" dir="ltr">{contactEmail}</a>
                 </li>
                 {store.phone && (
                   <li className="flex items-center gap-2">
                     <Icon icon={Phone} size="xs" className="text-gray-400" />
-                    <a href={`tel:${store.phone}`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors" dir="ltr">{store.phone}</a>
+                    <a href={`tel:${store.phone}`} className="text-sm text-gray-500 hover:text-primary-600 transition-colors motion-reduce:transition-none" dir="ltr">{store.phone}</a>
                   </li>
                 )}
                 {whatsappContact?.enabled && whatsappContact.waMeLink && (
                   <li className="flex items-center gap-2">
                     <Icon icon={Phone} size="xs" className="text-gray-400" />
-                    <a href={whatsappContact.waMeLink} target="_blank" rel="noreferrer" className="text-sm text-gray-500 hover:text-primary-600 transition-colors" dir="ltr">WhatsApp</a>
+                    <a href={whatsappContact.waMeLink} target="_blank" rel="noreferrer" className="text-sm text-gray-500 hover:text-primary-600 transition-colors motion-reduce:transition-none" dir="ltr">WhatsApp</a>
                   </li>
                 )}
               </ul>
@@ -138,7 +138,7 @@ export default function Footer() {
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {visibleSocialLinks.map((link) => (
                     <a key={link.key} href={link.href} target="_blank" rel="noreferrer"
-                      className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 hover:text-primary-600 transition-colors">
+                      className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 hover:text-primary-600 transition-colors motion-reduce:transition-none">
                       {link.label}
                     </a>
                   ))}

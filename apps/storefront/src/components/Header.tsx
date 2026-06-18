@@ -44,17 +44,17 @@ export default function Header() {
         <div className="container-store">
           <div className="min-h-[56px] flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-lg bg-surface-2 animate-pulse" />
-              <div className="h-5 w-24 bg-surface-2 rounded animate-pulse hidden sm:block" />
+              <div className="h-9 w-9 rounded-lg bg-surface-2 animate-pulse motion-reduce:animate-none" />
+              <div className="h-5 w-24 bg-surface-2 rounded animate-pulse motion-reduce:animate-none hidden sm:block" />
             </div>
             <div className="hidden lg:flex items-center gap-1">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-4 w-16 bg-surface-2 rounded animate-pulse mx-1" />
+                <div key={i} className="h-4 w-16 bg-surface-2 rounded animate-pulse motion-reduce:animate-none mx-1" />
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-lg bg-surface-2 animate-pulse" />
-              <div className="h-10 w-10 rounded-lg bg-surface-2 animate-pulse" />
+              <div className="h-10 w-10 rounded-lg bg-surface-2 animate-pulse motion-reduce:animate-none" />
+              <div className="h-10 w-10 rounded-lg bg-surface-2 animate-pulse motion-reduce:animate-none" />
             </div>
           </div>
         </div>
@@ -133,7 +133,7 @@ export default function Header() {
               <Link
                 key={link.to}
                 to={link.to}
-                className="min-h-[44px] inline-flex items-center px-3 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-2 rounded-xl transition-colors"
+                className="min-h-[44px] inline-flex items-center px-3 text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-2 rounded-xl transition-colors motion-reduce:transition-none"
               >
                 {link.label}
               </Link>
@@ -174,7 +174,7 @@ export default function Header() {
             {showAccount && (
             <Link
               to={`/s/${slug}/track`}
-              className="hidden sm:inline-flex min-w-[44px] min-h-[44px] items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-2 rounded-xl transition-colors"
+              className="hidden sm:inline-flex min-w-[44px] min-h-[44px] items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-2 rounded-xl transition-colors motion-reduce:transition-none"
               title={t('store.trackOrder')}
               aria-label={t('store.trackOrder', 'تتبع الطلب')}
             >
@@ -185,7 +185,7 @@ export default function Header() {
             {showCart && (
             <Link
               to={`/s/${slug}/cart`}
-              className="relative min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-2 rounded-xl transition-colors"
+              className="relative min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-2 rounded-xl transition-colors motion-reduce:transition-none"
               aria-label={t('store.cart', 'سلة التسوق')}
             >
               <Icon icon={ShoppingCart} size="sm" />
@@ -209,7 +209,7 @@ export default function Header() {
       </div>
 
       {menuOpen && (
-        <div className="lg:hidden border-t bg-surface-1 animate-fade-in">
+        <div className="lg:hidden border-t bg-surface-1 animate-fade-in motion-reduce:animate-none">
           <div className="container-store py-3">
             {showSearch && (
             <form onSubmit={handleSearch} className="mb-3 md:hidden">
@@ -233,7 +233,7 @@ export default function Header() {
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="px-3 py-2.5 rounded-lg text-sm font-medium opacity-70 hover:opacity-100 hover:bg-black/5 transition-all"
+                  className="px-3 py-2.5 rounded-lg text-sm font-medium opacity-70 hover:opacity-100 hover:bg-black/5 transition-all motion-reduce:transition-none"
                   onClick={() => setMenuOpen(false)}
                 >
                   {link.label}
@@ -242,7 +242,7 @@ export default function Header() {
               {showAccount && (
               <Link
                 to={`/s/${slug}/track`}
-                className="px-3 py-2.5 rounded-lg text-sm font-medium opacity-70 hover:opacity-100 hover:bg-black/5 transition-all sm:hidden"
+                className="px-3 py-2.5 rounded-lg text-sm font-medium opacity-70 hover:opacity-100 hover:bg-black/5 transition-all motion-reduce:transition-none sm:hidden"
                 onClick={() => setMenuOpen(false)}
               >
                 {t('store.trackOrder')}

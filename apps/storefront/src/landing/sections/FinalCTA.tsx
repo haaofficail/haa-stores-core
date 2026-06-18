@@ -50,9 +50,9 @@ export function FinalCTA({ t }: { t: TFn }) {
       <StoreContainer>
         <div className="aurora-cta relative overflow-hidden rounded-[2.5rem] px-6 py-16 text-center shadow-2xl sm:px-12 sm:py-20">
           {/* Animated gradient orbs */}
-          <div aria-hidden="true" className="absolute -end-32 -top-32 h-96 w-96 rounded-pill bg-blue-400/40 blur-3xl animate-pulse" style={{ animationDuration: '6s' }} />
-          <div aria-hidden="true" className="absolute -bottom-32 -start-32 h-96 w-96 rounded-pill bg-indigo-400/30 blur-3xl animate-pulse" style={{ animationDuration: '8s' }} />
-          <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-pill bg-violet-400/20 blur-3xl animate-pulse" style={{ animationDuration: '10s' }} />
+          <div aria-hidden="true" className="absolute -end-32 -top-32 h-96 w-96 rounded-pill bg-blue-400/40 blur-3xl animate-pulse motion-reduce:animate-none" style={{ animationDuration: '6s' }} />
+          <div aria-hidden="true" className="absolute -bottom-32 -start-32 h-96 w-96 rounded-pill bg-indigo-400/30 blur-3xl animate-pulse motion-reduce:animate-none" style={{ animationDuration: '8s' }} />
+          <div aria-hidden="true" className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-pill bg-violet-400/20 blur-3xl animate-pulse motion-reduce:animate-none" style={{ animationDuration: '10s' }} />
           {/* Floating particles */}
           {particles.map((p) => (
             <div
@@ -71,7 +71,7 @@ export function FinalCTA({ t }: { t: TFn }) {
           <div aria-hidden="true" className="absolute inset-0 bg-white/5 backdrop-blur-sm" />
           <div className="relative mx-auto max-w-4xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-eyebrow text-white/90 backdrop-blur-sm">
-              <span className="h-1.5 w-1.5 rounded-pill bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.8)] animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-pill bg-emerald-300 shadow-[0_0_8px_rgba(110,231,183,0.8)] animate-pulse motion-reduce:animate-none" />
               {t('landing.finalCta.eyebrow', 'جاهز تبدأ؟')}
             </span>
             <h2 className="mt-7 leading-[1.15] tracking-[-0.03em]">
@@ -94,29 +94,29 @@ export function FinalCTA({ t }: { t: TFn }) {
             <div className="mt-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center sm:gap-4">
               <Link
                 to="/signup?ref=final-cta"
-                className="group inline-flex h-14 min-h-[56px] w-full items-center justify-center gap-2 rounded-full bg-white px-8 text-[17px] font-semibold text-blue-700 shadow-xl transition-all duration-300 hover:scale-[1.04] hover:shadow-2xl sm:w-auto"
+                className="group inline-flex h-14 min-h-[56px] w-full items-center justify-center gap-2 rounded-full bg-white px-8 text-[17px] font-semibold text-blue-700 shadow-xl transition-all motion-reduce:transition-none duration-300 hover:scale-[1.04] hover:shadow-2xl sm:w-auto"
               >
                 {t('landing.finalCta.primaryCta', 'سجّل كتاجر — مجانًا')}
-                <ArrowLeft className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+                <ArrowLeft className="h-5 w-5 transition-transform motion-reduce:transition-none duration-300 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
               </Link>
               <Link
                 to="/contact"
-                className="group inline-flex h-14 min-h-[56px] w-full items-center justify-center gap-2 rounded-full border border-white/40 bg-white/10 px-7 text-[17px] font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:scale-[1.04] hover:bg-white/20 hover:!text-white sm:w-auto"
+                className="group inline-flex h-14 min-h-[56px] w-full items-center justify-center gap-2 rounded-full border border-white/40 bg-white/10 px-7 text-[17px] font-semibold text-white backdrop-blur-sm transition-all motion-reduce:transition-none duration-300 hover:scale-[1.04] hover:bg-white/20 hover:!text-white sm:w-auto"
               >
-                <MessageCircle className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                <MessageCircle className="h-5 w-5 transition-transform motion-reduce:transition-none duration-300 group-hover:scale-110" />
                 {t('landing.finalCta.secondaryCta', 'تواصل مع المبيعات')}
               </Link>
             </div>
             <ul className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm font-medium text-white/80">
-              <li className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white">
+              <li className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-sm transition-all motion-reduce:transition-none hover:bg-white/20 hover:text-white">
                 <CreditCard className="h-4 w-4 text-amber-300" />
                 {t('landing.finalCta.g1', getClaim('zeroCommission').text)}
               </li>
-              <li className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white">
+              <li className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-sm transition-all motion-reduce:transition-none hover:bg-white/20 hover:text-white">
                 <Globe className="h-4 w-4 text-blue-300" />
                 {t('landing.finalCta.g2', 'دومين فرعي مجاني')}
               </li>
-              <li className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-sm transition-all hover:bg-white/20 hover:text-white">
+              <li className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-sm transition-all motion-reduce:transition-none hover:bg-white/20 hover:text-white">
                 <Rocket className="h-4 w-4 text-indigo-300" />
                 <HighlightNumbers text={t('landing.finalCta.g3', 'إعداد في 60 ثانية')} size="text-[1.1em]" />
               </li>

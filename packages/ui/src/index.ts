@@ -29,3 +29,10 @@ export { TextArea } from './components/ui/TextArea'
 export { Stack } from './components/ui/Stack'
 export { Grid } from './components/ui/Grid'
 export { Container } from './components/ui/Container'
+
+// Utilities (T3.6 reduced-motion)
+export {
+  withReducedMotion,
+  isReducedMotionPreferred,
+  usePrefersReducedMotion,
+} from './utils/reduced-motion'

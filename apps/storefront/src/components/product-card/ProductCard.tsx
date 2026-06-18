@@ -139,10 +139,10 @@ export function ProductCard({
   // Resolve variant: explicit prop OR derived from legacy `compact` flag.
   const variant = variantProp ?? (compactProp ? 'compact' : 'default');
   const variantClasses = {
-    default: 'rounded-[8px] bg-white shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300',
-    compact: 'rounded-[8px] bg-white shadow-sm hover:shadow-md transition-all duration-300',
-    marketplace: 'rounded-2xl bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300',
-    luxury: 'rounded-2xl bg-[#faf8f6] hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300',
+    default: 'rounded-[8px] bg-white shadow-md hover:shadow-xl hover:-translate-y-1 transition-all motion-reduce:transition-none duration-300',
+    compact: 'rounded-[8px] bg-white shadow-sm hover:shadow-md transition-all motion-reduce:transition-none duration-300',
+    marketplace: 'rounded-2xl bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all motion-reduce:transition-none duration-300',
+    luxury: 'rounded-2xl bg-[#faf8f6] hover:shadow-sm hover:-translate-y-0.5 transition-all motion-reduce:transition-none duration-300',
   };
 
   const paddingClasses = {
@@ -259,7 +259,7 @@ export function ProductCard({
           ) : showAddToCart ? (
             <a
               href={productUrl}
-              className="w-full inline-flex items-center justify-center min-h-[44px] text-sm font-semibold rounded-xl bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors"
+              className="w-full inline-flex items-center justify-center min-h-[44px] text-sm font-semibold rounded-xl bg-gray-100 text-gray-900 hover:bg-gray-200 transition-colors motion-reduce:transition-none"
             >
               {t('product.viewDetails', 'عرض التفاصيل')}
             </a>

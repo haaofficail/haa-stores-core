@@ -156,7 +156,7 @@ export default function Cart() {
   const subtotal = Number(cart.subtotal);
 
   return (
-    <div className="animate-fade-in" id="main-content">
+    <div className="animate-fade-in motion-reduce:animate-none" id="main-content">
       <StoreContainer className="py-3 sm:py-4">
         <h1 className="text-lg sm:text-xl font-bold text-text-primary mb-4">{t('cart.title')}</h1>
 
