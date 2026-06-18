@@ -52,7 +52,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { useSEO } from '@/hooks/useSEO';
-import { usePlatformBrand } from '@/hooks/usePlatformBrand';
 import { StoreContainer } from '@/components/ui';
 // P2-#10: lazy-load the AI chat to reduce initial bundle size.
 // The chat is below-the-fold and only renders for users with the
