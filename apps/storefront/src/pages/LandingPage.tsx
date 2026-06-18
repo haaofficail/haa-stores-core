@@ -65,6 +65,8 @@ import { isAIPreviewEnabled } from '@/landing/aiChatContent';
 import { Nav } from '@/landing/sections/Nav';
 import { Footer } from '@/landing/sections/Footer';
 import { LiveTicker } from '@/landing/sections/LiveTicker';
+import { AboutSection } from '@/landing/sections/AboutSection';
+import { Features } from '@/landing/sections/Features';
 import type { TFn } from '@/landing/sections/types';
 
 /* ════════════════════════════════════════════════════════════════
@@ -288,134 +290,6 @@ function Hero({ t }: { t: TFn; onDemoOpen?: () => void }) {
         </div>
 
 
-      </StoreContainer>
-    </section>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   ABOUT — تعرف علينا
-   ════════════════════════════════════════════════════════════════ */
-function AboutSection() {
-  const stats = [
-    { num: '١٠٠٠+', label: 'متجر نشط' },
-    { num: '٥٠٠٠٠+', label: 'طلب شهريًا' },
-    { num: '١٠٠٪', label: 'سعودي ١٠٠٪' },
-    { num: 'دقيقة', label: 'وانطلق متجرك' },
-  ];
-  return (
-    <section id="about" className="relative py-16 sm:py-24 overflow-hidden" aria-labelledby="about-title">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <div className="absolute -end-16 -top-16 h-80 w-80 rounded-full bg-blue-100/30 blur-3xl" />
-        <div className="absolute -start-16 -bottom-16 h-80 w-80 rounded-full bg-emerald-100/20 blur-3xl" />
-      </div>
-      <StoreContainer>
-        <div className="mx-auto max-w-4xl text-center">
-          <span className="aurora-pill text-xs">{'منصة سعودية'}</span>
-          <h2 id="about-title" className="mt-6 text-[40px] font-bold leading-[1.15] tracking-[-0.03em] text-text-primary sm:text-[52px] lg:text-[64px]">
-            {'هاء — متجرك الإلكتروني في دقيقة'}
-          </h2>
-          <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-[1.7] text-text-secondary sm:text-[19px]">
-            {'هاء منصة سعودية ١٠٠٪ تمنح التجار متجرًا إلكترونيًا جاهزًا بالثيمات، بوابات الدفع السعودية (مدى، STC Pay، تابي، تمارا)، وشحن مدمج. لا برمجة، لا تصميم، ولا تعقيدات.'}
-          </p>
-        </div>
-
-        <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6">
-          {stats.map(({ num, label }) => (
-            <div key={label} className="rounded-2xl border border-white/20 bg-white/40 p-5 text-center backdrop-blur-sm sm:p-6">
-              <p className="text-[28px] font-bold text-text-primary sm:text-[34px]">{num === 'دقيقة' ? (
-                <><span className="text-blue-600">١</span> {num}</>
-              ) : num}
-              </p>
-              <p className="mt-1 text-sm font-medium text-text-secondary">{label}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-12 flex justify-center">
-          <Link
-            to="/about"
-            className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-text-secondary transition-colors hover:text-text-primary"
-          >
-            {'اعرف أكثر عن هاء'}
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </div>
-      </StoreContainer>
-    </section>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
-   FEATURES — three glass cards
-   ════════════════════════════════════════════════════════════════ */
-function Features({ t }: { t: TFn }) {
-  // Each card pairs an icon (24px icon inside 56px container) with a 3-step micro-proof
-  // structure: outcome stat → feature name → 1-line benefit. Card padding 32px, border-radius 24px.
-  const items = [
-    {
-      id: 'launch',
-      icon: Zap,
-      stat: '< 60 ثانية',
-      title: t('landing.features.launch.title', 'إطلاق فوري'),
-      desc: t('landing.features.launch.desc', 'افتح متجرك وأضف أول منتج في أقل من دقيقة. لا فريق تقني، لا انتظار.'),
-      gradient: 'from-blue-500 to-indigo-600',
-      shadow: 'shadow-blue-500/30',
-    },
-    {
-      id: 'themes',
-      icon: Palette,
-      stat: getClaim('themeCount').text,
-      title: t('landing.features.themes.title', 'ثيمات احترافية'),
-      desc: t('landing.features.themes.desc', 'صمّمها مصممون محترفون. غيّر الألوان والخطوط بنقرة واحدة بدون لمس الكود.'),
-      gradient: 'from-blue-600 to-indigo-700',
-      shadow: 'shadow-blue-600/30',
-    },
-    {
-      id: 'payments',
-      icon: CreditCard,
-      stat: getClaim('zeroCommission').text,
-      title: t('landing.features.payments.title', 'دفع سعودي كامل'),
-      desc: t('landing.features.payments.desc', 'مدى، Apple Pay، فيزا، ماستركارد، تابي، تمارا. كل البوابات بدون عمولات خفية.'),
-      gradient: 'from-blue-400 to-blue-600',
-      shadow: 'shadow-blue-500/30',
-    },
-    {
-      id: 'shipping',
-      icon: Truck,
-      stat: 'شحن مدمج',
-      title: t('landing.features.shipping.title', 'شحن وتوصيل'),
-      desc: t('landing.features.shipping.desc', 'اربط متجرك بشركات الشحن السعودية. احسب تكلفة التوصيل آليًا وتابع الطلبات.'),
-      gradient: 'from-blue-500 to-indigo-600',
-      shadow: 'shadow-blue-500/30',
-    },
-  ];
-  return (
-    // Section padding: 64px mobile, 96px desktop (reduced for better rhythm)
-    <section id="features" className="relative bg-white py-16 sm:py-24 scroll-mt-20">
-      <StoreContainer>
-        <div className="mx-auto max-w-2xl text-center">
-          <span className="aurora-pill text-xs">{t('landing.features.eyebrow', 'لماذا Haa؟')}</span>
-          <h2 className="mt-6 text-[32px] font-bold leading-[1.15] tracking-[-0.02em] text-text-primary sm:text-[44px]">
-            {t('landing.features.title', 'ركّز على منتجاتك، واترك التقنية علينا')}
-          </h2>
-        </div>
-        <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {items.map(({ id, icon: Icon, stat, title, desc, gradient, shadow }) => (
-            <li
-              key={id}
-              className="aurora-card group relative overflow-hidden rounded-2xl border border-white/40 bg-white/70 p-6 shadow-sm backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:border-white/60 hover:shadow-lg"
-            >
-              <div aria-hidden="true" className={`absolute -end-16 -top-16 h-48 w-48 rounded-pill bg-gradient-to-br ${gradient} opacity-20 blur-3xl transition-opacity duration-500 group-hover:opacity-40`} />
-              <span className={`relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg ${shadow}`}>
-                <Icon className="h-6 w-6" strokeWidth={1.75} />
-              </span>
-              <div className="relative mt-8 text-sm font-bold uppercase tracking-wider text-blue-600">{stat}</div>
-              <h3 className="relative mt-4 text-[18px] font-bold tracking-[-0.01em] text-text-primary">{title}</h3>
-              <p className="relative mt-4 text-[15px] leading-[1.6] text-text-secondary">{desc}</p>
-            </li>
-          ))}
-        </ul>
       </StoreContainer>
     </section>
   );
