@@ -37,22 +37,43 @@ export async function marketplaceSummaryRoute(c: any) {
 
 // ── /marketplace/products ──────────────────────────────────────────────────
 export async function marketplaceProductsRoute(c: any) {
+  // TASK-0043 Phase 4 — Track 4B — P1-3 admin pagination.
+  // Page + limit query params (defaults: page=1, limit=50, max limit=200).
+  // Returns { data, page, limit, total, totalPages } so the admin UI
+  // can render pagination controls. The previous version was a hard-
+  // coded .limit(200) which broke for stores with >200 marketplace items.
   const status = c.req.query('status');
+  const page = Math.max(1, Number(c.req.query('page')) || 1);
+  const limit = Math.min(200, Math.max(1, Number(c.req.query('limit')) || 50));
+  const offset = (page - 1) * limit;
   const db = createDbClient();
   const conditions = [eq(s.products.haaMarketplaceEnabled, true)];
   if (status) conditions.push(eq(s.products.haaMarketplaceReviewStatus, status));
+  // Total count for pagination metadata.
+  const [{ total }] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(s.products)
+    .where(and(...conditions));
   const rows = await db.select({ product: s.products, store: s.stores })
     .from(s.products)
     .innerJoin(s.stores, eq(s.products.storeId, s.stores.id))
     .where(and(...conditions))
     .orderBy(desc(s.products.updatedAt))
-    .limit(200);
-  return c.json({ success: true, data: rows.map(({ product, store }) => ({
-    ...product,
-    storeName: store.name,
-    storeSlug: store.slug,
-    storeCity: store.city,
-  })) });
+    .limit(limit)
+    .offset(offset);
+  return c.json({
+    success: true,
+    data: rows.map(({ product, store }) => ({
+      ...product,
+      storeName: store.name,
+      storeSlug: store.slug,
+      storeCity: store.city,
+    })),
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit),
+  });
 }
 
 // ── /marketplace/products/:id/review ──────────────────────────────────────
