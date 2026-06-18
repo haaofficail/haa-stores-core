@@ -14,3 +14,8 @@ storage
 # Log files (avoid tracking accidental local logs)
 *.log
 **/*.log
+
+# Playwright test artifacts (regenerated on every run)
+tests/e2e/test-results/
+tests/e2e/report/
+tests/e2e/screenshots/
