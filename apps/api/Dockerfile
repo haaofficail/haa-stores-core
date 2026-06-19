@@ -37,8 +37,11 @@ COPY package.json ./
 
 # Copy every package.json in the monorepo (apps + packages)
 # Using find to avoid manually listing each workspace member
-COPY apps/api/package.json          ./apps/api/
-COPY packages/                      ./packages/
+COPY apps/api/package.json                  ./apps/api/
+COPY apps/storefront/package.json           ./apps/storefront/
+COPY apps/merchant-dashboard/package.json   ./apps/merchant-dashboard/
+COPY apps/admin-dashboard/package.json      ./apps/admin-dashboard/
+COPY packages/                              ./packages/
 
 # Install all dependencies (frozen for reproducible builds)
 RUN pnpm install --frozen-lockfile --prefer-offline
@@ -92,8 +95,11 @@ WORKDIR /app
 COPY pnpm-workspace.yaml ./
 COPY pnpm-lock.yaml      ./
 COPY package.json        ./
-COPY apps/api/package.json ./apps/api/
-COPY packages/             ./packages/
+COPY apps/api/package.json                  ./apps/api/
+COPY apps/storefront/package.json           ./apps/storefront/
+COPY apps/merchant-dashboard/package.json   ./apps/merchant-dashboard/
+COPY apps/admin-dashboard/package.json      ./apps/admin-dashboard/
+COPY packages/                              ./packages/
 
 # Install ONLY production dependencies (no devDependencies)
 RUN pnpm install --frozen-lockfile --prod --prefer-offline

@@ -31,8 +31,11 @@ COPY pnpm-workspace.yaml ./
 COPY pnpm-lock.yaml      ./
 COPY package.json        ./
 
-COPY apps/storefront/package.json ./apps/storefront/
-COPY packages/                     ./packages/
+COPY apps/api/package.json                  ./apps/api/
+COPY apps/storefront/package.json           ./apps/storefront/
+COPY apps/merchant-dashboard/package.json   ./apps/merchant-dashboard/
+COPY apps/admin-dashboard/package.json      ./apps/admin-dashboard/
+COPY packages/                              ./packages/
 
 RUN pnpm install --frozen-lockfile --prefer-offline
 

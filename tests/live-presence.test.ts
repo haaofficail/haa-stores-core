@@ -1,5 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Mock the API env module so that importing worker.ts in tests doesn't throw
+// "Environment validation failed" (JWT_SECRET etc. not set in CI).
+vi.mock('../apps/api/src/env', () => ({
+  env: {
+    NODE_ENV: 'test',
+    DATABASE_URL: 'postgres://mock:5432/test',
+    JWT_SECRET: 'test-jwt-secret-16chars',
+    ADMIN_JWT_SECRET: 'test-admin-jwt-secret-16chars',
+    ENCRYPTION_KEY: 'test-encryption-key-32-chars!!!!!',
+  },
+}));
+
 // --- Device Normalization ---
 
 describe('device normalization', () => {
@@ -119,7 +131,7 @@ describe('LivePresenceService', () => {
 
     db = {
       insert: vi.fn().mockReturnValue({ values: valuesMock }),
-      select: vi.fn().mockImplementation((fields?: any) => makeSelectResult([])),
+      select: vi.fn().mockImplementation((_fields?: any) => makeSelectResult([])),
     };
 
     const { LivePresenceService } = await import('@haa/commerce-core');
@@ -375,18 +387,21 @@ describe('LivePresenceService', () => {
 
   it('cleanupOldPresence deletes rows older than 24 hours', async () => {
     const deleteResult = { rowCount: 5 };
+    // eslint-disable-next-line drizzle/enforce-delete-with-where
     db.delete = vi.fn().mockReturnValue({
       where: vi.fn().mockResolvedValue(deleteResult),
     });
 
     const deleted = await service.cleanupOldPresence();
     expect(deleted).toBe(5);
+    // eslint-disable-next-line drizzle/enforce-delete-with-where
     expect(db.delete).toHaveBeenCalled();
   });
 
   it('runLivePresenceCleanup exports and works', async () => {
     const { runLivePresenceCleanup } = await import('@haa/commerce-core');
     const mockDb = {
+       
       delete: vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue({ rowCount: 3 }),
       }),
@@ -458,11 +473,6 @@ describe('LivePresenceService', () => {
     await service.heartbeat(2, { sessionId: 's1', currentPath: '/', currentPageType: 'home', isInCheckout: false });
 
     expect(db.insert).toHaveBeenCalledTimes(2);
-    // The mock stores calls in order, check both calls
-    const firstCallValues = db.insert.mock.calls[0][0];
-    const secondCallValues = db.insert.mock.calls[1][0];
-    // The insert is called with the table, then .values() is called with the data
-    // We need to check the values passed to .values()
     expect(db.insert.mock.calls[0]).toBeDefined();
     expect(db.insert.mock.calls[1]).toBeDefined();
   });
@@ -522,7 +532,7 @@ describe('Geo Aggregation', () => {
 
     db = {
       insert: vi.fn().mockReturnValue({ values: valuesMock }),
-      select: vi.fn().mockImplementation((fields?: any) => makeSelectResult([])),
+      select: vi.fn().mockImplementation((_fields?: any) => makeSelectResult([])),
     };
 
     const { LivePresenceService } = await import('@haa/commerce-core');
@@ -686,7 +696,7 @@ describe('LiveSnapshotService', () => {
 
     db = {
       insert: vi.fn().mockReturnValue({ values: valuesMock }),
-      select: vi.fn().mockImplementation((fields?: any) => makeSelectResult([])),
+      select: vi.fn().mockImplementation((_fields?: any) => makeSelectResult([])),
     };
 
     const { LiveSnapshotService } = await import('@haa/commerce-core');
