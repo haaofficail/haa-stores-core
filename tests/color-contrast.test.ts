@@ -122,8 +122,9 @@ describe('P2-#7: brand color tokens are documented in index.css', () => {
       resolve(__dirname, '..', 'apps/storefront/src/index.css'),
       'utf-8',
     );
-    // After P2-#7, brand-primary is the contrast-passing #2a6fb8.
-    expect(src).toMatch(/--brand-primary:\s*#2a6fb8/);
+    // Owner override (2026-06-18): --brand-primary is #5c9cd5 (decorative).
+    // For AA-compliant text use --brand-primary-text (#2a6fb8).
+    expect(src).toMatch(/--brand-primary:\s*#5c9cd5/);
   });
 
   it('index.css declares --color-success + --color-danger + --color-warning', () => {
@@ -134,8 +135,7 @@ describe('P2-#7: brand color tokens are documented in index.css', () => {
     expect(src).toMatch(/--color-success:\s*#15803d/);
     expect(src).toMatch(/--color-danger:\s*#b91c1c/);
     expect(src).toMatch(/--color-warning:\s*#f59e0b/);
-    // New contrast-aware token (kept for future use as darker
-    // alternative; currently brand-primary is already contrast-passing).
-    expect(src).toMatch(/--brand-primary-soft:\s*#5c9cd5/);
+    // brand-primary-soft uses color-mix to derive a tinted background from brand-primary.
+    expect(src).toMatch(/--brand-primary-soft:\s*color-mix/);
   });
 });

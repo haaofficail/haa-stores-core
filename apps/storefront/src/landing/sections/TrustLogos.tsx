@@ -27,7 +27,7 @@ function computeHeight(baseHeightPx: number, scale = 1): CSSProperties {
 export function PaymentLogos({ size = 'md' }: { size?: LogoSize }) {
   const basePx = size === 'lg' ? 24 : size === 'md' ? 20 : 16;
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:gap-x-5">
       {PAYMENT_LOGOS.map(({ src, alt, hScale }) => (
         <img
           key={alt}

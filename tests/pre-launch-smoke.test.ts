@@ -180,7 +180,9 @@ describe('Pre-launch smoke test — A11y', () => {
 
   it('brand color is contrast-passing (>= 4.5:1 on white)', () => {
     const css = read('apps/storefront/src/index.css');
-    expect(css).toMatch(/--brand-primary:\s*#2a6fb8/);
+    // Owner override (2026-06-18): --brand-primary = #5c9cd5 (decorative).
+    // Text uses --brand-primary-text = #2a6fb8 for AA compliance.
+    expect(css).toMatch(/--brand-primary:\s*#5c9cd5/);
   });
 
   it('color-contrast.test.ts verifies all brand colors', () => {

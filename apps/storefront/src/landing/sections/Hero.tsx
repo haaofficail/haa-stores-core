@@ -78,7 +78,7 @@ export function Hero({ t }: { t: TFn; onDemoOpen?: () => void }) {
           {/* Trust strip — payment + shipping logos in a glass card */}
           <div className="mx-auto mt-10 max-w-3xl">
             <div className="aurora-card rounded-2xl border border-white/40 bg-white/40 px-6 py-5 shadow-lg shadow-primary-500/5 backdrop-blur-xl sm:px-8 sm:py-6">
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-text-tertiary">
                 وسائل الدفع والتوصيل المتكاملة
               </p>
               <PaymentLogos size="lg" />
