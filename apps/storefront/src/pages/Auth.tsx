@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Mail, Lock, User, Phone, Store as StoreIcon, Sparkles, ArrowLeft, Loader2, Check, Shield, Bell, Star, TrendingUp, Clock } from 'lucide-react';
 import { Nav } from '@/landing/sections/Nav';
 
@@ -486,7 +486,7 @@ function AuthShell({ children }: { children: React.ReactNode }) {
     i18nT(key, fallback ?? key) as string;
 
   return (
-    <div dir="rtl" className="relative min-h-screen overflow-x-hidden text-text-primary auth-scope">
+    <div id="storefront-scope" dir="rtl" className="relative min-h-screen overflow-x-hidden text-text-primary auth-scope">
 
       <AuroraBackground />
 

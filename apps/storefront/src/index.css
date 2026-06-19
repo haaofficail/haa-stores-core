@@ -619,21 +619,112 @@ The /login,
    wrapper sets these tokens inline; this rule applies them to
    utility classes. */
 .auth-scope {
+  /* ── Brand ── */
+  --brand-primary: #5c9cd5;
+  --brand-primary-soft: color-mix(in srgb, #5c9cd5 14%, #fff);
+  --brand-primary-text: #5c9cd5;
+  --store-primary: var(--brand-primary);
+
+  /* ── Primary palette ── */
+  --color-primary-50:  color-mix(in srgb, var(--brand-primary)  8%, #fff);
+  --color-primary-100: color-mix(in srgb, var(--brand-primary) 14%, #fff);
+  --color-primary-200: color-mix(in srgb, var(--brand-primary) 26%, #fff);
+  --color-primary-300: color-mix(in srgb, var(--brand-primary) 42%, #fff);
+  --color-primary-400: color-mix(in srgb, var(--brand-primary) 64%, #fff);
+  --color-primary-500: var(--brand-primary);
+  --color-primary-600: color-mix(in srgb, var(--brand-primary) 88%, #000);
+  --color-primary-700: color-mix(in srgb, var(--brand-primary) 76%, #000);
+  --color-primary-800: color-mix(in srgb, var(--brand-primary) 60%, #000);
+  --color-primary-900: color-mix(in srgb, var(--brand-primary) 42%, #000);
+  --color-primary-950: color-mix(in srgb, var(--brand-primary) 24%, #000);
+  --color-primary: var(--brand-primary);
+  --color-primary-soft: color-mix(in srgb, var(--brand-primary) 14%, #fff);
+
+  /* ── Surface ── */
+  --surface-1: #ffffff;
+  --surface-2: #f9fafb;
+  --surface-3: #f3f4f6;
+  --surface-inverse: #111827;
+
+  /* ── Text ── */
+  --text-primary:    #111827;
+  --text-secondary:  #4b5563;
+  --text-tertiary:   #6b7280;
+  --text-muted:      #6b7280;
+  --text-disabled:   #d1d5db;
+  --text-link:       var(--brand-primary);
+
+  /* ── Border ── */
+  --border-subtle:   #f0f0f1;
+  --border-default:  #e5e7eb;
+  --border-hover:    #d1d5db;
+  --border-focus:    var(--brand-primary);
+  --border-disabled: #f3f4f6;
+
+  /* ── Status ── */
+  --color-success:        #15803d;
+  --color-success-subtle: #f0fdf4;
+  --color-success-text:   #15803d;
+  --color-warning:        #f59e0b;
+  --color-warning-subtle: #fffbeb;
+  --color-warning-text:   #b45309;
+  --color-danger:         #b91c1c;
+  --color-danger-subtle:  #fef2f2;
+  --color-danger-text:    #b91c1c;
+  --color-info:           var(--brand-primary);
+  --color-info-subtle:    color-mix(in srgb, var(--brand-primary) 8%, #fff);
+  --color-info-text:      color-mix(in srgb, var(--brand-primary) 88%, #000);
+
+  /* ── Shadows & radius ── */
+  --card-radius: 16px;
+  --radius-pill: 9999px;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+
+  /* ── Legacy haa-* aliases (keep for backward compat) ── */
   --haa-surface-1: #ffffff;
   --haa-surface-2: #f9fafb;
   --haa-text-primary: #111827;
   --haa-text-secondary: #4b5563;
   --haa-text-muted: #6b7280;
   --haa-border-subtle: #f0f0f1;
-  background-color: var(--haa-surface-1);
-  color: var(--haa-text-primary);
+
+  background-color: transparent;
+  color: var(--text-primary);
 }
-.auth-scope .bg-surface { background-color: var(--haa-surface-1) !important; }
-.auth-scope .text-text-primary { color: var(--haa-text-primary) !important; }
-.auth-scope .text-text-secondary { color: var(--haa-text-secondary) !important; }
-.auth-scope .text-text-muted { color: var(--haa-text-muted) !important; }
-.auth-scope .text-text-tertiary { color: var(--haa-text-muted) !important; }
-.auth-scope .border-border-subtle { border-color: var(--haa-border-subtle) !important; }
+.auth-scope .bg-surface    { background-color: var(--surface-1) !important; }
+.auth-scope .text-text-primary   { color: var(--text-primary)   !important; }
+.auth-scope .text-text-secondary { color: var(--text-secondary) !important; }
+.auth-scope .text-text-muted     { color: var(--text-muted)     !important; }
+.auth-scope .text-text-tertiary  { color: var(--text-muted)     !important; }
+.auth-scope .border-border-subtle { border-color: var(--border-subtle) !important; }
+
+/* ── Auth: حقول الإدخال بيضاء داخل glass card ─────────────────────
+   StoreInput يستخدم bg-surface-2 (#f9fafb) — في سياق الـ glass card
+   يجب أن تكون الحقول بيضاء مع حدود خفيفة وfocus ring بلون الـ brand. */
+.auth-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.auth-scope select,
+.auth-scope textarea {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(0, 0, 0, 0.09) !important;
+}
+
+.auth-scope input:focus-visible:not([type="checkbox"]):not([type="radio"]),
+.auth-scope select:focus-visible,
+.auth-scope textarea:focus-visible {
+  background-color: #ffffff !important;
+  border-color: var(--brand-primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 15%, transparent) !important;
+  outline: none !important;
+}
+
+/* ── Auth: أزرار تتبع لون الـ brand ──────────────────────────────
+   focus-visible ring بلون الـ brand بدل الـ primary-400 الافتراضي */
+.auth-scope button:focus-visible,
+.auth-scope a:focus-visible {
+  outline: 2px solid var(--brand-primary) !important;
+  outline-offset: 2px !important;
+}
 
 /* ── P2-#6: focus-visible everywhere ──────────────────────────────
    Global rule so every interactive element (a, button, input,
