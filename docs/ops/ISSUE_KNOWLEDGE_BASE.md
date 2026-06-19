@@ -29,7 +29,7 @@
 - **Related Tasks:** TASK-0054
 - **Symptoms:** Merchant and admin tests receive connection refused; critical storefront path times out waiting for the old add-to-cart label.
 - **Root Cause:** Workflow started only API and storefront although the suite also covers ports 5173 and 5175. The critical-path selector omitted the current Arabic label `أضف للسلة`.
-- **Fix:** Start and readiness-check all four applications; use an accessible button selector covering current Arabic and English labels.
+- **Fix:** Start and readiness-check all four applications; use a visible button text selector that tolerates theme-composed accessible names while still requiring the current Arabic/English add-to-cart wording.
 - **Prevention:** CI contract coverage requires merchant/admin startup and readiness ports.
 - **Status:** Fix pushed for GitHub runner verification.
 

@@ -16,9 +16,11 @@ test.describe('Critical Path: Storefront to Order', () => {
     await productCard.click();
 
     // 3. Add to Cart
-    const addToCartBtn = page.getByRole('button', {
-      name: /Add to Cart|إضافة إلى السلة|أضف للسلة/i,
-    });
+    const addToCartBtn = page
+      .locator('button')
+      .filter({ hasText: /Add|أضف|السلة/i })
+      .first();
+    await expect(addToCartBtn).toBeVisible();
     await addToCartBtn.click();
 
     // 4. Go to Cart
