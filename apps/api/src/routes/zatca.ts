@@ -2,52 +2,10 @@ import { Hono } from 'hono';
 import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';
 import { OrdersService } from '@haa/commerce-core';
 import { generateZatcaQr, buildZatcaInvoice, isZatcaConfigured } from '@haa/zatca-core';
-import type { ZatcaSellerConfig } from '@haa/zatca-core';
-import { createDbClient } from '@haa/db';
-import * as s from '@haa/db/schema';
-import { eq } from 'drizzle-orm';
+import { resolveSellerConfig } from '../services/zatca-config.js';
 
 export const zatcaRouter = new Hono();
 zatcaRouter.use('*', requireAuth(), requireStoreAccess());
-
-/**
- * Resolve per-tenant ZATCA seller config from the DB.
- * Falls back to env-level globals if the tenant row is missing fields,
- * so existing single-tenant deployments keep working without changes.
- */
-async function resolveSellerConfig(storeId: number): Promise<ZatcaSellerConfig> {
-  try {
-    const db = createDbClient();
-    const [row] = await db
-      .select({
-        tenantName: s.tenants.name,
-        vatNumber: s.tenants.vatNumber,
-      })
-      .from(s.stores)
-      .innerJoin(s.tenants, eq(s.stores.tenantId, s.tenants.id))
-      .where(eq(s.stores.id, storeId))
-      .limit(1);
-
-    return {
-      sellerName: row?.tenantName ?? process.env.ZATCA_SELLER_NAME ?? 'متجر هاء',
-      vatNumber: row?.vatNumber ?? process.env.ZATCA_VAT_NUMBER ?? '',
-      street: process.env.ZATCA_STREET ?? 'شارع الملك عبدالعزيز',
-      district: process.env.ZATCA_DISTRICT,
-      city: process.env.ZATCA_CITY ?? 'الرياض',
-      postalCode: process.env.ZATCA_POSTAL_CODE ?? '12345',
-    };
-  } catch {
-    // DB unavailable — fall back to env-level globals
-    return {
-      sellerName: process.env.ZATCA_SELLER_NAME ?? 'متجر هاء',
-      vatNumber: process.env.ZATCA_VAT_NUMBER ?? '',
-      street: process.env.ZATCA_STREET ?? 'شارع الملك عبدالعزيز',
-      district: process.env.ZATCA_DISTRICT,
-      city: process.env.ZATCA_CITY ?? 'الرياض',
-      postalCode: process.env.ZATCA_POSTAL_CODE ?? '12345',
-    };
-  }
-}
 
 /**
  * GET /orders/:orderId/zatca-invoice
