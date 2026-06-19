@@ -28,8 +28,8 @@
 - **Area:** E2E orchestration / UI selectors
 - **Related Tasks:** TASK-0054
 - **Symptoms:** Merchant and admin tests receive connection refused; critical storefront path times out waiting for the old add-to-cart label.
-- **Root Cause:** Workflow started only API and storefront although the suite also covers ports 5173 and 5175. The critical path selected hidden carousel markup, and theme hydration could replace the visible product button between actionability checks and click.
-- **Fix:** Start and readiness-check all four applications; select only visible product/button elements, wait for product-page network stability, and dispatch the click against the current visible button node.
+- **Root Cause:** Workflow started only API and storefront although the suite also covers ports 5173 and 5175. The critical path selected hidden carousel markup and then assumed the first product detail was purchasable, although stock state can legitimately remove the add button.
+- **Fix:** Start and readiness-check all four applications; begin the purchase flow from the first visible, enabled add-to-cart button, which is the storefront's actual purchasability signal.
 - **Prevention:** CI contract coverage requires merchant/admin startup and readiness ports.
 - **Status:** Fix pushed for GitHub runner verification.
 
