@@ -112,7 +112,14 @@ export default function Customers() {
                 </Button>
               </>
             ) : (
-              <p className="text-sm text-neutral-500">{t('customers.noCustomers')}</p>
+              <>
+                <p className="text-sm text-neutral-500">{t('customers.noCustomers')}</p>
+                <PermissionGate permission="customers:create" fallback={null}>
+                  <Button size="sm" className="h-9 text-sm mt-4" onClick={openCreate}>
+                    <Plus className="h-4 w-4 me-1.5" />{t('customers.create')}
+                  </Button>
+                </PermissionGate>
+              </>
             )}
           </div>
         ) : (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Permission } from '@haa/shared';
-import { X, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, AlertTriangle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { PermissionCheckboxMatrix } from './PermissionCheckboxMatrix';
 import { usePermissions } from '@/lib/permissions';
 import { employeesApi } from '@/lib/api';
@@ -14,6 +14,7 @@ interface EmployeeFormData {
   role: string;
   permissions: string[];
   isActive: boolean;
+  password?: string;
 }
 
 interface EmployeeFormDialogProps {
@@ -42,8 +43,11 @@ export function EmployeeFormDialog({
       role: 'viewer',
       permissions: [],
       isActive: true,
+      password: '',
     }
   );
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +87,9 @@ export function EmployeeFormDialog({
         role: 'viewer',
         permissions: [],
         isActive: true,
+        password: '',
       });
+      setConfirmPassword('');
     }
   }, [mode, initialData]);
 
@@ -91,14 +97,20 @@ export function EmployeeFormDialog({
 
   async function handleSave() {
     if (!onSave) return;
+    if (mode === 'create') {
+      if (!form.password || form.password.length < 6) {
+        setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+        return;
+      }
+      if (form.password !== confirmPassword) {
+        setError('كلمتا المرور غير متطابقتين');
+        return;
+      }
+    }
     setSaving(true);
     setError(null);
     try {
-      // Include permissions in the save data
-      await onSave({
-        ...form,
-        permissions: form.permissions,
-      });
+      await onSave({ ...form });
       onClose();
     } catch (err: any) {
       setError(err?.message || 'حدث خطأ أثناء الحفظ');
@@ -164,10 +176,38 @@ export function EmployeeFormDialog({
             <input type="hidden" name="loading" value={loading.toString()} />
 
             {mode === 'create' && (
-            <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-primary-500 mt-0.5 shrink-0" />
-              <div className="text-xs text-primary-700">
-                تم إنشاء الموظف محليًا. إرسال الدعوات البريدية غير مفعّل بعد.
+            <div className="flex gap-4">
+              <div className="flex-1 space-y-1.5">
+                <label className="text-sm font-medium text-neutral-700">كلمة المرور</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={form.password ?? ''}
+                    onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm pl-9"
+                    placeholder="6 أحرف على الأقل"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 space-y-1.5">
+                <label className="text-sm font-medium text-neutral-700">تأكيد كلمة المرور</label>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm"
+                  placeholder="أعد كتابة كلمة المرور"
+                  autoComplete="new-password"
+                />
               </div>
             </div>
           )}
@@ -211,12 +251,14 @@ export function EmployeeFormDialog({
             />
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-            <div className="text-xs text-amber-700">
-              الصلاحيات مشتقة من الدور. التخصيص الفردي للصلاحيات غير مدعوم بعد.
+          {mode === 'create' && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+              <div className="text-xs text-amber-700">
+                احفظ كلمة المرور المُدخلة وشاركها مع الموظف — لا يوجد بريد دعوة تلقائي.
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-200">

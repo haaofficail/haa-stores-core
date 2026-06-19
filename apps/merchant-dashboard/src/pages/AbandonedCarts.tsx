@@ -142,10 +142,10 @@ export default function AbandonedCarts() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9"
-                      title="إرسال تذكير يدوي"
-                      aria-label="إرسال تذكير يدوي"
-                      onClick={() => toast.info('ميزة قيد التطوير')}
+                      className="h-9 w-9 opacity-40 cursor-not-allowed"
+                      title="إرسال تذكير — قيد التطوير"
+                      aria-label="إرسال تذكير — قيد التطوير"
+                      disabled
                     >
                       <Send className="h-4 w-4 text-neutral-400" />
                     </Button>

@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Pencil, Trash2, Tag } from 'lucide-react';
+import { Plus, Pencil, Trash2, Tag, AlertTriangle, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
@@ -76,13 +76,16 @@ export default function Tags() {
   const [form, setForm] = useState({ name: '', slug: '', color: '#6366f1', sortOrder: 0 });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+  const [nameError, setNameError] = useState('');
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const load = useCallback(() => {
     if (!storeId) { setLoading(false); return; }
     setLoading(true);
-    tagsApi.list(storeId).then(setTags).catch(() => toast.error(t('common.error'))).finally(() => setLoading(false));
+    setFetchError(false);
+    tagsApi.list(storeId).then(data => { setTags(data); }).catch(() => { setFetchError(true); toast.error(t('common.error')); }).finally(() => setLoading(false));
   }, [storeId, t]);
 
   useEffect(() => { load(); }, [load]);
@@ -106,6 +109,8 @@ export default function Tags() {
 
   const save = async () => {
     if (!storeId) return;
+    if (!form.name.trim()) { setNameError('اسم التاج مطلوب'); return; }
+    setNameError('');
     setSaving(true);
     try {
       if (editId) {
@@ -158,12 +163,25 @@ export default function Tags() {
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         {loading ? (
           <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
+        ) : fetchError ? (
+          <div className="p-12 text-center">
+            <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4"><AlertTriangle className="h-8 w-8 text-red-400" /></div>
+            <p className="text-sm font-medium text-neutral-700 mb-1">فشل تحميل التاجات</p>
+            <p className="text-sm text-neutral-500 mb-4">حدث خطأ أثناء الاتصال بالخادم.</p>
+            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={load}>
+              <RotateCcw className="h-4 w-4" /> إعادة المحاولة
+            </Button>
+          </div>
         ) : tags.length === 0 ? (
           <div className="p-12 text-center">
             <div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4">
               <Tag className="h-8 w-8 text-neutral-400" />
             </div>
-            <p className="text-sm text-neutral-500">لا توجد تاجات</p>
+            <p className="text-sm font-medium text-neutral-700 mb-1">لا توجد تاجات بعد</p>
+            <p className="text-sm text-neutral-500 mb-4">أضف أول تاج لتصنيف المنتجات.</p>
+            <PermissionGate permission="tags:manage">
+              <Button size="sm" className="h-9 text-sm" onClick={openCreate}><Plus className="h-4 w-4 me-1.5" />إضافة تاج</Button>
+            </PermissionGate>
           </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -197,8 +215,9 @@ export default function Tags() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label className="text-sm text-neutral-500">الاسم</Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value, slug: editId ? form.slug : e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') })} className="h-9 text-sm" />
+                <Label className="text-sm text-neutral-500">الاسم <span className="text-red-500">*</span></Label>
+                <Input value={form.name} onChange={(e) => { setNameError(''); setForm({ ...form, name: e.target.value, slug: editId ? form.slug : e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }); }} className={`h-9 text-sm ${nameError ? 'border-red-400' : ''}`} placeholder="مثال: جديد" />
+                {nameError && <p className="text-xs text-red-500">{nameError}</p>}
               </div>
               <div className="space-y-1">
                 <Label className="text-sm text-neutral-500">الرابط المختصر</Label>
@@ -216,6 +235,8 @@ export default function Tags() {
                       onClick={() => setForm({ ...form, color: c })}
                       className={`h-7 w-7 rounded-full border-2 transition-all ${form.color === c ? 'border-neutral-900 scale-110' : 'border-transparent'}`}
                       style={{ backgroundColor: c }}
+                      aria-label={`لون ${c}`}
+                      title={c}
                     />
                   ))}
                 </div>

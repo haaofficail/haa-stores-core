@@ -1,3 +1,74 @@
+import { z } from 'zod';
+
+// ── Zod schema for raw process.env ──────────────────────────────────────────
+// Used to validate the environment at startup. Coercions happen in loadEnv().
+// Optional vars use .optional() so the schema can be validated standalone.
+
+export const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
+  DATABASE_URL: z.string().min(1),
+  DATABASE_READ_URL: z.string().optional(),
+  JWT_SECRET: z.string().min(16),
+  ADMIN_JWT_SECRET: z.string().min(16),
+  ENCRYPTION_KEY: z.string().min(32),
+  API_PORT: z.coerce.number().int().positive().default(3000),
+  API_BASE_URL: z.string().url().optional(),
+  MERCHANT_DASHBOARD_URL: z.string().url().optional(),
+  STOREFRONT_URL: z.string().url().optional(),
+  CORS_ORIGINS: z.string().optional(),
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'silent']).optional(),
+  REDIS_URL: z.string().optional(),
+  QUEUE_REDIS_URL: z.string().optional(),
+  RATE_LIMIT_STORE: z.enum(['memory', 'redis-atomic']).optional(),
+  WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
+  CDN_PUBLIC_BASE_URL: z.string().url().optional(),
+  SENTRY_DSN: z.string().optional(),
+  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),
+  STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
+  S3_ENDPOINT: z.string().optional(),
+  S3_REGION: z.string().optional(),
+  S3_BUCKET: z.string().optional(),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  S3_PUBLIC_BASE_URL: z.string().optional(),
+  PAYMENT_PROVIDER: z.string().default('fake'),
+  PAYMENT_MODE: z.enum(['fake', 'sandbox']).default('fake'),
+  PAYMENT_SANDBOX_SECRET_KEY: z.string().optional(),
+  PAYMENT_SANDBOX_PUBLIC_KEY: z.string().optional(),
+  PAYMENT_WEBHOOK_SECRET: z.string().optional(),
+  GEIDEA_MERCHANT_PUBLIC_KEY: z.string().optional(),
+  GEIDEA_API_PASSWORD: z.string().optional(),
+  GEIDEA_API_BASE_URL: z.string().optional(),
+  GEIDEA_CALLBACK_URL: z.string().optional(),
+  GEIDEA_RETURN_URL: z.string().optional(),
+  SHIPPING_PROVIDER: z.string().default('manual'),
+  SHIPPING_MODE: z.enum(['manual', 'mock', 'sandbox']).default('manual'),
+  OTO_PLATFORM_MODE: z.string().optional(),
+  OTO_API_BASE_URL: z.string().optional(),
+  OTO_MARKETPLACE_TOKEN: z.string().optional(),
+  OTO_API_KEY: z.string().optional(),
+  OTO_ACCESS_TOKEN: z.string().optional(),
+  OTO_SANDBOX_API_KEY: z.string().optional(),
+  OTO_WEBHOOK_SECRET: z.string().optional(),
+  OTO_WEBHOOK_PUBLIC_KEY: z.string().optional(),
+  OTO_WEBHOOK_AUTHORIZATION_KEY: z.string().optional(),
+  SMTP_HOST: z.string().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  OLLAMA_URL: z.string().default('http://localhost:11434'),
+  OLLAMA_MODEL: z.string().default('llama3'),
+  HOSTING_REGION: z.string().default('pending'),
+  DATA_RESIDENCY: z.string().default('pending'),
+  ALLOW_NOOP_QUEUE: z.enum(['true', 'false']).optional(),
+  ENABLE_SCHEDULER: z.enum(['true', 'false']).optional(),
+  MARKETPLACE_SYNC_INTERVAL_MS: z.coerce.number().optional(),
+  APP_VERSION: z.string().optional(),
+  COMMIT_SHA: z.string().optional(),
+  GIT_COMMIT: z.string().optional(),
+});
+
+export type RawEnv = z.infer<typeof envSchema>;
+
 export interface EnvConfig {
   NODE_ENV: string;
   DATABASE_URL: string;
@@ -82,6 +153,15 @@ function validateLocalEnv(name: string, value: string | undefined): void {
 }
 
 export function loadEnv(): EnvConfig {
+  // Zod schema parse — fast-fail with clear error messages for unknown/invalid vars.
+  const zodResult = envSchema.safeParse(process.env);
+  if (!zodResult.success) {
+    const formatted = zodResult.error.errors
+      .map((e) => `  ${e.path.join('.')}: ${e.message}`)
+      .join('\n');
+    throw new Error(`Environment validation failed:\n${formatted}`);
+  }
+
   const nodeEnv = optionalEnv('NODE_ENV', 'development');
   const isProduction = nodeEnv === 'production' || nodeEnv === 'staging';
 

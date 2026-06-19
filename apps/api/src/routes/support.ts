@@ -59,6 +59,13 @@ supportRouter.get('/support/tickets', requirePermission('support:read'), async (
   return c.json({ success: true, data: { tickets, count, limit, offset } });
 });
 
+supportRouter.post('/support/tickets', requirePermission('support:create'), zValidator('json', createTicketSchema), async (c) => {
+  const storeId = Number(c.req.param('storeId'));
+  const data = c.req.valid('json');
+  const ticket = await new SupportService().createTicket({ storeId, ...data });
+  return c.json({ success: true, data: ticket }, 201);
+});
+
 supportRouter.get('/support/tickets/:ticketId', requirePermission('support:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const ticketId = Number(c.req.param('ticketId'));

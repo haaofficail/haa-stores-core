@@ -991,6 +991,8 @@ export interface KbArticleItem {
 }
 
 export const supportApi = {
+  createTicket: (storeId: number, data: { name: string; email?: string; phone?: string; subject: string; message: string }) =>
+    request<SupportTicketItem>(`/merchant/${storeId}/support/tickets`, { method: 'POST', body: JSON.stringify(data) }),
   listTickets: (storeId: number, status?: string) =>
     request<{ tickets: SupportTicketItem[]; count: number; limit: number; offset: number }>(
       `/merchant/${storeId}/support/tickets${status ? `?status=${status}` : ''}`,

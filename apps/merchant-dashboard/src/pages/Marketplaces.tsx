@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   RefreshCw, ExternalLink, Unlink, ShoppingCart, TrendingUp, Globe,
   CheckCircle2, XCircle, Clock, ArrowLeft, Store, Loader2,
-  HelpCircle, Package, Zap, Wifi, WifiOff, RotateCcw, Eye,
+  HelpCircle, Package, Zap, Wifi, WifiOff, RotateCcw, Eye, AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import MarketplaceGuideModal from '@/components/modals/MarketplaceGuideModal';
@@ -75,6 +75,7 @@ export default function MarketplacesPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
@@ -84,9 +85,10 @@ export default function MarketplacesPage() {
   const load = useCallback(() => {
     if (!storeId) { setLoading(false); return; }
     setLoading(true);
+    setFetchError(false);
     marketplaceApi.hub(storeId)
       .then(setData)
-      .catch(() => toast.error(t('marketplaces.loadError', 'حدث خطأ في تحميل القنوات')))
+      .catch(() => { setFetchError(true); toast.error(t('marketplaces.loadError', 'حدث خطأ في تحميل القنوات')); })
       .finally(() => setLoading(false));
   }, [storeId, t]);
 
@@ -127,6 +129,19 @@ export default function MarketplacesPage() {
     } catch { toast.error('فشلت المزامنة'); }
     finally { setSyncingProvider(null); }
   }, [storeId, load, syncingProvider]);
+
+  if (fetchError) {
+    return (
+      <div className="p-12 text-center max-w-7xl mx-auto">
+        <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4"><AlertTriangle className="h-8 w-8 text-red-400" /></div>
+        <p className="text-sm font-medium text-neutral-700 mb-1">فشل تحميل قنوات البيع</p>
+        <p className="text-sm text-neutral-500 mb-4">حدث خطأ أثناء الاتصال بالخادم.</p>
+        <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={load}>
+          <RotateCcw className="h-4 w-4" />إعادة المحاولة
+        </Button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

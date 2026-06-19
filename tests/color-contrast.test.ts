@@ -41,7 +41,7 @@ function contrastRatio(hex1: string, hex2: string): number {
 
 describe('P2-#7: WCAG 2.1 color contrast', () => {
   // Brand palette (current values).
-  // --brand-primary:  #56a1e3 (owner-approved, decorative + AA-large only)
+  // --brand-primary:  #5c9cd5 (owner-approved, decorative + AA-large only)
   // --brand-primary-text: #2a6fb8 (AA-compliant, for text/borders)
   // --surface-1:      #ffffff (white)
   // --text-primary:   #111827 (very dark gray)
@@ -53,21 +53,21 @@ describe('P2-#7: WCAG 2.1 color contrast', () => {
 
   it('brand primary on white: passes AA normal text', () => {
     // #2a6fb8 (--brand-primary-text) on white = 5.17:1 — passes AA normal text.
-    // Owner override (2026-06-18): --brand-primary is now #56a1e3 (decorative).
+    // Owner override (2026-06-18): --brand-primary is now #5c9cd5 (decorative).
     // For text, always use --brand-primary-text (#2a6fb8) which is AA-compliant.
     const ratio = contrastRatio('#2a6fb8', '#ffffff');
     expect(ratio).toBeGreaterThanOrEqual(4.5);
   });
 
   it('brand primary SOFT (light variant) on white: documented limitation', () => {
-    // #56a1e3 is the soft variant (decorative only).
+    // #5c9cd5 is the soft variant (decorative only).
     // Computed ratio: 2.76:1 on white — does NOT pass WCAG 2.1 SC 1.4.11
     // (3:1 minimum for non-text). Documented limitation per owner
     // decision 2026-06-18 (brand identity prioritized over strict AA).
     //
     // For any UI element that needs to be perceivable (icons, borders,
     // focus rings), use --brand-primary-text (#2a6fb8) instead.
-    const ratio = contrastRatio('#56a1e3', '#ffffff');
+    const ratio = contrastRatio('#5c9cd5', '#ffffff');
     expect(ratio).toBeGreaterThan(2);
     expect(ratio).toBeLessThan(3);
   });
@@ -136,6 +136,6 @@ describe('P2-#7: brand color tokens are documented in index.css', () => {
     expect(src).toMatch(/--color-warning:\s*#f59e0b/);
     // New contrast-aware token (kept for future use as darker
     // alternative; currently brand-primary is already contrast-passing).
-    expect(src).toMatch(/--brand-primary-soft:\s*#56a1e3/);
+    expect(src).toMatch(/--brand-primary-soft:\s*#5c9cd5/);
   });
 });

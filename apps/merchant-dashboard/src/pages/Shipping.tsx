@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Plus, Edit, Truck, Package, MapPin, DollarSign, Info,
-  RotateCcw, Search, CheckCircle2, XCircle, FileText, Undo2,
+  RotateCcw, Search, CheckCircle2, XCircle, FileText, Undo2, AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
@@ -38,24 +38,26 @@ function MethodsTab({ storeId }: { storeId: number }) {
   const { t } = useTranslation();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [dialog, setDialog] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', type: 'manual', estimatedDeliveryDays: '', isActive: true, pickupLocationId: '' });
   const [saving, setSaving] = useState(false);
   const [pickupLocations, setPickupLocations] = useState<any[]>([]);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
+    setFetchError(false);
     Promise.all([
       shippingApi.methods.list(storeId),
       settingsApi.listPickupLocations(storeId).catch(() => []),
     ]).then(([methods, pickups]) => {
       setItems(methods);
       setPickupLocations(pickups);
-    }).catch(() => toast.error(t('common.error'))).finally(() => setLoading(false));
-  };
+    }).catch(() => { setFetchError(true); toast.error(t('common.error')); }).finally(() => setLoading(false));
+  }, [storeId, t]);
 
-  useEffect(() => { load(); }, [storeId]);
+  useEffect(() => { load(); }, [load]);
 
   const openCreate = () => { setEditId(null); setForm({ name: '', type: 'manual', estimatedDeliveryDays: '', isActive: true, pickupLocationId: '' }); setDialog(true); };
   const openEdit = (m: any) => {
@@ -106,7 +108,24 @@ function MethodsTab({ storeId }: { storeId: number }) {
       </div>
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         {loading ? <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
-        : items.length === 0 ? <div className="p-12 text-center"><div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4"><Truck className="h-8 w-8 text-neutral-400" /></div><p className="text-sm text-neutral-500">{t('shipping.noMethods')}</p><p className="text-xs text-neutral-400 mt-1">{t('shipping.noMethodsHint')}</p></div>
+        : fetchError ? (
+          <div className="p-12 text-center">
+            <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4"><AlertTriangle className="h-8 w-8 text-red-400" /></div>
+            <p className="text-sm font-medium text-neutral-700 mb-1">فشل تحميل طرق الشحن</p>
+            <p className="text-sm text-neutral-500 mb-4">حدث خطأ أثناء الاتصال بالخادم.</p>
+            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={load}><RotateCcw className="h-4 w-4" />إعادة المحاولة</Button>
+          </div>
+        )
+        : items.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4"><Truck className="h-8 w-8 text-neutral-400" /></div>
+            <p className="text-sm text-neutral-500">{t('shipping.noMethods')}</p>
+            <p className="text-xs text-neutral-400 mt-1">{t('shipping.noMethodsHint')}</p>
+            <PermissionGate permission="shipping:manage">
+              <Button size="sm" className="h-9 text-sm mt-4" onClick={openCreate}><Plus className="h-4 w-4 me-1.5" />{t('shipping.createMethod')}</Button>
+            </PermissionGate>
+          </div>
+        )
         : <Table>
             <TableHeader><TableRow className="border-neutral-100 hover:bg-transparent">
               <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('shipping.methodName')}</TableHead>
@@ -188,13 +207,18 @@ function ZonesTab({ storeId }: { storeId: number }) {
   const { t } = useTranslation();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [dialog, setDialog] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', cities: '', isActive: true });
   const [saving, setSaving] = useState(false);
 
-  const load = () => { setLoading(true); shippingApi.zones.list(storeId).then(setItems).catch(() => toast.error(t('common.error'))).finally(() => setLoading(false)); };
-  useEffect(() => { load(); }, [storeId]);
+  const load = useCallback(() => {
+    setLoading(true);
+    setFetchError(false);
+    shippingApi.zones.list(storeId).then(setItems).catch(() => { setFetchError(true); toast.error(t('common.error')); }).finally(() => setLoading(false));
+  }, [storeId, t]);
+  useEffect(() => { load(); }, [load]);
 
   const openCreate = () => { setEditId(null); setForm({ name: '', cities: '', isActive: true }); setDialog(true); };
   const openEdit = (z: any) => { setEditId(z.id); setForm({ name: z.name ?? '', cities: (z.cities ?? []).join(', '), isActive: z.isActive ?? true }); setDialog(true); };
@@ -227,7 +251,24 @@ function ZonesTab({ storeId }: { storeId: number }) {
       </div>
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         {loading ? <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
-        : items.length === 0 ? <div className="p-12 text-center"><div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4"><MapPin className="h-8 w-8 text-neutral-400" /></div><p className="text-sm text-neutral-500">{t('shipping.noZones')}</p><p className="text-xs text-neutral-400 mt-1">{t('shipping.noZonesHint')}</p></div>
+        : fetchError ? (
+          <div className="p-12 text-center">
+            <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4"><AlertTriangle className="h-8 w-8 text-red-400" /></div>
+            <p className="text-sm font-medium text-neutral-700 mb-1">فشل تحميل مناطق الشحن</p>
+            <p className="text-sm text-neutral-500 mb-4">حدث خطأ أثناء الاتصال بالخادم.</p>
+            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={load}><RotateCcw className="h-4 w-4" />إعادة المحاولة</Button>
+          </div>
+        )
+        : items.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4"><MapPin className="h-8 w-8 text-neutral-400" /></div>
+            <p className="text-sm text-neutral-500">{t('shipping.noZones')}</p>
+            <p className="text-xs text-neutral-400 mt-1">{t('shipping.noZonesHint')}</p>
+            <PermissionGate permission="shipping:manage">
+              <Button size="sm" className="h-9 text-sm mt-4" onClick={openCreate}><Plus className="h-4 w-4 me-1.5" />{t('shipping.createZone')}</Button>
+            </PermissionGate>
+          </div>
+        )
         : <Table>
             <TableHeader><TableRow className="border-neutral-100 hover:bg-transparent">
               <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('shipping.zoneName')}</TableHead>
@@ -276,20 +317,22 @@ function RatesTab({ storeId }: { storeId: number }) {
   const { t } = useTranslation();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [methods, setMethods] = useState<any[]>([]);
   const [zones, setZones] = useState<any[]>([]);
   const [dialog, setDialog] = useState(false);
   const [form, setForm] = useState({ shippingMethodId: '', shippingZoneId: '', baseRate: '', perKgRate: '', freeAboveAmount: '', estimatedDaysMin: '', estimatedDaysMax: '' });
   const [saving, setSaving] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
+    setFetchError(false);
     Promise.all([shippingApi.rates.list(storeId), shippingApi.methods.list(storeId), shippingApi.zones.list(storeId)])
       .then(([r, m, z]) => { setItems(r); setMethods(m); setZones(z); })
-      .catch(() => toast.error(t('common.error')))
+      .catch(() => { setFetchError(true); toast.error(t('common.error')); })
       .finally(() => setLoading(false));
-  };
-  useEffect(() => { load(); }, [storeId]);
+  }, [storeId, t]);
+  useEffect(() => { load(); }, [load]);
 
   const save = async () => {
     if (!form.shippingMethodId || !form.shippingZoneId) { toast.error(t('shipping.err_rate_method_zone')); return; }
@@ -320,6 +363,14 @@ function RatesTab({ storeId }: { storeId: number }) {
       </div>
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         {loading ? <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
+        : fetchError ? (
+          <div className="p-12 text-center">
+            <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4"><AlertTriangle className="h-8 w-8 text-red-400" /></div>
+            <p className="text-sm font-medium text-neutral-700 mb-1">فشل تحميل أسعار الشحن</p>
+            <p className="text-sm text-neutral-500 mb-4">حدث خطأ أثناء الاتصال بالخادم.</p>
+            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={load}><RotateCcw className="h-4 w-4" />إعادة المحاولة</Button>
+          </div>
+        )
         : items.length === 0 ? <div className="p-12 text-center"><div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4"><DollarSign className="h-8 w-8 text-neutral-400" /></div><p className="text-sm text-neutral-500">{t('shipping.noRates')}</p><p className="text-xs text-neutral-400 mt-1">{t('shipping.noRatesHint')}</p></div>
         : <Table>
             <TableHeader><TableRow className="border-neutral-100 hover:bg-transparent">
@@ -381,6 +432,7 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
   const { t } = useTranslation();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [trackDialog, setTrackDialog] = useState(false);
   const [trackShipmentId, setTrackShipmentId] = useState<number | null>(null);
   const [trackForm, setTrackForm] = useState({ trackingNumber: '', trackingUrl: '', carrierName: '' });
@@ -394,13 +446,14 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
 
   const load = useCallback(() => {
     setLoading(true);
+    setFetchError(false);
     shippingApi.shipments.list(storeId, {
       status: statusFilter || undefined,
       noTracking: noTrackingOnly || undefined,
       city: citySearch || undefined,
       dateFrom: dateFrom || undefined,
       dateTo: dateTo || undefined,
-    }).then(setItems).catch(() => toast.error(t('common.error'))).finally(() => setLoading(false));
+    }).then(setItems).catch(() => { setFetchError(true); toast.error(t('common.error')); }).finally(() => setLoading(false));
   }, [storeId, statusFilter, noTrackingOnly, citySearch, dateFrom, dateTo, t]);
 
   useEffect(() => { load(); }, [load]);
@@ -523,6 +576,14 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
 
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         {loading ? <div className="p-6 space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
+        : fetchError ? (
+          <div className="p-12 text-center">
+            <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4"><AlertTriangle className="h-8 w-8 text-red-400" /></div>
+            <p className="text-sm font-medium text-neutral-700 mb-1">فشل تحميل الشحنات</p>
+            <p className="text-sm text-neutral-500 mb-4">حدث خطأ أثناء الاتصال بالخادم.</p>
+            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={load}><RotateCcw className="h-4 w-4" />إعادة المحاولة</Button>
+          </div>
+        )
         : items.length === 0 ? <div className="p-12 text-center"><div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4"><Truck className="h-8 w-8 text-neutral-400" /></div><p className="text-sm text-neutral-500">{hasActiveFilters ? t('shipping.noMatch') : t('shipping.noShipments')}</p>{hasActiveFilters && <Button variant="outline" size="sm" className="h-8 text-sm mt-4" onClick={resetFilters}>{t('orders.resetFilters')}</Button>}</div>
         : <Table>
             <TableHeader><TableRow className="border-neutral-100 hover:bg-transparent">

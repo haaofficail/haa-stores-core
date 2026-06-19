@@ -318,6 +318,7 @@ export default function Products() {
 
   const archive = async (id: number) => {
     if (!storeId) return;
+    if (!window.confirm(t('products.archiveConfirm', 'هل أنت متأكد من أرشفة هذا المنتج؟ لن يظهر في المتجر.'))) return;
     try {
       await productsApi.archive(storeId, id);
       toast.success(t('products.archivedMsg'));

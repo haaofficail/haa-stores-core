@@ -23,7 +23,7 @@ describe('isolation', () => {
     it('returns a complete config', () => {
       const config = getDefaultThemeConfig();
       expect(config.preset).toBe('minimal');
-      expect(config.colors.primary).toBe('#56a1e3');
+      expect(config.colors.primary).toBe('#5c9cd5');
       expect(config.font.family).toBe('IBM Plex Sans Arabic');
       expect(config.layout.productCardColumns).toBe(4);
     });
@@ -102,8 +102,8 @@ describe('isolation', () => {
 
     it('falls back safely for invalid primary hex', () => {
       applyTheme({ ...MOCK_CONFIG, colors: { ...MOCK_CONFIG.colors, primary: 'not-a-color' } });
-      expect(document.documentElement.style.getPropertyValue('--theme-primary')).toBe('#56a1e3');
-      expect(document.documentElement.style.getPropertyValue('--color-primary-500')).toBe('#56a1e3');
+      expect(document.documentElement.style.getPropertyValue('--theme-primary')).toBe('#5c9cd5');
+      expect(document.documentElement.style.getPropertyValue('--color-primary-500')).toBe('#5c9cd5');
       expect(document.documentElement.style.getPropertyValue('--color-primary-600')).toBe('#4c8ec8');
     });
 
@@ -111,7 +111,7 @@ describe('isolation', () => {
       // Drop the primary key explicitly so ESLint sees it as used.
       const colors = { ...MOCK_CONFIG.colors, primary: undefined };
       expect(() => applyTheme({ ...MOCK_CONFIG, colors } as any)).not.toThrow();
-      expect(document.documentElement.style.getPropertyValue('--theme-primary')).toBe('#56a1e3');
+      expect(document.documentElement.style.getPropertyValue('--theme-primary')).toBe('#5c9cd5');
     });
 
     it('adds font link element', () => {

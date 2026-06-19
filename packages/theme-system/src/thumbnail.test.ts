@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { generateThemeThumbnail } from './thumbnail';
 
-const COLORS = { primary: '#58a1e2', surface1: '#ffffff', surface2: '#f8f9fa', surface3: '#f1f3f5', textPrimary: '#1a1a1a', textSecondary: '#6b7280', textTertiary: '#9ca3af', border: '#e5e7eb', borderHover: '#d1d5db', success: '#10b981', warning: '#f59e0b', error: '#ef4444' };
+const COLORS = { primary: '#5c9cd5', surface1: '#ffffff', surface2: '#f8f9fa', surface3: '#f1f3f5', textPrimary: '#1a1a1a', textSecondary: '#6b7280', textTertiary: '#9ca3af', border: '#e5e7eb', borderHover: '#d1d5db', success: '#10b981', warning: '#f59e0b', error: '#ef4444' };
 
 describe('generateThemeThumbnail', () => {
   it('returns a data URI', () => {
@@ -17,7 +17,7 @@ describe('generateThemeThumbnail', () => {
   it('contains primary color', () => {
     const uri = generateThemeThumbnail(COLORS);
     const decoded = atob(uri.split(',')[1]);
-    expect(decoded).toContain('#58a1e2');
+    expect(decoded).toContain('#5c9cd5');
   });
 
   it('contains surface1 color', () => {

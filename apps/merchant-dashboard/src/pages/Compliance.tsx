@@ -206,7 +206,6 @@ export default function CompliancePage() {
   const readinessItems = useMemo(() => {
     const items = [
       { key: 'businessProfile', labelKey: 'compliance.readinessChecklist.businessProfile', done: !!(form.businessType && form.legalName.trim() && form.city.trim() && form.address.trim()) },
-      { key: 'contactInfo', labelKey: 'compliance.readinessChecklist.contactInfo', done: true },
       { key: 'documents', labelKey: 'compliance.readinessChecklist.documents', done: documents.length > 0 },
       { key: 'bankAccount', labelKey: 'compliance.readinessChecklist.bankAccount', done: !!(bankAccount?.iban || (bankForm.iban && validateSaudiIban(bankForm.iban))) },
       { key: 'vatNumber', labelKey: 'compliance.readinessChecklist.vatNumber', done: !!form.vatNumber.trim() },
@@ -386,7 +385,7 @@ export default function CompliancePage() {
               </div>
             </div>
             <div className="text-left">
-              <p className="text-3xl font-bold text-neutral-900">{status?.completionPercentage ?? 0}%</p>
+              <p className="text-3xl font-bold text-neutral-900">{status?.completionPercent ?? 0}%</p>
               <p className="text-xs text-neutral-400 mt-1">{t('compliance.statusCard.completionPercentage')}</p>
               {status?.updatedAt && (
                 <p className="text-xs text-neutral-400 mt-0.5">
@@ -400,7 +399,7 @@ export default function CompliancePage() {
             <div className="w-full bg-white/60 rounded-full h-3">
               <div
                 className="h-3 rounded-full bg-green-500 transition-all duration-500"
-                style={{ width: `${status?.completionPercentage ?? 0}%` }}
+                style={{ width: `${status?.completionPercent ?? 0}%` }}
               />
             </div>
           </div>

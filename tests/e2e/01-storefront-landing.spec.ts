@@ -17,9 +17,9 @@ test.describe('Storefront — landing page', () => {
     const hero = page.locator('h1').first();
     await expect(hero).toBeVisible();
 
-    // Brand color is #56a1e3 in <meta theme-color>
+    // Brand color is #5c9cd5 in <meta theme-color>
     const themeColor = await page.locator('meta[name="theme-color"]').getAttribute('content');
-    expect(themeColor).toBe('#56a1e3');
+    expect(themeColor).toBe('#5c9cd5');
 
     // RTL direction
     const html = page.locator('html');

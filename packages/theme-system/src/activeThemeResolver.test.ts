@@ -12,7 +12,7 @@ describe('activeThemeResolver', () => {
 
     expect(config.preset).toBe('minimal');
     expect(config.themeKey).toBe('minimal');
-    expect(config.colors.primary).toBe('#56a1e3');
+    expect(config.colors.primary).toBe('#5c9cd5');
   });
 
   it('uses themeKey as the canonical selector while preserving preset compatibility', () => {

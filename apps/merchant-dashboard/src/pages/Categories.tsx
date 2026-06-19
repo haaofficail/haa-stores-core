@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Tags, ChevronDown, ChevronLeft, GripVertical, Trash2, Pencil } from 'lucide-react';
+import { Plus, Tags, ChevronDown, ChevronLeft, GripVertical, Trash2, Pencil, AlertTriangle, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
@@ -111,6 +111,8 @@ export default function Categories() {
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -119,13 +121,14 @@ export default function Categories() {
   const load = useCallback(() => {
     if (!storeId) { setLoading(false); return; }
     setLoading(true);
+    setFetchError(false);
     Promise.all([
       categoriesApi.getTree(storeId),
       categoriesApi.list(storeId),
     ]).then(([treeData, flatData]) => {
       setTree(treeData);
       setFlatList(flatData);
-    }).catch(() => toast.error(t('common.error'))).finally(() => setLoading(false));
+    }).catch(() => { setFetchError(true); toast.error(t('common.error')); }).finally(() => setLoading(false));
   }, [storeId, t]);
 
   useEffect(() => { load(); }, [load]);
@@ -159,6 +162,11 @@ export default function Categories() {
 
   const save = async () => {
     if (!storeId) return;
+    const errs: Record<string, string> = {};
+    if (!form.name.trim()) errs.name = t('categories.nameRequired', 'اسم التصنيف مطلوب');
+    if (!form.slug.trim()) errs.slug = 'الرابط المختصر مطلوب';
+    setFormErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     setSaving(true);
     try {
       if (editId) {
@@ -238,12 +246,25 @@ export default function Categories() {
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         {loading ? (
           <div className="p-6 space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
+        ) : fetchError ? (
+          <div className="p-12 text-center">
+            <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4"><AlertTriangle className="h-8 w-8 text-red-400" /></div>
+            <p className="text-sm font-medium text-neutral-700 mb-1">فشل تحميل التصنيفات</p>
+            <p className="text-sm text-neutral-500 mb-4">حدث خطأ أثناء الاتصال بالخادم.</p>
+            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={load}>
+              <RotateCcw className="h-4 w-4" /> إعادة المحاولة
+            </Button>
+          </div>
         ) : tree.length === 0 ? (
           <div className="p-12 text-center">
             <div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4">
               <Tags className="h-8 w-8 text-neutral-400" />
             </div>
-            <p className="text-sm text-neutral-500">{t('categories.noCategories')}</p>
+            <p className="text-sm font-medium text-neutral-700 mb-1">{t('categories.noCategories', 'لا توجد تصنيفات بعد')}</p>
+            <p className="text-sm text-neutral-500 mb-4">أضف أول تصنيف لتنظيم منتجاتك.</p>
+            <PermissionGate permission="categories:manage">
+              <Button size="sm" className="h-9 text-sm" onClick={openCreate}><Plus className="h-4 w-4 me-1.5" />{t('categories.create', 'إضافة تصنيف')}</Button>
+            </PermissionGate>
           </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -260,12 +281,14 @@ export default function Categories() {
           <div className="space-y-4 max-h-[70vh] overflow-y-auto">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label className="text-sm text-neutral-500">{t('categories.name')}</Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value, slug: editId ? form.slug : e.target.value.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-').replace(/^-|-$/g, '') })} className="h-9 text-sm" />
+                <Label className="text-sm text-neutral-500">{t('categories.name')} <span className="text-red-500">*</span></Label>
+                <Input value={form.name} onChange={(e) => { setFormErrors(p => ({ ...p, name: '' })); setForm({ ...form, name: e.target.value, slug: editId ? form.slug : e.target.value.toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '-').replace(/^-|-$/g, '') }); }} className={`h-9 text-sm ${formErrors.name ? 'border-red-400' : ''}`} placeholder="\u0645\u062B\u0627\u0644: \u0645\u0644\u0627\u0628\u0633" />
+                {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
               </div>
               <div className="space-y-1">
-                <Label className="text-sm text-neutral-500">{t('categories.slug')}</Label>
-                <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className="h-9 text-sm" />
+                <Label className="text-sm text-neutral-500">{t('categories.slug')} <span className="text-red-500">*</span></Label>
+                <Input value={form.slug} onChange={(e) => { setFormErrors(p => ({ ...p, slug: '' })); setForm({ ...form, slug: e.target.value }); }} className={`h-9 text-sm ${formErrors.slug ? 'border-red-400' : ''}`} placeholder="malabis" />
+                {formErrors.slug && <p className="text-xs text-red-500">{formErrors.slug}</p>}
               </div>
             </div>
             <div className="space-y-1">

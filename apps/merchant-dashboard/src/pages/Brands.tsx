@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Pencil, Trash2, Building2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Building2, AlertTriangle, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
@@ -75,13 +75,16 @@ export default function Brands() {
   const [form, setForm] = useState({ name: '', slug: '', logo: '', description: '', website: '', sortOrder: 0, isActive: true });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const load = useCallback(() => {
     if (!storeId) { setLoading(false); return; }
     setLoading(true);
-    brandsApi.list(storeId).then(setBrands).catch(() => toast.error(t('common.error'))).finally(() => setLoading(false));
+    setFetchError(false);
+    brandsApi.list(storeId).then(data => { setBrands(data); }).catch(() => { setFetchError(true); toast.error(t('common.error')); }).finally(() => setLoading(false));
   }, [storeId, t]);
 
   useEffect(() => { load(); }, [load]);
@@ -107,8 +110,18 @@ export default function Brands() {
     setDeleteDialogOpen(true);
   };
 
+  const validate = () => {
+    const errs: Record<string, string> = {};
+    if (!form.name.trim()) errs.name = 'اسم الماركة مطلوب';
+    if (!form.slug.trim()) errs.slug = 'الرابط المختصر مطلوب';
+    return errs;
+  };
+
   const save = async () => {
     if (!storeId) return;
+    const errs = validate();
+    setFormErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     setSaving(true);
     try {
       if (editId) {
@@ -161,12 +174,25 @@ export default function Brands() {
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         {loading ? (
           <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
+        ) : fetchError ? (
+          <div className="p-12 text-center">
+            <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4"><AlertTriangle className="h-8 w-8 text-red-400" /></div>
+            <p className="text-sm font-medium text-neutral-700 mb-1">فشل تحميل الماركات</p>
+            <p className="text-sm text-neutral-500 mb-4">حدث خطأ أثناء الاتصال بالخادم.</p>
+            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={load}>
+              <RotateCcw className="h-4 w-4" /> إعادة المحاولة
+            </Button>
+          </div>
         ) : brands.length === 0 ? (
           <div className="p-12 text-center">
             <div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4">
               <Building2 className="h-8 w-8 text-neutral-400" />
             </div>
-            <p className="text-sm text-neutral-500">لا توجد ماركات</p>
+            <p className="text-sm font-medium text-neutral-700 mb-1">لا توجد ماركات بعد</p>
+            <p className="text-sm text-neutral-500 mb-4">أضف أول ماركة لتظهر هنا.</p>
+            <PermissionGate permission="brands:manage">
+              <Button size="sm" className="h-9 text-sm" onClick={openCreate}><Plus className="h-4 w-4 me-1.5" />إضافة ماركة</Button>
+            </PermissionGate>
           </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -200,12 +226,14 @@ export default function Brands() {
           <div className="space-y-4 max-h-[70vh] overflow-y-auto">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label className="text-sm text-neutral-500">الاسم</Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value, slug: editId ? form.slug : e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') })} className="h-9 text-sm" />
+                <Label className="text-sm text-neutral-500">الاسم <span className="text-red-500">*</span></Label>
+                <Input value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value, slug: editId ? form.slug : e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }); setFormErrors(p => ({ ...p, name: '' })); }} className={`h-9 text-sm ${formErrors.name ? 'border-red-400' : ''}`} placeholder="مثال: Apple" />
+                {formErrors.name && <p className="text-xs text-red-500">{formErrors.name}</p>}
               </div>
               <div className="space-y-1">
-                <Label className="text-sm text-neutral-500">الرابط المختصر</Label>
-                <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className="h-9 text-sm" />
+                <Label className="text-sm text-neutral-500">الرابط المختصر <span className="text-red-500">*</span></Label>
+                <Input value={form.slug} onChange={(e) => { setForm({ ...form, slug: e.target.value }); setFormErrors(p => ({ ...p, slug: '' })); }} className={`h-9 text-sm ${formErrors.slug ? 'border-red-400' : ''}`} placeholder="apple" />
+                {formErrors.slug && <p className="text-xs text-red-500">{formErrors.slug}</p>}
               </div>
             </div>
             <div className="space-y-1">

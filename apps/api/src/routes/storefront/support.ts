@@ -213,30 +213,43 @@ supportRouter.post('/:slug/events', zValidator('json', eventPayloadSchema), asyn
   if (error) return error;
   const body = c.req.valid('json');
   const db = createDbClient();
+  const baseValues = {
+    storeId: store.id,
+    eventType: body.eventType,
+    sessionId: body.sessionId ?? 'unknown',
+    productId: body.productId ?? null,
+    customerId: body.customerId ?? null,
+    cartId: body.cartId ?? null,
+    orderId: body.orderId ?? null,
+    path: body.path ?? null,
+    referrer: body.referrer ?? null,
+    deviceType: body.deviceType ?? null,
+    utmSource: body.utmSource ?? null,
+    utmMedium: body.utmMedium ?? null,
+    utmCampaign: body.utmCampaign ?? null,
+    utmContent: body.utmContent ?? null,
+    utmTerm: body.utmTerm ?? null,
+    metadata: body.metadata ?? null,
+  };
   try {
-    await db.insert(s.marketingEvents).values({
-      storeId: store.id,
-      eventType: body.eventType,
-      sessionId: body.sessionId ?? 'unknown',
-      productId: body.productId ?? null,
-      customerId: body.customerId ?? null,
-      cartId: body.cartId ?? null,
-      orderId: body.orderId ?? null,
-      path: body.path ?? null,
-      referrer: body.referrer ?? null,
-      deviceType: body.deviceType ?? null,
-      utmSource: body.utmSource ?? null,
-      utmMedium: body.utmMedium ?? null,
-      utmCampaign: body.utmCampaign ?? null,
-      utmContent: body.utmContent ?? null,
-      utmTerm: body.utmTerm ?? null,
-      metadata: body.metadata ?? null,
-    });
-  } catch (err) {
-    // Tracking failures must not break user experience — log and continue.
-    // Root cause: FK violation when productId/customerId/orderId don't exist
-    // in the local/test DB. ISSUE-0006 RCA.
-    console.error('[events] marketing_events insert failed (ISSUE-0006):', err);
+    await db.insert(s.marketingEvents).values(baseValues);
+  } catch (err: any) {
+    if (err?.code === '23503') {
+      // FK violation (ISSUE-0006): referenced product/customer/order doesn't exist.
+      // Retry with FK fields nulled — the event is still recorded for session analytics.
+      try {
+        await db.insert(s.marketingEvents).values({
+          ...baseValues,
+          productId: null,
+          customerId: null,
+          orderId: null,
+        });
+      } catch {
+        // Tracking never breaks user experience — silent on final failure.
+      }
+    } else {
+      console.error('[events] marketing_events insert failed:', err);
+    }
   }
   return c.json({ success: true });
 });

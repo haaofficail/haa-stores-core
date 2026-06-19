@@ -5,6 +5,7 @@ import { EmployeeFormDialog } from '@/components/employees/EmployeeFormDialog';
 import {
   Plus, Pencil, UserX, Shield, ShieldAlert, Clock, Loader2, AlertTriangle, RefreshCw, Users,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { employeesApi } from '@/lib/api';
 import type { Employee } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -114,12 +115,12 @@ export default function EmployeesPage() {
     setDialogOpen(true);
   }
 
-  async function handleSave(data: { name: string; email: string; role: string; permissions: string[]; isActive: boolean }) {
+  async function handleSave(data: { name: string; email: string; role: string; permissions: string[]; isActive: boolean; password?: string }) {
     if (dialogMode === 'create') {
       await employeesApi.invite(storeId, {
         name: data.name,
         email: data.email,
-        password: Math.random().toString(36).slice(2, 10),
+        password: data.password ?? '',
         role: data.role,
       });
     } else if (editTarget) {
@@ -145,8 +146,9 @@ export default function EmployeesPage() {
     try {
       await employeesApi.remove(storeId, emp.id);
       await fetchEmployees();
+      toast.success('تم حذف الموظف بنجاح');
     } catch (err: any) {
-      alert(err?.message || 'فشل حذف الموظف');
+      toast.error(err?.message || 'فشل حذف الموظف');
     } finally {
       setDeleting(null);
     }
@@ -306,6 +308,7 @@ export default function EmployeesPage() {
         onClose={handleDialogClose}
         onSave={handleSave}
         initialData={editTarget ? {
+          id: editTarget.id,
           name: editTarget.name,
           email: editTarget.email,
           role: editTarget.role,

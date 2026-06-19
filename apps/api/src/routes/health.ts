@@ -52,9 +52,8 @@ healthRouter.get('/', async (c) => {
       reason: q.reason,
     },
     environment: process.env.NODE_ENV || 'development',
-    // TASK-0038 G8: hosting region + data residency surface.
-    // Operators and owner can verify the deployment region from
-    // this endpoint. 'pending' means owner hasn't confirmed yet.
+    version: process.env.npm_package_version || process.env.APP_VERSION || '0.1.0',
+    commit: process.env.COMMIT_SHA || process.env.GIT_COMMIT || 'unknown',
     hostingRegion: process.env.HOSTING_REGION || 'pending',
     dataResidency: process.env.DATA_RESIDENCY || 'pending',
     timestamp: new Date().toISOString(),

@@ -11,7 +11,7 @@ test.describe('API — core endpoints', () => {
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
-    expect(body.data.primaryColor).toBe('#56a1e3');
+    expect(body.data.primaryColor).toBe('#5c9cd5');
   });
 
   test('/api/health returns OK', async ({ request }) => {

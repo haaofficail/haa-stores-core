@@ -206,8 +206,73 @@ function stopScheduler(): void {
 
 startScheduler();
 
+// ── BullMQ Worker (consumer side) ───────────────────────────────────────────
+//
+// When QUEUE_REDIS_URL is configured, starts a BullMQ Worker that processes
+// jobs enqueued via getQueue().enqueue(). This is the consumer counterpart of
+// the producer in services/queue.ts.
+//
+// The setInterval scheduler above remains the primary scheduling mechanism.
+// This worker handles on-demand jobs (e.g. async report exports, webhook
+// retries triggered by API events) enqueued via the queue service.
+
+// Lookup table: job name → handler. Must mirror JOB_NAMES entries.
+const jobHandlers: Partial<Record<JobName, () => Promise<void>>> = {};
+for (const job of scheduledJobs) {
+  jobHandlers[job.name] = job.handler;
+}
+
+let bullWorker: { close: () => Promise<void>; on: (event: string, cb: (...args: unknown[]) => void) => void } | null = null;
+
+async function startBullMQWorker(): Promise<void> {
+  const redisUrl = process.env.QUEUE_REDIS_URL;
+  if (!redisUrl) return;
+
+  try {
+     
+    const { Worker } = require('bullmq') as any;
+
+    bullWorker = new Worker(
+      'haa-default',
+      async (job: { name: string; data: Record<string, unknown> }) => {
+        const handler = jobHandlers[job.name as JobName];
+        if (!handler) {
+          console.warn(`[bullmq-worker] no handler for job: ${job.name}`);
+          return;
+        }
+        const start = Date.now();
+        try {
+          await handler();
+          console.log(`[bullmq-worker] completed ${job.name} in ${Date.now() - start}ms`);
+        } catch (err) {
+          console.error(`[bullmq-worker] failed ${job.name}:`, err);
+          throw err; // re-throw so BullMQ marks the job as failed (enables retries)
+        }
+      },
+      {
+        connection: { url: redisUrl },
+        concurrency: Number(process.env.WORKER_CONCURRENCY || 5),
+      },
+    );
+
+    bullWorker!.on('error', (err: unknown) => {
+      console.error('[bullmq-worker] worker error:', (err as Error).message);
+    });
+
+    console.log('[bullmq-worker] started — processing queue: haa-default');
+  } catch (err) {
+    console.error('[bullmq-worker] failed to start; queue jobs will not be processed:', (err as Error).message);
+  }
+}
+
+startBullMQWorker();
+
 async function shutdown(): Promise<void> {
   stopScheduler();
+  if (bullWorker) {
+    try { await bullWorker.close(); } catch { /* best-effort */ }
+    bullWorker = null;
+  }
   if (redisLockClient) {
     try { await redisLockClient.quit(); } catch { /* best-effort */ }
     redisLockClient = null;
