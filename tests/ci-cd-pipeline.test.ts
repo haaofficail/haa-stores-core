@@ -63,10 +63,16 @@ describe('Quality Pass 1 — CI/CD Pipeline (Item 4)', () => {
   it('build jobs must compile workspace packages before individual apps', () => {
     const ciFile = resolve(workflowsDir, 'ci.yml');
     const content = readFileSync(ciFile, 'utf-8');
-    const sharedBuildIndex = content.lastIndexOf(
+    const buildSection = content.slice(
+      content.indexOf('  build:'),
+      content.indexOf('  e2e:'),
+    );
+    const sharedBuildIndex = buildSection.indexOf(
       "pnpm -r --filter './packages/**' --workspace-concurrency=1 build",
     );
-    const appBuildIndex = content.indexOf('pnpm --filter @haa/${{ matrix.app }} build');
+    const appBuildIndex = buildSection.indexOf(
+      'pnpm --filter @haa/${{ matrix.app }} build',
+    );
     expect(sharedBuildIndex).toBeGreaterThan(-1);
     expect(appBuildIndex).toBeGreaterThan(sharedBuildIndex);
   });
@@ -76,6 +82,17 @@ describe('Quality Pass 1 — CI/CD Pipeline (Item 4)', () => {
     expect(content).toMatch(/from 'postgres'/);
     expect(content).toMatch(/fileURLToPath\(import\.meta\.url\)/);
     expect(content).not.toMatch(/\/Users\//);
+  });
+
+  it('E2E job must build workspace packages before starting dev servers', () => {
+    const content = readFileSync(resolve(workflowsDir, 'ci.yml'), 'utf-8');
+    const e2eSection = content.slice(content.indexOf('  e2e:'));
+    const packageBuildIndex = e2eSection.indexOf(
+      "pnpm -r --filter './packages/**' --workspace-concurrency=1 build",
+    );
+    const apiStartIndex = e2eSection.indexOf('pnpm --filter @haa/api dev &');
+    expect(packageBuildIndex).toBeGreaterThan(-1);
+    expect(apiStartIndex).toBeGreaterThan(packageBuildIndex);
   });
 
   it('ci.yml must run pnpm preflight', () => {

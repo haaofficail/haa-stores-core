@@ -20,6 +20,19 @@
 - **Prevention:** Added a regression assertion in `tests/migration-identifier-safety.test.ts`; CI now prepares a clean PostgreSQL database before the test suite.
 - **Status:** Fix pushed for GitHub runner verification.
 
+### ISSUE-0018: E2E Servers Started Before Workspace Packages Were Built
+
+- **ID:** ISSUE-0018
+- **Date:** 2026-06-20
+- **Severity:** High (only remaining PR check failure)
+- **Area:** E2E / Monorepo build order / CI
+- **Related Tasks:** TASK-0054
+- **Symptoms:** API cannot resolve `@haa/shared/dist/index.js`; storefront cannot resolve `@haa/theme-system`; readiness check times out.
+- **Root Cause:** E2E installed dependencies and started source dev servers without compiling workspace packages whose package entries point to `dist`.
+- **Fix:** E2E builds workspace packages in deterministic order before database setup and server startup.
+- **Prevention:** CI contract test verifies package build precedes API startup.
+- **Status:** Fix pushed for GitHub runner verification.
+
 ### ISSUE-0017: Test Setup Rewrote CI Database Name
 
 - **ID:** ISSUE-0017
