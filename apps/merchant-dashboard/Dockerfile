@@ -7,7 +7,7 @@
 ARG NODE_VERSION=20
 ARG ALPINE_VERSION=3.20
 ARG NGINX_VERSION=1.27-alpine
-ARG PNPM_VERSION=11
+ARG PNPM_VERSION=10
 
 ARG VERSION=0.1.0
 ARG MAINTAINER="Haa Stores DevOps <haa.officail@gmail.com>"
@@ -18,7 +18,7 @@ ARG MAINTAINER="Haa Stores DevOps <haa.officail@gmail.com>"
 FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS deps
 
 # Re-declare build args — Docker ARGs before FROM are not visible inside stages
-ARG PNPM_VERSION=11
+ARG PNPM_VERSION=10
 
 LABEL maintainer="${MAINTAINER}" \
       description="Merchant Dashboard — dependency stage"

@@ -88,5 +88,12 @@
       "esbuild",
       "sharp"
     ]
+  },
+  "overrides": {
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "vite": "6.4.2",
+    "vitest": "4.1.8",
+    "postcss": "8.5.15"
   }
 }
