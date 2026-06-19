@@ -25,7 +25,7 @@ export function ShowMoreKpiToggle({ showMore, onToggle, t }: Props) {
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-xl transition-colors"
+        className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-neutral-600 bg-neutral-50 hover:bg-neutral-100 rounded-xl transition-colors"
       >
         {showMore
           ? t("common.showLess", "عرض أقل")

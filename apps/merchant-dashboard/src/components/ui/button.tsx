@@ -20,7 +20,7 @@ const buttonVariants = cva(
         // ── Primary — filled brand blue ──
         // hover darkens one step; shadow lifts slightly to signal interactivity
         default:
-          'bg-primary-500 text-white shadow-sm hover:bg-primary-600 hover:shadow-md',
+          'bg-primary-500 text-white shadow-sm hover:bg-primary-700 hover:shadow-md',
 
         // ── Destructive — red delete/danger action ──
         destructive:

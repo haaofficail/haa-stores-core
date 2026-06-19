@@ -192,7 +192,7 @@ export function ProductListTable({
                     </Button></PermissionGate>
                     {p.status === 'active' && storeSlug && (
                       <a href={`${STOREFRONT_BASE}/s/${storeSlug}/p/${p.slug}`} target="_blank" rel="noopener noreferrer"
-                        className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-neutral-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                        className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
                         title={t('products.viewInStore', 'عرض في المتجر')} aria-label={t('products.viewInStore', 'عرض في المتجر')}>
                         <ExternalLink className="h-3.5 w-3.5" />
                       </a>

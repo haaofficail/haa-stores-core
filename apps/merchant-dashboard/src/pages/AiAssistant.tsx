@@ -291,7 +291,7 @@ export default function AiAssistant() {
                     <button
                       key={sug}
                       onClick={() => handleSuggestionClick(sug)}
-                      className="px-3 py-1.5 text-xs rounded-full border border-white/50 bg-white/80 text-neutral-600 hover:bg-primary-50 hover:border-primary-200 hover:text-primary-700 transition-all shadow-sm hover:shadow-md backdrop-blur-xl"
+                      className="px-3 py-1.5 text-xs rounded-full border border-neutral-200 bg-white/80 text-neutral-600 hover:bg-neutral-100 hover:border-neutral-300 hover:text-neutral-800 transition-all shadow-sm hover:shadow-md backdrop-blur-xl"
                     >
                       <Sparkles className="h-3 w-3 inline mr-1 text-amber-500" />
                       {sug}
@@ -308,7 +308,7 @@ export default function AiAssistant() {
                       key={act.label}
                       size="sm"
                       variant="outline"
-                      className="text-xs h-9 px-4 rounded-full border-primary-200 text-primary-700 bg-white/80 hover:bg-primary-50 backdrop-blur-xl shadow-sm hover:shadow-md transition-all"
+                      className="text-xs h-9 px-4 rounded-full border-neutral-200 text-neutral-700 bg-white/80 hover:bg-neutral-50 backdrop-blur-xl shadow-sm hover:shadow-md transition-all"
                       onClick={() => {
                         if (act.action === 'navigate' && act.params?.path) {
                           handleNavigate(act.params.path as string);

@@ -123,7 +123,7 @@ export function ProductGrid({ products, selectedIds, onSelect, onEdit, onArchive
                 </Button></PermissionGate>
                 {p.status === 'active' && storeSlug && (
                   <a href={`${STOREFRONT_BASE}/s/${storeSlug}/p/${p.slug}`} target="_blank" rel="noopener noreferrer"
-                    className="h-11 w-11 inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-primary-600 transition-colors"
+                    className="h-11 w-11 inline-flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-700 transition-colors"
                     title={t('products.viewInStore', 'عرض في المتجر')} aria-label={t('products.viewInStore', 'عرض في المتجر')}>
                     <ExternalLink className="h-3 w-3" />
                   </a>

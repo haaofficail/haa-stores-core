@@ -55,7 +55,7 @@ export function RecentActionableOrders({ orders, t }: Props) {
         </h2>
         <button
           onClick={() => navigate("/orders")}
-          className="text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors"
+          className="text-xs font-bold text-neutral-600 hover:text-neutral-800 transition-colors"
         >
           {t("dashboard.recentActionable.viewAll", "عرض الكل")}
         </button>
@@ -139,7 +139,7 @@ export function RecentActionableOrders({ orders, t }: Props) {
                   e.stopPropagation();
                   navigate(`/orders?orderId=${order.id}`);
                 }}
-                className="text-xs font-bold text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-1.5 rounded-xl transition-all flex-shrink-0"
+                className="text-xs font-bold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 px-3 py-1.5 rounded-xl transition-all flex-shrink-0"
               >
                 {t("dashboard.recentActionable.open", "فتح الطلب")}
               </button>

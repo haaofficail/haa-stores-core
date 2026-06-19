@@ -933,7 +933,7 @@ export default function ThemeEditor() {
                         copy.title = copy.title + ' (نسخة)';
                         updated.splice(idx + 1, 0, copy);
                         updateConfig('homepage.sections', updated);
-                      }} className="w-9 h-9 flex items-center justify-center rounded-md text-neutral-400 hover:text-primary-600 hover:bg-primary-50 transition-colors shrink-0" title="تكرار القسم">
+                      }} className="w-9 h-9 flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors shrink-0" title="تكرار القسم">
                         <Copy className="h-3.5 w-3.5" />
                       </button>
                       <button type="button" onClick={(e) => { e.stopPropagation();

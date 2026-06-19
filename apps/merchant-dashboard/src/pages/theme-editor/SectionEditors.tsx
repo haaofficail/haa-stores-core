@@ -244,7 +244,7 @@ export function BrandsEditor({ section, idx, homepageSections, updateConfig, upl
             <button type="button" onClick={() => updateItems(items.filter((_, j) => j !== i))} className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors mt-1"><X className="h-3 w-3" /></button>
           </div>
         ))}
-        <button type="button" onClick={() => updateItems([...items, { imageUrl: '', name: '', linkUrl: '' }])} className="w-full py-2 text-xs text-primary-600 font-medium border border-dashed border-primary-200 rounded-xl hover:bg-primary-50 transition-colors">+ إضافة براند</button>
+        <button type="button" onClick={() => updateItems([...items, { imageUrl: '', name: '', linkUrl: '' }])} className="w-full py-2 text-xs text-neutral-600 font-medium border border-dashed border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors">+ إضافة براند</button>
       </div>
     </div>
   );
@@ -265,7 +265,7 @@ export function FAQEditor({ section, idx, homepageSections, updateConfig }: Edit
           <button type="button" onClick={() => updateItems(items.filter((_, j) => j !== i))} className="text-xs text-red-500 hover:text-red-600 font-medium">حذف السؤال</button>
         </div>
       ))}
-      <button type="button" onClick={() => updateItems([...items, { question: '', answer: '' }])} className="w-full py-2 text-xs text-primary-600 font-medium border border-dashed border-primary-200 rounded-xl hover:bg-primary-50 transition-colors">+ إضافة سؤال</button>
+      <button type="button" onClick={() => updateItems([...items, { question: '', answer: '' }])} className="w-full py-2 text-xs text-neutral-600 font-medium border border-dashed border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors">+ إضافة سؤال</button>
     </div>
   );
 }

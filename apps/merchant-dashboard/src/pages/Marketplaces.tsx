@@ -344,7 +344,7 @@ export default function MarketplacesPage() {
               const provider = PROVIDERS.find(x => x.code === p.code);
               if (!provider) return null;
               return (
-                <Card key={p.code} className="border-dashed border-neutral-200 bg-white/50 hover:border-primary-300 hover:bg-primary-50/30 transition-all cursor-pointer group"
+                <Card key={p.code} className="border-dashed border-neutral-200 bg-white/50 hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer group"
                   onClick={() => navigate(`/channels/${p.code}`)}>
                   <CardContent className="p-5 text-center">
                     <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${provider.color} flex items-center justify-center text-white shadow-lg mx-auto mb-3 opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all`}>

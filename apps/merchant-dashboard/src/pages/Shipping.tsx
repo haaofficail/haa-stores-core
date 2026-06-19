@@ -653,7 +653,7 @@ function ShippingStatusSection({ storeId, onTabChange }: { storeId: number; onTa
         <p className="text-sm text-neutral-400">{t('shipping.connectCarrierDesc')}</p>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-5 cursor-pointer hover:border-primary-500/50 transition-colors" onClick={() => onTabChange('methods')}>
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-5 cursor-pointer hover:border-neutral-300 transition-colors" onClick={() => onTabChange('methods')}>
         <div className="flex items-center justify-between mb-3">
           <p className="font-bold text-sm text-neutral-900">{t('shipping.localDelivery')}</p>
           <Truck className="h-5 w-5 text-neutral-400" />
@@ -661,7 +661,7 @@ function ShippingStatusSection({ storeId, onTabChange }: { storeId: number; onTa
         <p className="text-sm text-neutral-400">{t('shipping.localDeliveryDesc')}</p>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-5 cursor-pointer hover:border-primary-500/50 transition-colors" onClick={() => onTabChange('rates')}>
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-5 cursor-pointer hover:border-neutral-300 transition-colors" onClick={() => onTabChange('rates')}>
         <div className="flex items-center justify-between mb-3">
           <p className="font-bold text-sm text-neutral-900">{t('shipping.pickup')}</p>
           <MapPin className="h-5 w-5 text-neutral-400" />

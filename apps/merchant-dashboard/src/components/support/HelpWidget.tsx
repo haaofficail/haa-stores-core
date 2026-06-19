@@ -139,7 +139,7 @@ export function HelpWidget() {
           'shadow-lg shadow-primary-500/30',
           'flex items-center justify-center',
           'transition-all duration-200',
-          'hover:bg-primary-600 hover:scale-110 hover:shadow-xl hover:shadow-primary-500/40',
+          'hover:bg-primary-700 hover:scale-110 hover:shadow-xl hover:shadow-primary-500/40',
           'active:scale-95',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400',
         )}
@@ -312,7 +312,7 @@ export function HelpWidget() {
                       <button
                         key={q}
                         onClick={() => { setChatInput(q); }}
-                        className="block w-full text-right px-3 py-2 text-xs rounded-lg bg-neutral-50 border border-neutral-100 text-neutral-600 hover:bg-primary-50 hover:border-primary-100 hover:text-primary-700 transition-colors"
+                        className="block w-full text-right px-3 py-2 text-xs rounded-lg bg-neutral-50 border border-neutral-100 text-neutral-600 hover:bg-neutral-100 hover:border-neutral-200 hover:text-neutral-800 transition-colors"
                       >
                         {q}
                       </button>

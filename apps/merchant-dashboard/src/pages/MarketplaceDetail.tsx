@@ -314,7 +314,7 @@ export default function MarketplaceDetailPage() {
                           {listing.status === 'active' ? t('marketplaceDetail.status.active', 'نشط') : t('marketplaceDetail.status.inactive', 'غير نشط')}
                         </Badge>
                         {listing.marketplaceUrl && (
-                          <a href={listing.marketplaceUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-primary-50 text-primary-500 transition-colors">
+                          <a href={listing.marketplaceUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-500 transition-colors">
                             <ExternalLink className="h-3.5 w-3.5" />
                           </a>
                         )}

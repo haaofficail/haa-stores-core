@@ -72,7 +72,7 @@ export function MerchantErrorState({
         <button
           type="button"
           onClick={onRetry}
-          className="inline-flex items-center justify-center min-h-[44px] px-5 rounded-xl bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600 transition-colors"
+          className="inline-flex items-center justify-center min-h-[44px] px-5 rounded-xl bg-primary-500 text-white text-sm font-semibold hover:bg-primary-700 transition-colors"
         >
           إعادة المحاولة
         </button>

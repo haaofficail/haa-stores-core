@@ -181,7 +181,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
           href={`${storefrontBase}/marketplace`}
           target="_blank"
           rel="noopener noreferrer"
-          className="mb-3 flex items-center gap-2 rounded-lg border border-primary-100 bg-primary-50 px-3 py-2 text-sm font-semibold text-primary-700 transition-colors hover:bg-primary-100"
+          className="mb-3 flex items-center gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-100"
         >
           <Store className="h-4 w-4 shrink-0" />
           <span className="flex-1 truncate">{t('nav.haaMarketplace', 'سوق هاء العام')}</span>
