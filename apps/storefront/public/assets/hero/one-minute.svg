@@ -1,0 +1,82 @@
+<svg viewBox="0 0 1672 941" xmlns="http://www.w3.org/2000/svg" xml:lang="ar" dir="rtl">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5c9cd5"/>
+      <stop offset="100%" stop-color="#2a6fb8"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5c9cd5" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#5c9cd5" stop-opacity="0.02"/>
+    </linearGradient>
+    <!-- Clock tick marks ring -->
+    <circle id="tick" cx="836" cy="94" r="5" fill="#5c9cd5" opacity="0.35"/>
+  </defs>
+
+  <!-- Soft background circle -->
+  <circle cx="836" cy="470" r="420" fill="url(#g2)"/>
+
+  <!-- Clock ring — 12 tick marks -->
+  <g transform="translate(836,470)">
+    <circle r="390" fill="none" stroke="#e8f0f8" stroke-width="2" stroke-dasharray="6 18"/>
+    <!-- Hour ticks -->
+    <line x1="0" y1="-380" x2="0" y2="-355" stroke="#5c9cd5" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+    <line x1="0" y1="-380" x2="0" y2="-355" stroke="#5c9cd5" stroke-width="4" stroke-linecap="round" opacity="0.5" transform="rotate(30)"/>
+    <line x1="0" y1="-380" x2="0" y2="-355" stroke="#5c9cd5" stroke-width="4" stroke-linecap="round" opacity="0.5" transform="rotate(60)"/>
+    <line x1="0" y1="-380" x2="0" y2="-355" stroke="#5c9cd5" stroke-width="6" stroke-linecap="round" opacity="0.8" transform="rotate(90)"/>
+    <line x1="0" y1="-380" x2="0" y2="-355" stroke="#5c9cd5" stroke-width="4" stroke-linecap="round" opacity="0.5" transform="rotate(120)"/>
+    <line x1="0" y1="-380" x2="0" y2="-355" stroke="#5c9cd5" stroke-width="4" stroke-linecap="round" opacity="0.5" transform="rotate(150)"/>
+    <line x1="0" y1="-380" x2="0" y2="-355" stroke="#5c9cd5" stroke-width="6" stroke-linecap="round" opacity="0.8" transform="rotate(180)"/>
+    <line x1="0" y1="-380" x2="0" y2="-355" stroke="#5c9cd5" stroke-width="4" stroke-linecap="round" opacity="0.5" transform="rotate(210)"/>
+    <line x1="0" y1="-380" x2="0" y2="-355" stroke="#5c9cd5" stroke-width="4" stroke-linecap="round" opacity="0.5" transform="rotate(240)"/>
+    <line x1="0" y1="-380" x2="0" y2="-355" stroke="#5c9cd5" stroke-width="6" stroke-linecap="round" opacity="0.8" transform="rotate(270)"/>
+    <line x1="0" y1="-380" x2="0" y2="-355" stroke="#5c9cd5" stroke-width="4" stroke-linecap="round" opacity="0.5" transform="rotate(300)"/>
+    <line x1="0" y1="-380" x2="0" y2="-355" stroke="#5c9cd5" stroke-width="4" stroke-linecap="round" opacity="0.5" transform="rotate(330)"/>
+
+    <!-- Clock hands — pointing to 1 minute (12 o'clock + slight offset) -->
+    <!-- Minute hand (long, points up = 12/60 min) -->
+    <line x1="0" y1="20" x2="0" y2="-300" stroke="url(#g1)" stroke-width="10" stroke-linecap="round"/>
+    <!-- Hour hand (short, pointing to ~12) -->
+    <line x1="0" y1="20" x2="-4" y2="-180" stroke="#2a6fb8" stroke-width="14" stroke-linecap="round"/>
+    <!-- Center dot -->
+    <circle r="18" fill="url(#g1)"/>
+    <circle r="7" fill="white"/>
+  </g>
+
+  <!-- "١" numeral — large, bold, gradient -->
+  <text
+    x="836" y="530"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    font-family="'IBM Plex Sans Arabic', 'Noto Sans Arabic', Arial, sans-serif"
+    font-size="520"
+    font-weight="800"
+    fill="url(#g1)"
+    opacity="0.12"
+    letter-spacing="-10"
+  >١</text>
+
+  <!-- "١ دقيقة" label — main readable text -->
+  <text
+    x="836" y="580"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    font-family="'IBM Plex Sans Arabic', 'Noto Sans Arabic', Arial, sans-serif"
+    font-size="200"
+    font-weight="800"
+    fill="url(#g1)"
+    letter-spacing="-4"
+  >١ دقيقة</text>
+
+  <!-- Subtitle decoration line -->
+  <line x1="636" y1="700" x2="1036" y2="700" stroke="#5c9cd5" stroke-width="3" stroke-linecap="round" opacity="0.3"/>
+
+  <!-- Motion lines — speed streaks to the left (RTL reading: things moving right-to-left) -->
+  <g opacity="0.2">
+    <line x1="200" y1="430" x2="360" y2="430" stroke="#5c9cd5" stroke-width="4" stroke-linecap="round"/>
+    <line x1="160" y1="470" x2="360" y2="470" stroke="#5c9cd5" stroke-width="3" stroke-linecap="round"/>
+    <line x1="220" y1="510" x2="360" y2="510" stroke="#5c9cd5" stroke-width="4" stroke-linecap="round"/>
+    <line x1="1312" y1="430" x2="1472" y2="430" stroke="#5c9cd5" stroke-width="4" stroke-linecap="round"/>
+    <line x1="1312" y1="470" x2="1512" y2="470" stroke="#5c9cd5" stroke-width="3" stroke-linecap="round"/>
+    <line x1="1312" y1="510" x2="1452" y2="510" stroke="#5c9cd5" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>
