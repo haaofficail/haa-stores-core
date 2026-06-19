@@ -4,12 +4,12 @@
   "private": true,
   "type": "module",
   "description": "DEPRECATED — Use @haa/storefront-themes instead. Storefront theme definitions, hook, and CSS scoping.",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "exports": {
-    ".": "./src/index.ts",
+    ".": "./dist/index.js",
     "./server": {
-      "types": "./src/server.ts",
-      "import": "./src/server.ts"
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
     }
   },
   "scripts": {
