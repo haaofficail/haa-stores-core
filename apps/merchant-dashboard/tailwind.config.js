@@ -54,9 +54,13 @@ export default {
         primary: {
           50: 'var(--haa-primary-50)',
           100: 'var(--haa-primary-100)',
+          200: 'var(--haa-primary-200)',
+          300: 'var(--haa-primary-300)',
+          400: 'var(--haa-primary-400)',
           500: 'var(--haa-primary-500)',
           600: 'var(--haa-primary-600)',
           700: 'var(--haa-primary-700)',
+          800: 'var(--haa-primary-800)',
         },
         neutral: {
           50: 'var(--color-neutral-50)',

@@ -59,7 +59,7 @@ export default function SupportTicketDetail() {
     setLoading(true);
     supportApi.getTicket(storeId, Number(ticketId))
       .then(setTicket)
-      .catch(() => {})
+      .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
       .finally(() => setLoading(false));
   }, [storeId, ticketId]);
 
@@ -68,7 +68,9 @@ export default function SupportTicketDetail() {
     try {
       await supportApi.updateStatus(storeId, Number(ticketId), status);
       setTicket(prev => prev ? { ...prev, status } : prev);
-    } catch {}
+    } catch (err: unknown) {
+      console.warn('Settings: failed to load secondary data', err);
+    }
   }
 
   async function updatePriority(priority: string) {
@@ -76,7 +78,9 @@ export default function SupportTicketDetail() {
     try {
       await supportApi.updatePriority(storeId, Number(ticketId), priority);
       setTicket(prev => prev ? { ...prev, priority } : prev);
-    } catch {}
+    } catch (err: unknown) {
+      console.warn('Settings: failed to load secondary data', err);
+    }
   }
 
   async function handleReply(e: FormEvent) {
@@ -88,7 +92,9 @@ export default function SupportTicketDetail() {
       const updated = await supportApi.getTicket(storeId, Number(ticketId));
       setTicket(updated);
       setReply('');
-    } catch {}
+    } catch (err: unknown) {
+      console.warn('Settings: failed to load secondary data', err);
+    }
     setSending(false);
   }
 

@@ -1,5 +1,24 @@
 /** ZATCA invoice types for KSA e-invoicing compliance */
 
+/**
+ * Per-tenant seller configuration for ZATCA invoicing.
+ * Populated from the `tenants` table (compliance fields added in migration 0061).
+ */
+export interface ZatcaSellerConfig {
+  /** Arabic legal name as registered with ZATCA */
+  sellerName: string;
+  /** 15-digit VAT number issued by ZATCA */
+  vatNumber: string;
+  /** Street address */
+  street: string;
+  /** District / neighbourhood (optional) */
+  district?: string;
+  /** City name in Arabic */
+  city: string;
+  /** Postal code */
+  postalCode: string;
+}
+
 export type InvoiceType = 'simplified' | 'standard';
 export type InvoiceTransactionType = 'invoice' | 'credit_note' | 'debit_note';
 

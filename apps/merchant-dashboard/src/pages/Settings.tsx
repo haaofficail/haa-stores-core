@@ -113,7 +113,7 @@ export default function SettingsPage() {
       .finally(() => setLoading(false));
     settingsApi.getProductFeatures(storeId)
       .then(setFeatures)
-      .catch(() => {})
+      .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
       .finally(() => setFeaturesLoading(false));
     settingsApi.getGiftOptions(storeId)
       .then(data => setGiftOptions({
@@ -122,22 +122,22 @@ export default function SettingsPage() {
         giftWrapInstructions: data.giftWrapInstructions ?? null,
         pickupInstructions: data.pickupInstructions ?? null,
       }))
-      .catch(() => {})
+      .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
       .finally(() => setGiftOptionsLoading(false));
     settingsApi.listPickupLocations(storeId)
       .then(setPickupLocations)
-      .catch(() => {})
+      .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
       .finally(() => setPickupLocationsLoading(false));
     settingsApi.listSizeGuides(storeId)
       .then(setSizeGuides)
-      .catch(() => {})
+      .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
       .finally(() => setSizeGuidesLoading(false));
     categoriesApi.list(storeId)
       .then(setCategoriesList)
-      .catch(() => {});
+      .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err));
     settingsApi.getStoreConfig(storeId)
       .then(setStoreConfig)
-      .catch(() => {})
+      .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
       .finally(() => setStoreConfigLoading(false));
   }, [storeId, t]);
 

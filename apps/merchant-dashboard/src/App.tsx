@@ -49,6 +49,11 @@ const SupportKb = lazy(() => import('@/pages/SupportKb'));
 const Employees = lazy(() => import('@/pages/Employees'));
 const GrowthInsights = lazy(() => import('@/pages/GrowthInsights'));
 const LiveRadar = lazy(() => import('@/pages/LiveRadar'));
+const CustomerSegments = lazy(() => import('@/pages/CustomerSegments'));
+const IntegrationHub = lazy(() => import('@/pages/IntegrationHub'));
+const MarketingActions = lazy(() => import('@/pages/MarketingActions'));
+const MarketplaceGuide = lazy(() => import('@/pages/MarketplaceGuide'));
+const MarketplaceListings = lazy(() => import('@/pages/MarketplaceListings'));
 
 function Lazy({ children }: { children: ReactNode }) {
   return <Suspense fallback={<LoadingSkeleton />}>{children}</Suspense>;
@@ -124,11 +129,15 @@ export default function App() {
               <Route path="/notifications" element={<GuardedRoute permission="notifications:view"><Notifications /></GuardedRoute>} />
               <Route path="/api-keys" element={<GuardedRoute permission="api_keys:view"><ApiKeys /></GuardedRoute>} />
               <Route path="/migration" element={<GuardedRoute permission="settings:read"><MigrationHub /></GuardedRoute>} />
+              <Route path="/customers/segments" element={<GuardedRoute permission="customers:read"><CustomerSegments /></GuardedRoute>} />
               <Route path="/channels" element={<GuardedRoute permission="settings:read"><Marketplaces /></GuardedRoute>} />
               <Route path="/channels/sync-logs" element={<GuardedRoute permission="settings:read"><SyncLogs /></GuardedRoute>} />
+              <Route path="/channels/guide" element={<GuardedRoute permission="settings:read"><MarketplaceGuide /></GuardedRoute>} />
+              <Route path="/channels/listings" element={<GuardedRoute permission="settings:read"><MarketplaceListings /></GuardedRoute>} />
               <Route path="/channels/hub" element={<Navigate to="/channels" replace />} />
-              <Route path="/channels/guide" element={<Navigate to="/channels" replace />} />
               <Route path="/channels/:provider" element={<GuardedRoute permission="settings:read"><MarketplaceDetail /></GuardedRoute>} />
+              <Route path="/marketing/actions" element={<GuardedRoute permission="promotions:read"><MarketingActions /></GuardedRoute>} />
+              <Route path="/settings/integrations" element={<GuardedRoute permission="settings:read"><IntegrationHub /></GuardedRoute>} />
               <Route path="/ai-assistant" element={<GuardedRoute permission="settings:read"><AiAssistant /></GuardedRoute>} />
               <Route path="/audit-logs" element={<GuardedRoute permission="stores:read"><AuditLogs /></GuardedRoute>} />
               <Route path="/support/tickets" element={<GuardedRoute permission="support:read"><SupportTickets /></GuardedRoute>} />

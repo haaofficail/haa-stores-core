@@ -19,6 +19,20 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: haa-redis
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - haa_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   minio:
     image: minio/minio:latest
     container_name: haa-minio
@@ -40,3 +54,4 @@ services:
 volumes:
   haa_postgres_data:
   haa_minio_data:
+  haa_redis_data:

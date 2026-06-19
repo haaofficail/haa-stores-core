@@ -1,0 +1,76 @@
+# ────────────────────────────────────────────────
+# Root .dockerignore — Haa Stores Core Monorepo
+# ────────────────────────────────────────────────
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Node modules (will be reinstalled inside image)
+node_modules
+**/node_modules
+
+# Build outputs (rebuilt inside image)
+**/dist
+**/build
+**/.vite
+
+# pnpm cache
+.pnpm-store
+**/.pnpm-store
+
+# Coverage & test artefacts
+coverage
+**/coverage
+test-results
+tests/e2e/report
+tests/e2e/screenshots
+playwright-report
+
+# Logs
+*.log
+logs
+**/logs
+
+# OS artefacts
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Local environment files (secrets — never bake in)
+.env
+.env.*
+!.env.example
+
+# CI / tooling configs not needed at runtime
+.serena
+.husky
+.eslintrc*
+eslint.config.*
+prettier.config.*
+.prettierrc*
+commitlint.config.*
+lint-staged.config.*
+vitest.config.*
+playwright.config.*
+
+# Docs & dashboards
+*.md
+DASHBOARD*.html
+ROADMAP.html
+docs
+
+# Scripts (not needed inside container)
+scripts
+
+# Storage data (mount as volume)
+storage
+
+# Local ecosystem / PM2 config
+ecosystem.config.cjs

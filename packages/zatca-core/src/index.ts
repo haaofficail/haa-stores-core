@@ -15,6 +15,7 @@ export type {
   ZatcaInvoiceResult,
   ZatcaPortalConfig,
   ZatcaClearanceResult,
+  ZatcaSellerConfig,
   InvoiceType,
   InvoiceTransactionType,
 } from './types.js';

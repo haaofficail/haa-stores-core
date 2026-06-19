@@ -1,0 +1,16 @@
+# ────────────────────────────────────────────────
+# apps/api/.dockerignore
+# Additional exclusions specific to the API app
+# ────────────────────────────────────────────────
+
+# Compiled output (rebuilt in image)
+dist
+
+# Dev / test files
+*.test.ts
+*.spec.ts
+__tests__
+
+# Local env overrides
+.env.local
+.env.development

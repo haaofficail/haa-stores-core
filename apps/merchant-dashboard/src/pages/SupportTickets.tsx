@@ -54,7 +54,7 @@ export default function SupportTickets() {
     setLoading(true);
     supportApi.listTickets(storeId, statusFilter || undefined)
       .then(d => { setTickets(d.tickets); setCount(d.count); })
-      .catch(() => {})
+      .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
       .finally(() => setLoading(false));
   }, [storeId, statusFilter]);
 
