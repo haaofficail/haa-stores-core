@@ -44,10 +44,12 @@ jobs:
         run: |
           node -v
           pnpm -v
-          pnpm -r list --depth -1
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Verify workspace packages
+        run: pnpm -r list --depth -1
 
       - name: Preflight checks
         run: pnpm preflight
@@ -74,7 +76,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build shared packages (required for cross-package type resolution)
-        run: pnpm -r --filter './packages/**' build
+        run: pnpm -r --filter './packages/**' --workspace-concurrency=1 build
 
       - name: Typecheck
         run: pnpm typecheck

@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CheckoutService } from '../packages/commerce-core/src/checkout';
-import { createDbClient } from '../packages/db';
-import { redis } from '../packages/commerce-core/src/redis';
+import { CheckoutService } from '@haa/commerce-core';
 
-vi.mock('../packages/commerce-core/src/redis', () => ({
+vi.mock('@haa/commerce-core/redis', () => ({
   redis: {
     set: vi.fn(),
     get: vi.fn(),
@@ -14,18 +12,17 @@ vi.mock('../packages/commerce-core/src/redis', () => ({
   releaseLock: vi.fn(),
 }));
 
-import { acquireLock, releaseLock } from '../packages/commerce-core/src/redis';
+import { acquireLock } from '@haa/commerce-core/redis';
 
 describe('Checkout Chaos & Edge Cases', () => {
   let checkoutService: CheckoutService;
-  const db = createDbClient();
 
   beforeEach(() => {
     vi.clearAllMocks();
     // The confirm method checks process.env.REDIS_URL before calling acquireLock.
     // Without it, redis lock is skipped and the test never hits the mock.
     vi.stubEnv('REDIS_URL', 'redis://mock:6379');
-    checkoutService = new CheckoutService(db);
+    checkoutService = new CheckoutService({} as any);
   });
 
   afterEach(() => {
@@ -38,7 +35,7 @@ describe('Checkout Chaos & Edge Cases', () => {
 
     await expect(checkoutService.confirm(1, 'session-123'))
       .rejects.toThrow('Checkout is already being processed. Please wait.');
-    
+
     expect(acquireLock).toHaveBeenCalledWith('lock:checkout:session-123');
   });
 
