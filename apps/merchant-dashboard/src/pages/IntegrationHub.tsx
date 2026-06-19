@@ -104,8 +104,8 @@ export default function IntegrationHub() {
       label: t('integrationHub.totalOrders', 'إجمالي الطلبات المستوردة'),
       value: formatNumber(summary.totalOrders),
       suffix: '',
-      gradient: 'from-blue-400 via-blue-500 to-indigo-600',
-      bgGlow: 'bg-blue-500/5',
+      gradient: 'from-primary-400 via-primary-500 to-indigo-600',
+      bgGlow: 'bg-primary-500/5',
       icon: ShoppingCart,
     },
     {
@@ -141,7 +141,7 @@ export default function IntegrationHub() {
           )}
           <Button
             size="sm"
-            className="rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40"
+            className="rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40"
             onClick={loadHub}
           >
             <RefreshCw className="h-4 w-4 ml-1" />
@@ -244,7 +244,7 @@ export default function IntegrationHub() {
                     <>
                       <Button
                         size="sm"
-                        className="rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 text-xs"
+                        className="rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 text-xs"
                         onClick={() => navigate(`/channels/${provider.code}/listings`)}
                       >
                         <Database className="h-3.5 w-3.5 ml-1" />
@@ -296,7 +296,7 @@ export default function IntegrationHub() {
                   ) : (
                     <Button
                       size="sm"
-                      className="rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 text-xs"
+                      className="rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 text-xs"
                       onClick={() => navigate(`/channels/${provider.code}`)}
                     >
                       <ExternalLink className="h-3.5 w-3.5 ml-1" />

@@ -274,9 +274,9 @@ export default function Orders() {
 
       {/* Selection Bar */}
       {selectedOrders.size > 0 && (
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-blue-100 shadow-sm p-4 flex items-center justify-between">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-primary-100 shadow-sm p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-blue-700">{t('orders.selectedCount', '{{count}} طلب محدد', { count: selectedOrders.size })}</span>
+            <span className="text-sm font-medium text-primary-700">{t('orders.selectedCount', '{{count}} طلب محدد', { count: selectedOrders.size })}</span>
             <Button variant="ghost" size="sm" className="h-8 text-xs text-neutral-400" onClick={() => setSelectedOrders(new Set())}>
               {t('orders.clearSelection', 'إلغاء التحديد')}
             </Button>
@@ -318,7 +318,7 @@ export default function Orders() {
                     try {
                       await ordersApi.changeStatus(storeId, id, 'confirmed');
                       succeeded++;
-                    } catch (err) {
+                    } catch {
                       const order = orders.find(o => o.id === id);
                       errors.push(order?.orderNumber ?? String(id));
                     }
@@ -342,7 +342,7 @@ export default function Orders() {
         {loading ? (
           <div className="p-8 space-y-4">
             <div className="flex items-center justify-center gap-3 mb-6">
-              <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+              <Loader2 className="h-5 w-5 animate-spin text-primary-500" />
               <span className="text-sm text-neutral-400">{t('orders.loadingOrders', 'جاري تحميل الطلبات...')}</span>
             </div>
             {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-14 w-full rounded-2xl" />)}
@@ -381,7 +381,7 @@ export default function Orders() {
           <div className="relative">
             {tableLoading && (
               <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center rounded-b-3xl">
-                <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                <Loader2 className="h-5 w-5 animate-spin text-primary-500" />
               </div>
             )}
             <Table>
@@ -413,7 +413,7 @@ export default function Orders() {
                 const isPickup = o.fulfillmentType === 'local_pickup';
                 const isCOD = o.paymentMethod === 'cash_on_delivery';
                 return (
-                  <TableRow key={o.id} className={`border-neutral-100 hover:bg-neutral-50 cursor-pointer transition-colors ${selectedOrders.has(o.id) ? 'bg-blue-50' : ''}`} onClick={() => openDetail(o.id)}>
+                  <TableRow key={o.id} className={`border-neutral-100 hover:bg-neutral-50 cursor-pointer transition-colors ${selectedOrders.has(o.id) ? 'bg-primary-50' : ''}`} onClick={() => openDetail(o.id)}>
                     <TableCell className="p-3" onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" className="rounded border-neutral-300 h-4 w-4 cursor-pointer"
                         checked={selectedOrders.has(o.id)}
@@ -445,7 +445,7 @@ export default function Orders() {
                     </TableCell>
                     <TableCell className="p-3">
                       <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
-                        isPickup ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                        isPickup ? 'bg-purple-100 text-purple-700' : 'bg-primary-100 text-primary-700'
                       }`}>
                         {isPickup ? t('orders.pickup_short', 'استلام') : t('orders.shipping_short', 'توصيل')}
                       </span>
@@ -494,7 +494,7 @@ export default function Orders() {
               {detailOrder && detailOrder.source && detailOrder.source !== 'storefront' && (
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${
                   detailOrder.source === 'salla' ? 'bg-green-100 text-green-700' :
-                  detailOrder.source === 'zid' ? 'bg-blue-100 text-blue-700' :
+                  detailOrder.source === 'zid' ? 'bg-primary-100 text-primary-700' :
                   detailOrder.source === 'noon' ? 'bg-amber-100 text-amber-700' :
                   'bg-orange-100 text-orange-700'
                 }`}>
@@ -507,7 +507,7 @@ export default function Orders() {
           {loadingDetail ? (
             <div className="space-y-5">
               <div className="flex items-center justify-center gap-3 py-8">
-                <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                <Loader2 className="h-5 w-5 animate-spin text-primary-500" />
                 <span className="text-sm text-neutral-400">{t('orders.loadingOrderDetail', 'جاري تحميل تفاصيل الطلب...')}</span>
               </div>
               <Skeleton className="h-20 w-full rounded-2xl" />
@@ -521,21 +521,21 @@ export default function Orders() {
                 const si = detailOrder.settlementInfo;
                 const settlementRef = `SET-${String(si.settlementBatchId).padStart(6, '0')}`;
                 return (
-                  <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                  <div className="bg-primary-50 border border-primary-200 rounded-2xl p-4">
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
-                        <p className="text-xs font-medium text-blue-600">{t('orders.settlementBadge', 'هذا الطلب مشمول في تسوية')}</p>
+                        <p className="text-xs font-medium text-primary-600">{t('orders.settlementBadge', 'هذا الطلب مشمول في تسوية')}</p>
                         <Link
                           to={`/wallet/settlements/${si.settlementBatchId}`}
-                          className="font-mono text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline inline-flex items-center gap-1"
+                          className="font-mono text-sm font-bold text-primary-700 hover:text-primary-900 hover:underline inline-flex items-center gap-1"
                         >
                           {settlementRef}
                           <ExternalLink className="h-3 w-3" />
                         </Link>
-                        <p className="text-xs text-blue-500">
+                        <p className="text-xs text-primary-500">
                           {t('orders.settlementStatus', 'حالة التسوية')}: {si.status}
                         </p>
-                        <p className="text-xs text-blue-500">
+                        <p className="text-xs text-primary-500">
                           {t('orders.netPayable', 'صافي المستحق')}: {formatCurrency(si.merchantPayable)} {t('common.sar')}
                         </p>
                       </div>
@@ -1079,7 +1079,7 @@ export default function Orders() {
                                 </DetailRow>
                                 {detailOrder.shipment.trackingUrl && (
                                   <DetailRow label={t('orders.tracking_url', 'الرابط')}>
-                                    <a href={detailOrder.shipment.trackingUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center gap-1 text-sm">
+                                    <a href={detailOrder.shipment.trackingUrl} target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline flex items-center gap-1 text-sm">
                                       {t('orders.open_tracking', 'فتح التتبع')} <ExternalLink className="h-4 w-4" />
                                     </a>
                                   </DetailRow>
@@ -1137,7 +1137,7 @@ export default function Orders() {
                                 {loc.phone && <p className="text-xs text-neutral-600 flex items-center gap-1" dir="ltr"><span className="font-mono">{loc.phone}</span></p>}
                                 {loc.address && <p className="text-xs text-neutral-600">{loc.address}</p>}
                                 {loc.mapsUrl && (
-                                  <a href={loc.mapsUrl} target="_blank" rel="noopener noreferrer" className="flex w-fit items-center gap-1 text-blue-600 text-xs underline">
+                                  <a href={loc.mapsUrl} target="_blank" rel="noopener noreferrer" className="flex w-fit items-center gap-1 text-primary-600 text-xs underline">
                                     <MapPin className="h-4 w-4" /> {t('orders.viewOnMap', 'عرض على الخريطة')}
                                   </a>
                                 )}

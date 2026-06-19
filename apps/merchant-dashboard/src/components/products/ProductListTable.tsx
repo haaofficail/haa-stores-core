@@ -114,7 +114,7 @@ export function ProductListTable({
             const isSelected = selectedIds.has(p.id);
             const hasVariants = p.optionCount > 0;
             return (
-              <TableRow key={p.id} className={`border-neutral-100 hover:bg-neutral-50 transition-colors ${isSelected ? 'bg-blue-50' : ''}`}>
+              <TableRow key={p.id} className={`border-neutral-100 hover:bg-neutral-50 transition-colors ${isSelected ? 'bg-primary-50' : ''}`}>
                 <TableCell className="p-3">
                   <input type="checkbox" className="rounded border-neutral-300 h-4 w-4 cursor-pointer"
                     checked={isSelected}

@@ -11,7 +11,7 @@ const EXPORT_TYPES = ['products', 'orders', 'customers', 'wallet'] as const;
 
 const exportConfig: Record<string, { icon: React.ReactNode; titleKey: string; descKey: string }> = {
   products: {
-    icon: <Package className="h-10 w-10 text-blue-500" />,
+    icon: <Package className="h-10 w-10 text-primary-500" />,
     titleKey: 'exports.products.title',
     descKey: 'exports.products.description',
   },

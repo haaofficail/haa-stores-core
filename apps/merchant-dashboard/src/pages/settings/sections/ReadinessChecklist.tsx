@@ -84,7 +84,7 @@ export function ReadinessChecklist({ storeId }: { storeId: number }) {
               </span>
             </div>
             {!item.completed && item.actionHref && item.actionHref !== '#' && (
-              <a href={item.actionHref} className="text-sm text-blue-500 hover:underline flex items-center gap-1">
+              <a href={item.actionHref} className="text-sm text-primary-500 hover:underline flex items-center gap-1">
                 {t(item.actionLabel)} <ArrowLeft className="h-3 w-3" />
               </a>
             )}

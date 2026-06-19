@@ -39,8 +39,8 @@ export function QuickStatsGrid({
       icon: Tag,
       label: t("common.brands", "ماركات"),
       count: brandsCount,
-      color: "from-blue-400 to-blue-600",
-      bg: "bg-blue-50",
+      color: "from-primary-400 to-primary-600",
+      bg: "bg-primary-50",
     },
     {
       icon: Layers,

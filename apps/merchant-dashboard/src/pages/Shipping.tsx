@@ -348,13 +348,13 @@ function RatesTab({ storeId }: { storeId: number }) {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5"><Label className="text-sm text-neutral-500">{t('shipping.methodName')} <span className="text-red-500">*</span></Label>
-                <select className="flex h-9 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" value={form.shippingMethodId} onChange={e => setForm({...form, shippingMethodId: e.target.value})}>
+                <select className="flex h-9 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500" value={form.shippingMethodId} onChange={e => setForm({...form, shippingMethodId: e.target.value})}>
                   <option value="">{t('shipping.selectMethod')}</option>
                   {methods.filter(m => m.isActive).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
               </div>
               <div className="space-y-1.5"><Label className="text-sm text-neutral-500">{t('shipping.zoneName')} <span className="text-red-500">*</span></Label>
-                <select className="flex h-9 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" value={form.shippingZoneId} onChange={e => setForm({...form, shippingZoneId: e.target.value})}>
+                <select className="flex h-9 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500" value={form.shippingZoneId} onChange={e => setForm({...form, shippingZoneId: e.target.value})}>
                   <option value="">{t('shipping.selectZone')}</option>
                   {zones.filter(z => z.isActive).map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
                 </select>
@@ -653,7 +653,7 @@ function ShippingStatusSection({ storeId, onTabChange }: { storeId: number; onTa
         <p className="text-sm text-neutral-400">{t('shipping.connectCarrierDesc')}</p>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-5 cursor-pointer hover:border-blue-500/50 transition-colors" onClick={() => onTabChange('methods')}>
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-5 cursor-pointer hover:border-primary-500/50 transition-colors" onClick={() => onTabChange('methods')}>
         <div className="flex items-center justify-between mb-3">
           <p className="font-bold text-sm text-neutral-900">{t('shipping.localDelivery')}</p>
           <Truck className="h-5 w-5 text-neutral-400" />
@@ -661,7 +661,7 @@ function ShippingStatusSection({ storeId, onTabChange }: { storeId: number; onTa
         <p className="text-sm text-neutral-400">{t('shipping.localDeliveryDesc')}</p>
       </div>
 
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-5 cursor-pointer hover:border-blue-500/50 transition-colors" onClick={() => onTabChange('rates')}>
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-5 cursor-pointer hover:border-primary-500/50 transition-colors" onClick={() => onTabChange('rates')}>
         <div className="flex items-center justify-between mb-3">
           <p className="font-bold text-sm text-neutral-900">{t('shipping.pickup')}</p>
           <MapPin className="h-5 w-5 text-neutral-400" />
@@ -685,10 +685,10 @@ export default function Shipping() {
 
       <ShippingStatusSection storeId={storeId} onTabChange={setActiveTab} />
 
-      <div className="bg-blue-50/50 border border-blue-200/50 rounded-3xl p-5">
+      <div className="bg-primary-50/50 border border-primary-200/50 rounded-3xl p-5">
         <div className="flex items-start gap-3">
-          <Info className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
-          <div className="text-sm text-blue-800 space-y-1">
+          <Info className="h-5 w-5 text-primary-500 mt-0.5 shrink-0" />
+          <div className="text-sm text-primary-800 space-y-1">
             <p className="font-bold">{t('shipping.explanationTitle')}</p>
             <ul className="list-disc list-inside space-y-0.5 text-sm">
               <li>{t('shipping.expManual')}</li>

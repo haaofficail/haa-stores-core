@@ -39,7 +39,7 @@ export function RecentCustomersList({ customers, t }: Props) {
           {t("dashboard.recentCustomers", "آخر العملاء")}
         </h3>
         <button
-          className="text-xs text-blue-600 hover:text-blue-700 font-bold"
+          className="text-xs text-primary-600 hover:text-primary-700 font-bold"
           onClick={() => navigate("/customers")}
         >
           {t("common.viewAll", "عرض الكل")}
@@ -79,7 +79,7 @@ export function RecentCustomersList({ customers, t }: Props) {
                   {c.phone && (
                     <a
                       href={`tel:${c.phone}`}
-                      className="p-0.5 text-blue-500"
+                      className="p-0.5 text-primary-500"
                       title={t("common.call", "اتصال")}
                     >
                       <svg

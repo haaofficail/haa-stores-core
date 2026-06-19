@@ -101,9 +101,9 @@ export function useDashboardComputed(
         key: "new",
         count: ac.newOrdersCount,
         label: "طلبات جديدة",
-        color: "from-blue-500 to-blue-600",
-        bg: "bg-blue-50",
-        textColor: "text-blue-700",
+        color: "from-primary-500 to-primary-600",
+        bg: "bg-primary-50",
+        textColor: "text-primary-700",
         link: "/orders?status=pending_payment",
       });
     const stockCount =

@@ -175,7 +175,7 @@ export function PermissionCheckboxMatrix({
                       checked={checked}
                       disabled={readOnly || !canManage || (!canGrant && !isOwner)}
                       onChange={() => togglePermission(perm.key)}
-                      className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">

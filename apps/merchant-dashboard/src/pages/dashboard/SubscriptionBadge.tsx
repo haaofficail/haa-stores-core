@@ -38,7 +38,7 @@ export function SubscriptionBadge({ subscription, t }: Props) {
           subscription.status === "active"
             ? "bg-emerald-50 text-emerald-600"
             : subscription.status === "trialing"
-              ? "bg-blue-50 text-blue-600"
+              ? "bg-primary-50 text-primary-600"
               : "bg-red-50 text-red-600",
         )}
       >

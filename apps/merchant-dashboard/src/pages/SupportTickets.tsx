@@ -28,7 +28,7 @@ const statusLabels: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   open: 'bg-yellow-100 text-yellow-700',
-  in_progress: 'bg-blue-100 text-blue-700',
+  in_progress: 'bg-primary-100 text-primary-700',
   waiting_on_customer: 'bg-purple-100 text-purple-700',
   resolved: 'bg-green-100 text-green-700',
   closed: 'bg-neutral-100 text-neutral-500',
@@ -62,8 +62,8 @@ export default function SupportTickets() {
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-            <Ticket className="h-5 w-5 text-blue-600" />
+          <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
+            <Ticket className="h-5 w-5 text-primary-600" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-neutral-900">{t('support.tickets', 'تذاكر الدعم')}</h1>
@@ -75,7 +75,7 @@ export default function SupportTickets() {
       <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
         {statusFilters.map(s => (
           <button key={s} onClick={() => setStatusFilter(s)}
-            className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? 'bg-blue-600 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}>
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? 'bg-primary-600 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}>
             {s ? statusLabels[s] || s : t('support.all', 'الكل')}
           </button>
         ))}
@@ -90,7 +90,7 @@ export default function SupportTickets() {
         <div className="space-y-3">
           {tickets.map(ticket => (
             <Link key={ticket.id} to={`/support/tickets/${ticket.id}`}
-              className="block p-4 rounded-xl border border-neutral-200 hover:border-blue-200 hover:bg-blue-50/30 transition-colors">
+              className="block p-4 rounded-xl border border-neutral-200 hover:border-primary-200 hover:bg-primary-50/30 transition-colors">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">

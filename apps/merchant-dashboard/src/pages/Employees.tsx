@@ -178,7 +178,7 @@ export default function EmployeesPage() {
           <PermissionGate permission="employees:invite">
             <button
               onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/25"
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/25"
             >
               <Plus className="h-4 w-4" />
               إضافة موظف
@@ -196,7 +196,7 @@ export default function EmployeesPage() {
 
       {loading && (
         <div className="bg-white rounded-xl border border-neutral-200 p-12 flex flex-col items-center justify-center gap-3">
-          <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
+          <Loader2 className="h-8 w-8 text-primary-500 animate-spin" />
           <p className="text-sm text-neutral-500">جاري تحميل الموظفين...</p>
         </div>
       )}
@@ -209,7 +209,7 @@ export default function EmployeesPage() {
           <PermissionGate permission="employees:invite">
             <button
               onClick={openCreate}
-              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+              className="mt-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
             >
               إضافة موظف
             </button>
@@ -237,7 +237,7 @@ export default function EmployeesPage() {
                   <tr key={emp.id} className="border-b border-neutral-50 hover:bg-neutral-50/50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-xs font-bold">
                           {emp.name.charAt(0)}
                         </div>
                         <span className="text-sm font-medium text-neutral-800">{emp.name}</span>
@@ -245,7 +245,7 @@ export default function EmployeesPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-neutral-600">{emp.email}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200">
                         <Shield className="h-3 w-3" />
                         {roleLabels[emp.role] || emp.role}
                       </span>

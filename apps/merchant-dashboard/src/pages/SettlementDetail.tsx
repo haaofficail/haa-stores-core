@@ -279,7 +279,7 @@ export default function SettlementDetail() {
                     <TableCell className="p-3 whitespace-nowrap">
                       <Link
                         to={`/orders/${tx.orderId}`}
-                        className="font-mono text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
+                        className="font-mono text-sm font-semibold text-primary-600 hover:text-primary-800 hover:underline inline-flex items-center gap-1"
                       >
                         {tx.orderNumber ?? `#${tx.orderId}`}
                         <ExternalLink className="h-3 w-3" />

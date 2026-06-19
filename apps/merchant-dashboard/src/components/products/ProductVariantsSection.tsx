@@ -27,7 +27,7 @@ export function ProductVariantsSection({ hasVariants, options, variants, onHasVa
               onVariantsChange([]);
             }
           }}
-          className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />
+          className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
         <span className="text-sm text-neutral-700">هذا المنتج له خيارات مثل اللون أو المقاس</span>
       </label>
 
@@ -69,7 +69,7 @@ export function ProductVariantsSection({ hasVariants, options, variants, onHasVa
             ))}
             <button type="button"
               onClick={() => onOptionsChange([...options, { name: '', values: [] }])}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
               <Plus className="h-3.5 w-3.5" />
               إضافة خيار
             </button>
@@ -133,7 +133,7 @@ export function ProductVariantsSection({ hasVariants, options, variants, onHasVa
                             newVars[vi] = { ...newVars[vi], isActive: e.target.checked };
                             onVariantsChange(newVars);
                           }}
-                          className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />
+                          className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
                       </td>
                     </tr>
                   ))}

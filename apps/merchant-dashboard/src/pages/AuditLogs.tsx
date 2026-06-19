@@ -66,7 +66,7 @@ const ACTION_COLORS: Record<string, string> = {
   compliance_check_failed: 'bg-red-100 text-red-700',
   policy_published: 'bg-green-100 text-green-700',
   policy_unpublished: 'bg-neutral-100 text-neutral-700',
-  policy_updated: 'bg-blue-100 text-blue-700',
+  policy_updated: 'bg-primary-100 text-primary-700',
   payment_settings_changed: 'bg-purple-100 text-purple-700',
   shipping_settings_changed: 'bg-cyan-100 text-cyan-700',
   return_settings_changed: 'bg-amber-100 text-amber-700',
@@ -218,7 +218,7 @@ export default function AuditLogs() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
-            <History className="h-6 w-6 text-blue-500" />
+            <History className="h-6 w-6 text-primary-500" />
             {t('audit.title', 'سجل التغييرات')}
           </h1>
           <p className="text-sm text-neutral-500 mt-1">
@@ -228,7 +228,7 @@ export default function AuditLogs() {
         <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
           <Filter className="h-4 w-4 ml-2" />
           {t('audit.filters', 'الفلاتر')}
-          {hasFilters && <Badge className="mr-2 bg-blue-500 text-white border-0 h-5 w-5 p-0 flex items-center justify-center text-xs">!</Badge>}
+          {hasFilters && <Badge className="mr-2 bg-primary-500 text-white border-0 h-5 w-5 p-0 flex items-center justify-center text-xs">!</Badge>}
         </Button>
       </div>
 

@@ -128,12 +128,12 @@ export default function MarketplaceGuide() {
             ))}
           </div>
 
-          <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100">
+          <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-primary-50 to-indigo-50 border border-primary-100">
             <div className="flex items-center gap-3">
-              <BookOpen className="h-5 w-5 text-blue-600" />
+              <BookOpen className="h-5 w-5 text-primary-600" />
               <div>
-                <p className="text-sm font-bold text-blue-900">{t('marketplaceGuide.overview', 'نظرة عامة')}</p>
-                <p className="text-xs text-blue-700 mt-0.5">
+                <p className="text-sm font-bold text-primary-900">{t('marketplaceGuide.overview', 'نظرة عامة')}</p>
+                <p className="text-xs text-primary-700 mt-0.5">
                   {active === 'salla' && 'تستخدم سلة بروتوكول OAuth 2.0 للربط الآمن. بعد الربط، يمكنك استيراد الطلبات والمنتجات والمخزون.'}
                   {active === 'zid' && 'تستخدم زد بروتوكول OAuth 2.0. يتطلب الربط رمزين: Authorization و X-Manager-Token.'}
                   {active === 'noon' && 'تستخدم نون توكن JWT ذاتي التوقيع (RS256) بدلاً من OAuth. تحتاج Client ID ومفتاح RSA خاص.'}
@@ -145,7 +145,7 @@ export default function MarketplaceGuide() {
 
           <div className="mt-6 flex justify-center">
             <Button
-              className="rounded-md bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40"
+              className="rounded-md bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40"
               onClick={() => navigate(`/channels/${active}`)}
             >
               <ExternalLink className="h-4 w-4 ms-1" />

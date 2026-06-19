@@ -241,7 +241,7 @@ export default function Brands() {
             </div>
             <div className="space-y-1">
               <Label className="text-sm text-neutral-500">الوصف</Label>
-              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="flex h-20 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="flex h-20 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none" />
             </div>
             <div className="space-y-1">
               <Label className="text-sm text-neutral-500">الموقع الإلكتروني</Label>
@@ -251,7 +251,7 @@ export default function Brands() {
               <Label className="text-sm text-neutral-500">الحالة</Label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <span className="text-sm text-neutral-600">{form.isActive ? 'نشط' : 'غير نشط'}</span>
-                <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" aria-label="الحالة" />
+                <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" aria-label="الحالة" />
               </label>
             </div>
           </div>

@@ -13,7 +13,7 @@ import { formatCurrency } from '@/lib/utils';
 
 const statusColors: Record<string, string> = {
   confirmed: 'bg-emerald-100 text-emerald-700',
-  processing: 'bg-blue-100 text-blue-700',
+  processing: 'bg-primary-100 text-primary-700',
   shipped: 'bg-purple-100 text-purple-700',
   delivered: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-red-100 text-red-700',
@@ -245,7 +245,7 @@ export default function Reports() {
               <p className="text-sm text-neutral-500">{t('reports.totalOrders')}</p>
               <p className="text-2xl font-bold text-neutral-900 mt-1">{salesSummary?.totalOrders ?? 0}</p>
             </div>
-            <div className="p-3.5 rounded-2xl bg-blue-50 text-blue-600"><ShoppingCart className="h-5 w-5" /></div>
+            <div className="p-3.5 rounded-2xl bg-primary-50 text-primary-600"><ShoppingCart className="h-5 w-5" /></div>
           </div>
         </div>
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">

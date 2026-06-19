@@ -22,17 +22,17 @@ type Props = {
 export function AiGreetingCard({ greeting, t }: Props) {
   if (!greeting) return null;
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-violet-50 rounded-2xl p-4 border border-blue-200/50 shadow-card">
+    <div className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-indigo-50 to-violet-50 rounded-2xl p-4 border border-primary-200/50 shadow-card">
       <div className="relative flex items-start gap-2.5">
-        <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl text-white shadow-lg shadow-blue-500/25 shrink-0">
+        <div className="p-2 bg-gradient-to-br from-primary-500 to-indigo-600 rounded-xl text-white shadow-lg shadow-primary-500/25 shrink-0">
           <Bot className="h-4 w-4" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-            <span className="text-sm font-bold text-blue-900">
+            <span className="text-sm font-bold text-primary-900">
               {t("dashboard.aiAssistant", "المساعد الذكي")}
             </span>
-            <span className="flex items-center gap-1 text-xs text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full font-medium">
+            <span className="flex items-center gap-1 text-xs text-primary-600 bg-primary-100 px-1.5 py-0.5 rounded-full font-medium">
               <Sparkles className="h-2.5 w-2.5" />
               {t("dashboard.aiPowered", "AI")}
             </span>

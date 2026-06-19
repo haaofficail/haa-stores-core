@@ -210,10 +210,10 @@ export default function SettlementOverview() {
         </Button>
       </div>
 
-      <div className="bg-blue-50/50 border border-blue-200/50 rounded-3xl p-4">
+      <div className="bg-primary-50/50 border border-primary-200/50 rounded-3xl p-4">
         <div className="flex items-start gap-3">
-          <Info className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
-          <div className="text-sm text-blue-800 space-y-1">
+          <Info className="h-5 w-5 text-primary-500 mt-0.5 shrink-0" />
+          <div className="text-sm text-primary-800 space-y-1">
             <p className="font-medium">{t('settlement.scheduleInfo')}</p>
             <p className="text-xs">{t('settlement.availableInfo')}</p>
             <p className="text-xs">{t('settlement.pendingInfo')}</p>
@@ -331,7 +331,7 @@ export default function SettlementOverview() {
               step="0.01"
               value={requestAmount}
               onChange={(e) => setRequestAmount(e.target.value)}
-              className="w-full border border-neutral-200 rounded-2xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-neutral-200 rounded-2xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <div className="flex justify-end gap-2 mt-5">
               <Button
@@ -414,7 +414,7 @@ export default function SettlementOverview() {
                     <TableCell className="p-3">
                       <Link
                         to={`/wallet/settlements/${batch.id}`}
-                        className="font-mono text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
+                        className="font-mono text-sm font-semibold text-primary-600 hover:text-primary-800 hover:underline inline-flex items-center gap-1"
                       >
                         {settlementRef}
                       </Link>

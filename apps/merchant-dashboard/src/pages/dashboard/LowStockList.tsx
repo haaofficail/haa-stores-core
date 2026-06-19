@@ -52,7 +52,7 @@ export function LowStockList({
         {products.length > 3 && (
           <button
             onClick={() => navigate("/products")}
-            className="text-xs font-bold text-blue-600"
+            className="text-xs font-bold text-primary-600"
           >
             {t("common.viewAll", "عرض الكل")}
           </button>

@@ -36,7 +36,7 @@ function PlaceholderCard({ icon, title, description, href, linkLabel }: Placehol
           <p className="font-bold text-sm text-neutral-900">{title}</p>
           <p className="text-sm text-neutral-400 mt-1">{description}</p>
           {href && linkLabel && (
-            <a href={href} className="inline-flex items-center gap-1 text-sm text-blue-500 hover:underline mt-2">
+            <a href={href} className="inline-flex items-center gap-1 text-sm text-primary-500 hover:underline mt-2">
               {linkLabel} <ExternalLink className="h-3 w-3" />
             </a>
           )}
@@ -102,10 +102,10 @@ export function PaymentStatusSection() {
       )}
 
       {!moyasarConfigured && activeMode === 'fake' && (
-        <div className="bg-blue-50/50 border border-blue-200/50 rounded-3xl p-5">
+        <div className="bg-primary-50/50 border border-primary-200/50 rounded-3xl p-5">
           <div className="flex items-start gap-3">
-            <Info className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
-            <div className="text-sm text-blue-800">
+            <Info className="h-5 w-5 text-primary-500 mt-0.5 shrink-0" />
+            <div className="text-sm text-primary-800">
               <p className="font-bold">{t('settings.sandboxReadyTitle')}</p>
               <p className="text-sm mt-1">{t('settings.sandboxReadyDesc')}</p>
             </div>

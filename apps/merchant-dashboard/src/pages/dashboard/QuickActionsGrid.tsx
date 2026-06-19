@@ -34,7 +34,7 @@ export function QuickActionsGrid({ t }: Props) {
       <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
         <button
           onClick={() => navigate("/products?create=true")}
-          className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
+          className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
         >
           <Plus className="h-4 w-4" />
           <span className="text-sm font-bold">

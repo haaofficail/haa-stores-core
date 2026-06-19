@@ -126,7 +126,7 @@ export function EmployeeFormDialog({
         <div className="px-6 py-4 space-y-4">
           {loading && (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
+              <Loader2 className="h-6 w-6 text-primary-500 animate-spin" />
               <span className="ml-2 text-sm text-neutral-500">جاري تحميل الصلاحيات...</span>
             </div>
           )}
@@ -164,9 +164,9 @@ export function EmployeeFormDialog({
             <input type="hidden" name="loading" value={loading.toString()} />
 
             {mode === 'create' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-              <div className="text-xs text-blue-700">
+            <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-primary-500 mt-0.5 shrink-0" />
+              <div className="text-xs text-primary-700">
                 تم إنشاء الموظف محليًا. إرسال الدعوات البريدية غير مفعّل بعد.
               </div>
             </div>
@@ -195,7 +195,7 @@ export function EmployeeFormDialog({
               type="checkbox"
               checked={form.isActive}
               onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))}
-              className="h-4 w-4 rounded border-neutral-300 text-blue-600"
+              className="h-4 w-4 rounded border-neutral-300 text-primary-600"
             />
             <span className="text-sm text-neutral-700">الحساب نشط</span>
           </div>
@@ -230,7 +230,7 @@ export function EmployeeFormDialog({
           <button
             onClick={handleSave}
             disabled={saving || !onSave}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center gap-2"
           >
             {saving ? 'جاري الحفظ...' : mode === 'create' ? 'إضافة الموظف' : 'حفظ التغييرات'}
           </button>

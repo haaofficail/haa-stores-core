@@ -44,7 +44,7 @@ const typeIcons: Record<string, React.ReactNode> = {
 
 const typeColors: Record<string, { bg: string; icon: string; badge: string }> = {
   sale:         { bg: 'bg-emerald-50',     icon: 'text-emerald-600',   badge: 'border-emerald-200 bg-emerald-50/60 text-emerald-700' },
-  platform_fee: { bg: 'bg-blue-50',        icon: 'text-blue-600',      badge: 'border-blue-200 bg-blue-50/60 text-blue-700' },
+  platform_fee: { bg: 'bg-primary-50',        icon: 'text-primary-600',      badge: 'border-primary-200 bg-primary-50/60 text-primary-700' },
   payment_fee:  { bg: 'bg-amber-50',       icon: 'text-amber-600',     badge: 'border-amber-200 bg-amber-50/60 text-amber-700' },
   shipping_fee: { bg: 'bg-purple-50',      icon: 'text-purple-600',    badge: 'border-purple-200 bg-purple-50/60 text-purple-700' },
   refund:       { bg: 'bg-rose-50',        icon: 'text-rose-600',      badge: 'border-rose-200 bg-rose-50/60 text-rose-700' },
@@ -314,7 +314,7 @@ export default function WalletPage() {
         {summary?.platformFee && (
           <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-4">
             <div className="flex items-start gap-3">
-              <div className="p-2 rounded-2xl bg-blue-50 text-blue-600 shrink-0">
+              <div className="p-2 rounded-2xl bg-primary-50 text-primary-600 shrink-0">
                 <Banknote className="h-4 w-4" />
               </div>
               <div className="text-sm text-neutral-700 space-y-1.5 flex-1">
@@ -322,7 +322,7 @@ export default function WalletPage() {
                   <p className="font-medium text-neutral-900">
                     {t('wallet.platformFeePolicyTitle', 'رسوم منصة Haa')}
                   </p>
-                  <span className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50/60 text-blue-700 px-2 py-1 text-xs">
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-primary-200 bg-primary-50/60 text-primary-700 px-2 py-1 text-xs">
                     {summary.platformFee.label}
                   </span>
                 </div>

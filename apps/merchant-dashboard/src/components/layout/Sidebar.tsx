@@ -130,8 +130,8 @@ function NavGroup({ titleKey, title, items }: { titleKey: string; title: string;
                 cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
                   isActive
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25'
-                    : 'text-neutral-700 hover:bg-white hover:shadow-sm',
+                    ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25'
+                    : 'text-neutral-700 hover:bg-surface-1 hover:shadow-sm',
                 )
               }
 
@@ -155,7 +155,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
     <>
       {open && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onClose} />}
       <aside className={cn(
-        'w-64 bg-white/50 backdrop-blur-xl flex flex-col shrink-0 shadow-xl',
+        'w-64 bg-surface-1/50 backdrop-blur-xl flex flex-col shrink-0 shadow-xl',
 
         'fixed inset-y-0 z-50 transition-transform duration-300',
         isRTL ? 'left-0' : 'right-0',
@@ -163,7 +163,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
         open ? 'translate-x-0' : isRTL ? '-translate-x-full' : 'translate-x-full',
       )}>
       <div className="h-16 px-4 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-500/25">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-primary-500/25">
           {t('sidebar.logoLetter', 'ه')}
         </div>
         <div className="flex flex-col">
@@ -181,7 +181,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
           href={`${storefrontBase}/marketplace`}
           target="_blank"
           rel="noopener noreferrer"
-          className="mb-3 flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100"
+          className="mb-3 flex items-center gap-2 rounded-lg border border-primary-100 bg-primary-50 px-3 py-2 text-sm font-semibold text-primary-700 transition-colors hover:bg-primary-100"
         >
           <Store className="h-4 w-4 shrink-0" />
           <span className="flex-1 truncate">{t('nav.haaMarketplace', 'سوق هاء العام')}</span>

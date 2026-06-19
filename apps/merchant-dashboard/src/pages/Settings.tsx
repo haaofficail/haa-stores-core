@@ -318,7 +318,7 @@ export default function SettingsPage() {
               </div>
               <div className="col-span-2 space-y-1.5">
                 <Label className="text-sm text-neutral-500">{t('settings.description')}</Label>
-                <textarea className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" value={form.description} onChange={e => updateField('description', e.target.value)} />
+                <textarea className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500" value={form.description} onChange={e => updateField('description', e.target.value)} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm text-neutral-500">{t('settings.logoUrl')}</Label>
@@ -384,7 +384,7 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm text-neutral-500">{t('settings.seoDescription')}</Label>
-                <textarea className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" value={form.seoDescription} onChange={e => updateField('seoDescription', e.target.value)} maxLength={160} />
+                <textarea className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500" value={form.seoDescription} onChange={e => updateField('seoDescription', e.target.value)} maxLength={160} />
                 <p className="text-xs text-neutral-400">{(form.seoDescription?.length ?? 0)}/160</p>
                 <FieldError message={errors.seoDescription} />
               </div>
@@ -413,7 +413,7 @@ export default function SettingsPage() {
                   <div className="flex-1">
                     <p className="font-bold text-sm text-neutral-900">{t('settings.socialPlaceholder')}</p>
                     <p className="text-sm text-neutral-400 mt-1">{t('settings.socialLinksHint', 'تعديل روابط التواصل من محرر الثيم')}</p>
-                    <a href="/theme" className="inline-flex items-center gap-1 text-sm text-blue-500 hover:underline mt-2">
+                    <a href="/theme" className="inline-flex items-center gap-1 text-sm text-primary-500 hover:underline mt-2">
                       {t('settings.openThemeEditor', 'فتح محرر الثيم')} <ExternalLink className="h-3 w-3" />
                     </a>
                   </div>
@@ -430,19 +430,19 @@ export default function SettingsPage() {
                       <div className="space-y-2">
                         <input type="text" value={storeConfig.city ?? ''}
                           onChange={e => setStoreConfig(p => ({ ...p, city: e.target.value || null }))}
-                          className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                           placeholder={t('settings.cityPlaceholder', 'المدينة')} />
                         <input type="text" value={storeConfig.district ?? ''}
                           onChange={e => setStoreConfig(p => ({ ...p, district: e.target.value || null }))}
-                          className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                           placeholder={t('settings.districtPlaceholder', 'الحي')} />
                         <input type="text" value={storeConfig.street ?? ''}
                           onChange={e => setStoreConfig(p => ({ ...p, street: e.target.value || null }))}
-                          className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                           placeholder={t('settings.streetPlaceholder', 'الشارع')} />
                         <input type="text" value={storeConfig.postalCode ?? ''}
                           onChange={e => setStoreConfig(p => ({ ...p, postalCode: e.target.value || null }))}
-                          className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                           placeholder={t('settings.postalCodePlaceholder', 'الرمز البريدي')} />
                       </div>
                       <div className="flex justify-end gap-2 mt-2">
@@ -492,7 +492,7 @@ export default function SettingsPage() {
                     </div>
                     <textarea value={storeConfig.welcomeMessage ?? ''}
                       onChange={e => setStoreConfig(p => ({ ...p, welcomeMessage: e.target.value || null }))}
-                      className="mt-2 w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-2 w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
                       rows={2} maxLength={500}
                       placeholder={t('settings.welcomeMessagePlaceholder', 'رسالة ترحيبية تظهر للعملاء...')} />
                     <p className="text-xs text-neutral-400 mt-1">{t('settings.welcomeMessageHint', 'تظهر في صفحة المتجر الرئيسية')}</p>
@@ -516,7 +516,7 @@ export default function SettingsPage() {
                     <div className="mt-2 flex items-center gap-2">
                       <input type="number" min={0} max={365} value={storeConfig.preparationTime}
                         onChange={e => setStoreConfig(p => ({ ...p, preparationTime: Math.max(0, parseInt(e.target.value) || 0) }))}
-                        className="w-20 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        className="w-20 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-primary-500" />
                       <span className="text-sm text-neutral-500">{t('settings.prepTimeUnit', 'أيام')}</span>
                     </div>
                     <p className="text-xs text-neutral-400 mt-1">{t('settings.prepTimeHint', 'الوقت المتوقع لتجهيز الطلب قبل الشحن')}</p>
@@ -540,7 +540,7 @@ export default function SettingsPage() {
                     <div className="mt-2 flex items-center gap-2">
                       <input type="number" min={0} step={0.01} value={Number(storeConfig.minOrderAmount)}
                         onChange={e => setStoreConfig(p => ({ ...p, minOrderAmount: e.target.value || '0' }))}
-                        className="w-24 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        className="w-24 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-primary-500" />
                       <span className="text-sm text-neutral-500">SAR</span>
                     </div>
                     <p className="text-xs text-neutral-400 mt-1">{t('settings.minOrderHint', 'الحد الأدنى لقيمة الطلب ليتم تأكيده')}</p>
@@ -574,13 +574,13 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="shipping" className="space-y-4">
-          <div className="bg-blue-50/50 border border-blue-200/50 rounded-3xl p-6">
+          <div className="bg-primary-50/50 border border-primary-200/50 rounded-3xl p-6">
             <div className="flex items-start gap-3">
-              <Info className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
-              <div className="text-sm text-blue-800">
+              <Info className="h-5 w-5 text-primary-500 mt-0.5 shrink-0" />
+              <div className="text-sm text-primary-800">
                 <p className="font-bold">{t('settings.shippingInfoTitle')}</p>
                 <p className="text-sm mt-1">{t('settings.shippingInfoDesc')}</p>
-                <a href="/shipping" className="inline-flex items-center gap-1 text-sm text-blue-700 hover:underline mt-2">
+                <a href="/shipping" className="inline-flex items-center gap-1 text-sm text-primary-700 hover:underline mt-2">
                   {t('settings.goToShipping')} <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
@@ -678,7 +678,7 @@ export default function SettingsPage() {
                 <div className="space-y-1.5">
                   <Label className="text-sm text-neutral-500">الجدول CSV</Label>
                   <textarea
-                    className="flex min-h-36 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-mono text-left direction-ltr focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    className="flex min-h-36 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-mono text-left direction-ltr focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                     dir="ltr"
                     value={sizeGuideForm.rowsText}
                     onChange={e => setSizeGuideForm(p => ({ ...p, rowsText: e.target.value }))}
@@ -698,7 +698,7 @@ export default function SettingsPage() {
                             ...p,
                             categoryIds: selected ? p.categoryIds.filter(id => id !== cat.id) : [...p.categoryIds, cat.id],
                           }))}
-                          className={`px-3 py-1.5 rounded-xl text-sm border transition-colors ${selected ? 'bg-blue-500 text-white border-blue-500' : 'bg-white hover:bg-neutral-50 border-neutral-200 text-neutral-700'}`}
+                          className={`px-3 py-1.5 rounded-xl text-sm border transition-colors ${selected ? 'bg-primary-500 text-white border-primary-500' : 'bg-white hover:bg-neutral-50 border-neutral-200 text-neutral-700'}`}
                         >
                           {cat.name}
                         </button>
@@ -822,7 +822,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm text-neutral-500">{t('settings.giftWrapInstructions', 'تعليمات التغليف')}</Label>
-                  <textarea className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  <textarea className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                     value={giftOptions.giftWrapInstructions ?? ''}
                     onChange={e => setGiftOptions(p => ({ ...p, giftWrapInstructions: e.target.value || null }))}
                     placeholder={t('settings.giftWrapInstructionsPlaceholder', 'سيتم تغليف الطلب كهدية مناسبة...')} />
@@ -936,7 +936,7 @@ export default function SettingsPage() {
             {/* Pickup Instructions */}
             <div className="mt-4 space-y-1.5">
               <Label className="text-sm text-neutral-500">{t('settings.pickupInstructions', 'تعليمات الاستلام')}</Label>
-              <textarea className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              <textarea className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                 value={giftOptions.pickupInstructions ?? ''}
                 onChange={e => setGiftOptions(p => ({ ...p, pickupInstructions: e.target.value || null }))}
                 placeholder={t('settings.pickupInstructionsPlaceholder', 'يرجى إحضار رقم الطلب عند الاستلام...')} />
@@ -1037,7 +1037,7 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-neutral-500">{t('settings.pickupInstructions', 'تعليمات الاستلام')}</Label>
-              <textarea className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              <textarea className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                 value={pickupForm.instructions} onChange={e => setPickupForm(p => ({ ...p, instructions: e.target.value }))}
                 placeholder={t('settings.pickupInstructionsPlaceholder', 'يرجى إحضار رقم الطلب عند الاستلام...')} />
             </div>

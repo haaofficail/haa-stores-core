@@ -225,7 +225,7 @@ export default function Subscriptions() {
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
           <div className="p-6">
             <div className="flex items-center gap-2 mb-4">
-              <Package className="h-5 w-5 text-blue-500" />
+              <Package className="h-5 w-5 text-primary-500" />
               <h3 className="font-bold text-lg text-neutral-900">{t('subscriptions.usageAndLimits')}</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -279,7 +279,7 @@ export default function Subscriptions() {
           {plans.map((plan) => {
             const isCurrent = currentPlan?.planId === plan.id;
             return (
-              <div key={plan.id} className={`bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden ${isCurrent ? 'ring-2 ring-blue-500' : ''}`}>
+              <div key={plan.id} className={`bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden ${isCurrent ? 'ring-2 ring-primary-500' : ''}`}>
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-bold text-lg text-neutral-900">{plan.name}</h3>

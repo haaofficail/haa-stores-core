@@ -49,8 +49,8 @@ export default function CompliancePage() {
   const STATUS_MAP: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode; message: string }> = {
     not_started:    { label: t('compliance.statusCard.notStarted'),       color: 'text-neutral-700', bg: 'bg-neutral-50 border-neutral-200', icon: <Clock className="h-6 w-6 text-neutral-400" />, message: t('compliance.statusCard.notStartedMsg') },
     draft:          { label: t('compliance.statusCard.draft'),            color: 'text-yellow-700', bg: 'bg-yellow-50 border-yellow-200', icon: <FileText className="h-6 w-6 text-yellow-500" />,  message: t('compliance.statusCard.draftMsg') },
-    submitted:      { label: t('compliance.statusCard.submitted'),        color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-200',     icon: <Clock className="h-6 w-6 text-blue-500" />,       message: t('compliance.statusCard.submittedMsg') },
-    under_review:   { label: t('compliance.statusCard.underReview'),      color: 'text-blue-700',   bg: 'bg-blue-50 border-blue-200',     icon: <ShieldCheck className="h-6 w-6 text-blue-500" />, message: t('compliance.statusCard.underReviewMsg') },
+    submitted:      { label: t('compliance.statusCard.submitted'),        color: 'text-primary-700',   bg: 'bg-primary-50 border-primary-200',     icon: <Clock className="h-6 w-6 text-primary-500" />,       message: t('compliance.statusCard.submittedMsg') },
+    under_review:   { label: t('compliance.statusCard.underReview'),      color: 'text-primary-700',   bg: 'bg-primary-50 border-primary-200',     icon: <ShieldCheck className="h-6 w-6 text-primary-500" />, message: t('compliance.statusCard.underReviewMsg') },
     approved:       { label: t('compliance.statusCard.approved'),         color: 'text-green-700',  bg: 'bg-green-50 border-green-200',   icon: <CheckCircle2 className="h-6 w-6 text-green-500" />, message: t('compliance.statusCard.approvedMsg') },
     rejected:       { label: t('compliance.statusCard.rejected'),         color: 'text-red-700',    bg: 'bg-red-50 border-red-200',       icon: <XCircle className="h-6 w-6 text-red-500" />,       message: t('compliance.statusCard.rejectedMsg') },
     needs_more_info:{ label: t('compliance.statusCard.needsMoreInfo'),    color: 'text-orange-700', bg: 'bg-orange-50 border-orange-200', icon: <AlertTriangle className="h-6 w-6 text-orange-500" />, message: t('compliance.statusCard.needsMoreInfoMsg') },
@@ -341,7 +341,7 @@ export default function CompliancePage() {
     switch (s) {
       case 'approved': return 'bg-green-100 text-green-700 border-green-200';
       case 'rejected': return 'bg-red-100 text-red-700 border-red-200';
-      case 'uploaded': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'uploaded': return 'bg-primary-100 text-primary-700 border-primary-200';
       default: return 'bg-neutral-100 text-neutral-500 border-neutral-200';
     }
   };
@@ -364,9 +364,9 @@ export default function CompliancePage() {
       <h1 className="text-2xl font-bold text-neutral-900">{t('compliance.title')}</h1>
 
       {/* Privacy Alert */}
-      <div className="bg-blue-50/50 border border-blue-200/50 rounded-3xl p-4 flex items-start gap-3">
-        <Info className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
-        <p className="text-sm text-blue-800">
+      <div className="bg-primary-50/50 border border-primary-200/50 rounded-3xl p-4 flex items-start gap-3">
+        <Info className="h-5 w-5 text-primary-500 mt-0.5 shrink-0" />
+        <p className="text-sm text-primary-800">
           {t('compliance.privacyAlert.message')}
         </p>
       </div>
@@ -812,9 +812,9 @@ export default function CompliancePage() {
             </div>
           )}
 
-          <div className="mt-3 p-3 bg-blue-50/50 border border-blue-200/50 rounded-2xl flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-blue-500 shrink-0" />
-            <p className="text-xs text-blue-700">{t('compliance.bankAccount.securityNotice')}</p>
+          <div className="mt-3 p-3 bg-primary-50/50 border border-primary-200/50 rounded-2xl flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-primary-500 shrink-0" />
+            <p className="text-xs text-primary-700">{t('compliance.bankAccount.securityNotice')}</p>
           </div>
 
           <div className="flex justify-end gap-3 mt-6">

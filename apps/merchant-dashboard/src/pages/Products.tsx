@@ -21,7 +21,7 @@ import { PermissionGate } from '@/lib/permissions';
 
 const PROVIDERS = [
   { code: 'salla', name: 'سلة', color: 'from-green-400 via-green-600 to-green-800' },
-  { code: 'zid', name: 'زد', color: 'from-blue-400 via-blue-600 to-blue-800' },
+  { code: 'zid', name: 'زد', color: 'from-primary-400 via-primary-600 to-primary-800' },
   { code: 'noon', name: 'نون', color: 'from-amber-300 via-amber-500 to-amber-600' },
   { code: 'amazon', name: 'أمازون', color: 'from-orange-400 via-orange-600 to-gray-900' },
 ];
@@ -675,13 +675,13 @@ export default function Products() {
             <div className="space-y-2">
               {/* Store channel — always available */}
               <label className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
-                selectedChannels.includes('store') ? 'border-blue-300 bg-blue-50/50' : 'border-neutral-200 hover:border-neutral-300 bg-white'
+                selectedChannels.includes('store') ? 'border-primary-300 bg-primary-50/50' : 'border-neutral-200 hover:border-neutral-300 bg-white'
               }`}>
                 <input type="checkbox" checked={selectedChannels.includes('store')}
                   onChange={() => setSelectedChannels(prev =>
                     prev.includes('store') ? prev.filter(c => c !== 'store') : [...prev, 'store']
                   )}
-                  className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />
+                  className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-neutral-600 to-neutral-800 flex items-center justify-center text-white text-xs font-bold shrink-0">
                   <Store className="h-4 w-4" />
                 </div>
@@ -704,13 +704,13 @@ export default function Products() {
                 const isSelected = selectedChannels.includes(p.code);
                 return (
                   <label key={p.code} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${
-                    isSelected ? 'border-blue-300 bg-blue-50/50' : 'border-neutral-200 hover:border-neutral-300 bg-white'
+                    isSelected ? 'border-primary-300 bg-primary-50/50' : 'border-neutral-200 hover:border-neutral-300 bg-white'
                   }`}>
                     <input type="checkbox" checked={isSelected}
                       onChange={() => setSelectedChannels(prev =>
                         prev.includes(p.code) ? prev.filter(c => c !== p.code) : [...prev, p.code]
                       )}
-                      className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" />
+                      className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
                     <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
                       <Store className="h-4 w-4" />
                     </div>
@@ -733,7 +733,7 @@ export default function Products() {
                 onClick={() => { setPublishDialog(prev => ({ ...prev, open: false })); setPublishProductData(null); }}>
                 إلغاء
               </Button>
-              <Button size="sm" className="rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25"
+              <Button size="sm" className="rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25"
                 disabled={publishing || !storeId || selectedChannels.length === 0}
                 onClick={async () => {
                   if (!storeId || selectedChannels.length === 0) return;

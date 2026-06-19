@@ -55,7 +55,7 @@ export function NextActionBanner({ items, t }: Props) {
         {items.length > 3 && (
           <button
             onClick={() => navigate("/orders")}
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+            className="text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors"
           >
             {t("dashboard.actionCenter.viewAll", "عرض الكل")}
           </button>
@@ -76,7 +76,7 @@ export function NextActionBanner({ items, t }: Props) {
                     ? "#c7d2fe"
                     : item.bg === "bg-violet-50"
                       ? "#ddd6fe"
-                      : item.bg === "bg-blue-50"
+                      : item.bg === "bg-primary-50"
                         ? "#bfdbfe"
                         : "#fecaca",
             }}

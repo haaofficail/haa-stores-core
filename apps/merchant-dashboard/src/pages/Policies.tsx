@@ -14,7 +14,7 @@ import { PermissionGate } from '@/lib/permissions';
 const POLICY_TYPES = ['privacy', 'terms', 'shipping', 'returns', 'about'] as const;
 
 const typeIcons: Record<string, React.ReactNode> = {
-  privacy: <FileText className="h-10 w-10 text-blue-500" />,
+  privacy: <FileText className="h-10 w-10 text-primary-500" />,
   terms: <FileText className="h-10 w-10 text-amber-500" />,
   shipping: <FileText className="h-10 w-10 text-green-500" />,
   returns: <FileText className="h-10 w-10 text-red-500" />,
@@ -272,7 +272,7 @@ export default function Policies() {
             <div className="space-y-1">
               <Label className="text-sm text-neutral-500">{t('policies.contentLabel')}</Label>
               <textarea
-                className="flex h-64 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-y"
+                className="flex h-64 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 resize-y"
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
                 placeholder={t('policies.contentPlaceholder')}
@@ -447,7 +447,7 @@ export default function Policies() {
                 </div>
 
                 {previewResult.globalWarnings.length > 0 && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-700">
+                  <div className="bg-primary-50 border border-primary-200 rounded-xl p-3 text-sm text-primary-700">
                     {previewResult.globalWarnings.map((w: string, i: number) => <div key={i}>• {w}</div>)}
                   </div>
                 )}

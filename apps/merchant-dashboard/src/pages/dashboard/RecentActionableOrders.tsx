@@ -55,7 +55,7 @@ export function RecentActionableOrders({ orders, t }: Props) {
         </h2>
         <button
           onClick={() => navigate("/orders")}
-          className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+          className="text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors"
         >
           {t("dashboard.recentActionable.viewAll", "عرض الكل")}
         </button>
@@ -104,7 +104,7 @@ export function RecentActionableOrders({ orders, t }: Props) {
                     className={`text-xs font-bold px-1.5 py-0.5 rounded-md ${
                       order.fulfillmentType === "local_pickup"
                         ? "bg-violet-100 text-violet-700"
-                        : "bg-blue-100 text-blue-700"
+                        : "bg-primary-100 text-primary-700"
                     }`}
                   >
                     {fulfillmentLabel}
@@ -139,7 +139,7 @@ export function RecentActionableOrders({ orders, t }: Props) {
                   e.stopPropagation();
                   navigate(`/orders?orderId=${order.id}`);
                 }}
-                className="text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-xl transition-all flex-shrink-0"
+                className="text-xs font-bold text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-1.5 rounded-xl transition-all flex-shrink-0"
               >
                 {t("dashboard.recentActionable.open", "فتح الطلب")}
               </button>

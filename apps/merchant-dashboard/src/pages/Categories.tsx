@@ -54,7 +54,7 @@ function SortableItem({ category, depth, onEdit, onDelete, children }: {
             {category.isActive ? t('categories.active') : t('categories.inactive')}
           </Badge>
           {category.showInHome && (
-            <Badge variant="outline" className="text-xs px-2 py-0.5 shrink-0 text-blue-600 border-blue-200 bg-blue-50">
+            <Badge variant="outline" className="text-xs px-2 py-0.5 shrink-0 text-primary-600 border-primary-200 bg-primary-50">
               الرئيسية
             </Badge>
           )}
@@ -273,7 +273,7 @@ export default function Categories() {
               <select
                 value={form.parentId ?? ''}
                 onChange={(e) => setForm({ ...form, parentId: e.target.value ? Number(e.target.value) : null })}
-                className="flex h-9 w-full rounded-lg border border-neutral-200 bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex h-9 w-full rounded-lg border border-neutral-200 bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="">{t('categories.none')}</option>
                 {parentOptions.map(cat => (
@@ -286,7 +286,7 @@ export default function Categories() {
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="flex h-20 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="flex h-20 w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
               />
             </div>
             <div className="space-y-1">
@@ -324,16 +324,16 @@ export default function Categories() {
               <Label className="text-sm text-neutral-500">{t('categories.status')}</Label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <span className="text-sm text-neutral-600">{form.isActive ? t('categories.active') : t('categories.inactive')}</span>
-                <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" aria-label="الحالة" />
+                <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" aria-label="الحالة" />
               </label>
             </div>
             <div className="flex items-center justify-between">
               <Label className="text-sm text-neutral-500">عرض في الرئيسية</Label>
-              <input type="checkbox" checked={form.showInHome} onChange={(e) => setForm({ ...form, showInHome: e.target.checked })} className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" aria-label="عرض في الرئيسية" />
+              <input type="checkbox" checked={form.showInHome} onChange={(e) => setForm({ ...form, showInHome: e.target.checked })} className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" aria-label="عرض في الرئيسية" />
             </div>
             <div className="flex items-center justify-between">
               <Label className="text-sm text-neutral-500">عرض في القائمة</Label>
-              <input type="checkbox" checked={form.showInMenu} onChange={(e) => setForm({ ...form, showInMenu: e.target.checked })} className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500" aria-label="عرض في القائمة" />
+              <input type="checkbox" checked={form.showInMenu} onChange={(e) => setForm({ ...form, showInMenu: e.target.checked })} className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500" aria-label="عرض في القائمة" />
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">

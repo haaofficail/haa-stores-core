@@ -102,7 +102,7 @@ export default function SupportTicketDetail() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <Link to="/support/tickets" className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-blue-600 transition-colors mb-6">
+      <Link to="/support/tickets" className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-primary-600 transition-colors mb-6">
         <ArrowRight className="h-4 w-4" />
         {t('support.backToTickets', 'العودة للتذاكر')}
       </Link>
@@ -119,11 +119,11 @@ export default function SupportTicketDetail() {
         </div>
         <div className="flex items-center gap-2">
           <select value={ticket.status} onChange={e => updateStatus(e.target.value)}
-            className="px-3 py-1.5 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            className="px-3 py-1.5 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
             {statusOptions.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}
           </select>
           <select value={ticket.priority} onChange={e => updatePriority(e.target.value)}
-            className="px-3 py-1.5 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            className="px-3 py-1.5 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
             {priorityOptions.map(p => <option key={p} value={p}>{priorityLabels[p]}</option>)}
           </select>
         </div>
@@ -132,7 +132,7 @@ export default function SupportTicketDetail() {
       <div className="space-y-4 mb-8">
         {allMessages.map((msg, i) => (
           <div key={msg.id || i} className={`flex ${msg.isStaffReply ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[75%] rounded-2xl px-5 py-3.5 ${msg.isStaffReply ? 'bg-blue-50 text-neutral-900' : 'bg-neutral-100 text-neutral-900'}`}>
+            <div className={`max-w-[75%] rounded-2xl px-5 py-3.5 ${msg.isStaffReply ? 'bg-primary-50 text-neutral-900' : 'bg-neutral-100 text-neutral-900'}`}>
               <div className="flex items-center gap-2 mb-1">
                 <MessageSquare className="h-3.5 w-3.5 text-neutral-400" />
                 <span className="text-xs text-neutral-500 font-medium">
@@ -149,11 +149,11 @@ export default function SupportTicketDetail() {
       {ticket.status !== 'resolved' && ticket.status !== 'closed' && (
         <form onSubmit={handleReply} className="border-t border-neutral-200 pt-6">
           <textarea value={reply} onChange={e => setReply(e.target.value)} rows={3}
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y mb-3"
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y mb-3"
             placeholder={t('support.replyPlaceholder', 'اكتب ردك هنا...')}
           />
           <button type="submit" disabled={sending || !reply.trim()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm">
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors text-sm">
             <Send className="h-4 w-4" />
             {sending ? t('support.sending', 'جاري الإرسال...') : t('support.send', 'إرسال الرد')}
           </button>

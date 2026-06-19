@@ -107,7 +107,7 @@ export default function SupportKb() {
           </div>
         </div>
         <button onClick={() => { resetForm(); setShowForm(true); }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors">
           <Plus className="h-4 w-4" /> {t('support.kb.add', 'إضافة مقال')}
         </button>
       </div>
@@ -115,39 +115,39 @@ export default function SupportKb() {
       <div className="relative mb-4">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
         <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-          className="w-full pr-10 px-4 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full pr-10 px-4 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           placeholder={t('support.kb.search', 'بحث...')} />
       </div>
 
       {showForm && (
-        <div className="mb-6 p-5 rounded-xl border border-blue-200 bg-blue-50/50 space-y-4">
+        <div className="mb-6 p-5 rounded-xl border border-primary-200 bg-primary-50/50 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">{t('support.kb.title', 'العنوان')}</label>
               <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">{t('support.kb.slug', 'الرابط المختصر')}</label>
               <input type="text" value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">{t('support.kb.content', 'المحتوى')}</label>
             <textarea value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} rows={8}
-              className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">{t('support.kb.category', 'التصنيف')}</label>
               <input type="text" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">{t('support.kb.sortOrder', 'الترتيب')}</label>
               <input type="number" value={form.sortOrder} onChange={e => setForm({ ...form, sortOrder: Number(e.target.value) })}
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -162,7 +162,7 @@ export default function SupportKb() {
               {t('common.cancel', 'إلغاء')}
             </button>
             <button onClick={handleSave} disabled={saving || !form.title || !form.content || !form.slug}
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+              className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
               {saving ? t('common.saving', 'جاري الحفظ...') : editingId ? t('common.update', 'تحديث') : t('common.save', 'حفظ')}
             </button>
           </div>
@@ -199,7 +199,7 @@ export default function SupportKb() {
                   {article.isPublished ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                 </button>
                 <button onClick={() => startEdit(article)}
-                  className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-blue-600 transition-colors">
+                  className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-primary-600 transition-colors">
                   <Edit3 className="h-4 w-4" />
                 </button>
                 <button onClick={() => handleDelete(article.id)}

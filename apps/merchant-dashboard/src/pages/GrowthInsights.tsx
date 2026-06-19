@@ -282,7 +282,7 @@ export default function GrowthInsights() {
                     <span className="font-semibold">{overview!.addToCarts.toLocaleString()} / {overview!.productViews.toLocaleString()}</span>
                   </div>
                   <div className="h-3 bg-neutral-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${Math.min((overview!.addToCarts / Math.max(overview!.productViews, 1)) * 100, 100)}%` }} />
+                    <div className="h-full bg-primary-500 rounded-full transition-all" style={{ width: `${Math.min((overview!.addToCarts / Math.max(overview!.productViews, 1)) * 100, 100)}%` }} />
                   </div>
                   <div className="text-xs text-neutral-400 mt-1">نسبة التحويل: <Perc value={overview!.productViews > 0 ? overview!.addToCarts / overview!.productViews : null} /></div>
                 </div>
@@ -326,12 +326,12 @@ export default function GrowthInsights() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {insights.map((insight, idx) => (
-                  <div key={idx} className={`p-4 rounded-2xl border ${insight.severity === 'critical' ? 'bg-red-50 border-red-200' : insight.severity === 'warning' ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
+                  <div key={idx} className={`p-4 rounded-2xl border ${insight.severity === 'critical' ? 'bg-red-50 border-red-200' : insight.severity === 'warning' ? 'bg-amber-50 border-amber-200' : 'bg-primary-50 border-primary-200'}`}>
                     <div className="flex items-start gap-3">
                       <div className="mt-0.5">
                         {insight.severity === 'critical' ? <AlertTriangle className="h-5 w-5 text-red-500" /> :
                          insight.severity === 'warning' ? <Target className="h-5 w-5 text-amber-500" /> :
-                         <Lightbulb className="h-5 w-5 text-blue-500" />}
+                         <Lightbulb className="h-5 w-5 text-primary-500" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">

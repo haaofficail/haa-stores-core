@@ -52,7 +52,7 @@ export function RecentSoldProducts({ orders, t }: Props) {
           {t("dashboard.recentSoldProducts", "آخر المنتجات المباعة")}
         </h3>
         <button
-          className="text-sm text-blue-600 hover:text-blue-700 font-bold"
+          className="text-sm text-primary-600 hover:text-primary-700 font-bold"
           onClick={() => navigate("/orders")}
         >
           {t("common.viewAll", "عرض الكل")}

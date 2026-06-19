@@ -16,7 +16,7 @@ export function UnauthorizedState() {
       </p>
       <Link
         to="/dashboard"
-        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+        className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
       >
         {t('unauthorized.backToDashboard', 'العودة للوحة التحكم')}
       </Link>

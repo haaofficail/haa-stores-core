@@ -289,7 +289,7 @@ export default function Coupons() {
             <div className="space-y-1.5">
               <Label className="text-sm text-neutral-500">{t('coupons.labelDescription')}</Label>
               <textarea
-                className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                 value={form.description}
                 onChange={(e) => updateField('description', e.target.value)}
                 placeholder={t('coupons.descPlaceholder')}

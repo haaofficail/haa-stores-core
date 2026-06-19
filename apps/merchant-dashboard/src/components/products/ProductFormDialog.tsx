@@ -98,7 +98,7 @@ export function ProductFormDialog({
               <div className="col-span-2 space-y-1.5">
                 <Label className="text-sm text-neutral-500">{t('products.description')}</Label>
                 <textarea
-                  className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                   value={form.description ?? ''}
                   onChange={(e) => onFieldChange('description', e.target.value)}
                 />
@@ -209,7 +209,7 @@ export function ProductFormDialog({
 
           <FormSection title="سوق هاء العام" defaultOpen={false}>
             <div className="space-y-4">
-              <label className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
+              <label className="flex items-start gap-3 rounded-2xl border border-primary-100 bg-primary-50/50 p-4">
                 <input
                   type="checkbox"
                   checked={form.haaMarketplaceEnabled}
@@ -251,7 +251,7 @@ export function ProductFormDialog({
                 <select
                   value={form.brandId ?? ''}
                   onChange={(e) => onFieldChange('brandId', e.target.value ? Number(e.target.value) : undefined)}
-                  className="flex h-9 w-full rounded-lg border border-neutral-200 bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex h-9 w-full rounded-lg border border-neutral-200 bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="">بدون ماركة</option>
                   {brands.map((b: any) => (
@@ -312,7 +312,7 @@ export function ProductFormDialog({
                               : [...form.categoryIds, cat.id];
                             onFieldChange('categoryIds', ids);
                           }}
-                          className={`px-3 py-1.5 rounded-xl text-sm border transition-colors ${selected ? 'bg-blue-500 text-white border-blue-500' : 'bg-white hover:bg-neutral-50 border-neutral-200 text-neutral-900'}`}
+                          className={`px-3 py-1.5 rounded-xl text-sm border transition-colors ${selected ? 'bg-primary-500 text-white border-primary-500' : 'bg-white hover:bg-neutral-50 border-neutral-200 text-neutral-900'}`}
                         >
                           {cat.name}
                         </button>
@@ -364,9 +364,9 @@ export function ProductFormDialog({
                     </button>
                   </div>
                 ))}
-                <label className={`w-20 h-20 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors ${uploadingImage ? 'border-blue-500/50 bg-blue-500/5' : 'border-neutral-200 hover:border-blue-500'}`}>
+                <label className={`w-20 h-20 rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors ${uploadingImage ? 'border-primary-500/50 bg-primary-500/5' : 'border-neutral-200 hover:border-primary-500'}`}>
                   {uploadingImage ? (
-                    <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+                    <Loader2 className="h-5 w-5 text-primary-500 animate-spin" />
                   ) : (
                     <Upload className="h-5 w-5 text-neutral-400" />
                   )}
@@ -417,7 +417,7 @@ export function ProductFormDialog({
               <div className="space-y-1.5">
                 <Label className="text-sm text-neutral-500">{t('products.seoDescription')}</Label>
                 <textarea
-                  className="flex h-16 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="flex h-16 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                   value={form.seoDescription ?? ''}
                   onChange={(e) => onFieldChange('seoDescription', e.target.value)}
                   maxLength={160}

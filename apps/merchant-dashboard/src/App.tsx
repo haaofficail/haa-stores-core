@@ -76,7 +76,7 @@ function NotFound() {
       <div className="text-center space-y-4">
         <h1 className="text-6xl font-bold text-neutral-200">404</h1>
         <p className="text-lg text-neutral-500">{t('notFound.message', 'الصفحة غير موجودة')}</p>
-        <Link to="/dashboard" className="text-blue-600 hover:text-blue-800 text-sm">{t('notFound.back', 'العودة للرئيسية')}</Link>
+        <Link to="/dashboard" className="text-primary-600 hover:text-primary-800 text-sm">{t('notFound.back', 'العودة للرئيسية')}</Link>
       </div>
     </div>
   );

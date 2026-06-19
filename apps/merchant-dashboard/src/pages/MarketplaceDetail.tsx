@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 
 const PROVIDER_META: Record<string, { name: string; color: string }> = {
   salla: { name: 'سلة', color: 'from-green-400 via-green-600 to-green-800' },
-  zid: { name: 'زد', color: 'from-blue-400 via-blue-600 to-blue-800' },
+  zid: { name: 'زد', color: 'from-primary-400 via-primary-600 to-primary-800' },
   noon: { name: 'نون', color: 'from-amber-300 via-amber-500 to-amber-600' },
   amazon: { name: 'أمازون', color: 'from-orange-400 via-orange-600 to-gray-900' },
 };
@@ -163,7 +163,7 @@ export default function MarketplaceDetailPage() {
                       {field === 'clientId' ? 'Client ID' : field === 'privateKey' ? (provider === 'noon' ? 'Private Key' : 'Client Secret') : field === 'sellerName' ? (provider === 'noon' ? 'Seller Name' : 'Refresh Token') : field === 'partnerId' ? (provider === 'noon' ? 'Partner ID' : 'AWS Access Key') : provider === 'noon' ? 'Warehouse Code' : 'AWS Secret Key'}
                     </Label>
                     {field === 'privateKey' ? (
-                      <textarea dir="ltr" className="w-full rounded-xl border border-neutral-200 bg-white/50 p-3 text-sm font-mono text-left resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/30" rows={3}
+                      <textarea dir="ltr" className="w-full rounded-xl border border-neutral-200 bg-white/50 p-3 text-sm font-mono text-left resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" rows={3}
                         placeholder={provider === 'noon' ? '-----BEGIN RSA PRIVATE KEY----- ...' : 'SP-API Client Secret'}
                         value={(noonCreds as any)[field]} onChange={(e) => setNoonCreds({ ...noonCreds, [field]: e.target.value })} />
                     ) : (
@@ -175,7 +175,7 @@ export default function MarketplaceDetailPage() {
                 {provider === 'amazon' && (
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-neutral-700">{t('marketplaceDetail.marketplace', 'السوق')}</Label>
-                    <select value={amazonMarketplaceId} onChange={(e) => setAmazonMarketplaceId(e.target.value)} className="w-full rounded-xl border border-neutral-200 bg-white/50 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+                    <select value={amazonMarketplaceId} onChange={(e) => setAmazonMarketplaceId(e.target.value)} className="w-full rounded-xl border border-neutral-200 bg-white/50 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30">
                       <option value="sa">{t('marketplaceDetail.country.sa', 'السعودية')}</option><option value="ae">{t('marketplaceDetail.country.ae', 'الإمارات')}</option><option value="eg">{t('marketplaceDetail.country.eg', 'مصر')}</option>
                       <option value="us">{t('marketplaceDetail.country.us', 'الولايات المتحدة')}</option><option value="uk">{t('marketplaceDetail.country.uk', 'بريطانيا')}</option><option value="de">{t('marketplaceDetail.country.de', 'ألمانيا')}</option>
                     </select>
@@ -184,7 +184,7 @@ export default function MarketplaceDetailPage() {
               </div>
             )}
 
-            <Button className="rounded-md bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25" onClick={handleConnect} disabled={connecting}>
+            <Button className="rounded-md bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25" onClick={handleConnect} disabled={connecting}>
               {connecting ? <Loader2 className="h-4 w-4 ms-1 animate-spin" /> : <ExternalLink className="h-4 w-4 ms-1" />}
               {connecting ? t('marketplaceDetail.connecting', 'جاري...') : t('marketplaceDetail.connectButton', `ربط ${meta.name}`)}
             </Button>
@@ -197,7 +197,7 @@ export default function MarketplaceDetailPage() {
             <div className="grid gap-4 grid-cols-3">
               {[
                 { label: t('marketplaceDetail.stat.totalSales', 'إجمالي المبيعات'), value: formatNumber(salesData.totalSales || 0), suffix: t('marketplaceDetail.currency', 'ر.س'), gradient: 'from-emerald-400 to-emerald-600' },
-                { label: t('marketplaceDetail.stat.totalOrders', 'إجمالي الطلبات'), value: String(salesData.totalOrders || 0), suffix: '', gradient: 'from-blue-400 to-blue-600' },
+                { label: t('marketplaceDetail.stat.totalOrders', 'إجمالي الطلبات'), value: String(salesData.totalOrders || 0), suffix: '', gradient: 'from-primary-400 to-primary-600' },
                 { label: t('marketplaceDetail.stat.marketedProducts', 'المنتجات المسوقة'), value: String(listings.length), suffix: '', gradient: 'from-amber-400 to-amber-600' },
               ].map(s => (
                 <Card key={s.label} className="overflow-hidden">
@@ -260,7 +260,7 @@ export default function MarketplaceDetailPage() {
                   </div>
                 )}
                 <div className="mt-5 flex gap-2">
-                  <Button className="rounded-md bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md text-sm" onClick={handleSync} disabled={syncing}>
+                  <Button className="rounded-md bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-md text-sm" onClick={handleSync} disabled={syncing}>
                     <RefreshCw className={`h-4 w-4 ms-1 ${syncing ? 'animate-spin' : ''}`} />
                     {syncing ? t('marketplaceDetail.syncing', 'جاري...') : t('marketplaceDetail.syncOrders', 'مزامنة الطلبات')}
                   </Button>
@@ -293,7 +293,7 @@ export default function MarketplaceDetailPage() {
                           {listing.status === 'active' ? t('marketplaceDetail.status.active', 'نشط') : t('marketplaceDetail.status.inactive', 'غير نشط')}
                         </Badge>
                         {listing.marketplaceUrl && (
-                          <a href={listing.marketplaceUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition-colors">
+                          <a href={listing.marketplaceUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-primary-50 text-primary-500 transition-colors">
                             <ExternalLink className="h-3.5 w-3.5" />
                           </a>
                         )}

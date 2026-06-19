@@ -33,14 +33,14 @@ type Props = {
 const BORDER_MAP: Record<SmartAlert["type"], string> = {
   danger: "border-red-200 bg-red-50",
   warning: "border-amber-200 bg-amber-50",
-  info: "border-blue-200 bg-blue-50",
+  info: "border-primary-200 bg-primary-50",
   success: "border-emerald-200 bg-emerald-50",
 };
 
 const ICON_MAP: Record<SmartAlert["type"], string> = {
   danger: "text-red-500",
   warning: "text-amber-500",
-  info: "text-blue-500",
+  info: "text-primary-500",
   success: "text-emerald-500",
 };
 

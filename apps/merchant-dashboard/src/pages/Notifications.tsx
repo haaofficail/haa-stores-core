@@ -155,7 +155,7 @@ export default function Notifications() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto animate-fade-in">
       <div className="flex items-center gap-3">
-        <Bell className="h-6 w-6 text-blue-500" />
+        <Bell className="h-6 w-6 text-primary-500" />
         <h1 className="text-2xl font-bold text-neutral-900">{t('notifications.title')}</h1>
       </div>
 

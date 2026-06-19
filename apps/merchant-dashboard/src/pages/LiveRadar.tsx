@@ -198,7 +198,7 @@ function HistoryCard({ label, value, icon, color, suffix = '' }: { label: string
       <div className="max-w-7xl mx-auto p-6 text-center">
         <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
         <p className="text-neutral-500">{t('common.error')}</p>
-        <button onClick={loadData} className="mt-4 text-blue-600 hover:text-blue-800 text-sm">{t('common.retry')}</button>
+        <button onClick={loadData} className="mt-4 text-primary-600 hover:text-primary-800 text-sm">{t('common.retry')}</button>
       </div>
     );
   }
@@ -221,7 +221,7 @@ function HistoryCard({ label, value, icon, color, suffix = '' }: { label: string
             <RefreshCw className={`h-3 w-3 ${autoRefresh ? 'animate-spin' : ''}`} />
             {autoRefresh ? 'تحديث تلقائي' : 'إيقاف التحديث'}
           </button>
-          <button onClick={loadData} className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1">
+          <button onClick={loadData} className="text-sm text-primary-600 hover:text-primary-800 flex items-center gap-1">
             <RefreshCw className="h-4 w-4" />
             تحديث
           </button>
@@ -275,7 +275,7 @@ function HistoryCard({ label, value, icon, color, suffix = '' }: { label: string
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-neutral-500">الزوار الآن</CardTitle>
-                <Users className="h-4 w-4 text-blue-500" />
+                <Users className="h-4 w-4 text-primary-500" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{overview!.onlineVisitors}</div>
@@ -332,7 +332,7 @@ function HistoryCard({ label, value, icon, color, suffix = '' }: { label: string
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
-                  <FunnelStep label="زوار" count={funnel.onlineVisitors} color="bg-blue-500" />
+                  <FunnelStep label="زوار" count={funnel.onlineVisitors} color="bg-primary-500" />
                   <FunnelArrow />
                   <FunnelStep label="منتجات" count={funnel.productViewers} color="bg-violet-500" />
                   <FunnelArrow />
@@ -434,7 +434,7 @@ function HistoryCard({ label, value, icon, color, suffix = '' }: { label: string
                       {geo.countries.slice(0, 10).map((c, idx) => (
                         <div key={idx} className="flex items-center justify-between py-2 border-b border-neutral-100 last:border-0">
                           <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-blue-500" />
+                            <MapPin className="h-4 w-4 text-primary-500" />
                             <span className="font-medium text-sm">{c.countryName}</span>
                             <span className="text-xs text-neutral-400">({c.countryCode})</span>
                           </div>
@@ -486,12 +486,12 @@ function HistoryCard({ label, value, icon, color, suffix = '' }: { label: string
               </CardHeader>
               <CardContent className="space-y-4">
                 {alerts.map((alert, idx) => (
-                  <div key={idx} className={`p-4 rounded-2xl border ${alert.severity === 'critical' ? 'bg-red-50 border-red-200' : alert.severity === 'warning' ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
+                  <div key={idx} className={`p-4 rounded-2xl border ${alert.severity === 'critical' ? 'bg-red-50 border-red-200' : alert.severity === 'warning' ? 'bg-amber-50 border-amber-200' : 'bg-primary-50 border-primary-200'}`}>
                     <div className="flex items-start gap-3">
                       <div className="mt-0.5">
                         {alert.severity === 'critical' ? <AlertTriangle className="h-5 w-5 text-red-500" /> :
                          alert.severity === 'warning' ? <Target className="h-5 w-5 text-amber-500" /> :
-                         <Lightbulb className="h-5 w-5 text-blue-500" />}
+                         <Lightbulb className="h-5 w-5 text-primary-500" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -521,7 +521,7 @@ function HistoryCard({ label, value, icon, color, suffix = '' }: { label: string
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <HistoryCard label="أعلى زوار" value={Math.max(...history.map(h => h.onlineVisitors))} icon={<Users className="h-4 w-4" />} color="text-blue-500" />
+                  <HistoryCard label="أعلى زوار" value={Math.max(...history.map(h => h.onlineVisitors))} icon={<Users className="h-4 w-4" />} color="text-primary-500" />
                   <HistoryCard label="أعلى مشاهدين" value={Math.max(...history.map(h => h.activeProductViewers))} icon={<Eye className="h-4 w-4" />} color="text-violet-500" />
                   <HistoryCard label="أعلى سلات" value={Math.max(...history.map(h => h.activeCarts))} icon={<ShoppingCart className="h-4 w-4" />} color="text-amber-500" />
                   <HistoryCard label="أعلى إيراد" value={Number(Math.max(...history.map(h => Number(h.revenueLast30Min)))).toFixed(0)} icon={<DollarSign className="h-4 w-4" />} color="text-emerald-500" suffix="ر.س" />
@@ -600,7 +600,7 @@ function DeviceGroup({ label, data, icon }: { label: string; data: { label: stri
             <div key={idx} className="flex items-center gap-2">
               <span className="text-sm w-24 truncate shrink-0">{d.label}</span>
               <div className="flex-1 h-2 bg-neutral-100 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 rounded-full" style={{ width: `${total > 0 ? (d.count / total) * 100 : 0}%` }} />
+                <div className="h-full bg-primary-500 rounded-full" style={{ width: `${total > 0 ? (d.count / total) * 100 : 0}%` }} />
               </div>
               <span className="text-xs text-neutral-500 w-8 text-left">{d.count}</span>
             </div>

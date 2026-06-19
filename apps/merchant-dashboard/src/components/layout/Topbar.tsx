@@ -40,7 +40,7 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
   const pageInfo = pageTitles[location.pathname] || { title: t('pageTitle.default', 'ها ستورز'), subtitle: '' };
 
   return (
-    <header className="h-16 bg-white/80 backdrop-blur-xl flex items-center justify-between px-6 shrink-0 shadow-sm">
+    <header className="h-16 bg-surface-1/80 backdrop-blur-xl flex items-center justify-between px-6 shrink-0 shadow-sm">
       <div className="flex items-center gap-4">
         {onToggleSidebar && (
           <button onClick={onToggleSidebar} className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 lg:hidden transition-colors">
@@ -62,7 +62,7 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
               type="text"
               placeholder={t('topbar.search', 'بحث...')}
               aria-label={t('topbar.search', 'بحث')}
-              className="h-10 w-64 rounded-lg border border-neutral-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+              className="h-10 w-64 rounded-lg border border-neutral-300 bg-surface-1 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent shadow-sm"
               style={{ paddingInlineEnd: '2.5rem' }}
               autoFocus
               onBlur={() => setSearchOpen(false)}
@@ -72,7 +72,7 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
         ) : (
           <button
             onClick={() => setSearchOpen(true)}
-            className="p-2.5 rounded-lg text-neutral-500 hover:bg-white hover:text-neutral-700 hover:shadow-sm transition-all"
+            className="p-2.5 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 hover:shadow-sm transition-all"
             title={t('topbar.search', 'بحث')}
             aria-label={t('topbar.search', 'بحث')}
           >
@@ -81,7 +81,7 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
         )}
 
         <button
-          className="relative p-2.5 rounded-lg text-neutral-500 hover:bg-white hover:text-neutral-700 hover:shadow-sm transition-all"
+          className="relative p-2.5 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 hover:shadow-sm transition-all"
           title={t('topbar.notifications', 'الإشعارات')}
           aria-label={t('topbar.notifications', 'الإشعارات')}
           onClick={() => navigate('/notifications')}
@@ -94,7 +94,7 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold shadow-lg shadow-blue-500/25">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-semibold shadow-lg shadow-primary-500/25">
               <User className="h-5 w-5" />
             </div>
             <div className="flex flex-col">

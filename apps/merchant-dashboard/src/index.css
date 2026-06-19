@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -35,6 +35,7 @@
   --haa-primary-500: #5c9cd5;
   --haa-primary-600: #5189bb;
   --haa-primary-700: #44739e;
+  --haa-primary-800: #2d5a8a;
 
   /* ── Neutral (Slate) ── */
   --color-neutral-50: #f8fafc;
@@ -64,9 +65,14 @@
   --haa-shadow-color: rgba(15, 23, 42, 0.04);
   --haa-shadow-color-strong: rgba(15, 23, 42, 0.08);
   --shadow-sm: 0 1px 2px var(--haa-shadow-color);
-  --shadow-md: 0 4px 12px var(--haa-shadow-color), 0 1px 3px var(--haa-shadow-color-strong);
-  --shadow-lg: 0 12px 40px var(--haa-shadow-color), 0 4px 12px var(--haa-shadow-color-strong);
-  --shadow-xl: 0 20px 60px var(--haa-shadow-color), 0 8px 20px var(--haa-shadow-color-strong);
+  --shadow-md:
+    0 4px 12px var(--haa-shadow-color), 0 1px 3px var(--haa-shadow-color-strong);
+  --shadow-lg:
+    0 12px 40px var(--haa-shadow-color),
+    0 4px 12px var(--haa-shadow-color-strong);
+  --shadow-xl:
+    0 20px 60px var(--haa-shadow-color),
+    0 8px 20px var(--haa-shadow-color-strong);
 
   /* ── Typography Scale ── */
   --typography-caption2-size: 0.625rem;
@@ -142,7 +148,12 @@
   body {
     background: var(--haa-surface-1);
     color: var(--haa-text-primary);
-    font-family: 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    font-family:
+      "IBM Plex Sans Arabic",
+      -apple-system,
+      BlinkMacSystemFont,
+      "SF Pro Display",
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-size: 15px; /* merchant: between storefront (16) and admin (14) — data density */

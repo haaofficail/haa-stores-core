@@ -293,8 +293,8 @@ export default function MarketingActions() {
               <Card key={action.id} className={`${action.status === 'active' && severity === 'critical' ? 'border-red-200 bg-red-50/30' : ''}`}>
                 <CardContent className="p-5">
                   <div className="flex items-start gap-4">
-                    <div className={`p-2 rounded-xl ${severity === 'critical' ? 'bg-red-100' : severity === 'high' ? 'bg-amber-100' : 'bg-blue-100'}`}>
-                      <Icon className={`h-5 w-5 ${severity === 'critical' ? 'text-red-600' : severity === 'high' ? 'text-amber-600' : 'text-blue-600'}`} />
+                    <div className={`p-2 rounded-xl ${severity === 'critical' ? 'bg-red-100' : severity === 'high' ? 'bg-amber-100' : 'bg-primary-100'}`}>
+                      <Icon className={`h-5 w-5 ${severity === 'critical' ? 'text-red-600' : severity === 'high' ? 'text-amber-600' : 'text-primary-600'}`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">

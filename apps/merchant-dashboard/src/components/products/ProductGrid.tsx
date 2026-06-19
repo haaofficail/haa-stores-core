@@ -60,7 +60,7 @@ export function ProductGrid({ products, selectedIds, onSelect, onEdit, onArchive
           <div
             key={p.id}
             className={`group relative flex flex-col rounded-2xl border bg-white overflow-hidden transition-all hover:shadow-md ${
-              isSelected ? 'border-blue-400 ring-2 ring-blue-200' : 'border-neutral-100'
+              isSelected ? 'border-primary-400 ring-2 ring-primary-200' : 'border-neutral-100'
             }`}
           >
             <div className="absolute top-2 end-2 z-10">
