@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { OrdersService, PaymentService, createPaymentProvider, WalletPostingService } from '@haa/commerce-core';
+import { OrdersService, PaymentService, createPaymentProvider, WalletPostingService, OutboundWebhookService } from '@haa/commerce-core';
 import { WalletLedger } from '@haa/wallet-core';
 import { AuditLogService } from '@haa/integration-core';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
@@ -82,6 +82,13 @@ ordersRouter.patch('/:orderId/status', requirePermission('orders:update_status')
       ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
       userAgent: c.req.header('user-agent'),
     });
+    // Emit outbound webhook for status transitions (best-effort)
+    const webhookEvent = `order.${order.status}` as const;
+    new OutboundWebhookService().emit(storeId, webhookEvent, {
+      orderId,
+      status: order.status,
+      previousStatus: prevStatus,
+    }).catch(() => null);
     return c.json({ success: true, data: order });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Status change failed';

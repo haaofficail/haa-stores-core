@@ -76,6 +76,7 @@ import { pixelsRouter } from './routes/pixels.js';
 import { cartCampaignsRouter } from './routes/cart-campaigns.js';
 import { whatsappCampaignsRouter } from './routes/whatsapp-campaigns.js';
 import { outboundWebhooksRouter } from './routes/outbound-webhooks.js';
+import { zatcaRouter } from './routes/zatca.js';
 import { createDbClient, closeDbClient } from '@haa/db';
 import { eq, sql } from 'drizzle-orm';
 import { setTokenVersionVerifier, setStoreTenantResolver } from '@haa/auth-core';
@@ -234,6 +235,7 @@ app.route('/merchant/:storeId/shipping', shippingRouter);
 app.route('/merchant/:storeId/wallet', walletRouter);
 app.route('/merchant/:storeId/dashboard', dashboardRouter);
 app.route('/merchant/:storeId/settings', settingsRouter);
+app.route('/merchant/:storeId/settings/pixels', pixelsRouter);
 app.route('/merchant/:storeId', merchantDataRouter);
 app.route('/merchant/:storeId/provider-status', providerStatusRouter);
 app.route('/merchant/:storeId/coupons', couponsRouter);
@@ -320,10 +322,10 @@ app.route('/merchant/:storeId/payment-providers', paymentSettingsRouter);
 app.route('/merchant/:storeId', supportRouter);
 app.route('/merchant/:storeId/audit', auditRouter);
 app.route('/merchant/:storeId/marketing', marketingRouter);
-app.route('/merchant/:storeId/settings/pixels', pixelsRouter);
 app.route('/merchant/:storeId/abandoned-carts/campaigns', cartCampaignsRouter);
 app.route('/merchant/:storeId/whatsapp-campaigns', whatsappCampaignsRouter);
 app.route('/merchant/:storeId/outbound-webhooks', outboundWebhooksRouter);
+app.route('/merchant/:storeId', zatcaRouter);
 
 const port = env.API_PORT;
 

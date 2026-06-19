@@ -7,6 +7,7 @@ import { CartProvider } from '@/hooks/CartContext';
 import { useThemeConfig, setThemeApiBase, getStorefrontThemeComponents, resolveStorefrontThemeKey } from '@haa/storefront-themes';
 import { ThemeProvider } from '@/hooks/useTheme';
 import { tracker } from '@/lib/tracker';
+import { usePixels } from '@/hooks/usePixels';
 import '@/theme-registry';
 
 setThemeApiBase(import.meta.env.VITE_API_URL ?? '');
@@ -60,6 +61,8 @@ export default function Layout() {
       tracker.trackPageView(slug);
     }
   }, [slug, location.pathname]);
+
+  usePixels(slug);
 
   if (!themeConfig && !useFallback) {
     return (

@@ -11,6 +11,7 @@ export const JOB_NAMES = {
   livePresenceCleanup: 'live-presence.cleanup',
   liveSnapshot: 'live-snapshot.create',
   marketingActionGenerate: 'marketing-action.generate',
+  whatsappCampaign: 'whatsapp.campaign',
 } as const;
 
 type JobName = typeof JOB_NAMES[keyof typeof JOB_NAMES];
@@ -45,6 +46,30 @@ const scheduledJobs: ScheduledJob[] = [
     handler: async () => {
       const { runLiveSnapshotCron } = await import('@haa/commerce-core');
       await runLiveSnapshotCron();
+    },
+  },
+  {
+    name: JOB_NAMES.whatsappCampaign,
+    intervalMs: 60 * 1000,
+    handler: async () => {
+      const { WhatsAppCampaignService } = await import('@haa/commerce-core');
+      const { createDbClient } = await import('@haa/db');
+      const { whatsappCampaigns } = await import('@haa/db/schema');
+      const { and, eq, lte } = await import('drizzle-orm');
+      const db = createDbClient();
+      const due = await db.select({ id: whatsappCampaigns.id, storeId: whatsappCampaigns.storeId })
+        .from(whatsappCampaigns)
+        .where(and(
+          eq(whatsappCampaigns.status, 'scheduled'),
+          lte(whatsappCampaigns.scheduledAt, new Date()),
+        )).limit(10);
+      for (const campaign of due) {
+        try {
+          await new WhatsAppCampaignService(db).sendCampaign(campaign.id, campaign.storeId);
+        } catch (err) {
+          console.error(`[scheduler] whatsapp.campaign failed for campaign ${campaign.id}:`, err);
+        }
+      }
     },
   },
   {
