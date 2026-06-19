@@ -24,8 +24,11 @@ test.describe('Critical Path: Storefront to Order', () => {
     await page.goto(`${baseUrl}/cart`);
     
     // 4. Proceed to Checkout
-    const checkoutBtn = page.locator('button:has-text("Checkout"), button:has-text("إتمام الطلب")');
-    await checkoutBtn.click();
+    const checkoutLink = page.getByRole('link', {
+      name: /Checkout|إتمام الطلب/i,
+    });
+    await expect(checkoutLink).toBeVisible();
+    await checkoutLink.click();
 
     // 5. Fill Checkout Form
     await page.fill('input[name="customerName"]', 'E2E Test User');
