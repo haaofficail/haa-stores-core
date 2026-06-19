@@ -12,12 +12,13 @@ test.describe('Critical Path: Storefront to Order', () => {
 
     // 2. Select a product
     // We search for the first product card and click it
-    const productCard = page.locator('a[href*="/p/"]').first();
+    const productCard = page.locator('a[href*="/p/"]:visible').first();
+    await expect(productCard).toBeVisible();
     await productCard.click();
 
     // 3. Add to Cart
     const addToCartBtn = page
-      .locator('button')
+      .locator('button:visible')
       .filter({ hasText: /Add|أضف|السلة/i })
       .first();
     await expect(addToCartBtn).toBeVisible();

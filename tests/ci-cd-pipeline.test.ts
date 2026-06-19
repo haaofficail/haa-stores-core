@@ -99,6 +99,26 @@ describe('Quality Pass 1 — CI/CD Pipeline (Item 4)', () => {
     expect(e2eSection).toMatch(/localhost:5175/);
   });
 
+  it('CI troubleshooting guide must document all required green gates', () => {
+    const guide = readFileSync(
+      resolve(projectRoot, 'docs/ops/GITHUB_ACTIONS_TROUBLESHOOTING.md'),
+      'utf-8',
+    );
+    for (const gate of [
+      'Preflight',
+      'Typecheck',
+      'Lint',
+      'Test',
+      'Build API',
+      'Build Merchant Dashboard',
+      'Build Admin Dashboard',
+      'Build Storefront',
+      'E2E',
+    ]) {
+      expect(guide).toContain(gate);
+    }
+  });
+
   it('ci.yml must run pnpm preflight', () => {
     const ciFile = resolve(workflowsDir, 'ci.yml');
     const content = readFileSync(ciFile, 'utf-8');

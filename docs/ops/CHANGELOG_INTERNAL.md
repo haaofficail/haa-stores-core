@@ -13,6 +13,7 @@
 - Changed the API production dependency install to skip lifecycle scripts, preventing the root Husky prepare hook from failing when devDependencies are excluded.
 - Added CI contract coverage for the database service and package-before-app build order.
 - Local verification: 12/12 CI contract tests, 2668 full-suite tests, all workspace packages, and all four apps passed. Docker image build remains delegated to GitHub because Docker is unavailable locally.
+- Added `docs/ops/GITHUB_ACTIONS_TROUBLESHOOTING.md` with the CI architecture, recovered root causes, diagnostic commands, prevention rules, and closure criteria.
 
 ## 2026-06-17 (Session #2: TASK-0034 — Phase 4-9 + Saudi PDPL — ALL 8 SUB-ITEMS DONE)
 

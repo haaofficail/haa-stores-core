@@ -26,6 +26,7 @@
   - [x] CI contract tests pass.
   - [x] Full local test suite passes.
   - [x] All four app builds pass.
+  - [x] Troubleshooting and recovery guide documents root causes, commands, and prevention.
   - [ ] GitHub Actions PR checks pass after push.
 - **Test Results:** `pnpm preflight` ✅; `pnpm ops:monitor` services/synthetics ✅; `tests/ci-cd-pipeline.test.ts` 12/12 ✅; workspace package build ✅; API + merchant + admin + storefront builds ✅; full suite 2668 passed, 1 skipped ✅. Local Docker verification unavailable because the `docker` CLI is not installed.
 
