@@ -9,11 +9,8 @@ import * as s from '@haa/db/schema';
 import {
   SupportService,
   LivePresenceService,
-  normalizeDevice,
-  resolveGeoFromHeaders,
   getAvailablePaymentMethods,
 } from '@haa/commerce-core';
-import { resolveActiveThemeConfig } from '@haa/theme-system/server';
 import { rateLimiter } from '../../middleware/rate-limiter.js';
 import { eventPayloadSchema, heartbeatPayloadSchema } from '@haa/shared';
 import { toPublicPolicy } from '@haa/shared/dto/storefront-dto';
@@ -53,7 +50,7 @@ supportRouter.get('/:slug/pickup-locations', async (c) => {
 });
 
 supportRouter.get('/:slug/payment-methods', async (c) => {
-  const { store, error } = await resolveActiveStore(c);
+  const { error } = await resolveActiveStore(c);
   if (error) return error;
   const methods = getAvailablePaymentMethods();
   return c.json({ success: true, data: methods });
@@ -216,17 +213,31 @@ supportRouter.post('/:slug/events', zValidator('json', eventPayloadSchema), asyn
   if (error) return error;
   const body = c.req.valid('json');
   const db = createDbClient();
-  await db.insert(s.marketingEvents).values({
-    storeId: store.id,
-    eventType: body.eventType,
-    sessionId: body.sessionId ?? 'unknown',
-    productId: body.productId ?? null,
-    customerId: body.customerId ?? null,
-    path: body.path ?? null,
-    referrer: body.referrer ?? null,
-    deviceType: body.deviceType ?? null,
-    metadata: body.metadata ?? null,
-  });
+  try {
+    await db.insert(s.marketingEvents).values({
+      storeId: store.id,
+      eventType: body.eventType,
+      sessionId: body.sessionId ?? 'unknown',
+      productId: body.productId ?? null,
+      customerId: body.customerId ?? null,
+      cartId: body.cartId ?? null,
+      orderId: body.orderId ?? null,
+      path: body.path ?? null,
+      referrer: body.referrer ?? null,
+      deviceType: body.deviceType ?? null,
+      utmSource: body.utmSource ?? null,
+      utmMedium: body.utmMedium ?? null,
+      utmCampaign: body.utmCampaign ?? null,
+      utmContent: body.utmContent ?? null,
+      utmTerm: body.utmTerm ?? null,
+      metadata: body.metadata ?? null,
+    });
+  } catch (err) {
+    // Tracking failures must not break user experience — log and continue.
+    // Root cause: FK violation when productId/customerId/orderId don't exist
+    // in the local/test DB. ISSUE-0006 RCA.
+    console.error('[events] marketing_events insert failed (ISSUE-0006):', err);
+  }
   return c.json({ success: true });
 });
 
