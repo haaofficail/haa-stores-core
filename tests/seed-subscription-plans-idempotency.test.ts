@@ -16,4 +16,14 @@ describe('subscription plan seed idempotency', () => {
     );
     expect(seedSource).toMatch(/existingPlan \?\?/);
   });
+
+  it('creates carts before checkout sessions instead of using random foreign keys', () => {
+    expect(seedSource).toMatch(/const \[checkoutCart\] = await db[\s\S]*insert\(s\.carts\)/);
+    expect(seedSource).toMatch(/cartId: checkoutCart\.id/);
+    expect(seedSource).toMatch(
+      /const \[abandonedCart\] = await db[\s\S]*insert\(s\.carts\)/,
+    );
+    expect(seedSource).toMatch(/cartId: abandonedCart\.id/);
+    expect(seedSource).not.toMatch(/cartId: crypto\.randomUUID\(\)/);
+  });
 });

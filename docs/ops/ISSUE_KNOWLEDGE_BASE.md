@@ -20,6 +20,19 @@
 - **Prevention:** Added a regression assertion in `tests/migration-identifier-safety.test.ts`; CI now prepares a clean PostgreSQL database before the test suite.
 - **Status:** Fix pushed for GitHub runner verification.
 
+### ISSUE-0016: Seed Checkout Sessions Referenced Nonexistent Carts
+
+- **ID:** ISSUE-0016
+- **Date:** 2026-06-20
+- **Severity:** High (blocks clean seed)
+- **Area:** Database seed / Referential integrity
+- **Related Tasks:** TASK-0054
+- **Symptoms:** Clean seed fails on `checkout_sessions_cart_id_carts_id_fk`.
+- **Root Cause:** Completed and abandoned checkout-session fixtures assigned random UUIDs to `cartId` without inserting matching `carts` rows.
+- **Fix:** Seed now creates a real cart for each checkout-session fixture and uses the returned ID.
+- **Prevention:** Seed regression coverage rejects random `cartId` values and requires cart creation.
+- **Status:** Fix pushed for GitHub runner verification.
+
 ### ISSUE-0015: Fresh Seed Inserts Subscription Plans Twice
 
 - **ID:** ISSUE-0015
