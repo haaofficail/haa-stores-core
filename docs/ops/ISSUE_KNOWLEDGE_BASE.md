@@ -20,6 +20,19 @@
 - **Prevention:** Added a regression assertion in `tests/migration-identifier-safety.test.ts`; CI now prepares a clean PostgreSQL database before the test suite.
 - **Status:** Fix pushed for GitHub runner verification.
 
+### ISSUE-0017: Test Setup Rewrote CI Database Name
+
+- **ID:** ISSUE-0017
+- **Date:** 2026-06-20
+- **Severity:** High (tests run after successful seed but connect elsewhere)
+- **Area:** Test environment / PostgreSQL / CI
+- **Related Tasks:** TASK-0054
+- **Symptoms:** Bootstrap and seed succeed on `haa_test`, then DB-backed tests fail because database `haastores_test` does not exist.
+- **Root Cause:** `tests/setup.ts` derives `haastores_test` from `DATABASE_URL` unless `TEST_DATABASE_URL` is explicitly set.
+- **Fix:** Test and E2E jobs now set `TEST_DATABASE_URL` to the provisioned `haa_test` service database.
+- **Prevention:** CI contract coverage requires the explicit test database variable.
+- **Status:** Fix pushed for GitHub runner verification.
+
 ### ISSUE-0016: Seed Checkout Sessions Referenced Nonexistent Carts
 
 - **ID:** ISSUE-0016
