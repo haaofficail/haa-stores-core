@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { applyTheme, clearTheme, applyStoreTheme, clearStoreTheme, getDefaultThemeConfig } from './isolation';
+import { applyTheme, clearTheme, applyStoreTheme, clearStoreTheme, getDefaultThemeConfig } from './isolation.js';
 
 const MOCK_CONFIG = {
   preset: 'test',

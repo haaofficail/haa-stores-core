@@ -4,7 +4,7 @@ import {
   mergeAndResolveThemeConfig,
   resolveActiveThemeConfig,
   resolveThemeKey,
-} from './activeThemeResolver';
+} from './activeThemeResolver.js';
 
 describe('activeThemeResolver', () => {
   it('falls back to minimal when config is missing', () => {

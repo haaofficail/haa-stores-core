@@ -13,18 +13,18 @@
  *   signup gate  →  soft conversion nudge after N messages per IP
  */
 
-export type { ChatEngine } from './engines';
-export { mockEngine, getActiveEngine, createModelEngine } from './engines';
-export { buildSystemPrompt, VERTICAL_HINTS, PERSONA_NAME, PERSONA_TONE } from './system-prompt';
-export { sanitizeUserMessage } from './sanitize';
-export { checkRateLimit, __resetRateLimit } from './rate-limit';
+export type { ChatEngine } from './engines.js';
+export { mockEngine, getActiveEngine, createModelEngine } from './engines.js';
+export { buildSystemPrompt, VERTICAL_HINTS, PERSONA_NAME, PERSONA_TONE } from './system-prompt.js';
+export { sanitizeUserMessage } from './sanitize.js';
+export { checkRateLimit, __resetRateLimit } from './rate-limit.js';
 export {
   countUserMessage,
   resetCounter,
   getCount,
   __resetSignupCounters,
-} from './signup-gate';
-export { composeAgentReply } from './matcher';
-export { MAX_MESSAGES_BEFORE_SIGNUP } from './signup-gate';
-export type { AgentMessage, AgentReply, ReplyId } from './matcher';
-export { FALLBACK_REPLY } from './reply-bank';
+} from './signup-gate.js';
+export { composeAgentReply } from './matcher.js';
+export { MAX_MESSAGES_BEFORE_SIGNUP } from './signup-gate.js';
+export type { AgentMessage, AgentReply, ReplyId } from './matcher.js';
+export { FALLBACK_REPLY } from './reply-bank.js';

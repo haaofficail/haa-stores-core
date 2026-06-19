@@ -11,9 +11,9 @@
  * The active engine is picked by `getActiveEngine()` based on env vars.
  */
 
-import { buildSystemPrompt } from './system-prompt';
-import { composeAgentReply, type AgentMessage, type AgentReply } from './matcher';
-import { sanitizeUserMessage } from './sanitize';
+import { buildSystemPrompt } from './system-prompt.js';
+import { composeAgentReply, type AgentMessage, type AgentReply } from './matcher.js';
+import { sanitizeUserMessage } from './sanitize.js';
 
 export interface ChatEngine {
   readonly name: string;

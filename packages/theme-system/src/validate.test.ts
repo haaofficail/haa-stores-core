@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { validateThemeConfig } from './validate';
-import type { ThemeConfig } from './types';
+import { validateThemeConfig } from './validate.js';
+import type { ThemeConfig } from './types.js';
 
 const validConfig: Partial<ThemeConfig> = {
   colors: {

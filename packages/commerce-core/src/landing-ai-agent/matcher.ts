@@ -6,8 +6,8 @@
  * engine for fallback / post-processing.
  */
 
-import { REPLIES, FALLBACK_REPLY, type AgentReply, type ReplyId } from './reply-bank';
-import { sanitizeUserMessage } from './sanitize';
+import { REPLIES, FALLBACK_REPLY, type AgentReply, type ReplyId } from './reply-bank.js';
+import { sanitizeUserMessage } from './sanitize.js';
 
 export interface AgentMessage {
   role: 'user' | 'assistant';
@@ -22,7 +22,7 @@ export const MAX_MESSAGES_BEFORE_SIGNUP = 8;
 /** Public composer — returns a persona-bound reply with follow-up suggestions. */
 export async function composeAgentReply(
   history: AgentMessage[],
-  locale: string = 'ar-SA'
+  _locale: string = 'ar-SA'
 ): Promise<AgentReply> {
   const lastUser = [...history].reverse().find((m) => m.role === 'user');
   if (!lastUser) return FALLBACK_REPLY;

@@ -1,4 +1,4 @@
-import { type ThemeColors } from './types';
+import { type ThemeColors } from './types.js';
 
 export function generateThemeThumbnail(colors: ThemeColors): string {
   const { primary, surface1, surface2, surface3, textPrimary, textSecondary } = colors;

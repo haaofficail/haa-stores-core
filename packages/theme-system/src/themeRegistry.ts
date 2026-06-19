@@ -1,5 +1,5 @@
 import { THEMES } from './themes.js';
-import type { ThemeConfig, ThemeManifest, ThemeSupportedPage } from './types';
+import type { ThemeConfig, ThemeManifest, ThemeSupportedPage } from './types.js';
 
 const DEFAULT_THEME_KEY = 'minimal';
 

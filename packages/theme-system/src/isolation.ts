@@ -1,5 +1,5 @@
-import { type ThemeConfig } from './types';
-import { getDefaultThemeConfig as resolveDefaultThemeConfig } from './activeThemeResolver';
+import { type ThemeConfig } from './types.js';
+import { getDefaultThemeConfig as resolveDefaultThemeConfig } from './activeThemeResolver.js';
 
 const THEME_VARS = [
   '--primary', '--theme-primary', '--theme-primary-hover', '--theme-primary-soft', '--theme-primary-foreground',

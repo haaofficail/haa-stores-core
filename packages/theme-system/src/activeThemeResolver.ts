@@ -4,7 +4,7 @@ import {
   isKnownThemeKey,
   normalizeThemeKey,
 } from './themeRegistry.js';
-import type { ThemeConfig, SectionConfig } from './types';
+import type { ThemeConfig, SectionConfig } from './types.js';
 
 export type ThemeKey = 'minimal' | 'royal' | 'night' | 'nature';
 

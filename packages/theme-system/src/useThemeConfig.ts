@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { applyStoreTheme } from './isolation';
-import { resolveActiveThemeConfig } from './activeThemeResolver';
-import { type ThemeConfig } from './types';
+import { applyStoreTheme } from './isolation.js';
+import { resolveActiveThemeConfig } from './activeThemeResolver.js';
+import { type ThemeConfig } from './types.js';
 
 let pendingSlug: string | null = null;
 let apiBase = '';

@@ -5,7 +5,7 @@ import { createProductSchema, updateProductSchema, ValidationError } from '@haa/
 import { createMediaAdapter, type MediaAdapter, type UploadResult } from '@haa/shared/media';
 import { AuditLogService } from '@haa/integration-core';
 import { z } from 'zod';
-import { cacheBumpNamespace, cacheGetVersioned, cacheSetVersioned } from './redis';
+import { cacheBumpNamespace, cacheGetVersioned, cacheSetVersioned } from './redis.js';
 
 type CreateProductInput = z.infer<typeof createProductSchema>;
 type UpdateProductInput = z.infer<typeof updateProductSchema>;

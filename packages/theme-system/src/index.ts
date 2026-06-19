@@ -29,10 +29,10 @@ export {
   type ThemeSettingsDefinition,
   type ThemeSupportedPage,
   type PublicThemeConfig,
-} from './types';
+} from './types.js';
 
 // ─── THEME DATA (safe — pure data, no DOM) ───
-export { THEMES, getThemeById } from './themes';
+export { THEMES, getThemeById } from './themes.js';
 
 // ─── THEME REGISTRY (safe — memory reads only) ───
 export {
@@ -43,7 +43,7 @@ export {
   getThemeManifest,
   isKnownThemeKey,
   normalizeThemeKey,
-} from './themeRegistry';
+} from './themeRegistry.js';
 
 // ─── DOM ISOLATION (🛑 STOREFRONT ONLY — writes to DOM) ───
 export {
@@ -51,7 +51,7 @@ export {
   clearStoreTheme,
   applyTheme,
   clearTheme,
-} from './isolation';
+} from './isolation.js';
 
 // ─── CONFIG RESOLUTION (safe — pure logic, no DOM) ───
 export {
@@ -63,7 +63,7 @@ export {
   resolveThemeKey,
   type ResolvedThemeConfig,
   type ThemeKey,
-} from './activeThemeResolver';
+} from './activeThemeResolver.js';
 
 // ─── RUNTIME HOOKS (🛑 STOREFRONT ONLY — DOM, network side effects) ───
 export {
@@ -71,8 +71,8 @@ export {
   fetchThemeConfig,
   loadTheme,
   setThemeApiBase,
-} from './useThemeConfig';
+} from './useThemeConfig.js';
 
 // ─── VALIDATION (safe — pure logic) ───
-export { validateThemeConfig } from './validate';
-export type { ValidationResult } from './validate';
+export { validateThemeConfig } from './validate.js';
+export type { ValidationResult } from './validate.js';

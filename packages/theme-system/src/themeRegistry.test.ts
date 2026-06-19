@@ -7,8 +7,8 @@ import {
   getThemeManifest,
   isKnownThemeKey,
   normalizeThemeKey,
-} from './themeRegistry';
-import { validateThemeConfig } from './validate';
+} from './themeRegistry.js';
+import { validateThemeConfig } from './validate.js';
 
 const THEME_KEYS = ['minimal', 'royal', 'night', 'nature', 'luxury-showcase'];
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { THEMES, getThemeById } from './themes';
-import type { ThemeColors } from './types';
+import { THEMES, getThemeById } from './themes.js';
+import type { ThemeColors } from './types.js';
 
 describe('THEMES', () => {
   it('has exactly 5 themes', () => {

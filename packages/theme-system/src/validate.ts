@@ -1,4 +1,4 @@
-import { type ThemeConfig } from './types';
+import { type ThemeConfig } from './types.js';
 import { getAllThemeManifests, isKnownThemeKey } from './themeRegistry.js';
 
 const HEX_RE = /^#[0-9a-fA-F]{3,8}$/;

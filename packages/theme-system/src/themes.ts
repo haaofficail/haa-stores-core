@@ -2,7 +2,7 @@
 // not full runtime storefront themes. They provide color/font/layout defaults for
 // backward compatibility with stores created before the runtime theme system.
 // Only kind: 'runtime' themes (e.g. luxury-showcase) appear in the Theme Store.
-import { type ThemeDefinition, type SectionConfig, type HeroSlide } from './types';
+import { type ThemeDefinition, type SectionConfig, type HeroSlide } from './types.js';
 import { generateThemeThumbnail } from './thumbnail.js';
 
 let sectionCounter = 0;
