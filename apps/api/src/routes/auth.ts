@@ -163,7 +163,7 @@ authRouter.get('/google', (c) => {
 
   const redirectUri = `${process.env.API_BASE_URL || ''}/api/auth/google/callback`;
   const scope = 'openid email profile';
-  const state = Buffer.from(Math.random().toString(36)).toString('base64');
+  const state = crypto.randomUUID();
 
   const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
   url.searchParams.set('client_id', clientId);
@@ -172,6 +172,9 @@ authRouter.get('/google', (c) => {
   url.searchParams.set('scope', scope);
   url.searchParams.set('state', state);
   url.searchParams.set('access_type', 'offline');
+
+  const isProd = process.env.NODE_ENV === 'production';
+  c.header('Set-Cookie', `__Host-oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600${isProd ? '; Secure' : ''}`);
 
   return c.redirect(url.toString());
 });
@@ -186,9 +189,18 @@ authRouter.get('/google/callback', async (c) => {
 
   const code = c.req.query('code');
   const error = c.req.query('error');
+  const returnedState = c.req.query('state');
   if (error || !code) {
     return c.json({ success: false, error: { code: 'OAUTH_DENIED', message: error || 'No code received' } }, 400);
   }
+
+  const cookieHeader = c.req.header('cookie') || '';
+  const storedState = cookieHeader.split(';').map(s => s.trim()).find(s => s.startsWith('__Host-oauth_state='))?.split('=')[1];
+  if (!storedState || !returnedState || storedState !== returnedState) {
+    return c.json({ success: false, error: { code: 'INVALID_STATE', message: 'OAuth state mismatch — possible CSRF attack' } }, 400);
+  }
+  const isProd = process.env.NODE_ENV === 'production';
+  c.header('Set-Cookie', `__Host-oauth_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${isProd ? '; Secure' : ''}`);
 
   const redirectUri = `${process.env.API_BASE_URL || ''}/api/auth/google/callback`;
 
