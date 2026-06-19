@@ -372,6 +372,76 @@
       "when": 1782000052000,
       "tag": "0052_store_billing_pct_cap",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1782000053000,
+      "tag": "0053_cod_fee_policy",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1782000054000,
+      "tag": "0058_marketplace_order_access_token",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1782000055000,
+      "tag": "0059_category_compliance",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1782000056000,
+      "tag": "0060_product_sfda",
+      "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1782000057000,
+      "tag": "0061_tenant_compliance_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1782000058000,
+      "tag": "0062_platform_fee_idempotency_index",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1782000059000,
+      "tag": "0063_wallet_entries_immutable",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1782000060000,
+      "tag": "0064_store_pixels",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1782000061000,
+      "tag": "0065_abandoned_cart_campaigns",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1782000062000,
+      "tag": "0066_whatsapp_campaigns",
+      "breakpoints": true
     }
   ]
 }

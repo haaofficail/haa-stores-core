@@ -598,6 +598,7 @@ const SCHEMA_DELTAS = {
   },
 
   // ── 0053: store_billing_settings — COD fee columns + cap
+  // Also tracked as idx 53 in the journal (tag: 0053_cod_fee_policy)
   '0053': (snap) => {
     const billing = snap.tables['public.store_billing_settings'];
     if (billing) {
@@ -610,6 +611,302 @@ const SCHEMA_DELTAS = {
         name: 'store_billing_settings_cod_pct_cap',
         value: '"cod_fee_pct" IS NULL OR "cod_fee_pct" <= 0.5',
       };
+    }
+  },
+
+  // ── 0058: marketplace_orders — add access_token (uuid)
+  '0058': (snap) => {
+    const mo = snap.tables['public.marketplace_orders'];
+    if (mo) {
+      mo.columns['access_token'] = { name: 'access_token', type: 'uuid', primaryKey: false, notNull: true, default: 'gen_random_uuid()' };
+      mo.uniqueConstraints = mo.uniqueConstraints || {};
+    }
+  },
+
+  // ── 0059: categories — add regulated_category + prohibited_in_marketplace
+  '0059': (snap) => {
+    const cats = snap.tables['public.categories'];
+    if (cats) {
+      cats.columns['regulated_category'] = { name: 'regulated_category', type: 'varchar(50)', primaryKey: false, notNull: false };
+      cats.columns['prohibited_in_marketplace'] = { name: 'prohibited_in_marketplace', type: 'boolean', primaryKey: false, notNull: true, default: 'false' };
+    }
+  },
+
+  // ── 0060: products — add 6 SFDA columns; categories — add requires_sfda
+  '0060': (snap) => {
+    const products = snap.tables['public.products'];
+    if (products) {
+      products.columns['requires_sfda_number'] = { name: 'requires_sfda_number', type: 'boolean', primaryKey: false, notNull: true, default: 'false' };
+      products.columns['sfda_number'] = { name: 'sfda_number', type: 'varchar(100)', primaryKey: false, notNull: false };
+      products.columns['sfda_license_type'] = { name: 'sfda_license_type', type: 'varchar(30)', primaryKey: false, notNull: false };
+      products.columns['sfda_expiry_date'] = { name: 'sfda_expiry_date', type: 'timestamp', primaryKey: false, notNull: false };
+      products.columns['sfda_verified_at'] = { name: 'sfda_verified_at', type: 'timestamp', primaryKey: false, notNull: false };
+      products.columns['sfda_verified_by'] = { name: 'sfda_verified_by', type: 'integer', primaryKey: false, notNull: false };
+    }
+    const cats = snap.tables['public.categories'];
+    if (cats) {
+      cats.columns['requires_sfda'] = { name: 'requires_sfda', type: 'boolean', primaryKey: false, notNull: true, default: 'false' };
+    }
+  },
+
+  // ── 0061: tenants — 28 compliance/legal columns
+  '0061': (snap) => {
+    const tenants = snap.tables['public.tenants'];
+    if (tenants) {
+      const cols = [
+        ['commercial_registration_number', 'varchar(20)', false],
+        ['commercial_registration_issued_at', 'timestamp', false],
+        ['vat_number', 'varchar(20)', false],
+        ['vat_registered_at', 'timestamp', false],
+        ['ecommerce_license_number', 'varchar(30)', false],
+        ['ecommerce_license_issued_at', 'timestamp', false],
+        ['ecommerce_license_expires_at', 'timestamp', false],
+        ['dpo_email', 'varchar(255)', false],
+        ['dpo_phone', 'varchar(20)', false],
+        ['dpo_appointed_at', 'timestamp', false],
+        ['trademark_number', 'varchar(30)', false],
+        ['trademark_registered_at', 'timestamp', false],
+        ['trademark_expires_at', 'timestamp', false],
+        ['asv_last_scan_at', 'timestamp', false],
+        ['asv_vendor', 'varchar(100)', false],
+        ['asv_certificate_url', 'varchar(500)', false],
+        ['pentest_last_scan_at', 'timestamp', false],
+        ['pentest_vendor', 'varchar(100)', false],
+        ['pentest_report_url', 'varchar(500)', false],
+        ['pentest_pass', 'boolean', false],
+        ['hosting_region', 'varchar(50)', false],
+        ['hosting_provider', 'varchar(100)', false],
+        ['hosting_ksa_residency', 'boolean', true, 'false'],
+        ['tabby_dpa_signed_at', 'timestamp', false],
+        ['tabby_dpa_url', 'varchar(500)', false],
+        ['dr_plan_documented_at', 'timestamp', false],
+        ['dr_last_tabletop_at', 'timestamp', false],
+        ['dr_next_tabletop_at', 'timestamp', false],
+      ];
+      for (const [name, type, notNull, def] of cols) {
+        tenants.columns[name] = { name, type, primaryKey: false, notNull: !!notNull, ...(def ? { default: def } : {}) };
+      }
+    }
+  },
+
+  // ── 0062: wallet_entries — unique index (structural only, no column changes)
+  '0062': (snap) => {
+    // Index only — snapshot tables/columns unchanged
+  },
+
+  // ── 0063: wallet_entries — immutability triggers (no column changes)
+  '0063': (snap) => {
+    // Function + triggers only — snapshot tables/columns unchanged
+  },
+
+  // ── 0064: new store_pixels table
+  '0064': (snap) => {
+    snap.tables['public.store_pixels'] = {
+      name: 'store_pixels',
+      schema: '',
+      columns: {
+        id: { name: 'id', type: 'serial', primaryKey: true, notNull: true },
+        store_id: { name: 'store_id', type: 'integer', primaryKey: false, notNull: true },
+        meta_pixel_id: { name: 'meta_pixel_id', type: 'varchar(50)', primaryKey: false, notNull: false },
+        meta_access_token: { name: 'meta_access_token', type: 'text', primaryKey: false, notNull: false },
+        tiktok_pixel_id: { name: 'tiktok_pixel_id', type: 'varchar(50)', primaryKey: false, notNull: false },
+        snapchat_pixel_id: { name: 'snapchat_pixel_id', type: 'varchar(50)', primaryKey: false, notNull: false },
+        twitter_pixel_id: { name: 'twitter_pixel_id', type: 'varchar(50)', primaryKey: false, notNull: false },
+        ga4_measurement_id: { name: 'ga4_measurement_id', type: 'varchar(50)', primaryKey: false, notNull: false },
+        gtm_container_id: { name: 'gtm_container_id', type: 'varchar(50)', primaryKey: false, notNull: false },
+        pinterest_tag_id: { name: 'pinterest_tag_id', type: 'varchar(50)', primaryKey: false, notNull: false },
+        is_active: { name: 'is_active', type: 'boolean', primaryKey: false, notNull: true, default: 'true' },
+        created_at: { name: 'created_at', type: 'timestamp', primaryKey: false, notNull: true, default: 'now()' },
+        updated_at: { name: 'updated_at', type: 'timestamp', primaryKey: false, notNull: true, default: 'now()' },
+      },
+      indexes: {},
+      foreignKeys: {
+        store_pixels_store_id_stores_id_fk: {
+          name: 'store_pixels_store_id_stores_id_fk',
+          tableFrom: 'store_pixels',
+          tableTo: 'stores',
+          columnsFrom: ['store_id'],
+          columnsTo: ['id'],
+          onDelete: 'cascade',
+          onUpdate: 'no action',
+        },
+      },
+      compositePrimaryKeys: {},
+      uniqueConstraints: {
+        store_pixels_store_id_unique: { name: 'store_pixels_store_id_unique', nullsNotDistinct: false, columns: ['store_id'] },
+      },
+      policies: {},
+      checkConstraints: {},
+      isRLSEnabled: false,
+    };
+  },
+
+  // ── 0065: new abandoned_cart_campaigns + campaign_recoveries tables
+  '0065': (snap) => {
+    snap.tables['public.abandoned_cart_campaigns'] = {
+      name: 'abandoned_cart_campaigns',
+      schema: '',
+      columns: {
+        id: { name: 'id', type: 'serial', primaryKey: true, notNull: true },
+        store_id: { name: 'store_id', type: 'integer', primaryKey: false, notNull: true },
+        name: { name: 'name', type: 'varchar(100)', primaryKey: false, notNull: true },
+        is_active: { name: 'is_active', type: 'boolean', primaryKey: false, notNull: true, default: 'true' },
+        steps: { name: 'steps', type: 'jsonb', primaryKey: false, notNull: true, default: "'[]'" },
+        discount_type: { name: 'discount_type', type: 'varchar(20)', primaryKey: false, notNull: false },
+        discount_value: { name: 'discount_value', type: 'numeric(10, 2)', primaryKey: false, notNull: false },
+        discount_expires_hours: { name: 'discount_expires_hours', type: 'integer', primaryKey: false, notNull: false, default: '24' },
+        min_cart_value: { name: 'min_cart_value', type: 'numeric(10, 2)', primaryKey: false, notNull: false, default: '0' },
+        created_at: { name: 'created_at', type: 'timestamp', primaryKey: false, notNull: true, default: 'now()' },
+        updated_at: { name: 'updated_at', type: 'timestamp', primaryKey: false, notNull: true, default: 'now()' },
+      },
+      indexes: {},
+      foreignKeys: {
+        abandoned_cart_campaigns_store_id_stores_id_fk: {
+          name: 'abandoned_cart_campaigns_store_id_stores_id_fk',
+          tableFrom: 'abandoned_cart_campaigns',
+          tableTo: 'stores',
+          columnsFrom: ['store_id'],
+          columnsTo: ['id'],
+          onDelete: 'cascade',
+          onUpdate: 'no action',
+        },
+      },
+      compositePrimaryKeys: {},
+      uniqueConstraints: {},
+      policies: {},
+      checkConstraints: {},
+      isRLSEnabled: false,
+    };
+    snap.tables['public.campaign_recoveries'] = {
+      name: 'campaign_recoveries',
+      schema: '',
+      columns: {
+        id: { name: 'id', type: 'serial', primaryKey: true, notNull: true },
+        store_id: { name: 'store_id', type: 'integer', primaryKey: false, notNull: true },
+        checkout_session_id: { name: 'checkout_session_id', type: 'uuid', primaryKey: false, notNull: true },
+        campaign_id: { name: 'campaign_id', type: 'integer', primaryKey: false, notNull: false },
+        recovery_token: { name: 'recovery_token', type: 'varchar(64)', primaryKey: false, notNull: true },
+        step: { name: 'step', type: 'integer', primaryKey: false, notNull: true, default: '1' },
+        channel: { name: 'channel', type: 'varchar(20)', primaryKey: false, notNull: true },
+        status: { name: 'status', type: 'varchar(20)', primaryKey: false, notNull: true, default: "'sent'" },
+        recipient: { name: 'recipient', type: 'varchar(255)', primaryKey: false, notNull: false },
+        discount_code: { name: 'discount_code', type: 'varchar(50)', primaryKey: false, notNull: false },
+        recovered_order_id: { name: 'recovered_order_id', type: 'integer', primaryKey: false, notNull: false },
+        sent_at: { name: 'sent_at', type: 'timestamp', primaryKey: false, notNull: true, default: 'now()' },
+        opened_at: { name: 'opened_at', type: 'timestamp', primaryKey: false, notNull: false },
+        recovered_at: { name: 'recovered_at', type: 'timestamp', primaryKey: false, notNull: false },
+        expires_at: { name: 'expires_at', type: 'timestamp', primaryKey: false, notNull: true },
+        created_at: { name: 'created_at', type: 'timestamp', primaryKey: false, notNull: true, default: 'now()' },
+      },
+      indexes: {},
+      foreignKeys: {
+        campaign_recoveries_store_id_stores_id_fk: {
+          name: 'campaign_recoveries_store_id_stores_id_fk',
+          tableFrom: 'campaign_recoveries',
+          tableTo: 'stores',
+          columnsFrom: ['store_id'],
+          columnsTo: ['id'],
+          onDelete: 'cascade',
+          onUpdate: 'no action',
+        },
+        campaign_recoveries_checkout_session_id_checkout_sessions_id_fk: {
+          name: 'campaign_recoveries_checkout_session_id_checkout_sessions_id_fk',
+          tableFrom: 'campaign_recoveries',
+          tableTo: 'checkout_sessions',
+          columnsFrom: ['checkout_session_id'],
+          columnsTo: ['id'],
+          onDelete: 'cascade',
+          onUpdate: 'no action',
+        },
+      },
+      compositePrimaryKeys: {},
+      uniqueConstraints: {
+        campaign_recoveries_recovery_token_unique: { name: 'campaign_recoveries_recovery_token_unique', nullsNotDistinct: false, columns: ['recovery_token'] },
+      },
+      policies: {},
+      checkConstraints: {},
+      isRLSEnabled: false,
+    };
+  },
+
+  // ── 0066: new whatsapp_campaigns + whatsapp_campaign_sends; webhook_endpoints circuit-breaker columns
+  '0066': (snap) => {
+    snap.tables['public.whatsapp_campaigns'] = {
+      name: 'whatsapp_campaigns',
+      schema: '',
+      columns: {
+        id: { name: 'id', type: 'serial', primaryKey: true, notNull: true },
+        store_id: { name: 'store_id', type: 'integer', primaryKey: false, notNull: true },
+        name: { name: 'name', type: 'varchar(100)', primaryKey: false, notNull: true },
+        segment_type: { name: 'segment_type', type: 'varchar(50)', primaryKey: false, notNull: false },
+        message_template: { name: 'message_template', type: 'text', primaryKey: false, notNull: true },
+        status: { name: 'status', type: 'varchar(20)', primaryKey: false, notNull: true, default: "'draft'" },
+        total_recipients: { name: 'total_recipients', type: 'integer', primaryKey: false, notNull: false, default: '0' },
+        sent_count: { name: 'sent_count', type: 'integer', primaryKey: false, notNull: false, default: '0' },
+        failed_count: { name: 'failed_count', type: 'integer', primaryKey: false, notNull: false, default: '0' },
+        scheduled_at: { name: 'scheduled_at', type: 'timestamp', primaryKey: false, notNull: false },
+        started_at: { name: 'started_at', type: 'timestamp', primaryKey: false, notNull: false },
+        completed_at: { name: 'completed_at', type: 'timestamp', primaryKey: false, notNull: false },
+        created_at: { name: 'created_at', type: 'timestamp', primaryKey: false, notNull: true, default: 'now()' },
+        updated_at: { name: 'updated_at', type: 'timestamp', primaryKey: false, notNull: true, default: 'now()' },
+      },
+      indexes: {},
+      foreignKeys: {
+        whatsapp_campaigns_store_id_stores_id_fk: {
+          name: 'whatsapp_campaigns_store_id_stores_id_fk',
+          tableFrom: 'whatsapp_campaigns',
+          tableTo: 'stores',
+          columnsFrom: ['store_id'],
+          columnsTo: ['id'],
+          onDelete: 'cascade',
+          onUpdate: 'no action',
+        },
+      },
+      compositePrimaryKeys: {},
+      uniqueConstraints: {},
+      policies: {},
+      checkConstraints: {},
+      isRLSEnabled: false,
+    };
+    snap.tables['public.whatsapp_campaign_sends'] = {
+      name: 'whatsapp_campaign_sends',
+      schema: '',
+      columns: {
+        id: { name: 'id', type: 'serial', primaryKey: true, notNull: true },
+        campaign_id: { name: 'campaign_id', type: 'integer', primaryKey: false, notNull: true },
+        customer_id: { name: 'customer_id', type: 'integer', primaryKey: false, notNull: false },
+        phone: { name: 'phone', type: 'varchar(20)', primaryKey: false, notNull: true },
+        status: { name: 'status', type: 'varchar(20)', primaryKey: false, notNull: true, default: "'pending'" },
+        message_id: { name: 'message_id', type: 'varchar(100)', primaryKey: false, notNull: false },
+        error_message: { name: 'error_message', type: 'text', primaryKey: false, notNull: false },
+        sent_at: { name: 'sent_at', type: 'timestamp', primaryKey: false, notNull: false },
+        created_at: { name: 'created_at', type: 'timestamp', primaryKey: false, notNull: true, default: 'now()' },
+      },
+      indexes: {},
+      foreignKeys: {
+        whatsapp_campaign_sends_campaign_id_whatsapp_campaigns_id_fk: {
+          name: 'whatsapp_campaign_sends_campaign_id_whatsapp_campaigns_id_fk',
+          tableFrom: 'whatsapp_campaign_sends',
+          tableTo: 'whatsapp_campaigns',
+          columnsFrom: ['campaign_id'],
+          columnsTo: ['id'],
+          onDelete: 'cascade',
+          onUpdate: 'no action',
+        },
+      },
+      compositePrimaryKeys: {},
+      uniqueConstraints: {},
+      policies: {},
+      checkConstraints: {},
+      isRLSEnabled: false,
+    };
+    const we = snap.tables['public.webhook_endpoints'];
+    if (we) {
+      we.columns['consecutive_failures'] = { name: 'consecutive_failures', type: 'integer', primaryKey: false, notNull: true, default: '0' };
+      we.columns['paused_until'] = { name: 'paused_until', type: 'timestamp', primaryKey: false, notNull: false };
+      we.columns['last_failure_at'] = { name: 'last_failure_at', type: 'timestamp', primaryKey: false, notNull: false };
+      we.columns['total_deliveries'] = { name: 'total_deliveries', type: 'integer', primaryKey: false, notNull: true, default: '0' };
+      we.columns['total_failures'] = { name: 'total_failures', type: 'integer', primaryKey: false, notNull: true, default: '0' };
     }
   },
 };

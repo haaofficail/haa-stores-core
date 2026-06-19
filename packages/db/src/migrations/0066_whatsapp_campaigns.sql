@@ -1,5 +1,5 @@
 -- WhatsApp bulk campaigns (merchant → customer segment)
-CREATE TABLE "whatsapp_campaigns" (
+CREATE TABLE IF NOT EXISTS "whatsapp_campaigns" (
   "id" serial PRIMARY KEY,
   "store_id" integer NOT NULL REFERENCES "stores"("id") ON DELETE CASCADE,
   "name" varchar(100) NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE "whatsapp_campaigns" (
   "updated_at" timestamp NOT NULL DEFAULT now()
 );
 
-CREATE TABLE "whatsapp_campaign_sends" (
+CREATE TABLE IF NOT EXISTS "whatsapp_campaign_sends" (
   "id" serial PRIMARY KEY,
   "campaign_id" integer NOT NULL REFERENCES "whatsapp_campaigns"("id") ON DELETE CASCADE,
   "customer_id" integer REFERENCES "customers"("id"),

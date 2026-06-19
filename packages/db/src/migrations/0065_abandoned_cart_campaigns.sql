@@ -1,5 +1,5 @@
 -- Abandoned cart recovery campaigns
-CREATE TABLE "abandoned_cart_campaigns" (
+CREATE TABLE IF NOT EXISTS "abandoned_cart_campaigns" (
   "id" serial PRIMARY KEY,
   "store_id" integer NOT NULL REFERENCES "stores"("id") ON DELETE CASCADE,
   "name" varchar(100) NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE "abandoned_cart_campaigns" (
 );
 
 -- Recovery attempts per abandoned session
-CREATE TABLE "campaign_recoveries" (
+CREATE TABLE IF NOT EXISTS "campaign_recoveries" (
   "id" serial PRIMARY KEY,
   "store_id" integer NOT NULL REFERENCES "stores"("id") ON DELETE CASCADE,
   "checkout_session_id" uuid NOT NULL REFERENCES "checkout_sessions"("id") ON DELETE CASCADE,
@@ -34,6 +34,6 @@ CREATE TABLE "campaign_recoveries" (
   "created_at" timestamp NOT NULL DEFAULT now()
 );
 
-CREATE INDEX "campaign_recoveries_token_idx" ON "campaign_recoveries"("recovery_token");
-CREATE INDEX "campaign_recoveries_store_status_idx" ON "campaign_recoveries"("store_id", "status", "created_at");
-CREATE INDEX "campaign_recoveries_session_idx" ON "campaign_recoveries"("checkout_session_id");
+CREATE INDEX IF NOT EXISTS "campaign_recoveries_token_idx" ON "campaign_recoveries"("recovery_token");
+CREATE INDEX IF NOT EXISTS "campaign_recoveries_store_status_idx" ON "campaign_recoveries"("store_id", "status", "created_at");
+CREATE INDEX IF NOT EXISTS "campaign_recoveries_session_idx" ON "campaign_recoveries"("checkout_session_id");

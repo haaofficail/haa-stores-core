@@ -1,5 +1,5 @@
 -- Store social media pixel configuration
-CREATE TABLE "store_pixels" (
+CREATE TABLE IF NOT EXISTS "store_pixels" (
   "id" serial PRIMARY KEY,
   "store_id" integer NOT NULL REFERENCES "stores"("id") ON DELETE CASCADE,
   "meta_pixel_id" varchar(50),
