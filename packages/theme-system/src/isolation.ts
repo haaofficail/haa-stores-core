@@ -30,7 +30,7 @@ const STOREFRONT_SCOPE_SELECTOR = '#storefront-scope';
  */
 const LEGACY_SCOPE_SELECTOR = '#theme-scope';
 
-const FALLBACK_PRIMARY = '#56a1e3';
+const FALLBACK_PRIMARY = '#5c9cd5';
 const FALLBACK_STATUS = {
   success: '#10b981',
   warning: '#f59e0b',

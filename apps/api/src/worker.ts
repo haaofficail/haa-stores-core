@@ -2,6 +2,56 @@ import 'dotenv/config';
 import { closeDbClient } from '@haa/db';
 import { env } from './env.js';
 
+// Distributed lock — prevents multiple API instances from running the
+// same scheduled job simultaneously. Uses Redis SET NX EX (atomic):
+// only the instance that acquires the lock runs the job; others skip
+// this cycle. The TTL is 90% of the job interval so the lock auto-
+// expires before the next cycle if the instance dies mid-job.
+const INSTANCE_ID = `${process.pid}-${Math.random().toString(36).slice(2)}`;
+let redisLockClient: {
+  set: (...args: unknown[]) => Promise<unknown>;
+  del: (...args: unknown[]) => Promise<unknown>;
+  quit: () => Promise<unknown>;
+} | null = null;
+
+async function getLockClient() {
+  if (redisLockClient) return redisLockClient;
+  const url = process.env.REDIS_URL || process.env.QUEUE_REDIS_URL;
+  if (!url) return null;
+  try {
+    const { default: Redis } = await import('ioredis') as any;
+    const client = new Redis(url, { lazyConnect: true, enableOfflineQueue: false, connectTimeout: 2000 });
+    await client.connect();
+    redisLockClient = client;
+    return redisLockClient;
+  } catch {
+    return null;
+  }
+}
+
+async function acquireLock(jobName: string, ttlMs: number): Promise<boolean> {
+  const redis = await getLockClient();
+  if (!redis) return true; // no Redis → single-instance mode, always run
+  try {
+    const key = `haa:scheduler:lock:${jobName}`;
+    const result = await redis.set(key, INSTANCE_ID, 'NX', 'PX', ttlMs);
+    return result === 'OK';
+  } catch {
+    return true; // Redis error → fall back to running the job
+  }
+}
+
+async function releaseLock(jobName: string): Promise<void> {
+  const redis = await getLockClient();
+  if (!redis) return;
+  try {
+    const key = `haa:scheduler:lock:${jobName}`;
+    // Only release the lock if we own it
+    const owner = await (redis as any).get(key);
+    if (owner === INSTANCE_ID) await redis.del(key);
+  } catch { /* best-effort */ }
+}
+
 export const JOB_NAMES = {
   marketplaceSync: 'marketplace.sync',
   webhookDeliver: 'webhook.deliver',
@@ -112,12 +162,20 @@ const scheduledJobs: ScheduledJob[] = [
 ];
 
 async function runJob(job: ScheduledJob): Promise<void> {
+  const lockTtlMs = Math.floor(job.intervalMs * 0.9);
+  const acquired = await acquireLock(job.name, lockTtlMs);
+  if (!acquired) {
+    console.log(`[scheduler] skipped ${job.name} — lock held by another instance`);
+    return;
+  }
   const start = Date.now();
   try {
     await job.handler();
     console.log(`[scheduler] completed ${job.name} in ${Date.now() - start}ms`);
   } catch (error) {
     console.error(`[scheduler] failed ${job.name}:`, error);
+  } finally {
+    await releaseLock(job.name);
   }
 }
 
@@ -150,6 +208,10 @@ startScheduler();
 
 async function shutdown(): Promise<void> {
   stopScheduler();
+  if (redisLockClient) {
+    try { await redisLockClient.quit(); } catch { /* best-effort */ }
+    redisLockClient = null;
+  }
   await closeDbClient();
 }
 

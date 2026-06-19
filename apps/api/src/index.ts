@@ -292,13 +292,20 @@ app.route('/', sitemapRouter);
 app.route('/api/landing-ai-agent', createLandingAIAgentRoute());
 app.get('/api/brand', async (c) => {
   try {
-    const [tenant] = await db
-      .select({ id: s.tenants.id, name: s.tenants.name, logoUrl: s.tenants.logoUrl })
+    const [row] = await db
+      .select({
+        id: s.tenants.id,
+        name: s.tenants.name,
+        logoUrl: s.tenants.logoUrl,
+        primaryColor: s.stores.primaryColor,
+      })
       .from(s.tenants)
+      .leftJoin(s.stores, eq(s.stores.tenantId, s.tenants.id))
       .where(eq(s.tenants.status, 'active'))
+      .orderBy(s.stores.id)
       .limit(1);
-    if (!tenant) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'No active tenant' } }, 404);
-    return c.json({ success: true, data: { primaryColor: FALLBACK_PRIMARY, tenantName: tenant.name, logoUrl: tenant.logoUrl } });
+    if (!row) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'No active tenant' } }, 404);
+    return c.json({ success: true, data: { primaryColor: row.primaryColor ?? FALLBACK_PRIMARY, tenantName: row.name, logoUrl: row.logoUrl } });
   } catch {
     return c.json({ success: true, data: { primaryColor: FALLBACK_PRIMARY } });
   }

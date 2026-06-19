@@ -442,6 +442,13 @@
       "when": 1782000062000,
       "tag": "0066_whatsapp_campaigns",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1782000063000,
+      "tag": "0067_wallet_entries_sale_uniq",
+      "breakpoints": true
     }
   ]
 }
