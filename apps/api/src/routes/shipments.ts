@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { ShipmentsService, type ShipmentsResult } from '@haa/commerce-core';
+import { ShipmentsService, OutboundWebhookService, type ShipmentsResult } from '@haa/commerce-core';
 import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';
 
 const shipmentsRouter = new Hono();
@@ -70,11 +70,14 @@ shipmentsRouter.post('/orders/:orderId/shipments', requirePermission('shipping:m
   const storeId = Number(c.req.param('storeId'));
   const orderId = Number(c.req.param('orderId'));
   const body = c.req.valid('json');
-  return toResponse(
-    c,
-    await new ShipmentsService().createShipment(storeId, orderId, body),
-    201,
-  );
+  const result = await new ShipmentsService().createShipment(storeId, orderId, body);
+  if (result.success && result.data) {
+    new OutboundWebhookService().emit(storeId, 'shipment.created', {
+      shipmentId: (result.data as any).id,
+      orderId,
+    }).catch(() => null);
+  }
+  return toResponse(c, result, 201);
 });
 
 // POST /merchant/:storeId/shipments/:shipmentId/label — Create label
@@ -101,7 +104,14 @@ shipmentsRouter.patch('/:shipmentId/status', requirePermission('shipping:manage'
   const storeId = Number(c.req.param('storeId'));
   const shipmentId = Number(c.req.param('shipmentId'));
   const body = c.req.valid('json');
-  return toResponse(c, await new ShipmentsService().updateStatus(storeId, shipmentId, body), 200);
+  const result = await new ShipmentsService().updateStatus(storeId, shipmentId, body);
+  if (result.success && body.status === 'delivered') {
+    new OutboundWebhookService().emit(storeId, 'shipment.delivered', {
+      shipmentId,
+      trackingNumber: body.trackingNumber,
+    }).catch(() => null);
+  }
+  return toResponse(c, result, 200);
 });
 
 // POST /merchant/:storeId/shipments/:shipmentId/events — Add tracking event
