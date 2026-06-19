@@ -145,6 +145,15 @@
 }
 
 @layer base {
+  /* Global button reset — prevents browser-default blue outline on raw <button> elements */
+  button {
+    outline: none;
+  }
+  button:focus-visible {
+    outline: 2px solid var(--haa-border-focus);
+    outline-offset: 2px;
+  }
+
   body {
     background: var(--haa-surface-1);
     color: var(--haa-text-primary);

@@ -4,6 +4,7 @@ import { BookOpen, Plus, Search, Edit3, Trash2, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getStoreId, supportApi } from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
+import { Button } from '@/components/ui/button';
 
 interface KbArticle {
   id: number;
@@ -124,10 +125,9 @@ export default function SupportKb() {
             <p className="text-sm text-neutral-500">{articles.length} {t('support.kb.articles', 'مقال')}</p>
           </div>
         </div>
-        <button onClick={() => { resetForm(); setShowForm(true); }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors">
+        <Button onClick={() => { resetForm(); setShowForm(true); }}>
           <Plus className="h-4 w-4" /> {t('support.kb.add', 'إضافة مقال')}
-        </button>
+        </Button>
       </div>
 
       <div className="relative mb-4">
@@ -185,14 +185,12 @@ export default function SupportKb() {
               {t('support.kb.publish', 'نشر')}
             </label>
             <div className="flex-1" />
-            <button onClick={resetForm}
-              className="px-4 py-2 rounded-lg border border-neutral-200 text-sm text-neutral-600 hover:bg-neutral-50">
+            <Button variant="outline" onClick={resetForm}>
               {t('common.cancel', 'إلغاء')}
-            </button>
-            <button onClick={handleSave} disabled={saving || !form.title || !form.content || !form.slug}
-              className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
+            </Button>
+            <Button onClick={handleSave} disabled={saving || !form.title || !form.content || !form.slug}>
               {saving ? t('common.saving', 'جاري الحفظ...') : editingId ? t('common.update', 'تحديث') : t('common.save', 'حفظ')}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -201,10 +199,9 @@ export default function SupportKb() {
         <div className="text-center py-16">
           <BookOpen className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
           <p className="text-neutral-500">{t('support.kb.loadError', 'تعذّر تحميل المقالات، حاول مجدداً')}</p>
-          <button onClick={load}
-            className="mt-4 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors">
+          <Button className="mt-4" onClick={load}>
             {t('common.retry', 'إعادة المحاولة')}
-          </button>
+          </Button>
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16">

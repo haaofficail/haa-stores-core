@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { employeesApi } from '@/lib/api';
 import type { Employee } from '@/lib/api';
+import { Button } from '@/components/ui/button';
 
 const roleLabels: Record<string, string> = {
   owner: 'مالك',
@@ -167,22 +168,14 @@ export default function EmployeesPage() {
           <p className="text-sm text-neutral-500 mt-1">إدارة موظفي المتجر والصلاحيات</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={fetchEmployees}
-            disabled={loading}
-            className="p-2 hover:bg-neutral-100 rounded-lg transition-colors text-neutral-500 disabled:opacity-50"
-            title="تحديث"
-          >
+          <Button variant="ghost" size="icon" onClick={fetchEmployees} disabled={loading} title="تحديث">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          </Button>
           <PermissionGate permission="employees:invite">
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/25"
-            >
+            <Button onClick={openCreate}>
               <Plus className="h-4 w-4" />
               إضافة موظف
-            </button>
+            </Button>
           </PermissionGate>
         </div>
       </div>
@@ -207,12 +200,7 @@ export default function EmployeesPage() {
           <p className="text-sm font-medium text-neutral-600">لا يوجد موظفون بعد</p>
           <p className="text-xs text-neutral-400 text-center max-w-xs">لم تقم بإضافة أي موظف بعد. أضف أول موظف للبدء بإدارة الصلاحيات.</p>
           <PermissionGate permission="employees:invite">
-            <button
-              onClick={openCreate}
-              className="mt-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
-            >
-              إضافة موظف
-            </button>
+            <Button className="mt-2" onClick={openCreate}>إضافة موظف</Button>
           </PermissionGate>
         </div>
       )}
@@ -278,23 +266,16 @@ export default function EmployeesPage() {
                         ) : (
                           <>
                             <PermissionGate permission="employees:update">
-                              <button
-                                onClick={() => openEdit(emp)}
-                                className="p-1.5 hover:bg-neutral-100 rounded-lg transition-colors text-neutral-500 hover:text-neutral-700"
-                                title="تعديل"
-                              >
+                              <Button variant="ghost" size="icon-sm" onClick={() => openEdit(emp)} title="تعديل">
                                 <Pencil className="h-4 w-4" />
-                              </button>
+                              </Button>
                             </PermissionGate>
                             <PermissionGate permission="employees:delete">
-                              <button
-                                onClick={() => handleDelete(emp)}
-                                disabled={deleting === emp.id}
-                                className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-neutral-500 hover:text-red-600 disabled:opacity-50"
-                                title="حذف"
-                              >
+                              <Button variant="ghost" size="icon-sm" onClick={() => handleDelete(emp)}
+                                disabled={deleting === emp.id} title="حذف"
+                                className="text-neutral-500 hover:text-red-600 hover:bg-red-50">
                                 {deleting === emp.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4" />}
-                              </button>
+                              </Button>
                             </PermissionGate>
                           </>
                         )}

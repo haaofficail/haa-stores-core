@@ -5,6 +5,7 @@ import { ArrowRight, Send, MessageSquare, Clock, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { getStoreId, supportApi } from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
+import { Button } from '@/components/ui/button';
 
 interface TicketMsg {
   id: number;
@@ -181,11 +182,10 @@ export default function SupportTicketDetail() {
             className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y mb-3"
             placeholder={t('support.replyPlaceholder', 'اكتب ردك هنا...')}
           />
-          <button type="submit" disabled={sending || !reply.trim()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors text-sm">
+          <Button type="submit" disabled={sending || !reply.trim()}>
             <Send className="h-4 w-4" />
             {sending ? t('support.sending', 'جاري الإرسال...') : t('support.send', 'إرسال الرد')}
-          </button>
+          </Button>
         </form>
       )}
     </div>

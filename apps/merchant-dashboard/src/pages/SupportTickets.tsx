@@ -5,6 +5,7 @@ import { Ticket, ChevronLeft, MessageSquare, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { getStoreId, supportApi } from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
+import { Button } from '@/components/ui/button';
 
 interface TicketItem {
   id: number;
@@ -87,10 +88,10 @@ export default function SupportTickets() {
 
       <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
         {statusFilters.map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)}
-            className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? 'bg-primary-600 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}>
+          <Button key={s} size="sm" variant={statusFilter === s ? 'default' : 'secondary'}
+            onClick={() => setStatusFilter(s)}>
             {s ? statusLabels[s] || s : t('support.all', 'الكل')}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -106,17 +107,16 @@ export default function SupportTickets() {
           <Ticket className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
           <p className="text-neutral-500">{t('support.noTickets', 'لا توجد تذاكر')}</p>
           {!searchQuery && (
-            <a href="mailto:support@haa.store"
-              className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors">
-              {t('support.createTicket', 'إنشاء تذكرة جديدة')}
-            </a>
+            <Button asChild className="mt-4">
+              <a href="mailto:support@haa.store">{t('support.createTicket', 'إنشاء تذكرة جديدة')}</a>
+            </Button>
           )}
         </div>
       ) : (
         <div className="space-y-3">
           {filteredTickets.map(ticket => (
             <Link key={ticket.id} to={`/support/tickets/${ticket.id}`}
-              className="block p-4 rounded-xl border border-neutral-200 hover:border-primary-200 hover:bg-primary-50/30 transition-colors">
+              className="block p-4 rounded-xl border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 transition-colors">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">

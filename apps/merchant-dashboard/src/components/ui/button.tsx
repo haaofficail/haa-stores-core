@@ -4,22 +4,57 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-500 disabled:pointer-events-none disabled:opacity-50',
+  // Base — shared by ALL variants
+  [
+    'inline-flex items-center justify-center gap-1.5 whitespace-nowrap',
+    'font-medium select-none cursor-pointer',
+    'transition-all duration-150 ease-out',
+    // Focus: ring offset creates a visible gap so the ring is clearly separate from the button
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400',
+    'disabled:pointer-events-none disabled:opacity-40',
+    'active:scale-[0.97]',
+  ].join(' '),
   {
     variants: {
       variant: {
-        default: 'bg-primary-500 text-white shadow-sm hover:bg-primary-600 active:scale-[0.98]',
-        destructive: 'bg-danger text-white shadow-sm hover:bg-red-600 active:scale-[0.98]',
-        outline: 'border border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-100 active:scale-[0.98]',
-        secondary: 'bg-neutral-100 text-neutral-900 hover:bg-neutral-200 active:scale-[0.98]',
-        ghost: 'text-neutral-900 hover:bg-neutral-100',
-        link: 'text-primary-500 underline-offset-4 hover:underline',
+        // ── Primary — filled brand blue ──
+        // hover darkens one step; shadow lifts slightly to signal interactivity
+        default:
+          'bg-primary-500 text-white shadow-sm hover:bg-primary-600 hover:shadow-md',
+
+        // ── Destructive — red delete/danger action ──
+        destructive:
+          'bg-red-500 text-white shadow-sm hover:bg-red-600 hover:shadow-md',
+
+        // ── Outline — bordered, white fill ──
+        // hover: subtle gray background, border gets slightly stronger — NO blue
+        outline:
+          'border border-neutral-200 bg-white text-neutral-700 shadow-sm hover:bg-neutral-50 hover:border-neutral-300 hover:text-neutral-900',
+
+        // ── Secondary — muted filled ──
+        // hover: goes one step darker gray — NO blue
+        secondary:
+          'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 hover:text-neutral-900',
+
+        // ── Ghost — transparent, minimal ──
+        // hover: very subtle gray wash — NO blue
+        ghost:
+          'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900',
+
+        // ── Link — text-only with underline ──
+        link:
+          'text-primary-600 underline-offset-4 hover:text-primary-700 hover:underline',
+
+        // ── Destructive outline — for less severe delete actions ──
+        'destructive-outline':
+          'border border-red-200 bg-white text-red-600 shadow-sm hover:bg-red-50 hover:border-red-300',
       },
       size: {
-        default: 'h-8 px-3 py-1.5',
-        sm: 'h-7 rounded-md px-2.5 text-xs',
-        lg: 'h-9 rounded-md px-4',
-        icon: 'h-8 w-8',
+        default: 'h-9 px-4 text-sm rounded-xl',
+        sm:      'h-7 px-3 text-xs rounded-lg',
+        lg:      'h-10 px-5 text-sm rounded-xl',
+        icon:    'h-9 w-9 rounded-xl',
+        'icon-sm': 'h-7 w-7 rounded-lg',
       },
     },
     defaultVariants: {
