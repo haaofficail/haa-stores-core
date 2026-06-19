@@ -26,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "pnpm"
 
       - name: pnpm install (frozen lockfile)
@@ -51,7 +51,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "pnpm"
 
       - name: pnpm install (frozen lockfile)
@@ -76,7 +76,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "pnpm"
 
       - name: pnpm install (frozen lockfile)
@@ -103,7 +103,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "pnpm"
 
       - name: pnpm install (frozen lockfile)
@@ -131,7 +131,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "pnpm"
 
       - name: pnpm install (frozen lockfile)
@@ -180,7 +180,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "pnpm"
 
       - name: pnpm install (frozen lockfile)
@@ -196,12 +196,12 @@ jobs:
         run: pnpm db:seed
 
       - name: Start API server
-        run: pnpm --filter @haa/api start &
+        run: pnpm --filter @haa/api dev &
         env:
           DATABASE_URL: postgresql://haa:haa_test_pw@localhost:5432/haa_test
 
       - name: Start storefront dev server
-        run: pnpm --filter storefront dev &
+        run: pnpm --filter @haa/storefront dev &
 
       - name: Wait for servers
         run: |
