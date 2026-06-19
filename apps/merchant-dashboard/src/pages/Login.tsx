@@ -67,7 +67,7 @@ export default function Login() {
       dir="rtl"
       className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50/30 p-6"
     >
-      <div className={`mx-auto flex min-h-screen max-w-7xl items-center justify-center transition-all duration-700 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      <div className={`mx-auto flex min-h-screen max-w-7xl items-center justify-center transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:opacity-100 motion-reduce:translate-y-0 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         <div className="grid w-full items-stretch gap-8 lg:grid-cols-5 lg:gap-12">
 
           {/* Right Side — Brand + Form stacked */}
@@ -93,10 +93,11 @@ export default function Login() {
                       id="email"
                       type="email"
                       dir="ltr"
+                      autoComplete="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="h-10 text-sm rounded-xl border border-neutral-200 bg-neutral-50/50 transition-all focus:shadow-md focus:bg-white"
+                      className="h-11 text-sm rounded-xl border border-neutral-200 bg-neutral-50/50 transition-all focus:shadow-md focus:bg-white"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -105,13 +106,14 @@ export default function Login() {
                       id="password"
                       type="password"
                       dir="ltr"
+                      autoComplete="current-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="h-10 text-sm rounded-xl border border-neutral-200 bg-neutral-50/50 transition-all focus:shadow-md focus:bg-white"
+                      className="h-11 text-sm rounded-xl border border-neutral-200 bg-neutral-50/50 transition-all focus:shadow-md focus:bg-white"
                     />
                   </div>
-                  <Button type="submit" className="h-10 text-sm px-4 w-full rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold transition-all hover:from-primary-600 hover:to-primary-700 hover:shadow-lg" disabled={loading}>
+                  <Button type="submit" className="h-11 text-sm px-4 w-full rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold transition-all hover:from-primary-600 hover:to-primary-700 hover:shadow-lg" disabled={loading}>
                     {loading ? 'جاري الدخول...' : 'دخول'}
                   </Button>
                 </form>
@@ -122,14 +124,14 @@ export default function Login() {
                     to={`${import.meta.env.VITE_STORE_URL || 'https://haa.store'}/signup`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 px-6 text-sm font-semibold text-white shadow-lg shadow-primary-500/25 transition-all hover:scale-[1.02] hover:shadow-xl"
+                    className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 px-6 text-sm font-semibold text-white shadow-lg shadow-primary-500/25 transition-all hover:scale-[1.02] hover:shadow-xl"
                   >
                     سجّل كتاجر جديد
                   </Link>
                 </div>
 
                 <div className="flex items-center justify-center gap-2 mt-8 text-xs text-neutral-400">
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>مدعوم بالذكاء الاصطناعي</span>
                 </div>
               </div>

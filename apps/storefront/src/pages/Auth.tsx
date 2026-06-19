@@ -206,7 +206,7 @@ export function SignupPage() {
             })()}
 
             {error && (
-              <div className="rounded-md border border-danger/30 bg-danger-soft p-3 text-sm text-danger">{error}</div>
+              <div role="alert" className="rounded-md border border-danger/30 bg-danger-soft p-3 text-sm text-danger">{error}</div>
             )}
 
             <p className="text-center text-xs text-text-muted">
