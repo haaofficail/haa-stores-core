@@ -55,7 +55,7 @@ export async function request<T>(
 
   let res: Response;
   try {
-    res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+    res = await fetch(`${BASE_URL}${path}`, { ...options, headers, credentials: 'include' });
   } catch {
     throw new ApiClientError('NETWORK_ERROR', 'Network error: unable to connect to server');
   }

@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type { Context } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { requireAuth, getAuth, signToken } from '@haa/auth-core';
 import { registerSchema, loginSchema, getPermissionsForRole, type UserRole } from '@haa/shared';
@@ -6,6 +7,28 @@ import { AuditLogService } from '@haa/integration-core';
 import { AuthFlowService } from '@haa/commerce-core';
 
 export const authRouter = new Hono();
+
+// 7-day JWT lifetime matches the default signToken expiry.
+const AUTH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
+
+function setAuthCookie(c: Context, token: string): void {
+  const isProd = process.env.NODE_ENV === 'production';
+  // SameSite=Lax: safe for same-site (*.haastores.com) AJAX with credentials:include.
+  // Secure flag in production ensures the cookie is only sent over HTTPS.
+  // HttpOnly prevents JS access — the primary XSS mitigation for P1-04.
+  c.header(
+    'Set-Cookie',
+    `haa_auth=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${AUTH_COOKIE_MAX_AGE}${isProd ? '; Secure' : ''}`,
+  );
+}
+
+function clearAuthCookie(c: Context): void {
+  const isProd = process.env.NODE_ENV === 'production';
+  c.header(
+    'Set-Cookie',
+    `haa_auth=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${isProd ? '; Secure' : ''}`,
+  );
+}
 
 // POST /auth/register
 authRouter.post('/register', zValidator('json', registerSchema), async (c) => {
@@ -41,6 +64,7 @@ authRouter.post('/register', zValidator('json', registerSchema), async (c) => {
       permissions: getPermissionsForRole(result.role),
     });
 
+    setAuthCookie(c, token);
     return c.json(
       {
         success: true,
@@ -99,6 +123,7 @@ authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
       permissions,
     });
 
+    setAuthCookie(c, token);
     return c.json({
       success: true,
       data: {
@@ -154,6 +179,12 @@ authRouter.get('/me', requireAuth(), async (c) => {
       permissions: auth.permissions,
     },
   });
+});
+
+// POST /auth/logout — clear the HttpOnly auth cookie
+authRouter.post('/logout', (c) => {
+  clearAuthCookie(c);
+  return c.json({ success: true });
 });
 
 // GET /auth/google — redirect to Google OAuth

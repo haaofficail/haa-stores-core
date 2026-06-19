@@ -44,15 +44,27 @@ export function getAuth(c: Context): AuthContext | null {
   return auth ?? null;
 }
 
+function extractToken(c: Context): string | null {
+  // 1. Authorization header (existing SPAs, API clients, file-download pages)
+  const authHeader = c.req.header('Authorization');
+  if (authHeader?.startsWith('Bearer ')) return authHeader.slice(7);
+
+  // 2. HttpOnly cookie (new path — browser sends automatically after login)
+  const cookieHeader = c.req.header('cookie') || '';
+  const match = cookieHeader.split(';').map(s => s.trim()).find(s => s.startsWith('haa_auth='));
+  if (match) return match.slice('haa_auth='.length);
+
+  return null;
+}
+
 export function requireAuth() {
   return async (c: Context, next: Next) => {
-    const authHeader = c.req.header('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    const token = extractToken(c);
+    if (!token) {
       return c.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Missing or invalid token' } }, 401);
     }
 
     try {
-      const token = authHeader.slice(7);
       const decoded = verifyToken(token);
 
       if (_tokenVersionVerifier) {
