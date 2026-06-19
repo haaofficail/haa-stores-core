@@ -59,12 +59,6 @@ export function Nav({ t }: { t: TFn }) {
 
         <div className="flex items-center gap-2">
           <Link
-            to="/login?ref=nav"
-            className="hidden min-h-[40px] items-center rounded-full px-3 text-[15px] font-medium text-text-secondary transition-colors hover:text-text-primary sm:inline-flex"
-          >
-            {t('landing.nav.login', 'تسجيل الدخول')}
-          </Link>
-          <Link
             to="/signup?ref=nav"
             className="aurora-btn inline-flex h-10 min-h-[40px] items-center gap-2 rounded-full bg-text-primary px-5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/30 hover:!text-white"
           >

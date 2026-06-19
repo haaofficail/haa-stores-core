@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 // eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
-import { Mail, Lock, User, Phone, Store as StoreIcon, Sparkles, ArrowLeft, Loader2, Check, Eye, EyeOff, Shield, Bell } from 'lucide-react';
+import { Mail, Lock, User, Phone, Store as StoreIcon, Sparkles, ArrowLeft, Loader2, Check, Shield, Bell } from 'lucide-react';
 
 // P2-#11: password strength meter. Lightweight client-side
 // scoring: 0-2 weak, 3 medium, 4+ strong. Used only in the
@@ -25,149 +25,6 @@ import { useSEO } from '@/hooks/useSEO';
 import { usePlatformBrand } from '@/hooks/usePlatformBrand';
 import { authApi } from '@/lib/auth';
 import { ApiClientError as ApiError } from '@/lib/api';
-
-export function LoginPage() {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPw, setShowPw] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useSEO({
-    title: t('auth.login.metaTitle', 'تسجيل الدخول — Haa'),
-    description: t('auth.login.metaDescription', 'ادخل على لوحة تحكم متجرك.'),
-  });
-
-  const onSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSubmitting(true);
-    try {
-      const session = await authApi.login(email.trim().toLowerCase(), password);
-      // Redirect to merchant dashboard on success.
-      const target = session.store?.slug
-        ? `/admin?store=${encodeURIComponent(session.store.slug)}`
-        : '/admin';
-      navigate(target, { replace: true });
-    } catch (err) {
-      if (err instanceof ApiError) {
-        if (err.code === 'INVALID_CREDENTIALS') {
-          setError(t('auth.login.errors.invalidCredentials', 'البريد أو كلمة المرور غير صحيحة'));
-        } else if (err.code === 'FORBIDDEN') {
-          setError(t('auth.login.errors.noTenant', 'هذا الحساب غير مرتبط بمتجر. تواصل مع الدعم.'));
-        } else {
-          setError(err.message || t('auth.login.errors.generic', 'تعذّر تسجيل الدخول. حاول مرة ثانية.'));
-        }
-      } else {
-        setError(t('auth.login.errors.generic', 'تعذّر تسجيل الدخول. حاول مرة ثانية.'));
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <AuthShell>
-      <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
-        <AuthAside
-          badge={t('auth.login.badge', 'نرجع لك')}
-          title={t('auth.login.title', 'أهلًا فيك من جديد')}
-          subtitle={t('auth.login.subtitle', 'سجّل دخولك على لوحة التحكم.')}
-        />
-
-        <div className="rounded-modal border border-border-subtle bg-surface p-6 shadow-card sm:p-8">
-          <form
-            onSubmit={onSubmit}
-            className="space-y-4"
-            aria-label={t('auth.login.title', 'تسجيل الدخول')}
-          >
-            <StoreInput
-              label={t('auth.login.emailLabel', 'البريد الإلكتروني')}
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t('auth.login.emailPlaceholder', 'you@example.com')}
-              iconStart={<Mail className="h-4 w-4" />}
-            />
-
-            <div>
-              <StoreInput
-                label={t('auth.login.passwordLabel', 'كلمة المرور')}
-                type={showPw ? 'text' : 'password'}
-                autoComplete="current-password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={t('auth.login.passwordPlaceholder', '••••••••')}
-                iconStart={<Lock className="h-4 w-4" />}
-              />
-              <div className="mt-2 flex items-center justify-between text-sm">
-                <label className="flex min-h-[44px] cursor-pointer items-center gap-2 text-text-secondary">
-                  <input type="checkbox" className="h-4 w-4 rounded border-border-subtle accent-primary" />
-                  <span>{t('auth.login.rememberMe', 'تذكّرني')}</span>
-                </label>
-                <a href="#forgot" className="min-h-[44px] inline-flex items-center text-primary hover:underline">
-                  {t('auth.login.forgotPassword', 'نسيت كلمة المرور؟')}
-                </a>
-              </div>
-            </div>
-
-            {error && (
-              <div className="rounded-md border border-danger/30 bg-danger-soft p-3 text-sm text-danger">
-                {error}
-              </div>
-            )}
-
-            <StoreButton
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full"
-              iconStart={submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowLeft className="h-4 w-4" />}
-              disabled={submitting}
-            >
-              {submitting ? t('auth.login.submitting', 'جاري الدخول...') : t('auth.login.submit', 'تسجيل الدخول')}
-            </StoreButton>
-
-            <div className="flex items-center gap-3 py-2">
-              <div className="h-px flex-1 bg-border-subtle" />
-              <span className="text-xs text-text-muted">{t('auth.login.divider', 'أو')}</span>
-              <div className="h-px flex-1 bg-border-subtle" />
-            </div>
-
-            <div className="mt-6 rounded-xl border border-blue-100 bg-blue-50/60 p-5 text-center">
-              <p className="text-sm font-medium text-text-secondary">
-                {t('auth.login.signupCta', 'ما عندك حساب؟')}
-              </p>
-              <Link
-                to="/signup"
-                className="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 px-6 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02]"
-              >
-                {t('auth.login.signupLink', 'سجّل كتاجر جديد')}
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowPw((v) => !v)}
-              className="sr-only"
-              aria-hidden="true"
-              tabIndex={-1}
-            >
-              {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </form>
-        </div>
-      </div>
-    </AuthShell>
-  );
-}
 
 export function SignupPage() {
   const { t } = useTranslation();
@@ -371,12 +228,6 @@ export function SignupPage() {
               {submitting ? t('auth.signup.submitting', 'جاري الإنشاء...') : t('auth.signup.submit', 'أنشئ متجري')}
             </StoreButton>
 
-            <p className="text-center text-sm text-text-secondary">
-              {t('auth.signup.loginCta', 'عندك حساب؟')}{' '}
-              <Link to="/login" className="font-semibold text-primary hover:underline">
-                {t('auth.signup.loginLink', 'سجّل دخول')}
-              </Link>
-            </p>
           </form>
         </div>
       </div>

@@ -6,7 +6,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const Home = lazy(() => import('@/pages/Home'));
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
-const AuthLogin = lazy(() => import('@/pages/Auth').then((m) => ({ default: m.LoginPage })));
 const AuthSignup = lazy(() => import('@/pages/Auth').then((m) => ({ default: m.SignupPage })));
 const AuthWaitlist = lazy(() => import('@/pages/Auth').then((m) => ({ default: m.WaitlistPage })));
 const Category = lazy(() => import('@/pages/Category'));
@@ -65,7 +64,6 @@ export default function App() {
         <Suspense fallback={<PageSkeleton />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<AuthLogin />} />
           <Route path="/signup" element={<AuthSignup />} />
           <Route path="/waitlist" element={<AuthWaitlist />} />
           <Route path="/s/:slug" element={<Layout />}>
