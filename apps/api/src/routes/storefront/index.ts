@@ -7,6 +7,8 @@ import { productsRouter } from './products.js';
 import { cartRouter } from './cart.js';
 import { checkoutRouter } from './checkout.js';
 import { supportRouter } from './support.js';
+import { pixelsPublicRouter } from './pixels.js';
+import { cartRecoveryRouter } from './cart-recovery.js';
 
 export const storefrontRouter = new Hono();
 
@@ -16,3 +18,5 @@ storefrontRouter.route('/', productsRouter);
 storefrontRouter.route('/', cartRouter);
 storefrontRouter.route('/', checkoutRouter);
 storefrontRouter.route('/', supportRouter);
+storefrontRouter.route('/', pixelsPublicRouter);
+storefrontRouter.route('/', cartRecoveryRouter);

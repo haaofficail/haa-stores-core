@@ -37,3 +37,5 @@ export * from './live-presence.js';
 export * from './live-snapshots.js';
 export * from './membership_permissions.js';
 export * from './marketing_actions.js';
+export * from './pixels.js';
+export * from './campaigns.js';

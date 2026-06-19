@@ -82,6 +82,13 @@ export { MarketingActionService, runMarketingActionGeneration } from './marketin
 export type { GeneratedAction, ActionListOptions, ActionListResult } from './marketing-action-engine.js';
 export { CustomerSegmentationService, runCustomerSegmentationSummary } from './customer-segmentation.js';
 export { StoreBillingSettingsService } from './billing-settings-service.js';
+export { PixelService } from './pixels.js';
+export type { PixelConfig } from './pixels.js';
+export { AbandonedCartCampaignService } from './abandoned-cart-campaigns.js';
+export type { CampaignInput, RecoveryStats } from './abandoned-cart-campaigns.js';
+export { WhatsAppCampaignService } from './whatsapp-campaigns.js';
+export type { CreateCampaignInput } from './whatsapp-campaigns.js';
+export { OutboundWebhookService } from './outbound-webhook.js';
 export { ShipmentsService } from './shipments-service.js';
 export type { ShipmentsResult } from './shipments-service.js';
 export { PaymentWebhookService } from './payment-webhook-service.js';

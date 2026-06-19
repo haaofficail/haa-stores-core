@@ -16,6 +16,7 @@
   "dependencies": {
     "@haa/auth-core": "workspace:*",
     "@haa/commerce-core": "workspace:*",
+    "@haa/zatca-core": "workspace:*",
     "@haa/db": "workspace:*",
     "@haa/integration-core": "workspace:*",
     "@haa/marketplace-core": "workspace:*",

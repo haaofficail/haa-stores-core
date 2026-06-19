@@ -48,6 +48,24 @@ const scheduledJobs: ScheduledJob[] = [
     },
   },
   {
+    name: JOB_NAMES.cartRecover,
+    intervalMs: 5 * 60 * 1000,
+    handler: async () => {
+      const { AbandonedCartCampaignService } = await import('@haa/commerce-core');
+      const service = new AbandonedCartCampaignService();
+      await service.runRecoveryPass();
+    },
+  },
+  {
+    name: JOB_NAMES.webhookDeliver,
+    intervalMs: 5 * 60 * 1000,
+    handler: async () => {
+      const { OutboundWebhookService } = await import('@haa/commerce-core');
+      const service = new OutboundWebhookService();
+      await service.retryPending();
+    },
+  },
+  {
     name: JOB_NAMES.marketingActionGenerate,
     intervalMs: 60 * 60 * 1000,
     handler: async () => {

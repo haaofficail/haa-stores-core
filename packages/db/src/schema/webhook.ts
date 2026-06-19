@@ -26,6 +26,12 @@ export const webhookEndpoints = pgTable('webhook_endpoints', {
   secret: varchar('secret', { length: 255 }),
   events: jsonb('events').$type<string[]>().notNull(),
   isActive: boolean('is_active').notNull().default(true),
+  // Circuit-breaker fields (added in migration 0066)
+  consecutiveFailures: integer('consecutive_failures').notNull().default(0),
+  pausedUntil: timestamp('paused_until'),
+  lastFailureAt: timestamp('last_failure_at'),
+  totalDeliveries: integer('total_deliveries').notNull().default(0),
+  totalFailures: integer('total_failures').notNull().default(0),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({

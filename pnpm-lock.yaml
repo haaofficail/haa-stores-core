@@ -138,6 +138,9 @@ importers:
       "@haa/wallet-core":
         specifier: workspace:*
         version: link:../../packages/wallet-core
+      "@haa/zatca-core":
+        specifier: workspace:*
+        version: link:../../packages/zatca-core
       "@hono/node-server":
         specifier: ^1.12.0
         version: 1.19.14(hono@4.12.26)
