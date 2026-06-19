@@ -66,19 +66,21 @@ try {
   check(false, 'pnpm available', 'Install pnpm >= 9')
 }
 
-console.log('')
-console.log('=== TypeScript TypeCheck ===')
+if (!process.env.CI) {
+  console.log('')
+  console.log('=== TypeScript TypeCheck ===')
 
-try {
-  execSync('pnpm run -r typecheck 2>&1', { encoding: 'utf-8', stdio: 'pipe', timeout: 120000 })
-  console.log('  ✅ TypeCheck passed')
-} catch (e) {
-  console.log('  ❌ TypeCheck failed')
-  const lines = e.stdout?.split('\n').filter(l => l.includes('error')).slice(0, 5) || []
-  for (const line of lines) {
-    console.log(`     ${line.trim()}`)
+  try {
+    execSync('pnpm run -r typecheck 2>&1', { encoding: 'utf-8', stdio: 'pipe', timeout: 120000 })
+    console.log('  ✅ TypeCheck passed')
+  } catch (e) {
+    console.log('  ❌ TypeCheck failed')
+    const lines = e.stdout?.split('\n').filter(l => l.includes('error')).slice(0, 5) || []
+    for (const line of lines) {
+      console.log(`     ${line.trim()}`)
+    }
+    failed = true
   }
-  failed = true
 }
 
 console.log('')

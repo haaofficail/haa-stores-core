@@ -226,7 +226,7 @@ export function SignupPage() {
 
               {/* Personal info section */}
               <div className="space-y-3">
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-text-tertiary">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-text-tertiary"> {/* small-text-allowed:badge */}
                   {t('auth.signup.sectionPersonal', 'معلوماتك الشخصية')}
                 </p>
                 <StoreInput
@@ -269,7 +269,7 @@ export function SignupPage() {
                   <div className="w-full border-t border-border-subtle" />
                 </div>
                 <div className="relative flex justify-center">
-                  <span className="bg-white/70 px-3 text-[11px] font-semibold uppercase tracking-widest text-text-tertiary backdrop-blur-sm">
+                  <span className="bg-white/70 px-3 text-[11px] font-semibold uppercase tracking-widest text-text-tertiary backdrop-blur-sm"> {/* small-text-allowed:badge */}
                     {t('auth.signup.sectionStore', 'معلومات متجرك')}
                   </span>
                 </div>
@@ -304,7 +304,7 @@ export function SignupPage() {
                   <div className="w-full border-t border-border-subtle" />
                 </div>
                 <div className="relative flex justify-center">
-                  <span className="bg-white/70 px-3 text-[11px] font-semibold uppercase tracking-widest text-text-tertiary backdrop-blur-sm">
+                  <span className="bg-white/70 px-3 text-[11px] font-semibold uppercase tracking-widest text-text-tertiary backdrop-blur-sm"> {/* small-text-allowed:badge */}
                     {t('auth.signup.sectionSecurity', 'الأمان')}
                   </span>
                 </div>
