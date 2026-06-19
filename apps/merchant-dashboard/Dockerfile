@@ -61,6 +61,7 @@ COPY tsconfig.base.json ./
 COPY tsconfig.json      ./
 
 # Build: tsc -b && vite build → apps/merchant-dashboard/dist/
+RUN pnpm -r --filter './packages/**' --workspace-concurrency=1 build
 RUN pnpm --filter @haa/merchant-dashboard build
 
 

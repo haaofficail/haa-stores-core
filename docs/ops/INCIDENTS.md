@@ -35,9 +35,25 @@
 
 ## Active Incidents
 
-*(No active incidents)*
+_(No active incidents)_
 
 ## Resolved Incidents
+
+### INC-20260619-006..008: Historical React Runtime P0 Events Re surfaced by Monitor
+
+- **Date:** 2026-06-19
+- **Severity:** P0 (historical captured severity)
+- **Status:** Resolved / no current outage observed on 2026-06-20
+- **Detected By:** `pnpm ops:monitor`
+- **Impact:** No current service outage. API, storefront, and merchant dashboard all returned HTTP 200 during the 2026-06-20 health and synthetic checks.
+- **Affected Apps:** merchant-dashboard / React runtime
+- **Error Codes:** DASH-001
+- **Correlation IDs:** `evt-mqkvcig7-n3lu8y`, `evt-mqkw79kh-e5y01y`, `evt-mqkykp9r-e2m4xm`
+- **Root Cause:** Not established in TASK-0054; events predate the CI repair and were retained in the NDJSON history.
+- **Resolution:** Recorded as required by the monitoring rule. No runtime code was changed because current health checks are green and the active user request is limited to GitHub Actions.
+- **Prevention:** Treat historical P0 events separately from current health; investigate recurrence if a new event with either fingerprint is captured.
+- **Related Tasks:** TASK-0054 (detection context only)
+- **Verification:** `pnpm ops:health` 25/25; storefront, merchant dashboard, and API synthetic checks all HTTP 200.
 
 ### INC-20260615-001..005: Vite HMR Transient (cluster)
 
@@ -77,16 +93,15 @@ Six fingerprints recorded on 2026-06-15 with ≥3 occurrences each. All
 **resolved** by `scripts/seed-billing-guards.ts` (this session). See
 ISSUE-0011 for full RCA.
 
-| Fingerprint | Count | Resolution |
-|---|---|---|
-| `API-001::unknown::/marketplace/categories::Failed_query:_select_..._` | 48 | Seed guard now backfills `store_billing_settings` |
-| `API-001::unknown::/merchant/1/categories::Failed_query:_select_..._` | 39 | Same — store-scoped query needed `store_billing_settings` |
-| `API-001::unknown::/merchant/1/reports/low-stock::Failed_query:_select_..._` | 33 | Same |
-| `API-001::unknown::/marketplace/products::Failed_query:_select_..._` | 36 | Same |
-| `API-001::unknown::/marketplace/products::Failed_query:_select_count(*)...` | 12 | Same |
-| `API-001::unknown::/merchant/1/wallet/summary::Failed_query:_select_..._platform_fee_mode..._` | 41 | Same — direct `getRawSettings()` failure |
+| Fingerprint                                                                                    | Count | Resolution                                                |
+| ---------------------------------------------------------------------------------------------- | ----- | --------------------------------------------------------- |
+| `API-001::unknown::/marketplace/categories::Failed_query:_select_..._`                         | 48    | Seed guard now backfills `store_billing_settings`         |
+| `API-001::unknown::/merchant/1/categories::Failed_query:_select_..._`                          | 39    | Same — store-scoped query needed `store_billing_settings` |
+| `API-001::unknown::/merchant/1/reports/low-stock::Failed_query:_select_..._`                   | 33    | Same                                                      |
+| `API-001::unknown::/marketplace/products::Failed_query:_select_..._`                           | 36    | Same                                                      |
+| `API-001::unknown::/marketplace/products::Failed_query:_select_count(*)...`                    | 12    | Same                                                      |
+| `API-001::unknown::/merchant/1/wallet/summary::Failed_query:_select_..._platform_fee_mode..._` | 41    | Same — direct `getRawSettings()` failure                  |
 
 **Resolution date:** 2026-06-18
 **Resolution:** Created `scripts/seed-billing-guards.ts` (idempotent) + wired into `pnpm db:seed` as a final step. All 209 historical events archived.
 **Prevention:** Documented in ISSUE-0011; regression checklist updated.
-

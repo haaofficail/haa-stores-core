@@ -52,6 +52,7 @@ COPY apps/storefront/ ./apps/storefront/
 COPY tsconfig.base.json ./
 COPY tsconfig.json      ./
 
+RUN pnpm -r --filter './packages/**' --workspace-concurrency=1 build
 RUN pnpm --filter @haa/storefront build
 
 

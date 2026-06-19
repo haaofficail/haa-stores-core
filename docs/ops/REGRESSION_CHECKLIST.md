@@ -14,6 +14,15 @@
 - [ ] No files outside scope were modified
 - [ ] docs/ops/ files updated if needed
 
+## CI / Docker
+
+- [ ] CI Test job provisions PostgreSQL before DB-backed tests
+- [ ] CI Test job runs migrations and seeds before `pnpm test`
+- [ ] Workspace packages build before individual app builds
+- [ ] Docker build stages compile workspace packages before apps
+- [ ] Production-only installs do not invoke dev-only Husky hooks
+- [ ] PR checks are green before merge to `main`
+
 ## Local Port Governance
 
 - [ ] API health endpoint is checked on `http://localhost:3000/health`
@@ -95,7 +104,7 @@
 - [ ] API boundary tests (tests/employee-management-api.test.ts) pass
 - [ ] UI wire tests (tests/employee-ui-api-wire.test.ts) pass
 - [ ] API endpoints: GET list, POST invite, PATCH update, DELETE remove, PATCH permissions (501)
-- [ ] API enforces employee:* permissions on all endpoints
+- [ ] API enforces employee:\* permissions on all endpoints
 - [ ] API safety rules: last owner, self-downgrade, duplicate email, invalid role, self-delete
 - [ ] API custom permissions returns 501 NOT_IMPLEMENTED
 - [ ] Employees page fetches from API (no mock data)
@@ -241,7 +250,7 @@
 - [ ] `@haa/theme-react`'s `ThemeProvider` is used for light/dark mode only (design system, not storefront)
 - [ ] `@haa/system-theme` CSS uses `--haa-*` namespaced variables
 - [ ] No storefront-specific CSS files imported in dashboard apps
-- [ ] Admin-dashboard does not import from storefront, storefront-themes, or theme-* packages
+- [ ] Admin-dashboard does not import from storefront, storefront-themes, or theme-\* packages
 - [ ] Fallback theme renders if theme key is unregistered
 - [ ] No themed content rendered before themeConfig resolves (loading guard in Layout.tsx)
 - [ ] Skeleton uses only neutral Tailwind colors (no theme CSS vars) during theme loading
@@ -251,4 +260,4 @@
 
 ## Previous Issue Checks
 
-*(Add specific checks here as issues are resolved)*
+_(Add specific checks here as issues are resolved)_

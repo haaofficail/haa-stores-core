@@ -5,6 +5,14 @@
 
 ---
 
+## 2026-06-20 — GitHub Actions CI/Docker Recovery (TASK-0054)
+
+- Added a PostgreSQL 16 service plus migration/seed preparation to the CI Test job so DB-backed tests do not connect to a missing localhost database.
+- Added ordered workspace-package builds before every app build in CI and in all four Dockerfiles.
+- Changed the API production dependency install to skip lifecycle scripts, preventing the root Husky prepare hook from failing when devDependencies are excluded.
+- Added CI contract coverage for the database service and package-before-app build order.
+- Local verification: 12/12 CI contract tests, 2668 full-suite tests, all workspace packages, and all four apps passed. Docker image build remains delegated to GitHub because Docker is unavailable locally.
+
 ## 2026-06-17 (Session #2: TASK-0034 — Phase 4-9 + Saudi PDPL — ALL 8 SUB-ITEMS DONE)
 
 ### Context
@@ -142,6 +150,7 @@ Session #1 of the 4-session "production-ready" roadmap (see `~/.mavis/scratchpad
 ### Background
 
 The wallet entry creation was dispersed across 6 call sites in 3 files with no central posting service. The Phase 1 audit (TASK-0031) flagged 5 critical findings. Session #1 shipped:
+
 - **Findings 1, 3, 4** — addressed via the new `WalletPostingService` (TASK-0033). Centralized dedup kills the sale double-write race (Finding 4). Route-level refund (Finding 3) and 6 dispersed call sites (Finding 1) are partially addressed; remaining 4 call sites queued for Session #2 (TASK-0034 sub-items 5+6).
 - **Finding 2** (no `gateway_fee` entry type) — `WalletEntryType` union extended; full implementation queued for TASK-0034 sub-item 2.
 - **Finding 5** (hardcoded COD fee) — DONE in TASK-0032. Policy-driven via `store_billing_settings.cod_fee_*` columns.
@@ -320,7 +329,7 @@ The project has had `tests/ci-cd-pipeline.test.ts` since Quality Pass 1 that ass
   2. **`requireStoreAccess`** is called for routes whose URL contains `:storeId`.
   3. **`requirePermission` / `requireAnyPermission`** is called on every mutating route.
 
-- A `DENY_LIST` of route files that are intentionally public (no auth): pre-auth (auth, admin/*), webhooks (signature-based), storefront customer endpoints (cart, checkout, haa-marketplace, support under `/s/*`), and one-offs (landing-ai-agent, public-api with API key auth, health, support-errors, migration).
+- A `DENY_LIST` of route files that are intentionally public (no auth): pre-auth (auth, admin/_), webhooks (signature-based), storefront customer endpoints (cart, checkout, haa-marketplace, support under `/s/_`), and one-offs (landing-ai-agent, public-api with API key auth, health, support-errors, migration).
 
 ### Background
 
@@ -454,9 +463,11 @@ This pattern is the modern equivalent of double-submit cookies for Bearer-token 
 Decomposed `apps/merchant-dashboard/src/pages/DashboardHome.tsx` (2743 LOC) incrementally across **22 commits**, each independently verified with typecheck + build + 3 dashboard test files / 144 tests. Extracted 22 sub-components + 1 constants file to `apps/merchant-dashboard/src/pages/dashboard/`:
 
 **Helpers (no React deps):**
+
 - `constants.ts` — `CHART_COLORS`, `getRemainingDays`, `formatTimeAgo`, `getUpcomingSeason`, `orderStatusColors`, `arabicStatusLabels`, `arabicPaymentLabels`, `getNextActionLabel`. Arabic strings preserved exactly (including subtle spelling variants like مرتجع).
 
 **Visual sub-components (pure presentational unless noted):**
+
 - `StatsCards.tsx` — 5-tile extended KPI grid (total sales, orders, new orders, products, wallet) with trend badges
 - `PrimaryKpiCards.tsx` — 2 always-visible KPI tiles (today's sales + actionable orders)
 - `ShowMoreKpiToggle.tsx` — Mobile KPI expand toggle button
@@ -571,7 +582,7 @@ The 1500 LOC remaining inside DashboardHome is the **state and orchestration lay
 ### Verified
 
 - 5 split-aware regression test files passed (33/33 tests):
-  - `tests/dto-storefront.test.ts` — toPublic* DTO extraction + split-aware assertions on each storefront sub-router file
+  - `tests/dto-storefront.test.ts` — toPublic\* DTO extraction + split-aware assertions on each storefront sub-router file
   - `tests/cart-security-regression.test.ts` — cart route split + cart PATCH/DELETE presence + store-scope enforcement
   - `tests/email-contact-regression.test.ts` — `getOfficialContactEmail` fallback now sourced from `storefront/store-info.ts`
   - `tests/products-qa-regression.test.ts` — category slug store-scoping + selected-variant flow reads from `storefront/products.ts`, `storefront/cart.ts`, `storefront/checkout.ts`
@@ -645,25 +656,27 @@ The 1500 LOC remaining inside DashboardHome is the **state and orchestration lay
 
 ### Quality Pass 1 Summary
 
-| Item | Status | Notes |
-|------|--------|-------|
-| Item 1: Schema deduplication | ✅ Done | Removed `marketing-actions.ts` |
-| Item 2: Migration deduplication | ✅ Done | Split 0046 into 0047+0048 |
-| Bug fix: FK identifier overflow | ✅ Done (bonus) | 3 migrations fixed |
-| Item 3: ADMIN_JWT_SECRET | ✅ Done | Added validation in env.ts |
-| Item 4: Local CI Script | ✅ Done | `pnpm ci:local` |
-| Item 5: FK Cascade on stores.tenantId | ✅ Done | Migration 0049 |
-| Item 6: requirePermission on ai-agent.ts | ✅ Done | 11 endpoints secured |
-| **Total** | **6/6 (100%)** | + 1 bonus fix |
+| Item                                     | Status          | Notes                          |
+| ---------------------------------------- | --------------- | ------------------------------ |
+| Item 1: Schema deduplication             | ✅ Done         | Removed `marketing-actions.ts` |
+| Item 2: Migration deduplication          | ✅ Done         | Split 0046 into 0047+0048      |
+| Bug fix: FK identifier overflow          | ✅ Done (bonus) | 3 migrations fixed             |
+| Item 3: ADMIN_JWT_SECRET                 | ✅ Done         | Added validation in env.ts     |
+| Item 4: Local CI Script                  | ✅ Done         | `pnpm ci:local`                |
+| Item 5: FK Cascade on stores.tenantId    | ✅ Done         | Migration 0049                 |
+| Item 6: requirePermission on ai-agent.ts | ✅ Done         | 11 endpoints secured           |
+| **Total**                                | **6/6 (100%)**  | + 1 bonus fix                  |
 
 ### What's Next (Quality Pass 2)
 
 According to COMMITMENTS.md and the strategic plan, Quality Pass 2 covers:
+
 - Component unification (route splitting, payment provider extraction, helpers)
 - Targeted at `storefront.ts` (876 lines), `marketplaces.ts` (910 lines), `admin.ts` (692 lines)
 - `payment.ts` god class extraction (1429 lines → 5 providers)
 
 The strategic plan suggests pausing before Pass 2 to:
+
 1. Review Quality Pass 1 results
 2. Get owner approval for next phase scope
 3. Possibly tackle other technical debt (test DB issues, schema drift)
@@ -873,7 +886,7 @@ The strategic plan suggests pausing before Pass 2 to:
 
 ### Manually Applied to Main DB
 
-- Ran `psql -f 0048_repair_marketing_action_tables.sql` on `haastores` to create the missing marketing_action_* tables
+- Ran `psql -f 0048_repair_marketing_action_tables.sql` on `haastores` to create the missing marketing*action*\* tables
 - Inserted manual entry into `drizzle.__drizzle_migrations` (id=46, hash='manual_repair_0048') to align with new journal
 
 ### Verified
@@ -1253,7 +1266,7 @@ The strategic plan suggests pausing before Pass 2 to:
   - ESCALATION_GUIDE.md — escalation criteria and paths
   - ERROR_CODE_TAXONOMY.md — 22 error code categories
 - Added System Health section (11) to AGENTS.md
-- Added ops:* scripts to package.json
+- Added ops:\* scripts to package.json
 
 ### Changed
 
@@ -1519,6 +1532,7 @@ and compliance surfaces.
 ### Impact
 
 These 5 docs enable:
+
 1. Legal review submission (Owner + Legal before live)
 2. On-call team training
 3. Regulatory audit submission (SDAIA, NCA, SAMA)
@@ -1544,7 +1558,7 @@ These 5 docs enable:
 
 - TASK-0034 sub-item 8 (PDPL endpoints)
 - TASK-0035 (3DS + VAT)
-- docs/security/* (security controls)
+- docs/security/\* (security controls)
 - docs/ops/INCIDENTS.md (existing incident log)
 - memory/drizzle-migration-snapshots.md (deploy gotcha)
 
@@ -1720,6 +1734,7 @@ created. Drizzle infers the snapshot filename from the journal entry's
 missing files.
 
 **Workaround (synthesize snapshots from previous):**
+
 - New `scripts/build-snapshots.cjs` (~140 LOC) — reads each
   migration's `_journal.json`, finds the prior snapshot in the
   filesystem, applies the migration's `sql` statements as structural
@@ -1738,6 +1753,7 @@ missing files.
     Re-linked to the correct previous snapshot UUID.
 
 **Regression guards (5 new tests, all green):**
+
 - `tests/drizzle-snapshot-integrity.test.ts` (7 tests)
   1. All journal entries have matching `*_snapshot.json` files
   2. All snapshot files parse as valid JSON

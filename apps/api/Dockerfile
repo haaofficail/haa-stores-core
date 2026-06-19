@@ -65,6 +65,7 @@ COPY tsconfig.base.json ./
 COPY tsconfig.json      ./
 
 # Build: tsc outputs to apps/api/dist/
+RUN pnpm -r --filter './packages/**' --workspace-concurrency=1 build
 RUN pnpm --filter @haa/api build
 
 
@@ -101,8 +102,9 @@ COPY apps/merchant-dashboard/package.json   ./apps/merchant-dashboard/
 COPY apps/admin-dashboard/package.json      ./apps/admin-dashboard/
 COPY packages/                              ./packages/
 
-# Install ONLY production dependencies (no devDependencies)
-RUN pnpm install --frozen-lockfile --prod --prefer-offline
+# Install ONLY production dependencies. Lifecycle scripts are skipped because
+# the root prepare hook uses Husky, which is intentionally a devDependency.
+RUN pnpm install --frozen-lockfile --prod --prefer-offline --ignore-scripts
 
 # Copy compiled output from build stage
 COPY --from=build /repo/apps/api/dist ./apps/api/dist

@@ -48,6 +48,25 @@ describe('Quality Pass 1 — CI/CD Pipeline (Item 4)', () => {
     expect(content).toMatch(/pnpm test/);
   });
 
+  it('test job must provide and prepare PostgreSQL for DB-backed tests', () => {
+    const ciFile = resolve(workflowsDir, 'ci.yml');
+    const content = readFileSync(ciFile, 'utf-8');
+    expect(content).toMatch(/test:[\s\S]*services:[\s\S]*postgres:16-alpine/);
+    expect(content).toMatch(/test:[\s\S]*DATABASE_URL:/);
+    expect(content).toMatch(/Prepare test database[\s\S]*pnpm db:migrate[\s\S]*pnpm db:seed/);
+  });
+
+  it('build jobs must compile workspace packages before individual apps', () => {
+    const ciFile = resolve(workflowsDir, 'ci.yml');
+    const content = readFileSync(ciFile, 'utf-8');
+    const sharedBuildIndex = content.lastIndexOf(
+      "pnpm -r --filter './packages/**' --workspace-concurrency=1 build",
+    );
+    const appBuildIndex = content.indexOf('pnpm --filter @haa/${{ matrix.app }} build');
+    expect(sharedBuildIndex).toBeGreaterThan(-1);
+    expect(appBuildIndex).toBeGreaterThan(sharedBuildIndex);
+  });
+
   it('ci.yml must run pnpm preflight', () => {
     const ciFile = resolve(workflowsDir, 'ci.yml');
     const content = readFileSync(ciFile, 'utf-8');

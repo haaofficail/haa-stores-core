@@ -52,6 +52,7 @@ COPY apps/admin-dashboard/ ./apps/admin-dashboard/
 COPY tsconfig.base.json    ./
 COPY tsconfig.json         ./
 
+RUN pnpm -r --filter './packages/**' --workspace-concurrency=1 build
 RUN pnpm --filter @haa/admin-dashboard build
 
 

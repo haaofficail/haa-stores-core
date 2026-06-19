@@ -4,6 +4,30 @@
 
 ---
 
+### TASK-0054: Restore GitHub Actions CI and Docker Build Reliability
+
+- **Type:** Bug Fix / Support/Ops / Testing
+- **Priority:** P0 Critical
+- **Status:** In Progress
+- **Created:** 2026-06-20
+- **Updated:** 2026-06-20
+- **Original Request:** "حل مشاكل الاكشن ، الفشل كثير ما انحلت"
+- **Expanded Requirement:** Fix the failing checks on PR #1 and the Docker build failure seen by the main-branch Deploy workflow.
+- **Problem:** The Test job had no PostgreSQL service despite running DB-backed tests; app build jobs compiled apps before their workspace packages; the API production image ran the root Husky `prepare` hook after excluding devDependencies.
+- **Scope:** `.github/workflows/ci.yml`, four app Dockerfiles, CI contract tests, and required ops documentation.
+- **Out of Scope:** Product behavior, deployment secrets/server configuration, and unrelated historical runtime P0 fingerprints.
+- **Skills Used:** `github:gh-fix-ci`; explicit plan/debug/verification methodology (the named local skills were unavailable in this session).
+- **Acceptance Criteria:**
+  - [x] CI Test job provisions PostgreSQL and runs migrations/seeds.
+  - [x] CI build matrix builds workspace packages before each app.
+  - [x] Docker build stages build workspace packages before each app.
+  - [x] API production dependency install does not execute the Husky prepare hook.
+  - [x] CI contract tests pass.
+  - [x] Full local test suite passes.
+  - [x] All four app builds pass.
+  - [ ] GitHub Actions PR checks pass after push.
+- **Test Results:** `pnpm preflight` ✅; `pnpm ops:monitor` services/synthetics ✅; `tests/ci-cd-pipeline.test.ts` 12/12 ✅; workspace package build ✅; API + merchant + admin + storefront builds ✅; full suite 2668 passed, 1 skipped ✅. Local Docker verification unavailable because the `docker` CLI is not installed.
+
 ### TASK-0026: Quality Pass 2 — Component Unification
 
 - **Type:** Refactor / Architecture
