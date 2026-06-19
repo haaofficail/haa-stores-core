@@ -30,20 +30,32 @@ test.describe('Critical Path: Storefront to Order', () => {
     await expect(checkoutLink).toBeVisible();
     await checkoutLink.click();
 
-    // 5. Fill Checkout Form
-    await page.fill('input[name="customerName"]', 'E2E Test User');
-    await page.fill('input[name="customerPhone"]', '0500000000');
-    await page.fill('input[name="customerEmail"]', 'e2e@test.com');
-    await page.fill('input[name="city"]', 'Riyadh');
-    
-    // Select a shipping method (first available)
-    await page.locator('input[type="radio"]').first().click();
-    
-    // Select payment method (Cash on Delivery for simplicity in E2E)
-    await page.locator('text=cash_on_delivery').click();
-    
+    // 5. Complete the current multi-step checkout wizard.
+    await page.getByPlaceholder(/الاسم الكامل|Full name/i).fill('E2E Test User');
+    await page.getByPlaceholder('05xxxxxxxx').fill('0500000000');
+    await page.getByPlaceholder(/email@example\.com/i).fill('e2e@test.com');
+    await page.getByRole('button', { name: /Next|التالي/i }).click();
+
+    await page.getByPlaceholder(/مثال: الرياض|Riyadh/i).fill('Riyadh');
+    await page.getByRole('button', { name: /Next|التالي/i }).click();
+
+    const shippingMethod = page.locator('input[name="shipping"]').first();
+    await expect(shippingMethod).toBeVisible();
+    await shippingMethod.check();
+    await page.getByRole('button', { name: /Next|التالي/i }).click();
+
+    const cashOnDelivery = page.locator(
+      'input[name="payment"][value="cash_on_delivery"]',
+    );
+    await expect(cashOnDelivery).toBeVisible();
+    await cashOnDelivery.check();
+    await page.getByRole('button', { name: /Next|التالي/i }).click();
+
     // 6. Confirm Order
-    const confirmBtn = page.locator('button:has-text("Confirm Order"), button:has-text("تأكيد الطلب")');
+    const confirmBtn = page.getByRole('button', {
+      name: /Confirm Order|تأكيد الطلب/i,
+    });
+    await expect(confirmBtn).toBeEnabled();
     await confirmBtn.click();
 
     // 7. Verify Success

@@ -74,23 +74,24 @@ pnpm --filter @haa/<app> build
 
 ## 3. الأعطال التي عولجت وأسبابها
 
-| العرض                                  | السبب الجذري                           | الحل                                                 |
-| -------------------------------------- | -------------------------------------- | ---------------------------------------------------- |
-| مئات `Cannot find module @haa/*`       | التطبيق بُني قبل حزم workspace         | بناء `packages/**` أولًا                             |
-| اختبارات `ECONNREFUSED :5432`          | Test job بلا PostgreSQL                | إضافة service وتهيئة القاعدة                         |
-| `total_spent cannot be cast`           | migration بلا `USING` ومع default قديم | إسقاط default، cast صريح، إعادة default              |
-| duplicate tables/columns أثناء migrate | استخدام المسار الخطأ لقاعدة جديدة      | استخدام `pnpm db:bootstrap`                          |
-| `/Users/thwany/...` غير موجود          | مسار جهاز مطور داخل سكربت              | اشتقاق المسار من `import.meta.url`                   |
-| duplicate subscription plan            | seed يزرع الخطط مرتين                  | إعادة استخدام الصف حسب `code`                        |
-| checkout cart FK failure               | UUID عشوائي بدل cart موجود             | إنشاء cart واستخدام ID المرجع                        |
-| tests تبحث عن `haastores_test`         | غياب `TEST_DATABASE_URL`               | تعيينه صراحةً                                        |
-| API/storefront لا يبدأان في E2E        | حزم workspace غير مبنية                | بناء الحزم قبل dev servers                           |
-| dashboard E2E connection refused       | workflow لم يشغّل التطبيقين            | تشغيل وانتظار جميع التطبيقات                         |
-| زر السلة موجود لكنه مخفي               | الاختبار اختار نسخة carousel مخفية     | استخدام locators مرئية فقط                           |
-| زر مرئي ينفصل عند النقر                | hydration يستبدل عقدة DOM              | انتظار `networkidle` وإرسال الحدث للعقدة الحالية     |
-| صفحة المنتج بلا زر إضافة               | أول منتج قد يكون غير متاح للمخزون      | اختيار أول زر إضافة مرئي ومفعّل من قائمة المنتجات    |
-| نص الإجراء ظاهر لكن locator لا يجده    | الاختبار افترض `button` والإجراء رابط  | استخدام الدور الدلالي الصحيح مثل `getByRole('link')` |
-| API Docker install يفشل في Husky       | production install يشغّل root prepare  | `--ignore-scripts` في طبقة production                |
+| العرض                                  | السبب الجذري                           | الحل                                                  |
+| -------------------------------------- | -------------------------------------- | ----------------------------------------------------- |
+| مئات `Cannot find module @haa/*`       | التطبيق بُني قبل حزم workspace         | بناء `packages/**` أولًا                              |
+| اختبارات `ECONNREFUSED :5432`          | Test job بلا PostgreSQL                | إضافة service وتهيئة القاعدة                          |
+| `total_spent cannot be cast`           | migration بلا `USING` ومع default قديم | إسقاط default، cast صريح، إعادة default               |
+| duplicate tables/columns أثناء migrate | استخدام المسار الخطأ لقاعدة جديدة      | استخدام `pnpm db:bootstrap`                           |
+| `/Users/thwany/...` غير موجود          | مسار جهاز مطور داخل سكربت              | اشتقاق المسار من `import.meta.url`                    |
+| duplicate subscription plan            | seed يزرع الخطط مرتين                  | إعادة استخدام الصف حسب `code`                         |
+| checkout cart FK failure               | UUID عشوائي بدل cart موجود             | إنشاء cart واستخدام ID المرجع                         |
+| tests تبحث عن `haastores_test`         | غياب `TEST_DATABASE_URL`               | تعيينه صراحةً                                         |
+| API/storefront لا يبدأان في E2E        | حزم workspace غير مبنية                | بناء الحزم قبل dev servers                            |
+| dashboard E2E connection refused       | workflow لم يشغّل التطبيقين            | تشغيل وانتظار جميع التطبيقات                          |
+| زر السلة موجود لكنه مخفي               | الاختبار اختار نسخة carousel مخفية     | استخدام locators مرئية فقط                            |
+| زر مرئي ينفصل عند النقر                | hydration يستبدل عقدة DOM              | انتظار `networkidle` وإرسال الحدث للعقدة الحالية      |
+| صفحة المنتج بلا زر إضافة               | أول منتج قد يكون غير متاح للمخزون      | اختيار أول زر إضافة مرئي ومفعّل من قائمة المنتجات     |
+| نص الإجراء ظاهر لكن locator لا يجده    | الاختبار افترض `button` والإجراء رابط  | استخدام الدور الدلالي الصحيح مثل `getByRole('link')`  |
+| حقول checkout غير موجودة               | الاختبار قديم والواجهة أصبحت wizard    | اجتياز الخطوات بالـplaceholders وradio values الحالية |
+| API Docker install يفشل في Husky       | production install يشغّل root prepare  | `--ignore-scripts` في طبقة production                 |
 
 ## 4. التحقق المحلي قبل الرفع
 
