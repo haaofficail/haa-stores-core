@@ -460,13 +460,35 @@ export function WaitlistPage() {
   );
 }
 
+/* نفس مكوّن الخلفية في الصفحة الرئيسية تمامًا */
+function AuroraBackground() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      <div className="absolute inset-0 bg-white" />
+      <div className="aurora-blob aurora-blob-1" />
+      <div className="aurora-blob aurora-blob-2" />
+      <div className="aurora-blob aurora-blob-3" />
+      <div className="aurora-blob aurora-blob-4" />
+      <div
+        className="absolute inset-0 opacity-[0.035] mix-blend-overlay"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
+        }}
+      />
+    </div>
+  );
+}
+
 function AuthShell({ children }: { children: React.ReactNode }) {
   const [logoError, setLogoError] = useState(false);
   const { platformLogoUrl } = usePlatformBrand();
   const showLogo = !!platformLogoUrl && !logoError;
 
   return (
-    <div dir="rtl" className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-primary-50/60 via-white to-primary-50/30 text-text-primary auth-scope">
+    <div dir="rtl" className="relative min-h-screen overflow-x-hidden text-text-primary auth-scope">
+
+      <AuroraBackground />
 
       {/* Skip link */}
       <a
@@ -476,40 +498,28 @@ function AuthShell({ children }: { children: React.ReactNode }) {
         تخطّى إلى المحتوى
       </a>
 
-      {/* Aurora background blobs */}
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
-        <div className="absolute -top-32 start-1/4 h-[500px] w-[600px] rounded-full bg-gradient-to-br from-primary-200/40 via-primary-100/20 to-transparent blur-3xl motion-reduce:hidden" />
-        <div className="absolute bottom-0 end-0 h-80 w-80 rounded-full bg-primary-100/30 blur-3xl motion-reduce:hidden" />
-        <div className="absolute top-1/2 start-0 h-64 w-64 rounded-full bg-emerald-100/20 blur-3xl motion-reduce:hidden" />
-      </div>
-
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-white/30 bg-white/60 backdrop-blur-2xl">
-        <StoreContainer className="flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5" aria-label="هاء ستورز — الرئيسية">
+      {/* Header — مطابق لنفس الـ Nav في الصفحة الرئيسية */}
+      <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/60 backdrop-blur-2xl backdrop-saturate-150">
+        <StoreContainer className="flex h-16 items-center justify-between gap-4">
+          <Link to="/" aria-label="هاء ستورز — الرئيسية" className="flex items-center gap-2.5">
             {showLogo ? (
               <img
                 key={platformLogoUrl}
                 src={platformLogoUrl!}
                 alt="Haa"
-                className="platform-logo h-9 w-auto"
+                className="platform-logo h-12 w-auto"
                 onError={() => setLogoError(true)}
               />
             ) : (
-              <>
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-sm" aria-hidden="true">
-                  <Sparkles className="h-5 w-5" />
-                </span>
-                <span className="text-lg font-extrabold tracking-tight text-text-primary">متاجر هاء</span>
-              </>
+              <img src="/assets/haa-logo.png" alt="Haa" className="h-12 w-auto" />
             )}
           </Link>
           <Link
             to="/"
-            className="flex h-9 items-center gap-1.5 rounded-full border border-border-subtle bg-white/60 px-4 text-sm font-medium text-text-secondary backdrop-blur-sm transition-colors hover:bg-white hover:text-text-primary"
+            className="aurora-btn inline-flex h-10 min-h-[40px] items-center gap-2 rounded-full bg-text-primary px-5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:!text-white"
           >
-            <ArrowLeft className="h-3.5 w-3.5 rotate-180" aria-hidden="true" />
             الرئيسية
+            <ArrowLeft className="h-3.5 w-3.5 rotate-180" aria-hidden="true" />
           </Link>
         </StoreContainer>
       </header>
