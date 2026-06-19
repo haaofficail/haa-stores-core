@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BookOpen, Plus, Search, Edit3, Trash2, Check, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { getStoreId, supportApi } from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 
@@ -21,8 +22,9 @@ export default function SupportKb() {
   const { t } = useTranslation();
   const storeId = Number(getStoreId());
   const [articles, setArticles] = useState<KbArticle[]>([]);
-  const [, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -32,9 +34,14 @@ export default function SupportKb() {
   function load() {
     if (!storeId) return;
     setLoading(true);
+    setFetchError(false);
     supportApi.listArticles(storeId)
       .then(d => { setArticles(d.articles); setCategories(d.categories); })
-      .catch(() => {})
+      .catch((err) => {
+        console.error(err);
+        setFetchError(true);
+        toast.error('فشل تحميل المقالات');
+      })
       .finally(() => setLoading(false));
   }
 
@@ -52,12 +59,17 @@ export default function SupportKb() {
     try {
       if (editingId) {
         await supportApi.updateArticle(storeId, editingId, form);
+        toast.success('تم تحديث المقال');
       } else {
         await supportApi.createArticle(storeId, form);
+        toast.success('تم حفظ المقال');
       }
       resetForm();
       load();
-    } catch {}
+    } catch (err) {
+      console.error(err);
+      toast.error('فشل حفظ المقال');
+    }
     setSaving(false);
   }
 
@@ -66,7 +78,10 @@ export default function SupportKb() {
     try {
       await supportApi.deleteArticle(storeId, id);
       load();
-    } catch {}
+    } catch (err) {
+      console.error(err);
+      toast.error('فشل حذف المقال');
+    }
   }
 
   function startEdit(article: KbArticle) {
@@ -87,7 +102,10 @@ export default function SupportKb() {
     try {
       await supportApi.updateArticle(storeId, article.id, { isPublished: !article.isPublished });
       load();
-    } catch {}
+    } catch (err) {
+      console.error(err);
+      toast.error('فشل تغيير حالة النشر');
+    }
   }
 
   const filtered = articles.filter(a =>
@@ -123,7 +141,7 @@ export default function SupportKb() {
         <div className="mb-6 p-5 rounded-xl border border-primary-200 bg-primary-50/50 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">{t('support.kb.title', 'العنوان')}</label>
+              <label className="block text-sm font-medium text-neutral-700 mb-1">{t('support.kb.titleField', 'العنوان')}</label>
               <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
                 className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
             </div>
@@ -141,8 +159,18 @@ export default function SupportKb() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">{t('support.kb.category', 'التصنيف')}</label>
-              <input type="text" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              {categories.length > 0 ? (
+                <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                  <option value="">{t('support.kb.noCategory', 'بدون تصنيف')}</option>
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              ) : (
+                <input type="text" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1">{t('support.kb.sortOrder', 'الترتيب')}</label>
@@ -169,7 +197,16 @@ export default function SupportKb() {
         </div>
       )}
 
-      {loading ? <LoadingSkeleton /> : filtered.length === 0 ? (
+      {loading ? <LoadingSkeleton /> : fetchError ? (
+        <div className="text-center py-16">
+          <BookOpen className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
+          <p className="text-neutral-500">{t('support.kb.loadError', 'تعذّر تحميل المقالات، حاول مجدداً')}</p>
+          <button onClick={load}
+            className="mt-4 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors">
+            {t('common.retry', 'إعادة المحاولة')}
+          </button>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16">
           <BookOpen className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
           <p className="text-neutral-500">{t('support.kb.noArticles', 'لا توجد مقالات')}</p>

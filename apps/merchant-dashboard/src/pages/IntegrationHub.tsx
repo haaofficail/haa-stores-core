@@ -12,6 +12,7 @@ import {
   RefreshCw, ExternalLink, Unlink, ShoppingCart, TrendingUp, Globe,
   CheckCircle2, XCircle, Clock, ArrowLeft, Database, Store, ListChecks, Loader2,
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
 const PROVIDERS = [
@@ -43,6 +44,7 @@ export default function IntegrationHub() {
   const [data, setData] = useState<Awaited<ReturnType<typeof marketplaceApi.hub>> | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [disconnectConfirm, setDisconnectConfirm] = useState<string | null>(null);
 
   const loadHub = useCallback(() => {
     if (!storeId) { setLoading(false); return; }
@@ -278,16 +280,7 @@ export default function IntegrationHub() {
                         size="sm"
                         variant="ghost"
                         className="rounded-full text-red-500 hover:text-red-700 hover:bg-red-50 text-xs mr-auto"
-                        onClick={async () => {
-                          if (!storeId) return;
-                          try {
-                            await marketplaceApi.disconnect(storeId, provider.code);
-                            toast.success(t('integrationHub.disconnected', 'تم قطع الاتصال'));
-                            loadHub();
-                          } catch {
-                            toast.error(t('common.error', 'حدث خطأ'));
-                          }
-                        }}
+                        onClick={() => setDisconnectConfirm(provider.code)}
                       >
                         <Unlink className="h-3.5 w-3.5 ml-1" />
                         {t('marketplaces.disconnect', 'فصل')}
@@ -378,6 +371,30 @@ export default function IntegrationHub() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={disconnectConfirm !== null} onOpenChange={(open) => { if (!open) setDisconnectConfirm(null); }}>
+        <DialogContent className="max-w-sm bg-white/95 backdrop-blur-2xl border border-neutral-100 shadow-2xl rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-neutral-900">تأكيد الفصل</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-neutral-600">هل أنت متأكد من فصل هذه القناة؟ سيتوقف تزامن الطلبات والمنتجات.</p>
+          <DialogFooter className="gap-2 flex-row-reverse">
+            <Button variant="ghost" className="h-9 text-sm" onClick={() => setDisconnectConfirm(null)}>إلغاء</Button>
+            <Button variant="destructive" className="h-9 text-sm" onClick={async () => {
+              if (!storeId || !disconnectConfirm) return;
+              const code = disconnectConfirm;
+              setDisconnectConfirm(null);
+              try {
+                await marketplaceApi.disconnect(storeId, code);
+                toast.success(t('integrationHub.disconnected', 'تم قطع الاتصال'));
+                loadHub();
+              } catch {
+                toast.error(t('common.error', 'حدث خطأ'));
+              }
+            }}>فصل</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

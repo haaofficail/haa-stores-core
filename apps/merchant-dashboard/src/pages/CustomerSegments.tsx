@@ -245,11 +245,19 @@ export default function CustomerSegments() {
 
             {membersTotalPages > 1 && (
               <div className="flex items-center justify-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => { setMembersPage(p => Math.max(1, p - 1)); loadMembers(selectedSegment, Math.max(1, membersPage - 1)); }} disabled={membersPage === 1}>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const nextPage = Math.max(1, membersPage - 1);
+                  setMembersPage(nextPage);
+                  loadMembers(selectedSegment, nextPage);
+                }} disabled={membersPage === 1}>
                   السابق
                 </Button>
                 <span className="text-sm text-neutral-500">صفحة {membersPage} من {membersTotalPages}</span>
-                <Button variant="outline" size="sm" onClick={() => { setMembersPage(p => Math.min(membersTotalPages, p + 1)); loadMembers(selectedSegment, Math.min(membersTotalPages, membersPage + 1)); }} disabled={membersPage === membersTotalPages}>
+                <Button variant="outline" size="sm" onClick={() => {
+                  const nextPage = Math.min(membersTotalPages, membersPage + 1);
+                  setMembersPage(nextPage);
+                  loadMembers(selectedSegment, nextPage);
+                }} disabled={membersPage === membersTotalPages}>
                   التالي
                 </Button>
               </div>

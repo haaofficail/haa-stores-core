@@ -1,7 +1,8 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Send, MessageSquare, Clock, User } from 'lucide-react';
+import { toast } from 'sonner';
 import { getStoreId, supportApi } from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 
@@ -53,15 +54,30 @@ export default function SupportTicketDetail() {
   const [loading, setLoading] = useState(true);
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  function scrollToBottom() {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }
 
   useEffect(() => {
     if (!storeId || !ticketId) return;
     setLoading(true);
     supportApi.getTicket(storeId, Number(ticketId))
-      .then(setTicket)
-      .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
+      .then(data => { setTicket(data); })
+      .catch((err: unknown) => {
+        console.error(err);
+        toast.error('فشل تحميل التذكرة');
+      })
       .finally(() => setLoading(false));
   }, [storeId, ticketId]);
+
+  // Scroll to bottom when ticket first loads
+  useEffect(() => {
+    if (ticket) {
+      scrollToBottom();
+    }
+  }, [ticket?.id]);
 
   async function updateStatus(status: string) {
     if (!ticket || !ticketId) return;
@@ -69,7 +85,8 @@ export default function SupportTicketDetail() {
       await supportApi.updateStatus(storeId, Number(ticketId), status);
       setTicket(prev => prev ? { ...prev, status } : prev);
     } catch (err: unknown) {
-      console.warn('Settings: failed to load secondary data', err);
+      console.error(err);
+      toast.error('فشل تحديث الحالة');
     }
   }
 
@@ -79,7 +96,8 @@ export default function SupportTicketDetail() {
       await supportApi.updatePriority(storeId, Number(ticketId), priority);
       setTicket(prev => prev ? { ...prev, priority } : prev);
     } catch (err: unknown) {
-      console.warn('Settings: failed to load secondary data', err);
+      console.error(err);
+      toast.error('فشل تحديث الأولوية');
     }
   }
 
@@ -92,8 +110,12 @@ export default function SupportTicketDetail() {
       const updated = await supportApi.getTicket(storeId, Number(ticketId));
       setTicket(updated);
       setReply('');
+      toast.success('تم إرسال الرد');
+      setTimeout(scrollToBottom, 100);
     } catch (err: unknown) {
-      console.warn('Settings: failed to load secondary data', err);
+      console.error(err);
+      toast.error('فشل إرسال الرد، حاول مجدداً');
+      // reply text intentionally NOT cleared on failure
     }
     setSending(false);
   }
@@ -150,6 +172,7 @@ export default function SupportTicketDetail() {
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       {ticket.status !== 'resolved' && ticket.status !== 'closed' && (

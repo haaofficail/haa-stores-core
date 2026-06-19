@@ -131,7 +131,7 @@ export default function LiveRadar() {
 
   const loadData = useCallback(() => {
     if (!storeId) return;
-    setLoading(s => s === true ? true : false);
+    setLoading(false);
     setFetchError(false);
     Promise.all([
       request<LiveOverview>(`/merchant/${storeId}/marketing/live/overview`),

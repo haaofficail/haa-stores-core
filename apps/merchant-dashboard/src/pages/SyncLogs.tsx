@@ -21,7 +21,7 @@ const PROVIDERS = [
 
 function formatDate(d: string) {
   try {
-    return new Date(d).toLocaleString('en-US', {
+    return new Date(d).toLocaleString('ar-SA', {
       hour: '2-digit', minute: '2-digit',
       day: 'numeric', month: 'short', year: 'numeric',
     });

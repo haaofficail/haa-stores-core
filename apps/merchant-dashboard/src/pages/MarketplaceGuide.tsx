@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowRight, CheckCircle2, BookOpen, ExternalLink, Store,
+  ArrowRight, BookOpen, ExternalLink, Store,
 } from 'lucide-react';
 
 const PROVIDERS = [
@@ -122,7 +122,9 @@ export default function MarketplaceGuide() {
                   <p className="text-sm text-neutral-500 leading-relaxed">{t(step.desc, step.desc)}</p>
                 </div>
                 <div className="shrink-0 pt-2">
-                  <CheckCircle2 className="h-5 w-5 text-neutral-300" />
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-neutral-100 text-neutral-500 text-xs font-bold select-none">
+                    {i + 1}
+                  </span>
                 </div>
               </div>
             ))}

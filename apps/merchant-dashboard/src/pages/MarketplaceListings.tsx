@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   ArrowRight, Package, Trash2, ExternalLink, Loader2,
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
 export default function MarketplaceListingsPage() {
@@ -20,6 +21,10 @@ export default function MarketplaceListingsPage() {
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const PROVIDER_NAMES: Record<string, string> = { salla: 'سلة', zid: 'زد', noon: 'نون', amazon: 'أمازون' };
+  const providerDisplayName = PROVIDER_NAMES[provider || ''] || provider || '';
 
   const loadListings = useCallback(() => {
     if (!storeId || !provider) {
@@ -37,6 +42,7 @@ export default function MarketplaceListingsPage() {
 
   async function handleRemove(listingId: number) {
     if (!storeId || !provider) return;
+    setDeleteConfirm(null);
     const deleted = listings.find(l => l.id === listingId);
     setListings((prev) => prev.filter((l) => l.id !== listingId));
     setDeletingId(listingId);
@@ -63,7 +69,7 @@ export default function MarketplaceListingsPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-neutral-900">{t('marketplaces.listings', 'المنتجات المسوقة')}</h1>
-            <p className="text-sm text-neutral-500">{provider}</p>
+            <p className="text-sm text-neutral-500">{providerDisplayName}</p>
           </div>
         </div>
       </div>
@@ -115,7 +121,7 @@ export default function MarketplaceListingsPage() {
                             </Button>
                           </a>
                         )}
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-50" onClick={() => handleRemove(listing.id)} disabled={deletingId === listing.id}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-50" onClick={() => setDeleteConfirm(String(listing.id))} disabled={deletingId === listing.id}>
                           {deletingId === listing.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         </Button>
                       </div>
@@ -127,6 +133,19 @@ export default function MarketplaceListingsPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={deleteConfirm !== null} onOpenChange={(open) => { if (!open) setDeleteConfirm(null); }}>
+        <DialogContent className="max-w-sm bg-white/95 backdrop-blur-2xl border border-neutral-100 shadow-2xl rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-neutral-900">تأكيد الحذف</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-neutral-600">هل أنت متأكد من حذف هذا المنتج من القناة؟</p>
+          <DialogFooter className="gap-2 flex-row-reverse">
+            <Button variant="ghost" className="h-9 text-sm" onClick={() => setDeleteConfirm(null)}>إلغاء</Button>
+            <Button variant="destructive" className="h-9 text-sm" onClick={() => { if (deleteConfirm !== null) handleRemove(Number(deleteConfirm)); }}>حذف</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -115,6 +115,7 @@ export default function Reports() {
   const [lowStock, setLowStock] = useState<any[]>([]);
   const [walletSummary, setWalletSummary] = useState<any>(null);
   const [deepReport, setDeepReport] = useState<DeepReport | null>(null);
+  const [fetchError, setFetchError] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -162,25 +163,37 @@ export default function Reports() {
   const loadReports = useCallback(() => {
     if (!storeId) { setLoading(false); return; }
     setLoading(true);
+    setFetchError(false);
     Promise.all([
-      reportsApi.salesSummary(storeId, dateFrom || undefined, dateTo || undefined).catch(() => null),
-      reportsApi.topProducts(storeId, 10).catch(() => []),
-      reportsApi.ordersByStatus(storeId).catch(() => []),
-      reportsApi.salesByCity(storeId).catch(() => []),
-      reportsApi.lowStock(storeId).catch(() => []),
-      reportsApi.walletSummary(storeId).catch(() => null),
-      reportsApi.deep(storeId, dateFrom || undefined, dateTo || undefined).catch(() => null),
+      reportsApi.salesSummary(storeId, dateFrom || undefined, dateTo || undefined)
+        .catch(() => { toast.error('فشل تحميل التقارير'); return null; }),
+      reportsApi.topProducts(storeId, 10)
+        .catch(() => []),
+      reportsApi.ordersByStatus(storeId)
+        .catch(() => []),
+      reportsApi.salesByCity(storeId)
+        .catch(() => []),
+      reportsApi.lowStock(storeId)
+        .catch(() => []),
+      reportsApi.walletSummary(storeId)
+        .catch(() => null),
+      reportsApi.deep(storeId, dateFrom || undefined, dateTo || undefined)
+        .catch(() => null),
     ]).then(([s, tp, obs, sbc, ls, ws, deep]) => {
+      // If the critical section (salesSummary) failed along with all other sections, treat as full error
+      const allFailed = !s && (!tp || (tp as any[]).length === 0) && (!obs || (obs as any[]).length === 0);
+      if (allFailed) {
+        setFetchError(true);
+      }
       if (s) setSalesSummary(s);
-      if (tp) setTopProducts(tp);
-      if (obs) setOrdersByStatus(obs);
-      if (sbc) setSalesByCity(sbc);
-      if (ls) setLowStock(ls);
+      if (tp) setTopProducts(tp as any[]);
+      if (obs) setOrdersByStatus(obs as any[]);
+      if (sbc) setSalesByCity(sbc as any[]);
+      if (ls) setLowStock(ls as any[]);
       if (ws) setWalletSummary(ws);
       if (deep) setDeepReport(deep);
-    }).catch(() => toast.error(t('common.error')))
-    .finally(() => setLoading(false));
-  }, [storeId, dateFrom, dateTo, t]);
+    }).finally(() => setLoading(false));
+  }, [storeId, dateFrom, dateTo]);
 
   useEffect(() => { loadReports(); }, [loadReports]);
 
@@ -197,6 +210,24 @@ export default function Reports() {
         <h1 className="text-2xl font-bold text-neutral-900">{t('reports.title')}</h1>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[1,2,3,4].map(i => <Skeleton key={i} className="h-36 rounded-3xl" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
+        <h1 className="text-2xl font-bold text-neutral-900">{t('reports.title')}</h1>
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-16 text-center">
+          <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4">
+            <AlertTriangle className="h-10 w-10 text-red-400" />
+          </div>
+          <p className="text-base font-medium text-neutral-700 mb-1">فشل تحميل التقارير</p>
+          <p className="text-sm text-neutral-500 mb-6 max-w-sm mx-auto">حدث خطأ أثناء الاتصال بالخادم. يرجى التحقق من اتصالك والمحاولة مرة أخرى.</p>
+          <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={loadReports}>
+            <Loader2 className="h-4 w-4" /> {t('common.retry', 'إعادة المحاولة')}
+          </Button>
         </div>
       </div>
     );

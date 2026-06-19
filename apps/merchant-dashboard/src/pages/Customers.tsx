@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { customersApi, ApiClientError } from '@/lib/api';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Edit, Search, Users } from 'lucide-react';
+import { Plus, Edit, Search, Users, AlertTriangle, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { PermissionGate } from '@/lib/permissions';
 
@@ -17,24 +17,39 @@ export default function Customers() {
   const { storeId } = useAuth();
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const limit = 20;
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!storeId) { setLoading(false); return; }
     setLoading(true);
+    setFetchError(false);
     customersApi.list(storeId, { page, limit, search: search || undefined })
-      .then(r => { setCustomers(r.data); })
-      .catch(() => toast.error(t('common.error')))
+      .then(r => { setCustomers(r.data); setTotal(r.total ?? 0); })
+      .catch(() => { setFetchError(true); toast.error('فشل تحميل العملاء'); })
       .finally(() => setLoading(false));
-  };
+  }, [storeId, page, search]);
 
-  useEffect(() => { load(); }, [storeId, page, search]);
+  useEffect(() => { load(); }, [load]);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const totalPages = Math.ceil(total / limit);
 
   const openCreate = () => {
     setEditId(null); setForm({ name: '', phone: '', email: '', notes: '' }); setDialogOpen(true);
@@ -66,19 +81,39 @@ export default function Customers() {
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
         <div className="relative max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-          <Input placeholder={t('customers.search')} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pr-10 h-9 text-sm" />
+          <Input placeholder={t('customers.search')} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="pr-10 h-9 text-sm" />
         </div>
       </div>
 
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         {loading ? (
           <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
+        ) : fetchError ? (
+          <div className="p-12 text-center">
+            <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4">
+              <AlertTriangle className="h-8 w-8 text-red-400" />
+            </div>
+            <p className="text-sm font-medium text-neutral-700 mb-1">فشل تحميل العملاء</p>
+            <p className="text-sm text-neutral-500 mb-4">حدث خطأ أثناء الاتصال بالخادم. يرجى المحاولة مرة أخرى.</p>
+            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={load}>
+              <RotateCcw className="h-4 w-4" /> {t('common.retry', 'إعادة المحاولة')}
+            </Button>
+          </div>
         ) : customers.length === 0 ? (
           <div className="p-12 text-center">
             <div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4">
-              <Users className="h-8 w-8 text-neutral-400" />
+              {search ? <Search className="h-8 w-8 text-neutral-400" /> : <Users className="h-8 w-8 text-neutral-400" />}
             </div>
-            <p className="text-sm text-neutral-500">{t('customers.noCustomers')}</p>
+            {search ? (
+              <>
+                <p className="text-sm font-medium text-neutral-700 mb-1">لا توجد نتائج لـ "{search}"</p>
+                <Button variant="outline" size="sm" className="h-8 text-sm mt-3" onClick={() => { setSearchInput(''); setSearch(''); }}>
+                  مسح البحث
+                </Button>
+              </>
+            ) : (
+              <p className="text-sm text-neutral-500">{t('customers.noCustomers')}</p>
+            )}
           </div>
         ) : (
           <Table>
@@ -109,6 +144,23 @@ export default function Customers() {
           </Table>
         )}
       </div>
+
+      {total > 0 && totalPages > 1 && (
+        <div className="flex justify-between items-center text-sm text-neutral-400">
+          <span>
+            {(page - 1) * limit + 1}–{Math.min(page * limit, total)} من {total}
+          </span>
+          <div className="flex gap-2 items-center">
+            <Button variant="outline" size="icon" className="h-11 w-11" disabled={page <= 1} onClick={() => setPage(p => p - 1)} aria-label="الصفحة السابقة">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm tabular-nums">صفحة {page} من {totalPages}</span>
+            <Button variant="outline" size="icon" className="h-11 w-11" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} aria-label="الصفحة التالية">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-white/95 backdrop-blur-2xl border border-neutral-100 shadow-2xl rounded-3xl">

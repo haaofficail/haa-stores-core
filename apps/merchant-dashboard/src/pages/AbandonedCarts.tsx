@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ShoppingBag, AlertTriangle, Users, DollarSign, Clock } from 'lucide-react';
+import { ShoppingBag, AlertTriangle, Users, DollarSign, Clock, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { abandonedCartsApi, ApiClientError } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
@@ -122,6 +122,7 @@ export default function AbandonedCarts() {
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('abandonedCarts.table.total')}</TableHead>
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('abandonedCarts.table.lastActive')}</TableHead>
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('abandonedCarts.table.expiresAt')}</TableHead>
+                <TableHead className="h-10 w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -132,10 +133,22 @@ export default function AbandonedCarts() {
                   <TableCell className="text-sm text-neutral-900 p-3">{cart.itemCount ?? cart.items?.length ?? 0}</TableCell>
                   <TableCell className="text-sm font-semibold text-neutral-900 p-3 font-mono">{formatCurrency(cart.total || cart.totalAmount || 0)} {t('common.sar')}</TableCell>
                   <TableCell className="text-sm text-neutral-400 p-3">
-                    {cart.lastActive ? new Date(cart.lastActive).toLocaleDateString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                    {cart.lastActive ? new Date(cart.lastActive).toLocaleString('ar-SA', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) : '-'}
                   </TableCell>
                   <TableCell className="text-sm text-neutral-400 p-3">
                     {cart.expiresAt ? new Date(cart.expiresAt).toLocaleDateString('ar-SA') : '-'}
+                  </TableCell>
+                  <TableCell className="p-3">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9"
+                      title="إرسال تذكير يدوي"
+                      aria-label="إرسال تذكير يدوي"
+                      onClick={() => toast.info('ميزة قيد التطوير')}
+                    >
+                      <Send className="h-4 w-4 text-neutral-400" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

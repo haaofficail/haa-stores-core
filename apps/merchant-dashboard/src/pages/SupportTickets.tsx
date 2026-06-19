@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { Ticket, ChevronLeft, MessageSquare } from 'lucide-react';
+import { Ticket, ChevronLeft, MessageSquare, Search } from 'lucide-react';
+import { toast } from 'sonner';
 import { getStoreId, supportApi } from '@/lib/api';
 import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 
@@ -48,15 +49,27 @@ export default function SupportTickets() {
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (!storeId) return;
     setLoading(true);
     supportApi.listTickets(storeId, statusFilter || undefined)
       .then(d => { setTickets(d.tickets); setCount(d.count); })
-      .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
+      .catch((err: unknown) => {
+        console.error(err);
+        toast.error('فشل تحميل التذاكر');
+      })
       .finally(() => setLoading(false));
   }, [storeId, statusFilter]);
+
+  const filteredTickets = useMemo(() => {
+    if (!searchQuery.trim()) return tickets;
+    const q = searchQuery.toLowerCase();
+    return tickets.filter(t =>
+      t.subject.toLowerCase().includes(q) || t.name.toLowerCase().includes(q)
+    );
+  }, [tickets, searchQuery]);
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -81,19 +94,33 @@ export default function SupportTickets() {
         ))}
       </div>
 
-      {loading ? <LoadingSkeleton /> : tickets.length === 0 ? (
+      <div className="relative mb-4">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+        <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+          className="w-full pr-10 px-4 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          placeholder={t('support.searchPlaceholder', 'بحث بالموضوع أو اسم العميل...')} />
+      </div>
+
+      {loading ? <LoadingSkeleton /> : filteredTickets.length === 0 ? (
         <div className="text-center py-16">
           <Ticket className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
           <p className="text-neutral-500">{t('support.noTickets', 'لا توجد تذاكر')}</p>
+          {!searchQuery && (
+            <a href="mailto:support@haa.store"
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors">
+              {t('support.createTicket', 'إنشاء تذكرة جديدة')}
+            </a>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
-          {tickets.map(ticket => (
+          {filteredTickets.map(ticket => (
             <Link key={ticket.id} to={`/support/tickets/${ticket.id}`}
               className="block p-4 rounded-xl border border-neutral-200 hover:border-primary-200 hover:bg-primary-50/30 transition-colors">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs text-neutral-400 font-mono shrink-0">#{ticket.id}</span>
                     <h3 className="font-semibold text-neutral-900 truncate">{ticket.subject}</h3>
                     <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[ticket.status] || ''}`}>
                       {statusLabels[ticket.status] || ticket.status}

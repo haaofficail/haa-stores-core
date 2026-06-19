@@ -34,6 +34,7 @@ export default function Promotions() {
   const [promotions, setPromotions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -54,6 +55,12 @@ export default function Promotions() {
   }, [storeId, search, statusFilter, t]);
 
   useEffect(() => { loadPromotions(); }, [loadPromotions]);
+
+  // Debounce search input by 350ms
+  useEffect(() => {
+    const timer = setTimeout(() => { setSearch(searchInput); }, 350);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const updateField = (field: string, value: any) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -160,7 +167,7 @@ export default function Promotions() {
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6 flex gap-4 items-center flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-          <Input placeholder={t('promotions.search')} value={search} onChange={(e) => setSearch(e.target.value)} className="pr-9 h-9 text-sm" />
+          <Input placeholder={t('promotions.search')} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="pr-9 h-9 text-sm" />
         </div>
         <Select value={statusFilter || undefined} onValueChange={v => setStatusFilter(v === 'all' ? '' : v)}>
           <SelectTrigger className="w-40 h-9 text-sm"><SelectValue placeholder={t('promotions.filterStatus')} /></SelectTrigger>
@@ -190,8 +197,8 @@ export default function Promotions() {
             <div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4">
               <Percent className="h-8 w-8 text-neutral-400" />
             </div>
-            <p className="text-sm text-neutral-500">{search || statusFilter ? t('promotions.noMatch') : t('promotions.noPromotions')}</p>
-            {!search && !statusFilter && (
+            <p className="text-sm text-neutral-500">{searchInput || statusFilter ? t('promotions.noMatch') : t('promotions.noPromotions')}</p>
+            {!searchInput && !statusFilter && (
               <PermissionGate permission="promotions:create">
                 <Button variant="outline" className="h-9 text-sm mt-4" onClick={openCreate}>{t('promotions.create')}</Button>
               </PermissionGate>

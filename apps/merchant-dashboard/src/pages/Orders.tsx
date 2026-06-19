@@ -91,7 +91,7 @@ export default function Orders() {
         setLoading(false);
         setTableLoading(false);
       });
-  }, [storeId, page, statusFilter, paymentFilter, fulfillmentFilter, sourceFilter, search, dateFrom, dateTo, t]);
+  }, [storeId, page, statusFilter, paymentFilter, fulfillmentFilter, sourceFilter, fulfillmentTypeFilter, paymentMethodFilter, search, dateFrom, dateTo, t]);
 
   useEffect(() => { load(); }, [load]);
 

@@ -47,6 +47,7 @@ import type { StatCardData } from "../StatsCards";
 export interface DashboardData {
   // Core state
   loading: boolean;
+  fetchError: boolean;
   refreshKey: number;
   refresh: () => void;
 
@@ -95,6 +96,7 @@ export function useDashboardData(): DashboardData {
   const { t } = useTranslation();
   const { storeId } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const loadIdRef = useRef(0);
 
@@ -133,6 +135,7 @@ export function useDashboardData(): DashboardData {
     }
     const id = ++loadIdRef.current;
     setLoading(true);
+    setFetchError(false);
     const onboardingDone = localStorage.getItem("onboarding_done");
 
     const results = await Promise.allSettled([
@@ -170,6 +173,7 @@ export function useDashboardData(): DashboardData {
 
     if (id !== loadIdRef.current) return;
     if (results[0].status === "fulfilled") setSummary(results[0].value);
+    else setFetchError(true);
     if (results[1].status === "fulfilled") setWallet(results[1].value);
     if (results[2].status === "fulfilled")
       setRecentOrders(results[2].value?.data ?? []);
@@ -360,6 +364,7 @@ export function useDashboardData(): DashboardData {
 
   return {
     loading,
+    fetchError,
     refreshKey,
     refresh,
     summary,

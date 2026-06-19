@@ -12,6 +12,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, RotateCcw } from "lucide-react";
 import { StatsCards, type StatCardData } from "./dashboard/StatsCards";
 import { NextActionBanner } from "./dashboard/NextActionBanner";
 import { DashboardHeader } from "./dashboard/DashboardHeader";
@@ -75,6 +77,21 @@ export default function DashboardHome() {
           <Skeleton className="h-10 rounded-xl" />
           <Skeleton className="h-10 rounded-xl" />
         </div>
+      </div>
+    );
+  }
+
+  if (data.fetchError) {
+    return (
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-16 text-center">
+        <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4">
+          <AlertTriangle className="h-10 w-10 text-red-400" />
+        </div>
+        <p className="text-base font-medium text-neutral-700 mb-6">فشل تحميل البيانات</p>
+        <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={data.refresh}>
+          <RotateCcw className="h-4 w-4" />
+          إعادة المحاولة
+        </Button>
       </div>
     );
   }

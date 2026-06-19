@@ -32,6 +32,7 @@ export default function Coupons() {
   const [coupons, setCoupons] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -52,6 +53,12 @@ export default function Coupons() {
   }, [storeId, search, statusFilter, t]);
 
   useEffect(() => { loadCoupons(); }, [loadCoupons]);
+
+  // Debounce search input by 350ms
+  useEffect(() => {
+    const timer = setTimeout(() => { setSearch(searchInput); }, 350);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const updateField = (field: string, value: any) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -168,7 +175,7 @@ export default function Coupons() {
         <div className="flex gap-3 items-center flex-wrap">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-            <Input placeholder={t('coupons.search')} value={search} onChange={(e) => setSearch(e.target.value)} className="pr-10 h-9 text-sm" />
+            <Input placeholder={t('coupons.search')} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="pr-10 h-9 text-sm" />
           </div>
           <Select value={statusFilter || undefined} onValueChange={v => setStatusFilter(v === 'all' ? '' : v)}>
             <SelectTrigger className="w-40 h-9 text-sm"><SelectValue placeholder={t('coupons.filterStatus')} /></SelectTrigger>
@@ -199,8 +206,8 @@ export default function Coupons() {
             <div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4">
               <Tag className="h-8 w-8 text-neutral-400" />
             </div>
-            <p className="text-sm text-neutral-500">{search || statusFilter ? t('coupons.noMatch') : t('coupons.noCoupons')}</p>
-            {!search && !statusFilter && (
+            <p className="text-sm text-neutral-500">{searchInput || statusFilter ? t('coupons.noMatch') : t('coupons.noCoupons')}</p>
+            {!searchInput && !statusFilter && (
               <PermissionGate permission="coupons:create">
                 <Button variant="outline" size="sm" className="h-8 text-sm mt-4" onClick={openCreate}>{t('coupons.create')}</Button>
               </PermissionGate>

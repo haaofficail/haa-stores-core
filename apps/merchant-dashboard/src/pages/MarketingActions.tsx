@@ -306,8 +306,14 @@ export default function MarketingActions() {
                           {isExpired ? 'منتهي الصلاحية' : ACTION_STATUS_LABELS[action.status]}
                         </Badge>
                       </div>
-                      <p className="text-xs text-neutral-500 mb-3">
-                        {action.actionFingerprint}
+                      <p className="text-xs text-neutral-500 mb-3 font-mono dir-ltr">
+                        {(() => {
+                          // Convert technical fingerprint to human-readable hint
+                          // e.g. "email.winback_cart_7d" → "winback cart 7d"
+                          const fp = action.actionFingerprint ?? '';
+                          const withoutPrefix = fp.includes('.') ? fp.split('.').slice(1).join('.') : fp;
+                          return withoutPrefix.replace(/[_]/g, ' ');
+                        })()}
                       </p>
                       {action.status === 'active' && (
                         <div className="flex items-center gap-2 flex-wrap">
