@@ -3,16 +3,11 @@ import { zValidator } from '@hono/zod-validator';
 import { ProductsService, MarketplaceSyncService } from '@haa/commerce-core';
 import { createProductSchema, updateProductSchema, paginationSchema } from '@haa/shared';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
-import { getProviderService } from './marketplaces';
+import { getProviderService } from './marketplaces.js';
 
 const productsRouter = new Hono();
 
 productsRouter.use('*', requireAuth(), requireStoreAccess());
-
-// Adapter so the MarketplaceSyncService (which lives in
-// @haa/commerce-core) can call the route-layer getProviderService
-// without the service depending on the API layer.
-const providerResolver = (code: string) => getProviderService(code, 0) as any;
 
 productsRouter.get('/', requirePermission('products:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
