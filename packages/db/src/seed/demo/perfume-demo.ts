@@ -2,8 +2,9 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '../../.env' });
 import { createDbClient } from '../../index.js';
 import * as s from '../../schema/index.js';
-import { eq, and, sql } from 'drizzle-orm';
-import { hashPassword } from '@haa/auth-core';
+import { eq, and } from 'drizzle-orm';
+import bcrypt from 'bcryptjs';
+const hashPassword = (pw: string) => bcrypt.hash(pw, 12);
 
 const DEMO_SLUG = 'demo-perfumes';
 const DEMO_SEED_VERSION = '2026-06-perfume-v1';

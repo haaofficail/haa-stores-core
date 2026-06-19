@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import { createDbClient } from '../index.js';
 import * as s from '../schema/index.js';
-import { hashPassword } from '@haa/auth-core';
+import bcrypt from 'bcryptjs';
+const hashPassword = (pw: string) => bcrypt.hash(pw, 12);
 import { eq } from 'drizzle-orm';
 
 async function seed() {
