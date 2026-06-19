@@ -43,9 +43,8 @@ const OnboardingSuccess = lazy(() => import('@/pages/OnboardingSuccess'));
 const AuditLogs = lazy(() => import('@/pages/AuditLogs'));
 const SettlementDetail = lazy(() => import('@/pages/SettlementDetail'));
 const SettlementOverview = lazy(() => import('@/pages/SettlementOverview'));
-const SupportTickets = lazy(() => import('@/pages/SupportTickets'));
+const Support = lazy(() => import('@/pages/Support'));
 const SupportTicketDetail = lazy(() => import('@/pages/SupportTicketDetail'));
-const SupportKb = lazy(() => import('@/pages/SupportKb'));
 const Employees = lazy(() => import('@/pages/Employees'));
 const GrowthInsights = lazy(() => import('@/pages/GrowthInsights'));
 const LiveRadar = lazy(() => import('@/pages/LiveRadar'));
@@ -140,9 +139,10 @@ export default function App() {
               <Route path="/settings/integrations" element={<GuardedRoute permission="settings:read"><IntegrationHub /></GuardedRoute>} />
               <Route path="/ai-assistant" element={<GuardedRoute permission="settings:read"><AiAssistant /></GuardedRoute>} />
               <Route path="/audit-logs" element={<GuardedRoute permission="stores:read"><AuditLogs /></GuardedRoute>} />
-              <Route path="/support/tickets" element={<GuardedRoute permission="support:read"><SupportTickets /></GuardedRoute>} />
+              <Route path="/support" element={<GuardedRoute permission="support:read"><Support /></GuardedRoute>} />
+              <Route path="/support/tickets" element={<Navigate to="/support" replace />} />
               <Route path="/support/tickets/:ticketId" element={<GuardedRoute permission="support:read"><SupportTicketDetail /></GuardedRoute>} />
-              <Route path="/support/kb" element={<GuardedRoute permission="support:read"><SupportKb /></GuardedRoute>} />
+              <Route path="/support/kb" element={<Navigate to="/support" replace />} />
             </Route>
           </Route>
           <Route path="*" element={<NotFound />} />

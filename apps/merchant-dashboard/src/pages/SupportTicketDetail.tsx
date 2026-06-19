@@ -131,7 +131,7 @@ export default function SupportTicketDetail() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <Link to="/support/tickets" className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-primary-600 transition-colors mb-6">
+      <Link to="/support" className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-800 transition-colors mb-6">
         <ArrowRight className="h-4 w-4" />
         {t('support.backToTickets', 'العودة للتذاكر')}
       </Link>
