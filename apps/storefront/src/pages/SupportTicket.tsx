@@ -5,7 +5,7 @@ import { ArrowRight, Send, MessageSquare, Clock, CheckCircle, AlertTriangle } fr
 import { useTranslation } from 'react-i18next';
 import { supportApi, type SupportTicket as SupportTicketType } from '@/lib/api';
 
-const FOCUS_VISIBLE = 'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a65d4e]';
+const FOCUS_VISIBLE = 'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--theme-primary,var(--brand-primary))]';
 
 const statusLabels: Record<string, string> = {
   open: 'مفتوح',

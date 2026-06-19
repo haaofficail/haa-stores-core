@@ -5,7 +5,7 @@ import { ArrowRight, Send, CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supportApi, type CreatedTicket } from '@/lib/api';
 
-const FOCUS_VISIBLE = 'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#a65d4e]';
+const FOCUS_VISIBLE = 'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--theme-primary,var(--brand-primary))]';
 
 export default function Support() {
   const { slug } = useParams<{ slug: string }>();

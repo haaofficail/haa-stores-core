@@ -6,14 +6,8 @@
  * (e.g. "< 60 ثانية") + title + 1-line description with icon + gradient.
  * Stats are sourced from getClaim() for the dynamic claims (themes, payments).
  */
-import {
-  Zap,
-  Palette,
-  CreditCard,
-  Truck,
-} from 'lucide-react';
+import { CreditCard, Palette, StoreContainer, Truck, Zap } from '@/components/ui';
 import { getClaim } from '@/lib/landing-claims';
-import { StoreContainer } from '@/components/ui';
 import type { TFn } from './types';
 
 export function Features({ t }: { t: TFn }) {
@@ -26,7 +20,7 @@ export function Features({ t }: { t: TFn }) {
       stat: '< 60 ثانية',
       title: t('landing.features.launch.title', 'إطلاق فوري'),
       desc: t('landing.features.launch.desc', 'افتح متجرك وأضف أول منتج في أقل من دقيقة. لا فريق تقني، لا انتظار.'),
-      gradient: 'from-blue-500 to-indigo-600',
+      gradient: 'from-blue-400 to-blue-700',
       shadow: 'shadow-blue-500/30',
     },
     {
@@ -35,7 +29,7 @@ export function Features({ t }: { t: TFn }) {
       stat: getClaim('themeCount').text,
       title: t('landing.features.themes.title', 'ثيمات احترافية'),
       desc: t('landing.features.themes.desc', 'صمّمها مصممون محترفون. غيّر الألوان والخطوط بنقرة واحدة بدون لمس الكود.'),
-      gradient: 'from-blue-600 to-indigo-700',
+      gradient: 'from-blue-500 to-blue-800',
       shadow: 'shadow-blue-600/30',
     },
     {
@@ -53,7 +47,7 @@ export function Features({ t }: { t: TFn }) {
       stat: 'شحن مدمج',
       title: t('landing.features.shipping.title', 'شحن وتوصيل'),
       desc: t('landing.features.shipping.desc', 'اربط متجرك بشركات الشحن السعودية. احسب تكلفة التوصيل آليًا وتابع الطلبات.'),
-      gradient: 'from-blue-500 to-indigo-600',
+      gradient: 'from-blue-400 to-blue-700',
       shadow: 'shadow-blue-500/30',
     },
   ];

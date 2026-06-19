@@ -94,7 +94,7 @@ const html = `<!DOCTYPE html>
 <meta charset="UTF-8">
 <title>Haa Stores — Quality Dashboard</title>
 <style>
-:root { --primary: #56a1e3; --success: #16a34a; --danger: #dc2626; --warning: #d97706; --bg: #f8f9fc; --card: #fff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0; }
+:root { --primary: #5c9cd5; --success: #16a34a; --danger: #dc2626; --warning: #d97706; --bg: #f8f9fc; --card: #fff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'IBM Plex Sans Arabic', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem; }
 .container { max-width: 1200px; margin: 0 auto; }

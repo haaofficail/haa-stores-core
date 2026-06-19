@@ -2,7 +2,7 @@ import { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, TextareaHTMLAttri
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 // eslint-disable-next-line no-restricted-imports -- this IS the icon barrel; lucide imports are permitted here so other files can import via @/components/ui
-import { AlertTriangle, ArrowLeft, ExternalLink, MessageCircle, Search, Shield, ChevronLeft, Loader2, Info, CheckCircle, X, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CreditCard, ExternalLink, MessageCircle, Palette, Search, Shield, ChevronLeft, Loader2, Info, CheckCircle, Truck, X, Zap, type LucideIcon } from 'lucide-react';
 import { Icon } from './icon';
 import { SarIcon } from './SarIcon';
 import { CurrencyAmount, CurrencyStrike } from '@/components/product-card';
@@ -32,7 +32,7 @@ export {
 } from '@haa/ui';
 
 export { Icon, SarIcon, type LucideIcon };
-export { ArrowLeft, ExternalLink, MessageCircle, Shield, X };
+export { ArrowLeft, CreditCard, ExternalLink, MessageCircle, Palette, Shield, Truck, X, Zap };
 
 export function StoreContainer({ children, className = '', id }: { children: ReactNode; className?: string; id?: string }) {
   return (
