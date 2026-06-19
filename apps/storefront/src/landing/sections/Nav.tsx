@@ -22,7 +22,7 @@ const NAV_LINKS = (t: TFn) => [
   { label: 'السوق', href: '/marketplace', isLink: true },
 ];
 
-export function Nav({ t }: { t: TFn }) {
+export function Nav({ t, authMode = false }: { t: TFn; authMode?: boolean }) {
   const [logoError, setLogoError] = useReactState(false);
   const [mobileOpen, setMobileOpen] = useReactState(false);
   const { platformLogoUrl } = usePlatformBrand();
@@ -54,49 +54,63 @@ export function Nav({ t }: { t: TFn }) {
           )}
         </Link>
 
-        {/* Desktop nav */}
-        <nav aria-label={t('store.mainNav', 'التنقل الرئيسي')} className="hidden items-center gap-1 md:flex">
-          {NAV_LINKS(t).map(({ label, href, isLink }) =>
-            isLink ? (
-              <Link
-                key={href}
-                to={href}
-                className="min-h-[44px] rounded-full px-3 text-sm font-medium text-text-secondary transition-colors hover:bg-white/60 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-              >
-                {label}
-              </Link>
-            ) : (
-              <a
-                key={href}
-                href={href}
-                className="min-h-[44px] rounded-full px-3 text-sm font-medium text-text-secondary transition-colors hover:bg-white/60 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-              >
-                {label}
-              </a>
-            )
-          )}
-        </nav>
+        {/* Desktop nav — hidden in auth mode */}
+        {!authMode && (
+          <nav aria-label={t('store.mainNav', 'التنقل الرئيسي')} className="hidden items-center gap-1 md:flex">
+            {NAV_LINKS(t).map(({ label, href, isLink }) =>
+              isLink ? (
+                <Link
+                  key={href}
+                  to={href}
+                  className="min-h-[44px] rounded-full px-3 text-sm font-medium text-text-secondary transition-colors hover:bg-white/60 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                >
+                  {label}
+                </Link>
+              ) : (
+                <a
+                  key={href}
+                  href={href}
+                  className="min-h-[44px] rounded-full px-3 text-sm font-medium text-text-secondary transition-colors hover:bg-white/60 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+                >
+                  {label}
+                </a>
+              )
+            )}
+          </nav>
+        )}
 
         <div className="flex items-center gap-2">
-          <Link
-            to="/signup?ref=nav"
-            className="aurora-btn inline-flex h-11 min-h-[44px] items-center gap-2 rounded-full bg-text-primary px-5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/30 hover:!text-white"
-          >
-            {t('landing.nav.signup', 'سجّل كتاجر')}
-            <Icon icon={ArrowLeft} size="xs" />
-          </Link>
+          {authMode ? (
+            <Link
+              to="/"
+              className="aurora-btn inline-flex h-11 min-h-[44px] items-center gap-2 rounded-full bg-text-primary px-5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/30 hover:!text-white"
+            >
+              الرئيسية
+              <ArrowLeft className="h-3.5 w-3.5 rotate-180" aria-hidden="true" />
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/signup?ref=nav"
+                className="aurora-btn inline-flex h-11 min-h-[44px] items-center gap-2 rounded-full bg-text-primary px-5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/30 hover:!text-white"
+              >
+                {t('landing.nav.signup', 'سجّل كتاجر')}
+                <Icon icon={ArrowLeft} size="xs" aria-hidden="true" />
+              </Link>
 
-          {/* Mobile hamburger */}
-          <button
-            type="button"
-            aria-label={mobileOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
-            aria-expanded={mobileOpen}
-            aria-controls="mobile-nav"
-            onClick={() => setMobileOpen((v) => !v)}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/50 text-text-primary backdrop-blur-sm transition-colors hover:bg-white/80 md:hidden"
-          >
-            {mobileOpen ? <XIcon className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
-          </button>
+              {/* Mobile hamburger */}
+              <button
+                type="button"
+                aria-label={mobileOpen ? 'إغلاق القائمة' : 'فتح القائمة'}
+                aria-expanded={mobileOpen}
+                aria-controls="mobile-nav"
+                onClick={() => setMobileOpen((v) => !v)}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/50 text-text-primary backdrop-blur-sm transition-colors hover:bg-white/80 md:hidden"
+              >
+                {mobileOpen ? <XIcon className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
+              </button>
+            </>
+          )}
         </div>
       </StoreContainer>
 

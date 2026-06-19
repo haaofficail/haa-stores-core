@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 // eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Mail, Lock, User, Phone, Store as StoreIcon, Sparkles, ArrowLeft, Loader2, Check, Shield, Bell, Star, TrendingUp, Clock } from 'lucide-react';
+import { Nav } from '@/landing/sections/Nav';
 
 function passwordStrength(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string; color: string } {
   let score = 0;
@@ -20,7 +21,6 @@ function passwordStrength(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string
 
 import { StoreButton, StoreContainer, StoreInput } from '@/components/ui';
 import { useSEO } from '@/hooks/useSEO';
-import { usePlatformBrand } from '@/hooks/usePlatformBrand';
 import { authApi } from '@/lib/auth';
 import { ApiClientError as ApiError } from '@/lib/api';
 
@@ -481,9 +481,9 @@ function AuroraBackground() {
 }
 
 function AuthShell({ children }: { children: React.ReactNode }) {
-  const [logoError, setLogoError] = useState(false);
-  const { platformLogoUrl } = usePlatformBrand();
-  const showLogo = !!platformLogoUrl && !logoError;
+  const { t: i18nT } = useTranslation();
+  const t = (key: string, fallback?: string): string =>
+    i18nT(key, fallback ?? key) as string;
 
   return (
     <div dir="rtl" className="relative min-h-screen overflow-x-hidden text-text-primary auth-scope">
@@ -498,31 +498,8 @@ function AuthShell({ children }: { children: React.ReactNode }) {
         تخطّى إلى المحتوى
       </a>
 
-      {/* Header — مطابق لنفس الـ Nav في الصفحة الرئيسية */}
-      <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/60 backdrop-blur-2xl backdrop-saturate-150">
-        <StoreContainer className="flex h-16 items-center justify-between gap-4">
-          <Link to="/" aria-label="هاء ستورز — الرئيسية" className="flex items-center gap-2.5">
-            {showLogo ? (
-              <img
-                key={platformLogoUrl}
-                src={platformLogoUrl!}
-                alt="Haa"
-                className="platform-logo h-12 w-auto"
-                onError={() => setLogoError(true)}
-              />
-            ) : (
-              <img src="/assets/haa-logo.png" alt="Haa" className="h-12 w-auto" />
-            )}
-          </Link>
-          <Link
-            to="/"
-            className="aurora-btn inline-flex h-10 min-h-[40px] items-center gap-2 rounded-full bg-text-primary px-5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:!text-white"
-          >
-            الرئيسية
-            <ArrowLeft className="h-3.5 w-3.5 rotate-180" aria-hidden="true" />
-          </Link>
-        </StoreContainer>
-      </header>
+      {/* نفس مكوّن Nav الحقيقي من الصفحة الرئيسية */}
+      <Nav t={(key, fallback) => t(key, fallback ?? key)} authMode />
 
       <main id="main" className="py-10 sm:py-14 lg:py-20">
         <StoreContainer>{children}</StoreContainer>
