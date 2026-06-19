@@ -148,7 +148,7 @@ jobs:
 
       - name: Prepare test database
         run: |
-          pnpm db:migrate
+          pnpm db:bootstrap
           pnpm db:seed
 
       - name: Test
@@ -236,7 +236,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run DB migrations
-        run: pnpm db:migrate
+        run: pnpm db:bootstrap
 
       - name: Seed test DB
         run: pnpm db:seed

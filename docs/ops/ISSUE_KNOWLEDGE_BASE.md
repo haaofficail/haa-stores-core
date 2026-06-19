@@ -20,6 +20,19 @@
 - **Prevention:** Added a regression assertion in `tests/migration-identifier-safety.test.ts`; CI now prepares a clean PostgreSQL database before the test suite.
 - **Status:** Fix pushed for GitHub runner verification.
 
+### ISSUE-0013: Clean CI Database Must Use the Documented Bootstrap Path
+
+- **ID:** ISSUE-0013
+- **Date:** 2026-06-20
+- **Severity:** High (blocks Test and E2E jobs)
+- **Area:** Database / Drizzle migrations / CI
+- **Related Tasks:** TASK-0054
+- **Symptoms:** After repairing the numeric cast, `drizzle-kit migrate` reached a later historical migration and failed because `store_settings.theme_config` already existed.
+- **Root Cause:** The retained historical migration set includes intentional/idempotent repair overlap. The project already documents `pnpm db:bootstrap` as the supported clean-database path; CI incorrectly used raw `pnpm db:migrate`.
+- **Fix:** CI Test and E2E jobs now use `pnpm db:bootstrap`, followed by seeding. The bootstrap applies SQL with repair overlap tolerated and records migration hashes for future normal migrate calls.
+- **Prevention:** CI contract tests require the bootstrap command for clean test databases.
+- **Status:** Fix pushed for GitHub runner verification.
+
 ### ISSUE-0010: Vite HMR Transient Errors Surfacing as DASH-001 P0 (INC-20260615-001..005)
 
 - **ID:** ISSUE-0010

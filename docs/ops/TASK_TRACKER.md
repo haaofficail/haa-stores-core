@@ -18,7 +18,7 @@
 - **Out of Scope:** Product behavior, deployment secrets/server configuration, and unrelated historical runtime P0 fingerprints.
 - **Skills Used:** `github:gh-fix-ci`; explicit plan/debug/verification methodology (the named local skills were unavailable in this session).
 - **Acceptance Criteria:**
-  - [x] CI Test job provisions PostgreSQL and runs migrations/seeds.
+  - [x] CI Test/E2E jobs provision PostgreSQL and run the documented fresh-DB bootstrap plus seeds.
   - [x] Migration 0010 supports a clean PostgreSQL database.
   - [x] CI build matrix builds workspace packages before each app.
   - [x] Docker build stages build workspace packages before each app.

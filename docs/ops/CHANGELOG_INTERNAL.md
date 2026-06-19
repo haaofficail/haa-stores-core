@@ -7,7 +7,7 @@
 
 ## 2026-06-20 — GitHub Actions CI/Docker Recovery (TASK-0054)
 
-- Added a PostgreSQL 16 service plus migration/seed preparation to the CI Test job so DB-backed tests do not connect to a missing localhost database.
+- Added a PostgreSQL 16 service plus the documented fresh-database bootstrap/seed preparation to the CI Test job; E2E now uses the same bootstrap path.
 - Repaired migration 0010 with an explicit `USING` cast for `customers.total_spent`, allowing the chain to run on a clean PostgreSQL database.
 - Added ordered workspace-package builds before every app build in CI and in all four Dockerfiles.
 - Changed the API production dependency install to skip lifecycle scripts, preventing the root Husky prepare hook from failing when devDependencies are excluded.

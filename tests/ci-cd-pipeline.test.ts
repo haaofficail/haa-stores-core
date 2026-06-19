@@ -53,7 +53,9 @@ describe('Quality Pass 1 — CI/CD Pipeline (Item 4)', () => {
     const content = readFileSync(ciFile, 'utf-8');
     expect(content).toMatch(/test:[\s\S]*services:[\s\S]*postgres:16-alpine/);
     expect(content).toMatch(/test:[\s\S]*DATABASE_URL:/);
-    expect(content).toMatch(/Prepare test database[\s\S]*pnpm db:migrate[\s\S]*pnpm db:seed/);
+    expect(content).toMatch(
+      /Prepare test database[\s\S]*pnpm db:bootstrap[\s\S]*pnpm db:seed/,
+    );
   });
 
   it('build jobs must compile workspace packages before individual apps', () => {

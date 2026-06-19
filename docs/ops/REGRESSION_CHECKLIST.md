@@ -17,7 +17,7 @@
 ## CI / Docker
 
 - [ ] CI Test job provisions PostgreSQL before DB-backed tests
-- [ ] CI Test job runs migrations and seeds before `pnpm test`
+- [ ] CI Test/E2E jobs run `pnpm db:bootstrap` and seeds on clean databases
 - [ ] Numeric type-change migrations include an explicit PostgreSQL `USING` cast
 - [ ] Workspace packages build before individual app builds
 - [ ] Docker build stages compile workspace packages before apps
