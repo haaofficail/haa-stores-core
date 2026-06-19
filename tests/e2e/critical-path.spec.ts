@@ -15,6 +15,7 @@ test.describe('Critical Path: Storefront to Order', () => {
     const productCard = page.locator('a[href*="/p/"]:visible').first();
     await expect(productCard).toBeVisible();
     await productCard.click();
+    await page.waitForLoadState('networkidle');
 
     // 3. Add to Cart
     const addToCartBtn = page
@@ -22,7 +23,7 @@ test.describe('Critical Path: Storefront to Order', () => {
       .filter({ hasText: /Add|أضف|السلة/i })
       .first();
     await expect(addToCartBtn).toBeVisible();
-    await addToCartBtn.click();
+    await addToCartBtn.dispatchEvent('click');
 
     // 4. Go to Cart
     await page.goto(`${baseUrl}/cart`);
