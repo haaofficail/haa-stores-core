@@ -30,11 +30,15 @@ function failHard(condition, label, help) {
 console.log('')
 console.log('=== Preflight Root Guard ===')
 
-failHard(
-  CWD === EXPECTED_ROOT,
-  `Wrong project root. Expected: ${EXPECTED_ROOT}`,
-  `Actual: ${CWD}\n   Run: cd ${EXPECTED_ROOT} && pnpm preflight`
-)
+if (process.env.CI) {
+  console.log('  ✅ Root guard skipped (CI environment)')
+} else {
+  failHard(
+    CWD === EXPECTED_ROOT,
+    `Wrong project root. Expected: ${EXPECTED_ROOT}`,
+    `Actual: ${CWD}\n   Run: cd ${EXPECTED_ROOT} && pnpm preflight`
+  )
+}
 
 console.log('')
 console.log('=== Project Structure Checks ===')
