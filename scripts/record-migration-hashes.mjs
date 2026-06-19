@@ -11,13 +11,17 @@
 
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import postgres from '/Users/thwany/Desktop/haa-stores-core/node_modules/.pnpm/postgres@3.4.9/node_modules/postgres/src/index.js';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import postgres from 'postgres';
 
 const url = process.env.DATABASE_URL;
 if (!url) { console.error('DATABASE_URL is required'); process.exit(1); }
 
-const journalPath = '/Users/thwany/Desktop/haa-stores-core/packages/db/src/migrations/meta/_journal.json';
-const migrationsDir = '/Users/thwany/Desktop/haa-stores-core/packages/db/src/migrations';
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const projectRoot = resolve(scriptDir, '..');
+const migrationsDir = resolve(projectRoot, 'packages/db/src/migrations');
+const journalPath = resolve(migrationsDir, 'meta/_journal.json');
 const journal = JSON.parse(readFileSync(journalPath, 'utf-8'));
 
 const client = postgres(url, { max: 1 });

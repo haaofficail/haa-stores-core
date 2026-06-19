@@ -20,6 +20,19 @@
 - **Prevention:** Added a regression assertion in `tests/migration-identifier-safety.test.ts`; CI now prepares a clean PostgreSQL database before the test suite.
 - **Status:** Fix pushed for GitHub runner verification.
 
+### ISSUE-0014: Fresh-DB Hash Recorder Contained a Developer-Machine Absolute Path
+
+- **ID:** ISSUE-0014
+- **Date:** 2026-06-20
+- **Severity:** High (bootstrap applies SQL but fails before recording hashes)
+- **Area:** Database bootstrap / CI portability
+- **Related Tasks:** TASK-0054
+- **Symptoms:** `pnpm db:bootstrap` applied all 65 SQL migrations, then failed with `ERR_MODULE_NOT_FOUND` referencing `/Users/thwany/Desktop/haa-stores-core/node_modules/...`.
+- **Root Cause:** `scripts/record-migration-hashes.mjs` imported `postgres` and located migration files through absolute paths from one developer machine.
+- **Fix:** Use the normal `postgres` package import and derive repository paths from `import.meta.url`.
+- **Prevention:** CI contract coverage rejects `/Users/` paths in the bootstrap helper.
+- **Status:** Fix pushed for GitHub runner verification.
+
 ### ISSUE-0013: Clean CI Database Must Use the Documented Bootstrap Path
 
 - **ID:** ISSUE-0013

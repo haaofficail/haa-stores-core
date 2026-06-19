@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 const workflowsDir = resolve(projectRoot, '.github/workflows');
+const migrationHashScript = resolve(projectRoot, 'scripts/record-migration-hashes.mjs');
 
 describe('Quality Pass 1 — CI/CD Pipeline (Item 4)', () => {
   it('.github/workflows directory must exist', () => {
@@ -67,6 +68,13 @@ describe('Quality Pass 1 — CI/CD Pipeline (Item 4)', () => {
     const appBuildIndex = content.indexOf('pnpm --filter @haa/${{ matrix.app }} build');
     expect(sharedBuildIndex).toBeGreaterThan(-1);
     expect(appBuildIndex).toBeGreaterThan(sharedBuildIndex);
+  });
+
+  it('fresh database bootstrap helper must not contain machine-specific paths', () => {
+    const content = readFileSync(migrationHashScript, 'utf-8');
+    expect(content).toMatch(/from 'postgres'/);
+    expect(content).toMatch(/fileURLToPath\(import\.meta\.url\)/);
+    expect(content).not.toMatch(/\/Users\//);
   });
 
   it('ci.yml must run pnpm preflight', () => {

@@ -44,6 +44,9 @@ importers:
       lint-staged:
         specifier: ^17.0.7
         version: 17.0.7
+      postgres:
+        specifier: ^3.4.9
+        version: 3.4.9
       prettier:
         specifier: ^3.8.4
         version: 3.8.4
@@ -52,7 +55,7 @@ importers:
         version: 8.61.1(eslint@10.5.0(jiti@2.7.0))(typescript@5.9.3)
       vitest:
         specifier: 4.1.8
-        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9)(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9(vitest@4.1.8))(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
 
   apps/admin-dashboard:
     dependencies:
@@ -654,7 +657,7 @@ importers:
         version: 6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
       vitest:
         specifier: 4.1.8
-        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9)(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9(vitest@4.1.8))(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/system-theme:
     dependencies:
@@ -679,7 +682,7 @@ importers:
         version: 6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
       vitest:
         specifier: 4.1.8
-        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9)(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9(vitest@4.1.8))(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/theme-engine:
     devDependencies:
@@ -688,7 +691,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 4.1.8
-        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9)(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9(vitest@4.1.8))(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
       zod:
         specifier: ^3.23.8
         version: 3.25.76
@@ -725,7 +728,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 4.1.8
-        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9)(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9(vitest@4.1.8))(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/theme-system:
     dependencies:
@@ -750,7 +753,7 @@ importers:
         version: 6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
       vitest:
         specifier: 4.1.8
-        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9)(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9(vitest@4.1.8))(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/theme-web:
     dependencies:
@@ -823,7 +826,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 4.1.8
-        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9)(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9(vitest@4.1.8))(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/tokens:
     devDependencies:
@@ -896,7 +899,7 @@ importers:
         version: 6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)
       vitest:
         specifier: 4.1.8
-        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9)(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9(vitest@4.1.8))(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/wallet-core:
     dependencies:
@@ -10912,7 +10915,7 @@ snapshots:
       obug: 2.1.3
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9)(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
+      vitest: 4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9(vitest@4.1.8))(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
 
   "@vitest/expect@2.0.5":
     dependencies:
@@ -13140,7 +13143,7 @@ snapshots:
       tsx: 4.22.4
       yaml: 2.9.0
 
-  vitest@4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9)(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)):
+  vitest@4.1.8(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9(vitest@4.1.8))(jsdom@24.1.3)(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0)):
     dependencies:
       "@vitest/expect": 4.1.8
       "@vitest/mocker": 4.1.8(vite@6.4.2(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
