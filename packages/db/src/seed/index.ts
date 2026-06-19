@@ -173,7 +173,19 @@ async function seed() {
 
   const planRecords: { id: number; code: string }[] = [];
   for (const plan of plansData) {
-    const [row] = await db.insert(s.subscriptionPlans).values(plan as any).returning();
+    const [existingPlan] = await db
+      .select()
+      .from(s.subscriptionPlans)
+      .where(eq(s.subscriptionPlans.code, plan.code))
+      .limit(1);
+    const row =
+      existingPlan ??
+      (
+        await db
+          .insert(s.subscriptionPlans)
+          .values(plan as any)
+          .returning()
+      )[0];
     planRecords.push({ id: row.id, code: row.code });
   }
   console.log(`  ✓ ${plansData.length} Subscription Plans created`);

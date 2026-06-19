@@ -20,6 +20,19 @@
 - **Prevention:** Added a regression assertion in `tests/migration-identifier-safety.test.ts`; CI now prepares a clean PostgreSQL database before the test suite.
 - **Status:** Fix pushed for GitHub runner verification.
 
+### ISSUE-0015: Fresh Seed Inserts Subscription Plans Twice
+
+- **ID:** ISSUE-0015
+- **Date:** 2026-06-20
+- **Severity:** High (blocks CI after successful bootstrap)
+- **Area:** Database seed / CI
+- **Related Tasks:** TASK-0054
+- **Symptoms:** `pnpm db:bootstrap` succeeds, then `pnpm db:seed` fails on `subscription_plans_code_unique`.
+- **Root Cause:** The seed creates plans near startup, then the fresh-tenant path inserted the same plan codes again.
+- **Fix:** The fresh-tenant plan loop now looks up each unique code and reuses the existing row before inserting.
+- **Prevention:** Added `tests/seed-subscription-plans-idempotency.test.ts`.
+- **Status:** Fix pushed for GitHub runner verification.
+
 ### ISSUE-0014: Fresh-DB Hash Recorder Contained a Developer-Machine Absolute Path
 
 - **ID:** ISSUE-0014
