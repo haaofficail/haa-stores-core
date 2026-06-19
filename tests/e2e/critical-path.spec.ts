@@ -16,8 +16,9 @@ test.describe('Critical Path: Storefront to Order', () => {
     await productCard.click();
 
     // 3. Add to Cart
-    // Assuming there is an "Add to Cart" button
-    const addToCartBtn = page.locator('button:has-text("Add to Cart"), button:has-text("إضافة إلى السلة")');
+    const addToCartBtn = page.getByRole('button', {
+      name: /Add to Cart|إضافة إلى السلة|أضف للسلة/i,
+    });
     await addToCartBtn.click();
 
     // 4. Go to Cart

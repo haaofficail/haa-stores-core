@@ -20,6 +20,19 @@
 - **Prevention:** Added a regression assertion in `tests/migration-identifier-safety.test.ts`; CI now prepares a clean PostgreSQL database before the test suite.
 - **Status:** Fix pushed for GitHub runner verification.
 
+### ISSUE-0019: E2E Suite Targeted Apps That the Workflow Never Started
+
+- **ID:** ISSUE-0019
+- **Date:** 2026-06-20
+- **Severity:** High (final CI gate)
+- **Area:** E2E orchestration / UI selectors
+- **Related Tasks:** TASK-0054
+- **Symptoms:** Merchant and admin tests receive connection refused; critical storefront path times out waiting for the old add-to-cart label.
+- **Root Cause:** Workflow started only API and storefront although the suite also covers ports 5173 and 5175. The critical-path selector omitted the current Arabic label `أضف للسلة`.
+- **Fix:** Start and readiness-check all four applications; use an accessible button selector covering current Arabic and English labels.
+- **Prevention:** CI contract coverage requires merchant/admin startup and readiness ports.
+- **Status:** Fix pushed for GitHub runner verification.
+
 ### ISSUE-0018: E2E Servers Started Before Workspace Packages Were Built
 
 - **ID:** ISSUE-0018

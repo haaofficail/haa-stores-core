@@ -255,6 +255,12 @@ jobs:
       - name: Start storefront (dev mode)
         run: pnpm --filter @haa/storefront dev &
 
+      - name: Start merchant dashboard (dev mode)
+        run: pnpm --filter @haa/merchant-dashboard dev &
+
+      - name: Start admin dashboard (dev mode)
+        run: pnpm --filter @haa/admin-dashboard dev &
+
       - name: Wait for servers to be ready
         run: |
           echo "Waiting for API on :3000..."
@@ -270,6 +276,20 @@ jobs:
             sleep 2
           done
           curl -sf http://localhost:5174 || { echo "ERROR: Storefront did not start within 60s"; exit 1; }
+
+          echo "Waiting for merchant dashboard on :5173..."
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:5173 && break
+            sleep 2
+          done
+          curl -sf http://localhost:5173 || { echo "ERROR: Merchant dashboard did not start within 60s"; exit 1; }
+
+          echo "Waiting for admin dashboard on :5175..."
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:5175 && break
+            sleep 2
+          done
+          curl -sf http://localhost:5175 || { echo "ERROR: Admin dashboard did not start within 60s"; exit 1; }
 
       - name: Run E2E tests
         run: pnpm exec playwright test --project=chromium

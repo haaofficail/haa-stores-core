@@ -93,6 +93,10 @@ describe('Quality Pass 1 — CI/CD Pipeline (Item 4)', () => {
     const apiStartIndex = e2eSection.indexOf('pnpm --filter @haa/api dev &');
     expect(packageBuildIndex).toBeGreaterThan(-1);
     expect(apiStartIndex).toBeGreaterThan(packageBuildIndex);
+    expect(e2eSection).toMatch(/pnpm --filter @haa\/merchant-dashboard dev &/);
+    expect(e2eSection).toMatch(/pnpm --filter @haa\/admin-dashboard dev &/);
+    expect(e2eSection).toMatch(/localhost:5173/);
+    expect(e2eSection).toMatch(/localhost:5175/);
   });
 
   it('ci.yml must run pnpm preflight', () => {
