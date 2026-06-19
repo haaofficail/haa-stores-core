@@ -8,7 +8,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useState as useReactState } from 'react';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; required to pass icon as prop to <Icon>
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; required to pass icon as prop to <Icon>
 import { ArrowLeft, Menu, X as XIcon } from 'lucide-react';
 import { usePlatformBrand } from '@/hooks/usePlatformBrand';
 import { StoreContainer, Icon } from '@/components/ui';
@@ -33,6 +33,7 @@ export function Nav({ t, authMode = false }: { t: TFn; authMode?: boolean }) {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileOpen(false); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mobileOpen]);
 
   const closeMobile = () => setMobileOpen(false);
@@ -83,7 +84,7 @@ export function Nav({ t, authMode = false }: { t: TFn; authMode?: boolean }) {
           {authMode ? (
             <Link
               to="/"
-              className="aurora-btn inline-flex h-11 min-h-[44px] items-center gap-2 rounded-full bg-text-primary px-5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/30 hover:!text-white"
+              className="aurora-btn-primary inline-flex h-11 min-h-[44px] items-center gap-2 rounded-full px-5 text-sm font-semibold text-white transition-all hover:!text-white"
             >
               الرئيسية
               <ArrowLeft className="h-3.5 w-3.5 rotate-180" aria-hidden="true" />
