@@ -4,7 +4,7 @@
 #  Multi-stage : deps → build → prod
 # ════════════════════════════════════════════════════════════════════
 
-ARG NODE_VERSION=20
+ARG NODE_VERSION=22
 ARG ALPINE_VERSION=3.20
 ARG NGINX_VERSION=1.27-alpine
 ARG PNPM_VERSION=10

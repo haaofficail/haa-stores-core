@@ -22,6 +22,10 @@ export default defineConfig({
       '@haa/wallet-core': path.resolve(__dirname, 'packages/wallet-core/src'),
       '@haa/integration-core': path.resolve(__dirname, 'packages/integration-core/src'),
       '@haa/notification-core': path.resolve(__dirname, 'packages/notification-core/src'),
+      '@haa/payment-providers': path.resolve(__dirname, 'packages/payment-providers/src'),
+      '@haa/marketplace-core': path.resolve(__dirname, 'packages/marketplace-core/src'),
+      '@haa/theme-system': path.resolve(__dirname, 'packages/theme-system/src'),
+      '@haa/zatca-core': path.resolve(__dirname, 'packages/zatca-core/src'),
     },
   },
   test: {

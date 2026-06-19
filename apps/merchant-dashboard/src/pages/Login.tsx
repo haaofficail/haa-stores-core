@@ -105,7 +105,7 @@ export default function Login() {
               {/* Top accent line */}
               <div
                 className="pointer-events-none absolute -top-px inset-x-8 h-px"
-                style={{ background: 'linear-gradient(90deg, transparent, #5c9cd5, transparent)' }}
+                style={{ background: 'linear-gradient(90deg, transparent, var(--haa-primary-500), transparent)' }}
                 aria-hidden="true"
               />
 

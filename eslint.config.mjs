@@ -1,17 +1,33 @@
 import tseslint from 'typescript-eslint';
+import reactHooksPlugin from 'eslint-plugin-react-hooks';
+import drizzlePlugin from 'eslint-plugin-drizzle';
 
 export default tseslint.config(
-  { ignores: ['**/node_modules/**', '**/dist/**', '**/.next/**', '**/.pnpm/**', '**/storybook-static/**', '**/*.d.ts', '**/*.js', '**/*.mjs', '**/*.cjs'] },
+  { ignores: ['**/node_modules/**', '**/dist/**', '**/.next/**', '**/.pnpm/**', '**/storybook-static/**', '**/*.d.ts', '**/*.js', '**/*.mjs', '**/*.cjs', '.claude/**', '.serena/**'] },
 
   // Base TS/TSX rules
   ...tseslint.configs.recommended,
 
   {
     files: ['**/*.ts', '**/*.tsx'],
+    plugins: {
+      'react-hooks': reactHooksPlugin,
+      drizzle: drizzlePlugin,
+    },
+    languageOptions: {
+      parserOptions: {
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-require-imports': 'off',
+      // Loaded so eslint-disable comments in source files resolve correctly.
+      // exhaustive-deps is warn (not error) — real violations are suppressed at call sites.
+      'react-hooks/exhaustive-deps': 'warn',
+      // enforce-delete-with-where is warn — call sites that need bypass use disable comments.
+      'drizzle/enforce-delete-with-where': 'warn',
     },
   },
 
@@ -31,20 +47,21 @@ export default tseslint.config(
   {
     files: ['apps/storefront/src/**/*.{ts,tsx}'],
     rules: {
+      // Boundary violations are hard errors — cross-app imports break isolation.
       'no-restricted-imports': ['error', {
         patterns: [
           { group: ['@haa/merchant-dashboard', '@haa/merchant-dashboard/**'], message: 'Storefront must never import merchant-dashboard code.' },
           { group: ['@haa/admin-dashboard', '@haa/admin-dashboard/**'], message: 'Storefront must never import admin-dashboard code.' },
           { group: ['@haa/system-theme', '@haa/system-theme/**'], message: 'Storefront must never import system-theme (dashboard UI only).' },
-          // P1-#5: direct lucide-react icon imports in page files.
-          // The Icon wrapper (apps/storefront/src/components/ui/icon.tsx)
-          // enforces our design system icon size governance. Page files
-          // should use <Icon icon={Foo} size="sm" /> instead of <Foo />
-          // so the 24px / 18px / 16px rules are followed.
-          // We use 'warn' (not 'error') so this is observable but not
-          // blocking — the storefront has many files still using
-          // lucide directly and a hard error would break the build.
-          { group: ['lucide-react'], message: 'P1-#5: import icons via <Icon icon={...} /> from "@/components/ui/icon" instead of using lucide directly. This enforces the 24/18/16 icon size governance.' },
+        ],
+      }],
+      // P1-#5: lucide-react direct imports — warn only (many files still migrating to <Icon>).
+      // The Icon wrapper (apps/storefront/src/components/ui/icon.tsx) enforces
+      // the 24px/18px/16px size governance. Using a separate rule name allows
+      // independent severity from the boundary-isolation errors above.
+      '@typescript-eslint/no-restricted-imports': ['warn', {
+        patterns: [
+          { regex: '^lucide-react$', message: 'P1-#5: import icons via <Icon icon={...} /> from "@/components/ui/icon" instead of using lucide directly. This enforces the 24/18/16 icon size governance.' },
         ],
       }],
     },
