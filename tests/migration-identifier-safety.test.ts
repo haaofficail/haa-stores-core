@@ -15,9 +15,11 @@ describe('Quality Pass 1 — Migration Identifier Safety', () => {
       resolve(migrationsDir, '0010_public_metal_master.sql'),
       'utf-8',
     );
+    expect(migration).toMatch(/ALTER COLUMN "total_spent" DROP DEFAULT/);
     expect(migration).toMatch(
       /ALTER COLUMN "total_spent" SET DATA TYPE numeric\(14, 2\) USING "total_spent"::numeric\(14, 2\)/,
     );
+    expect(migration).toMatch(/ALTER COLUMN "total_spent" SET DEFAULT 0/);
   });
 
   it('0007 FK constraint name must fit within Postgres 63-char limit', () => {

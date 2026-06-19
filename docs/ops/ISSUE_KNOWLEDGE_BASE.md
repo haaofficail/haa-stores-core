@@ -15,8 +15,8 @@
 - **Symptoms:** GitHub Actions Test job provisions PostgreSQL successfully, then `pnpm db:migrate` fails in migration 0010 with `column "total_spent" cannot be cast automatically to type numeric`.
 - **Expected:** The full migration chain applies to a brand-new PostgreSQL 16 database.
 - **Actual:** Migration 0010 used `ALTER COLUMN ... SET DATA TYPE numeric(14, 2)` without telling PostgreSQL how to cast the existing column type.
-- **Root Cause:** The generated type-change SQL omitted an explicit `USING` expression. Existing developer databases had already passed this migration, so the defect only surfaced on a clean CI database.
-- **Fix:** Added `USING "total_spent"::numeric(14, 2)` to migration 0010.
+- **Root Cause:** The generated type-change SQL omitted an explicit `USING` expression and retained a default value whose old type PostgreSQL could not cast automatically. Existing developer databases had already passed this migration, so the defect only surfaced on a clean CI database.
+- **Fix:** Migration 0010 now drops the old default, converts with `USING "total_spent"::numeric(14, 2)`, then restores a numeric default.
 - **Prevention:** Added a regression assertion in `tests/migration-identifier-safety.test.ts`; CI now prepares a clean PostgreSQL database before the test suite.
 - **Status:** Fix pushed for GitHub runner verification.
 
