@@ -5,6 +5,21 @@
 
 ---
 
+### ISSUE-0012: Fresh PostgreSQL Migration Fails Converting customers.total_spent
+
+- **ID:** ISSUE-0012
+- **Date:** 2026-06-20
+- **Severity:** High (blocks clean CI databases and fresh deployments)
+- **Area:** Database / Drizzle migrations / CI
+- **Related Tasks:** TASK-0054
+- **Symptoms:** GitHub Actions Test job provisions PostgreSQL successfully, then `pnpm db:migrate` fails in migration 0010 with `column "total_spent" cannot be cast automatically to type numeric`.
+- **Expected:** The full migration chain applies to a brand-new PostgreSQL 16 database.
+- **Actual:** Migration 0010 used `ALTER COLUMN ... SET DATA TYPE numeric(14, 2)` without telling PostgreSQL how to cast the existing column type.
+- **Root Cause:** The generated type-change SQL omitted an explicit `USING` expression. Existing developer databases had already passed this migration, so the defect only surfaced on a clean CI database.
+- **Fix:** Added `USING "total_spent"::numeric(14, 2)` to migration 0010.
+- **Prevention:** Added a regression assertion in `tests/migration-identifier-safety.test.ts`; CI now prepares a clean PostgreSQL database before the test suite.
+- **Status:** Fix pushed for GitHub runner verification.
+
 ### ISSUE-0010: Vite HMR Transient Errors Surfacing as DASH-001 P0 (INC-20260615-001..005)
 
 - **ID:** ISSUE-0010
@@ -19,7 +34,7 @@
   - INC-004 + INC-005: `Failed to fetch dynamically imported module: http://localhost:5173/src/pages/Login.tsx?t=<timestamp>` (15:53 + 15:54)
 - **Expected:** Either (a) real React/JS errors in production code, or (b) no errors at all.
 - **Actual:** `apps/merchant-dashboard/src/pages/Login.tsx` (149 LOC) imports `useState, useEffect` from 'react' (correct). No `useRef` or `tickerRef` anywhere in the file. The reported `route` was `/login` (the Login page itself), not `/dashboard` as initially suspected. The dashboard was the **origin of the error report**, not the source of the error.
-- **Root Cause:** Vite Fast Refresh transient — when a module is hot-replaced, React's HMR runtime can briefly hold a stale closure that references hooks (`useRef`) or local variables (`tickerRef`) from a previous module version. The error surfaces once, gets caught by `ErrorBoundary`, and disappears after the next reload. The error message itself is React telling us "this name is not defined in the current module scope", which is true *temporarily* during HMR.
+- **Root Cause:** Vite Fast Refresh transient — when a module is hot-replaced, React's HMR runtime can briefly hold a stale closure that references hooks (`useRef`) or local variables (`tickerRef`) from a previous module version. The error surfaces once, gets caught by `ErrorBoundary`, and disappears after the next reload. The error message itself is React telling us "this name is not defined in the current module scope", which is true _temporarily_ during HMR.
 - **Why they were flagged as P0:** `pnpm ops:monitor` escalates any 3+ same-fingerprint as P0. Five near-identical events within 30 min tripped that threshold. The classification was correct by rule but the rule was overly aggressive for dev-only HMR noise.
 - **Fix:**
   1. **ErrorBoundary hardening** (this session) — `apps/{merchant-dashboard,storefront,admin-dashboard}/src/.../ErrorBoundary.tsx` now adds:
@@ -207,7 +222,7 @@
 
 ## Open Issues
 
-*(No issues recorded yet)*
+_(No issues recorded yet)_
 
 ## Fixed Issues
 

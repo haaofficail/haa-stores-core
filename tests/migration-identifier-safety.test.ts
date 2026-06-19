@@ -10,6 +10,16 @@ const migrationsDir = resolve(__dirname, '../packages/db/src/migrations');
 const POSTGRES_IDENTIFIER_MAX = 63;
 
 describe('Quality Pass 1 — Migration Identifier Safety', () => {
+  it('0010 total_spent type conversion must include an explicit PostgreSQL USING cast', () => {
+    const migration = readFileSync(
+      resolve(migrationsDir, '0010_public_metal_master.sql'),
+      'utf-8',
+    );
+    expect(migration).toMatch(
+      /ALTER COLUMN "total_spent" SET DATA TYPE numeric\(14, 2\) USING "total_spent"::numeric\(14, 2\)/,
+    );
+  });
+
   it('0007 FK constraint name must fit within Postgres 63-char limit', () => {
     const migration = readFileSync(
       resolve(migrationsDir, '0007_tan_cassandra_nova.sql'),

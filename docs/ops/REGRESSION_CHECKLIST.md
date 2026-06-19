@@ -18,6 +18,7 @@
 
 - [ ] CI Test job provisions PostgreSQL before DB-backed tests
 - [ ] CI Test job runs migrations and seeds before `pnpm test`
+- [ ] Numeric type-change migrations include an explicit PostgreSQL `USING` cast
 - [ ] Workspace packages build before individual app builds
 - [ ] Docker build stages compile workspace packages before apps
 - [ ] Production-only installs do not invoke dev-only Husky hooks

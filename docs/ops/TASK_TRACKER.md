@@ -13,12 +13,13 @@
 - **Updated:** 2026-06-20
 - **Original Request:** "حل مشاكل الاكشن ، الفشل كثير ما انحلت"
 - **Expanded Requirement:** Fix the failing checks on PR #1 and the Docker build failure seen by the main-branch Deploy workflow.
-- **Problem:** The Test job had no PostgreSQL service despite running DB-backed tests; app build jobs compiled apps before their workspace packages; the API production image ran the root Husky `prepare` hook after excluding devDependencies.
+- **Problem:** The Test job had no PostgreSQL service despite running DB-backed tests; migration 0010 lacked the explicit PostgreSQL `USING` cast required on a clean database; app build jobs compiled apps before their workspace packages; the API production image ran the root Husky `prepare` hook after excluding devDependencies.
 - **Scope:** `.github/workflows/ci.yml`, four app Dockerfiles, CI contract tests, and required ops documentation.
 - **Out of Scope:** Product behavior, deployment secrets/server configuration, and unrelated historical runtime P0 fingerprints.
 - **Skills Used:** `github:gh-fix-ci`; explicit plan/debug/verification methodology (the named local skills were unavailable in this session).
 - **Acceptance Criteria:**
   - [x] CI Test job provisions PostgreSQL and runs migrations/seeds.
+  - [x] Migration 0010 supports a clean PostgreSQL database.
   - [x] CI build matrix builds workspace packages before each app.
   - [x] Docker build stages build workspace packages before each app.
   - [x] API production dependency install does not execute the Husky prepare hook.
