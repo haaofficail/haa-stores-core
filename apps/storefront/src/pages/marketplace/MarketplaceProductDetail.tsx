@@ -33,6 +33,14 @@ export default function MarketplaceProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
+
+  // إغلاق معاينة الصورة بمفتاح Escape (QA A2 — وصولية المودال).
+  useEffect(() => {
+    if (!imagePreviewOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setImagePreviewOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [imagePreviewOpen]);
   const [cartCount, setCartCount] = useState(() => marketplaceCart.count());
 
   useSEO({
@@ -494,7 +502,7 @@ export default function MarketplaceProductDetail() {
 
       {imagePreviewOpen && activeImage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label="معاينة صورة المنتج">
-          <button type="button" onClick={() => setImagePreviewOpen(false)} className="absolute top-4 end-4 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-black">
+          <button type="button" autoFocus onClick={() => setImagePreviewOpen(false)} className="absolute top-4 end-4 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-black">
             إغلاق
           </button>
           <img src={activeImage} alt={product.name} className="max-h-[86vh] max-w-[92vw] object-contain" />

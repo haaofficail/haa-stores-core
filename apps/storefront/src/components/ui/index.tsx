@@ -1,4 +1,4 @@
-import { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes } from 'react';
+import { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes, useId } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports -- this IS the icon barrel; lucide imports are permitted here so other files can import via @/components/ui
@@ -155,7 +155,8 @@ interface StoreInputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export function StoreInput({ label, error, hint, iconStart, iconEnd, className = '', id, ...props }: StoreInputProps) {
-  const inputId = id || label?.toLowerCase().replace(/\s/g, '-');
+  const reactId = useId();
+  const inputId = id || reactId;
   return (
     <div className="space-y-1.5">
       {label && (
@@ -195,7 +196,8 @@ interface StoreTextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement>
 }
 
 export function StoreTextarea({ label, error, iconStart, className = '', id, ...props }: StoreTextareaProps) {
-  const textareaId = id || label?.toLowerCase().replace(/\s/g, '-');
+  const reactId = useId();
+  const textareaId = id || reactId;
   return (
     <div className="space-y-1.5">
       {label && (
@@ -231,7 +233,8 @@ interface StoreSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 export function StoreSelect({ label, error, options, placeholder, iconStart, className = '', id, ...props }: StoreSelectProps) {
-  const selectId = id || label?.toLowerCase().replace(/\s/g, '-');
+  const reactId = useId();
+  const selectId = id || reactId;
   return (
     <div className="space-y-1.5">
       {label && (
