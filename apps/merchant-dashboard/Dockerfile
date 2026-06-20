@@ -60,6 +60,11 @@ COPY apps/merchant-dashboard/ ./apps/merchant-dashboard/
 COPY tsconfig.base.json ./
 COPY tsconfig.json      ./
 
+# Bake the API base URL into the SPA bundle (see storefront Dockerfile). Staging
+# builds with VITE_API_URL=/api so API calls hit the reverse proxy's API route.
+ARG VITE_API_URL=""
+ENV VITE_API_URL=${VITE_API_URL}
+
 # Build: tsc -b && vite build → apps/merchant-dashboard/dist/
 RUN pnpm -r --filter './packages/**' --workspace-concurrency=1 build
 RUN pnpm --filter @haa/merchant-dashboard build

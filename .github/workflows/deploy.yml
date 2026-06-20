@@ -72,6 +72,7 @@ jobs:
             GIT_SHA=${{ github.sha }}
             BUILD_TIME=${{ github.event.head_commit.timestamp }}
             APP_VERSION=${{ github.run_number }}
+            VITE_API_URL=/api
 
   # ─────────────────────────────────────────────────────────────
   # 2. Deploy to Staging (تلقائي عند كل push لـ main)

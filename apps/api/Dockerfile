@@ -109,8 +109,10 @@ RUN pnpm install --frozen-lockfile --prod --prefer-offline --ignore-scripts
 # Copy compiled output from build stage
 COPY --from=build /repo/apps/api/dist ./apps/api/dist
 
-# Copy package sources needed at runtime (workspace:* packages)
-# These were already copied via packages/ above
+# Overlay the COMPILED workspace packages (dist/) from the build stage. The
+# `COPY packages/ ./packages/` above is source-only, so the api's runtime
+# imports of @haa/*/dist would otherwise be ERR_MODULE_NOT_FOUND.
+COPY --from=build /repo/packages ./packages
 
 # Security: drop to non-root user
 # node user (uid 1000) already exists in node:alpine
