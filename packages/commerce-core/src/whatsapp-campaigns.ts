@@ -152,7 +152,12 @@ export class WhatsAppCampaignService {
       id: s.customers.id,
       phone: s.customers.phone,
     }).from(s.customers)
-      .where(eq(s.customers.storeId, storeId));
+      .where(and(
+        eq(s.customers.storeId, storeId),
+        // ممتثل: أرسل فقط لمن وافق صراحةً ولم يلغِ الاشتراك (QA WA1/WA3)
+        eq(s.customers.whatsappMarketingConsent, true),
+        eq(s.customers.whatsappOptOut, false),
+      ));
 
     return rows
       .filter(r => r.phone && normalizeWhatsappPhone(r.phone))

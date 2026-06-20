@@ -200,9 +200,9 @@
 ### واتساب وحملاته — موجود، لكن P0 امتثال
 | # | المشكلة | الخطورة | الحالة |
 |---|---------|---------|--------|
-| WA1 | لا consent/opt-in — يُرسل لكل عملاء المتجر (مخالفة PDPL + سياسة WhatsApp) | P0 | 📋 يحتاج عمود consent في customers + فلترة في resolveRecipients |
+| WA1 | لا consent/opt-in — يُرسل لكل العملاء | P0 | ✅ عمود `whatsapp_marketing_consent` (افتراضي false) + فلترة resolveRecipients (migration 0069) |
 | WA2 | رسائل حرة بلا قوالب WABA معتمدة + لا نافذة 24س | P0 | 📋 سجل قوالب + type:template + inbound webhook |
-| WA3 | لا opt-out/إلغاء اشتراك | P0 | 📋 عمود optOut + webhook STOP + فلترة |
+| WA3 | لا opt-out | P0 | 🟡 عمود `whatsapp_opt_out` + فلترة مضافان؛ inbound webhook لكلمة STOP (WA2) لاحقاً |
 | WA4 | إعادة دخول/إرسال مكرر (status='running' غير محروس، انتهاء القفل) | P1 | ✅ حارس running مضاف (atomic claim لاحقاً) |
 | WA5 | "sent" وهمي (fallback deeplink يُحتسب مُرسلاً) + لا تتبّع تسليم | P1 | 📋 webhook تسليم + عدم احتساب fallback |
 | WA6 | rate-limit ثابت بلا 429 backoff؛ مسار السلة المهجورة بلا throttle | P2 | 📋 |

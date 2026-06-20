@@ -456,6 +456,13 @@
       "when": 1782000064000,
       "tag": "0068_brand_color_defaults",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1782000065000,
+      "tag": "0069_whatsapp_consent",
+      "breakpoints": true
     }
   ]
 }

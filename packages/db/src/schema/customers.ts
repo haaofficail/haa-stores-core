@@ -9,6 +9,10 @@ export const customers = pgTable('customers', {
   email: varchar('email', { length: 255 }),
   notes: text('notes'),
   totalOrders: integer('total_orders').notNull().default(0),
+  // موافقة تسويق واتساب (PDPL + سياسة WhatsApp) — افتراضي false: لا تسويق بلا موافقة صريحة (QA WA1/WA3)
+  whatsappMarketingConsent: boolean('whatsapp_marketing_consent').notNull().default(false),
+  whatsappConsentAt: timestamp('whatsapp_consent_at'),
+  whatsappOptOut: boolean('whatsapp_opt_out').notNull().default(false),
   totalSpent: decimal('total_spent', { precision: 14, scale: 2 }).notNull().default('0'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
