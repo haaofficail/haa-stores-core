@@ -145,6 +145,10 @@ function LpProductCard({ product }: { product: LpProduct }) {
         {product.purchaseCount && (
           <div className="lp-pcard__purchases">{product.purchaseCount.toLocaleString('ar-SA-u-nu-arab')} مشتري</div>
         )}
+        {/* عنصر توضيحي ضمن معاينة المتجر — ليس زراً تفاعلياً (a11y) */}
+        <span className="lp-pcard__cta" aria-hidden="true">
+          <ShoppingCart size={14} /> أضف للسلة
+        </span>
       </div>
     </div>
   );
