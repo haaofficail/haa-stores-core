@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { buildCheckoutStepKeys, clampStepIndex, type CheckoutStepKey } from '@/lib/checkout-steps';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useSharedCart } from '@/hooks/CartContext';
@@ -127,27 +128,40 @@ export default function Checkout() {
   // Safety clamp: when fulfillmentType changes, the dynamic step list
   // shrinks/grows; ensure currentStep never points past the last step.
   useEffect(() => {
-    const stepCount = fulfillmentType === 'shipping' ? 5 : 4;
-    setCurrentStep((s) => Math.min(s, stepCount - 1));
+    const stepCount = buildCheckoutStepKeys(fulfillmentType).length;
+    setCurrentStep((s) => clampStepIndex(s, stepCount));
   }, [fulfillmentType]);
+
+  // خطوات ديناميكية بمفاتيح ثابتة — pickup يحذف خطوة الشحن دون كسر الفهارس (QA CO3).
+  const STEP_LABELS: Record<CheckoutStepKey, string> = {
+    customer: t('checkout.stepCustomer', 'بيانات العميل'),
+    fulfillment: t('checkout.stepFulfillment', 'طريقة الاستلام'),
+    shipping: t('checkout.stepShipping', 'الشحن'),
+    payment: t('checkout.stepPayment', 'الدفع'),
+    review: t('checkout.stepReview', 'المراجعة'),
+  };
+  const stepKeys = buildCheckoutStepKeys(fulfillmentType);
+  const steps = stepKeys.map((key) => ({ key, label: STEP_LABELS[key] }));
+  const STEPS = steps.map((st) => st.label);
+  const activeStep = steps[currentStep]?.key;
 
   const validateStep = (step: number): boolean => {
     const errs: Record<string, string> = {};
-    switch (step) {
-      case 0:
+    switch (steps[step]?.key) {
+      case 'customer':
         if (!customer.name.trim()) errs.name = t('checkout.errNameRequired', 'الاسم مطلوب');
         if (!customer.phone.trim()) errs.phone = t('checkout.errPhoneRequired', 'رقم الجوال مطلوب');
         else if (!/^[0-9+\-\s]{8,20}$/.test(customer.phone.trim())) errs.phone = t('checkout.errPhoneInvalid', 'رقم جوال غير صالح');
         if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) errs.email = t('checkout.errEmailInvalid', 'بريد إلكتروني غير صالح');
         break;
-      case 1:
+      case 'fulfillment':
         if (fulfillmentType === 'shipping') {
           if (!address.city.trim()) errs.city = t('checkout.errCityRequired', 'المدينة مطلوبة');
         } else {
           if (!selectedPickupLocationId) errs.fulfillment = t('checkout.errPickupLocationRequired', 'اختر فرع الاستلام');
         }
         break;
-      case 2:
+      case 'shipping':
         if (fulfillmentType === 'shipping' && !selectedShippingId) errs.shipping = t('checkout.errShippingRequired', 'اختر طريقة الشحن');
         break;
     }
@@ -262,13 +276,6 @@ export default function Checkout() {
   const shippingCost = toMoneyNumber(selectedRate?.baseRate);
   const total = Math.max(0, subtotal + shippingCost);
 
-  const STEPS = [
-    t('checkout.stepCustomer', 'بيانات العميل'),
-    t('checkout.stepFulfillment', 'طريقة الاستلام'),
-    ...(fulfillmentType === 'shipping' ? [t('checkout.stepShipping', 'الشحن')] : []),
-    t('checkout.stepPayment', 'الدفع'),
-    t('checkout.stepReview', 'المراجعة'),
-  ];
 
   const bnplOptions = bnplMethods.map(m => {
     const isTabby = m.provider === 'tabby';
@@ -310,7 +317,7 @@ export default function Checkout() {
 
         <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
           <div className="lg:col-span-2">
-            {currentStep === 0 && (
+            {activeStep === 'customer' && (
               <StoreCard className="p-6">
                 <h2 className="font-bold text-lg mb-4">{t('checkout.customerInfo')}</h2>
                 <div className="space-y-4">
@@ -321,7 +328,7 @@ export default function Checkout() {
               </StoreCard>
             )}
 
-            {currentStep === 1 && (
+            {activeStep === 'fulfillment' && (
               <StoreCard className="p-6">
                 <h2 className="font-bold text-lg mb-4">{t('checkout.fulfillmentType', 'طريقة الاستلام')}</h2>
                 {(features?.pickup !== false) && pickupLocations.length > 0 && (
@@ -429,7 +436,7 @@ export default function Checkout() {
               </StoreCard>
             )}
 
-            {currentStep === 2 && fulfillmentType === 'shipping' && (
+            {activeStep === 'shipping' && (
               <StoreCard className="p-6">
                 <h2 className="font-bold text-lg mb-4">{t('checkout.shippingMethod')}</h2>
                 {shippingLoading ? (
@@ -474,7 +481,7 @@ export default function Checkout() {
               </StoreCard>
             )}
 
-            {currentStep === 3 && (
+            {activeStep === 'payment' && (
               <StoreCard className="p-6">
                 <h2 className="font-bold text-lg mb-4">{t('checkout.paymentMethod')}</h2>
                 <div className="space-y-3">
@@ -511,7 +518,7 @@ export default function Checkout() {
               </StoreCard>
             )}
 
-            {currentStep === 4 && (
+            {activeStep === 'review' && (
               <StoreCard className="p-6">
                 <h2 className="font-bold text-lg mb-4">{t('checkout.orderSummary')} — {t('checkout.stepReview', 'المراجعة')}</h2>
                 <div className="space-y-4">
