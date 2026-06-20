@@ -122,3 +122,18 @@
 | TO2 | ترجمة بلا fallback، encode، مفتاح sessionStorage بـ slug | ✅ PR #25 |
 | TOR1 | loading للأبد عند غياب slug/orderNumber | ✅ PR #25 — `setLoading(false)` |
 | TOR2 | scope + cancellation + مفتاح موحّد + NaN + fallbacks | ✅ PR #25 |
+
+## مراجعة App/CSS/Tailwind/Registry/التغطية (دفعة ثالثة)
+
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| APP1 | `/about` العام يستخدم صفحة متجر (`useStore` بلا slug → skeleton للأبد) | ✅ PR #26 — توجيه `/about` → `/` |
+| APP2 | `/fake-3ds-challenge` متاح في الإنتاج | ✅ PR #26 — محصور خلف `import.meta.env.DEV` |
+| CSS1 | **تعليق `.auth-scope` بلا `/*` افتتاحي → قاعدة auth-scope تُسقَط + تحذير unterminated string** | ✅ PR #26 — أُضيف `/*` (build نظيف) |
+| CSS2 | كتلة `#storefront-scope {}` فارغة | ✅ PR #26 — أُزيلت |
+| CASE1 | ادّعاء case-sensitivity (ملفات lowercase) | ✅ إيجابية كاذبة — الملفات PascalCase فعلاً، `forceConsistentCasingInFileNames:true` مضبوط، CI/Linux يبني طوال اليوم |
+| CSS3 | Splide/Aurora global غير معزولة، font `!important` على كل عنصر، RTL `[dir=rtl]` selector، color-mix fallback | 📋 متابعة — تحسينات عزل CSS (غير حاجبة) |
+| APP3 | `StoreNotFound` كـ 404 عام بدل `PlatformNotFound`؛ PageSkeleton عام | 📋 متابعة (المراجع أقرّ أن skeleton عام بلا id مقبول) |
+| TW1 | tailwind: surface/text/status قيم ثابتة بدل CSS vars (اتساق الثيم) | 📋 متابعة — تغيير color-resolution عام، يتطلب تحقق بصري |
+| REG1 | Theme Registry بلا guard ضد التسجيل المكرر (HMR/tests) | 📋 متابعة — idempotency في `@haa/storefront-themes` |
+| COV1 | **تغطية اختبارات منخفضة في المسارات الحرجة** (shipping-core 10%, theme-system 8%, payment-providers 20%, api routes branch/fn 0%, commerce-core 30%) | 📋 **P0 اختبارات** — رفع التغطية في الدفع/الشحن/الطلبات/routes (نجاح+فشل+3DS+مخزون+عزل) قبل الإطلاق التجاري |

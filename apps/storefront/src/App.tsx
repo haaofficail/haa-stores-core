@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Layout from '@/components/Layout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -85,7 +85,8 @@ export default function App() {
             <Route path="*" element={<StoreNotFound />} />
           </Route>
           <Route path="/marketplace" element={<HaaMarketplace />} />
-          <Route path="/about" element={<About />} />
+          {/* /about على مستوى المنصة: لا متجر/slug — وجّه للّاندينق بدل صفحة المتجر التي تعلّق على skeleton */}
+          <Route path="/about" element={<Navigate to="/" replace />} />
           <Route path="/marketplace/cart" element={<MarketplaceCart />} />
           <Route path="/marketplace/checkout" element={<MarketplaceCheckout />} />
           <Route path="/marketplace/orders" element={<MarketplaceOrderTrack />} />
@@ -96,7 +97,9 @@ export default function App() {
           {/* TASK-0035 sub-item 5: Fake 3-D Secure challenge (dev-only).
               Real providers (Moyasar/Geidea) redirect to their own hosted
               challenge pages; the fake provider redirects here. */}
-          <Route path="/fake-3ds-challenge" element={<Fake3DSChallenge />} />
+          {import.meta.env.DEV && (
+            <Route path="/fake-3ds-challenge" element={<Fake3DSChallenge />} />
+          )}
           <Route path="/legal/:legalSlug" element={<LegalPage />} />
           <Route path="*" element={<StoreNotFound />} />
         </Routes>
