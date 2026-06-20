@@ -487,7 +487,7 @@ function AuthShell({ children }: { children: React.ReactNode }) {
     i18nT(key, fallback ?? key) as string;
 
   return (
-    <div id="storefront-scope" dir="rtl" className="relative min-h-screen overflow-x-hidden text-text-primary auth-scope">
+    <div id="auth-scope" data-theme-scope="auth" dir="rtl" className="relative min-h-screen overflow-x-hidden text-text-primary auth-scope">
 
       <AuroraBackground />
 
