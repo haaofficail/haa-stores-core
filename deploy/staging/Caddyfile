@@ -1,0 +1,52 @@
+# Haa Stores — Staging reverse proxy (Caddy v2)
+# ---------------------------------------------------------------------------
+# Automatic HTTPS (Let's Encrypt) for the three staging hostnames. Requires
+# DNS A records pointing each name at the staging server and ports 80/443 open:
+#
+#   staging.haastores.com           A   72.61.108.208
+#   admin.staging.haastores.com     A   72.61.108.208
+#   merchant.staging.haastores.com  A   72.61.108.208
+#
+# The app SPA images are built with VITE_API_URL='' (empty), so the frontends
+# call the API on their OWN origin using relative paths. Caddy therefore routes
+# the API path prefixes to the `api` service and everything else to the SPA.
+
+{
+	email haa.officail@gmail.com
+}
+
+# ── Storefront (public site) ───────────────────────────────────────────────
+staging.haastores.com {
+	@api path /health* /s/* /auth/* /marketplace/* /webhooks/* /internal/* /api/*
+	handle @api {
+		reverse_proxy api:3001
+	}
+	handle {
+		reverse_proxy storefront:80
+	}
+	encode gzip zstd
+}
+
+# ── Admin dashboard ────────────────────────────────────────────────────────
+admin.staging.haastores.com {
+	@api path /health* /admin/* /auth/* /internal/*
+	handle @api {
+		reverse_proxy api:3001
+	}
+	handle {
+		reverse_proxy admin-dashboard:80
+	}
+	encode gzip zstd
+}
+
+# ── Merchant dashboard ─────────────────────────────────────────────────────
+merchant.staging.haastores.com {
+	@api path /health* /merchant/* /auth/* /internal/*
+	handle @api {
+		reverse_proxy api:3001
+	}
+	handle {
+		reverse_proxy merchant-dashboard:80
+	}
+	encode gzip zstd
+}
