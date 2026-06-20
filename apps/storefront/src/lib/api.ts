@@ -229,10 +229,10 @@ export interface ShippingMethod {
 export interface ShippingRate {
   shippingMethodId: number;
   methodName: string;
-  estimatedDaysMin: number;
-  estimatedDaysMax: number;
+  estimatedDaysMin: number | null;
+  estimatedDaysMax: number | null;
   baseRate: number | string;
-  perKgRate: number;
+  perKgRate?: number | null;
   freeAboveAmount: number | null;
 }
 
