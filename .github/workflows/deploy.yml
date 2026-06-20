@@ -137,6 +137,34 @@ jobs:
             | ssh "$DEPLOY_USER@$DEPLOY_HOST" \
                 "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
 
+      - name: Port ownership preflight (G7)
+        env:
+          DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
+          DEPLOY_USER: ${{ secrets.STAGING_USER }}
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" bash -s << 'G7_EOF'
+            set -euo pipefail
+            echo "==> G7: asserting ports 80 / 443 / 5433 are free or owned by haa-staging..."
+            _failed=0
+            for _p in 80 443 5433; do
+              _busy=$(ss -Htlnp "sport = :${_p}" 2>/dev/null | head -1)
+              if [ -z "$_busy" ]; then
+                echo "  :${_p} — free"
+              elif docker compose -p haa-staging ps 2>/dev/null | grep -qE ":${_p}->"; then
+                echo "  :${_p} — haa-staging (OK)"
+              else
+                echo "G7 ERROR: port ${_p} is occupied by a foreign process:"
+                ss -tlnp "sport = :${_p}" 2>/dev/null || true
+                _failed=1
+              fi
+            done
+            if [ "$_failed" -ne 0 ]; then
+              echo "G7 preflight FAILED — identify and stop the conflicting process, then re-run deploy"
+              exit 1
+            fi
+            echo "✓ G7: ports 80 / 443 / 5433 are clear"
+          G7_EOF
+
       - name: Deploy to staging server
         env:
           DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
