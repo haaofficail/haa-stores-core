@@ -178,3 +178,19 @@
 | CO5 | مسح السلة قبل اكتمال 3DS/BNPL | 📋 P1 — مسح بعد callback مؤكّد فقط |
 | CO6 | redirectUrl بلا allowlist، callback URLs، VAT naming | 📋 P1 — تشديد + اختبار |
 | CO7 | `: any` في cart.items + دين `item.item?` | 📋 متابعة — يتطلب تنظيف شكل الـ item |
+
+## Batch 3 — Marketplace Orchestration (B3 / MC6) — production-safe via gating
+
+**القرار:** بناء endpoint backend موحّد بـ rollback يتطلب إعادة هيكلة دفع متعدّد المتاجر (مخاطر دفع حقيقية — قاعدة AGENTS/التاسك 15: سلامة الإنتاج أولاً). الإغلاق الـ production-safe المقبول في التاسك = **feature-gating**.
+
+| البند | الحالة |
+|---|---|
+| MC6 orchestration بالواجهة (خطر orphan عند فشل جزئي) | ✅ **production-safe** — `MARKETPLACE_CHECKOUT_ENABLED` (DEV أو `VITE_ENABLE_MARKETPLACE_CHECKOUT`) — معطّل في الإنتاج، submit + render محروسان، 3 اختبارات |
+
+### عقد الـ endpoint المطلوب لاحقاً (لرفع الحظر بالكامل)
+`POST /api/marketplace/checkout` — الواجهة ترسل **intent فقط**:
+```
+{ items:[{storeSlug,productId,quantity}], customer, shippingAddress, paymentMethod, idempotencyKey }
+```
+الـ backend (في معاملة واحدة): تحقّق المنتجات/النشر/التاجر · إعادة حساب الأسعار/VAT/الشحن من DB · تحقّق المخزون الذرّي · تجميع per-seller · إنشاء master order + child orders + links · idempotency على المفتاح · rollback عند أي فشل · جلسة دفع موحّدة. الواجهة لا تحسم ماليّاً ولا تنشئ child orders.
+**ملاحظة:** المسارات ذات إعادة التوجيه (card/BNPL/3DS) تحتاج تصميم callback موحّد — لذلك البناء الكامل خارج نطاق جلسة واحدة آمنة.

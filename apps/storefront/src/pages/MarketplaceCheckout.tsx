@@ -10,6 +10,11 @@ import { Icon } from '@/components/ui/icon';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { useSEO } from '@/hooks/useSEO';
 
+// بوّابة: checkout الماركتبليس متعدّد المتاجر يُنسّق per-store من الواجهة (خطر طلبات يتيمة عند
+// الفشل الجزئي). معطّل في الإنتاج حتى يُبنى endpoint backend موحّد (QA B3/MC6). راجع docs/ops/QA_AUDIT.
+const MARKETPLACE_CHECKOUT_ENABLED =
+  import.meta.env.DEV || import.meta.env.VITE_ENABLE_MARKETPLACE_CHECKOUT === 'true';
+
 function generateIdempotencyKey(): string {
   try { return crypto.randomUUID(); } catch {
     return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}-0000-4000-8000-000000000000`;
@@ -49,12 +54,26 @@ export default function MarketplaceCheckout() {
   useSEO({ title: 'إتمام طلب سوق هاء', noIndex: true });
 
   const submit = async () => {
+    if (!MARKETPLACE_CHECKOUT_ENABLED) return; // production-safe gate (QA B3)
     if (submitting) return;
     if (!customer.name.trim() || !customer.phone.trim() || !address.city.trim()) {
       toast.error('أدخل الاسم والجوال والمدينة');
       return;
     }
-    if (items.length === 0) {
+    if (!MARKETPLACE_CHECKOUT_ENABLED) {
+    return (
+      <main id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-surface-2 overflow-x-hidden">
+        <StoreContainer className="py-10">
+          <StoreAlert variant="info" title="الدفع من السوق غير متاح حالياً">
+            نعمل على تجهيز الدفع الموحّد عبر سوق هاء. يمكنك الشراء مباشرة من صفحة كل متجر الآن.
+          </StoreAlert>
+          <StoreButton href="/marketplace" className="mt-4">تصفّح السوق</StoreButton>
+        </StoreContainer>
+      </main>
+    );
+  }
+
+  if (items.length === 0) {
       navigate('/marketplace/cart');
       return;
     }
