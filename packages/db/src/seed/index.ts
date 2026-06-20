@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import { createDbClient } from '../index.js';
 import * as s from '../schema/index.js';
-import { hashPassword } from '@haa/auth-core';
+import bcrypt from 'bcryptjs';
+const hashPassword = (pw: string) => bcrypt.hash(pw, 12);
 import { eq } from 'drizzle-orm';
 
 async function seed() {
@@ -172,7 +173,19 @@ async function seed() {
 
   const planRecords: { id: number; code: string }[] = [];
   for (const plan of plansData) {
-    const [row] = await db.insert(s.subscriptionPlans).values(plan as any).returning();
+    const [existingPlan] = await db
+      .select()
+      .from(s.subscriptionPlans)
+      .where(eq(s.subscriptionPlans.code, plan.code))
+      .limit(1);
+    const row =
+      existingPlan ??
+      (
+        await db
+          .insert(s.subscriptionPlans)
+          .values(plan as any)
+          .returning()
+      )[0];
     planRecords.push({ id: row.id, code: row.code });
   }
   console.log(`  ✓ ${plansData.length} Subscription Plans created`);
@@ -622,9 +635,17 @@ async function seed() {
 
     // Checkout session for completed or in-progress orders
     if (os.status !== 'cancelled' && os.status !== 'returned') {
+      const [checkoutCart] = await db
+        .insert(s.carts)
+        .values({
+          storeId: store.id,
+          sessionToken: crypto.randomUUID(),
+          isAbandoned: false,
+        })
+        .returning();
       await db.insert(s.checkoutSessions).values({
         storeId: store.id,
-        cartId: crypto.randomUUID(),
+        cartId: checkoutCart.id,
         idempotencyKey: crypto.randomUUID(),
         status: 'completed',
         customerName: customerRecords[os.customer].name,
@@ -818,9 +839,18 @@ async function seed() {
   const abandonedCities = ['الرياض', 'جدة'];
   for (let ai = 0; ai < 2; ai++) {
     const abandonedDate = new Date(now.getTime() - (ai === 0 ? 5 : 2) * 86400000);
+    const [abandonedCart] = await db
+      .insert(s.carts)
+      .values({
+        storeId: store.id,
+        sessionToken: crypto.randomUUID(),
+        isAbandoned: true,
+        updatedAt: abandonedDate,
+      })
+      .returning();
     await db.insert(s.checkoutSessions).values({
       storeId: store.id,
-      cartId: crypto.randomUUID(),
+      cartId: abandonedCart.id,
       idempotencyKey: crypto.randomUUID(),
       status: 'pending',
       customerName: customerData[3 + ai].name,

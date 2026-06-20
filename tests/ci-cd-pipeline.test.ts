@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 const workflowsDir = resolve(projectRoot, '.github/workflows');
+const migrationHashScript = resolve(projectRoot, 'scripts/record-migration-hashes.mjs');
 
 describe('Quality Pass 1 — CI/CD Pipeline (Item 4)', () => {
   it('.github/workflows directory must exist', () => {
@@ -46,6 +47,76 @@ describe('Quality Pass 1 — CI/CD Pipeline (Item 4)', () => {
     const ciFile = resolve(workflowsDir, 'ci.yml');
     const content = readFileSync(ciFile, 'utf-8');
     expect(content).toMatch(/pnpm test/);
+  });
+
+  it('test job must provide and prepare PostgreSQL for DB-backed tests', () => {
+    const ciFile = resolve(workflowsDir, 'ci.yml');
+    const content = readFileSync(ciFile, 'utf-8');
+    expect(content).toMatch(/test:[\s\S]*services:[\s\S]*postgres:16-alpine/);
+    expect(content).toMatch(/test:[\s\S]*DATABASE_URL:/);
+    expect(content).toMatch(/test:[\s\S]*TEST_DATABASE_URL:/);
+    expect(content).toMatch(
+      /Prepare test database[\s\S]*pnpm db:bootstrap[\s\S]*pnpm db:seed/,
+    );
+  });
+
+  it('build jobs must compile workspace packages before individual apps', () => {
+    const ciFile = resolve(workflowsDir, 'ci.yml');
+    const content = readFileSync(ciFile, 'utf-8');
+    const buildSection = content.slice(
+      content.indexOf('  build:'),
+      content.indexOf('  e2e:'),
+    );
+    const sharedBuildIndex = buildSection.indexOf(
+      "pnpm -r --filter './packages/**' --workspace-concurrency=1 build",
+    );
+    const appBuildIndex = buildSection.indexOf(
+      'pnpm --filter @haa/${{ matrix.app }} build',
+    );
+    expect(sharedBuildIndex).toBeGreaterThan(-1);
+    expect(appBuildIndex).toBeGreaterThan(sharedBuildIndex);
+  });
+
+  it('fresh database bootstrap helper must not contain machine-specific paths', () => {
+    const content = readFileSync(migrationHashScript, 'utf-8');
+    expect(content).toMatch(/from 'postgres'/);
+    expect(content).toMatch(/fileURLToPath\(import\.meta\.url\)/);
+    expect(content).not.toMatch(/\/Users\//);
+  });
+
+  it('E2E job must build workspace packages before starting dev servers', () => {
+    const content = readFileSync(resolve(workflowsDir, 'ci.yml'), 'utf-8');
+    const e2eSection = content.slice(content.indexOf('  e2e:'));
+    const packageBuildIndex = e2eSection.indexOf(
+      "pnpm -r --filter './packages/**' --workspace-concurrency=1 build",
+    );
+    const apiStartIndex = e2eSection.indexOf('pnpm --filter @haa/api dev &');
+    expect(packageBuildIndex).toBeGreaterThan(-1);
+    expect(apiStartIndex).toBeGreaterThan(packageBuildIndex);
+    expect(e2eSection).toMatch(/pnpm --filter @haa\/merchant-dashboard dev &/);
+    expect(e2eSection).toMatch(/pnpm --filter @haa\/admin-dashboard dev &/);
+    expect(e2eSection).toMatch(/localhost:5173/);
+    expect(e2eSection).toMatch(/localhost:5175/);
+  });
+
+  it('CI troubleshooting guide must document all required green gates', () => {
+    const guide = readFileSync(
+      resolve(projectRoot, 'docs/ops/GITHUB_ACTIONS_TROUBLESHOOTING.md'),
+      'utf-8',
+    );
+    for (const gate of [
+      'Preflight',
+      'Typecheck',
+      'Lint',
+      'Test',
+      'Build API',
+      'Build Merchant Dashboard',
+      'Build Admin Dashboard',
+      'Build Storefront',
+      'E2E',
+    ]) {
+      expect(guide).toContain(gate);
+    }
   });
 
   it('ci.yml must run pnpm preflight', () => {

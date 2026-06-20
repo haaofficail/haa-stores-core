@@ -25,7 +25,6 @@ import {
   OrdersService,
   CouponsService,
   CartService,
-  createPaymentProvider,
 } from '@haa/commerce-core';
 import { ManualShippingProvider } from '@haa/shipping-core';
 import { ALLOWED_PAYMENT_METHODS, AppError } from '@haa/shared';
@@ -106,7 +105,16 @@ checkoutRouter.post('/:slug/checkout/shipping-rates', zValidator('json', shippin
     destination: { city: body.city, country: 'Saudi Arabia' },
     subtotal: cart.subtotal,
   });
-  return c.json({ success: true, data: rates });
+  // Map provider field names to the storefront API contract
+  const mapped = rates.map((r) => ({
+    shippingMethodId: r.methodId,
+    methodName: r.methodName,
+    baseRate: r.cost,
+    estimatedDaysMin: r.estimatedDaysMin ?? null,
+    estimatedDaysMax: r.estimatedDaysMax ?? null,
+    freeAboveAmount: r.freeAbove ?? null,
+  }));
+  return c.json({ success: true, data: mapped });
 });
 
 checkoutRouter.post('/:slug/checkout/validate-coupon', zValidator('json', couponSchema), async (c) => {
@@ -211,7 +219,7 @@ checkoutRouter.post('/:slug/checkout/sessions/:sessionId/confirm', async (c) => 
 // the 3DS challenge. Updates the payment status (paid or failed) and
 // finalizes the order. For SAMA-mandated card payments in Saudi Arabia.
 checkoutRouter.post('/:slug/checkout/3ds-callback', async (c) => {
-  const { store, error } = await resolveActiveStore(c);
+  const { error } = await resolveActiveStore(c);
   if (error) return error;
   const body = await c.req.json().catch(() => ({})) as { paymentId?: number; status?: 'success' | 'failure' };
   const paymentId = Number(body.paymentId);
@@ -246,7 +254,7 @@ checkoutRouter.get('/:slug/order/:orderNumber', async (c) => {
 });
 
 checkoutRouter.get('/:slug/track/:orderNumber', async (c) => {
-  const { store, error } = await resolveActiveStore(c);
+  const { error } = await resolveActiveStore(c);
   if (error) return error;
   const orderNumber = c.req.param('orderNumber') as string | undefined;
   if (!orderNumber) return c.json({ success: false, error: { code: 'BAD_REQUEST', message: 'Order number required' } }, 400);

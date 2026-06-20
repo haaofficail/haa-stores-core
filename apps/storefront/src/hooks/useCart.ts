@@ -74,7 +74,7 @@ export function useCart(slug: string | undefined) {
   }, [slug, cart?.id]);
 
   const addItem = useCallback(async (productId: number, quantity: number = 1, notes?: string, giftData?: { giftWrapSelected?: boolean; sendAsGift?: boolean; giftMessage?: string }, variantId?: number, source?: 'storefront' | 'haa_marketplace') => {
-    if (!slug || !cart?.id) return;
+    if (!slug || !cart?.id) throw new Error('cart not ready');
     const updated = await cartApi.addItem(slug, cart.id, productId, quantity, notes, giftData, variantId, source);
     const normalized = normalizeCart(updated);
     setCart(normalized);

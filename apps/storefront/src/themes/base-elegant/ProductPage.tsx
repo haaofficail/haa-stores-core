@@ -8,6 +8,7 @@ import ThemedProductCard from '@/components/ThemedProductCard';
 import {
   paymentLogos, PaymentLogoImg, TrustBadgesSection,
 } from '@/components/ui/trust-badges';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import {
   ShoppingBag, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown,
   Minus, Plus, Check, AlertTriangle,
@@ -159,7 +160,7 @@ const paymentLogoByProvider: Record<string, string> = {
 
 function getPaymentLogosForMethods(methods: any[], categories?: Set<string>, availableOnly = true) {
   const logoIds = new Set(
-    methods
+    (Array.isArray(methods) ? methods : [])
       .filter((method: any) => !availableOnly || method.available)
       .map((method: any) => paymentLogoByProvider[method.provider])
       .filter(Boolean)
@@ -636,7 +637,8 @@ export default function BaseElegantProductPage(props: ProductPageProps) {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto]" style={{ gap: 'var(--space-4)' }}>
-                <StoreButton onClick={props.onAddToCart} disabled={props.isOutOfStock || props.adding} loading={props.adding}
+                <StoreButton onClick={props.onAddToCart} disabled={props.isOutOfStock || props.adding || props.cartReady === false} loading={props.adding}
+                  data-testid="pdp-add-to-cart"
                   iconStart={props.added ? <Icon icon={Check} size="sm" /> : <Icon icon={ShoppingCart} size="sm" />}
                   className={`w-full ${props.added ? 'bg-success text-success-text hover:bg-success' : props.isOutOfStock ? 'bg-surface-2 text-text-tertiary cursor-not-allowed' : ''}`}>
                   {props.added ? t('product.addedSuccessfully') : props.isOutOfStock ? t('product.outOfStock') : t('product.addToCart')}

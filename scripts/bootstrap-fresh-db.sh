@@ -60,11 +60,27 @@ DB_PORT="$(node -e "const u=new URL(process.env.DATABASE_URL); process.stdout.wr
 
 echo "=== Bootstrap: $DB_NAME on $DB_HOST:$DB_PORT ==="
 
-# Step 0: create the database if it doesn't exist.
+# Step 0: drop (if exists) then recreate — ensures a clean slate every run.
 PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres \
-  -c "CREATE DATABASE \"$DB_NAME\"" 2>&1 | tail -1 || true
+  -c "DROP DATABASE IF EXISTS \"$DB_NAME\"" 2>&1 | tail -1 || true
+PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres \
+  -c "CREATE DATABASE \"$DB_NAME\"" 2>&1 | tail -1
 
 # Step 1: apply every SQL migration in numeric order.
+#
+# The migration tree contains duplicate-numbered files from prior branch
+# merges (e.g. 0025_publish_gate + 0025_sudden_leech, 0027/0028 pairs).
+# When applied to a fresh DB in order, the redundant ones try to recreate
+# objects an earlier migration already created and emit "already exists".
+# The resulting schema is still correct — the object exists either way.
+#
+# We therefore run each file with ON_ERROR_STOP=0 so EVERY statement is
+# attempted (psql autocommits per statement, so a benign conflict on one
+# statement never blocks the rest of the file — critical, since otherwise
+# a redundant ADD COLUMN at the top of a file would skip the CREATE INDEXes
+# below it and leave the schema incomplete). A migration only counts as
+# failed when it emits an ERROR that is NOT a benign "already exists"
+# conflict, in which case we abort loudly.
 MIGRATIONS_DIR="$PROJECT_DIR/packages/db/src/migrations"
 applied=0
 failed=0
@@ -73,18 +89,25 @@ for sql in "$MIGRATIONS_DIR"/[0-9][0-9][0-9][0-9]_*.sql; do
   set +e
   PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
     -v ON_ERROR_STOP=0 -f "$sql" >/tmp/bs-psql.log 2>&1
-  rc=$?
   set -e
-  if [ $rc -eq 0 ]; then
+  # Genuine failures = ERROR lines that are not "already exists" conflicts.
+  real_errors=$(grep 'ERROR:' /tmp/bs-psql.log | grep -viE 'already exists' || true)
+  if [ -z "$real_errors" ]; then
     applied=$((applied+1))
     echo "  ✓ $name"
   else
     failed=$((failed+1))
-    echo "  ✗ $name  (see /tmp/bs-psql.log)"
+    echo "  ✗ $name  (real error — see below)"
+    echo "$real_errors" >&2
   fi
 done
 echo ""
 echo "=== Step 1: applied $applied, failed $failed ==="
+
+if [ "$failed" -gt 0 ]; then
+  echo "Bootstrap aborted: $failed migration(s) had genuine errors. Fix them before recording hashes." >&2
+  exit 1
+fi
 
 # Step 2: record hashes in drizzle.__drizzle_migrations so subsequent
 # pnpm db:migrate calls recognize the state.

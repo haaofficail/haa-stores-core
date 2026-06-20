@@ -9,7 +9,7 @@ import { Icon } from '@/components/ui/icon';
 import { useSEO } from '@/hooks/useSEO';
 import { useStore } from '@/hooks/useStore';
 import { useStorefrontTheme } from '@/hooks/useTheme';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { AlertTriangle, ArrowLeft, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { getStorefrontThemeComponents, resolveStorefrontThemeKey } from '@haa/storefront-themes';
@@ -65,7 +65,8 @@ export default function ProductDetail() {
   const [showFullDesc, setShowFullDesc] = useState(false);
   const watcherCount = product?.views ?? null;
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
-  const { addItem } = useSharedCart();
+  const { addItem, cart, loading: cartLoading } = useSharedCart();
+  const cartReady = Boolean(cart?.id) && !cartLoading;
   const cartSource = searchParams.get('source') === 'haa_marketplace' ? 'haa_marketplace' : 'storefront';
 
   useEffect(() => {
@@ -124,7 +125,7 @@ export default function ProductDetail() {
     if (!slug) return;
     featuresApi.get(slug).then(setFeatures).catch(() => {});
     giftOptionsApi.get(slug).then(setStoreGiftOptions).catch(() => {});
-    checkoutApi.getPaymentMethods(slug).then((res: any) => setPaymentMethods(res.methods)).catch(() => setPaymentMethods([]));
+    checkoutApi.getPaymentMethods(slug).then((res: any) => setPaymentMethods(Array.isArray(res?.methods) ? res.methods : [])).catch(() => setPaymentMethods([]));
   }, [slug]);
 
   useEffect(() => {
@@ -188,20 +189,22 @@ export default function ProductDetail() {
   }, [giftWrap, product, storeGiftOptions]);
 
   const handleAddToCart = useCallback(async () => {
-    if (!product || isOutOfStock) return;
+    if (!product || isOutOfStock || !cartReady) return;
     if (hasOptions && !selectedVariant) { toast.error(t('product.variantUnavailable', 'هذا الخيار غير متوفر')); return; }
     if (quantity < 1) { toast.error(t('product.quantityMin')); return; }
     if (quantity > maxQuantity) { toast.error(t('product.quantityMax')); return; }
     setAdding(true);
     try {
-      await addItem(product.id, quantity, undefined, giftData, selectedVariant?.id, cartSource);
-      setAdded(true);
-      toast.success(t('product.addedSuccessfully'), {
-        action: { label: t('product.viewCart'), onClick: () => navigate(`/s/${slug}/cart`) },
-      });
+      const result = await addItem(product.id, quantity, undefined, giftData, selectedVariant?.id, cartSource);
+      if (result) {
+        setAdded(true);
+        toast.success(t('product.addedSuccessfully'), {
+          action: { label: t('product.viewCart'), onClick: () => navigate(`/s/${slug}/cart`) },
+        });
+      }
     } catch { toast.error(t('common.error')); }
     finally { setAdding(false); }
-  }, [product, isOutOfStock, hasOptions, selectedVariant, quantity, maxQuantity, addItem, slug, t, navigate, giftData, cartSource]);
+  }, [product, isOutOfStock, cartReady, hasOptions, selectedVariant, quantity, maxQuantity, addItem, slug, t, navigate, giftData, cartSource]);
 
   const handleBuyNow = useCallback(async () => {
     if (!product || isOutOfStock) return;
@@ -346,6 +349,7 @@ export default function ProductDetail() {
       adding={adding}
       buying={buying}
       added={added}
+      cartReady={cartReady}
       giftWrapPriceDisplay={giftWrapPriceDisplay}
       recentlyViewed={recentlyViewed}
     />

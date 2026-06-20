@@ -7,7 +7,6 @@ import { CouponsService } from './coupons.js';
 import { PaymentService, createPaymentProvider, FakePaymentProvider } from '@haa/payment-providers';
 import type { PaymentProvider } from '@haa/payment-providers';
 import { WalletLedger, describePlatformFeePolicy } from '@haa/wallet-core';
-import type { PlatformFeePolicy } from '@haa/wallet-core';
 import { StoreBillingSettingsService } from './billing-settings-service.js';
 import { WebhookOutboxService } from '@haa/integration-core';
 import { AuditLogService } from '@haa/integration-core';
@@ -172,7 +171,7 @@ export class CheckoutService {
     return { idempotent: false, session, customer };
   }
 
-  async confirm(storeId: number, sessionId: string, actorUserId?: number, ipAddress?: string) {
+  async confirm(storeId: number, sessionId: string, actorUserId?: number, _ipAddress?: string) {
     const lockKey = `lock:checkout:${sessionId}`;
     const hasLock = process.env.REDIS_URL ? await acquireLock(lockKey) : true;
     if (!hasLock) throw new Error('Checkout is already being processed. Please wait.');
@@ -325,7 +324,7 @@ export class CheckoutService {
 
           for (const item of cartItems) {
             await tx.update(s.products)
-              .set({ salesCount: sql`${s.products.salesCount} + ${item.quantity}` })
+              .set({ salesCount: sql`${s.products.salesCount} + ${item.item.quantity}` })
               .where(eq(s.products.id, item.product.id));
           }
 
@@ -417,7 +416,7 @@ export class CheckoutService {
 
           for (const item of cartItems) {
             await tx.update(s.products)
-              .set({ salesCount: sql`${s.products.salesCount} + ${item.quantity}` })
+              .set({ salesCount: sql`${s.products.salesCount} + ${item.item.quantity}` })
               .where(eq(s.products.id, item.product.id));
           }
 

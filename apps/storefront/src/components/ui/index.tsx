@@ -1,7 +1,7 @@
 import { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-// eslint-disable-next-line no-restricted-imports -- this IS the icon barrel; lucide imports are permitted here so other files can import via @/components/ui
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- this IS the icon barrel; lucide imports are permitted here so other files can import via @/components/ui
 import { AlertTriangle, ArrowLeft, CreditCard, ExternalLink, MessageCircle, Palette, Search, Shield, ChevronLeft, Loader2, Info, CheckCircle, Truck, X, Zap, type LucideIcon } from 'lucide-react';
 import { Icon } from './icon';
 import { SarIcon } from './SarIcon';
@@ -129,7 +129,7 @@ export function StoreButton({ variant = 'primary', size = 'md', loading, icon, i
 
   if (href) {
     return (
-      <Link to={href} className={classes}>
+      <Link to={href} className={classes} {...(props as any)}>
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : startIcon}
         {children}
         {iconEnd}

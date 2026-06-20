@@ -33,8 +33,11 @@ COPY pnpm-lock.yaml      ./
 COPY package.json        ./
 
 # Copy every app/package package.json needed for workspace resolution
-COPY apps/merchant-dashboard/package.json ./apps/merchant-dashboard/
-COPY packages/                             ./packages/
+COPY apps/api/package.json                  ./apps/api/
+COPY apps/storefront/package.json           ./apps/storefront/
+COPY apps/merchant-dashboard/package.json   ./apps/merchant-dashboard/
+COPY apps/admin-dashboard/package.json      ./apps/admin-dashboard/
+COPY packages/                              ./packages/
 
 # Install all deps (dev included — needed for Vite build)
 RUN pnpm install --frozen-lockfile --prefer-offline
@@ -58,6 +61,7 @@ COPY tsconfig.base.json ./
 COPY tsconfig.json      ./
 
 # Build: tsc -b && vite build → apps/merchant-dashboard/dist/
+RUN pnpm -r --filter './packages/**' --workspace-concurrency=1 build
 RUN pnpm --filter @haa/merchant-dashboard build
 
 

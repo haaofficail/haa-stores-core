@@ -44,6 +44,9 @@ importers:
       lint-staged:
         specifier: ^17.0.7
         version: 17.0.7
+      postgres:
+        specifier: ^3.4.9
+        version: 3.4.9
       prettier:
         specifier: ^3.8.4
         version: 3.8.4
@@ -482,12 +485,12 @@ importers:
 
   packages/db:
     dependencies:
-      "@haa/auth-core":
-        specifier: workspace:*
-        version: link:../auth-core
       "@haa/shared":
         specifier: workspace:*
         version: link:../shared
+      bcryptjs:
+        specifier: ^2.4.3
+        version: 2.4.3
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
@@ -498,6 +501,9 @@ importers:
         specifier: ^3.4.4
         version: 3.4.9
     devDependencies:
+      "@types/bcryptjs":
+        specifier: ^2.4.6
+        version: 2.4.6
       "@types/node":
         specifier: ^20.14.12
         version: 20.19.43
