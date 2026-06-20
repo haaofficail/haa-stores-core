@@ -11,6 +11,7 @@ import {
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSEO } from '@/hooks/useSEO';
+import { merchantDashboardUrl } from '@/lib/merchant';
 import { StoreButton } from '@/components/ui';
 import { SarIcon } from '@/components/ui/SarIcon';
 import '@/landing/landing.css';
@@ -346,7 +347,7 @@ export default function LandingPage() {
             <a href="#faq"       onClick={go('faq')}>الأسئلة</a>
           </div>
           <div className="lp-nav__cta">
-            <StoreButton variant="ghost" size="sm" href="/login">دخول</StoreButton>
+            <StoreButton variant="ghost" size="sm" href={merchantDashboardUrl('/login')}>دخول</StoreButton>
             <StoreButton size="sm" iconEnd={<ArrowLeft size={16} />} href="/signup">ابدأ مجانًا</StoreButton>
           </div>
         </div>
@@ -638,7 +639,7 @@ export default function LandingPage() {
                   <div className="lp-market__stat"><b>+١٢٠٠</b><span>متجر موثّق</span></div>
                   <div className="lp-market__stat"><b>+١٠٠ ألف</b><span>زائر شهريًا</span></div>
                 </div>
-                <StoreButton size="lg" variant="secondary" iconEnd={<ArrowLeft size={18} />} href="/market">اكتشف السوق</StoreButton>
+                <StoreButton size="lg" variant="secondary" iconEnd={<ArrowLeft size={18} />} href="/marketplace">اكتشف السوق</StoreButton>
               </div>
               <div className="lp-market__grid-wrap">
                 <div className="lp-market__cats">
@@ -783,7 +784,7 @@ export default function LandingPage() {
             <p>انضم لأكثر من ١٢٠٠ تاجر يبيعون بثقة عبر هاء متاجر.</p>
             <div className="lp-cta__btn">
               <StoreButton size="lg" iconEnd={<ArrowLeft size={18} />} href="/signup">أنشئ متجري الآن</StoreButton>
-              <StoreButton size="lg" variant="secondary" href="/contact">تحدّث مع المبيعات</StoreButton>
+              <StoreButton size="lg" variant="secondary" href="/signup">تحدّث مع المبيعات</StoreButton>
             </div>
           </div>
         </div>
@@ -806,14 +807,13 @@ export default function LandingPage() {
             <div className="lp-foot__col">
               <h4>الشركة</h4>
               <Link to="/about">من نحن</Link>
-              <Link to="/blog">المدوّنة</Link>
-              <Link to="/contact">تواصل معنا</Link>
+              <a href="mailto:info@haastores.com">تواصل معنا</a>
             </div>
             <div className="lp-foot__col">
               <h4>الدعم</h4>
               <a href="#faq" onClick={go('faq')}>الأسئلة الشائعة</a>
-              <Link to="/help">مركز المساعدة</Link>
-              <Link to="/privacy">الشروط والخصوصية</Link>
+              <a href="#faq" onClick={go('faq')}>مركز المساعدة</a>
+              <Link to="/legal/privacy">الشروط والخصوصية</Link>
             </div>
           </div>
           <div className="lp-foot__bottom">

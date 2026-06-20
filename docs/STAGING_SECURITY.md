@@ -60,7 +60,7 @@ CORS_ORIGINS=http://localhost:5173,http://localhost:5174
 
 **Staging example:**
 ```
-CORS_ORIGINS=https://app.stores.haasoft.com,https://stores.haasoft.com
+CORS_ORIGINS=https://app.haastores.com,https://haastores.com
 ```
 
 **Behavior:**

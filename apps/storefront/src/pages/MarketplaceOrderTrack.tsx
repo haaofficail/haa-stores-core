@@ -103,7 +103,7 @@ export default function MarketplaceOrderTrack() {
   };
 
   return (
-    <main className="min-h-screen bg-surface-2 overflow-x-hidden">
+    <main id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-surface-2 overflow-x-hidden">
       <StoreContainer className="py-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>

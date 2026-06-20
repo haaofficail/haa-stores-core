@@ -26,7 +26,7 @@ export default function MarketplaceCart() {
 
   if (items.length === 0) {
     return (
-      <main className="min-h-screen bg-surface-2 overflow-x-hidden">
+      <main id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-surface-2 overflow-x-hidden">
         <StoreContainer className="py-10">
           <StoreEmptyState
             icon={ShoppingBag}
@@ -40,7 +40,7 @@ export default function MarketplaceCart() {
   }
 
   return (
-    <main className="min-h-screen bg-surface-2 overflow-x-hidden">
+    <main id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-surface-2 overflow-x-hidden">
       <StoreContainer className="py-6">
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>

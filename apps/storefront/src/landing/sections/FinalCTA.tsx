@@ -100,7 +100,7 @@ export function FinalCTA({ t }: { t: TFn }) {
                 <ArrowLeft className="h-5 w-5 transition-transform motion-reduce:transition-none duration-300 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
               </Link>
               <Link
-                to="/contact"
+                to="/signup"
                 className="group inline-flex h-14 min-h-[56px] w-full items-center justify-center gap-2 rounded-full border border-white/40 bg-white/10 px-7 text-[17px] font-semibold text-white backdrop-blur-sm transition-all motion-reduce:transition-none duration-300 hover:scale-[1.04] hover:bg-white/20 hover:!text-white sm:w-auto"
               >
                 <MessageCircle className="h-5 w-5 transition-transform motion-reduce:transition-none duration-300 group-hover:scale-110" />

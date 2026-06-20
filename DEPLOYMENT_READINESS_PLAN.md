@@ -137,12 +137,12 @@ P0A includes: Error handling (centralized, no stack traces), Security headers, C
 ### Staging (مباشر)
 
 ```
-stores.haasoft.com          ← Storefront (public, root)
-app.stores.haasoft.com      ← Merchant Dashboard
-api.stores.haasoft.com      ← API (REST)
+haastores.com          ← Storefront (public, root)
+app.haastores.com      ← Merchant Dashboard
+api.haastores.com      ← API (REST)
 ```
 
-**السبب**: نطاق فرعي تحت `haasoft.com` موجود، لا يحتاج شراء نطاق جديد.
+**السبب**: نطاق فرعي تحت `haastores.com` موجود، لا يحتاج شراء نطاق جديد.
 
 ### Production (لاحقًا)
 
@@ -157,11 +157,11 @@ api.haastores.com            ← API (REST)
 ### Routing المقترح (Nginx / Caddy)
 
 ```
-# Staging — stores.haasoft.com (Nginx example)
+# Staging — haastores.com (Nginx example)
 
 server {
     listen 443 ssl;
-    server_name api.stores.haasoft.com;
+    server_name api.haastores.com;
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -172,7 +172,7 @@ server {
 
 server {
     listen 443 ssl;
-    server_name app.stores.haasoft.com;
+    server_name app.haastores.com;
 
     root /var/www/dashboard/dist;
     index index.html;
@@ -181,7 +181,7 @@ server {
 
 server {
     listen 443 ssl;
-    server_name stores.haasoft.com;
+    server_name haastores.com;
 
     root /var/www/storefront/dist;
     index index.html;
@@ -216,7 +216,7 @@ server {
 | API Connection | `VITE_API_URL` يُحدد في وقت البناء |
 | SPA Routing | `try_files $uri $uri/ /index.html` |
 
-**هام**: في staging، يجب بناء dashboard بـ `VITE_API_URL=https://api.stores.haasoft.com`
+**هام**: في staging، يجب بناء dashboard بـ `VITE_API_URL=https://api.haastores.com`
 
 ### apps/storefront — React SPA
 
@@ -227,7 +227,7 @@ server {
 | API Connection | `VITE_API_URL` يُحدد في وقت البناء |
 | SPA Routing | `try_files $uri $uri/ /index.html` |
 
-**هام**: في staging، يجب بناء storefront بـ `VITE_API_URL=https://api.stores.haasoft.com`
+**هام**: في staging، يجب بناء storefront بـ `VITE_API_URL=https://api.haastores.com`
 
 ### Postgresql
 
@@ -266,9 +266,9 @@ API_PORT=3000
 NODE_ENV=staging|production
 
 # URLs (for CORS)
-API_BASE_URL=https://api.stores.haasoft.com
-MERCHANT_DASHBOARD_URL=https://app.stores.haasoft.com
-STOREFRONT_URL=https://stores.haasoft.com
+API_BASE_URL=https://api.haastores.com
+MERCHANT_DASHBOARD_URL=https://app.haastores.com
+STOREFRONT_URL=https://haastores.com
 
 # Storage (S3-compatible)
 STORAGE_DRIVER=s3
@@ -294,7 +294,7 @@ LOG_LEVEL=info
 ### Build-time (Vite)
 
 ```env
-VITE_API_URL=https://api.stores.haasoft.com
+VITE_API_URL=https://api.haastores.com
 ```
 
 ### Local Only
@@ -317,8 +317,8 @@ MINIO_BUCKET=haa-stores
 | `ENCRYPTION_KEY` | dev key | **مفتاح عشوائي** | **مفتاح عشوائي** |
 | `STORAGE_DRIVER` | `local` | `s3` | `s3` |
 | `S3_*` | — | R2 staging | R2/S3 production |
-| `VITE_API_URL` | `/api` | `https://api.stores.haasoft.com` | `https://api.haastores.com` |
-| `CORS_ORIGINS` | `localhost:5173,5174` | `stores.haasoft.com, app.stores.haasoft.com` | `haastores.com, app.haastores.com` |
+| `VITE_API_URL` | `/api` | `https://api.haastores.com` | `https://api.haastores.com` |
+| `CORS_ORIGINS` | `localhost:5173,5174` | `haastores.com, app.haastores.com` | `haastores.com, app.haastores.com` |
 | `NODE_ENV` | `development` | `staging` | `production` |
 | `LOG_LEVEL` | `debug` | `info` | `warn` |
 
@@ -544,7 +544,7 @@ psql $(DATABASE_URL) < /tmp/pre-migration-backup-*.sql
 | Error logs | `pino` + file/stream | `pino/file` أو stream إلى stdout |
 | Request logs | Hono logger | موجود حاليًا، يطبع لكل request |
 | Health endpoint | `GET /health` | موجود ✅ |
-| Uptime check | Cron job أو Better Uptime | ping `https://api.stores.haasoft.com/health` كل 5 دقائق |
+| Uptime check | Cron job أو Better Uptime | ping `https://api.haastores.com/health` كل 5 دقائق |
 | DB connectivity | Health endpoint | موجود ✅ (`db: connected/disconnected`) |
 | Disk usage | نظامي (ضمن VPS monitoring) | — |
 | Backup status | Log بعد كل backup | تسجيل نجاح/فشل cron job |
@@ -566,18 +566,18 @@ psql $(DATABASE_URL) < /tmp/pre-migration-backup-*.sql
 ### 2. بنية الدومينات
 
 ```
-stores.haasoft.com          ← Storefront
-app.stores.haasoft.com      ← Dashboard
-api.stores.haasoft.com      ← API
+haastores.com          ← Storefront
+app.haastores.com      ← Dashboard
+api.haastores.com      ← API
 ```
 
 ### 3. بنية الخدمات
 
 ```
 Client → DNS → Fly.io → Nginx (أو Fly.io proxy)
-                          ├── api.stores.haasoft.com → API (port 3000)
-                          ├── app.stores.haasoft.com → Dashboard (static)
-                          └── stores.haasoft.com     → Storefront (static)
+                          ├── api.haastores.com → API (port 3000)
+                          ├── app.haastores.com → Dashboard (static)
+                          └── haastores.com     → Storefront (static)
 ```
 
 ### 4. متغيرات البيئة المطلوبة

@@ -65,7 +65,7 @@ export default function Fake3DSChallengePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 overflow-x-hidden" dir="rtl">
+    <div id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 overflow-x-hidden" dir="rtl">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
         {/* Bank-style header */}
         <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white p-6 text-center">

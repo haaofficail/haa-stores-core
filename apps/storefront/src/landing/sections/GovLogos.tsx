@@ -1,6 +1,6 @@
 const LOGOS = [
   { src: '/assets/payment-logos/ministry-of-commerce.svg', alt: 'وزارة التجارة', wide: true },
-  { src: '/assets/payment-logos/citc.png', alt: 'هيئة الاتصالات وتقنية المعلومات' },
+  { src: '/assets/payment-logos/trim/citc.png', alt: 'هيئة الاتصالات وتقنية المعلومات' },
   { src: '/assets/payment-logos/zatca.svg', alt: 'هيئة الزكاة والضريبة والجمارك' },
   { src: '/assets/payment-logos/saudi-business-center.svg', alt: 'المركز السعودي للأعمال' },
 ];

@@ -89,7 +89,7 @@ export function MarketplaceFooter() {
             <ul className="space-y-2">
               <li className="flex items-center gap-2 text-sm text-gray-500">
                 <Icon icon={Mail} size="xs" className="text-gray-400" />
-                info@haasoft.com
+                info@haastores.com
               </li>
               <li className="flex items-center gap-2 text-sm text-gray-500">
                 <Icon icon={Phone} size="xs" className="text-gray-400" />
@@ -107,7 +107,7 @@ export function MarketplaceFooter() {
             &copy; {new Date().getFullYear()} سوق هاء. جميع الحقوق محفوظة.
             {' '}· سوق هاء منصة وسيطة · البائع في كل طلبية هو المتجر صاحب المنتج.
             <span className="mx-1.5">&middot;</span>
-            <span>مدعوم بواسطة <a href="https://haasoft.com" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:text-primary-600 transition-colors">haasoft.com</a></span>
+            <span>مدعوم بواسطة <a href="https://haastores.com" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:text-primary-600 transition-colors">هاء ستورز</a></span>
           </p>
         </div>
       </div>

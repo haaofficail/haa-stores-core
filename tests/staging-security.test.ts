@@ -121,9 +121,9 @@ describe('P0A — Staging Security', () => {
     });
 
     it('parses single origin', () => {
-      const raw = 'https://app.stores.haasoft.com';
+      const raw = 'https://app.haastores.com';
       const origins = raw.split(',').map(s => s.trim()).filter(Boolean);
-      expect(origins).toEqual(['https://app.stores.haasoft.com']);
+      expect(origins).toEqual(['https://app.haastores.com']);
     });
 
     it('handles empty string', () => {
