@@ -12,7 +12,7 @@ export function GovLogos() {
         <p className="mb-5 text-center text-sm font-semibold text-text-tertiary">
           متوافق ومسجّل لدى الجهات الرسمية في المملكة
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
           {LOGOS.map(({ src, alt, wide }) => (
             <span
               key={alt}
