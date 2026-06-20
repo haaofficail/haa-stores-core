@@ -54,3 +54,14 @@
 | M3 | ~41 `eslint-disable` مؤجّلة (هجرة P1-#5 lucide→Icon) | 📋 |
 | M4 | 2FA ناقص على حذف الحساب (PDPL) + لا تنفيذ لمهمة الحذف بعد 30 يوماً | 📋 |
 | M5 | 148 `any` في `merchant-dashboard/src/lib/api.ts` | 📋 |
+
+## مراجعة كود Home (H)
+
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| H1 | `const [, setLoading]` تُضبط ولا تُقرأ → الصفحة تُعرض والمنتجات فارغة | ✅ PR #24 — `contentLoading` + skeleton |
+| H2 | لا حاجة لـ scope على Home (موجود من Layout عبر Outlet) | ℹ️ مقصود — إضافته = id مكرر (حذّر منه المراجع) |
+| H3 | Race condition عند تبديل المتجر | ✅ PR #24 — حارس `cancelled` + تصفير |
+| H4 | مفاتيح ترجمة بلا fallback | ✅ PR #24 |
+| H5 | فشل `addItem` غير معالج | ✅ PR #24 — `try/catch` + `toast.error` |
+| H6 | `window.location.href` يعيد تحميل كامل | ✅ PR #24 — `useNavigate` |
