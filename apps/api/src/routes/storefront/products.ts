@@ -13,17 +13,47 @@ type AnyRecord = Record<string, unknown>;
 
 export const productsRouter = new Hono();
 
+const SORT_VALUES = ['newest', 'price_asc', 'price_desc', 'name'] as const;
+function parseSort(v: string | undefined): (typeof SORT_VALUES)[number] | undefined {
+  return SORT_VALUES.includes(v as never) ? (v as (typeof SORT_VALUES)[number]) : undefined;
+}
+function parseNum(v: string | undefined): number | undefined {
+  if (v === undefined || v === '') return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 productsRouter.get('/:slug/products', async (c) => {
   const { store, error } = await resolveActiveStore(c);
   if (error) return error;
   const db = createDbClient();
   const query = paginationSchema.parse(c.req.query());
 
+  // الفلاتر التي ترسلها الواجهة (كانت تُتجاهل سابقاً — QA C1).
+  // `category` يصل كـ slug فنحوّله إلى categoryId.
+  const categorySlug = c.req.query('category');
+  let categoryId: number | undefined;
+  if (categorySlug && categorySlug !== 'all') {
+    const [cat] = await db
+      .select({ id: s.categories.id })
+      .from(s.categories)
+      .where(and(eq(s.categories.storeId, store.id), eq(s.categories.slug, categorySlug)))
+      .limit(1);
+    categoryId = cat?.id;
+  }
+
   const productsService = new ProductsService();
   const result = await productsService.list(store.id, {
     page: query.page,
     limit: query.limit,
     status: 'active',
+    categoryId,
+    brandId: parseNum(c.req.query('brandId')),
+    tagId: parseNum(c.req.query('tagId')),
+    search: c.req.query('search') || undefined,
+    minPrice: parseNum(c.req.query('minPrice')),
+    maxPrice: parseNum(c.req.query('maxPrice')),
+    sort: parseSort(c.req.query('sort')),
   });
 
   const promotions = await new PromotionsService().getActiveForStore(store.id);
@@ -65,7 +95,9 @@ productsRouter.get('/:slug/brands', async (c) => {
   if (error) return error;
   const db = createDbClient();
   const brands = await db.select().from(s.brands).where(eq(s.brands.storeId, store.id));
-  return c.json({ success: true, data: brands });
+  // DTO عام — لا نسرّب storeId/tenantId/الطوابع الزمنية (QA C2).
+  const data = brands.map((b: AnyRecord) => ({ id: b.id, name: b.name, slug: b.slug, logo: b.logo ?? null }));
+  return c.json({ success: true, data });
 });
 
 productsRouter.get('/:slug/tags', async (c) => {
@@ -73,5 +105,7 @@ productsRouter.get('/:slug/tags', async (c) => {
   if (error) return error;
   const db = createDbClient();
   const tags = await db.select().from(s.tags).where(eq(s.tags.storeId, store.id));
-  return c.json({ success: true, data: tags });
+  // DTO عام — لا نسرّب storeId/tenantId/الطوابع الزمنية (QA C2).
+  const data = tags.map((t: AnyRecord) => ({ id: t.id, name: t.name, slug: t.slug, color: t.color ?? null }));
+  return c.json({ success: true, data });
 });

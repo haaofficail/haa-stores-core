@@ -73,22 +73,22 @@ marketplacesRouter.get('/', requirePermission('settings:read'), async (c) => {
   try {
     const info = await salla.getStoreInfoFromConnection();
     if (info.storeId) { sallaConnected = true; sallaStatus = 'connected'; }
-  } catch {}
+  } catch (err) { console.warn('[marketplaces] probe failed:', (err as Error)?.message); }
 
   try {
     const info = await getZidService(storeId).getStoreInfoFromConnection();
     if (info.storeId) { zidConnected = true; zidStatus = 'connected'; }
-  } catch {}
+  } catch (err) { console.warn('[marketplaces] probe failed:', (err as Error)?.message); }
 
   try {
     const info = await getNoonService(storeId).getStoreInfo();
     if (info.storeId) { noonConnected = true; noonStatus = 'connected'; }
-  } catch {}
+  } catch (err) { console.warn('[marketplaces] probe failed:', (err as Error)?.message); }
 
   try {
     const info = await getAmazonService(storeId).getStoreInfo();
     if (info.storeId) { amazonConnected = true; amazonStatus = 'connected'; }
-  } catch {}
+  } catch (err) { console.warn('[marketplaces] probe failed:', (err as Error)?.message); }
 
   const providers = [
     { code: 'salla', name: 'سلة', connected: sallaConnected, status: sallaStatus },
@@ -422,7 +422,7 @@ marketplacesRouter.get('/summary', requirePermission('reports:read'), async (c) 
     const report = await salla.getSalesReport(from, to);
     sallaSales = report.totalSales;
     sallaOrders = report.totalOrders;
-  } catch {}
+  } catch (err) { console.warn('[marketplaces] probe failed:', (err as Error)?.message); }
 
   let noonSales = '0';
   let noonOrders = 0;
@@ -430,7 +430,7 @@ marketplacesRouter.get('/summary', requirePermission('reports:read'), async (c) 
     const report = await getNoonService(storeId).getSalesReport(from, to);
     noonSales = report.totalSales;
     noonOrders = report.totalOrders;
-  } catch {}
+  } catch (err) { console.warn('[marketplaces] probe failed:', (err as Error)?.message); }
 
   let amazonSales = '0';
   let amazonOrders = 0;
@@ -438,7 +438,7 @@ marketplacesRouter.get('/summary', requirePermission('reports:read'), async (c) 
     const report = await getAmazonService(storeId).getSalesReport(from, to);
     amazonSales = report.totalSales;
     amazonOrders = report.totalOrders;
-  } catch {}
+  } catch (err) { console.warn('[marketplaces] probe failed:', (err as Error)?.message); }
 
   let zidSales = '0';
   let zidOrders = 0;
@@ -446,7 +446,7 @@ marketplacesRouter.get('/summary', requirePermission('reports:read'), async (c) 
     const report = await getZidService(storeId).getSalesReport(from, to);
     zidSales = report.totalSales;
     zidOrders = report.totalOrders;
-  } catch {}
+  } catch (err) { console.warn('[marketplaces] probe failed:', (err as Error)?.message); }
 
   const summary = [
     { code: 'salla', name: 'سلة', totalSales: sallaSales, totalOrders: sallaOrders, currency: 'SAR' },
@@ -846,6 +846,6 @@ export async function syncAllStores() {
           });
         }),
       );
-    } catch {}
+    } catch (err) { console.warn('[marketplaces] operation failed:', (err as Error)?.message); }
   }
 }
