@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { merchantDashboardUrl } from '@/lib/merchant';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Mail, Lock, User, Phone, Store as StoreIcon, Sparkles, ArrowLeft, Loader2, Check, Shield, Bell, Star, TrendingUp, Clock } from 'lucide-react';
 import { Nav } from '@/landing/sections/Nav';
@@ -78,7 +78,6 @@ function StatCard({ icon: Icon, value, label }: { icon: React.ElementType; value
 
 export function SignupPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [params] = useSearchParams();
   const plan = params.get('plan') === 'pro' ? 'pro' : 'free';
   const [name, setName] = useState('');
@@ -114,7 +113,7 @@ export function SignupPage() {
     setError(null);
     setSubmitting(true);
     try {
-      const session = await authApi.register({
+      await authApi.register({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password,
@@ -122,10 +121,9 @@ export function SignupPage() {
         storeName: storeName.trim(),
         storeSlug: storeSlug.trim().toLowerCase(),
       });
-      const target = session.store?.slug
-        ? `/admin?store=${encodeURIComponent(session.store.slug)}`
-        : '/admin';
-      navigate(target, { replace: true });
+      // بعد التسجيل ينتقل التاجر للوحة التاجر (تطبيق منفصل على merchant.<host>).
+      // لا يوجد مسار /admin في الـ storefront — كان يهبط على StoreNotFound.
+      window.location.href = merchantDashboardUrl('/');
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.code === 'CONFLICT') {

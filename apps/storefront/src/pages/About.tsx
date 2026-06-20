@@ -35,7 +35,7 @@ export default function About() {
   }
 
   return (
-    <div className="animate-fade-in overflow-x-hidden">
+    <div id="storefront-scope" data-theme-scope="storefront" className="animate-fade-in overflow-x-hidden">
       <section className="bg-gradient-to-bl from-primary-50 via-white to-primary-50/30 py-12 sm:py-16">
         <StoreContainer className="text-center">
           <h1 className="text-2xl sm:text-3xl font-bold text-text-primary mb-4">{t('about.title')}</h1>
