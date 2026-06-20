@@ -1,18 +1,63 @@
 /* HAA — 01-colors */
 
 :root {
-  /* Primary Palette */
-  --color-primary-50: #f2f5ff;
-  --color-primary-100: #e0e8ff;
-  --color-primary-200: #b3c6ff;
-  --color-primary-300: #80a4ff;
-  --color-primary-400: #4082ff;
-  --color-primary-500: #007aff;
-  --color-primary-600: #0066d6;
-  --color-primary-700: #0055b3;
-  --color-primary-800: #004499;
-  --color-primary-900: #003380;
-  --color-primary-950: #002266;
+  /* ── Brand Primary — approved Haa blue #5c9cd5
+     The full ramp is derived via color-mix() so re-theming a store is
+     a one-variable change: override --brand-primary. */
+  --brand-primary: #5c9cd5;
+  --color-primary-50: color-mix(
+    in srgb,
+    var(--brand-primary) 8%,
+    #fff
+  ); /* ~#f2f7fc */
+  --color-primary-100: color-mix(
+    in srgb,
+    var(--brand-primary) 14%,
+    #fff
+  ); /* ~#e8f1f9 */
+  --color-primary-200: color-mix(
+    in srgb,
+    var(--brand-primary) 26%,
+    #fff
+  ); /* ~#d5e5f4 */
+  --color-primary-300: color-mix(
+    in srgb,
+    var(--brand-primary) 42%,
+    #fff
+  ); /* ~#bbd5ed */
+  --color-primary-400: color-mix(
+    in srgb,
+    var(--brand-primary) 64%,
+    #fff
+  ); /* ~#97c0e4 */
+  --color-primary-500: var(--brand-primary); /* #5c9cd5 */
+  --color-primary-600: color-mix(
+    in srgb,
+    var(--brand-primary) 88%,
+    #000
+  ); /* ~#5189bb — hover */
+  --color-primary-700: color-mix(
+    in srgb,
+    var(--brand-primary) 76%,
+    #000
+  ); /* ~#4677a2 */
+  --color-primary-800: color-mix(
+    in srgb,
+    var(--brand-primary) 60%,
+    #000
+  ); /* ~#375e80 */
+  --color-primary-900: color-mix(
+    in srgb,
+    var(--brand-primary) 42%,
+    #000
+  ); /* ~#27425a */
+  --color-primary-950: color-mix(
+    in srgb,
+    var(--brand-primary) 24%,
+    #000
+  ); /* ~#162533 */
+  --color-primary: var(--brand-primary);
+  --color-primary-soft: var(--color-primary-50);
 
   /* Neutral Palette */
   --color-neutral-50: #fafafa;
