@@ -13,10 +13,10 @@
 #   exits 0 with 0 migrations applied (no error to the user).
 #   This script uses two passes:
 #     1. `psql -f` each SQL file in order — applies schema changes.
-#        Pre-existing migrations (0010, 0025, 0028, 0030, 0033, 0034,
-#        0037, 0039, 0046) may emit NOTICE-level "already exists"
-#        messages, but they are safe to ignore because the migrations
-#        use `IF NOT EXISTS` clauses for the most part.
+#        Every migration is idempotent (duplicate-numbered merge siblings
+#        guard their statements with IF NOT EXISTS / DO-EXCEPTION blocks),
+#        so a fresh replay applies cleanly with ON_ERROR_STOP=1 and any
+#        error is a real failure that aborts the run.
 #     2. `drizzle-orm`'s migrator records the hashes in
 #        `drizzle.__drizzle_migrations` so future `pnpm db:migrate` calls
 #        recognize the state correctly.
@@ -68,19 +68,13 @@ PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres
 
 # Step 1: apply every SQL migration in numeric order.
 #
-# The migration tree contains duplicate-numbered files from prior branch
-# merges (e.g. 0025_publish_gate + 0025_sudden_leech, 0027/0028 pairs).
-# When applied to a fresh DB in order, the redundant ones try to recreate
-# objects an earlier migration already created and emit "already exists".
-# The resulting schema is still correct — the object exists either way.
-#
-# We therefore run each file with ON_ERROR_STOP=0 so EVERY statement is
-# attempted (psql autocommits per statement, so a benign conflict on one
-# statement never blocks the rest of the file — critical, since otherwise
-# a redundant ADD COLUMN at the top of a file would skip the CREATE INDEXes
-# below it and leave the schema incomplete). A migration only counts as
-# failed when it emits an ERROR that is NOT a benign "already exists"
-# conflict, in which case we abort loudly.
+# The migration files are idempotent: every statement that a duplicate-numbered
+# merge sibling (e.g. 0025_sudden_leech vs 0020-0024, 0028_live_presence vs
+# 0027_membership_permissions) could re-create is guarded with IF NOT EXISTS
+# (tables/columns/indexes) or a DO/EXCEPTION block (constraints). A fresh-DB
+# replay therefore applies cleanly with zero "already exists" conflicts, so we
+# run with ON_ERROR_STOP=1 and abort loudly on ANY error — a real regression
+# can no longer hide behind a tolerated benign conflict.
 MIGRATIONS_DIR="$PROJECT_DIR/packages/db/src/migrations"
 applied=0
 failed=0
@@ -88,24 +82,23 @@ for sql in "$MIGRATIONS_DIR"/[0-9][0-9][0-9][0-9]_*.sql; do
   name=$(basename "$sql" .sql)
   set +e
   PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
-    -v ON_ERROR_STOP=0 -f "$sql" >/tmp/bs-psql.log 2>&1
+    -v ON_ERROR_STOP=1 -f "$sql" >/tmp/bs-psql.log 2>&1
+  rc=$?
   set -e
-  # Genuine failures = ERROR lines that are not "already exists" conflicts.
-  real_errors=$(grep 'ERROR:' /tmp/bs-psql.log | grep -viE 'already exists' || true)
-  if [ -z "$real_errors" ]; then
+  if [ $rc -eq 0 ]; then
     applied=$((applied+1))
     echo "  ✓ $name"
   else
     failed=$((failed+1))
-    echo "  ✗ $name  (real error — see below)"
-    echo "$real_errors" >&2
+    echo "  ✗ $name  (see below)"
+    cat /tmp/bs-psql.log >&2
   fi
 done
 echo ""
 echo "=== Step 1: applied $applied, failed $failed ==="
 
 if [ "$failed" -gt 0 ]; then
-  echo "Bootstrap aborted: $failed migration(s) had genuine errors. Fix them before recording hashes." >&2
+  echo "Bootstrap aborted: $failed migration(s) failed. Fix them before recording hashes." >&2
   exit 1
 fi
 

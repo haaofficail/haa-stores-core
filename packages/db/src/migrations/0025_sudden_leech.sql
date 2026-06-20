@@ -1,4 +1,4 @@
-CREATE TABLE "pickup_locations" (
+CREATE TABLE IF NOT EXISTS "pickup_locations" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"store_id" integer NOT NULL,
 	"name_ar" varchar(255) NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE "pickup_locations" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "merchant_payment_provider_credentials" (
+CREATE TABLE IF NOT EXISTS "merchant_payment_provider_credentials" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"store_id" integer NOT NULL,
 	"provider_code" varchar(20) NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE "merchant_payment_provider_credentials" (
 	CONSTRAINT "uq_payment_creds_store_provider" UNIQUE("store_id","provider_code")
 );
 --> statement-breakpoint
-CREATE TABLE "merchant_payment_provider_settings" (
+CREATE TABLE IF NOT EXISTS "merchant_payment_provider_settings" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"store_id" integer NOT NULL,
 	"provider_code" varchar(20) NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE "merchant_payment_provider_settings" (
 	CONSTRAINT "uq_payment_settings_store_provider" UNIQUE("store_id","provider_code")
 );
 --> statement-breakpoint
-CREATE TABLE "size_guides" (
+CREATE TABLE IF NOT EXISTS "size_guides" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"store_id" integer NOT NULL,
 	"name" varchar(120) NOT NULL,
@@ -61,7 +61,7 @@ CREATE TABLE "size_guides" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "merchant_acknowledgements" (
+CREATE TABLE IF NOT EXISTS "merchant_acknowledgements" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"merchant_user_id" integer NOT NULL,
 	"store_id" integer NOT NULL,
@@ -78,31 +78,47 @@ CREATE TABLE "merchant_acknowledgements" (
 );
 --> statement-breakpoint
 ALTER TABLE "store_settings" ALTER COLUMN "product_features" SET DEFAULT '{"imageLightbox":true,"stickyCart":true,"trustBadges":true,"badgeMaroof":false,"badgeSaudiBusinessCenter":false,"badgeSaudiMade":false,"reviews":true,"shareButton":true,"deliveryEstimate":true,"sizeGuide":true,"alsoBought":true,"recentlyViewed":true,"priceAlert":true,"giftWrap":true,"sendAsGift":true,"pickup":true,"stockBar":true,"liveViewers":true,"compareBadges":true}'::jsonb;--> statement-breakpoint
-ALTER TABLE "users" ADD COLUMN "token_version" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
-ALTER TABLE "store_settings" ADD COLUMN "gift_wrap_default_price" numeric(12, 2) DEFAULT '0';--> statement-breakpoint
-ALTER TABLE "store_settings" ADD COLUMN "gift_message_max_length" integer DEFAULT 250;--> statement-breakpoint
-ALTER TABLE "store_settings" ADD COLUMN "gift_wrap_instructions" text;--> statement-breakpoint
-ALTER TABLE "store_settings" ADD COLUMN "pickup_instructions" text;--> statement-breakpoint
-ALTER TABLE "stores" ADD COLUMN "publish_status" varchar(20) DEFAULT 'draft' NOT NULL;--> statement-breakpoint
-ALTER TABLE "product_variants" ADD COLUMN "is_active" boolean DEFAULT true NOT NULL;--> statement-breakpoint
-ALTER TABLE "products" ADD COLUMN "gift_wrap_available" boolean DEFAULT false NOT NULL;--> statement-breakpoint
-ALTER TABLE "products" ADD COLUMN "gift_wrap_price_override" numeric(12, 2);--> statement-breakpoint
-ALTER TABLE "cart_items" ADD COLUMN "gift_wrap_selected" boolean DEFAULT false NOT NULL;--> statement-breakpoint
-ALTER TABLE "cart_items" ADD COLUMN "gift_wrap_price" numeric(12, 2);--> statement-breakpoint
-ALTER TABLE "cart_items" ADD COLUMN "send_as_gift" boolean DEFAULT false NOT NULL;--> statement-breakpoint
-ALTER TABLE "cart_items" ADD COLUMN "gift_message" varchar(1000);--> statement-breakpoint
-ALTER TABLE "order_items" ADD COLUMN "gift_wrap_selected" boolean DEFAULT false;--> statement-breakpoint
-ALTER TABLE "order_items" ADD COLUMN "gift_wrap_price" numeric(12, 2);--> statement-breakpoint
-ALTER TABLE "order_items" ADD COLUMN "send_as_gift" boolean DEFAULT false;--> statement-breakpoint
-ALTER TABLE "order_items" ADD COLUMN "gift_message" text;--> statement-breakpoint
-ALTER TABLE "orders" ADD COLUMN "fulfillment_type" varchar(20) DEFAULT 'shipping';--> statement-breakpoint
-ALTER TABLE "orders" ADD COLUMN "pickup_location_id" integer;--> statement-breakpoint
-ALTER TABLE "orders" ADD COLUMN "gift_options" jsonb;--> statement-breakpoint
-ALTER TABLE "shipping_methods" ADD COLUMN "config" jsonb;--> statement-breakpoint
-ALTER TABLE "notification_preferences" ADD COLUMN "order_ready_for_pickup" boolean DEFAULT true NOT NULL;--> statement-breakpoint
-ALTER TABLE "notification_preferences" ADD COLUMN "order_picked_up" boolean DEFAULT true NOT NULL;--> statement-breakpoint
-ALTER TABLE "pickup_locations" ADD CONSTRAINT "pickup_locations_store_id_stores_id_fk" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "merchant_payment_provider_credentials" ADD CONSTRAINT "merchant_payment_provider_credentials_store_id_stores_id_fk" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "merchant_payment_provider_settings" ADD CONSTRAINT "merchant_payment_provider_settings_store_id_stores_id_fk" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "size_guides" ADD CONSTRAINT "size_guides_store_id_stores_id_fk" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "size_guides_store_active_idx" ON "size_guides" USING btree ("store_id","is_active");
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "token_version" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "store_settings" ADD COLUMN IF NOT EXISTS "gift_wrap_default_price" numeric(12, 2) DEFAULT '0';--> statement-breakpoint
+ALTER TABLE "store_settings" ADD COLUMN IF NOT EXISTS "gift_message_max_length" integer DEFAULT 250;--> statement-breakpoint
+ALTER TABLE "store_settings" ADD COLUMN IF NOT EXISTS "gift_wrap_instructions" text;--> statement-breakpoint
+ALTER TABLE "store_settings" ADD COLUMN IF NOT EXISTS "pickup_instructions" text;--> statement-breakpoint
+ALTER TABLE "stores" ADD COLUMN IF NOT EXISTS "publish_status" varchar(20) DEFAULT 'draft' NOT NULL;--> statement-breakpoint
+ALTER TABLE "product_variants" ADD COLUMN IF NOT EXISTS "is_active" boolean DEFAULT true NOT NULL;--> statement-breakpoint
+ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "gift_wrap_available" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "gift_wrap_price_override" numeric(12, 2);--> statement-breakpoint
+ALTER TABLE "cart_items" ADD COLUMN IF NOT EXISTS "gift_wrap_selected" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "cart_items" ADD COLUMN IF NOT EXISTS "gift_wrap_price" numeric(12, 2);--> statement-breakpoint
+ALTER TABLE "cart_items" ADD COLUMN IF NOT EXISTS "send_as_gift" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "cart_items" ADD COLUMN IF NOT EXISTS "gift_message" varchar(1000);--> statement-breakpoint
+ALTER TABLE "order_items" ADD COLUMN IF NOT EXISTS "gift_wrap_selected" boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE "order_items" ADD COLUMN IF NOT EXISTS "gift_wrap_price" numeric(12, 2);--> statement-breakpoint
+ALTER TABLE "order_items" ADD COLUMN IF NOT EXISTS "send_as_gift" boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE "order_items" ADD COLUMN IF NOT EXISTS "gift_message" text;--> statement-breakpoint
+ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "fulfillment_type" varchar(20) DEFAULT 'shipping';--> statement-breakpoint
+ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "pickup_location_id" integer;--> statement-breakpoint
+ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "gift_options" jsonb;--> statement-breakpoint
+ALTER TABLE "shipping_methods" ADD COLUMN IF NOT EXISTS "config" jsonb;--> statement-breakpoint
+ALTER TABLE "notification_preferences" ADD COLUMN IF NOT EXISTS "order_ready_for_pickup" boolean DEFAULT true NOT NULL;--> statement-breakpoint
+ALTER TABLE "notification_preferences" ADD COLUMN IF NOT EXISTS "order_picked_up" boolean DEFAULT true NOT NULL;--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "pickup_locations" ADD CONSTRAINT "pickup_locations_store_id_stores_id_fk" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "merchant_payment_provider_credentials" ADD CONSTRAINT "merchant_payment_provider_credentials_store_id_stores_id_fk" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "merchant_payment_provider_settings" ADD CONSTRAINT "merchant_payment_provider_settings_store_id_stores_id_fk" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "size_guides" ADD CONSTRAINT "size_guides_store_id_stores_id_fk" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "size_guides_store_active_idx" ON "size_guides" USING btree ("store_id","is_active");
