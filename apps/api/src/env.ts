@@ -4,7 +4,23 @@ import { z } from 'zod';
 // Used to validate the environment at startup. Coercions happen in loadEnv().
 // Optional vars use .optional() so the schema can be validated standalone.
 
-export const envSchema = z.object({
+// Keys required when NODE_ENV is 'staging' or 'production'.
+// Must stay in sync with deploy/staging/.env.example (enforced by
+// scripts/check-env-contract.mjs which runs in CI preflight).
+export const STAGING_REQUIRED_KEYS = [
+  'DATABASE_READ_URL',
+  'REDIS_URL',
+  'QUEUE_REDIS_URL',
+  'CDN_PUBLIC_BASE_URL',
+  'SENTRY_DSN',
+  'OTEL_EXPORTER_OTLP_ENDPOINT',
+  'API_BASE_URL',
+  'MERCHANT_DASHBOARD_URL',
+  'STOREFRONT_URL',
+] as const;
+
+export const envSchema = z
+  .object({
   NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
   DATABASE_URL: z.string().min(1),
   DATABASE_READ_URL: z.string().optional(),
@@ -65,6 +81,37 @@ export const envSchema = z.object({
   APP_VERSION: z.string().optional(),
   COMMIT_SHA: z.string().optional(),
   GIT_COMMIT: z.string().optional(),
+})
+.superRefine((data, ctx) => {
+  const isProduction = data.NODE_ENV === 'staging' || data.NODE_ENV === 'production';
+  if (!isProduction) return;
+
+  // All vars in STAGING_REQUIRED_KEYS must be present in staging/production.
+  for (const key of STAGING_REQUIRED_KEYS) {
+    if (!data[key]) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [key],
+        message: `Required in ${data.NODE_ENV} — set ${key} in your .env`,
+      });
+    }
+  }
+
+  // Dev default secrets must not be used in staging/production.
+  const devDefaults: Partial<Record<string, string>> = {
+    JWT_SECRET: 'dev-jwt-secret-change-in-production',
+    ENCRYPTION_KEY: 'dev-encryption-key-32-chars-minimum!!',
+    ADMIN_JWT_SECRET: 'dev-admin-jwt-secret-change-in-production',
+  };
+  for (const [key, defaultVal] of Object.entries(devDefaults)) {
+    if (data[key as keyof typeof data] === defaultVal) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [key],
+        message: `${key} is the development default — generate a real secret for ${data.NODE_ENV}`,
+      });
+    }
+  }
 });
 
 export type RawEnv = z.infer<typeof envSchema>;
@@ -127,33 +174,10 @@ export interface EnvConfig {
   OLLAMA_MODEL?: string;
 }
 
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
-}
-
-function optionalEnv(name: string, defaultValue: string): string {
-  return process.env[name] ?? defaultValue;
-}
-
-function validateLocalEnv(name: string, value: string | undefined): void {
-  const knownDevDefaults: Record<string, string> = {
-    JWT_SECRET: 'dev-jwt-secret-change-in-production',
-    ENCRYPTION_KEY: 'dev-encryption-key-32-chars-minimum!!',
-    ADMIN_JWT_SECRET: 'dev-admin-jwt-secret-change-in-production',
-  };
-  if (value && knownDevDefaults[name] && value === knownDevDefaults[name]) {
-    if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging') {
-      throw new Error(`${name} is set to the development default value. Generate a new secret for ${process.env.NODE_ENV} environment.`);
-    }
-  }
-}
-
 export function loadEnv(): EnvConfig {
-  // Zod schema parse — fast-fail with clear error messages for unknown/invalid vars.
+  // Single source of truth: the zod schema (including superRefine for staging).
+  // All required-field checks, staging-conditional checks, and dev-secret guards
+  // live in envSchema — no separate requireEnv() loops needed here.
   const zodResult = envSchema.safeParse(process.env);
   if (!zodResult.success) {
     const formatted = zodResult.error.errors
@@ -162,115 +186,89 @@ export function loadEnv(): EnvConfig {
     throw new Error(`Environment validation failed:\n${formatted}`);
   }
 
-  const nodeEnv = optionalEnv('NODE_ENV', 'development');
+  const parsed = zodResult.data;
+  const nodeEnv = parsed.NODE_ENV;
   const isProduction = nodeEnv === 'production' || nodeEnv === 'staging';
 
-  const required: string[] = ['DATABASE_URL', 'JWT_SECRET', 'ENCRYPTION_KEY', 'ADMIN_JWT_SECRET'];
-  if (isProduction) {
-    required.push('API_BASE_URL', 'MERCHANT_DASHBOARD_URL', 'STOREFRONT_URL');
-    required.push('DATABASE_READ_URL', 'REDIS_URL', 'QUEUE_REDIS_URL', 'CDN_PUBLIC_BASE_URL', 'SENTRY_DSN', 'OTEL_EXPORTER_OTLP_ENDPOINT');
-  }
-
-  const env: Record<string, string> = {};
-  for (const key of required) {
-    const value = requireEnv(key);
-    env[key] = value;
-    validateLocalEnv(key, value);
-  }
-
-  const storageDriver = optionalEnv('STORAGE_DRIVER', 'local');
+  const storageDriver = parsed.STORAGE_DRIVER;
   if (storageDriver === 's3') {
     const s3Vars = ['S3_ENDPOINT', 'S3_REGION', 'S3_BUCKET', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY', 'S3_PUBLIC_BASE_URL'];
-    for (const key of s3Vars) {
-      requireEnv(key);
+    const missing = s3Vars.filter((k) => !process.env[k]);
+    if (missing.length > 0) {
+      throw new Error(`STORAGE_DRIVER=s3 requires: ${missing.join(', ')}`);
     }
   }
   if (isProduction && storageDriver === 'local') {
     throw new Error('STORAGE_DRIVER=local is not allowed in staging/production. Use STORAGE_DRIVER=s3 with R2 or S3.');
   }
 
-  // Validate payment mode
-  const paymentMode = optionalEnv('PAYMENT_MODE', 'fake');
-  if (paymentMode === 'live') {
-    throw new Error(
-      'PAYMENT_MODE=live is not allowed. ' +
-      'Set PAYMENT_MODE=fake or sandbox. ' +
-      'Live payments are blocked until Payment Review Gate, KYC, Admin, and formal GO decision.'
-    );
-  }
+  const paymentMode = parsed.PAYMENT_MODE;
+  const shippingMode = parsed.SHIPPING_MODE;
 
-  const shippingMode = optionalEnv('SHIPPING_MODE', 'manual');
-  if (shippingMode === 'live') {
-    throw new Error(
-      'SHIPPING_MODE=live is not allowed. ' +
-      'Set SHIPPING_MODE=manual, mock, or sandbox. ' +
-      'Live shipping is blocked until Shipping Review Gate.'
-    );
-  }
-
-  const corsOrigins = optionalEnv('CORS_ORIGINS', 'http://localhost:5173,http://localhost:5174,http://localhost:5175').split(',').map(s => s.trim()).filter(Boolean);
+  const corsOrigins = (parsed.CORS_ORIGINS ?? 'http://localhost:5173,http://localhost:5174,http://localhost:5175')
+    .split(',').map((s) => s.trim()).filter(Boolean);
 
   const config: EnvConfig = {
     NODE_ENV: nodeEnv,
-    DATABASE_URL: env.DATABASE_URL,
-    DATABASE_READ_URL: process.env.DATABASE_READ_URL,
-    REDIS_URL: process.env.REDIS_URL,
-    QUEUE_REDIS_URL: process.env.QUEUE_REDIS_URL,
-    JWT_SECRET: env.JWT_SECRET,
-    ADMIN_JWT_SECRET: env.ADMIN_JWT_SECRET,
-    ENCRYPTION_KEY: env.ENCRYPTION_KEY,
-    API_PORT: parseInt(optionalEnv('API_PORT', '3000'), 10),
-    API_BASE_URL: optionalEnv('API_BASE_URL', `http://localhost:${optionalEnv('API_PORT', '3000')}`),
-    MERCHANT_DASHBOARD_URL: optionalEnv('MERCHANT_DASHBOARD_URL', 'http://localhost:5173'),
-    STOREFRONT_URL: optionalEnv('STOREFRONT_URL', 'http://localhost:5174'),
+    DATABASE_URL: parsed.DATABASE_URL,
+    DATABASE_READ_URL: parsed.DATABASE_READ_URL,
+    REDIS_URL: parsed.REDIS_URL,
+    QUEUE_REDIS_URL: parsed.QUEUE_REDIS_URL,
+    JWT_SECRET: parsed.JWT_SECRET,
+    ADMIN_JWT_SECRET: parsed.ADMIN_JWT_SECRET,
+    ENCRYPTION_KEY: parsed.ENCRYPTION_KEY,
+    API_PORT: parsed.API_PORT,
+    API_BASE_URL: parsed.API_BASE_URL ?? `http://localhost:${parsed.API_PORT}`,
+    MERCHANT_DASHBOARD_URL: parsed.MERCHANT_DASHBOARD_URL ?? 'http://localhost:5173',
+    STOREFRONT_URL: parsed.STOREFRONT_URL ?? 'http://localhost:5174',
     CORS_ORIGINS: corsOrigins,
-    LOG_LEVEL: optionalEnv('LOG_LEVEL', isProduction ? 'info' : 'debug'),
-    RATE_LIMIT_STORE: optionalEnv('RATE_LIMIT_STORE', isProduction ? 'redis-atomic' : 'memory'),
-    WORKER_CONCURRENCY: parseInt(optionalEnv('WORKER_CONCURRENCY', '5'), 10),
-    CDN_PUBLIC_BASE_URL: process.env.CDN_PUBLIC_BASE_URL,
-    SENTRY_DSN: process.env.SENTRY_DSN,
-    OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+    LOG_LEVEL: parsed.LOG_LEVEL ?? (isProduction ? 'info' : 'debug'),
+    RATE_LIMIT_STORE: parsed.RATE_LIMIT_STORE ?? (isProduction ? 'redis-atomic' : 'memory'),
+    WORKER_CONCURRENCY: parsed.WORKER_CONCURRENCY,
+    CDN_PUBLIC_BASE_URL: parsed.CDN_PUBLIC_BASE_URL,
+    SENTRY_DSN: parsed.SENTRY_DSN,
+    OTEL_EXPORTER_OTLP_ENDPOINT: parsed.OTEL_EXPORTER_OTLP_ENDPOINT,
     // TASK-0038 G8: hosting region + data residency.
     // HOSTING_REGION: free-form label ('ae-dubai', 'sa-riyadh', etc.)
     //   Used by health endpoint + tenant table (migration 0061).
     // DATA_RESIDENCY: 'in-ksa' | 'cross-border' | 'pending'.
     //   Defaults to 'pending' until owner confirms KSA region.
     //   CITC/NCA may require 'in-ksa' for PDPL-sensitive workloads.
-    HOSTING_REGION: optionalEnv('HOSTING_REGION', 'pending'),
-    DATA_RESIDENCY: optionalEnv('DATA_RESIDENCY', 'pending'),
+    HOSTING_REGION: parsed.HOSTING_REGION,
+    DATA_RESIDENCY: parsed.DATA_RESIDENCY,
     STORAGE_DRIVER: storageDriver,
-    S3_ENDPOINT: process.env.S3_ENDPOINT,
-    S3_REGION: process.env.S3_REGION,
-    S3_BUCKET: process.env.S3_BUCKET,
-    S3_ACCESS_KEY_ID: process.env.S3_ACCESS_KEY_ID,
-    S3_SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY,
-    S3_PUBLIC_BASE_URL: process.env.S3_PUBLIC_BASE_URL,
-    PAYMENT_PROVIDER: optionalEnv('PAYMENT_PROVIDER', 'fake'),
+    S3_ENDPOINT: parsed.S3_ENDPOINT,
+    S3_REGION: parsed.S3_REGION,
+    S3_BUCKET: parsed.S3_BUCKET,
+    S3_ACCESS_KEY_ID: parsed.S3_ACCESS_KEY_ID,
+    S3_SECRET_ACCESS_KEY: parsed.S3_SECRET_ACCESS_KEY,
+    S3_PUBLIC_BASE_URL: parsed.S3_PUBLIC_BASE_URL,
+    PAYMENT_PROVIDER: parsed.PAYMENT_PROVIDER,
     PAYMENT_MODE: paymentMode,
-    PAYMENT_SANDBOX_SECRET_KEY: process.env.PAYMENT_SANDBOX_SECRET_KEY,
-    PAYMENT_SANDBOX_PUBLIC_KEY: process.env.PAYMENT_SANDBOX_PUBLIC_KEY,
-    PAYMENT_WEBHOOK_SECRET: process.env.PAYMENT_WEBHOOK_SECRET,
-    GEIDEA_MERCHANT_PUBLIC_KEY: process.env.GEIDEA_MERCHANT_PUBLIC_KEY,
-    GEIDEA_API_PASSWORD: process.env.GEIDEA_API_PASSWORD,
-    GEIDEA_API_BASE_URL: process.env.GEIDEA_API_BASE_URL,
-    GEIDEA_CALLBACK_URL: process.env.GEIDEA_CALLBACK_URL,
-    GEIDEA_RETURN_URL: process.env.GEIDEA_RETURN_URL,
-    SHIPPING_PROVIDER: optionalEnv('SHIPPING_PROVIDER', 'manual'),
+    PAYMENT_SANDBOX_SECRET_KEY: parsed.PAYMENT_SANDBOX_SECRET_KEY,
+    PAYMENT_SANDBOX_PUBLIC_KEY: parsed.PAYMENT_SANDBOX_PUBLIC_KEY,
+    PAYMENT_WEBHOOK_SECRET: parsed.PAYMENT_WEBHOOK_SECRET,
+    GEIDEA_MERCHANT_PUBLIC_KEY: parsed.GEIDEA_MERCHANT_PUBLIC_KEY,
+    GEIDEA_API_PASSWORD: parsed.GEIDEA_API_PASSWORD,
+    GEIDEA_API_BASE_URL: parsed.GEIDEA_API_BASE_URL,
+    GEIDEA_CALLBACK_URL: parsed.GEIDEA_CALLBACK_URL,
+    GEIDEA_RETURN_URL: parsed.GEIDEA_RETURN_URL,
+    SHIPPING_PROVIDER: parsed.SHIPPING_PROVIDER,
     SHIPPING_MODE: shippingMode,
-    OTO_PLATFORM_MODE: process.env.OTO_PLATFORM_MODE,
-    OTO_API_BASE_URL: process.env.OTO_API_BASE_URL,
-    OTO_MARKETPLACE_TOKEN: process.env.OTO_MARKETPLACE_TOKEN,
-    OTO_API_KEY: process.env.OTO_API_KEY,
-    OTO_ACCESS_TOKEN: process.env.OTO_ACCESS_TOKEN,
-    OTO_SANDBOX_API_KEY: process.env.OTO_SANDBOX_API_KEY,
-    OTO_WEBHOOK_SECRET: process.env.OTO_WEBHOOK_SECRET,
-    OTO_WEBHOOK_PUBLIC_KEY: process.env.OTO_WEBHOOK_PUBLIC_KEY,
-    OTO_WEBHOOK_AUTHORIZATION_KEY: process.env.OTO_WEBHOOK_AUTHORIZATION_KEY,
-    SMTP_HOST: process.env.SMTP_HOST,
-    SMTP_USER: process.env.SMTP_USER,
-    SMTP_PASSWORD: process.env.SMTP_PASSWORD,
-    OLLAMA_URL: optionalEnv('OLLAMA_URL', 'http://localhost:11434'),
-    OLLAMA_MODEL: optionalEnv('OLLAMA_MODEL', 'llama3'),
+    OTO_PLATFORM_MODE: parsed.OTO_PLATFORM_MODE,
+    OTO_API_BASE_URL: parsed.OTO_API_BASE_URL,
+    OTO_MARKETPLACE_TOKEN: parsed.OTO_MARKETPLACE_TOKEN,
+    OTO_API_KEY: parsed.OTO_API_KEY,
+    OTO_ACCESS_TOKEN: parsed.OTO_ACCESS_TOKEN,
+    OTO_SANDBOX_API_KEY: parsed.OTO_SANDBOX_API_KEY,
+    OTO_WEBHOOK_SECRET: parsed.OTO_WEBHOOK_SECRET,
+    OTO_WEBHOOK_PUBLIC_KEY: parsed.OTO_WEBHOOK_PUBLIC_KEY,
+    OTO_WEBHOOK_AUTHORIZATION_KEY: parsed.OTO_WEBHOOK_AUTHORIZATION_KEY,
+    SMTP_HOST: parsed.SMTP_HOST,
+    SMTP_USER: parsed.SMTP_USER,
+    SMTP_PASSWORD: parsed.SMTP_PASSWORD,
+    OLLAMA_URL: parsed.OLLAMA_URL,
+    OLLAMA_MODEL: parsed.OLLAMA_MODEL,
   };
 
   return config;
