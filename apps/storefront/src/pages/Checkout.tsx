@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { buildCheckoutStepKeys, clampStepIndex, type CheckoutStepKey } from '@/lib/checkout-steps';
+import { isSafeRedirectUrl } from '@/lib/safe-redirect';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useSharedCart } from '@/hooks/CartContext';
@@ -50,6 +51,8 @@ export default function Checkout() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [confirming, setConfirming] = useState(false);
+  // مفتاح idempotency ثابت لكل محاولة checkout — لا يتغيّر مع كل ضغطة/إعادة محاولة (QA CO4)
+  const idempotencyKeyRef = useRef<string>(generateIdempotencyKey());
 
   const [customer, setCustomer] = useState({ name: '', phone: '', email: '' });
   const [address, setAddress] = useState({ city: '', district: '', street: '', details: '' });
@@ -76,9 +79,10 @@ export default function Checkout() {
   const callbackOrderNumber = searchParams.get('orderNumber');
   useEffect(() => {
     if (callbackOrderNumber && slug) {
+      clearLocalCart(); // الدفع اكتمل والطلب موجود — آمن لمسح السلة الآن (QA CO5)
       navigate(`/s/${slug}/order/${callbackOrderNumber}`, { replace: true });
     }
-  }, [callbackOrderNumber, slug, navigate]);
+  }, [callbackOrderNumber, slug, navigate, clearLocalCart]);
 
   useEffect(() => {
     if (!slug) return;
@@ -183,6 +187,7 @@ export default function Checkout() {
   const isBNPL = paymentMethod === 'tabby_installments' || paymentMethod === 'tamara_installments';
 
   const handleConfirm = async () => {
+    if (confirming) return; // امنع الإرسال المزدوج فعلياً (QA CO4)
     if (!slug || !cart) return;
     if (fulfillmentType === 'shipping' && !selectedShippingId) return;
     if (fulfillmentType === 'pickup' && !selectedPickupLocationId) return;
@@ -204,7 +209,7 @@ export default function Checkout() {
         pickupLocationId: fulfillmentType === 'pickup' ? selectedPickupLocationId! : undefined,
         gift: orderGift.sendAsGift ? { sendAsGift: true, message: orderGift.message || undefined } : undefined,
         paymentMethod,
-        idempotencyKey: generateIdempotencyKey(),
+        idempotencyKey: idempotencyKeyRef.current,
         couponCode,
       });
 
@@ -217,7 +222,12 @@ export default function Checkout() {
           cancelUrl,
           failureUrl: cancelUrl,
         });
-        clearLocalCart();
+        // لا نمسح السلة قبل تأكيد الدفع — تُمسح عند العودة بـ orderNumber (QA CO5)
+        if (!isSafeRedirectUrl(bnplResult.redirectUrl)) {
+          toast.error(t('checkout.paymentError', 'تعذّر بدء الدفع.'));
+          setConfirming(false);
+          return;
+        }
         tracker.trackPurchase(slug, bnplResult.order.id, cart.id, { orderNumber: bnplResult.order.orderNumber, paymentMethod: 'bnpl' });
         if (couponCode) {
           tracker.trackCouponApplied(slug, couponCode, cart.id);
@@ -233,7 +243,12 @@ export default function Checkout() {
       // the issuer will redirect the customer back to a callback that
       // finalizes the payment.
       if (result.paymentStatus === 'requires_3ds' && result.redirectUrl) {
-        clearLocalCart();
+        // لا نمسح السلة قبل اكتمال تحدّي 3DS — تُمسح عند العودة المؤكّدة (QA CO5)
+        if (!isSafeRedirectUrl(result.redirectUrl)) {
+          toast.error(t('checkout.paymentError', 'تعذّر بدء التحقق من الدفع.'));
+          setConfirming(false);
+          return;
+        }
         tracker.trackPurchase(slug, result.order.id, cart.id, { orderNumber: result.order.orderNumber, paymentMethod: '3ds_pending' });
         toast.info(t('checkout.threeDsRedirect', 'جاري التحقق من بطاقتك…'));
         // Use a relative path for the fake provider's local 3DS page;
