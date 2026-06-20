@@ -296,6 +296,8 @@ export class TabbyProvider implements PaymentProvider {
       .createHmac('sha256', this.secretKey)
       .update(typeof payload === 'string' ? payload : payload.toString())
       .digest('hex');
-    return expected === signature;
+    // مقارنة ثابتة الزمن — تمنع timing attack على التوقيع (QA S5)
+    if (Buffer.from(expected).length !== Buffer.from(signature).length) return false;
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
   }
 }

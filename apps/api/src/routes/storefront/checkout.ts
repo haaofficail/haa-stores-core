@@ -244,11 +244,14 @@ checkoutRouter.post('/:slug/checkout/3ds-callback', async (c) => {
 });
 
 checkoutRouter.get('/:slug/order/:orderNumber', async (c) => {
-  const { store, error } = await resolveActiveStore(c);
+  const { error } = await resolveActiveStore(c);
   if (error) return error;
   const orderNumber = c.req.param('orderNumber') as string | undefined;
   if (!orderNumber) return c.json({ success: false, error: { code: 'BAD_REQUEST', message: 'Order number required' } }, 400);
-  const order = await new OrdersService().getByOrderNumber(store.id, orderNumber);
+  // فحص ملكية عبر الهاتف — يمنع تعداد أرقام الطلبات وقراءة طلبات الغير (QA S3).
+  const phone = c.req.query('phone');
+  if (!phone) return c.json({ success: false, error: { code: 'BAD_REQUEST', message: 'Phone is required' } }, 400);
+  const order = await new OrdersService().getByOrderNumberPublic(orderNumber, phone);
   if (!order) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } }, 404);
   return c.json({ success: true, data: toPublicOrder(order as any) });
 });
