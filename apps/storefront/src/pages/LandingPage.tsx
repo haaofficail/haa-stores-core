@@ -26,7 +26,7 @@ import React, { useEffect, useRef, useState as useReactState, useCallback } from
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { getClaim } from '@/lib/landing-claims';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import {
   ArrowLeft,
   ArrowUp,
@@ -48,6 +48,8 @@ import { Pricing } from '@/landing/sections/Pricing';
 import { FinalCTA } from '@/landing/sections/FinalCTA';
 import { Hero } from '@/landing/sections/Hero';
 import { Bento } from '@/landing/sections/Bento';
+import { FAQ } from '@/landing/sections/FAQ';
+import { GovLogos } from '@/landing/sections/GovLogos';
 import type { TFn } from '@/landing/sections/types';
 
 /* ════════════════════════════════════════════════════════════════
@@ -65,6 +67,7 @@ function useScrollReveal<T extends HTMLElement>() {
     );
     obs.observe(el);
     return () => obs.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- setVisible is a stable setState from useState
   }, []);
   return { ref, visible };
 }
@@ -273,7 +276,9 @@ export default function LandingPage() {
   const { t: i18nT } = useTranslation();
   const t = i18nT as unknown as TFn;
   const [demoOpen, setDemoOpen] = useReactState(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- setDemoOpen is a stable setState from useState
   const openDemo = useCallback(() => setDemoOpen(true), []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- setDemoOpen is a stable setState from useState
   const closeDemo = useCallback(() => setDemoOpen(false), []);
   // Cmd+K / Ctrl+K shortcut for demo
   useEffect(() => {
@@ -285,6 +290,7 @@ export default function LandingPage() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- setDemoOpen is a stable setState from useState
   }, []);
   useSEO({
     title: t('landing.metaTitle', 'Haa — أطلق متجرك الإلكتروني خلال دقيقة'),
@@ -301,6 +307,7 @@ export default function LandingPage() {
       <main>
         <Reveal><Hero t={t} onDemoOpen={openDemo} /></Reveal>
         <Reveal><AboutSection /></Reveal>
+        <Reveal><GovLogos /></Reveal>
         <Reveal><LiveTicker t={t} /></Reveal>
         <Reveal><Features t={t} /></Reveal>
         <Reveal><HowItWorks t={t} /></Reveal>
@@ -309,6 +316,7 @@ export default function LandingPage() {
         <Reveal><MockupPreview /></Reveal>
         <Reveal><Bento t={t} /></Reveal>
         <Reveal><Pricing t={t} /></Reveal>
+        <Reveal><FAQ /></Reveal>
         <Reveal><FinalCTA t={t} /></Reveal>
       </main>
       <Footer t={t} />
