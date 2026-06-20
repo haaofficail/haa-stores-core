@@ -23,6 +23,22 @@ concurrency:
 # ─────────────────────────────────────────────────────────────────────────────
 
 jobs:
+  # ── 0. Secret scan (G4) ─────────────────────────────────────────────────
+  # Runs independently and in parallel with preflight. No pnpm required.
+  # Blocks the PR if any secret/credential pattern is detected in the diff.
+  secret-scan:
+    name: Secret Scan (G4)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Scan for secrets (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # ── 1. Preflight ─────────────────────────────────────────────────────────
   preflight:
     name: Preflight
