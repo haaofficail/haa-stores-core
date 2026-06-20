@@ -33,6 +33,14 @@ export default function MarketplaceProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
+
+  // إغلاق معاينة الصورة بمفتاح Escape (QA A2 — وصولية المودال).
+  useEffect(() => {
+    if (!imagePreviewOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setImagePreviewOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [imagePreviewOpen]);
   const [cartCount, setCartCount] = useState(() => marketplaceCart.count());
 
   useSEO({
@@ -42,21 +50,29 @@ export default function MarketplaceProductDetail() {
 
   useEffect(() => {
     if (!storeSlug || !productSlug) return;
+    // حارس ضد سباق الطلبات: نتجاهل نتيجة طلب قديم لو تغيّر المنتج (QA review #3).
+    let cancelled = false;
     setLoading(true);
+    setSimilarProducts([]); // امسح المشابهة من المنتج السابق فوراً (QA review #4)
+    setSelectedImage(0);
+    setQuantity(1); // صفّر الكمية عند تغيير المنتج (QA review #2)
     haaMarketplaceApi.getProduct(storeSlug, productSlug)
       .then((result) => {
+        if (cancelled) return;
         setProduct(result);
-        setSelectedImage(0);
-        if (result?.categorySlug) {
-          haaMarketplaceApi.listProducts({ category: result.categorySlug, limit: 4 })
-            .then((res) => setSimilarProducts(res.data.filter(
+        if (!result?.categorySlug) { setSimilarProducts([]); return; }
+        return haaMarketplaceApi.listProducts({ category: result.categorySlug, limit: 8 })
+          .then((res) => {
+            if (cancelled) return;
+            setSimilarProducts(res.data.filter(
               (p: HaaMarketplaceProduct) => !(p.store.slug === storeSlug && p.slug === productSlug)
-            ).slice(0, 4)))
-            .catch(() => setSimilarProducts([]));
-        }
+            ).slice(0, 4));
+          })
+          .catch(() => { if (!cancelled) setSimilarProducts([]); });
       })
-      .catch(() => setProduct(null))
-      .finally(() => setLoading(false));
+      .catch(() => { if (!cancelled) { setProduct(null); setSimilarProducts([]); } })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [storeSlug, productSlug]);
 
   useEffect(() => {
@@ -70,6 +86,8 @@ export default function MarketplaceProductDetail() {
   const hasDiscount = product?.compareAtPrice && Number(product.compareAtPrice) > Number(product.price);
   const outOfStock = !!(product && product.trackInventory && product.stockQuantity <= 0);
   const maxQuantity = product?.trackInventory ? Math.max(1, product.stockQuantity) : 99;
+  // مصدر موحّد لحالة الديمو (قد تأتي من المنتج أو من المتجر) — QA review #1
+  const isDemoStore = product?.store?.isDemoStore === true || product?.isDemoStore === true;
   const discount = hasDiscount ? Math.round((1 - Number(product.price) / Number(product.compareAtPrice!)) * 100) : null;
   const savings = hasDiscount ? Number(product.compareAtPrice!) - Number(product.price) : 0;
   const installmentAmount = product ? Number(product.price) / 4 : 0;
@@ -88,15 +106,23 @@ export default function MarketplaceProductDetail() {
     { label: 'الأبعاد', value: dimensions },
   ].filter((item) => item.value != null && item.value !== '') : [];
 
+  const safeQuantity = () => {
+    if (!product) return 0;
+    return product.trackInventory ? Math.min(quantity, Math.max(0, product.stockQuantity)) : quantity;
+  };
   const addToCart = () => {
     if (!product || outOfStock) return;
-    marketplaceCart.add(product, quantity);
+    const qty = safeQuantity();
+    if (qty <= 0) return;
+    marketplaceCart.add(product, qty);
     toast.success('تمت الإضافة إلى سلة سوق هاء');
   };
 
   const buyNow = () => {
     if (!product || outOfStock) return;
-    marketplaceCart.add(product, quantity);
+    const qty = safeQuantity();
+    if (qty <= 0) return;
+    marketplaceCart.add(product, qty);
     toast.success('تم تجهيز المنتج لإتمام الشراء');
     navigate('/marketplace/checkout');
   };
@@ -203,7 +229,7 @@ export default function MarketplaceProductDetail() {
               <div className="aspect-square p-1 sm:p-2">
                 {activeImage ? (
                   <button type="button" onClick={() => setImagePreviewOpen(true)} className="h-full w-full" aria-label="تكبير صورة المنتج">
-                    <img src={activeImage} alt={product.name} className="h-full w-full object-contain" />
+                    <img src={activeImage} alt={product.name} referrerPolicy="no-referrer" className="h-full w-full object-contain" />
                   </button>
                 ) : (
                   <div className="flex h-full items-center justify-center text-gray-300">
@@ -238,7 +264,7 @@ export default function MarketplaceProductDetail() {
           <div className="min-w-0 space-y-3">
             <div className="flex flex-wrap items-center gap-1.5">
               {hasDiscount && (
-                <span className="rounded-lg bg-[#dc2626] px-2 py-0.5 text-xs font-bold text-white">خصم {discount}%</span>
+                <span className="rounded-lg bg-danger px-2 py-0.5 text-xs font-bold text-white">خصم {discount}%</span>
               )}
               {product.categoryName && (
                 <span className="rounded-lg bg-gray-100 px-2 py-0.5 text-xs font-bold text-gray-500">{product.categoryName}</span>
@@ -342,7 +368,7 @@ export default function MarketplaceProductDetail() {
               </StoreButton>
             </div>
             <Link
-              to={product.merchantProductUrl ?? `/s/${product.store.slug}/p/${product.slug}?source=haa_marketplace`}
+              to={product.merchantProductUrl?.startsWith('/') ? product.merchantProductUrl : `/s/${product.store.slug}/p/${product.slug}?source=haa_marketplace`}
               className="inline-flex text-xs font-bold text-primary-500 hover:text-primary-600"
             >
               عرض في متجر التاجر
@@ -353,19 +379,19 @@ export default function MarketplaceProductDetail() {
           {/* ═══ Seller Card ═══ */}
           <aside className="h-fit min-w-0 rounded-xl bg-white ring-1 ring-gray-100 p-4 text-center">
             <span className="mx-auto flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gray-50 text-gray-400 ring-4 ring-gray-50">
-              {product.store.logoUrl ? <img src={product.store.logoUrl} alt={product.store.name} className="h-full w-full object-cover" /> : <Icon icon={Store} size="md" />}
+              {product.store.logoUrl ? <img src={product.store.logoUrl} alt={product.store.name} referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : <Icon icon={Store} size="md" />}
             </span>
             {/* Trust badge — gated by kycVerified to avoid misleading
                 visitors. Demo stores and unverified stores must NOT
                 show this badge. The backend should set kycVerified
                 only after KYC + MoCI registration is confirmed. */}
-            {product.store.kycVerified === true && !product.store.isDemoStore && (
+            {product.store.kycVerified === true && !isDemoStore && (
               <div className="mt-2 inline-flex items-center gap-1 rounded-lg bg-success/10 px-2 py-0.5 text-xs font-bold text-success">
                 <Icon icon={BadgeCheck} size="2xs" />
                 متجر موثوق
               </div>
             )}
-            {product.isDemoStore && (
+            {isDemoStore && (
               <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-bold text-amber-700">
                 <Info className="h-3 w-3" />
                 متجر تجريبي
@@ -493,11 +519,12 @@ export default function MarketplaceProductDetail() {
       <MarketplaceFooter />
 
       {imagePreviewOpen && activeImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label="معاينة صورة المنتج">
-          <button type="button" onClick={() => setImagePreviewOpen(false)} className="absolute top-4 end-4 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-black">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label="معاينة صورة المنتج" onClick={() => setImagePreviewOpen(false)}>
+          <button type="button" autoFocus onClick={() => setImagePreviewOpen(false)} className="absolute top-4 end-4 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-black">
             إغلاق
           </button>
-          <img src={activeImage} alt={product.name} className="max-h-[86vh] max-w-[92vw] object-contain" />
+          {/* إيقاف انتشار النقر حتى لا يُغلق عند الضغط على الصورة نفسها (QA review #9) */}
+          <img src={activeImage} alt={product.name} referrerPolicy="no-referrer" onClick={(e) => e.stopPropagation()} className="max-h-[86vh] max-w-[92vw] object-contain" />
         </div>
       )}
     </main>

@@ -9,12 +9,12 @@
 | # | المشكلة | الموضع | الخطورة | الحالة |
 |---|---------|--------|---------|--------|
 | S1 | XSS مخزّن عبر JSON-LD — أسماء منتجات/متاجر يتحكّم بها التاجر تُحقن في `<script ld+json>` بلا تهريب `<>&` | `apps/storefront/src/lib/jsonld.ts` | عالية | ✅ PR #19 — `escapeJsonLd()` |
-| S2 | منقّي HTML بـ regex قابل للتجاوز (blocklist) → XSS من محتوى أقسام التاجر | `apps/storefront/src/themes/base-elegant/HomePage.tsx:431` | عالية | 🔧 |
-| S3 | IDOR — `/order/:orderNumber` يتجاهل فحص الهاتف → قراءة طلبات أي عميل بتخمين الرقم (PII) | `apps/api/src/routes/storefront/checkout.ts:246` | عالية | 🔧 |
-| S4 | JWT في query string عند redirect (يتسرّب عبر Referer/سجلّات/تاريخ) | `apps/api/src/routes/auth.ts:288` | متوسطة-عالية | 🔧 |
-| S5 | مقارنة توقيع webhook غير ثابتة الزمن (`===`) → timing attack لتزوير دفعة | `packages/payment-providers/{moyasar,geidea,tabby,tamara}.ts` | متوسطة | 🔧 |
+| S2 | منقّي HTML بـ regex قابل للتجاوز (blocklist) → XSS من محتوى أقسام التاجر | `apps/storefront/src/themes/base-elegant/HomePage.tsx:431` | عالية | ✅ PR #21 (DOMPurify) |
+| S3 | IDOR — `/order/:orderNumber` يتجاهل فحص الهاتف → قراءة طلبات أي عميل بتخمين الرقم (PII) | `apps/api/src/routes/storefront/checkout.ts:246` | عالية | ✅ PR #21 |
+| S4 | JWT في query string عند redirect (يتسرّب عبر Referer/سجلّات/تاريخ) | `apps/api/src/routes/auth.ts:288` | متوسطة-عالية | 📋 يتطلب تنسيق api+dashboard (OAuth خامل) |
+| S5 | مقارنة توقيع webhook غير ثابتة الزمن (`===`) → timing attack لتزوير دفعة | `packages/payment-providers/{moyasar,geidea,tabby,tamara}.ts` | متوسطة | ✅ PR #21 |
 | S6 | تسريب PII في سجلّات الإشعارات (المستلم + محتوى الرسالة) | `packages/notification-core/src/index.ts:27` | متوسطة | ✅ PR #19 — خلف `NOTIFICATION_DEBUG` |
-| S7 | دفع وهمي (`fake_card_success`) + تحذير "لن يُخصم مبلغ" يظهران في الإنتاج بلا حارس بيئة | `apps/storefront/src/pages/Checkout.tsx:57,498` | عالية | 🔧 |
+| S7 | دفع وهمي (`fake_card_success`) + تحذير "لن يُخصم مبلغ" يظهران في الإنتاج بلا حارس بيئة | `apps/storefront/src/pages/Checkout.tsx:57,498` | عالية | ✅ PR #21 (حُصر بالتطوير) |
 
 ## صحّة وظيفية (Correctness)
 
@@ -41,9 +41,9 @@
 
 | # | المشكلة | الموضع | الحالة |
 |---|---------|--------|--------|
-| A1 | StorefrontMockup: أزرار أيقونية بلا aria-label، div/span قابلة للنقر بلا keyboard | `landing/sections/StorefrontMockup.tsx` | 🔧 |
-| A2 | dialogs بلا Escape/focus-trap/initial-focus | `StorefrontMockup.tsx`, `MarketplaceProductDetail.tsx:495` | 🔧 |
-| A3 | `StoreInput/Textarea/Select` يشتق id من نص عربي → معرّفات مكررة | `components/ui/index.tsx:158,198,234` | 🔧 |
+| A1 | StorefrontMockup: أزرار أيقونية بلا aria-label، div/span قابلة للنقر بلا keyboard | `landing/sections/StorefrontMockup.tsx` | ✅ PR #22 (حُذف كود ميت) |
+| A2 | dialogs بلا Escape/focus-trap/initial-focus | `StorefrontMockup.tsx`, `MarketplaceProductDetail.tsx:495` | ✅ PR #22 |
+| A3 | `StoreInput/Textarea/Select` يشتق id من نص عربي → معرّفات مكررة | `components/ui/index.tsx:158,198,234` | ✅ PR #22 |
 
 ## صيانة (Maintainability) — متابعة
 
@@ -54,3 +54,17 @@
 | M3 | ~41 `eslint-disable` مؤجّلة (هجرة P1-#5 lucide→Icon) | 📋 |
 | M4 | 2FA ناقص على حذف الحساب (PDPL) + لا تنفيذ لمهمة الحذف بعد 30 يوماً | 📋 |
 | M5 | 148 `any` في `merchant-dashboard/src/lib/api.ts` | 📋 |
+
+## مراجعة كود MarketplaceProductDetail (R)
+
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| R1 | عدم اتساق `isDemoStore` (الشارة تستخدم `product.isDemoStore`، الثقة تستخدم `product.store.isDemoStore`) | ✅ PR #22 — مصدر موحّد |
+| R2 | الكمية لا تُصفّر عند تغيير المنتج ولا تُقيّد بالمخزون قبل الإضافة | ✅ PR #22 — تصفير + `safeQuantity()` |
+| R3 | Race condition في جلب المنتج (نتيجة طلب قديم تستبدل الجديد) | ✅ PR #22 — حارس `cancelled` |
+| R4 | `similarProducts` تبقى من منتج سابق عند غياب `categorySlug` | ✅ PR #22 — مسح فوري + else |
+| R5 | `merchantProductUrl` يُمرّر لـ `Link` بلا تحقق (رابط خارجي محتمل) | ✅ PR #22 — يقبل المسارات الداخلية فقط |
+| R6 | المنتجات المشابهة قد تقل عن 4 (limit:4 ثم استبعاد الحالي) | ✅ PR #22 — limit:8 ثم slice(4) |
+| R7 | لون خصم hardcoded `#dc2626` | ✅ PR #22 — `bg-danger` |
+| R8 | صور API بلا سياسة referrer | ✅ PR #22 — `referrerPolicy="no-referrer"` |
+| R9 | معاينة الصورة بلا Escape/إغلاق خارجي | ✅ PR #22 — Escape + autoFocus + click-outside |
