@@ -24,7 +24,10 @@ export class ConsoleNotificationProvider implements NotificationProvider {
   readonly isAvailable = false;
 
   async send(message: NotificationMessage): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    console.log(`[NOTIFICATION] [${this.channel}] To: ${message.recipient} | Subject: ${message.subject || '-'} | Body: ${message.body.substring(0, 100)}...`);
+    // لا نطبع المستلم/محتوى الرسالة (PII) إلا عند تفعيل debug صراحةً
+    if (process.env.NOTIFICATION_DEBUG === '1') {
+      console.log(`[NOTIFICATION] [${this.channel}] To: ${message.recipient} | Subject: ${message.subject || '-'}`);
+    }
     return {
       success: false,
       error: 'Simulated: No real email/SMS/WhatsApp provider is configured. Notifications are console-only. Set up a provider in production.',
