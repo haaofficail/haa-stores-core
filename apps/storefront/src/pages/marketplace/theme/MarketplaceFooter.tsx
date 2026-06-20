@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 // eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
-import { Mail, Phone } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { usePlatformBrand } from '@/hooks/usePlatformBrand';
 import { PaymentLogoImg, getPaymentLogosByCategory } from '@/components/ui/trust-badges';
@@ -90,10 +90,6 @@ export function MarketplaceFooter() {
               <li className="flex items-center gap-2 text-sm text-gray-500">
                 <Icon icon={Mail} size="xs" className="text-gray-400" />
                 info@haastores.com
-              </li>
-              <li className="flex items-center gap-2 text-sm text-gray-500">
-                <Icon icon={Phone} size="xs" className="text-gray-400" />
-                +966 800 000 0000
               </li>
             </ul>
           </div>
