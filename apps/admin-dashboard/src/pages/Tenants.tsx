@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
@@ -15,7 +15,7 @@ export default function Tenants() {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
@@ -27,9 +27,9 @@ export default function Tenants() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const handleOpenDialog = (tenant?: any) => {
     if (tenant) {
@@ -68,10 +68,6 @@ export default function Tenants() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const deleteTenant = async (id: number) => {
-    setConfirmDelete(id);
   };
 
   const confirmDeleteTenant = async () => {

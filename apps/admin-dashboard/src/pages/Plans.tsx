@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
@@ -12,16 +12,16 @@ export default function Plans() {
   const [editForm, setEditForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     setError(false);
     adminApi.getPlans()
       .then(setPlans)
       .catch(() => { setError(true); toast.error(t('plans.loadError', 'فشل تحميل الباقات')); })
       .finally(() => setLoading(false));
-  };
+  }, [t]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const toggleActive = async (plan: any) => {
     try {

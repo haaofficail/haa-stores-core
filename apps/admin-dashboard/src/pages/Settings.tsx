@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
@@ -10,10 +10,8 @@ export default function Settings() {
   const [form, setForm] = useState({ name: '', logoUrl: '', faviconUrl: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [previewLogo, setPreviewLogo] = useState<string | null>(null);
-  const [previewFavicon, setPreviewFavicon] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const s = await adminApi.getSettings();
       setForm({ name: s.name, logoUrl: s.logoUrl ?? '', faviconUrl: s.faviconUrl ?? '' });
@@ -22,9 +20,9 @@ export default function Settings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const uploadFile = async (file: File): Promise<string> => {
     const token = localStorage.getItem('admin_token');
@@ -99,7 +97,7 @@ export default function Settings() {
           <label className="block text-sm font-medium text-gray-700">{t('settings.logo', 'شعار المنصة')}</label>
           <div className="flex items-center gap-4">
             {form.logoUrl && (
-              <img src={form.logoUrl} alt={t('settings.logoAlt', 'شعار المنصة')} className="h-16 w-16 rounded-xl object-cover bg-gray-100 border" onError={() => setPreviewLogo(null)} />
+              <img src={form.logoUrl} alt={t('settings.logoAlt', 'شعار المنصة')} className="h-16 w-16 rounded-xl object-cover bg-gray-100 border" />
             )}
             <label className="px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-600 cursor-pointer hover:bg-gray-50">
               <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
@@ -115,7 +113,7 @@ export default function Settings() {
           <label className="block text-sm font-medium text-gray-700">{t('settings.favicon', 'أيقونة التبويب (Favicon)')}</label>
           <div className="flex items-center gap-4">
             {form.faviconUrl && (
-              <img src={form.faviconUrl} alt="Favicon" className="h-10 w-10 rounded-lg object-cover bg-gray-100 border" onError={() => setPreviewFavicon(null)} />
+              <img src={form.faviconUrl} alt="Favicon" className="h-10 w-10 rounded-lg object-cover bg-gray-100 border" />
             )}
             <label className="px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-600 cursor-pointer hover:bg-gray-50">
               <input type="file" accept="image/x-icon,image/png,image/svg+xml" className="hidden" onChange={handleFaviconUpload} />

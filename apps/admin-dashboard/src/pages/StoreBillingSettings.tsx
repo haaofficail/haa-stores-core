@@ -31,13 +31,6 @@ type RawSettings = {
   createdAt: string;
 } | null;
 
-type EffectivePolicy = {
-  mode: string;
-  pct: number | null;
-  fixed: number | null;
-  enabled: boolean;
-};
-
 const MODE_LABELS: Record<Mode, string> = {
   none: 'معفى — لا تُحتسب رسوم',
   percentage: 'نسبة مئوية من إجمالي الطلب',
@@ -62,7 +55,6 @@ export default function StoreBillingSettings() {
   const [stores, setStores] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedId, setSelectedId] = useState<number | null>(initialStoreId);
   const [raw, setRaw] = useState<RawSettings>(null);
-  const [effective, setEffective] = useState<EffectivePolicy | null>(null);
   const [effectiveLabel, setEffectiveLabel] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -80,14 +72,13 @@ export default function StoreBillingSettings() {
 
   useEffect(() => {
     if (selectedId == null) {
-      setRaw(null); setEffective(null); setEffectiveLabel('');
+      setRaw(null); setEffectiveLabel('');
       return;
     }
     setLoading(true);
     adminApi.getStoreBillingSettings(selectedId).then(res => {
       const r = res.settings;
       setRaw(r);
-      setEffective(res.effectivePolicy);
       setEffectiveLabel(res.effectivePolicyLabel);
       const m = (res.effectivePolicy.mode as Mode) ?? 'percentage';
       setMode(m);
@@ -115,7 +106,6 @@ export default function StoreBillingSettings() {
         changeReason: changeReason.trim(),
       });
       setRaw(res.data.settings);
-      setEffective(res.data.effectivePolicy);
       setEffectiveLabel(res.data.effectivePolicyLabel);
       toast.success('تم تحديث إعدادات الرسوم');
     } catch (e: any) {

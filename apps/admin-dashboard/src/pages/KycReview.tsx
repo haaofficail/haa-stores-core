@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
@@ -14,16 +14,16 @@ export default function KycReview() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     setError(false);
     adminApi.getKycProfiles()
       .then(setProfiles)
       .catch(() => { setError(true); toast.error(t('kyc.loadError', 'فشل تحميل ملفات التحقق')); })
       .finally(() => setLoading(false));
-  };
+  }, [t]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const review = async (id: number, status: string, rejectionReason?: string) => {
     try {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
@@ -14,7 +14,7 @@ export default function Stores() {
   const [form, setForm] = useState({ name: '', domain: '', tenantId: '', isActive: 'true' });
   const [saving, setSaving] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(false);
     try {
@@ -26,9 +26,9 @@ export default function Stores() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const handleOpenDialog = (store?: any) => {
     if (store) {
