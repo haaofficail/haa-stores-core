@@ -2,6 +2,7 @@ import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { eq, and } from 'drizzle-orm';
 import type { ConnectionResult, ProductListing, ChannelOrder, SyncResult, SalesReport } from '../types.js';
+import { encryptCredentials, decryptCredentials } from '../credential-cipher.js';
 
 const AUTH_URL = 'https://accounts.salla.sa/oauth2/auth';
 const TOKEN_URL = 'https://accounts.salla.sa/oauth2/token';
@@ -183,7 +184,7 @@ export class SallaService {
       await this.db
         .update(s.marketplaceConnections)
         .set({
-          credentials,
+          credentials: encryptCredentials(credentials) as typeof credentials,
           isConnected: true,
           status: 'connected',
           storeName: storeInfo.name,
@@ -198,7 +199,7 @@ export class SallaService {
         storeId: this.storeId,
         providerId,
         isConnected: true,
-        credentials,
+        credentials: encryptCredentials(credentials) as typeof credentials,
         status: 'connected',
         storeName: storeInfo.name,
         storeEmail: storeInfo.email,
@@ -248,7 +249,7 @@ export class SallaService {
 
     await this.db
       .update(s.marketplaceConnections)
-      .set({ credentials, updatedAt: new Date() })
+      .set({ credentials: encryptCredentials(credentials) as typeof credentials, updatedAt: new Date() })
       .where(eq(s.marketplaceConnections.id, connection.id));
   }
 
@@ -274,6 +275,7 @@ export class SallaService {
 
     if (!connections[0]) return null;
     const conn = connections[0] as typeof connections[0] & { credentials: CredentialsStore | null };
+    conn.credentials = decryptCredentials<CredentialsStore>(conn.credentials);
     return conn;
   }
 

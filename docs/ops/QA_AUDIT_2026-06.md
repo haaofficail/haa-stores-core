@@ -211,7 +211,7 @@
 ### التكاملات (salla/noon/amazon/zid) — موجودة، P0 أمني
 | # | المشكلة | الخطورة | الحالة |
 |---|---------|---------|--------|
-| INT1 | **بيانات اعتماد القنوات plaintext** (Noon RSA private key، Amazon AWS secret، OAuth tokens) رغم وجود `commerce-core/encryption.ts` المستخدم للدفع | **P0** | 📋 تشفير write/read + migration backfill + key-version |
+| INT1 | **بيانات اعتماد القنوات plaintext** | **P0** | ✅ مُشفّرة AES-256-GCM (`credential-cipher.ts`) في القنوات الأربع، متوافق مع القديم (decrypt fallback)، 4 اختبارات. (migration backfill للصفوف القديمة لاحقاً — تُعاد تشفيرها عند أول كتابة) |
 | INT2 | لا timeouts على fetch الصادر (sync يعلّق المجموعة) | P1 | 📋 `AbortSignal.timeout` (~12 موضع، آمن) |
 | INT3 | لا 429/Retry-After handling | P1 | 📋 |
 | INT4 | لا retry/backoff (idempotency-aware) | P1 | 📋 |

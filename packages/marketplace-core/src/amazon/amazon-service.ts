@@ -3,6 +3,7 @@ import * as s from '@haa/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { createHmac, createHash } from 'node:crypto';
 import type { ConnectionResult, ProductListing, ChannelOrder, SyncResult, SalesReport } from '../types.js';
+import { encryptCredentials, decryptCredentials } from '../credential-cipher.js';
 
 interface AmazonCredentials {
   clientId: string;
@@ -226,8 +227,8 @@ export class AmazonService {
 
     if (!connection[0]?.credentials) throw new Error('Amazon not connected');
 
-    const creds = connection[0].credentials as unknown as AmazonCredentials;
-    if (!creds.clientId || !creds.clientSecret || !creds.refreshToken || !creds.awsAccessKey || !creds.awsSecretKey) {
+    const creds = decryptCredentials<AmazonCredentials>(connection[0].credentials);
+    if (!creds || !creds.clientId || !creds.clientSecret || !creds.refreshToken || !creds.awsAccessKey || !creds.awsSecretKey) {
       throw new Error('Amazon credentials incomplete');
     }
 
@@ -314,7 +315,7 @@ export class AmazonService {
       await this.db
         .update(s.marketplaceConnections)
         .set({
-          credentials: storedCreds as unknown as ConnectionResult['credentials'],
+          credentials: encryptCredentials(storedCreds) as unknown as ConnectionResult['credentials'],
           isConnected: true,
           status: 'connected',
           connectedAt: new Date(),
@@ -326,7 +327,7 @@ export class AmazonService {
         storeId: this.storeId,
         providerId,
         isConnected: true,
-        credentials: storedCreds as unknown as ConnectionResult['credentials'],
+        credentials: encryptCredentials(storedCreds) as unknown as ConnectionResult['credentials'],
         status: 'connected',
         connectedAt: new Date(),
       });
@@ -388,7 +389,7 @@ export class AmazonService {
       await this.db
         .update(s.marketplaceConnections)
         .set({
-          credentials: storedCreds as unknown as ConnectionResult['credentials'],
+          credentials: encryptCredentials(storedCreds) as unknown as ConnectionResult['credentials'],
           isConnected: true,
           status: 'connected',
           storeName: creds.sellerName,
@@ -401,7 +402,7 @@ export class AmazonService {
         storeId: this.storeId,
         providerId,
         isConnected: true,
-        credentials: storedCreds as unknown as ConnectionResult['credentials'],
+        credentials: encryptCredentials(storedCreds) as unknown as ConnectionResult['credentials'],
         status: 'connected',
         storeName: creds.sellerName,
         connectedAt: new Date(),

@@ -3,6 +3,7 @@ import * as s from '@haa/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { createSign } from 'node:crypto';
 import type { ConnectionResult, ProductListing, ChannelOrder, SyncResult, SalesReport } from '../types.js';
+import { encryptCredentials, decryptCredentials } from '../credential-cipher.js';
 
 const API_BASE = 'https://api.noon.com/partners';
 
@@ -131,7 +132,7 @@ export class NoonService {
 
     if (!connection[0]?.credentials) throw new Error('Noon not connected');
 
-    const creds = connection[0].credentials as unknown as NoonCredentials;
+    const creds = decryptCredentials<NoonCredentials>(connection[0].credentials)!;
     if (!creds.clientId || !creds.privateKey) throw new Error('Noon credentials incomplete');
 
     return creds;
@@ -196,7 +197,7 @@ export class NoonService {
       await this.db
         .update(s.marketplaceConnections)
         .set({
-          credentials: storedCreds,
+          credentials: encryptCredentials(storedCreds) as typeof storedCreds,
           isConnected: true,
           status: 'connected',
           storeName: storeInfo.name,
@@ -210,7 +211,7 @@ export class NoonService {
         storeId: this.storeId,
         providerId,
         isConnected: true,
-        credentials: storedCreds,
+        credentials: encryptCredentials(storedCreds) as typeof storedCreds,
         status: 'connected',
         storeName: storeInfo.name,
         externalStoreId: storeInfo.id,
@@ -413,7 +414,7 @@ export class NoonService {
         )
         .limit(1);
 
-      const creds = connection[0]?.credentials as unknown as NoonCredentials | undefined;
+      const creds = decryptCredentials<NoonCredentials>(connection[0]?.credentials);
       return {
         name: creds?.sellerName || '',
         storeId: creds?.partnerId || '',

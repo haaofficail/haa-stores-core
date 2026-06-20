@@ -2,6 +2,7 @@ import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { eq, and } from 'drizzle-orm';
 import type { ConnectionResult, ProductListing, ChannelOrder, SyncResult, SalesReport } from '../types.js';
+import { encryptCredentials, decryptCredentials } from '../credential-cipher.js';
 
 const AUTH_URL = 'https://oauth.zid.sa/oauth/authorize';
 const TOKEN_URL = 'https://oauth.zid.sa/oauth/token';
@@ -179,7 +180,7 @@ export class ZidService {
       await this.db
         .update(s.marketplaceConnections)
         .set({
-          credentials,
+          credentials: encryptCredentials(credentials) as CredentialsStore,
           isConnected: true,
           status: 'connected',
           storeName: info.name,
@@ -194,7 +195,7 @@ export class ZidService {
         storeId: this.storeId,
         providerId,
         isConnected: true,
-        credentials,
+        credentials: encryptCredentials(credentials) as CredentialsStore,
         status: 'connected',
         storeName: info.name,
         storeEmail: info.email,
@@ -237,7 +238,11 @@ export class ZidService {
       .limit(1);
 
     if (!connections[0]) return null;
-    return connections[0] as typeof connections[0] & { credentials: CredentialsStore | null };
+    const row = connections[0] as typeof connections[0] & { credentials: unknown };
+    return {
+      ...row,
+      credentials: decryptCredentials<CredentialsStore>(row.credentials),
+    } as typeof connections[0] & { credentials: CredentialsStore | null };
   }
 
   private async getTokens(): Promise<{ authorization: string; accessToken: string }> {
