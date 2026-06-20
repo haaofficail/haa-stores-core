@@ -54,6 +54,9 @@ jobs:
       - name: Preflight checks
         run: pnpm preflight
 
+      - name: Env contract check (G1)
+        run: node scripts/check-env-contract.mjs
+
   # ── 2. Typecheck ─────────────────────────────────────────────────────────
   typecheck:
     name: Typecheck
