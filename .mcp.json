@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "hostinger-haa-stores": {
+      "command": "./scripts/mcp/hostinger-haa-stores.sh",
+      "env": {
+        "DEBUG": "false"
+      }
+    }
+  }
+}
