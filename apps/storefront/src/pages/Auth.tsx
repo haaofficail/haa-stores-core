@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { normalizeStoreSlug, isSaudiPhone } from '@/lib/validation';
 import { merchantDashboardUrl } from '@/lib/merchant';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -20,7 +21,6 @@ function passwordStrength(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string
   return { score: 4, label: 'قوية', color: 'text-success' };
 }
 
-function normalizeStoreSlug(value: string){ return value.trim().toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,50); }
 
 import { StoreButton, StoreContainer, StoreInput } from '@/components/ui';
 import { useSEO } from '@/hooks/useSEO';
@@ -104,12 +104,12 @@ export function SignupPage() {
     }
   };
 
-  const isSaudiPhone = /^05\d{8}$/.test(phone.trim());
+  const phoneValid = isSaudiPhone(phone);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!isSaudiPhone) {
+    if (!phoneValid) {
       setError(t('auth.signup.errors.invalidPhone', 'أدخل رقم جوال سعودي صحيح بصيغة 05XXXXXXXX.'));
       return;
     }

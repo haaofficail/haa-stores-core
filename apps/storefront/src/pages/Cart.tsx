@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { toMoneyNumber, formatAmount } from '@/lib/money';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { useSharedCart } from '@/hooks/CartContext';
@@ -23,8 +24,6 @@ function getVariantLabel(item: Cart['items'][number]): string {
   return '';
 }
 
-function toMoneyNumber(value: unknown){ const n = Number(value); return Number.isFinite(n) ? n : 0; }
-function formatAmount(value: unknown){ return toMoneyNumber(value).toFixed(2); }
 
 export default function Cart() {
   const { t } = useTranslation();
