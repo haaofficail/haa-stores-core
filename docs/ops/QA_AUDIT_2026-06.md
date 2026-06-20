@@ -90,3 +90,35 @@
 | H4 | مفاتيح ترجمة بلا fallback | ✅ PR #24 |
 | H5 | فشل `addItem` غير معالج | ✅ PR #24 — `try/catch` + `toast.error` |
 | H6 | `window.location.href` يعيد تحميل كامل | ✅ PR #24 — `useNavigate` |
+
+## مراجعة صفحات السوق/التتبع (دفعة ثانية)
+
+### MarketplaceCheckout (MC)
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| MC1 | `fake_card_success` افتراضي ومعروض في الإنتاج | ✅ PR #25 — محصور خلف `import.meta.env.DEV`، الإنتاج COD |
+| MC2 | ضغط مزدوج على الإرسال | ✅ PR #25 — `if (submitting) return` |
+| MC3 | `catch (error: any)` | ✅ PR #25 — `unknown` + رسالة آمنة |
+| MC4 | idempotency لكل session فقط | ✅ PR #25 — مفتاح واحد للمحاولة `key:slug` |
+| MC5 | access token في localStorage | ✅ PR #25 — `sessionStorage` + try/catch |
+| MC6 | **Orchestration متعدد المتاجر في الواجهة + partial failure + لا اختيار شحن** | 📋 **P0 معماري** — يجب نقله لـ endpoint backend واحد (`POST /marketplace/checkout`) بـ idempotency وtracking موحّد ومعالجة الفشل الجزئي + عرض/اختيار الشحن. لا يُنفّذ بالواجهة. |
+
+### MarketplaceSellers (MS) / MarketplaceCart (CART) / MarketplaceOrderTrack (OT) / TrackOrder (TO) / TrackOrderResult (TOR)
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| MS1 | فشل API يظهر كـ"لا يوجد بائعون" | ✅ PR #25 — error state منفصل |
+| MS2 | لا cancellation guard | ✅ PR #25 |
+| MS3 | صور بلا referrer/lazy، productCount undefined | ✅ PR #25 |
+| CART1 | كمية صفر/سالبة | ✅ PR #25 — حذف عند ≤0 |
+| CART2 | أسعار NaN | ✅ PR #25 — `formatAmount` |
+| CART3 | `productUrl` بلا تحقق داخلي | ✅ PR #25 — مسار داخلي فقط |
+| CART4 | أيقونات/referrer/type=button | ✅ PR #25 |
+| OT1 | إعادة كتابة access_token في URL | ✅ PR #25 — يُمسح بعد القراءة |
+| OT2 | token في localStorage | ✅ PR #25 — sessionStorage |
+| OT3 | race في load + اعتماد على accessToken | ✅ PR #25 — requestId guard + signature صريح |
+| OT4 | زر الاستعلام يتجاهل الرقم المكتوب + لا sync | ✅ PR #25 |
+| OT5 | تسمية "المنتجات" لحالة التنفيذ + NaN | ✅ PR #25 |
+| TO1 | لا storefront-scope | ✅ PR #25 |
+| TO2 | ترجمة بلا fallback، encode، مفتاح sessionStorage بـ slug | ✅ PR #25 |
+| TOR1 | loading للأبد عند غياب slug/orderNumber | ✅ PR #25 — `setLoading(false)` |
+| TOR2 | scope + cancellation + مفتاح موحّد + NaN + fallbacks | ✅ PR #25 |

@@ -32,6 +32,11 @@ const statusIcons: Record<string, React.ReactNode> = {
   partially_refunded: <CreditCard className="h-4 w-4" />,
 };
 
+function formatAmount(value: unknown) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
+}
+
 export default function TrackOrderResult() {
   const { t, i18n } = useTranslation();
 
@@ -51,24 +56,26 @@ export default function TrackOrderResult() {
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
 
   useEffect(() => {
-    if (!slug || !orderNumber) return;
-    pickupLocationsApi.list(slug).then(setPickupLocations).catch(() => {});
-    const savedPhone = sessionStorage.getItem(`track_phone_${orderNumber}`);
+    if (!slug || !orderNumber) { setLoading(false); return; }
+    let cancelled = false;
+    pickupLocationsApi.list(slug).then((locs) => { if (!cancelled) setPickupLocations(locs); }).catch(() => {});
+    const savedPhone = sessionStorage.getItem(`track_phone_${slug}_${orderNumber}`) ?? sessionStorage.getItem(`track_phone_${orderNumber}`);
     if (savedPhone) {
       setPhoneInput(savedPhone);
       orderApi.track(slug, orderNumber, savedPhone)
-        .then(setOrder)
-        .catch(() => toast.error(t('common.error', 'فشل تتبع الطلب')))
-        .finally(() => setLoading(false));
+        .then((o) => { if (!cancelled) setOrder(o); })
+        .catch(() => { if (!cancelled) toast.error(t('common.error', 'فشل تتبع الطلب')); })
+        .finally(() => { if (!cancelled) setLoading(false); });
     } else {
       setLoading(false);
     }
+    return () => { cancelled = true; };
   }, [slug, orderNumber]);
 
   const handleTrack = async () => {
     if (!slug || !orderNumber || !phoneInput.trim()) return;
     setLoading(true);
-    sessionStorage.setItem(`track_phone_${orderNumber}`, phoneInput.trim());
+    sessionStorage.setItem(`track_phone_${slug}_${orderNumber}`, phoneInput.trim());
     try {
       const o = await orderApi.track(slug, orderNumber, phoneInput.trim());
       setOrder(o);
@@ -82,7 +89,7 @@ export default function TrackOrderResult() {
   if (loading) {
     return (
       <StoreContainer className="py-8">
-        <div id="main-content" className="max-w-2xl mx-auto space-y-4 overflow-x-hidden">
+        <div id="storefront-scope" data-theme-scope="storefront" className="max-w-2xl mx-auto space-y-4 overflow-x-hidden">
           <StoreSkeleton className="h-8 w-48" />
           <StoreSkeleton className="h-40 w-full" />
           <StoreSkeleton className="h-60 w-full" />
@@ -94,30 +101,30 @@ export default function TrackOrderResult() {
   if (!order) {
     return (
       <StoreContainer className="py-12">
-        <div className="max-w-md mx-auto text-center">
+        <div id="storefront-scope" data-theme-scope="storefront" className="max-w-md mx-auto text-center">
           <div className="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center mx-auto mb-3">
             <Package className="h-4 w-4 text-text-tertiary" />
           </div>
-          <h2 className="text-xl font-bold mb-2">{t('track.notFound')}</h2>
-          <p className="text-sm text-text-secondary mb-6">{t('order.phoneRequired')}</p>
+          <h2 className="text-xl font-bold mb-2">{t('track.notFound', 'لم يتم العثور على الطلب')}</h2>
+          <p className="text-sm text-text-secondary mb-6">{t('order.phoneRequired', 'يرجى إدخال رقم الجوال المرتبط بالطلب')}</p>
           <div className="flex gap-2 mb-6">
             <StoreInput
               value={phoneInput}
               onChange={(e) => setPhoneInput(e.target.value)}
-              placeholder={t('track.phone')}
+              placeholder={t('track.phone', 'رقم الجوال')}
               dir="ltr"
               className="text-start flex-1"
             />
             <StoreButton onClick={handleTrack} disabled={!phoneInput.trim()}>
-              {t('track.track')}
+              {t('track.track', 'تتبع')}
             </StoreButton>
           </div>
           <div className="flex gap-3 justify-center">
             <Link to={`/s/${slug}/track`} className="text-sm text-primary-600 hover:underline">
-              {t('track.title')}
+              {t('track.title', 'تتبع طلب آخر')}
             </Link>
             <Link to={`/s/${slug}`} className="text-sm text-primary-600 hover:underline">
-              {t('order.backToStore')}
+              {t('order.backToStore', 'العودة للمتجر')}
             </Link>
           </div>
         </div>
@@ -126,7 +133,7 @@ export default function TrackOrderResult() {
   }
 
   return (
-    <div className="animate-fade-in">
+    <div id="storefront-scope" data-theme-scope="storefront" className="animate-fade-in">
       <StoreContainer className="py-6 sm:py-8">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-3 mb-6">
@@ -134,7 +141,7 @@ export default function TrackOrderResult() {
               <ArrowLeft className="h-4 w-4 text-text-secondary" />
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-text-primary">{t('track.orderTitle')}</h1>
+              <h1 className="text-xl font-bold text-text-primary">{t('track.orderTitle', 'تفاصيل الطلب')}</h1>
               <p className="text-sm text-text-secondary font-mono" dir="ltr">{order.orderNumber}</p>
             </div>
           </div>
@@ -142,20 +149,20 @@ export default function TrackOrderResult() {
           <StoreCard className="p-6 mb-6">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
               <div className="text-center p-3 bg-surface-2 rounded-xl">
-                <p className="text-xs text-text-secondary mb-1">{t('order.status')}</p>
+                <p className="text-xs text-text-secondary mb-1">{t('order.status', 'الحالة')}</p>
                 <StoreBadge variant="info" icon={statusIcons[order.status]}>
                   {statusLabels[order.status] ?? order.status}
                 </StoreBadge>
               </div>
               <div className="text-center p-3 bg-surface-2 rounded-xl">
-                <p className="text-xs text-text-secondary mb-1">{t('order.paymentStatus')}</p>
+                <p className="text-xs text-text-secondary mb-1">{t('order.paymentStatus', 'حالة الدفع')}</p>
                 <StoreBadge variant={order.paymentStatus === 'paid' ? 'success' : order.paymentStatus === 'failed' ? 'danger' : 'warning'}>
                   {order.paymentStatus === 'paid' ? t('track.paid', 'مدفوع') : order.paymentStatus === 'unpaid' ? t('track.unpaid', 'غير مدفوع') : order.paymentStatus === 'failed' ? t('status.payment_failed', 'فشل الدفع') : order.paymentStatus}
                 </StoreBadge>
               </div>
               {order.fulfillmentStatus && (
                 <div className="text-center p-3 bg-surface-2 rounded-xl">
-                  <p className="text-xs text-text-secondary mb-1">{t('order.shipmentStatus')}</p>
+                  <p className="text-xs text-text-secondary mb-1">{t('order.shipmentStatus', 'حالة الشحن')}</p>
                   <StoreBadge>{order.fulfillmentStatus}</StoreBadge>
                 </div>
               )}
@@ -190,7 +197,7 @@ export default function TrackOrderResult() {
                     {order.giftOptions.message && <p className="text-info text-xs">{order.giftOptions.message}</p>}
                   </div>
                 )}
-                <h3 className="font-bold text-sm mb-3">{t('order.items')}</h3>
+                <h3 className="font-bold text-sm mb-3">{t('order.items', 'المنتجات')}</h3>
                 <div className="space-y-2 mb-4">
                   {order.items.map((item: any) => (
                     <div key={item.id} className="flex justify-between text-sm py-1.5 border-b border-border/40 last:border-0">
@@ -204,13 +211,13 @@ export default function TrackOrderResult() {
                         )}
                         {item.giftMessage && <p className="text-[var(--badge-font-size)] text-text-tertiary mt-0.5"><Icon icon={FileText} size="2xs" className="inline align-middle ms-0.5" />{item.giftMessage}</p>}
                       </div>
-                      <span className="font-medium">{Number(item.totalPrice).toFixed(2)} <SarIcon size="sm" /></span>
+                      <span className="font-medium">{formatAmount(item.totalPrice)} <SarIcon size="sm" /></span>
                     </div>
                   ))}
                 </div>
                 <div className="border-t border-border pt-3 flex justify-between items-center">
-                  <span className="font-bold">{t('order.total')}</span>
-                  <span className="font-bold text-lg text-primary-600">{Number(order.total).toFixed(2)} <SarIcon size="md" /></span>
+                  <span className="font-bold">{t('order.total', 'الإجمالي')}</span>
+                  <span className="font-bold text-lg text-primary-600">{formatAmount(order.total)} <SarIcon size="md" /></span>
                 </div>
               </>
             )}
@@ -249,7 +256,7 @@ export default function TrackOrderResult() {
               {t('track.trackAnother', 'تتبع طلب آخر')}
             </StoreButton>
             <StoreButton variant="outline" href={`/s/${slug}`} icon={<ArrowLeft className="h-4 w-4" />}>
-              {t('order.backToStore')}
+              {t('order.backToStore', 'العودة للمتجر')}
             </StoreButton>
           </div>
         </div>

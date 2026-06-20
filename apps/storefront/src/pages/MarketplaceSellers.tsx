@@ -10,14 +10,18 @@ import { useSEO } from '@/hooks/useSEO';
 export default function MarketplaceSellers() {
   const [sellers, setSellers] = useState<HaaMarketplaceSeller[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useSEO({ title: 'بائعو سوق هاء', description: 'كل البائعين المشاركين في سوق هاء.' });
 
   useEffect(() => {
+    let cancelled = false;
+    setError(false);
     haaMarketplaceApi.listSellers()
-      .then(setSellers)
-      .catch(() => setSellers([]))
-      .finally(() => setLoading(false));
+      .then((data) => { if (cancelled) return; setSellers(data); })
+      .catch(() => { if (cancelled) return; setError(true); setSellers([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, []);
 
   return (
@@ -39,6 +43,13 @@ export default function MarketplaceSellers() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => <StoreSkeleton key={i} className="h-32" />)}
           </div>
+        ) : error ? (
+          <StoreEmptyState
+            icon={Store}
+            title="تعذر تحميل البائعين"
+            description="حدث خطأ أثناء جلب قائمة البائعين. حاول مرة أخرى."
+            action={<StoreButton onClick={() => window.location.reload()}>إعادة المحاولة</StoreButton>}
+          />
         ) : sellers.length === 0 ? (
           <StoreEmptyState icon={Store} title="لا يوجد بائعون" description="لم يتم اعتماد منتجات بائعين في السوق بعد." />
         ) : (
@@ -47,7 +58,7 @@ export default function MarketplaceSellers() {
               <Link key={seller.slug} to={`/marketplace/sellers/${seller.slug}`} className="rounded-[8px] border border-border bg-surface-1 p-4 shadow-card transition-shadow hover:shadow-card-hover">
                 <div className="flex gap-3">
                   <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-surface-2">
-                    {seller.logoUrl ? <img src={seller.logoUrl} alt={seller.name} className="h-full w-full object-cover" /> : <Icon icon={Store} size="md" className="text-text-disabled" />}
+                    {seller.logoUrl ? <img src={seller.logoUrl} alt={seller.name} loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : <Icon icon={Store} size="md" className="text-text-disabled" />}
                   </span>
                   <div className="min-w-0">
                     <h2 className="truncate text-base font-bold text-text-primary">{seller.name}</h2>
@@ -57,7 +68,7 @@ export default function MarketplaceSellers() {
                         {[seller.city, seller.district].filter(Boolean).join(' - ')}
                       </p>
                     )}
-                    <p className="mt-2 text-xs font-semibold text-primary-600">{seller.productCount} منتج في السوق</p>
+                    <p className="mt-2 text-xs font-semibold text-primary-600">{seller.productCount ?? 0} منتج في السوق</p>
                   </div>
                 </div>
                 {seller.description && <p className="mt-3 line-clamp-2 text-sm leading-6 text-text-secondary">{seller.description}</p>}

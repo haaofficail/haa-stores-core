@@ -8,6 +8,16 @@ import { SarIcon } from '@/components/ui/SarIcon';
 import { marketplaceCart, type MarketplaceCartItem } from '@/lib/marketplace-cart';
 import { useSEO } from '@/hooks/useSEO';
 
+function formatAmount(value: unknown) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
+}
+
+function getProductPath(item: MarketplaceCartItem) {
+  const u = item.product.productUrl;
+  return typeof u === 'string' && u.startsWith('/') ? u : '/marketplace';
+}
+
 export default function MarketplaceCart() {
   const [items, setItems] = useState<MarketplaceCartItem[]>(() => marketplaceCart.list());
   const subtotal = marketplaceCart.subtotal(items);
@@ -21,6 +31,10 @@ export default function MarketplaceCart() {
   }, []);
 
   const updateQty = (item: MarketplaceCartItem, quantity: number) => {
+    if (quantity <= 0) {
+      setItems(marketplaceCart.remove(item.product.id, item.product.store.slug));
+      return;
+    }
     setItems(marketplaceCart.update(item.product.id, item.product.store.slug, quantity));
   };
 
@@ -55,20 +69,20 @@ export default function MarketplaceCart() {
             {items.map((item) => (
               <article key={`${item.product.store.slug}-${item.product.id}`} className="rounded-[8px] border border-border bg-surface-1 p-3 shadow-card">
                 <div className="flex gap-3">
-                  <Link to={item.product.productUrl} className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-surface-2">
+                  <Link to={getProductPath(item)} className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-surface-2">
                     {item.product.images?.[0] ? (
-                      <img src={item.product.images[0]} alt={item.product.name} className="h-full w-full object-contain p-2" loading="lazy" />
+                      <img src={item.product.images[0]} alt={item.product.name} className="h-full w-full object-contain p-2" loading="lazy" referrerPolicy="no-referrer" />
                     ) : (
                       <Icon icon={Package} size="md" className="text-text-disabled" />
                     )}
                   </Link>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium text-primary-600">{item.product.store.name}</p>
-                    <Link to={item.product.productUrl} className="mt-1 line-clamp-2 text-sm font-semibold text-text-primary hover:text-primary-600">
+                    <Link to={getProductPath(item)} className="mt-1 line-clamp-2 text-sm font-semibold text-text-primary hover:text-primary-600">
                       {item.product.name}
                     </Link>
                     <p className="mt-2 text-sm font-bold text-text-primary">
-                      {Number(item.product.price).toFixed(2)} <SarIcon size="md" />
+                      {formatAmount(item.product.price)} <SarIcon size="md" />
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end justify-between gap-3">
@@ -76,12 +90,12 @@ export default function MarketplaceCart() {
                       <Icon icon={Trash2} size="xs" />
                     </StoreIconButton>
                     <div className="flex items-center gap-1 rounded-[8px] border border-border bg-surface-1 p-1">
-                      <button className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl hover:bg-surface-2" onClick={() => updateQty(item, item.quantity - 1)} aria-label="إنقاص">
-                        <Minus className="h-4 w-4" />
+                      <button type="button" className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl hover:bg-surface-2" onClick={() => updateQty(item, item.quantity - 1)} aria-label="إنقاص">
+                        <Icon icon={Minus} size="xs" />
                       </button>
                       <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
-                      <button className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl hover:bg-surface-2" onClick={() => updateQty(item, item.quantity + 1)} aria-label="زيادة">
-                        <Plus className="h-4 w-4" />
+                      <button type="button" className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl hover:bg-surface-2" onClick={() => updateQty(item, item.quantity + 1)} aria-label="زيادة">
+                        <Icon icon={Plus} size="xs" />
                       </button>
                     </div>
                   </div>
@@ -98,7 +112,7 @@ export default function MarketplaceCart() {
             </div>
             <div className="mt-3 flex items-center justify-between text-sm">
               <span className="text-text-secondary">الإجمالي قبل الشحن</span>
-              <span className="font-bold text-text-primary">{subtotal.toFixed(2)} <SarIcon size="md" /></span>
+              <span className="font-bold text-text-primary">{formatAmount(subtotal)} <SarIcon size="md" /></span>
             </div>
             <StoreButton href="/marketplace/checkout" className="mt-5 w-full" iconStart={<Icon icon={ShoppingBag} size="xs" />}>
               إتمام الطلب الموحد

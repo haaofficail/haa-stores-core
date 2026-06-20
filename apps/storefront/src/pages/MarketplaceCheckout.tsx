@@ -35,12 +35,13 @@ export default function MarketplaceCheckout() {
   const [items] = useState<MarketplaceCartItem[]>(() => marketplaceCart.list());
   const [customer, setCustomer] = useState({ name: '', phone: '', email: '' });
   const [address, setAddress] = useState({ city: '', district: '', street: '' });
-  const [paymentMethod, setPaymentMethod] = useState<'fake_card_success' | 'bank_transfer' | 'cash_on_delivery'>('fake_card_success');
+  const [paymentMethod, setPaymentMethod] = useState<'fake_card_success' | 'bank_transfer' | 'cash_on_delivery'>(import.meta.env.DEV ? 'fake_card_success' : 'cash_on_delivery');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [marketplaceOrderNumber, setMarketplaceOrderNumber] = useState('');
   const [marketplaceAccessToken, setMarketplaceAccessToken] = useState('');
   const [orders, setOrders] = useState<Array<{ storeName: string; storeSlug: string; orderNumber: string }>>([]);
+  const [checkoutIdempotencyKey] = useState(() => generateIdempotencyKey());
 
   const groups = useMemo(() => groupByStore(items), [items]);
   const subtotal = marketplaceCart.subtotal(items);
@@ -48,6 +49,7 @@ export default function MarketplaceCheckout() {
   useSEO({ title: 'إتمام طلب سوق هاء', noIndex: true });
 
   const submit = async () => {
+    if (submitting) return;
     if (!customer.name.trim() || !customer.phone.trim() || !address.city.trim()) {
       toast.error('أدخل الاسم والجوال والمدينة');
       return;
@@ -94,7 +96,7 @@ export default function MarketplaceCheckout() {
           shippingMethodId: selectedRate.shippingMethodId,
           paymentMethod,
           notes: notes || 'طلب من سوق هاء العام',
-          idempotencyKey: generateIdempotencyKey(),
+          idempotencyKey: `${checkoutIdempotencyKey}:${group.slug}`,
         });
 
         const confirmed: CheckoutConfirm = await checkoutApi.confirm(group.slug, session.id);
@@ -129,15 +131,20 @@ export default function MarketplaceCheckout() {
       // The MarketplaceOrderTrack page also reads from API response.
       if (marketplaceOrder.accessToken) {
         setMarketplaceAccessToken(marketplaceOrder.accessToken);
-        localStorage.setItem(
-          `haa.marketplace.order.token.${marketplaceOrder.marketplaceOrderNumber}`,
-          marketplaceOrder.accessToken,
-        );
+        try {
+          sessionStorage.setItem(
+            `haa.marketplace.order.token.${marketplaceOrder.marketplaceOrderNumber}`,
+            marketplaceOrder.accessToken,
+          );
+        } catch {
+          // ignore storage failures (private mode, quota, etc.)
+        }
       }
       setOrders(createdOrders);
       toast.success('تم إنشاء طلبات السوق بنجاح');
-    } catch (error: any) {
-      toast.error(error?.message || 'تعذر إتمام طلب السوق');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'تعذر إتمام طلب السوق';
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -224,7 +231,7 @@ export default function MarketplaceCheckout() {
               <h2 className="mb-4 text-base font-bold text-text-primary">الدفع والملاحظات</h2>
               <div className="grid gap-2 sm:grid-cols-3">
                 {[
-                  ['fake_card_success', 'بطاقة تجريبية'],
+                  ...(import.meta.env.DEV ? [['fake_card_success', 'بطاقة تجريبية']] : []),
                   ['bank_transfer', 'تحويل بنكي'],
                   ['cash_on_delivery', 'الدفع عند الاستلام'],
                 ].map(([value, label]) => (
