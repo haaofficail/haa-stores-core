@@ -1,0 +1,37 @@
+# Gitleaks configuration — Haa Stores (G4 / PR-D)
+# Docs: https://github.com/gitleaks/gitleaks#configuration
+#
+# Allowlists here cover documented placeholder values in .env.example files
+# and test fixtures. Real secrets must never appear in source — use
+# ${{ secrets.* }} references in CI and the staging .env on the server.
+
+title = "Haa Stores gitleaks config"
+
+[extend]
+# Inherit the default ruleset from gitleaks
+useDefault = true
+
+[[allowlists]]
+description = "Documented placeholder values in .env.example files"
+paths = [
+  '''deploy/staging/.env\.example''',
+]
+
+[[allowlists]]
+description = "CI test fixtures — known-fake secrets used only in test jobs"
+regexTarget = "match"
+regexes = [
+  '''ci-jwt-secret-at-least-16-chars''',
+  '''ci-admin-jwt-secret-at-least-16-chars''',
+  '''ci-encryption-key-32-chars-minimum-!!''',
+  '''haa_test_pw''',
+]
+
+[[allowlists]]
+description = "Dev-mode defaults documented in env.ts — must never reach staging"
+regexTarget = "match"
+regexes = [
+  '''dev-jwt-secret-change-in-production''',
+  '''dev-encryption-key-32-chars-minimum!!''',
+  '''dev-admin-jwt-secret-change-in-production''',
+]

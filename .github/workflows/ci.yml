@@ -23,6 +23,22 @@ concurrency:
 # ─────────────────────────────────────────────────────────────────────────────
 
 jobs:
+  # ── 0. Secret scan (G4) ─────────────────────────────────────────────────
+  # Runs independently and in parallel with preflight. No pnpm required.
+  # Blocks the PR if any secret/credential pattern is detected in the diff.
+  secret-scan:
+    name: Secret Scan (G4)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Scan for secrets (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # ── 1. Preflight ─────────────────────────────────────────────────────────
   preflight:
     name: Preflight
@@ -56,6 +72,21 @@ jobs:
 
       - name: Env contract check (G1)
         run: node scripts/check-env-contract.mjs
+
+      - name: Assert api Dockerfile overlays compiled packages (G2)
+        run: |
+          # INC-05: the api prod stage must overlay the compiled workspace
+          # packages (dist/) from the build stage, otherwise the image boots
+          # with ERR_MODULE_NOT_FOUND for every @haa/* package.
+          # This grep prevents silent regression of that COPY line.
+          if ! grep -q 'COPY --from=build /repo/packages ./packages' apps/api/Dockerfile; then
+            echo "::error file=apps/api/Dockerfile::Missing compiled-packages overlay."
+            echo "The prod stage must contain:"
+            echo "  COPY --from=build /repo/packages ./packages"
+            echo "Without it the api image crashes with ERR_MODULE_NOT_FOUND on boot."
+            exit 1
+          fi
+          echo "✓ api Dockerfile has compiled-packages overlay"
 
   # ── 2. Typecheck ─────────────────────────────────────────────────────────
   typecheck:
