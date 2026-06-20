@@ -64,7 +64,8 @@ export class WhatsAppCampaignService {
         eq(s.whatsappCampaigns.storeId, storeId),
       )).limit(1);
 
-    if (!campaign || campaign.status === 'completed') return;
+    // امنع إعادة الدخول على حملة قيد التشغيل (re-tick المجدول بعد انتهاء قفل Redis) — منع إرسال مكرر (QA WhatsApp #5)
+    if (!campaign || campaign.status === 'completed' || campaign.status === 'running') return;
 
     await this.db.update(s.whatsappCampaigns)
       .set({ status: 'running', startedAt: new Date(), updatedAt: new Date() })
