@@ -166,28 +166,34 @@ jobs:
             echo "==> Deploy complete"
           EOF
 
-      - name: Health check — staging
+      - name: Post-deploy smoke gate — staging (G9)
         id: health-check
         env:
-          HEALTH_URL: ${{ vars.STAGING_HEALTH_URL }}
+          STAGING_URL: ${{ vars.STAGING_URL }}
         run: |
           echo "Waiting for services to stabilize..."
           sleep 15
 
+          # Phase 1: wait for /health to respond (api process + DB + Redis)
           MAX_RETRIES=10
           RETRY_INTERVAL=10
           for i in $(seq 1 $MAX_RETRIES); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL/health" || echo "000")
-            echo "Attempt $i/$MAX_RETRIES — HTTP $STATUS"
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/health" || echo "000")
+            echo "Attempt $i/$MAX_RETRIES — /health HTTP $STATUS"
             if [ "$STATUS" = "200" ]; then
-              echo "health=ok" >> "$GITHUB_OUTPUT"
-              exit 0
+              break
+            fi
+            if [ "$i" = "$MAX_RETRIES" ]; then
+              echo "health=failed" >> "$GITHUB_OUTPUT"
+              exit 1
             fi
             sleep $RETRY_INTERVAL
           done
 
-          echo "health=failed" >> "$GITHUB_OUTPUT"
-          exit 1
+          # Phase 2: run the full smoke suite (G9 — INC-21)
+          # Checks: /health JSON, storefront HTML, /api payment-methods contract
+          bash scripts/server/smoke-staging.sh "$STAGING_URL"
+          echo "health=ok" >> "$GITHUB_OUTPUT"
 
       - name: Rollback staging on health failure
         if: failure() && steps.health-check.outputs.health == 'failed'
