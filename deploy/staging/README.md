@@ -110,7 +110,7 @@ are applied from a repo checkout against the localhost-published Postgres —
 ```bash
 cd /srv/haa-stores/src && git pull
 set -a; . /srv/haa-stores/.env; set +a
-DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}" pnpm db:migrate
+DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5433/${POSTGRES_DB}" pnpm db:migrate
 ```
 
 ## Hardening follow-up

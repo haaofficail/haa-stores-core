@@ -26,8 +26,9 @@ services:
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     # Bound to localhost only — lets an operator run DB migrations from a repo
     # checkout on the server without exposing Postgres to the internet.
+    # Host port 5433 to avoid clashing with a pre-existing host Postgres on 5432.
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - haa_pg_data:/var/lib/postgresql/data
     healthcheck:

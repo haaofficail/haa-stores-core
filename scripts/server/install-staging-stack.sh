@@ -55,7 +55,7 @@ done
 log "Initialising database schema from repo (${REPO_REF})"
 # shellcheck disable=SC1091
 set -a; . "${DEPLOY_PATH}/.env"; set +a
-MIGRATE_URL="postgres://${POSTGRES_USER:-haa}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB:-haastores}"
+MIGRATE_URL="postgres://${POSTGRES_USER:-haa}:${POSTGRES_PASSWORD}@127.0.0.1:5433/${POSTGRES_DB:-haastores}"
 if [ ! -d "${SRC_DIR}/.git" ]; then
   git clone --depth 1 --branch "${REPO_REF}" "${REPO_URL}" "${SRC_DIR}"
 else
