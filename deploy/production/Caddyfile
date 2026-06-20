@@ -1,0 +1,58 @@
+# Haa Stores — Production reverse proxy (Caddy v2)
+# ---------------------------------------------------------------------------
+# Automatic HTTPS (Let's Encrypt) for the three production hostnames. Requires
+# DNS A records pointing each name at the production server and ports 80/443 open:
+#
+#   haastores.com           A   <production-server-ip>
+#   admin.haastores.com     A   <production-server-ip>
+#   merchant.haastores.com  A   <production-server-ip>
+#
+# The www subdomain redirects to the apex. The SPA images are built with
+# VITE_API_URL=/api, so each frontend calls the API under the /api/* prefix
+# on its own origin. Caddy strips /api and forwards to the api service.
+
+{
+	email haa.officail@gmail.com
+}
+
+(spa_site) {
+	handle /health* {
+		reverse_proxy api:3001
+	}
+	handle_path /api/* {
+		reverse_proxy api:3001
+	}
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}
+
+www.haastores.com {
+	redir https://haastores.com{uri} permanent
+}
+
+haastores.com {
+	import spa_site
+	handle {
+		reverse_proxy storefront:80
+	}
+}
+
+admin.haastores.com {
+	import spa_site
+	handle {
+		reverse_proxy admin-dashboard:80
+	}
+}
+
+merchant.haastores.com {
+	import spa_site
+	handle {
+		reverse_proxy merchant-dashboard:80
+	}
+}

@@ -1,0 +1,39 @@
+{
+  "project": "haa-stores",
+  "arabicName": "متاجر هاء",
+  "localPath": "~/Desktop/haa-stores-core",
+  "hostingerMcpServer": "hostinger-haa-stores",
+  "approvedServer": {
+    "ip": "72.61.108.208",
+    "currentRole": "staging",
+    "futureRole": "production_candidate",
+    "productionStatus": "not_promoted_yet"
+  },
+  "decision": {
+    "doNotSuggestNewVpsAutomatically": true,
+    "newVpsAllowedOnlyIfApprovedServerUnsuitable": true
+  },
+  "forbiddenForHaaStores": {
+    "vpsIp": "187.124.41.239",
+    "vpsId": "1496264",
+    "hostname": "srv1496264.hstgr.cloud",
+    "ownerProject": "Nasaq / Haa Soft",
+    "domains": ["nasaqpro.tech", "tarmizos.com", "haasoft.com"],
+    "sshKey": "nasaq_deploy",
+    "paths": ["/var/www/nasaq", "/var/www/haasoft", "/var/www/nasaqpro.tech"],
+    "pm2Services": ["nasaq-api", "nasaq-whatsapp-worker", "nasaq-worker"]
+  },
+  "rules": {
+    "useApprovedServerIp": "72.61.108.208",
+    "currentRoleIsStaging": true,
+    "futureProductionPromotionAllowedAfterReadinessAudit": true,
+    "doNotInferFromApiOrdering": true,
+    "doNotUseForbiddenServer": true,
+    "doNotPrintSecrets": true,
+    "requireApprovalForDns": true,
+    "requireApprovalForNginx": true,
+    "requireApprovalForDeploy": true,
+    "requireApprovalForVpsMutation": true,
+    "requireApprovalForSshKeyChanges": true
+  }
+}

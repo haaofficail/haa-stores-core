@@ -97,6 +97,45 @@ export const envSchema = z
     }
   }
 
+  // fake payment provider is development-only.
+  if (data.NODE_ENV === 'production' && data.PAYMENT_PROVIDER === 'fake') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['PAYMENT_PROVIDER'],
+      message: 'PAYMENT_PROVIDER=fake is not allowed in production. Use geidea with live credentials.',
+    });
+  }
+
+  // Geidea requires both merchant public key and API password.
+  if (data.PAYMENT_PROVIDER === 'geidea') {
+    if (!data.GEIDEA_MERCHANT_PUBLIC_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['GEIDEA_MERCHANT_PUBLIC_KEY'],
+        message: 'GEIDEA_MERCHANT_PUBLIC_KEY is required when PAYMENT_PROVIDER=geidea',
+      });
+    }
+    if (!data.GEIDEA_API_PASSWORD) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['GEIDEA_API_PASSWORD'],
+        message: 'GEIDEA_API_PASSWORD is required when PAYMENT_PROVIDER=geidea',
+      });
+    }
+  }
+
+  // OTO shipping provider requires at least one credential.
+  if (data.SHIPPING_PROVIDER === 'oto') {
+    const hasOtoCred = data.OTO_API_KEY || data.OTO_ACCESS_TOKEN || data.OTO_SANDBOX_API_KEY;
+    if (!hasOtoCred) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['OTO_API_KEY'],
+        message: 'SHIPPING_PROVIDER=oto requires OTO_API_KEY, OTO_ACCESS_TOKEN, or OTO_SANDBOX_API_KEY',
+      });
+    }
+  }
+
   // Dev default secrets must not be used in staging/production.
   const devDefaults: Partial<Record<string, string>> = {
     JWT_SECRET: 'dev-jwt-secret-change-in-production',

@@ -19,3 +19,8 @@ storage
 tests/e2e/test-results/
 tests/e2e/report/
 tests/e2e/screenshots/
+.hostinger-mcp.env
+
+# Production secrets — never commit
+deploy/production/.env
+deploy/staging/.env
