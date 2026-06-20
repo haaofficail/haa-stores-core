@@ -60,9 +60,11 @@ DB_PORT="$(node -e "const u=new URL(process.env.DATABASE_URL); process.stdout.wr
 
 echo "=== Bootstrap: $DB_NAME on $DB_HOST:$DB_PORT ==="
 
-# Step 0: create the database if it doesn't exist.
+# Step 0: drop (if exists) then recreate — ensures a clean slate every run.
 PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres \
-  -c "CREATE DATABASE \"$DB_NAME\"" 2>&1 | tail -1 || true
+  -c "DROP DATABASE IF EXISTS \"$DB_NAME\"" 2>&1 | tail -1 || true
+PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres \
+  -c "CREATE DATABASE \"$DB_NAME\"" 2>&1 | tail -1
 
 # Step 1: apply every SQL migration in numeric order.
 MIGRATIONS_DIR="$PROJECT_DIR/packages/db/src/migrations"
