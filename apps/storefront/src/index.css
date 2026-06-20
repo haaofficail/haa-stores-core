@@ -120,10 +120,6 @@
    #storefront-scope, not :root, to prevent global CSS leakage into
    the admin dashboard, system theme, or other apps on the same
    origin. Tailwind's preflight and other apps' tokens stay clean. */
-#storefront-scope,
-#storefront-scope * {
-  /* Selector list for clarity — actual vars live under #storefront-scope. */
-}
 
 #storefront-scope {
   /* Border radius (matches tailwind.config extended borderRadius) */
@@ -596,7 +592,9 @@
   outline: 3px solid #5c9cd5;
   outline-offset: 2px;
 }
-The /login,
+
+/* ── Auth scope ──────────────────────────────────────────────
+   The /login,
 /signup,
 /waitlist
   pages
@@ -614,7 +612,7 @@ The /login,
   namespace
   so
   they
-  don"t visually
+  don't visually
    inherit from the active storefront theme. The auth-scope
    wrapper sets these tokens inline; this rule applies them to
    utility classes. */
