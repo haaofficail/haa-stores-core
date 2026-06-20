@@ -87,6 +87,28 @@ jobs:
       IMAGE_TAG: sha-${{ github.sha }}
 
     steps:
+      - name: Preflight — verify required staging config
+        env:
+          STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          STAGING_USER: ${{ secrets.STAGING_USER }}
+          STAGING_DEPLOY_PATH: ${{ secrets.STAGING_DEPLOY_PATH }}
+          STAGING_URL: ${{ vars.STAGING_URL }}
+          STAGING_HEALTH_URL: ${{ vars.STAGING_HEALTH_URL }}
+        run: |
+          missing=()
+          for v in STAGING_SSH_KEY STAGING_HOST STAGING_USER STAGING_DEPLOY_PATH STAGING_URL STAGING_HEALTH_URL; do
+            if [ -z "${!v}" ]; then missing+=("$v"); fi
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing required staging config: ${missing[*]}"
+            echo "Set them under Settings → Environments → staging — secrets:"
+            echo "  STAGING_SSH_KEY, STAGING_HOST, STAGING_USER, STAGING_DEPLOY_PATH"
+            echo "and variables: STAGING_URL, STAGING_HEALTH_URL."
+            exit 1
+          fi
+          echo "✓ All required staging secrets and variables are present."
+
       - name: Checkout
         uses: actions/checkout@v5
 
