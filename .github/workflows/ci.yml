@@ -54,6 +54,21 @@ jobs:
       - name: Preflight checks
         run: pnpm preflight
 
+      - name: Assert api Dockerfile overlays compiled packages (G2)
+        run: |
+          # INC-05: the api prod stage must overlay the compiled workspace
+          # packages (dist/) from the build stage, otherwise the image boots
+          # with ERR_MODULE_NOT_FOUND for every @haa/* package.
+          # This grep prevents silent regression of that COPY line.
+          if ! grep -q 'COPY --from=build /repo/packages ./packages' apps/api/Dockerfile; then
+            echo "::error file=apps/api/Dockerfile::Missing compiled-packages overlay."
+            echo "The prod stage must contain:"
+            echo "  COPY --from=build /repo/packages ./packages"
+            echo "Without it the api image crashes with ERR_MODULE_NOT_FOUND on boot."
+            exit 1
+          fi
+          echo "✓ api Dockerfile has compiled-packages overlay"
+
   # ── 2. Typecheck ─────────────────────────────────────────────────────────
   typecheck:
     name: Typecheck
