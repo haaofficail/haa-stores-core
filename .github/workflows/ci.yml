@@ -73,6 +73,9 @@ jobs:
       - name: Env contract check (G1)
         run: node scripts/check-env-contract.mjs
 
+      - name: Migration journal completeness (G5)
+        run: node scripts/check-migration-journal.mjs
+
       - name: Assert api Dockerfile overlays compiled packages (G2)
         run: |
           # INC-05: the api prod stage must overlay the compiled workspace
@@ -181,6 +184,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Wait for Postgres (G3)
+        run: |
+          echo "Asserting Postgres is accepting connections on :5432..."
+          for i in $(seq 1 20); do
+            pg_isready -h localhost -p 5432 -U haa && break
+            echo "  Attempt $i/20 — retrying in 2s..."
+            sleep 2
+          done
+          pg_isready -h localhost -p 5432 -U haa \
+            || { echo "::error::Postgres did not become ready within 40s"; exit 1; }
+
       - name: Prepare test database
         run: |
           pnpm db:bootstrap
@@ -273,6 +287,17 @@ jobs:
 
       - name: Build shared packages
         run: pnpm -r --filter './packages/**' --workspace-concurrency=1 build
+
+      - name: Wait for Postgres (G3)
+        run: |
+          echo "Asserting Postgres is accepting connections on :5432..."
+          for i in $(seq 1 20); do
+            pg_isready -h localhost -p 5432 -U haa && break
+            echo "  Attempt $i/20 — retrying in 2s..."
+            sleep 2
+          done
+          pg_isready -h localhost -p 5432 -U haa \
+            || { echo "::error::Postgres did not become ready within 40s"; exit 1; }
 
       - name: Run DB migrations
         run: pnpm db:bootstrap
