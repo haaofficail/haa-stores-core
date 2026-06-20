@@ -136,6 +136,11 @@ export default function SettlementBatchDetailPage() {
       .then(setPayout)
       .catch(() => { /* payout may not exist yet */ })
       .finally(() => setPayoutLoading(false));
+    // Keyed to `detail` only on purpose: `load` already depends on
+    // `manualMode`, so any manualMode change refreshes `detail` and
+    // re-runs this effect through it. Adding `manualMode` here would
+    // double-fetch the payout (once with the stale detail, once with the new).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detail]);
 
   const performAction = async (action: string, fn: () => Promise<unknown>) => {

@@ -53,6 +53,11 @@ export default function Marketplace() {
     }
   };
 
+  // Mount-only initial load. Subsequent reloads are triggered explicitly:
+  // the status filter's onChange calls load(nextStatus), and mutation
+  // handlers call load() after success. Adding `load` to the deps would
+  // double-fetch on every filter change, so the empty array is intentional.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
   const review = async (id: number, nextStatus: 'approved' | 'rejected' | 'suspended' | 'pending') => {

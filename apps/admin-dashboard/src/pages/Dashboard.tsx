@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -9,16 +9,16 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     setError(false);
     adminApi.dashboard()
       .then(setStats)
       .catch(() => { setError(true);       toast.error(t('dashboard.loadError', 'فشل تحميل البيانات')); })
       .finally(() => setLoading(false));
-  };
+  }, [t]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   if (loading) {
     return (
