@@ -54,7 +54,9 @@ export default function Checkout() {
   const [address, setAddress] = useState({ city: '', district: '', street: '', details: '' });
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([]);
   const [selectedShippingId, setSelectedShippingId] = useState<number | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState('fake_card_success');
+  // طريقة الدفع التجريبية متاحة في التطوير فقط؛ الإنتاج يبدأ بالدفع عند الاستلام (QA S7).
+  const FAKE_PAYMENTS_ENABLED = import.meta.env.DEV;
+  const [paymentMethod, setPaymentMethod] = useState(import.meta.env.DEV ? 'fake_card_success' : 'cash_on_delivery');
   const [shippingLoading, setShippingLoading] = useState(false);
 
   const [features, setFeatures] = useState<Record<string, boolean> | null>(null);
@@ -281,7 +283,7 @@ export default function Checkout() {
   });
 
   const paymentMethods = [
-    { value: 'fake_card_success', label: t('checkout.payCard'), icon: <CreditCard className="h-4 w-4" />, desc: t('checkout.payCardDesc', 'تجريبي — سينجح الدفع') },
+    ...(FAKE_PAYMENTS_ENABLED ? [{ value: 'fake_card_success', label: t('checkout.payCard'), icon: <CreditCard className="h-4 w-4" />, desc: t('checkout.payCardDesc', 'تجريبي — سينجح الدفع') }] : []),
     { value: 'bank_transfer', label: t('checkout.payBankTransfer'), icon: <Building className="h-4 w-4" />, desc: t('checkout.payBankTransferDesc', 'تحويل بنكي مباشر') },
     { value: 'cash_on_delivery', label: t('checkout.payCash'), icon: <Banknote className="h-4 w-4" />, desc: t('checkout.payCashDesc', 'ادفع عند استلام طلبك') },
     ...bnplOptions,
@@ -494,9 +496,11 @@ export default function Checkout() {
                     </label>
                   ))}
                 </div>
-                <StoreAlert variant="warning" className="mt-4">
-                  <p className="text-xs">{t('checkout.localTestWarning', 'هذه نسخة تجريبية محلية. لن يتم خصم أي مبالغ حقيقية.')}</p>
-                </StoreAlert>
+                {FAKE_PAYMENTS_ENABLED && (
+                  <StoreAlert variant="warning" className="mt-4">
+                    <p className="text-xs">{t('checkout.localTestWarning', 'هذه نسخة تجريبية محلية. لن يتم خصم أي مبالغ حقيقية.')}</p>
+                  </StoreAlert>
+                )}
               </StoreCard>
             )}
 

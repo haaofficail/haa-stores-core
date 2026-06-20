@@ -1,6 +1,7 @@
 // GeideaPaymentProvider — full adapter for Geidea payment gateway.
 // Requires GEIDEA_MERCHANT_PUBLIC_KEY and GEIDEA_API_PASSWORD env vars.
 
+import crypto from 'crypto';
 import { eq, and } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import type { DbClient } from '@haa/db';
@@ -125,6 +126,8 @@ export class GeideaPaymentProvider implements PaymentProvider {
   verifyWebhookSignature(payload: string | Buffer, signature: string): boolean {
     if (!this.apiPassword) return false;
     const expected = createGeideaSignature([payload.toString()], this.apiPassword);
-    return expected === signature;
+    // مقارنة ثابتة الزمن (QA S5)
+    if (Buffer.from(expected).length !== Buffer.from(signature).length) return false;
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
   }
 }
