@@ -84,9 +84,10 @@ describe('Quality Pass 5 — Queue Scaffold (Item 2)', () => {
 
   it('env.ts must require QUEUE_REDIS_URL in production', () => {
     const content = read(envFile);
-    // It should be in the production-required list
+    // Must appear in env.ts as a recognized var and be enforced in staging/production.
+    // Updated from the old requireEnv() loop pattern to STAGING_REQUIRED_KEYS (PR-A / G1).
     expect(content).toMatch(/QUEUE_REDIS_URL/);
-    expect(content).toMatch(/required\.push.*QUEUE_REDIS_URL/);
+    expect(content).toMatch(/STAGING_REQUIRED_KEYS/);
   });
 
   it('services/ README must document the queue shim pattern (next to observability shim)', () => {

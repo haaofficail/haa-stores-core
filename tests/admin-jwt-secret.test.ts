@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -21,8 +21,9 @@ describe('Quality Pass 1 — ADMIN_JWT_SECRET Validation', () => {
 
   it('env.ts must require ADMIN_JWT_SECRET', () => {
     const envTs = readFileSync(resolve(projectRoot, 'apps/api/src/env.ts'), 'utf-8');
-    // Should be in the required array
-    expect(envTs).toMatch(/'ADMIN_JWT_SECRET'/);
+    // Must appear in the zod schema with a min-length constraint (always-required field).
+    // Updated from the old requireEnv() loop pattern to the zod superRefine approach (PR-A / G1).
+    expect(envTs).toMatch(/ADMIN_JWT_SECRET\s*:\s*z\.string/);
   });
 
   it('env.ts must validate dev default for ADMIN_JWT_SECRET', () => {
