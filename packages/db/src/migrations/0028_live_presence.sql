@@ -58,7 +58,7 @@ CREATE TABLE "live_presence" (
 	CONSTRAINT "live_presence_store_session_unique" UNIQUE("store_id","session_id")
 );
 --> statement-breakpoint
-CREATE TABLE "membership_permissions" (
+CREATE TABLE IF NOT EXISTS "membership_permissions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"membership_id" integer NOT NULL,
 	"permission_key" varchar(100) NOT NULL,
