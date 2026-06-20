@@ -7,46 +7,45 @@
 #   admin.staging.haastores.com     A   72.61.108.208
 #   merchant.staging.haastores.com  A   72.61.108.208
 #
-# The app SPA images are built with VITE_API_URL='' (empty), so the frontends
-# call the API on their OWN origin using relative paths. Caddy therefore routes
-# the API path prefixes to the `api` service and everything else to the SPA.
+# The SPA images are built with VITE_API_URL=/api, so each frontend calls the
+# API under the /api/* prefix on its own origin. Caddy strips /api and forwards
+# to the api service; /health is proxied for the deploy health check; everything
+# else is served by the SPA. This avoids the /s/:slug path collision between the
+# storefront's API endpoints and its client-side page routes.
 
 {
 	email haa.officail@gmail.com
 }
 
-# ── Storefront (public site) ───────────────────────────────────────────────
-staging.haastores.com {
-	@api path /health* /s/* /auth/* /marketplace/* /webhooks/* /internal/* /api/*
-	handle @api {
+(spa_site) {
+	# Deploy health check + API. handle_path strips the /api prefix before
+	# proxying, so /api/s/x -> api:/s/x.
+	handle /health* {
 		reverse_proxy api:3001
 	}
+	handle_path /api/* {
+		reverse_proxy api:3001
+	}
+	encode gzip zstd
+}
+
+staging.haastores.com {
+	import spa_site
 	handle {
 		reverse_proxy storefront:80
 	}
-	encode gzip zstd
 }
 
-# ── Admin dashboard ────────────────────────────────────────────────────────
 admin.staging.haastores.com {
-	@api path /health* /admin/* /auth/* /internal/*
-	handle @api {
-		reverse_proxy api:3001
-	}
+	import spa_site
 	handle {
 		reverse_proxy admin-dashboard:80
 	}
-	encode gzip zstd
 }
 
-# ── Merchant dashboard ─────────────────────────────────────────────────────
 merchant.staging.haastores.com {
-	@api path /health* /merchant/* /auth/* /internal/*
-	handle @api {
-		reverse_proxy api:3001
-	}
+	import spa_site
 	handle {
 		reverse_proxy merchant-dashboard:80
 	}
-	encode gzip zstd
 }

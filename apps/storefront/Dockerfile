@@ -52,6 +52,13 @@ COPY apps/storefront/ ./apps/storefront/
 COPY tsconfig.base.json ./
 COPY tsconfig.json      ./
 
+# Bake the API base URL into the SPA bundle. Empty in dev (relative same-origin
+# to the Vite proxy); staging/prod build with VITE_API_URL=/api so API calls hit
+# the reverse proxy's API route instead of colliding with the SPA's own
+# /s/:slug page routes on the same origin.
+ARG VITE_API_URL=""
+ENV VITE_API_URL=${VITE_API_URL}
+
 RUN pnpm -r --filter './packages/**' --workspace-concurrency=1 build
 RUN pnpm --filter @haa/storefront build
 

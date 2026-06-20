@@ -55,6 +55,41 @@ services:
       retries: 10
     networks: [haa]
 
+  # S3-compatible object storage. The API forbids STORAGE_DRIVER=local in
+  # staging/production, so staging ships a self-contained MinIO instead of
+  # depending on an external bucket. Credentials come from .env.
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-haaadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set in .env}
+    volumes:
+      - haa_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [haa]
+
+  # One-shot: create the staging bucket, then exit.
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-haaadmin} ${MINIO_ROOT_PASSWORD} &&
+      mc mb -p local/${S3_BUCKET:-haa-staging} &&
+      mc anonymous set download local/${S3_BUCKET:-haa-staging} &&
+      echo 'bucket ready';
+      "
+    restart: "no"
+    networks: [haa]
+
   api:
     image: ${REGISTRY:-ghcr.io}/${IMAGE_PREFIX:-haaofficail/haa-stores}-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
@@ -63,6 +98,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     healthcheck:
       test:
@@ -95,6 +132,12 @@ services:
     image: caddy:2-alpine
     restart: unless-stopped
     depends_on: [api, storefront, admin-dashboard, merchant-dashboard]
+    # The host uses a systemd-resolved stub (127.0.0.53) that isn't reachable
+    # from inside containers, which breaks Caddy's outbound ACME calls. Pin
+    # public resolvers so certificate issuance can reach Let's Encrypt.
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     ports:
       - "80:80"
       - "443:443"
@@ -107,6 +150,7 @@ services:
 volumes:
   haa_pg_data:
   haa_redis_data:
+  haa_minio_data:
   haa_caddy_data:
   haa_caddy_config:
 
