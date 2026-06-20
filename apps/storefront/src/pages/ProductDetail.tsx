@@ -125,7 +125,7 @@ export default function ProductDetail() {
     if (!slug) return;
     featuresApi.get(slug).then(setFeatures).catch(() => {});
     giftOptionsApi.get(slug).then(setStoreGiftOptions).catch(() => {});
-    checkoutApi.getPaymentMethods(slug).then((res: any) => setPaymentMethods(res.methods)).catch(() => setPaymentMethods([]));
+    checkoutApi.getPaymentMethods(slug).then((res: any) => setPaymentMethods(Array.isArray(res?.methods) ? res.methods : [])).catch(() => setPaymentMethods([]));
   }, [slug]);
 
   useEffect(() => {

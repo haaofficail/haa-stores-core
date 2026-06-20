@@ -13,7 +13,7 @@ import {
   StoreStepIndicator, StoreAlert, StoreBadge,
 } from '@/components/ui';
 import { toast } from 'sonner';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Package, ArrowLeft, ArrowRight, CreditCard, Building, Banknote, ShieldCheck, MapPin, Truck, Gift, Phone, Clock } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { SarIcon } from '@/components/ui/SarIcon';
@@ -87,7 +87,8 @@ export default function Checkout() {
   useEffect(() => {
     if (!slug || !cart) return;
     checkoutApi.getPaymentMethods(slug, cart.id).then((res) => {
-      setBnplMethods(res.methods.filter(m => m.provider === 'tabby' || m.provider === 'tamara'));
+      const methods = Array.isArray(res?.methods) ? res.methods : [];
+      setBnplMethods(methods.filter(m => m.provider === 'tabby' || m.provider === 'tamara'));
     }).catch(() => {});
   }, [slug, cart]);
 
@@ -102,6 +103,7 @@ export default function Checkout() {
     if (slug && cart && cart.items.length > 0) {
       tracker.trackBeginCheckout(slug, cart.id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug, cart?.id, cart?.items?.length]);
 
   useEffect(() => {
@@ -117,6 +119,7 @@ export default function Checkout() {
         .catch(() => toast.error(t('common.error', 'فشل تحميل طرق الشحن')))
         .finally(() => setShippingLoading(false));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address.city]);
 
   const validateStep = (step: number): boolean => {

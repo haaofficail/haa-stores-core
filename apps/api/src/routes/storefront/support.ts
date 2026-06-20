@@ -9,10 +9,10 @@ import * as s from '@haa/db/schema';
 import {
   SupportService,
   LivePresenceService,
-  getAvailablePaymentMethods,
+  PaymentProviderSettingsService,
 } from '@haa/commerce-core';
 import { rateLimiter } from '../../middleware/rate-limiter.js';
-import { eventPayloadSchema, heartbeatPayloadSchema } from '@haa/shared';
+import { eventPayloadSchema, heartbeatPayloadSchema, isDemoStore } from '@haa/shared';
 import { toPublicPolicy } from '@haa/shared/dto/storefront-dto';
 import { resolveActiveStore } from './_shared.js';
 
@@ -50,10 +50,16 @@ supportRouter.get('/:slug/pickup-locations', async (c) => {
 });
 
 supportRouter.get('/:slug/payment-methods', async (c) => {
-  const { error } = await resolveActiveStore(c);
+  const { store, error } = await resolveActiveStore(c);
   if (error) return error;
-  const methods = getAvailablePaymentMethods();
-  return c.json({ success: true, data: methods });
+  // Return the rich availability shape the storefront expects:
+  // { methods: PaymentMethodAvailability[] } — not a bare string[].
+  // The previous handler returned getAvailablePaymentMethods() (string[]),
+  // so the frontend's `res.methods` was undefined and crashed the product
+  // page render (.filter on undefined → ErrorBoundary STORE-001).
+  const service = new PaymentProviderSettingsService();
+  const methods = await service.getAvailableMethods(store.id, { isDemo: isDemoStore(store) });
+  return c.json({ success: true, data: { methods } });
 });
 
 supportRouter.get('/:slug/gift-options', async (c) => {

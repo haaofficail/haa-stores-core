@@ -160,7 +160,7 @@ const paymentLogoByProvider: Record<string, string> = {
 
 function getPaymentLogosForMethods(methods: any[], categories?: Set<string>, availableOnly = true) {
   const logoIds = new Set(
-    methods
+    (Array.isArray(methods) ? methods : [])
       .filter((method: any) => !availableOnly || method.available)
       .map((method: any) => paymentLogoByProvider[method.provider])
       .filter(Boolean)
