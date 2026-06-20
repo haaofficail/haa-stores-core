@@ -68,3 +68,14 @@
 | R7 | لون خصم hardcoded `#dc2626` | ✅ PR #22 — `bg-danger` |
 | R8 | صور API بلا سياسة referrer | ✅ PR #22 — `referrerPolicy="no-referrer"` |
 | R9 | معاينة الصورة بلا Escape/إغلاق خارجي | ✅ PR #22 — Escape + autoFocus + click-outside |
+
+## مراجعة كود About (AB)
+
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| AB1 | حالة التحميل تستخدم `id="main-content"` خارج `storefront-scope` | ✅ PR #23 — `storefront-scope` في الحالتين |
+| AB2 | `t('about.title')` و`t('about.description')` بلا fallback | ✅ PR #23 |
+| AB3 | عنوان SEO يظهر "عن المتجر - " قبل تحميل المتجر | ✅ PR #23 — شرطي |
+| AB4 | الوصف مكرر حرفياً في الهيرو والبطاقة السفلية | ✅ PR #23 — البطاقة صارت "قصة المتجر" + اسم المتجر في الهيرو |
+| AB5 | الكروت الأربعة مكررة يدوياً | ✅ PR #23 — مصفوفة + map |
+| AB6 | استيراد lucide مباشر (P1-#5) | ✅ PR #23 — عبر `<Icon>` (هجرة فعلية لهذا الملف) |
