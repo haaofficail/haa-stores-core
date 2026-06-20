@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 // eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Copy, Package, Search, Store } from 'lucide-react';
@@ -28,6 +28,11 @@ function statusLabel(status: string) {
   return labels[status] ?? status;
 }
 
+function formatAmount(value: unknown) {
+  const a = Number(value);
+  return Number.isFinite(a) ? a.toFixed(2) : '0.00';
+}
+
 // TASK-0040 Track 1B — P0-3. Persist the access token per-order in
 // localStorage so customers don't have to re-enter it on every visit.
 // Keyed by marketplaceOrderNumber to keep tokens isolated per order.
@@ -40,48 +45,66 @@ export default function MarketplaceOrderTrack() {
   const [lookupOrderNumber, setLookupOrderNumber] = useState(orderNumber ?? '');
   // Prefer ?access_token= query param; fall back to localStorage; fall
   // back to legacy ?phone= (deprecated, see Plan §3 Track 1B).
+  const readStoredToken = (key: string): string | null => {
+    try {
+      return sessionStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  };
   const initialToken =
     searchParams.get('access_token') ??
-    (orderNumber ? localStorage.getItem(TOKEN_STORAGE_PREFIX + orderNumber) : null);
+    (orderNumber ? readStoredToken(TOKEN_STORAGE_PREFIX + orderNumber) : null);
   const [accessToken, setAccessToken] = useState(initialToken ?? '');
   const [legacyPhone] = useState(searchParams.get('phone') ?? '');
   const [order, setOrder] = useState<MarketplaceOrder | null>(null);
   const [loading, setLoading] = useState(Boolean(orderNumber && (initialToken || legacyPhone)));
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const requestIdRef = useRef(0);
 
   useSEO({ title: `تتبع طلب سوق هاء ${orderNumber ?? ''}`, noIndex: true });
 
-  const load = useCallback(async (nextToken = accessToken, nextPhone = legacyPhone) => {
+  const load = useCallback(async (token: string, phone: string) => {
     if (!orderNumber) return;
-    if (!nextToken.trim() && !nextPhone.trim()) return;
+    if (!token.trim() && !phone.trim()) return;
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError('');
     try {
       // Prefer token; fall back to legacy phone during transition window.
-      const result = nextToken.trim()
-        ? await haaMarketplaceApi.getOrder(orderNumber, nextToken.trim())
-        : await haaMarketplaceApi.getOrderLegacy(orderNumber, nextPhone.trim());
+      const result = token.trim()
+        ? await haaMarketplaceApi.getOrder(orderNumber, token.trim())
+        : await haaMarketplaceApi.getOrderLegacy(orderNumber, phone.trim());
+      if (requestId !== requestIdRef.current) return;
       setOrder(result);
       // Persist token for future visits (one-time read from API response
       // OR from URL query on first navigation).
       if (result.accessToken && orderNumber) {
-        localStorage.setItem(TOKEN_STORAGE_PREFIX + orderNumber, result.accessToken);
+        try {
+          sessionStorage.setItem(TOKEN_STORAGE_PREFIX + orderNumber, result.accessToken);
+        } catch {
+          // Storage may be unavailable (private mode / quota); non-fatal.
+        }
       }
-      const next = new URLSearchParams();
-      if (result.accessToken) next.set('access_token', result.accessToken);
-      setSearchParams(next, { replace: true });
+      // Do not re-write the token back into the URL; clear query params once read.
+      setSearchParams(new URLSearchParams(), { replace: true });
     } catch {
+      if (requestId !== requestIdRef.current) return;
       setOrder(null);
       setError('لم يتم العثور على طلب سوق بهذا الرقم.');
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [orderNumber, accessToken, legacyPhone, setSearchParams]);
+  }, [orderNumber, setSearchParams]);
 
   useEffect(() => {
     if (orderNumber && (initialToken || legacyPhone)) load(initialToken ?? '', legacyPhone);
   }, [orderNumber, initialToken, legacyPhone, load]);
+
+  useEffect(() => {
+    setLookupOrderNumber(orderNumber ?? '');
+  }, [orderNumber]);
 
   const submitLookup = () => {
     if (!lookupOrderNumber.trim() || !accessToken.trim()) {
@@ -133,7 +156,15 @@ export default function MarketplaceOrderTrack() {
               dir="ltr"
               className="text-start"
             />
-            <StoreButton type="button" onClick={orderNumber ? () => load() : submitLookup} loading={loading} className="self-end" iconStart={<Icon icon={Search} size="xs" />}>
+            <StoreButton type="button" onClick={orderNumber ? () => {
+              const typed = lookupOrderNumber.trim();
+              const token = accessToken.trim();
+              if (typed && typed !== orderNumber) {
+                navigate(`/marketplace/order/${encodeURIComponent(typed)}?access_token=${encodeURIComponent(token)}`);
+              } else {
+                load(token, '');
+              }
+            } : submitLookup} loading={loading} className="self-end" iconStart={<Icon icon={Search} size="xs" />}>
               استعلام وتتبع
             </StoreButton>
           </div>
@@ -187,7 +218,7 @@ export default function MarketplaceOrderTrack() {
                     </div>
                   </div>
                   <p className="mt-3 text-sm font-bold text-text-primary">
-                    {Number(subOrder.total).toFixed(2)} <SarIcon size="md" />
+                    {formatAmount(subOrder.total)} <SarIcon size="md" />
                   </p>
                   <StoreAlert variant="info" title="يكتمل عند التاجر" className="mt-3">
                     هذا الطلب تحول داخليًا إلى طلب متجر عادي. الشحن والإرجاع والاستبدال والدعم تتم من صفحة طلب المتجر.
@@ -240,13 +271,13 @@ export default function MarketplaceOrderTrack() {
                   <span className="font-semibold">{order.subOrders.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-text-secondary">المنتجات</span>
+                  <span className="text-text-secondary">حالة التنفيذ</span>
                   <span className="font-semibold">{statusLabel(order.fulfillmentStatus)}</span>
                 </div>
                 <div className="border-t border-border pt-3">
                   <div className="flex justify-between">
                     <span className="text-text-secondary">الإجمالي</span>
-                    <span className="font-bold">{Number(order.total).toFixed(2)} <SarIcon size="md" /></span>
+                    <span className="font-bold">{formatAmount(order.total)} <SarIcon size="md" /></span>
                   </div>
                 </div>
               </div>
