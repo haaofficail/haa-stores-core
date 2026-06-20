@@ -8,8 +8,8 @@ const storefrontStoreInfoRoute = readFileSync(new URL('../apps/api/src/routes/st
 const dashboardNotifications = readFileSync(new URL('../apps/merchant-dashboard/src/pages/Notifications.tsx', import.meta.url), 'utf-8');
 
 describe('Email contact regression', () => {
-  it('uses info@haasoft.com as official contact fallback until SMTP is configured', () => {
-    expect(getOfficialContactEmail()).toBe('info@haasoft.com');
+  it('uses info@haastores.com as official contact fallback until SMTP is configured', () => {
+    expect(getOfficialContactEmail()).toBe('info@haastores.com');
     // After QP 5 Route Migration 7/24, the provider-status
     // aggregation moved into ProviderStatusService.
     expect(providerStatusService).toContain("status: smtpConfigured ? 'configured' : 'contact_only'");
@@ -22,6 +22,6 @@ describe('Email contact regression', () => {
     expect(providerStatusService).toContain('SMTP_USER');
     expect(providerStatusService).toContain('SMTP_PASSWORD');
     expect(dashboardNotifications).toContain('contact-only');
-    expect(dashboardNotifications).toContain('info@haasoft.com');
+    expect(dashboardNotifications).toContain('info@haastores.com');
   });
 });
