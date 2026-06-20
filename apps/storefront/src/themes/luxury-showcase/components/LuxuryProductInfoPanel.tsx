@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Check, Heart, Minus, Plus, Share2, ShoppingBag, ShieldCheck, Truck, RefreshCcw } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { SarIcon } from '@/components/ui/SarIcon';
@@ -210,8 +211,9 @@ export function LuxuryProductInfoPanel({
         <div className="mt-6 flex gap-2">
           <button
             type="button"
+            data-testid="pdp-add-to-cart"
             onClick={handleAddToCart}
-            disabled={outOfStock || adding}
+            disabled={outOfStock || adding || propsBag.cartReady === false}
             className={[
               'flex min-h-8 flex-1 items-center justify-center rounded-lg px-3 text-xs font-light uppercase tracking-[0.16em] transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]',
             ].join(' ')}

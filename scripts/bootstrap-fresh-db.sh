@@ -72,7 +72,7 @@ for sql in "$MIGRATIONS_DIR"/[0-9][0-9][0-9][0-9]_*.sql; do
   name=$(basename "$sql" .sql)
   set +e
   PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
-    -v ON_ERROR_STOP=0 -f "$sql" >/tmp/bs-psql.log 2>&1
+    -v ON_ERROR_STOP=1 -f "$sql" >/tmp/bs-psql.log 2>&1
   rc=$?
   set -e
   if [ $rc -eq 0 ]; then
@@ -81,10 +81,16 @@ for sql in "$MIGRATIONS_DIR"/[0-9][0-9][0-9][0-9]_*.sql; do
   else
     failed=$((failed+1))
     echo "  ✗ $name  (see /tmp/bs-psql.log)"
+    cat /tmp/bs-psql.log >&2
   fi
 done
 echo ""
 echo "=== Step 1: applied $applied, failed $failed ==="
+
+if [ "$failed" -gt 0 ]; then
+  echo "Bootstrap aborted: $failed migration(s) failed. Fix them before recording hashes." >&2
+  exit 1
+fi
 
 # Step 2: record hashes in drizzle.__drizzle_migrations so subsequent
 # pnpm db:migrate calls recognize the state.

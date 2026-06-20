@@ -6,7 +6,7 @@ import {
   StoreContainer, StoreButton, StoreCard, StoreSkeleton, StoreEmptyState, StoreQuantitySelector, StoreBadge, StoreInput, StoreIconButton,
 } from '@/components/ui';
 import { Icon } from '@/components/ui/icon';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { ShoppingCart, Trash2, Package, ArrowLeft, ShoppingBag, Check, Tag, X, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 import { SarIcon } from '@/components/ui/SarIcon';
@@ -430,6 +430,7 @@ export default function Cart() {
                   href={`/s/${slug}/checkout${couponData?.valid && couponData.code ? `?coupon=${encodeURIComponent(couponData.code)}` : ''}`}
                   className="w-full"
                   size="md"
+                  data-testid="cart-checkout-link"
                 >
                   {t('cart.checkout')}
                 </StoreButton>

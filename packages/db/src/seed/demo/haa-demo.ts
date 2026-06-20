@@ -341,6 +341,29 @@ async function seedHaaDemo() {
     console.log(`  ✓ ${existingZones.length} Shipping zones already exist, skipped`);
   }
 
+  // ── Shipping Rates (idempotent) — must run after methods AND zones exist ──
+  const allMethods = await db.select().from(s.shippingMethods).where(eq(s.shippingMethods.storeId, storeId));
+  const allZones = await db.select().from(s.shippingZones).where(eq(s.shippingZones.storeId, storeId));
+  const zoneRiyadh = allZones.find((z) => z.name === 'الرياض');
+  const zoneOther = allZones.find((z) => z.name === 'بقية المناطق');
+  const methodRegular = allMethods.find((m) => m.name === 'توصيل عادي');
+  const methodExpress = allMethods.find((m) => m.name === 'توصيل سريع');
+  const methodOther = allMethods.find((m) => m.name === 'توصيل خارج الرياض');
+  if (zoneRiyadh && methodRegular) {
+    const existingRates = await db.select().from(s.shippingRates).where(eq(s.shippingRates.shippingZoneId, zoneRiyadh.id)).limit(1);
+    if (existingRates.length === 0) {
+      await db.insert(s.shippingRates).values([
+        ...(methodRegular ? [{ shippingMethodId: methodRegular.id, shippingZoneId: zoneRiyadh.id, baseRate: '15.00', estimatedDaysMin: 1, estimatedDaysMax: 3 }] : []),
+        ...(methodExpress ? [{ shippingMethodId: methodExpress.id, shippingZoneId: zoneRiyadh.id, baseRate: '35.00', estimatedDaysMin: 0, estimatedDaysMax: 1 }] : []),
+        ...(zoneOther && methodRegular ? [{ shippingMethodId: methodRegular.id, shippingZoneId: zoneOther.id, baseRate: '25.00', estimatedDaysMin: 2, estimatedDaysMax: 5 }] : []),
+        ...(zoneOther && methodOther ? [{ shippingMethodId: methodOther.id, shippingZoneId: zoneOther.id, baseRate: '25.00', estimatedDaysMin: 2, estimatedDaysMax: 5 }] : []),
+      ]);
+      console.log('  ✓ Shipping rates created');
+    } else {
+      console.log('  ✓ Shipping rates already exist, skipped');
+    }
+  }
+
   // ── Pickup Location (idempotent) ──
   const existingPickups = await db.select().from(s.pickupLocations).where(eq(s.pickupLocations.storeId, storeId));
   if (existingPickups.length === 0) {

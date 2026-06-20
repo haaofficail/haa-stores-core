@@ -60,6 +60,7 @@ export interface ProductPageProps {
   adding: boolean;
   buying: boolean;
   added: boolean;
+  cartReady?: boolean;
   giftWrapPriceDisplay: number | null;
   recentlyViewed?: Array<{ id: number; name: string; slug: string; image: string }>;
 }
