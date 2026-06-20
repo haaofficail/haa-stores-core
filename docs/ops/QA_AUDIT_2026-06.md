@@ -54,3 +54,17 @@
 | M3 | ~41 `eslint-disable` مؤجّلة (هجرة P1-#5 lucide→Icon) | 📋 |
 | M4 | 2FA ناقص على حذف الحساب (PDPL) + لا تنفيذ لمهمة الحذف بعد 30 يوماً | 📋 |
 | M5 | 148 `any` في `merchant-dashboard/src/lib/api.ts` | 📋 |
+
+## مراجعة كود MarketplaceProductDetail (R)
+
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| R1 | عدم اتساق `isDemoStore` (الشارة تستخدم `product.isDemoStore`، الثقة تستخدم `product.store.isDemoStore`) | ✅ PR #22 — مصدر موحّد |
+| R2 | الكمية لا تُصفّر عند تغيير المنتج ولا تُقيّد بالمخزون قبل الإضافة | ✅ PR #22 — تصفير + `safeQuantity()` |
+| R3 | Race condition في جلب المنتج (نتيجة طلب قديم تستبدل الجديد) | ✅ PR #22 — حارس `cancelled` |
+| R4 | `similarProducts` تبقى من منتج سابق عند غياب `categorySlug` | ✅ PR #22 — مسح فوري + else |
+| R5 | `merchantProductUrl` يُمرّر لـ `Link` بلا تحقق (رابط خارجي محتمل) | ✅ PR #22 — يقبل المسارات الداخلية فقط |
+| R6 | المنتجات المشابهة قد تقل عن 4 (limit:4 ثم استبعاد الحالي) | ✅ PR #22 — limit:8 ثم slice(4) |
+| R7 | لون خصم hardcoded `#dc2626` | ✅ PR #22 — `bg-danger` |
+| R8 | صور API بلا سياسة referrer | ✅ PR #22 — `referrerPolicy="no-referrer"` |
+| R9 | معاينة الصورة بلا Escape/إغلاق خارجي | ✅ PR #22 — Escape + autoFocus + click-outside |
