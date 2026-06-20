@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- icons passed through <Icon> wrapper
 import { Bell, Mail, MessageSquare, Smartphone, Save, Loader2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api';
@@ -162,7 +163,7 @@ export default function Notifications() {
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
         <p className="font-medium mb-1">تنبيه: قنوات الاتصال تحتاج إعداد مزودات حقيقية</p>
         <p className="text-amber-700">
-          البريد يعمل كقناة تواصل رسمية عبر info@haasoft.com حتى إعداد SMTP. واتساب هنا رابط/QR تواصل فقط، وليس WhatsApp Business API.
+          البريد يعمل كقناة تواصل رسمية عبر info@haastores.com حتى إعداد SMTP. واتساب هنا رابط/QR تواصل فقط، وليس WhatsApp Business API.
         </p>
       </div>
 

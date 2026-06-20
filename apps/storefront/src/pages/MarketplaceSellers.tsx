@@ -21,7 +21,7 @@ export default function MarketplaceSellers() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-surface-2 overflow-x-hidden">
+    <main id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-surface-2 overflow-x-hidden">
       <section className="border-b border-border bg-surface-1">
         <StoreContainer className="py-8">
           <div className="flex flex-wrap items-center justify-between gap-3">

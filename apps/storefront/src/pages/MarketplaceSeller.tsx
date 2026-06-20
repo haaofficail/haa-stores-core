@@ -58,7 +58,7 @@ export default function MarketplaceSeller() {
 
   if (loading) {
     return (
-      <main className={`min-h-screen ${marketplaceTheme.shell} overflow-x-hidden`}>
+      <main id="storefront-scope" data-theme-scope="storefront" className={`min-h-screen ${marketplaceTheme.shell} overflow-x-hidden`}>
         <StoreContainer className="py-3">
           <StoreSkeleton className="h-24" />
           <div className="mt-3 grid grid-cols-2 gap-3 sm:gap-5 sm:grid-cols-3 lg:grid-cols-4">
@@ -71,7 +71,7 @@ export default function MarketplaceSeller() {
 
   if (!seller) {
     return (
-      <main className={`min-h-screen ${marketplaceTheme.shell} overflow-x-hidden`}>
+      <main id="storefront-scope" data-theme-scope="storefront" className={`min-h-screen ${marketplaceTheme.shell} overflow-x-hidden`}>
         <StoreContainer className="py-6">
           <StoreEmptyState icon={Store} title="البائع غير موجود" description="لم يتم العثور على بائع نشط في سوق هاء بهذا الرابط." action={<StoreButton href="/marketplace">العودة للسوق</StoreButton>} />
         </StoreContainer>
@@ -80,7 +80,7 @@ export default function MarketplaceSeller() {
   }
 
   return (
-      <main className={`min-h-screen ${marketplaceTheme.shell} overflow-x-hidden`}>
+      <main id="storefront-scope" data-theme-scope="storefront" className={`min-h-screen ${marketplaceTheme.shell} overflow-x-hidden`}>
       <section className="bg-white">
         {seller.coverUrl && (
           <div className="h-24 w-full overflow-hidden bg-[#dbeafe] sm:h-32">

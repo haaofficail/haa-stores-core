@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { useStore } from '@/hooks/useStore';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- icons passed through <Icon> wrapper
 import { Mail, Phone } from 'lucide-react';
 import {
   PaymentLogoImg,
@@ -52,7 +53,7 @@ export default function Footer() {
     { key: 'snapchat', label: 'Snapchat', href: socialLinks.snapchat },
     { key: 'whatsapp', label: 'WhatsApp', href: whatsappContact?.enabled ? whatsappContact.waMeLink : socialLinks.whatsapp },
   ].filter((link): link is { key: string; label: string; href: string } => typeof link.href === 'string' && link.href.trim().length > 0);
-  const contactEmail = store.contactChannels?.email || store.email || 'info@haasoft.com';
+  const contactEmail = store.contactChannels?.email || store.email || 'info@haastores.com';
 
   return (
     <>

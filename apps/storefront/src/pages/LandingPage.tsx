@@ -11,6 +11,7 @@ import {
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSEO } from '@/hooks/useSEO';
+import { merchantDashboardUrl } from '@/lib/merchant';
 import { StoreButton } from '@/components/ui';
 import { SarIcon } from '@/components/ui/SarIcon';
 import '@/landing/landing.css';
@@ -346,7 +347,7 @@ export default function LandingPage() {
             <a href="#faq"       onClick={go('faq')}>الأسئلة</a>
           </div>
           <div className="lp-nav__cta">
-            <StoreButton variant="ghost" size="sm" href="/login">دخول</StoreButton>
+            <StoreButton variant="ghost" size="sm" href={merchantDashboardUrl('/login')}>دخول</StoreButton>
             <StoreButton size="sm" iconEnd={<ArrowLeft size={16} />} href="/signup">ابدأ مجانًا</StoreButton>
           </div>
         </div>

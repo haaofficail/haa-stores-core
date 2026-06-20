@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { merchantDashboardUrl } from '@/lib/merchant';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
@@ -381,9 +382,9 @@ export function SignupPage() {
               {/* Login link */}
               <p className="text-center text-sm text-text-secondary">
                 {t('auth.signup.hasAccount', 'لديك حساب؟')}{' '}
-                <Link to="/login" className="font-semibold text-primary underline-offset-2 hover:underline">
+                <a href={merchantDashboardUrl('/login')} className="font-semibold text-primary underline-offset-2 hover:underline">
                   {t('auth.signup.loginLink', 'سجّل دخولك')}
-                </Link>
+                </a>
               </p>
             </form>
           </div>

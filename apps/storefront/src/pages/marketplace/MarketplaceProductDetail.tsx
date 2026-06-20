@@ -108,7 +108,7 @@ export default function MarketplaceProductDetail() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-white text-black overflow-x-hidden">
+      <main id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-white text-black overflow-x-hidden">
         <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 py-4">
           <StoreSkeleton className="h-8 w-40" />
           <div className="mt-4 grid gap-4 lg:grid-cols-[400px_1fr_260px]">
@@ -123,7 +123,7 @@ export default function MarketplaceProductDetail() {
 
   if (!product) {
     return (
-      <main className="min-h-screen bg-white text-black overflow-x-hidden">
+      <main id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-white text-black overflow-x-hidden">
         <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 py-8">
           <StoreEmptyState icon={ShoppingBag} title="المنتج غير موجود" description="لم يتم العثور على هذا المنتج داخل سوق هاء." action={<StoreButton href="/marketplace">العودة للسوق</StoreButton>} />
         </div>
@@ -132,7 +132,7 @@ export default function MarketplaceProductDetail() {
   }
 
   return (
-    <main className="min-h-screen bg-white text-black pb-20 sm:pb-0 overflow-x-hidden">
+    <main id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-white text-black pb-20 sm:pb-0 overflow-x-hidden">
       {/* ── Sticky Mini Header ── */}
       <header className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-gray-100">
         <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8">

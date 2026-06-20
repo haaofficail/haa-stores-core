@@ -93,7 +93,7 @@ export default function MarketplaceEdition() {
   };
 
   return (
-    <main className="min-h-screen bg-white text-black overflow-x-hidden">
+    <main id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-white text-black overflow-x-hidden">
       <MarketplaceHero total={total} cartCount={cartCount} searchInput={searchInput} onSearchInputChange={setSearchInput} />
 
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8">
