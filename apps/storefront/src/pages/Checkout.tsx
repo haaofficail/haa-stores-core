@@ -124,6 +124,13 @@ export default function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address.city]);
 
+  // Safety clamp: when fulfillmentType changes, the dynamic step list
+  // shrinks/grows; ensure currentStep never points past the last step.
+  useEffect(() => {
+    const stepCount = fulfillmentType === 'shipping' ? 5 : 4;
+    setCurrentStep((s) => Math.min(s, stepCount - 1));
+  }, [fulfillmentType]);
+
   const validateStep = (step: number): boolean => {
     const errs: Record<string, string> = {};
     switch (step) {
@@ -551,7 +558,7 @@ export default function Checkout() {
                               )}
                               {item.item?.giftMessage &&                       <p className="text-[var(--badge-font-size)] text-text-tertiary mt-0.5"><Icon icon={Gift} size="2xs" className="inline align-middle ms-0.5" />{item.item.giftMessage}</p>}
                             </div>
-                            <span className="font-medium tabular-nums">{Number(item.item?.totalPrice ?? item.totalPrice).toFixed(2)} <SarIcon size="sm" /></span>
+                            <span className="font-medium tabular-nums">{toMoneyNumber(item.item?.totalPrice ?? item.totalPrice).toFixed(2)} <SarIcon size="sm" /></span>
                           </div>
                         ))}
                       </div>
@@ -620,10 +627,10 @@ export default function Checkout() {
                       {getVariantLabel(item)}
                     </p>
                   )}
-                  <p className="text-xs text-text-tertiary">{item.quantity} × {Number(item.unitPrice).toFixed(2)} <SarIcon size="sm" /></p>
+                  <p className="text-xs text-text-tertiary">{item.quantity} × {toMoneyNumber(item.unitPrice).toFixed(2)} <SarIcon size="sm" /></p>
                   {item.notes && <p className="text-[var(--badge-font-size)] text-text-tertiary mt-0.5">{item.notes}</p>}
                 </div>
-                    <p className="font-medium text-sm">{Number(item.totalPrice).toFixed(2)} <SarIcon size="sm" /></p>
+                    <p className="font-medium text-sm">{toMoneyNumber(item.totalPrice).toFixed(2)} <SarIcon size="sm" /></p>
                   </div>
                 ))}
               </div>

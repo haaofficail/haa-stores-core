@@ -137,3 +137,44 @@
 | TW1 | tailwind: surface/text/status قيم ثابتة بدل CSS vars (اتساق الثيم) | 📋 متابعة — تغيير color-resolution عام، يتطلب تحقق بصري |
 | REG1 | Theme Registry بلا guard ضد التسجيل المكرر (HMR/tests) | 📋 متابعة — idempotency في `@haa/storefront-themes` |
 | COV1 | **تغطية اختبارات منخفضة في المسارات الحرجة** (shipping-core 10%, theme-system 8%, payment-providers 20%, api routes branch/fn 0%, commerce-core 30%) | 📋 **P0 اختبارات** — رفع التغطية في الدفع/الشحن/الطلبات/routes (نجاح+فشل+3DS+مخزون+عزل) قبل الإطلاق التجاري |
+
+## مراجعة Dockerfile/Auth/Cart/Checkout (دفعة رابعة)
+
+### Dockerfile (DK) — أغلبها إيجابيات كاذبة/تحسينات
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| DK1 | `/healthz` غير موجود في nginx.conf | ✅ إيجابية كاذبة — موجود (nginx.conf:72) |
+| DK2 | `.dockerignore` ناقص | ✅ إيجابية كاذبة — موجود وقوي |
+| DK3 | casing لـ SarIcon/ملفات | ✅ إيجابية كاذبة — PascalCase فعلاً |
+| DK4 | `MAINTAINER` ARG غير معاد تعريفه في stages، cache، non-root nginx، BuildKit | 📋 متابعة (تحسينات/label تجميلي، البناء يعمل) |
+
+### Auth (AU) — آمن
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| AU1 | توليد slug من اسم عربي ينتج فارغاً (`\w`) | ✅ PR #27 — `normalizeStoreSlug` (NFKD) |
+| AU2 | slug يتوقف بعد أول حرف (لا slugTouched) | ✅ PR #27 — `slugTouched` |
+| AU3 | لا تحقق من صيغة الجوال | ✅ PR #27 — `/^05\d{8}$/` قبل الإرسال |
+| AU4 | WaitlistPage نجاح وهمي | ✅ لا يدّعي حفظاً — مقبول |
+| AU5 | `id=storefront-scope` بدل auth-scope (عزل) | 📋 متابعة — عملياً منخفض الأثر (auth خارج متجر؛ التوكن #5c9cd5)، تغييره يمسّ focus styles |
+| AU6 | أرقام تسويقية hardcoded، Nav authMode | 📋 متابعة |
+
+### Cart (CT) — آمن
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| CT1 | كوبون قديم بعد تغيّر السلة | ✅ PR #27 — مسح عند التغيّر |
+| CT2 | NaN في الأسعار | ✅ PR #27 — `toMoneyNumber/formatAmount` |
+| CT3 | إجمالي سالب | ✅ PR #27 — `Math.max(0,...)` |
+| CT4 | maxQty: `Math.max(1, undefined)=NaN`، 0→1 يسمح بالشراء | ✅ PR #27 — stock آمن + isOutOfStock |
+| CT5 | `slug!`/`cart!` | ✅ PR #27 — guards |
+| CT6 | كوبون/سعر يعتمد على الواجهة | 📋 backend يحسم (موثّق) |
+
+### Checkout (CO) — آمن طُبّق، تدفّق الدفع مؤجّل لاختبار مخصّص
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| CO1 | NaN في الأسعار | ✅ PR #27 — `toMoneyNumber` |
+| CO2 | currentStep يخرج عن النطاق عند تغيير fulfillment | ✅ PR #27 — clamp |
+| CO3 | **خطوات checkout تنكسر مع pickup (فهارس ثابتة)** | 📋 **P0** — refactor لمفاتيح الخطوات (`step keys`)، يتطلب اختبار تدفّق الدفع |
+| CO4 | idempotencyKey يتغيّر كل ضغطة | 📋 P1 — مفتاح ثابت لكل محاولة (useRef) |
+| CO5 | مسح السلة قبل اكتمال 3DS/BNPL | 📋 P1 — مسح بعد callback مؤكّد فقط |
+| CO6 | redirectUrl بلا allowlist، callback URLs، VAT naming | 📋 P1 — تشديد + اختبار |
+| CO7 | `: any` في cart.items + دين `item.item?` | 📋 متابعة — يتطلب تنظيف شكل الـ item |

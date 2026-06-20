@@ -20,6 +20,8 @@ function passwordStrength(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string
   return { score: 4, label: 'قوية', color: 'text-success' };
 }
 
+function normalizeStoreSlug(value: string){ return value.trim().toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').slice(0,50); }
+
 import { StoreButton, StoreContainer, StoreInput } from '@/components/ui';
 import { useSEO } from '@/hooks/useSEO';
 import { authApi } from '@/lib/auth';
@@ -88,6 +90,7 @@ export function SignupPage() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [slugTouched, setSlugTouched] = useState(false);
 
   useSEO({
     title: t('auth.signup.metaTitle', 'سجّل كتاجر — Haa'),
@@ -96,21 +99,20 @@ export function SignupPage() {
 
   const onStoreNameChange = (value: string) => {
     setStoreName(value);
-    if (!storeSlug) {
-      const derived = value
-        .trim()
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-      setStoreSlug(derived);
+    if (!slugTouched) {
+      setStoreSlug(normalizeStoreSlug(value));
     }
   };
+
+  const isSaudiPhone = /^05\d{8}$/.test(phone.trim());
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!isSaudiPhone) {
+      setError(t('auth.signup.errors.invalidPhone', 'أدخل رقم جوال سعودي صحيح بصيغة 05XXXXXXXX.'));
+      return;
+    }
     setSubmitting(true);
     try {
       await authApi.register({
@@ -288,7 +290,7 @@ export function SignupPage() {
                   label={t('auth.signup.storeSlugLabel', 'رابط المتجر')}
                   required
                   value={storeSlug}
-                  onChange={(e) => setStoreSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                  onChange={(e) => { setSlugTouched(true); setStoreSlug(normalizeStoreSlug(e.target.value)); }}
                   placeholder="elegance-store"
                   pattern="[a-z0-9-]+"
                   minLength={3}
