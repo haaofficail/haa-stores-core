@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { StoreButton } from '@/components/ui';
@@ -430,10 +431,12 @@ function getSectionLink(url: string | undefined, slug: string): string {
 
 function sanitizeSectionHtml(html: string): string {
   if (!html) return '';
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/\son\w+=(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    .replace(/javascript:/gi, '');
+  // DOMPurify (allowlist) بدل المنقّي القديم القائم على regex (blocklist) القابل للتجاوز — QA S2.
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'ul', 'ol', 'li', 'a', 'span', 'h1', 'h2', 'h3', 'h4', 'blockquote'],
+    ALLOWED_ATTR: ['href', 'title', 'target', 'rel', 'class', 'style'],
+    ALLOW_DATA_ATTR: false,
+  });
 }
 
 function getProductsForSource(products: any[], source: string | undefined, limit: number, settings: Record<string, any> = {}): any[] {
