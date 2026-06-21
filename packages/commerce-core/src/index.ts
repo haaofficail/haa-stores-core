@@ -88,6 +88,8 @@ export { AbandonedCartCampaignService } from './abandoned-cart-campaigns.js';
 export type { CampaignInput, RecoveryStats } from './abandoned-cart-campaigns.js';
 export { WhatsAppCampaignService, classifyInboundMessage, significantDigits, mapDeliveryStatus } from './whatsapp-campaigns.js';
 export { LoyaltyService, consumeFifo } from './loyalty.js';
+export { CustomDomainService, checkDnsRecords } from './custom-domain.js';
+export type { SetDomainResult, VerifyResult, DnsLookup } from './custom-domain.js';
 export type { CreateCampaignInput } from './whatsapp-campaigns.js';
 export { OutboundWebhookService } from './outbound-webhook.js';
 export { ShipmentsService } from './shipments-service.js';

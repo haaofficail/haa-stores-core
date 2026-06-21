@@ -39,6 +39,7 @@ import { walletRouter } from './routes/wallet.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { settingsRouter } from './routes/settings.js';
 import { storefrontRouter } from './routes/storefront/index.js';
+import { resolveStoreByHost } from './routes/storefront/_shared.js';
 import { merchantDataRouter } from './routes/merchant-data.js';
 import { couponsRouter } from './routes/coupons.js';
 import { exportsRouter } from './routes/exports.js';
@@ -76,6 +77,7 @@ import { pixelsRouter } from './routes/pixels.js';
 import { cartCampaignsRouter } from './routes/cart-campaigns.js';
 import { whatsappCampaignsRouter } from './routes/whatsapp-campaigns.js';
 import { loyaltyRouter } from './routes/loyalty.js';
+import { customDomainRouter } from './routes/custom-domain.js';
 import { outboundWebhooksRouter } from './routes/outbound-webhooks.js';
 import { zatcaRouter } from './routes/zatca.js';
 import { createDbClient, closeDbClient } from '@haa/db';
@@ -286,6 +288,20 @@ app.use('/marketplace*', async (c, next) => {
   await next();
 });
 
+// Resolve the store for the current Host (QA Custom Domain). Lets the SPA,
+// when served on a merchant custom domain or a *.haastores.com subdomain,
+// discover which store slug to bootstrap. Reads the forwarded/real Host.
+app.get('/api/resolve-host', async (c) => {
+  const host = c.req.header('x-forwarded-host')?.split(',')[0]?.trim()
+    || c.req.header('host')
+    || '';
+  const store = await resolveStoreByHost(host);
+  if (!store || store.status !== 'active' || !store.isActive || store.publishStatus !== 'published') {
+    return c.json({ success: true, data: { slug: null } });
+  }
+  return c.json({ success: true, data: { slug: store.slug, name: store.name } });
+});
+
 // Storefront API routes (JSON responses)
 app.route('/s', storefrontRouter);
 app.route('/marketplace', haaMarketplaceRouter);
@@ -333,6 +349,7 @@ app.route('/merchant/:storeId/marketing', marketingRouter);
 app.route('/merchant/:storeId/abandoned-carts/campaigns', cartCampaignsRouter);
 app.route('/merchant/:storeId/whatsapp-campaigns', whatsappCampaignsRouter);
 app.route('/merchant/:storeId/loyalty', loyaltyRouter);
+app.route('/merchant/:storeId/domain', customDomainRouter);
 app.route('/merchant/:storeId/outbound-webhooks', outboundWebhooksRouter);
 app.route('/merchant/:storeId', zatcaRouter);
 
