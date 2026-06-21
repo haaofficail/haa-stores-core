@@ -43,9 +43,12 @@ export const MOYASAR_CAPABILITIES: PaymentProviderCapabilitiesT = {
   supports3DS: true, // Moyasar supports 3DS (SAMA mandatory)
 };
 
+// DECISION-OS-011: Geidea live API wiring is gated. Refund + partial refund
+// are flipped to false until the official implementation lands so the UI
+// does not advertise unavailable features. See docs/agent-os/GEIDEA_READINESS.md.
 export const GEIDEA_CAPABILITIES: PaymentProviderCapabilitiesT = {
-  supportsRefunds: true,
-  supportsPartialRefunds: true,
+  supportsRefunds: false, // re-enable after Geidea refund is implemented (F-QA-C-002)
+  supportsPartialRefunds: false, // re-enable after Geidea partial refund is implemented
   supportsMada: true,
   supportsApplePay: true,
   supportsCard: true,
