@@ -144,6 +144,54 @@ export class WhatsAppCampaignService {
       ));
   }
 
+  /**
+   * عالج رسالة WhatsApp واردة — يطبّق إلغاء/تجديد الاشتراك امتثالاً (QA WA2).
+   * يُستدعى من webhook المزوّد. المطابقة بالرقم تتجاوز حدود المتجر:
+   * إذا طلب رقمٌ التوقف، يُلغى اشتراكه أينما ظهر (التزام تنظيمي).
+   * يطابق آخر 9 أرقام دالة (الجزء الوطني للجوال السعودي) لتجاوز اختلاف الصيغ.
+   * @returns الإجراء المتخذ وعدد العملاء المتأثرين.
+   */
+  async processInboundMessage(input: { phone: string; body: string }): Promise<{
+    action: 'opt_out' | 'opt_in' | 'none';
+    matched: number;
+  }> {
+    const normalized = normalizeWhatsappPhone(input.phone);
+    if (!normalized) return { action: 'none', matched: 0 };
+
+    const action = classifyInboundMessage(input.body);
+    if (action === 'none') return { action: 'none', matched: 0 };
+    const isOptOut = action === 'opt_out';
+
+    const suffix = significantDigits(normalized);
+    if (!suffix) return { action: 'none', matched: 0 };
+
+    // رشّح بالـ suffix على مستوى SQL ثم تحقّق من التطابق الدقيق في الذاكرة (تختلف الصيغ المخزّنة)
+    const candidates = await this.db.select({ id: s.customers.id, phone: s.customers.phone })
+      .from(s.customers)
+      .where(sql`${s.customers.phone} LIKE ${'%' + suffix}`);
+
+    const matchedIds = candidates
+      .filter(r => significantDigits(normalizeWhatsappPhone(r.phone)) === suffix)
+      .map(r => r.id);
+
+    if (matchedIds.length === 0) {
+      return { action: isOptOut ? 'opt_out' : 'opt_in', matched: 0 };
+    }
+
+    if (isOptOut) {
+      await this.db.update(s.customers)
+        .set({ whatsappOptOut: true })
+        .where(inArray(s.customers.id, matchedIds));
+      return { action: 'opt_out', matched: matchedIds.length };
+    }
+
+    // تجديد الاشتراك: ارفع الحظر فقط؛ الموافقة التسويقية تبقى كما هي (تتطلب opt-in صريح منفصل)
+    await this.db.update(s.customers)
+      .set({ whatsappOptOut: false })
+      .where(inArray(s.customers.id, matchedIds));
+    return { action: 'opt_in', matched: matchedIds.length };
+  }
+
   private async resolveRecipients(
     storeId: number,
     _segmentType?: CustomerSegmentType,
@@ -163,6 +211,35 @@ export class WhatsAppCampaignService {
       .filter(r => r.phone && normalizeWhatsappPhone(r.phone))
       .map(r => ({ customerId: r.id, phone: normalizeWhatsappPhone(r.phone!)! }));
   }
+}
+
+/** كلمات إلغاء الاشتراك المعتمدة (إنجليزي + عربي) — مطابقة دقيقة للكلمة الأولى */
+const OPT_OUT_KEYWORDS = new Set([
+  'stop', 'unsubscribe', 'cancel', 'end', 'quit',
+  'إيقاف', 'ايقاف', 'إلغاء', 'الغاء', 'توقف', 'إلغ', 'الغ',
+]);
+/** كلمات تجديد الاشتراك المعتمدة (إنجليزي + عربي) */
+const OPT_IN_KEYWORDS = new Set([
+  'start', 'subscribe', 'unstop', 'yes',
+  'اشتراك', 'ابدأ', 'ابدا', 'تفعيل', 'نعم',
+]);
+
+/** آخر 9 أرقام دالة (الجزء الوطني للجوال) — للمطابقة عبر اختلاف الصيغ */
+export function significantDigits(phone: string | null): string {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  return digits.length >= 9 ? digits.slice(-9) : '';
+}
+
+/**
+ * صنّف رسالة واردة: إلغاء/تجديد اشتراك أو لا شيء (QA WA2).
+ * يطابق الكلمة الأولى فقط لتفادي إلغاء عرضي ("please don't stop").
+ */
+export function classifyInboundMessage(body: string | null | undefined): 'opt_out' | 'opt_in' | 'none' {
+  const firstWord = (body || '').trim().toLowerCase().split(/\s+/)[0] ?? '';
+  if (OPT_OUT_KEYWORDS.has(firstWord)) return 'opt_out';
+  if (OPT_IN_KEYWORDS.has(firstWord)) return 'opt_in';
+  return 'none';
 }
 
 function interpolateTemplate(template: string, vars: Record<string, string>): string {

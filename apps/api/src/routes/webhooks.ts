@@ -1,8 +1,17 @@
 import { Hono } from 'hono';
-import { PaymentWebhookService, type PaymentWebhookResult } from '@haa/commerce-core';
+import { timingSafeEqual } from 'node:crypto';
+import { PaymentWebhookService, type PaymentWebhookResult, WhatsAppCampaignService } from '@haa/commerce-core';
 import type { ProviderCode } from '@haa/shared';
 
 const webhooksRouter = new Hono();
+
+/** مقارنة توكن webhook بزمن ثابت (fail-closed على اختلاف الطول) */
+function tokenMatches(provided: string, expected: string): boolean {
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
 
 /**
  * Inbound payment webhooks — POST /webhooks/payments/:provider
@@ -47,6 +56,54 @@ webhooksRouter.post('/payments/:provider', async (c) => {
     );
   }
   return c.json({ success: true, data: result.data });
+});
+
+/**
+ * Inbound WhatsApp webhook — POST /webhooks/whatsapp/inbound  (QA WA2)
+ *
+ * يستقبل رسائل العملاء الواردة من المزوّد (Unifonic) ويطبّق إلغاء الاشتراك
+ * (STOP / إيقاف) امتثالاً تنظيمياً. الأمان: توكن مشترك بزمن ثابت.
+ * fail-closed: إن لم يُضبط WHATSAPP_WEBHOOK_SECRET فالمسار معطّل (503).
+ *
+ * يعيد 200 دائماً بعد المصادقة لمنع إعادة محاولات المزوّد، حتى لو لم يطابق رقمٌ
+ * أو لم تكن الرسالة أمر إلغاء — فالاستلام نجح والمعالجة تمّت.
+ */
+webhooksRouter.post('/whatsapp/inbound', async (c) => {
+  const expected = process.env.WHATSAPP_WEBHOOK_SECRET;
+  if (!expected) {
+    return c.json({ success: false, error: { code: 'webhook_disabled', message: 'WhatsApp inbound webhook not configured' } }, 503);
+  }
+
+  const provided = c.req.header('x-webhook-token') || c.req.query('token') || '';
+  if (!tokenMatches(provided, expected)) {
+    return c.json({ success: false, error: { code: 'unauthorized', message: 'Invalid webhook token' } }, 401);
+  }
+
+  // الصيغة تختلف بين خطط Unifonic؛ التقط الحقول المحتملة بتحفّظ
+  let payload: Record<string, unknown> = {};
+  try {
+    payload = (await c.req.json()) as Record<string, unknown>;
+  } catch {
+    return c.json({ success: false, error: { code: 'bad_request', message: 'Invalid JSON' } }, 400);
+  }
+
+  const pick = (...keys: string[]): string => {
+    for (const k of keys) {
+      const v = payload[k] ?? payload[k.toLowerCase()] ?? payload[k.toUpperCase()];
+      if (typeof v === 'string' && v.trim()) return v.trim();
+    }
+    return '';
+  };
+
+  const phone = pick('Sender', 'sender', 'From', 'from', 'msisdn');
+  const body = pick('Body', 'body', 'Message', 'message', 'Text', 'text');
+
+  if (!phone) {
+    return c.json({ success: true, data: { action: 'none', matched: 0 } });
+  }
+
+  const result = await new WhatsAppCampaignService().processInboundMessage({ phone, body });
+  return c.json({ success: true, data: result });
 });
 
 export { webhooksRouter };
