@@ -2,7 +2,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { ThemeEditorField } from '@haa/storefront-themes';
+import type { ThemeEditorField } from '@haa/storefront-themes/server';
 
 function getNestedValue(obj: Record<string, any>, path: string): unknown {
   const keys = path.split('.');

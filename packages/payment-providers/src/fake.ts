@@ -73,9 +73,17 @@ export class FakePaymentProvider implements PaymentProvider {
       success = true;
       status = 'paid';
       message = 'Payment successful';
-    } else if (method === 'fake_card_failed') {
+    } else if (method === 'fake_card_failed' || method === 'fake_card_declined') {
       status = 'failed';
       message = 'Card declined (simulated)';
+    } else if (method === 'fake_card_cancelled') {
+      // DECISION-OS-012 scenario: user cancelled at provider hosted page.
+      status = 'failed';
+      message = 'Payment cancelled by user (simulated)';
+    } else if (method === 'fake_card_expired') {
+      // DECISION-OS-012 scenario: payment intent expired before confirmation.
+      status = 'failed';
+      message = 'Payment intent expired (simulated)';
     } else if (method === 'bank_transfer') {
       success = true;
       status = 'pending';

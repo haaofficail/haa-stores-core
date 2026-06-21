@@ -4,6 +4,21 @@
 
 ---
 
+### TASK-0075: Post-QA Autopilot — wave plan execution
+
+- **Type:** Quality / Multi-area (orchestration)
+- **Priority:** P1
+- **Status:** In Progress (Wave 0)
+- **Created:** 2026-06-22
+- **Updated:** 2026-06-22
+- **Branch:** `autopilot/post-qa-execution`
+- **Skills Used:** `haa-command-orchestrator`, `verification-before-completion`, `documentation-handoff-gate`, `single-source-of-truth-gate`, `cleanup-and-archive-policy`.
+- **Scope:** 22-wave autopilot per the user SAFE FULL AUTOPILOT brief (2026-06-22). Tracks: theme single gateway, brand color reconciliation, payment test environment, Geidea infra readiness, shipping aggregator readiness, shipping rate cache, API/Caddy contract, no-auto-migrate enforcement, CI security scan upgrades, support-errors 404, RBAC comment cleanup, docker safety, beta deletion policy, outbound webhook hardening (tests/docs), RBAC small guards, wallet idempotency plan (no migration run), icon governance lock, RTL/a11y/brand guards, marketplace/SFDA/affiliate tracking, production readiness tracking, docs archive cleanup.
+- **Out of Scope:** push, deploy, SSH, live integrations, `db:migrate` execution, secrets handling, server `187.124.41.239`, hard delete, direct delete features.
+- **Trackers:** `docs/agent-os/EXECUTION_CHECKLIST.md`, `docs/agent-os/REMAINING_WORK.md`.
+
+---
+
 ### TASK-0054: Restore GitHub Actions CI and Docker Build Reliability
 
 - **Type:** Bug Fix / Support/Ops / Testing

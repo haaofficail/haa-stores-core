@@ -153,5 +153,96 @@
 | DECISION-OS-002 | Marketplace audit truth              | Locked — both reports STALE; marketplace work out of Agent OS scope      |
 | DECISION-OS-003 | Theme package canonical direction    | Provisional — `@haa/storefront-themes` canonical; build on existing only |
 | DECISION-OS-004 | MASTER_PLAN authority                | Locked — stale plan is not source of truth; refresh deferred             |
-| DECISION-OS-005 | Existing `.claude/skills/`           | Locked — read-only until Batch C evaluation                              |
+| DECISION-OS-005 | Existing `.claude/skills/`           | Locked — evaluated in Batch C; legacy disarmed in Batch C.1              |
 | DECISION-OS-006 | Worktree policy                      | Locked — canonical repo only; sibling worktree parked                    |
+| DECISION-OS-007 | Server canonical                     | Locked — `72.61.108.208` official; `187.124.41.239` forbidden            |
+| DECISION-OS-008 | DNS provider                         | Locked — Cloudflare DNS; Hostinger registrar/mail only                   |
+| DECISION-OS-009 | Theme system gateway                 | Locked — `@haa/storefront-themes` single gateway (refines OS-003)        |
+| DECISION-OS-010 | Brand color                          | Locked — `#5c9cd5` canonical                                             |
+| DECISION-OS-011 | Geidea readiness                     | Locked — infrastructure now; no live calls                               |
+| DECISION-OS-012 | Payment test environment             | Locked — mock/sandbox only                                               |
+| DECISION-OS-013 | Shipping aggregator                  | Locked — abstractions now; live waits                                    |
+| DECISION-OS-014 | Deletion policy (beta)               | Locked — no direct delete; no self-delete                                |
+| DECISION-OS-015 | `/api/` path contract                | Locked — Hono without `/api/`; Caddy strips                              |
+| DECISION-OS-016 | No auto-migrate                      | Locked — manual explicit step                                            |
+| DECISION-OS-017 | CI security scan                     | Locked — Node 22 + on every PR                                           |
+| DECISION-OS-018 | Wallet idempotency                   | Locked policy; execution gated by approval                               |
+| DECISION-OS-019 | G1–G10 owner gates                   | Locked — independent track                                               |
+| DECISION-OS-020 | Docs truth-sync first                | Locked — sync now; archive later                                         |
+
+---
+
+## Post-QA Owner Decisions — Full text (Locked 2026-06-22)
+
+> These supersede any prior conflicting reports. Brief by the autopilot owner brief; recorded verbatim into operations.
+
+### DECISION-OS-007 — Server canonical
+
+**Locked.** `72.61.108.208` is the official Haa Stores server (staging now, production-candidate later). `187.124.41.239` is forbidden for Haa Stores. Do not suggest a new VPS unless `72.61.108.208` is proven unsuitable with evidence.
+
+### DECISION-OS-008 — DNS provider
+
+**Locked.** **Cloudflare** is the official DNS manager for `haastores.com`. Hostinger may remain as registrar/mail only. MX/SPF/DKIM/DMARC must be preserved for email. Do not enable Cloudflare proxy on webhook endpoints if it breaks headers/signatures. Closes OD-NEEDED-001 (DNS provider unknown).
+
+### DECISION-OS-009 — Theme system gateway (refines DECISION-OS-003)
+
+**Locked.**
+
+- `@haa/storefront-themes` — **the single public gateway** for storefront themes.
+- `@haa/storefront-themes/server` — dashboard-safe entry (types + server-only helpers).
+- Dashboards forbidden from importing runtime/main theme packages.
+- `@haa/theme-system` — legacy/compatibility only.
+- `@haa/theme-engine` — internal only.
+- `@haa/theme-web` — preview/Storybook or legacy.
+- `@haa/system-theme` — system identity only, NOT storefront themes.
+
+### DECISION-OS-010 — Brand color
+
+**Locked.** Haa primary color is `#5c9cd5`. Tokens, defaults, UI, and admin must converge on it. `#007aff` is NOT a Haa brand color (it is the Apple-style template baseline). `blue-500/600` Tailwind defaults are NOT the platform identity.
+
+### DECISION-OS-011 — Geidea readiness policy
+
+**Locked.** Geidea is the intended primary payment provider. Build the full infrastructure now (provider contract, readiness states, encrypted credential slots, webhook contract, mock + sandbox adapters). **No live API calls** until official endpoints/credentials/signature rules arrive. Refund / partial refund must not appear as working features in the UI until real implementation lands.
+
+### DECISION-OS-012 — Payment test environment
+
+**Locked.** Build a complete local payment test environment without live money. CI uses mock only; staging uses mock or sandbox only. Required scenarios: success, declined, cancelled, expired, duplicate webhook, invalid signature, delayed webhook, webhook-before-callback, callback-before-webhook. Callback alone must NOT confirm a payment.
+
+### DECISION-OS-013 — Shipping aggregator policy
+
+**Locked.** Build the shipping aggregator abstraction now (rate / label / tracking / return / webhook + mock/sandbox provider). Final live wiring waits on provider selection + credentials + owner approval. No live shipping without credentials and owner approval.
+
+### DECISION-OS-014 — Deletion policy (beta)
+
+**Locked.** For beta:
+
+- **No direct tenant deletion** as a feature.
+- **No merchant account self-deletion** as a feature.
+- **No hard delete** anywhere.
+- Account closure = suspend/deactivate/archive or routed via compliance/support request.
+- Any existing direct-delete route must be disabled, guarded, or hidden from the beta surface.
+- Forbidden: any PR that adds direct deletion as a feature.
+
+### DECISION-OS-015 — `/api/` path contract
+
+**Locked.** Caddy owns the `/api/` prefix (strip happens at the proxy). Hono routes register **without** `/api/`. Client URLs continue to call `/api/...`. Tests must exercise this via Caddy or a strip simulation.
+
+### DECISION-OS-016 — No auto-migrate
+
+**Locked.** No deploy path auto-migrates. Migrations are a separate, explicit, manual step. Any deploy script that calls `db:migrate` must be modified or gated by a kill confirmation.
+
+### DECISION-OS-017 — CI security scan
+
+**Locked.** Security-scan workflow uses Node 22 and runs on every PR (in addition to schedule + lockfile-touching push). Semgrep adoption is **Phase 2**, not a launch blocker.
+
+### DECISION-OS-018 — Wallet idempotency
+
+**Locked policy (execution gated).** DB-level idempotency for the 7 non-`platform_fee` wallet entry types (`sale`, `refund`, `cod_fee`, `gateway_fee`, `payout_debit`, `payout_reversal`, `settlement_difference`) is a **commercial-launch prerequisite**. The migration PR is opened separately. **Migration must not be auto-run.**
+
+### DECISION-OS-019 — G1–G10 owner gates
+
+**Locked.** Owner-action items G1–G10 run on an independent track in parallel to engineering PRs. Engineering cannot close them by writing code.
+
+### DECISION-OS-020 — Docs truth-sync first; archive cleanup later
+
+**Locked.** Truth-sync (Agent OS docs + `CURRENT_STATE` + `TASK_TRACKER`) happens first. Archive cleanup of root-level legacy reports happens after truth is stable. Agents must not rely on root-level legacy reports as a source of decision until they are marked or archived.

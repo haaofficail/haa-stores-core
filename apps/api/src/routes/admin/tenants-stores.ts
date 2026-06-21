@@ -100,11 +100,18 @@ export const tenantsRoutes = {
   },
 
   remove: async (c: any) => {
-    const id = Number(c.req.param('id'));
-    const db = createDbClient();
-    const [tenant] = await db.delete(s.tenants).where(eq(s.tenants.id, id)).returning({ id: s.tenants.id });
-    if (!tenant) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Tenant not found' } }, 404);
-    return c.json({ success: true, data: { deleted: true, id: tenant.id } });
+    // DECISION-OS-014 (beta deletion policy):
+    // No direct tenant deletion as a feature in beta. No hard delete.
+    // Account closure must route through compliance/support (suspend/deactivate/archive).
+    // To re-enable in a future controlled release, an explicit owner ruling is required.
+    const _id = Number(c.req.param('id'));
+    return c.json({
+      success: false,
+      error: {
+        code: 'FORBIDDEN_BETA_POLICY',
+        message: 'Direct tenant deletion is disabled in beta (DECISION-OS-014). Use suspend (PATCH /admin/tenants/:id/status) or open a compliance/support ticket.',
+      },
+    }, 403);
   },
 
   status: async (c: any) => {

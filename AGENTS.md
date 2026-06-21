@@ -11,23 +11,23 @@ This is a **multi-tenant SaaS e-commerce platform**, not a single store.
 
 ### Layers
 
-| Layer | Directory | Responsibility |
-|-------|-----------|----------------|
-| Platform Admin | `apps/admin-dashboard` | Platform-wide management |
-| Merchant Dashboard | `apps/merchant-dashboard` | Merchant store management |
-| Storefront | `apps/storefront` | Public customer-facing store |
-| API | `apps/api` | Backend API |
-| Database | `packages/db` | Schema, migrations, seeds |
-| Shared Packages | `packages/shared` | Types, schemas, utilities |
-| Theme System | `packages/theme-*` | Storefront theming engine |
-| Commerce Core | `packages/commerce-core` | E-commerce business logic |
-| Auth Core | `packages/auth-core` | Authentication & RBAC |
-| Shipping Core | `packages/shipping-core` | Shipping & logistics |
-| Notification Core | `packages/notification-core` | Notifications |
-| Integration Core | `packages/integration-core` | Third-party integrations |
-| Marketplace Core | `packages/marketplace-core` | Marketplace features |
-| Wallet Core | `packages/wallet-core` | Digital wallet |
-| UI | `packages/ui` | Shared UI components |
+| Layer              | Directory                    | Responsibility               |
+| ------------------ | ---------------------------- | ---------------------------- |
+| Platform Admin     | `apps/admin-dashboard`       | Platform-wide management     |
+| Merchant Dashboard | `apps/merchant-dashboard`    | Merchant store management    |
+| Storefront         | `apps/storefront`            | Public customer-facing store |
+| API                | `apps/api`                   | Backend API                  |
+| Database           | `packages/db`                | Schema, migrations, seeds    |
+| Shared Packages    | `packages/shared`            | Types, schemas, utilities    |
+| Theme System       | `packages/theme-*`           | Storefront theming engine    |
+| Commerce Core      | `packages/commerce-core`     | E-commerce business logic    |
+| Auth Core          | `packages/auth-core`         | Authentication & RBAC        |
+| Shipping Core      | `packages/shipping-core`     | Shipping & logistics         |
+| Notification Core  | `packages/notification-core` | Notifications                |
+| Integration Core   | `packages/integration-core`  | Third-party integrations     |
+| Marketplace Core   | `packages/marketplace-core`  | Marketplace features         |
+| Wallet Core        | `packages/wallet-core`       | Digital wallet               |
+| UI                 | `packages/ui`                | Shared UI components         |
 
 ---
 
@@ -75,26 +75,26 @@ No short command is executed directly. Every request must be expanded using this
 
 Every task must be classified as one or more of:
 
-| Type | Description |
-|------|-------------|
-| Audit | Systematic review of code, security, performance, or architecture |
-| Bug Fix | Fixing a defect |
-| Feature | New functionality |
-| UX/UI Polish | Visual refinement without changing behavior |
-| Refactor | Restructuring code without changing behavior |
-| Security | Security hardening |
-| Performance | Performance optimization |
-| Architecture | Architectural change |
-| Documentation | Documentation creation or update |
-| Testing | Test creation or improvement |
-| Data/DB | Database schema, migration, or data work |
-| Integration | Third-party integration |
-| Theme Work | Storefront theme changes |
-| Permission/RBAC Work | Permissions and roles |
-| Product Planning | Product decisions, scoping |
-| Support/Ops | Operational or support tasks |
-| Monitoring | Monitoring, observability |
-| Incident Response | Production incident |
+| Type                 | Description                                                       |
+| -------------------- | ----------------------------------------------------------------- |
+| Audit                | Systematic review of code, security, performance, or architecture |
+| Bug Fix              | Fixing a defect                                                   |
+| Feature              | New functionality                                                 |
+| UX/UI Polish         | Visual refinement without changing behavior                       |
+| Refactor             | Restructuring code without changing behavior                      |
+| Security             | Security hardening                                                |
+| Performance          | Performance optimization                                          |
+| Architecture         | Architectural change                                              |
+| Documentation        | Documentation creation or update                                  |
+| Testing              | Test creation or improvement                                      |
+| Data/DB              | Database schema, migration, or data work                          |
+| Integration          | Third-party integration                                           |
+| Theme Work           | Storefront theme changes                                          |
+| Permission/RBAC Work | Permissions and roles                                             |
+| Product Planning     | Product decisions, scoping                                        |
+| Support/Ops          | Operational or support tasks                                      |
+| Monitoring           | Monitoring, observability                                         |
+| Incident Response    | Production incident                                               |
 
 ---
 
@@ -102,14 +102,16 @@ Every task must be classified as one or more of:
 
 Strict separation is enforced between these layers. No crossing without documented architectural reason.
 
-| Layer | Must NOT import from |
-|-------|---------------------|
-| `admin-dashboard` | `storefront`, `merchant-dashboard`, theme packages |
-| `merchant-dashboard` | `storefront`, theme packages |
-| `storefront` | `admin-dashboard`, `merchant-dashboard` |
-| `api` | Any frontend app |
-| theme packages | Dashboard apps |
-| `packages/shared` | Any app |
+| Layer                | Must NOT import from                                |
+| -------------------- | --------------------------------------------------- |
+| `admin-dashboard`    | `storefront`, `merchant-dashboard`, theme packages¹ |
+| `merchant-dashboard` | `storefront`, theme packages¹                       |
+| `storefront`         | `admin-dashboard`, `merchant-dashboard`             |
+| `api`                | Any frontend app                                    |
+| theme packages       | Dashboard apps                                      |
+| `packages/shared`    | Any app                                             |
+
+> ¹ **DECISION-OS-009 carve-out:** dashboards MAY import from `@haa/storefront-themes/server` (and `@haa/theme-system/server`) — these subpaths expose only types and pure registry/validation helpers (no DOM, no analytics, no CSS-variable mutation). `@haa/system-theme` is the dashboard's own visual-identity package. Direct imports of `@haa/storefront-themes`, `@haa/theme-system`, `@haa/theme-engine`, or `@haa/theme-web` from dashboards are forbidden and locked by `tests/theme-boundary.test.ts` + `eslint.config.mjs`.
 
 ---
 
@@ -162,6 +164,7 @@ After every task, provide a report containing:
 ## 9. Design System & Storefront Standards
 
 ### 9.1 Spacing Governance
+
 Use the approved spacing scale via tokens only (`--space-*`):
 | Token | Value | Usage |
 |-------|------:|-------|
@@ -178,6 +181,7 @@ Use the approved spacing scale via tokens only (`--space-*`):
 | `--space-16` | 64px | hero/major separation |
 
 ### 9.2 Icon Governance
+
 - Default UI icon: 24px
 - Small metadata icon: 16px
 - Button icon: 18px or 20px
@@ -187,6 +191,7 @@ Use the approved spacing scale via tokens only (`--space-*`):
 - Clickable icons: hit area ≥ 44px
 
 ### 9.3 Product Cards
+
 - Equal visual height in grids
 - Flex-column layout
 - Fixed image aspect ratio
@@ -194,11 +199,13 @@ Use the approved spacing scale via tokens only (`--space-*`):
 - Action area pinned to bottom
 
 ### 9.4 RTL Rules
+
 - Use logical CSS: `margin-inline`, `padding-inline`, `inset-inline`, `border-inline`, `text-align: start/end`
 - No hardcoded `left`/`right`
 - Mirror directional icons only when semantically correct
 
 ### 9.5 Approved Libraries
+
 - SplideJS — carousels
 - Lucide — icons
 - Sonner — toasts
@@ -210,6 +217,7 @@ Use the approved spacing scale via tokens only (`--space-*`):
 ## 10. Per-Task Documentation Update
 
 After any task, update at minimum:
+
 - [ ] `docs/ops/TASK_TRACKER.md`
 - [ ] `docs/ops/CURRENT_STATE.md` (if project state changed)
 - [ ] `docs/ops/ISSUE_KNOWLEDGE_BASE.md` (if root cause found)
@@ -271,19 +279,19 @@ Before any significant development or bug fix:
 
 ## 12. Available Commands
 
-| Command | Purpose |
-|---------|---------|
-| `pnpm preflight` | **Hardened:** fails with exit code 1 if not in correct project root. Checks `.haa-project-root`, package.json, pnpm-workspace.yaml, apps/, packages/, AGENTS.md, docs/ops/ |
-| `pnpm ops:health` | Run health checks on project and apps |
-| `pnpm ops:synthetic` | Run synthetic HTTP checks on running servers |
-| `pnpm ops:errors` | Analyze recorded errors and suggest actions |
-| `pnpm ops:errors:simulate` | Write a random fake error event to support-error-events.ndjson |
-| `pnpm ops:monitor` | Run health + synthetic + error analysis in sequence |
-| `pnpm ops:monitor:report` | Generate a Markdown monitoring report |
-| `pnpm ops:monitor:tail` | View recent monitoring events |
-| `pnpm typecheck` | TypeScript type checking |
-| `pnpm test` | Run vitest tests |
-| `pnpm lint` | Run ESLint |
+| Command                    | Purpose                                                                                                                                                                    |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm preflight`           | **Hardened:** fails with exit code 1 if not in correct project root. Checks `.haa-project-root`, package.json, pnpm-workspace.yaml, apps/, packages/, AGENTS.md, docs/ops/ |
+| `pnpm ops:health`          | Run health checks on project and apps                                                                                                                                      |
+| `pnpm ops:synthetic`       | Run synthetic HTTP checks on running servers                                                                                                                               |
+| `pnpm ops:errors`          | Analyze recorded errors and suggest actions                                                                                                                                |
+| `pnpm ops:errors:simulate` | Write a random fake error event to support-error-events.ndjson                                                                                                             |
+| `pnpm ops:monitor`         | Run health + synthetic + error analysis in sequence                                                                                                                        |
+| `pnpm ops:monitor:report`  | Generate a Markdown monitoring report                                                                                                                                      |
+| `pnpm ops:monitor:tail`    | View recent monitoring events                                                                                                                                              |
+| `pnpm typecheck`           | TypeScript type checking                                                                                                                                                   |
+| `pnpm test`                | Run vitest tests                                                                                                                                                           |
+| `pnpm lint`                | Run ESLint                                                                                                                                                                 |
 
 ---
 
@@ -296,30 +304,34 @@ Before any significant development or bug fix:
 For every action — no matter how small — complete these 4 steps **in order, in writing, before touching any file or command**:
 
 #### Step 1: **STATE** the task
+
 One sentence. What are you about to do?
 
 #### Step 2: **SELECT** the skill(s)
+
 Which skill(s) apply? List them by name. If unsure, consult `~/.mavis/skills/` or use the `find-skills` skill.
 
 Common skill triggers:
 
-| Task pattern | Required skill |
-|--------------|----------------|
-| Any new feature, bug fix, or refactor | `plan-mode` |
-| Any bug investigation or unexpected behavior | `systematic-debugging` |
-| Any new code or test | `test-driven-development` |
-| Before claiming "done" | `verification-before-completion` |
-| After any significant change | `requesting-code-review` |
-| Any creative/design work | `brainstorming-2` |
-| Any complex multi-step task | `plan-mode` |
-| Stuck / unsure why | `mavis-doctor` |
-| Multi-step parallel work | `mavis-team` |
-| Code review of existing code | `code-review` |
+| Task pattern                                 | Required skill                   |
+| -------------------------------------------- | -------------------------------- |
+| Any new feature, bug fix, or refactor        | `plan-mode`                      |
+| Any bug investigation or unexpected behavior | `systematic-debugging`           |
+| Any new code or test                         | `test-driven-development`        |
+| Before claiming "done"                       | `verification-before-completion` |
+| After any significant change                 | `requesting-code-review`         |
+| Any creative/design work                     | `brainstorming-2`                |
+| Any complex multi-step task                  | `plan-mode`                      |
+| Stuck / unsure why                           | `mavis-doctor`                   |
+| Multi-step parallel work                     | `mavis-team`                     |
+| Code review of existing code                 | `code-review`                    |
 
 #### Step 3: **STATE WHY** the skill fits
+
 One sentence per skill. Why does this skill apply to this specific task?
 
 #### Step 4: **LOAD** the skill(s)
+
 Use the `skill` tool to load each selected skill. Do not proceed until loaded.
 
 ### Enforcement Format (use this exact template)
@@ -331,6 +343,7 @@ Before EVERY sub-task, write this in your response:
 
 **Task:** [one sentence]
 **Skills selected:**
+
 - `[skill-name]` — [why it fits]
 - `[skill-name]` — [why it fits]
 
@@ -341,12 +354,14 @@ Before EVERY sub-task, write this in your response:
 ### Examples
 
 #### Example 1: Merging duplicate schemas
+
 ```markdown
 ## Pre-Action Skill Gate
 
 **Task:** Delete duplicate `marketing-actions.ts` schema file.
 
 **Skills selected:**
+
 - `plan-mode` — this is a data-integrity change requiring deliberate planning
 - `systematic-debugging` — need to confirm root cause of duplication before removal
 - `verification-before-completion` — must verify no test breaks after removal
@@ -355,12 +370,14 @@ Before EVERY sub-task, write this in your response:
 ```
 
 #### Example 2: Adding a new API endpoint
+
 ```markdown
 ## Pre-Action Skill Gate
 
 **Task:** Add `requirePermission` to `dashboard.ts` routes.
 
 **Skills selected:**
+
 - `plan-mode` — multi-step change across multiple endpoints
 - `test-driven-development` — need boundary tests before applying changes
 - `verification-before-completion` — must verify all tests pass
@@ -369,12 +386,14 @@ Before EVERY sub-task, write this in your response:
 ```
 
 #### Example 3: Investigating a failing test
+
 ```markdown
 ## Pre-Action Skill Gate
 
 **Task:** Investigate why `compliance-regression-gate.test.ts` fails on local DB.
 
 **Skills selected:**
+
 - `systematic-debugging` — debugging a test failure requires root cause analysis
 - `mavis-doctor` — could be environment, migration state, or seed data issue
 
@@ -416,4 +435,3 @@ Before EVERY sub-task, write this in your response:
 - `find-skills` skill can be used to discover relevant skills when unsure
 
 ---
-

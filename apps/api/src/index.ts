@@ -324,8 +324,10 @@ app.get('/internal/tls-check', async (c) => {
 app.route('/s', storefrontRouter);
 app.route('/marketplace', haaMarketplaceRouter);
 app.route('/', sitemapRouter);
-app.route('/api/landing-ai-agent', createLandingAIAgentRoute());
-app.get('/api/brand', async (c) => {
+// DECISION-OS-015: Caddy strips /api/* before forwarding (deploy/{staging,production}/Caddyfile).
+// Hono mounts WITHOUT the /api/ prefix; client SPAs continue to call /api/...
+app.route('/landing-ai-agent', createLandingAIAgentRoute());
+app.get('/brand', async (c) => {
   try {
     const [row] = await db
       .select({
@@ -354,7 +356,9 @@ app.route('/merchant/:storeId/notifications', notificationsRouter);
 app.route('/merchant/:storeId/api-keys', apiKeysRouter);
 app.route('/merchant/:storeId/integrations', integrationsRouter);
 app.route('/merchant/:storeId/migration', migrationRouter);
-app.route('/api/v1', publicApiRouter);
+// DECISION-OS-015: Caddy strips /api/* — Hono mount without the /api/ prefix.
+// External merchants call /api/v1/...; Caddy delivers /v1/... here.
+app.route('/v1', publicApiRouter);
 app.route('/merchant/:storeId/feeds', feedsRouter);
 app.route('/merchant/:storeId/ai', aiRouter);
 app.route('/merchant/:storeId/marketplaces', marketplacesRouter);

@@ -37,9 +37,21 @@ echo "=== [3/6] Build all packages ==="
 pnpm --filter @haa/db build || true
 pnpm -r --filter '!@haa/db' build
 
-echo "=== [4/6] Copy production env and run migrations ==="
+echo "=== [4/6] Copy production env (migrations are MANUAL — see DECISION-OS-016) ==="
 cp "$ENV_FILE" "$REPO_DIR/.env"
-pnpm db:migrate
+
+# DECISION-OS-016: NO auto-migrate. Migrations are an explicit, separate step.
+# To run migrations, the operator must execute:
+#     HAA_DEPLOY_BUNDLE_MIGRATE_ACK=I-have-reviewed-the-migrations pnpm db:migrate
+# This script will refuse to run db:migrate by itself.
+if [ "${HAA_DEPLOY_BUNDLE_MIGRATE_ACK:-}" = "I-have-reviewed-the-migrations" ]; then
+  echo "    Migration acknowledgement detected — running pnpm db:migrate ..."
+  pnpm db:migrate
+else
+  echo "    Skipping pnpm db:migrate (DECISION-OS-016: no auto-migrate)."
+  echo "    To run migrations, set HAA_DEPLOY_BUNDLE_MIGRATE_ACK=I-have-reviewed-the-migrations"
+  echo "    and re-run, OR run migrations manually before invoking this bundle script."
+fi
 
 echo "=== [5/6] Start / reload API with PM2 ==="
 cp "$REPO_DIR/ecosystem.config.cjs" "$APP_DIR/"

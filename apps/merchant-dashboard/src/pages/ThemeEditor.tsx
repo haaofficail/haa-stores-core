@@ -22,7 +22,7 @@ import {
 import { toast } from 'sonner';
 import { PermissionGate } from '@/lib/permissions';
 import { updateSection, BannerEditor, ProductEditor, CategoriesEditor, TextEditor, ImageTextEditor, BrandsEditor, FAQEditor } from './theme-editor/SectionEditors';
-import { getThemeCapsule } from '@haa/storefront-themes';
+import { getThemeCapsule } from '@haa/storefront-themes/server';
 import { ThemeEditorHost } from '@/components/theme-editor/ThemeEditorHost';
 
 const COLOR_GROUPS = [

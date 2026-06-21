@@ -157,6 +157,26 @@ merchantDataRouter.get('/data-export', requirePermission('settings:update'), asy
  * Returns: { success: true, deactivatedAt, retentionDays, hardDeleteAt }
  */
 merchantDataRouter.delete('/account', requirePermission('settings:update'), async (c) => {
+  // DECISION-OS-014 (beta deletion policy):
+  // No merchant account self-deletion as a feature in beta. The PDPL right-
+  // to-erasure obligation is honoured by routing the request through
+  // compliance/support (operator-assisted soft delete + 2FA gate), not via
+  // a self-service endpoint without 2FA (ISSUE-0010 / F-QA-B-002).
+  //
+  // To re-enable this endpoint, two prerequisites must land first:
+  //   1. 2FA confirmation step (TOTP / email / re-password) — F-QA-B-002.
+  //   2. Owner ruling re-opening DECISION-OS-014 for self-service deletion.
+  return c.json({
+    success: false,
+    error: {
+      code: 'FORBIDDEN_BETA_POLICY',
+      message: 'Self-service account deletion is disabled in beta (DECISION-OS-014). Open a compliance/support request for PDPL right-to-erasure.',
+    },
+  }, 403);
+
+  // The legacy soft-delete implementation is preserved below for reference
+  // when this endpoint is re-enabled with 2FA. It is unreachable today.
+   
   const storeId = Number(c.req.param('storeId'));
   const db = createDbClient();
   const audit = new AuditLogService(db);

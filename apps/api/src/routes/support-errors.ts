@@ -7,7 +7,8 @@ const IS_LOCAL = !process.env.NODE_ENV || process.env.NODE_ENV === 'development'
 
 router.post('/report', async (c) => {
   if (!IS_LOCAL) {
-    return c.json({ ok: false, message: 'This endpoint is local-development only.' }, 403)
+    // AGENTS.md §13 #5 specifies 404 in production (hides endpoint existence).
+    return c.json({ ok: false, message: 'Not found.' }, 404)
   }
 
   try {
