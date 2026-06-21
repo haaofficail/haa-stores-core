@@ -40,6 +40,7 @@ import { dashboardRouter } from './routes/dashboard.js';
 import { settingsRouter } from './routes/settings.js';
 import { storefrontRouter } from './routes/storefront/index.js';
 import { resolveStoreByHost } from './routes/storefront/_shared.js';
+import { CustomDomainService } from '@haa/commerce-core';
 import { merchantDataRouter } from './routes/merchant-data.js';
 import { couponsRouter } from './routes/coupons.js';
 import { exportsRouter } from './routes/exports.js';
@@ -300,6 +301,18 @@ app.get('/api/resolve-host', async (c) => {
     return c.json({ success: true, data: { slug: null } });
   }
   return c.json({ success: true, data: { slug: store.slug, name: store.name } });
+});
+
+// On-demand TLS gate for Caddy (QA Custom Domain). Caddy calls this before
+// issuing a Let's Encrypt cert for an unknown host. We return 200 ONLY for a
+// genuinely active custom domain, so an attacker can't force cert issuance for
+// arbitrary hostnames (cert-exhaustion / rate-limit DoS). Any other host -> 404.
+app.get('/api/internal/tls-check', async (c) => {
+  const domain = c.req.query('domain') || '';
+  if (!domain) return c.json({ ok: false }, 400);
+  const store = await new CustomDomainService().getStoreByActiveDomain(domain);
+  if (!store) return c.json({ ok: false }, 404);
+  return c.json({ ok: true });
 });
 
 // Storefront API routes (JSON responses)
