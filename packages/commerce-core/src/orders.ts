@@ -8,6 +8,7 @@ import { AuditLogService } from '@haa/integration-core';
 import { WalletLedger } from '@haa/wallet-core';
 import { StoreBillingSettingsService } from './billing-settings-service.js';
 import { WalletPostingService } from './wallet-posting-service.js';
+import { LoyaltyService } from './loyalty.js';
 
 export class OrdersService {
   constructor(private db: DbClient = createDbClient()) {}
@@ -307,9 +308,9 @@ export class OrdersService {
     if (order.paymentStatus === 'refunded') throw new Error('Order already refunded');
     if (order.status === 'cancelled' || order.status === 'refunded') throw new Error('Order is cancelled or refunded');
 
-    return this.db.transaction(async (tx) => {
+    const updated = await this.db.transaction(async (tx) => {
       const txOrders = new OrdersService(tx as any);
-      const updated = await txOrders.updatePaymentStatus(storeId, orderId, 'paid', Number(order.total));
+      const collected = await txOrders.updatePaymentStatus(storeId, orderId, 'paid', Number(order.total));
 
       // Read the per-store COD-fee policy at collection time. The policy
       // is then snapshotted onto the `cod_fee` wallet entry for
@@ -360,8 +361,28 @@ export class OrdersService {
         newValue: { paymentStatus: 'paid', method: 'cash_on_delivery', orderNumber: order.orderNumber },
       });
 
-      return updated;
+      return collected;
     });
+
+    // اكسب نقاط الولاء بعد تحصيل COD — خارج المعاملة، idempotent، best-effort
+    // فلا يُفشل التحصيل لو تعثّر الولاء.
+    if (order.customerId) {
+      await new LoyaltyService(this.db).earnFromOrder({
+        storeId,
+        customerId: order.customerId,
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        amounts: {
+          subtotal: Number(order.subtotal),
+          tax: Number(order.taxAmount ?? 0),
+          shipping: Number(order.shippingCost ?? 0),
+        },
+      }).catch((err) => {
+        console.error(`[loyalty] COD earn failed for order ${order.id}:`, err);
+      });
+    }
+
+    return updated;
   }
 
   async markCODFailed(storeId: number, orderId: number, reason?: string, userId?: number) {

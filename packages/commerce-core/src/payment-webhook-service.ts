@@ -13,6 +13,7 @@ import type { ProviderCode } from '@haa/shared';
 import { OrdersService } from './orders.js';
 import { StoreBillingSettingsService } from './billing-settings-service.js';
 import { WalletPostingService } from './wallet-posting-service.js';
+import { LoyaltyService } from './loyalty.js';
 
 /**
  * Result envelope returned by PaymentWebhookService.process.
@@ -202,6 +203,7 @@ export class PaymentWebhookService {
       .limit(1);
     const tenantId = store?.tenantId ?? 0;
 
+    let becamePaid = false;
     await this.db.transaction(async (tx) => {
       const txPaymentService = new PaymentService(tx as any);
       const txOrdersService = new OrdersService(tx as any);
@@ -212,6 +214,7 @@ export class PaymentWebhookService {
       const txPosting = new WalletPostingService(tx as any);
 
       if (internalStatus === 'paid' && payment.status !== 'paid') {
+        becamePaid = true;
         await txOrdersService.updatePaymentStatus(storeId, payment.orderId, 'paid', Number(payment.amount));
         await txOrdersService.changeStatus(storeId, payment.orderId, 'confirmed');
 
@@ -303,6 +306,39 @@ export class PaymentWebhookService {
           internalStatus === 'refunded' ? 'refunded' : 'partially_refunded',
         );
       }
+    });
+
+    // اكسب نقاط الولاء بعد نجاح الدفع — خارج معاملة الدفع عمداً:
+    // idempotent عبر (store, order)، و best-effort فلا يُفشل معالجة الدفع أبداً.
+    if (becamePaid) {
+      await this.awardLoyaltyForOrder(storeId, payment.orderId).catch((err) => {
+        console.error(`[loyalty] earn failed for order ${payment.orderId}:`, err);
+      });
+    }
+  }
+
+  /** اكسب نقاط الولاء لطلب مدفوع (idempotent). يُتجاهل بهدوء لو لا عميل/طلب. */
+  private async awardLoyaltyForOrder(storeId: number, orderId: number): Promise<void> {
+    const [order] = await this.db.select({
+      customerId: s.orders.customerId,
+      orderNumber: s.orders.orderNumber,
+      subtotal: s.orders.subtotal,
+      taxAmount: s.orders.taxAmount,
+      shippingCost: s.orders.shippingCost,
+    }).from(s.orders).where(eq(s.orders.id, orderId)).limit(1);
+
+    if (!order || !order.customerId) return;
+
+    await new LoyaltyService(this.db).earnFromOrder({
+      storeId,
+      customerId: order.customerId,
+      orderId,
+      orderNumber: order.orderNumber,
+      amounts: {
+        subtotal: Number(order.subtotal),
+        tax: Number(order.taxAmount ?? 0),
+        shipping: Number(order.shippingCost ?? 0),
+      },
     });
   }
 }

@@ -75,6 +75,7 @@ import { permissionsRouter } from './routes/permissions.js';
 import { pixelsRouter } from './routes/pixels.js';
 import { cartCampaignsRouter } from './routes/cart-campaigns.js';
 import { whatsappCampaignsRouter } from './routes/whatsapp-campaigns.js';
+import { loyaltyRouter } from './routes/loyalty.js';
 import { outboundWebhooksRouter } from './routes/outbound-webhooks.js';
 import { zatcaRouter } from './routes/zatca.js';
 import { createDbClient, closeDbClient } from '@haa/db';
@@ -331,6 +332,7 @@ app.route('/merchant/:storeId/audit', auditRouter);
 app.route('/merchant/:storeId/marketing', marketingRouter);
 app.route('/merchant/:storeId/abandoned-carts/campaigns', cartCampaignsRouter);
 app.route('/merchant/:storeId/whatsapp-campaigns', whatsappCampaignsRouter);
+app.route('/merchant/:storeId/loyalty', loyaltyRouter);
 app.route('/merchant/:storeId/outbound-webhooks', outboundWebhooksRouter);
 app.route('/merchant/:storeId', zatcaRouter);
 
