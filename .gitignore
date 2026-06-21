@@ -24,3 +24,20 @@ tests/e2e/screenshots/
 # Production secrets — never commit
 deploy/production/.env
 deploy/staging/.env
+
+# Local secrets
+.env
+.env.*
+!.env.example
+.hostinger-mcp.env
+
+# Claude / agent temporary worktrees
+.claude/worktrees/
+.worktrees/
+
+# Generated build artifacts
+packages/theme-web/.next/
+packages/theme-web/storybook-static/
+
+# Local backups
+CLAUDE.md.backup.*

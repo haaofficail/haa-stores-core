@@ -53,7 +53,7 @@ describe('Encryption Utility', () => {
 
 describe('Redaction Helper', () => {
   it('redacts showing first 4 and last 4 characters', () => {
-    expect(redactCredential('sk_test_abc123def456')).toBe('sk_t****f456');
+    expect(redactCredential('PLACEHOLDER_credential_value')).toBe('PLAC****alue');
   });
 
   it('returns **** for short values', () => {

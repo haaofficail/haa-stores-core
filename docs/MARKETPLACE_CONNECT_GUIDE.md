@@ -3,6 +3,7 @@
 ## نظرة عامة
 
 لوحة تحكم هاء متاجر تدعم الربط مع 4 منصات بيع:
+
 - **سلة** — OAuth 2.0
 - **زد** — OAuth 2.0 + X-Manager-Token
 - **نون** — JWT (مفاتيح خاصة)
@@ -13,6 +14,7 @@
 ## 1. سلة (Salla)
 
 ### المتطلبات
+
 - حساب تاجر في [سلة](https://salla.sa)
 - تطبيق (Application) مسجل في [Salla Partners](https://partners.salla.sa)
 - Client ID و Client Secret من التطبيق
@@ -38,6 +40,7 @@ SALLA_REDIRECT_URI=http://localhost:3000/api/merchant/{storeId}/marketplaces/sal
 ```
 
 ### نطاق الصلاحيات المطلوبة
+
 - `products.read` — قراءة المنتجات
 - `products.write` — إدارة المنتجات
 - `orders.read` — قراءة الطلبات
@@ -49,6 +52,7 @@ SALLA_REDIRECT_URI=http://localhost:3000/api/merchant/{storeId}/marketplaces/sal
 ## 2. زد (Zid)
 
 ### المتطلبات
+
 - حساب تاجر في [زد](https://zid.sa)
 - تطبيق مسجل في [Zid Partners](https://partners.zid.sa)
 - Client ID و Client Secret
@@ -75,6 +79,7 @@ ZID_REDIRECT_URI=http://localhost:3000/api/merchant/{storeId}/marketplaces/zid/o
 ```
 
 ### ملاحظات
+
 - التوثيق يتطلب `Authorization` (JWT) + `X-Manager-Token` في كل طلب
 - X-Manager-Token يُجدد من لوحة تحكم زد كل سنة
 
@@ -83,6 +88,7 @@ ZID_REDIRECT_URI=http://localhost:3000/api/merchant/{storeId}/marketplaces/zid/o
 ## 3. نون (Noon)
 
 ### المتطلبات
+
 - حساب تاجر في [نون](https://noon.com/partner)
 - Client ID (من نون بارتنرز)
 - Private Key (مفتاح RSA خاص، من نون بارتنرز)
@@ -96,13 +102,14 @@ ZID_REDIRECT_URI=http://localhost:3000/api/merchant/{storeId}/marketplaces/zid/o
 1. افتح "قنوات البيع" ← اختر "نون"
 2. أملأ الحقول التالية:
    - Client ID — من حساب نون بارتنرز
-   - Private Key — المفتاح الخاص الكامل (يبدأ بـ -----BEGIN RSA PRIVATE KEY-----)
+   - Private Key — قيمة `<NOON_PRIVATE_KEY_PEM_FROM_NOON_DASHBOARD>` كاملةً كما تظهر في لوحة بارتنرز نون
    - Seller Name — اختياري
    - Partner ID — اختياري
 3. اضغط "ربط نون"
 ```
 
 ### مهم
+
 - Private Key يجب أن يكون المفتاح كاملاً مع سطري البداية والنهاية
 - لا حاجة لمتغيرات بيئة — البيانات تدخل من الواجهة مباشرة
 - JWT يتم توليده تلقائياً من المفتاح الخاص لكل طلب
@@ -112,6 +119,7 @@ ZID_REDIRECT_URI=http://localhost:3000/api/merchant/{storeId}/marketplaces/zid/o
 ## 4. أمازون (Amazon SP-API)
 
 ### المتطلبات
+
 1. حساب بائع في [Amazon Seller Central](https://sellercentral.amazon.com)
 2. تطبيق SP-API مسجل في [Seller Central Partner Network](https://developer.amazonservices.com)
 3. مستخدم IAM في حساب AWS مع الصلاحيات المناسبة
@@ -150,16 +158,17 @@ AMAZON_APP_CLIENT_ID=your_app_client_id
 
 ### الأسواق المدعومة
 
-| الدولة | Marketplace ID | الـ endpoint |
-|--------|---------------|--------------|
+| الدولة   | Marketplace ID   | الـ endpoint                      |
+| -------- | ---------------- | --------------------------------- |
 | السعودية | `A2E3T7L0C1Z0XH` | `sellingpartnerapi-me.amazon.com` |
 | الإمارات | `A2VIGQ35RCS4UG` | `sellingpartnerapi-me.amazon.com` |
-| مصر | `ARBP9OOSHTCHU` | `sellingpartnerapi-me.amazon.com` |
-| أمريكا | `ATVPDKIKX0DER` | `sellingpartnerapi-na.amazon.com` |
+| مصر      | `ARBP9OOSHTCHU`  | `sellingpartnerapi-me.amazon.com` |
+| أمريكا   | `ATVPDKIKX0DER`  | `sellingpartnerapi-na.amazon.com` |
 | بريطانيا | `A1F83G8C2ARO7P` | `sellingpartnerapi-eu.amazon.com` |
-| ألمانيا | `A1PA6795UKMFR9` | `sellingpartnerapi-eu.amazon.com` |
+| ألمانيا  | `A1PA6795UKMFR9` | `sellingpartnerapi-eu.amazon.com` |
 
 ### ملاحظات فنية
+
 - التوثيق: LWA (Login With Amazon) للحصول على Access Token + AWS Signature V4 لتوقيع الطلبات
 - AWS SigV4 يتم تطبيقه تلقائياً — لا حاجة لأي AWS SDK
 - Refresh Token يُستخدم لكل طلب للحصول على Access Token جديد
@@ -172,7 +181,9 @@ AMAZON_APP_CLIENT_ID=your_app_client_id
 بعد ربط أي سوق، يمكنك:
 
 ### مركز الربط
+
 افتح `/channels/hub` من لوحة التحكم لعرض:
+
 - لوحة تحكم موحدة لجميع الأسواق المتصلة
 - إجمالي المبيعات والطلبات المستوردة
 - حالة كل سوق (متصل/غير متصل)
@@ -181,41 +192,46 @@ AMAZON_APP_CLIENT_ID=your_app_client_id
 - سجل المزامنة (آخر 10 عمليات)
 
 ### المزامنة
+
 1. **استيراد الطلبات** — `/channels/:provider` ← سحب الطلبات من السوق
 2. **مزامنة الكل** — `/channels/hub` ← مزامنة جميع الأسواق بنقرة واحدة
 3. **مزامنة المنتجات** — `/channels/:provider/listings` ← عرض وإدارة المنتجات المسوقة
 4. **مزامنة المخزون** — تحديث الكميات في السوق
 
 ### إدارة المنتجات
+
 1. من صفحة **المنتجات**، اضغط على أيقونة 🌐 في آخر كل منتج
 2. اختر السوق المستهدف (سلة/زد/نون/أمازون)
 3. اضغط **نشر** — سيتم إنشاء المنتج في السوق مباشرة
 
 ### التقارير
+
 - **تقارير المبيعات** — عرض إجمالي المبيعات والطلبات لكل سوق
 - **سجل المزامنة** — `/channels/sync-logs` — سجل كامل بفلترة حسب النوع (طلبات/منتجات/مخزون)
 
 ### الإدارة
+
 - **دليل الربط التفاعلي** — `/channels/guide` — شرح خطوة بخطوة لكل سوق
 - **فصل السوق** — إلغاء الربط في أي وقت
 
 ### نقاط API المتاحة
 
-| الطريقة | المسار | الوظيفة |
-|---------|--------|---------|
-| GET | `/merchant/:storeId/marketplaces` | قائمة الأسواق مع حالة الاتصال |
-| GET | `/merchant/:storeId/marketplaces/hub` | لوحة تحكم موحدة (مبيعات + حالة + سجل) |
-| GET | `/merchant/:storeId/marketplaces/summary` | ملخص المبيعات لجميع الأسواق |
-| GET | `/merchant/:storeId/marketplaces/sync-logs` | سجل المزامنة مع تصفية وصفحات |
-| POST | `/merchant/:storeId/marketplaces/sync-all` | مزامنة جميع الأسواق المتصلة |
-| POST | `/merchant/:storeId/marketplaces/:provider/sync/orders` | استيراد الطلبات من سوق معين |
-| POST | `/merchant/:storeId/marketplaces/:provider/sync/inventory` | مزامنة المخزون |
-| POST | `/merchant/:storeId/marketplaces/:provider/publish` | نشر منتج في السوق |
-| GET | `/merchant/:storeId/marketplaces/:provider/listings` | قائمة منتجات السوق |
-| POST | `/merchant/:storeId/marketplaces/:provider/listings` | إنشاء منتج في السوق |
-| GET | `/merchant/:storeId/marketplaces/:provider/sales` | تقارير مبيعات السوق |
+| الطريقة | المسار                                                     | الوظيفة                               |
+| ------- | ---------------------------------------------------------- | ------------------------------------- |
+| GET     | `/merchant/:storeId/marketplaces`                          | قائمة الأسواق مع حالة الاتصال         |
+| GET     | `/merchant/:storeId/marketplaces/hub`                      | لوحة تحكم موحدة (مبيعات + حالة + سجل) |
+| GET     | `/merchant/:storeId/marketplaces/summary`                  | ملخص المبيعات لجميع الأسواق           |
+| GET     | `/merchant/:storeId/marketplaces/sync-logs`                | سجل المزامنة مع تصفية وصفحات          |
+| POST    | `/merchant/:storeId/marketplaces/sync-all`                 | مزامنة جميع الأسواق المتصلة           |
+| POST    | `/merchant/:storeId/marketplaces/:provider/sync/orders`    | استيراد الطلبات من سوق معين           |
+| POST    | `/merchant/:storeId/marketplaces/:provider/sync/inventory` | مزامنة المخزون                        |
+| POST    | `/merchant/:storeId/marketplaces/:provider/publish`        | نشر منتج في السوق                     |
+| GET     | `/merchant/:storeId/marketplaces/:provider/listings`       | قائمة منتجات السوق                    |
+| POST    | `/merchant/:storeId/marketplaces/:provider/listings`       | إنشاء منتج في السوق                   |
+| GET     | `/merchant/:storeId/marketplaces/:provider/sales`          | تقارير مبيعات السوق                   |
 
 ### الصلاحية للوصول API
+
 - قراءة: `settings:read`، `products:read`، `orders:read`، `reports:read`
 - كتابة: `settings:update`، `products:create`، `products:update`، `products:delete`
 
@@ -224,6 +240,7 @@ AMAZON_APP_CLIENT_ID=your_app_client_id
 ## تجهيز البيئة — خطوة بخطوة
 
 ### 1. سلة
+
 1. سجل دخولك في [Salla Partners](https://partners.salla.sa)
 2. اضغط **"Create New App"**
 3. اختر النوع: **"Private App"** (لتطبيق خاص لمتجرك)
@@ -241,6 +258,7 @@ AMAZON_APP_CLIENT_ID=your_app_client_id
    ```
 
 ### 2. زد
+
 1. سجل دخولك في [Zid Partners](https://partners.zid.sa)
 2. أنشئ تطبيقاً جديداً واختار **"Private Integration"**
 3. أضف `Redirect URI`:
@@ -258,20 +276,25 @@ AMAZON_APP_CLIENT_ID=your_app_client_id
 7. الصلاحية: توكن X-Manager-Token صالح لمدة **سنة** — ضع تذكيراً للتجديد
 
 ### 3. نون
+
 1. سجل دخولك في [Noon Partners](https://partners.noon.com)
 2. اذهب إلى **"API Integration"** ← **"Generate Credentials"**
 3. اختر `RS256` كخوارزمية التوقيع
 4. سيتم توليد:
    - `Client ID`
-   - `Private Key` (مفتاح RSA) — انسخه **كاملاً** (بما في ذلك `-----BEGIN RSA PRIVATE KEY-----`)
+   - `Private Key` (مفتاح RSA) — انسخه **كاملاً** بصيغة PEM كما تظهر في لوحة بارتنرز نون، بما في ذلك سطري الترويسة والذيل المعتادين لمفاتيح RSA
 5. أضف إلى ملف `.env` (اختياري، يمكن إدخالها من الواجهة):
    ```env
    NOON_CLIENT_ID=xxx
-   NOON_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
+   # ضع قيمة المفتاح الكاملة من لوحة نون (سطر واحد بدون كسر سطر)
+   NOON_PRIVATE_KEY=<NOON_PRIVATE_KEY_PEM_FROM_NOON_DASHBOARD>
+   # أو اقرأه من ملف محمي على القرص بدلاً من تضمينه في .env
+   NOON_PRIVATE_KEY_PATH=/secure/path/noon-private-key.pem
    ```
 6. **مهم:** Private Key يُدخل من واجهة المستخدم، متغيرات البيئة اختيارية
 
 ### 4. أمازون
+
 1. سجل دخولك في [Seller Central](https://sellercentral.amazon.com)
 2. اذهب إلى **"Partner Network"** ← **"Develop Apps"** ← **"Register New Application"**
 3. اختر نوع التطبيق: **"SP-API Application"**
@@ -319,20 +342,24 @@ pnpm dev:storefront   # http://localhost:5175
 ## استكشاف الأخطاء
 
 ### OAuth فشل
+
 - تأكد من صحة `Client ID` و `Client Secret`
 - تأكد من تطابق `Redirect URI` بين التطبيق والكود
 - جرب إعادة الربط من البداية
 
 ### نون فشل
-- Private Key يجب أن يبدأ بـ `-----BEGIN RSA PRIVATE KEY-----`
+
+- تأكد أن Private Key بصيغة PEM كاملة (يحتوي سطري ترويسة وذيل RSA المعتادين) كما توفّرها لوحة نون
 - تأكد من أن Client ID صحيح
 - جرب الاتصال بـ `/sellers/me` لتأكيد صلاحية البيانات
 
 ### أمازون فشل
+
 - تأكد من صلاحية IAM user للوصول إلى SP-API
 - Refresh Token ينتهي — قد تحتاج لإعادة تفويض
 - بعض الأسواق تتطلب تكوين خاص في Seller Central
 
 ### خطأ "Invalid Signature" (أمازون)
+
 - هذا يحدث تلقائياً — تأكد من صحة AWS Access Key و Secret Key
 - تأكد من أن المنطقة (region) صحيحة للسوق المستهدف
