@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { toMoneyNumber, formatAmount } from '@/lib/money';
+import { toMoneyNumber, formatAmount, safeMaxQty } from '@/lib/money';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { useSharedCart } from '@/hooks/CartContext';
@@ -168,7 +168,7 @@ export default function Cart() {
     );
   }
 
-  const subtotal = Number(cart.subtotal);
+  const subtotal = toMoneyNumber(cart.subtotal);
 
   return (
     <div className="animate-fade-in motion-reduce:animate-none overflow-x-hidden" id="main-content">
@@ -180,10 +180,9 @@ export default function Cart() {
             {cart.items.map((item) => {
               const variantLabel = getVariantLabel(item);
               const rawStock = item.variant?.stockQuantity ?? item.product.stockQuantity ?? 0;
-              const availableStock = Number.isFinite(Number(rawStock)) ? Number(rawStock) : 0;
-              const maxQty = item.product.trackInventory ? availableStock : 99;
-              const isOutOfStock = item.product.trackInventory && availableStock < 1;
-              void isOutOfStock;
+              // safeMaxQty يضمن max >= 0 ولا يقع تحت min=1 بشكل غير معالَج
+              const maxQty = safeMaxQty(!!item.product.trackInventory, rawStock, 99);
+              const isOutOfStock = !!item.product.trackInventory && maxQty < 1;
               return (
                 <StoreCard key={item.id} className="p-3">
                   <div className="flex items-center gap-3">
@@ -213,6 +212,11 @@ export default function Cart() {
                       <p className="text-primary-600 font-semibold text-xs mt-0.5">
                         {formatAmount(item.unitPrice)} <SarIcon size="md" />
                       </p>
+                      {isOutOfStock && (
+                        <p className="mt-0.5">
+                          <StoreBadge variant="danger" size="sm">{t('cart.outOfStock', 'نفذ من المخزون')}</StoreBadge>
+                        </p>
+                      )}
                       {(item.giftWrapSelected || item.sendAsGift) && (
                         <div className="flex flex-wrap gap-1 mt-0.5">
                            {item.giftWrapSelected && <StoreBadge variant="info" size="sm"><Icon icon={Gift} size="2xs" className="inline align-middle ms-0.5" />{t('cart.giftWrap', 'تغليف')}</StoreBadge>}
@@ -226,8 +230,8 @@ export default function Cart() {
                         value={item.quantity}
                         onChange={(newQty) => handleQuantityChange(item.id, newQty)}
                         min={1}
-                        max={maxQty}
-                        disabled={updating === item.id}
+                        max={Math.max(1, maxQty)}
+                        disabled={updating === item.id || isOutOfStock}
                       />
                       <p className="font-semibold text-xs sm:w-16 sm:text-start">
                         {formatAmount(item.totalPrice)} <SarIcon size="md" />

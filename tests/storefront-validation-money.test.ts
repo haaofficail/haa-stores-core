@@ -9,6 +9,17 @@ describe('Auth validation (QA B6)', () => {
     expect(normalizeStoreSlug('  --Trim--  ')).toBe('trim');
     expect(normalizeStoreSlug('a'.repeat(80)).length).toBeLessThanOrEqual(50);
   });
+  it('normalizeStoreSlug never returns an empty slug for a non-empty Arabic name (QA AU1)', () => {
+    const a = normalizeStoreSlug('متجر الأناقة');
+    expect(a.length).toBeGreaterThan(0);
+    expect(a).toMatch(/^store-[a-z0-9]+$/); // stable fallback
+    // stable + deterministic: same input → same slug
+    expect(normalizeStoreSlug('متجر الأناقة')).toBe(a);
+    // different Arabic names → different fallbacks
+    expect(normalizeStoreSlug('بيت العود')).not.toBe(a);
+    // truly empty input stays empty (caller decides)
+    expect(normalizeStoreSlug('   ')).toBe('');
+  });
   it('isSaudiPhone enforces 05XXXXXXXX', () => {
     expect(isSaudiPhone('0512345678')).toBe(true);
     expect(isSaudiPhone(' 0512345678 ')).toBe(true);
