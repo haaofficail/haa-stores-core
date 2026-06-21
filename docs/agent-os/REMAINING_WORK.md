@@ -41,7 +41,7 @@ _(none — autopilot has executed every safe wave in scope)_
 - [ ] F-QA-B-002 — 2FA on merchant `DELETE /account` (when re-enabled past beta). Currently locked.
 - [ ] F-QA-C-001 — Wallet DB idempotency migration EXECUTION (DECISION-OS-018). Plan is in `WALLET_IDEMPOTENCY_PLAN.md`; **migration not generated, not run**.
 - [ ] F-QA-C-002 — Geidea live refund implementation. Capability flags disabled in Wave 4; re-enable when implementation lands.
-- [ ] F-QA-E-007 — Production server provisioning + production secrets (owner).
+- [ ] F-QA-E-007 — Production readiness promotion checklist against the official server `72.61.108.208` + production secrets (owner). No server-vs-server decision — the server is locked by DECISION-OS-007.
 
 ## Remaining — P2
 
@@ -65,8 +65,8 @@ _(none — autopilot has executed every safe wave in scope)_
 
 ## Blocked (owner / credentials / deploy)
 
-- [ ] **Production server provisioning** — owner decision (promote `72.61.108.208` vs provision separate).
-- [ ] **Production secrets** — owner to generate + load per `docs/ops/PRODUCTION_READINESS_CHECKLIST §2`.
+- [ ] **Production readiness promotion** — the official server is `72.61.108.208` (locked by DECISION-OS-007). Execute the promotion checklist in `docs/ops/PRODUCTION_READINESS_CHECKLIST.md` §1.5–1.7 (server hardening review, prod DNS, prod TLS auto-issue). No server-vs-server decision remains.
+- [ ] **Production secrets** — owner to generate + load per `docs/ops/PRODUCTION_READINESS_CHECKLIST §2` (JWT_SECRET, ADMIN_JWT_SECRET, ENCRYPTION_KEY, DATABASE_URL, REDIS_URL, etc).
 - [ ] **GitHub `production` environment secrets** — owner to set in repo settings.
 - [ ] **Geidea live API wiring** — needs official endpoints/credentials/signature rules.
 - [ ] **Shipping aggregator live selection** — owner picks provider + credentials.
