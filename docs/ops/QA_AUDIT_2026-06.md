@@ -226,5 +226,11 @@
 - ✅ مسارات API `/merchant/:storeId/loyalty` (settings GET/PUT، رصيد العميل، expire) + ربط الكسب في payment-webhook (online) و collectCOD (COD) — كلاهما best-effort بعد commit. 5 اختبارات.
 - 📋 **متبقٍّ**: واجهة العميل في storefront (عرض الرصيد + استبدال عند الدفع) — متابعة frontend.
 
-### ربط دومين خارجي — غير مبني (تصميم جاهز، infra يحتاج موافقتك)
-لا حقل domain. تصميم كامل: أعمدة stores (customDomain/status/token/ssl) + `packages/shared/custom-domain.ts` (normalize/verify نقي) + `resolveStoreByHost` + `GET /api/resolve-host` + bootstrap SPA لمضيف مخصّص. **TLS عبر Caddy on-demand مع `ask` guard** — يتطلب تعديل `Caddyfile` + DNS (CNAME→stores.haastores.com→72.61.108.208) = **يحتاج موافقتك الصريحة (CLAUDE.md)**. الجهد ≈ 7-11 يوم. مخاطر: domain takeover, cert-exhaustion DoS, host-header injection (محلولة بالتصميم).
+### ربط دومين خارجي — ✅ الكود + البنية كـكود مكتمل (DNS محجوب)
+- ✅ `packages/shared/custom-domain.ts` (normalize/validate/verify-record نقي، anti-takeover) — 11 اختباراً.
+- ✅ أعمدة stores (custom_domain/status/token/verified_at) + هجرة 0072 + فهرس فريد (لا اختطاف). 
+- ✅ `CustomDomainService` (set/verify عبر DNS TXT+CNAME/remove/getStatus، DNS قابل للحقن، `checkDnsRecords` نقي) — 14 اختباراً.
+- ✅ `resolveStoreByHost` + `GET /api/resolve-host` + مسار التاجr `/merchant/:storeId/domain` + `CustomDomainGate` في SPA (يحوّل `/`→`/s/:slug`) — 4 اختبارات.
+- ✅ **on-demand TLS كـكود**: `GET /api/internal/tls-check` (ask gate يمنع cert-exhaustion) + Caddyfiles staging/production (on_demand_tls + catch-all :443). 5 اختبارات.
+- 🔴 **محجوب (يحتاجك)**: سجل DNS `stores.haastores.com A 72.61.108.208` + نشر الـ Caddyfiles. زون haastores.com **ليس في حساب Hostinger المتصل** (`DNS_getDNSRecordsV1`→404) رغم أن staging.haastores.com يعمل — أي أن DNS مُدار في مكان آخر. لزم توجيهك.
+- مخاطر محلولة بالتصميم: domain takeover (فهرس فريد + تحقّق ملكية)، cert-exhaustion DoS (ask gate)، host-header injection (تطبيع صارم).
