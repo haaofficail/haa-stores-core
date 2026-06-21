@@ -3,6 +3,7 @@ import * as s from '@haa/db/schema';
 import { eq, and } from 'drizzle-orm';
 import type { ConnectionResult, ProductListing, ChannelOrder, SyncResult, SalesReport } from '../types.js';
 import { encryptCredentials, decryptCredentials } from '../credential-cipher.js';
+import { resilientFetch } from '../resilient-fetch.js';
 
 const AUTH_URL = 'https://accounts.salla.sa/oauth2/auth';
 const TOKEN_URL = 'https://accounts.salla.sa/oauth2/token';
@@ -81,7 +82,7 @@ async function sallaFetch<T>(path: string, accessToken: string, options: Request
     ...(options.headers as Record<string, string> || {}),
   };
 
-  const response = await fetch(url, { ...options, headers });
+  const response = await resilientFetch(url, { ...options, headers });
 
   if (!response.ok) {
     const error: SallaApiError = { status: response.status, message: response.statusText };
@@ -123,7 +124,7 @@ export class SallaService {
   }
 
   async handleCallback(code: string): Promise<ConnectionResult> {
-    const response = await fetch(TOKEN_URL, {
+    const response = await resilientFetch(TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
@@ -223,7 +224,7 @@ export class SallaService {
       throw new Error('No refresh token available');
     }
 
-    const response = await fetch(TOKEN_URL, {
+    const response = await resilientFetch(TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({

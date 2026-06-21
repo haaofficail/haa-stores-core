@@ -3,6 +3,7 @@ import * as s from '@haa/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { createHmac, createHash } from 'node:crypto';
 import type { ConnectionResult, ProductListing, ChannelOrder, SyncResult, SalesReport } from '../types.js';
+import { resilientFetch } from '../resilient-fetch.js';
 import { encryptCredentials, decryptCredentials } from '../credential-cipher.js';
 
 interface AmazonCredentials {
@@ -124,7 +125,7 @@ async function getLwaAccessToken(
   clientSecret: string,
   refreshToken: string,
 ): Promise<string> {
-  const res = await fetch('https://api.amazon.com/auth/o2/token', {
+  const res = await resilientFetch('https://api.amazon.com/auth/o2/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -179,7 +180,7 @@ async function amazonFetch<T>(
 
   const authHeader = `AWS4-HMAC-SHA256 Credential=${awsAccessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
-  const response = await fetch(url.toString(), {
+  const response = await resilientFetch(url.toString(), {
     method,
     headers: {
       ...userHeaders,
@@ -258,7 +259,7 @@ export class AmazonService {
     const clientId = process.env.AMAZON_CLIENT_ID || '';
     const clientSecret = process.env.AMAZON_CLIENT_SECRET || '';
 
-    const res = await fetch('https://api.amazon.com/auth/o2/token', {
+    const res = await resilientFetch('https://api.amazon.com/auth/o2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({

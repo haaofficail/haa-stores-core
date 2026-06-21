@@ -3,6 +3,7 @@ import * as s from '@haa/db/schema';
 import { eq, and } from 'drizzle-orm';
 import type { ConnectionResult, ProductListing, ChannelOrder, SyncResult, SalesReport } from '../types.js';
 import { encryptCredentials, decryptCredentials } from '../credential-cipher.js';
+import { resilientFetch } from '../resilient-fetch.js';
 
 const AUTH_URL = 'https://oauth.zid.sa/oauth/authorize';
 const TOKEN_URL = 'https://oauth.zid.sa/oauth/token';
@@ -78,7 +79,7 @@ async function zidFetch<T>(path: string, authorization: string, accessToken: str
     ...(options.headers as Record<string, string> || {}),
   };
 
-  const response = await fetch(url, { ...options, headers });
+  const response = await resilientFetch(url, { ...options, headers });
 
   if (!response.ok) {
     let message = response.statusText;
@@ -119,7 +120,7 @@ export class ZidService {
   }
 
   async handleCallback(code: string): Promise<ConnectionResult> {
-    const response = await fetch(TOKEN_URL, {
+    const response = await resilientFetch(TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({

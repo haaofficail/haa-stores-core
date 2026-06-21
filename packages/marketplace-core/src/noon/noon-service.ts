@@ -3,6 +3,7 @@ import * as s from '@haa/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { createSign } from 'node:crypto';
 import type { ConnectionResult, ProductListing, ChannelOrder, SyncResult, SalesReport } from '../types.js';
+import { resilientFetch } from '../resilient-fetch.js';
 import { encryptCredentials, decryptCredentials } from '../credential-cipher.js';
 
 const API_BASE = 'https://api.noon.com/partners';
@@ -91,7 +92,7 @@ async function noonFetch<T>(
     ...(options.headers as Record<string, string> || {}),
   };
 
-  const response = await fetch(url, { ...options, headers });
+  const response = await resilientFetch(url, { ...options, headers });
 
   if (!response.ok) {
     let message = response.statusText;
