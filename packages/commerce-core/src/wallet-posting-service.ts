@@ -203,10 +203,10 @@ export class WalletPostingService {
     return result;
   }
 
-  // Stub methods for Phase 4-9 of the audit. The full implementations
-  // land in Session #2 (TASK-0034). For Session #1 we declare the
-  // surface so the type system and call sites can be designed against
-  // it without YAGNI.
+  // Wallet posting entry points.
+  // These methods implement ledger postings for sales, COD, refunds,
+  // platform fees, gateway fees, payout debits, reversals, and payout
+  // replay guards. Each is idempotent on its own dedup key.
 
   /**
    * Record a `platform_fee` wallet entry (debit) for an order.
