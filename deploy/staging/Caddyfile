@@ -21,7 +21,7 @@
 	# it returns 200 only for an ACTIVE custom domain, which blocks
 	# cert-exhaustion abuse from arbitrary hostnames. Rate limited.
 	on_demand_tls {
-		ask http://api:3001/api/internal/tls-check
+		ask http://api:3001/internal/tls-check
 		interval 2m
 		burst 5
 	}

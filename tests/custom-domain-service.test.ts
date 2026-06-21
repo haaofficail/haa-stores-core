@@ -57,7 +57,8 @@ describe('custom-domain service + wiring (QA Custom Domain)', () => {
   });
 
   it('public resolve-host route reads forwarded host and is mounted', () => {
-    expect(index).toContain("app.get('/api/resolve-host'");
+    // No /api prefix — Caddy strips /api before forwarding to the API.
+    expect(index).toContain("app.get('/resolve-host'");
     expect(index).toContain('x-forwarded-host');
     expect(index).toContain('resolveStoreByHost');
     expect(index).toContain("app.route('/merchant/:storeId/domain', customDomainRouter)");

@@ -292,7 +292,10 @@ app.use('/marketplace*', async (c, next) => {
 // Resolve the store for the current Host (QA Custom Domain). Lets the SPA,
 // when served on a merchant custom domain or a *.haastores.com subdomain,
 // discover which store slug to bootstrap. Reads the forwarded/real Host.
-app.get('/api/resolve-host', async (c) => {
+// NOTE: registered WITHOUT the /api prefix — Caddy's `handle_path /api/*`
+// strips /api before forwarding, so the SPA's request('/resolve-host') (which
+// becomes /api/resolve-host) arrives here as /resolve-host.
+app.get('/resolve-host', async (c) => {
   const host = c.req.header('x-forwarded-host')?.split(',')[0]?.trim()
     || c.req.header('host')
     || '';
@@ -307,7 +310,9 @@ app.get('/api/resolve-host', async (c) => {
 // issuing a Let's Encrypt cert for an unknown host. We return 200 ONLY for a
 // genuinely active custom domain, so an attacker can't force cert issuance for
 // arbitrary hostnames (cert-exhaustion / rate-limit DoS). Any other host -> 404.
-app.get('/api/internal/tls-check', async (c) => {
+// No /api prefix (Caddy strips it); the Caddy on_demand `ask` points directly
+// at http://api:3001/internal/tls-check.
+app.get('/internal/tls-check', async (c) => {
   const domain = c.req.query('domain') || '';
   if (!domain) return c.json({ ok: false }, 400);
   const store = await new CustomDomainService().getStoreByActiveDomain(domain);
