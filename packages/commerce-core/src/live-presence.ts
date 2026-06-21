@@ -1,7 +1,6 @@
 import { and, eq, gte, lte, sql, count, isNotNull } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
-import type { NormalizedDevice } from './device-normalization.js';
 import type {
   HeartbeatPayload, LiveOverview, LivePages, LivePageInfo,
   LiveDevices, LiveSources, LiveFunnel, LiveAlert, LiveGeo,

@@ -454,7 +454,7 @@ ${knowledge}
           return { text: `تم إنشاء الكوبون ${coupon.code} بنجاح!`, confidence: 1 };
 
         case 'update_product_price':
-          const product = await this.productsService.update(storeId, params.productId as number, {
+          const _product = await this.productsService.update(storeId, params.productId as number, {
             price: params.price as number,
           });
           return { text: `تم تحديث سعر المنتج بنجاح إلى ${params.price} ر.س`, confidence: 1 };

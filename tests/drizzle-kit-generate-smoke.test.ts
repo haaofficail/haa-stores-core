@@ -127,7 +127,6 @@ describe('Drizzle snapshot validator (regression guard for Bud1 + malformed)', (
     //
     // Enable by setting ENABLE_DRIZZLE_KIT_SMOKE=1 in your env.
     if (process.env.ENABLE_DRIZZLE_KIT_SMOKE !== '1') {
-      // eslint-disable-next-line no-console
       console.warn(
         '[drizzle-kit-smoke] Skipped (set ENABLE_DRIZZLE_KIT_SMOKE=1 to enable)',
       );

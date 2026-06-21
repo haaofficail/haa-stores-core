@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { getOfficialContactEmail } from '../packages/commerce-core/src/contact-channels';
 
-const providerStatusRoute = readFileSync(new URL('../apps/api/src/routes/provider-status.ts', import.meta.url), 'utf-8');
 const providerStatusService = readFileSync(new URL('../packages/commerce-core/src/provider-status-service.ts', import.meta.url), 'utf-8');
 const storefrontStoreInfoRoute = readFileSync(new URL('../apps/api/src/routes/storefront/store-info.ts', import.meta.url), 'utf-8');
 const dashboardNotifications = readFileSync(new URL('../apps/merchant-dashboard/src/pages/Notifications.tsx', import.meta.url), 'utf-8');

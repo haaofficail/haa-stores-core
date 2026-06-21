@@ -31,7 +31,7 @@ zidRouter.get('/oauth/callback', async (c) => {
   }
 
   try {
-    const result = await getZidService(storeId).handleCallback(code);
+    const _result = await getZidService(storeId).handleCallback(code);
     return c.redirect(`/channels/zid?connected=true`);
   } catch (error) {
     return c.redirect(`/channels/zid?error=${encodeURIComponent((error as Error).message)}`);

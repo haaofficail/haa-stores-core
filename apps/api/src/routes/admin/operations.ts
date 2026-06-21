@@ -131,7 +131,7 @@ export async function usersRoute(c: any) {
   return c.json({
     success: true,
     data: users.map(u => {
-      const { passwordHash, ...safe } = u;
+      const { passwordHash: _passwordHash, ...safe } = u;
       return safe;
     }),
   });

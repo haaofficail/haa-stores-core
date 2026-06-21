@@ -18,7 +18,6 @@ export function getErrorMonitor(): ErrorMonitor | null {
   return monitor
 }
 
-const IS_LOCAL = !process.env.NODE_ENV || process.env.NODE_ENV === 'development'
 
 const errorHandler: ErrorHandler = async (err: Error, c: Context) => {
   const isProduction = process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging'

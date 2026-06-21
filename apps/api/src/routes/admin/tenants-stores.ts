@@ -4,7 +4,7 @@
 // Each export is a raw Hono handler. The aggregator in ./index.ts applies
 // `requireAdminAuth()` and any other middleware when mounting the route.
 
-import { eq, and, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { AuditLogService } from '@haa/integration-core';
@@ -175,7 +175,7 @@ export const kycRoutes = {
     return c.json({
       success: true,
       data: profiles.map(p => {
-        const { nationalIdOrIqama, ...safe } = p as any;
+        const { nationalIdOrIqama: _nationalIdOrIqama, ...safe } = p as any;
         return safe;
       }),
     });

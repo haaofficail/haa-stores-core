@@ -21,13 +21,20 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['warn', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+        destructuredArrayIgnorePattern: '^_',
+      }],
       '@typescript-eslint/no-require-imports': 'off',
       // Loaded so eslint-disable comments in source files resolve correctly.
       // exhaustive-deps is warn (not error) — real violations are suppressed at call sites.
       'react-hooks/exhaustive-deps': 'warn',
       // enforce-delete-with-where is warn — call sites that need bypass use disable comments.
-      'drizzle/enforce-delete-with-where': 'warn',
+      // drizzleObjectName scopes the rule to real drizzle handles (db, tx) so native
+      // Map/Set/URLSearchParams .delete() calls in app code are not false-flagged.
+      'drizzle/enforce-delete-with-where': ['warn', { drizzleObjectName: ['db', 'tx'] }],
     },
   },
 

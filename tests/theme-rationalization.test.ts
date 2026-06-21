@@ -110,7 +110,6 @@ describe('Quality Pass 5 — Theme Package Rationalization (Item 3)', () => {
   it('no NEW theme package should be created (rationalization is the goal, not expansion)', () => {
     const infos = listThemePackages();
     const names = infos.map(i => i.name);
-    // eslint-disable-next-line no-console
     console.log('[Theme Packages]', names.join(', '));
     // Hard ceiling — if a new theme package is added, this test signals
     // a regression of the rationalization effort. Current count: 6.
@@ -134,7 +133,6 @@ describe('Quality Pass 5 — Theme Package Rationalization (Item 3)', () => {
     // Allow some leeway for tiny packages
     expect(missing.length).toBeLessThanOrEqual(2);
     if (missing.length > 0) {
-      // eslint-disable-next-line no-console
       console.warn('[Theme] Packages missing README:', missing.map(m => m.name).join(', '));
     }
   });

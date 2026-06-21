@@ -107,7 +107,7 @@ describe('Compliance UX Tests', () => {
     });
 
     it('all status labels are in Arabic', () => {
-      for (const [key, label] of Object.entries(STATUS_LABELS)) {
+      for (const [_key, label] of Object.entries(STATUS_LABELS)) {
         expect(label).not.toMatch(/^[a-zA-Z]+$/);
         expect(label.length).toBeGreaterThan(0);
       }
@@ -303,7 +303,7 @@ describe('Compliance UX Tests', () => {
 
   describe('8. Document upload does not expose storage key', () => {
     it('document type labels are user-friendly', () => {
-      for (const [key, label] of Object.entries(DOCUMENT_TYPE_LABELS)) {
+      for (const [_key, label] of Object.entries(DOCUMENT_TYPE_LABELS)) {
         expect(label).toBeTruthy();
         expect(label.length).toBeGreaterThan(0);
         // Labels should not contain file system paths or storage keys
@@ -406,7 +406,7 @@ describe('Compliance UX Tests', () => {
     };
 
     it('has all document statuses in Arabic', () => {
-      for (const [key, label] of Object.entries(docStatuses)) {
+      for (const [_key, label] of Object.entries(docStatuses)) {
         expect(label).toBeTruthy();
         expect(label).not.toMatch(/^[a-zA-Z]+$/);
       }

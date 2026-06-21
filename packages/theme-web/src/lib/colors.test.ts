@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { contrastRatio, meetsAA } from '@/lib/colors'
+import { contrastRatio } from '@/lib/colors'
 
 /**
  * These tests verify that the token colors (which we also validate

@@ -67,7 +67,6 @@ export function isAIPreviewEnabled(): boolean {
     return false;
   }
   // Vite injects import.meta.env at build time
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const env = (import.meta as any)?.env?.VITE_LANDING_AI_CHAT;
   if (env === '0' || env === 'false') return false;
   return true;

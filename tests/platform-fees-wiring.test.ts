@@ -188,7 +188,10 @@ describe('Admin API endpoints', () => {
   it('admin route file uses validatePlatformFeePolicyInput and Zod', () => {
     const route = read('apps/api/src/routes/admin/billing-settings.ts');
     expect(route).toContain('validatePlatformFeePolicyInput');
-    expect(route).toContain('zValidator');
+    // Route validates via a Zod schema (updateSchema = z.object({...})), not the
+    // @hono/zod-validator middleware — assert the real Zod usage rather than the
+    // unused `zValidator` import that previously satisfied this check by accident.
+    expect(route).toContain('z.object');
     expect(route).toContain('changeReason');
   });
 

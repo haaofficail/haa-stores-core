@@ -187,7 +187,7 @@ export default function HeroAIChat({
         } else {
           throw new Error(`HTTP ${res.status}`);
         }
-      } catch (apiErr) {
+      } catch (_apiErr) {
         // 2. Fallback to the local mock engine
         try {
           reply = await (engine ?? mockEngine).reply(agentHistory, 'ar-SA');

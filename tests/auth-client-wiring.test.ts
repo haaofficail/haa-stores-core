@@ -114,7 +114,7 @@ describe('auth client — localStorage persistence', () => {
 
     try {
       await authApi.login('bad@example.com', 'wrong');
-    } catch (err) {
+    } catch (_err) {
       // Second call will fail for a different reason (no fetch mock), so
       // the throw may be different — only assert the first call's type.
     }

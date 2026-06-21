@@ -4,11 +4,11 @@ import { forwardRef, type ElementRef, type ComponentPropsWithoutRef } from 'reac
 import { usePlatformAdaptation } from '../../../lib/platform'
 import { getElevationStyle } from '../../../lib/elevation'
 
-const variants = ['primary', 'secondary', 'ghost', 'danger'] as const
-const sizes = ['sm', 'md', 'lg'] as const
+const _variants = ['primary', 'secondary', 'ghost', 'danger'] as const
+const _sizes = ['sm', 'md', 'lg'] as const
 
-type ButtonVariant = (typeof variants)[number]
-type ButtonSize = (typeof sizes)[number]
+type ButtonVariant = (typeof _variants)[number]
+type ButtonSize = (typeof _sizes)[number]
 
 interface ButtonProps extends ComponentPropsWithoutRef<'button'> {
   variant?: ButtonVariant

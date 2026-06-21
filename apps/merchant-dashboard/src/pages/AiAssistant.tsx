@@ -62,6 +62,7 @@ export default function AiAssistant() {
         timestamp: new Date(),
       }]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is stable from useTranslation; effect intentionally runs on [storeId] only
   }, [storeId]);
 
   function addAssistantMessage(response: { text: string; suggestions?: string[]; actions?: Array<{ label: string; action: string; params?: Record<string, unknown> }>; confidence?: number }) {

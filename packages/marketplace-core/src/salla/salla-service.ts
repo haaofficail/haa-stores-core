@@ -444,7 +444,7 @@ export class SallaService {
     };
   }
 
-  async connect(config: Record<string, unknown>): Promise<ConnectionResult> {
+  async connect(_config: Record<string, unknown>): Promise<ConnectionResult> {
     throw new Error('Use OAuth flow to connect Salla. Call getOAuthUrl() first.');
   }
 

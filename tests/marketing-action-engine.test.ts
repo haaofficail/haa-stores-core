@@ -146,18 +146,18 @@ function makeSelectResult(data: any[]) {
 describe('MarketingActionService', () => {
   let service: any;
   let db: any;
-  let insertResult: any;
-  let updateResult: any;
+  let _insertResult: any;
+  let _updateResult: any;
 
   beforeEach(async () => {
     vi.resetModules();
 
-    insertResult = {
+    _insertResult = {
       values: vi.fn().mockResolvedValue(undefined),
       onConflictDoUpdate: vi.fn().mockResolvedValue(undefined),
     };
 
-    updateResult = {
+    _updateResult = {
       where: vi.fn().mockResolvedValue(undefined),
     };
 

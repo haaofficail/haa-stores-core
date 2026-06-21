@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { db } from './setup.js';
 
 describe('Final Compliance Regression Gate', () => {
   describe('1. Compliance Checklist — missing returnWindowDays', () => {

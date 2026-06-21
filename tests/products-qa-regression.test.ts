@@ -98,7 +98,7 @@ describe('Products QA regression', () => {
     const storefrontCart = readSource('apps/storefront/src/pages/Cart.tsx');
     const storefrontCheckout = readSource('apps/storefront/src/pages/Checkout.tsx');
     const storefrontCartRouter = readSource('apps/api/src/routes/storefront/cart.ts');
-    const storefrontCheckoutRouter = readSource('apps/api/src/routes/storefront/checkout.ts');
+    const _storefrontCheckoutRouter = readSource('apps/api/src/routes/storefront/checkout.ts');
     const cartService = readSource('packages/commerce-core/src/cart.ts');
     const checkoutService = readSource('packages/commerce-core/src/checkout.ts');
     const ordersService = readSource('packages/commerce-core/src/orders.ts');
@@ -133,8 +133,8 @@ describe('Products QA regression', () => {
     // audit depth contract is preserved — just at the new layer.
     const productsServiceSrc = readSource('packages/commerce-core/src/products.ts');
     const marketplaceSyncSrc = readSource('packages/commerce-core/src/marketplace-sync.ts');
-    const auditTypes = readSource('packages/shared/src/types/orders.ts');
-    const auditLabels = readSource('packages/shared/src/types/audit.ts');
+    const _auditTypes = readSource('packages/shared/src/types/orders.ts');
+    const _auditLabels = readSource('packages/shared/src/types/audit.ts');
 
     expect(productsServiceSrc).toContain("action: 'product_created'");
     expect(productsServiceSrc).toContain("action: 'product_updated'");

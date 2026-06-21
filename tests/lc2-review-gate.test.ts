@@ -160,7 +160,7 @@ describe('LC2 Review Gate — Security Fixes', () => {
     // from apps/api/src/routes/storefront.ts. If the originals change, update these to match.
     it('toPublicProduct strips cost field', () => {
       const product = { id: 1, name: 'Test', cost: 50, price: 100, storeId: 1 };
-      const { cost, ...publicProduct } = product;
+      const { cost: _cost, ...publicProduct } = product;
       expect(publicProduct).not.toHaveProperty('cost');
       expect(publicProduct).toHaveProperty('price');
     });
@@ -176,14 +176,14 @@ describe('LC2 Review Gate — Security Fixes', () => {
 
     it('toPublicStore strips tenantId', () => {
       const store = { id: 1, name: 'Test Store', tenantId: 99, slug: 'test' };
-      const { tenantId, ...publicStore } = store;
+      const { tenantId: _tenantId, ...publicStore } = store;
       expect(publicStore).not.toHaveProperty('tenantId');
       expect(publicStore).toHaveProperty('name');
     });
 
     it('toPublicStore strips createdAt and updatedAt', () => {
       const store = { id: 1, name: 'Test', createdAt: new Date(), updatedAt: new Date() };
-      const { createdAt, updatedAt, ...publicStore } = store;
+      const { createdAt: _createdAt, updatedAt: _updatedAt, ...publicStore } = store;
       expect(publicStore).not.toHaveProperty('createdAt');
       expect(publicStore).not.toHaveProperty('updatedAt');
     });
@@ -194,7 +194,7 @@ describe('LC2 Review Gate — Security Fixes', () => {
         checkoutSessionId: 'cs_123', idempotencyKey: 'idem_456',
         customerName: 'Ahmed', total: 100,
       };
-      const { id, storeId, checkoutSessionId, idempotencyKey, ...publicOrder } = order;
+      const { id: _id, storeId: _storeId, checkoutSessionId: _checkoutSessionId, idempotencyKey: _idempotencyKey, ...publicOrder } = order;
       expect(publicOrder).not.toHaveProperty('storeId');
       expect(publicOrder).not.toHaveProperty('checkoutSessionId');
       expect(publicOrder).not.toHaveProperty('idempotencyKey');

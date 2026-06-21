@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, sql, count, desc, lt, ne } from 'drizzle-orm';
+import { and, eq, gte, sql, count, desc, lt } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import type {

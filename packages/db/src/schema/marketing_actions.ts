@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, varchar, text, timestamp, jsonb, boolean, index, unique } from 'drizzle-orm/pg-core';
+import { pgTable, serial, integer, varchar, timestamp, jsonb, index, unique } from 'drizzle-orm/pg-core';
 import { stores } from './stores.js';
 
 export const marketingActionSettings = pgTable('marketing_action_settings', {

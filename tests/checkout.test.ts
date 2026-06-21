@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe } from 'vitest';
 
 describe('Checkout idempotency and transaction safety', () => {
   describe('session creation idempotency', () => {

@@ -5,7 +5,7 @@ import { useAccessibility } from './use-accessibility'
 import { useSafeArea } from './use-safe-area'
 import { useBreakpoint } from './use-breakpoint'
 import { cn } from './cn'
-import type { ReactNode, ComponentType } from 'react'
+import type { ComponentType } from 'react'
 
 export function useHAA() {
   const theme = useTheme()

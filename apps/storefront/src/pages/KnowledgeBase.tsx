@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { ArrowRight, BookOpen, Search, ChevronLeft, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supportApi, type KbArticle, type KbListResult } from '@/lib/api';

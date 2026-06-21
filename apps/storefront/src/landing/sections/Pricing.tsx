@@ -8,7 +8,6 @@
  */
 import { useState as useReactState } from 'react';
 import { Link } from 'react-router-dom';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; Sparkles icon as plain JSX
 import { Sparkles } from 'lucide-react';
 import { getClaim } from '@/lib/landing-claims';
 import { StoreContainer } from '@/components/ui';

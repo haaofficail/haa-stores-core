@@ -107,6 +107,7 @@ export default function Orders() {
     if (routeOrderId && storeId) {
       openDetail(Number(routeOrderId));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- openDetail recreated each render; effect intentionally runs on [routeOrderId, storeId] only to avoid a fetch/re-run loop
   }, [routeOrderId, storeId]);
 
   const resetFilters = () => {

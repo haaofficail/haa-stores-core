@@ -15,7 +15,6 @@ import { useSEO } from '@/hooks/useSEO';
 import { breadcrumbJSONLD } from '@/lib/jsonld';
 import { useStore } from '@/hooks/useStore';
 import FilterSidebar, { defaultFilters, filtersToParams, getActiveFilterCount, type FilterState } from '@/components/FilterSidebar';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Package, X, LayoutGrid, List, Check, ShoppingCart, Star, BadgeCheck, Percent, SlidersHorizontal, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -262,6 +261,7 @@ export default function Category() {
       })
       .catch(() => toast.error(t('common.error', 'حدث خطأ في تحميل البيانات')))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is stable from useTranslation; effect intentionally runs on [slug, categorySlug, isAllCategories, page, sort, filters] only
   }, [slug, categorySlug, isAllCategories, page, sort, filters]);
 
   const prevFiltersRef = useRef('');

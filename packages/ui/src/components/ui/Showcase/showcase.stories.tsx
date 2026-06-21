@@ -1,5 +1,5 @@
 import type { Meta } from '@storybook/react'
-import { Badge, Button, Card, Container, Divider, EmptyState, Icon, NavigationBar, Progress, Select, Skeleton, Stack, Switch, TabBar, Text, TextArea } from '@/components/ui'
+import { Badge, Button, Card, Container, Divider, EmptyState, NavigationBar, Progress, Select, Skeleton, Stack, Switch, TabBar, Text, TextArea } from '@/components/ui'
 
 const meta: Meta = {
   title: 'Overview/All Components',

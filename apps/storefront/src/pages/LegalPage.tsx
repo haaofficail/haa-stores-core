@@ -1,5 +1,4 @@
 import { useParams, Link } from 'react-router-dom';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { ArrowRight, FileText, Calendar, Clock } from 'lucide-react';
 
 interface LegalDocumentSection {

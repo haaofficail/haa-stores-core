@@ -46,6 +46,7 @@ export default function SupportKb() {
       .finally(() => setLoading(false));
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- load recreated each render; effect intentionally runs on [storeId] only to avoid a fetch/re-run loop
   useEffect(() => { load(); }, [storeId]);
 
   function resetForm() {

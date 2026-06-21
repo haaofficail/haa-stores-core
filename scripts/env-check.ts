@@ -27,7 +27,7 @@ async function main() {
       const stdout = await new Promise<string>((resolve, reject) => {
         let out = '';
         proc.stdout.on('data', (d: Buffer) => { out += d.toString(); });
-        proc.on('close', (code) => { resolve(out.trim()); });
+        proc.on('close', (_code) => { resolve(out.trim()); });
         proc.on('error', reject);
       });
       const ok = await req.check(stdout);

@@ -1064,7 +1064,6 @@ export function useSmartAlerts(input: UseSmartAlertsInput): SmartAlert[] {
         },
       });
     return result.sort((a, b) => a.priority - b.priority);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     lowStock,
     summary,

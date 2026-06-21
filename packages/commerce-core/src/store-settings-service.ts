@@ -43,13 +43,13 @@ const DEFAULT_PRODUCT_FEATURES = {
 
 const THEME_HISTORY_LIMIT = 5;
 
-const STORE_SETTINGS_COLUMNS = [
+const _STORE_SETTINGS_COLUMNS = [
   'welcomeMessage', 'welcomeMessageEnabled', 'preparationTime', 'preparationTimeEnabled',
   'minOrderAmount', 'minOrderEnabled', 'productFeatures', 'themeConfig',
   'giftWrapDefaultPrice', 'giftMessageMaxLength', 'giftWrapInstructions', 'pickupInstructions',
 ] as const;
 
-export type StoreSettingsColumns = (typeof STORE_SETTINGS_COLUMNS)[number];
+export type StoreSettingsColumns = (typeof _STORE_SETTINGS_COLUMNS)[number];
 
 function pickStoreSettingsColumns(settings: any) {
   return {

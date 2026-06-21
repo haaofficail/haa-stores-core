@@ -100,7 +100,7 @@ describe('Public API exposure', () => {
     // Simulate what toPublicStore does:
     // It removes demoProfile, demoSeedVersion, tenantId, createdAt, updatedAt
     const store = { id: 1, isDemo: true, demoProfile: 'perfume', demoSeedVersion: 'v1', tenantId: 1, createdAt: new Date(), updatedAt: new Date(), name: 'test' };
-    const { tenantId, createdAt, updatedAt, demoProfile, demoSeedVersion, ...publicStore } = store;
+    const { tenantId: _tenantId, createdAt: _createdAt, updatedAt: _updatedAt, demoProfile: _demoProfile, demoSeedVersion: _demoSeedVersion, ...publicStore } = store;
     expect(publicStore.isDemo).toBe(true);
     expect((publicStore as any).demoProfile).toBeUndefined();
     expect((publicStore as any).demoSeedVersion).toBeUndefined();
@@ -109,7 +109,7 @@ describe('Public API exposure', () => {
 
   it('toPublicStore keeps isDemo in public response', () => {
     const store = { id: 1, isDemo: true, demoProfile: 'perfume', tenantId: 1, createdAt: new Date(), updatedAt: new Date(), name: 'test' };
-    const { tenantId, createdAt, updatedAt, demoProfile, ...publicStore } = store;
+    const { tenantId: _tenantId, createdAt: _createdAt, updatedAt: _updatedAt, demoProfile: _demoProfile, ...publicStore } = store;
     expect(publicStore.isDemo).toBe(true);
   });
 

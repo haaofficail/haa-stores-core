@@ -16,7 +16,7 @@
 // effects on the dedup index) without a real database. The integration
 // tests live elsewhere.
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   WalletPostingService,
   type DedupKey,
@@ -488,7 +488,7 @@ describe('WalletPostingService — postPayoutReversal', () => {
       orderNumber: 'PO-002',
       reason: 'system_error' as const,
     };
-    const a = await svc.postPayoutReversal(input);
+    const _a = await svc.postPayoutReversal(input);
     const b = await svc.postPayoutReversal(input);
     expect(b.dedupHit).toBe(true);
   });
@@ -566,7 +566,7 @@ describe('WalletPostingService — postSale', () => {
       orderNumber: 'ORD-001',
       method: 'online' as const,
     };
-    const a = await svc.postSale(input);
+    const _a = await svc.postSale(input);
     const b = await svc.postSale(input);
     expect(b.dedupHit).toBe(true);
     // The second call should not re-record or change the amount
@@ -598,7 +598,7 @@ describe('WalletPostingService — postRefund', () => {
       orderNumber: 'ORD-001',
       reason: 'customer_request' as const,
     };
-    const a = await svc.postRefund(input);
+    const _a = await svc.postRefund(input);
     const b = await svc.postRefund(input);
     expect(b.dedupHit).toBe(true);
   });

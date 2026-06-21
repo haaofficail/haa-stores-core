@@ -1,6 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { ArrowRight, Send, CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supportApi, type CreatedTicket } from '@/lib/api';

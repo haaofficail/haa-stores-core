@@ -225,6 +225,7 @@ export function useDashboardData(): DashboardData {
     });
 
     setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshKey intentionally forces recomputation on manual refresh though unused in body
   }, [storeId, refreshKey, t]);
 
   useEffect(() => {
@@ -358,6 +359,7 @@ export function useDashboardData(): DashboardData {
     } catch {
       return new Set<string>();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshKey intentionally forces recomputation on manual refresh though unused in body
   }, [refreshKey]);
 
   const refresh = () => setRefreshKey((k) => k + 1);

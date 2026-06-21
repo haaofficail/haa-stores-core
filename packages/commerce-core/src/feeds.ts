@@ -6,7 +6,7 @@ export class ProductFeedService {
   constructor(private db: DbClient = createDbClient()) {}
 
   async generateGoogleMerchantFeed(storeId: number) {
-    const store = await this.db.select().from(s.stores).where(eq(s.stores.id, storeId)).limit(1);
+    const _store = await this.db.select().from(s.stores).where(eq(s.stores.id, storeId)).limit(1);
     const products = await this.db.select().from(s.products)
       .where(and(eq(s.products.storeId, storeId), eq(s.products.status, 'active')));
 
@@ -23,7 +23,7 @@ export class ProductFeedService {
   }
 
   async generateMetaCatalogFeed(storeId: number) {
-    const store = await this.db.select().from(s.stores).where(eq(s.stores.id, storeId)).limit(1);
+    const _store = await this.db.select().from(s.stores).where(eq(s.stores.id, storeId)).limit(1);
     const products = await this.db.select().from(s.products)
       .where(and(eq(s.products.storeId, storeId), eq(s.products.status, 'active')));
 

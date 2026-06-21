@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, varchar, text, decimal, timestamp, jsonb, unique, index } from 'drizzle-orm/pg-core';
+import { pgTable, serial, integer, decimal, timestamp, jsonb, unique, index } from 'drizzle-orm/pg-core';
 import { stores } from './stores.js';
 
 export const liveRadarSnapshots = pgTable('live_radar_snapshots', {

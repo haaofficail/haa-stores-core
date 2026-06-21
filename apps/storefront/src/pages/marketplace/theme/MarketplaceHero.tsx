@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { BadgeCheck, Menu, PackageSearch, Search, ShieldCheck, ShoppingBag, Truck, X } from 'lucide-react';
 import { StoreInput } from '@/components/ui';
 import { Icon } from '@/components/ui/icon';

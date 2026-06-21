@@ -91,7 +91,7 @@ function buildColors(tokens: Tokens): string {
 
   css += '\n[data-theme="dark"] {\n'
   css += '  /* Neutral Palette — inverted for dark mode */\n'
-  const neutralEntries = Object.entries(tokens.color.neutral).filter(([k, v]) => typeof v === 'object' && 'srgb' in (v as any))
+  const neutralEntries = Object.entries(tokens.color.neutral).filter(([_k, v]) => typeof v === 'object' && 'srgb' in (v as any))
   const neutralKeys = neutralEntries.map(([k]) => k).filter(k => k !== 'description' && k !== 'why')
   // Invert neutral palette: 50↔950, 100↔900, etc.
   for (const key of neutralKeys) {

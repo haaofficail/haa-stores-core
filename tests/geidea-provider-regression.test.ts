@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { createGeideaSignature, verifyGeideaCallbackSignature } from '../packages/payment-providers/src/base';
 
-const geideaSource = readFileSync(new URL('../packages/payment-providers/src/geidea.ts', import.meta.url), 'utf-8');
 const factorySource = readFileSync(new URL('../packages/payment-providers/src/factory.ts', import.meta.url), 'utf-8');
 const orderTypesSource = readFileSync(new URL('../packages/shared/src/types/orders.ts', import.meta.url), 'utf-8');
 

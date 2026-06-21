@@ -5,7 +5,6 @@ import { AuditLogService } from '@haa/integration-core';
 import {
   PLATFORM_TERMS, PLATFORM_PRIVACY, PLATFORM_DATA_PROCESSING,
   PLATFORM_PROHIBITED_PRODUCTS, PLATFORM_TAKEDOWN,
-  type LegalDocument,
 } from '@haa/shared';
 
 export interface AcknowledgementStatus {
@@ -23,14 +22,6 @@ export interface AcknowledgeInput {
   userAgent?: string | null;
   acknowledgedItems: Record<string, boolean>;
 }
-
-const DOCUMENT_VERSIONS: Record<string, LegalDocument> = {
-  terms: PLATFORM_TERMS,
-  privacy: PLATFORM_PRIVACY,
-  dataProcessing: PLATFORM_DATA_PROCESSING,
-  prohibitedProducts: PLATFORM_PROHIBITED_PRODUCTS,
-  takedown: PLATFORM_TAKEDOWN,
-};
 
 const REQUIRED_ITEMS = [
   { key: 'terms', label: 'شروط استخدام المنصة', versionField: 'termsVersion' as const },

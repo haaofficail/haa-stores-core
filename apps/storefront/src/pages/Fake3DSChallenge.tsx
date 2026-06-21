@@ -16,7 +16,6 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { ShieldCheck, XCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { checkoutApi } from '@/lib/api';

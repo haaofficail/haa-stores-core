@@ -63,21 +63,6 @@ function hexToRGBA(hex: string): { r: number; g: number; b: number; a: number } 
   return { r, g, b, a }
 }
 
-function parseCSSColor(css: string): { r: number; g: number; b: number; a: number } | null {
-  // Handle rgb() / rgba()
-  const rgbMatch = css.match(/rgba?\((\d+)\s+(\d+)\s+(\d+)(?:\s*\/\s*([0-9.]+))?\)/)
-  if (rgbMatch) {
-    return {
-      r: parseInt(rgbMatch[1]) / 255,
-      g: parseInt(rgbMatch[2]) / 255,
-      b: parseInt(rgbMatch[3]) / 255,
-      a: rgbMatch[4] ? parseFloat(rgbMatch[4]) : 1,
-    }
-  }
-  // Handle hex
-  return hexToRGBA(css)
-}
-
 function nextId(prefix: string): string {
   return `${prefix}_${randomUUID().slice(0, 8)}`
 }
@@ -101,7 +86,7 @@ function build() {
   const TYPOGRAPHY_COLLECTION = nextId('col')
   const SPACING_COLLECTION = nextId('col')
   const RADIUS_COLLECTION = nextId('col')
-  const EASING_COLLECTION = nextId('col')
+  const _EASING_COLLECTION = nextId('col')
   const THEME_COLLECTION = nextId('col')
 
   const export_: FigmaExport = {
@@ -112,13 +97,13 @@ function build() {
   }
 
   // ── Modes ────────────────────────────────────────────
-  const themeModeIds: Record<string, string> = {}
+  const _themeModeIds: Record<string, string> = {}
 
   const colorMode = nextId('mode')
   const typoMode = nextId('mode')
   const spacingMode = nextId('mode')
   const radiusMode = nextId('mode')
-  const easingMode = nextId('mode')
+  const _easingMode = nextId('mode')
 
   // ── COLORS Collection ────────────────────────────────
   const colorVariables: FigmaVariable[] = []

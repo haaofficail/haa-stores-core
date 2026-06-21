@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { eq, and, sql, desc, not } from 'drizzle-orm';
+import { eq, and, sql, desc } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';

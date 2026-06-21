@@ -205,7 +205,7 @@ export class PaymentWebhookService {
 
     let becamePaid = false;
     await this.db.transaction(async (tx) => {
-      const txPaymentService = new PaymentService(tx as any);
+      const _txPaymentService = new PaymentService(tx as any);
       const txOrdersService = new OrdersService(tx as any);
       const txWallet = new WalletLedger(tx as any);
       const txOutbox = new WebhookOutboxService(tx as any);

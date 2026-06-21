@@ -39,7 +39,7 @@ settingsRouter.get('/', requirePermission('stores:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const store = await new StoreSettingsService().getStore(storeId);
   if (!store) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Store not found' } }, 404);
-  const { tenantId, ...rest } = store;
+  const { tenantId: _tenantId, ...rest } = store;
   return c.json({ success: true, data: rest });
 });
 
@@ -48,7 +48,7 @@ settingsRouter.put('/', requirePermission('settings:update'), zValidator('json',
   const body = c.req.valid('json');
   const updated = await new StoreSettingsService().updateStore(storeId, body);
   if (!updated) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Store not found' } }, 404);
-  const { tenantId, ...rest } = updated;
+  const { tenantId: _tenantId, ...rest } = updated;
   return c.json({ success: true, data: rest });
 });
 

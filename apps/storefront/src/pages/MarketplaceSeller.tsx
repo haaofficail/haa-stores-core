@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Building2, MapPin, Search, ShoppingBag, Star, Store } from 'lucide-react';
 import { haaMarketplaceApi, type HaaMarketplaceProduct, type HaaMarketplaceSeller } from '@/lib/api';
 import { StoreButton, StoreContainer, StoreEmptyState, StoreInput, StoreSkeleton } from '@/components/ui';

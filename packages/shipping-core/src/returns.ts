@@ -1,4 +1,4 @@
-import { eq, and, or, inArray } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { createDbClient, type DbClient } from "@haa/db";
 import * as s from "@haa/db/schema";
 

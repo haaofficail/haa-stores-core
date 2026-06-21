@@ -8,7 +8,7 @@ import { eq } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import type { DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
-import type { ProviderCode, PaymentMode, InternalPaymentStatus } from '@haa/shared';
+import type { ProviderCode, PaymentMode } from '@haa/shared';
 import { type PaymentProvider } from './base.js';
 import { FakePaymentProvider } from './fake.js';
 import { GeideaPaymentProvider } from './geidea.js';

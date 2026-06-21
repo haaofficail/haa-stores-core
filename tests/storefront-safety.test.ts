@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 // NOTE: This is a local copy of toPublicProduct from apps/api/src/routes/storefront.ts
 // If the original changes, update this to match.
 const toPublicProduct = (product: Record<string, unknown>) => {
-  const { cost, ...rest } = product;
+  const { cost: _cost, ...rest } = product;
   return rest;
 };
 
@@ -13,14 +13,14 @@ const toPublicProducts = (products: Record<string, unknown>[]) =>
 // NOTE: This is a local copy of toPublicStore from apps/api/src/routes/storefront.ts
 // If the original changes, update this to match.
 const toPublicStore = (store: Record<string, unknown>) => {
-  const { tenantId, createdAt, updatedAt, ...rest } = store;
+  const { tenantId: _tenantId, createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = store;
   return rest;
 };
 
 // NOTE: This is a local copy of toPublicOrder from apps/api/src/routes/storefront.ts
 // If the original changes, update this to match.
 const toPublicOrder = (order: Record<string, unknown>) => {
-  const { id, storeId, checkoutSessionId, idempotencyKey, walletEntry, paymentIntentRaw, auditLogs, platformFee, ...rest } = order;
+  const { id: _id, storeId: _storeId, checkoutSessionId: _checkoutSessionId, idempotencyKey: _idempotencyKey, walletEntry: _walletEntry, paymentIntentRaw: _paymentIntentRaw, auditLogs: _auditLogs, platformFee: _platformFee, ...rest } = order;
   return rest;
 };
 
@@ -30,7 +30,7 @@ const toPublicCart = (cart: Record<string, unknown>) => {
   if (!cart) return cart;
   const items = (cart.items as Record<string, unknown>[])?.map((item: Record<string, unknown>) => {
     if (item.product) {
-      const { cost, ...product } = item.product as Record<string, unknown>;
+      const { cost: _cost, ...product } = item.product as Record<string, unknown>;
       return { ...item, product };
     }
     return item;

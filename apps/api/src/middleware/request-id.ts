@@ -1,4 +1,4 @@
-import { Context, MiddlewareHandler } from 'hono';
+import { MiddlewareHandler } from 'hono';
 import crypto from 'crypto';
 
 const REQUEST_ID_HEADER = 'X-Request-Id';

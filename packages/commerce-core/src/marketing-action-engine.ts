@@ -8,11 +8,10 @@ import type {
   MarketingActionState,
 } from '@haa/shared';
 
-const PURCHASE_EVENT = 'payment_succeeded';
 const THIRTY_MINUTES = 30 * 60 * 1000;
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
-const ACTION_TYPES: MarketingActionType[] = [
+const _ACTION_TYPES: MarketingActionType[] = [
   'high_views_low_add_to_cart',
   'active_carts_no_checkout',
   'checkout_no_payment',
@@ -26,7 +25,7 @@ function generateFingerprint(storeId: number, type: MarketingActionType, entityI
   return entityId != null ? `${base}:${entityId}` : base;
 }
 
-function toDateString(d: Date): string {
+function _toDateString(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
@@ -320,7 +319,6 @@ export class MarketingActionService {
 
   private async checkHighViewsLowCart(storeId: number, thresholds: MarketingActionThresholds): Promise<GeneratedAction[]> {
     const { start, end } = dateRange7d();
-    const dateStr = toDateString(start);
 
     const viewCounts = await this.db
       .select({

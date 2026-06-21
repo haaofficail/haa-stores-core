@@ -1,5 +1,4 @@
 import type { Preview } from '@storybook/react'
-import path from 'path'
 
 const preview: Preview = {
   parameters: {

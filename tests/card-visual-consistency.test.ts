@@ -5,8 +5,8 @@
 // a new card component is added, this test fails if it diverges.
 
 import { describe, it, expect } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const CARD_FILES = [
   'apps/storefront/src/components/product-card/ProductCard.tsx',

@@ -2,13 +2,13 @@
 
 import { type ReactNode, type CSSProperties } from 'react'
 
-const textElements = [
+const _textElements = [
   'largeTitle', 'title1', 'title2', 'title3',
   'headline', 'body', 'callout', 'subhead',
   'footnote', 'caption1', 'caption2',
 ] as const
 
-type TextElement = (typeof textElements)[number]
+type TextElement = (typeof _textElements)[number]
 
 interface TextProps {
   as?: 'span' | 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'label'
