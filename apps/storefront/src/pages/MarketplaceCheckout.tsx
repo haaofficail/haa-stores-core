@@ -54,26 +54,14 @@ export default function MarketplaceCheckout() {
   useSEO({ title: 'إتمام طلب سوق هاء', noIndex: true });
 
   const submit = async () => {
-    if (!MARKETPLACE_CHECKOUT_ENABLED) return; // production-safe gate (QA B3)
+    if (!MARKETPLACE_CHECKOUT_ENABLED) return; // production-safe gate (QA B3) — defensive; render is gated below
     if (submitting) return;
     if (!customer.name.trim() || !customer.phone.trim() || !address.city.trim()) {
       toast.error('أدخل الاسم والجوال والمدينة');
       return;
     }
-    if (!MARKETPLACE_CHECKOUT_ENABLED) {
-    return (
-      <main id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-surface-2 overflow-x-hidden">
-        <StoreContainer className="py-10">
-          <StoreAlert variant="info" title="الدفع من السوق غير متاح حالياً">
-            نعمل على تجهيز الدفع الموحّد عبر سوق هاء. يمكنك الشراء مباشرة من صفحة كل متجر الآن.
-          </StoreAlert>
-          <StoreButton href="/marketplace" className="mt-4">تصفّح السوق</StoreButton>
-        </StoreContainer>
-      </main>
-    );
-  }
 
-  if (items.length === 0) {
+    if (items.length === 0) {
       navigate('/marketplace/cart');
       return;
     }
@@ -168,6 +156,24 @@ export default function MarketplaceCheckout() {
       setSubmitting(false);
     }
   };
+
+  // Production-safe gate (QA B3 / marketplace blocker): when the unified
+  // marketplace checkout is disabled, never render the form OR the submit
+  // button — show a disabled notice instead. This is a RENDER-level early
+  // return (the previous gate sat inside the submit handler and returned JSX
+  // that was never displayed, so the form shipped to production).
+  if (!MARKETPLACE_CHECKOUT_ENABLED) {
+    return (
+      <main id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-surface-2 overflow-x-hidden">
+        <StoreContainer className="py-10">
+          <StoreAlert variant="info" title="الدفع من السوق غير متاح حالياً">
+            نعمل على تجهيز الدفع الموحّد عبر سوق هاء. يمكنك الشراء مباشرةً من صفحة كل متجر الآن.
+          </StoreAlert>
+          <StoreButton href="/marketplace" className="mt-4">تصفّح السوق</StoreButton>
+        </StoreContainer>
+      </main>
+    );
+  }
 
   if (orders.length > 0) {
     return (

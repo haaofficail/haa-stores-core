@@ -151,11 +151,11 @@
 ### Auth (AU) — آمن
 | # | المشكلة | الحالة |
 |---|---------|--------|
-| AU1 | توليد slug من اسم عربي ينتج فارغاً (`\w`) | ✅ PR #27 — `normalizeStoreSlug` (NFKD) |
+| AU1 | توليد slug من اسم عربي ينتج فارغاً (`\w`) | ✅ — `normalizeStoreSlug` يُنتج fallback مستقرّاً `store-<hash>` للاسم العربي الخالص بدل فراغ صامت (لا قيمة فارغة بصمت)، اختبار AU1 |
 | AU2 | slug يتوقف بعد أول حرف (لا slugTouched) | ✅ PR #27 — `slugTouched` |
 | AU3 | لا تحقق من صيغة الجوال | ✅ PR #27 — `/^05\d{8}$/` قبل الإرسال |
 | AU4 | WaitlistPage نجاح وهمي | ✅ لا يدّعي حفظاً — مقبول |
-| AU5 | `id=storefront-scope` بدل auth-scope (عزل) | 📋 متابعة — عملياً منخفض الأثر (auth خارج متجر؛ التوكن #5c9cd5)، تغييره يمسّ focus styles |
+| AU5 | `id=storefront-scope` بدل auth-scope (عزل) | ✅ — `AuthShell` يستخدم `id="auth-scope" data-theme-scope="auth"`، اختبار عزل الثيم |
 | AU6 | أرقام تسويقية hardcoded، Nav authMode | 📋 متابعة |
 
 ### Cart (CT) — آمن
@@ -173,9 +173,9 @@
 |---|---------|--------|
 | CO1 | NaN في الأسعار | ✅ PR #27 — `toMoneyNumber` |
 | CO2 | currentStep يخرج عن النطاق عند تغيير fulfillment | ✅ PR #27 — clamp |
-| CO3 | **خطوات checkout تنكسر مع pickup (فهارس ثابتة)** | 📋 **P0** — refactor لمفاتيح الخطوات (`step keys`)، يتطلب اختبار تدفّق الدفع |
-| CO4 | idempotencyKey يتغيّر كل ضغطة | 📋 P1 — مفتاح ثابت لكل محاولة (useRef) |
-| CO5 | مسح السلة قبل اكتمال 3DS/BNPL | 📋 P1 — مسح بعد callback مؤكّد فقط |
+| CO3 | **خطوات checkout تنكسر مع pickup (فهارس ثابتة)** | ✅ — `buildCheckoutStepKeys`/`clampStepIndex` (step keys ديناميكية)، 6 اختبارات وحدة. (متبقٍّ: اختبار UI/smoke لمسار pickup) |
+| CO4 | idempotencyKey يتغيّر كل ضغطة | ✅ — `idempotencyKeyRef` (useRef) ثابت لكل محاولة |
+| CO5 | مسح السلة قبل اكتمال 3DS/BNPL | ✅ — `clearLocalCart` بعد callback مؤكّد بـ orderNumber فقط (لا مسح قبل redirect) |
 | CO6 | redirectUrl بلا allowlist، callback URLs، VAT naming | 📋 P1 — تشديد + اختبار |
 | CO7 | `: any` في cart.items + دين `item.item?` | 📋 متابعة — يتطلب تنظيف شكل الـ item |
 
@@ -185,7 +185,7 @@
 
 | البند | الحالة |
 |---|---|
-| MC6 orchestration بالواجهة (خطر orphan عند فشل جزئي) | ✅ **production-safe** — `MARKETPLACE_CHECKOUT_ENABLED` (DEV أو `VITE_ENABLE_MARKETPLACE_CHECKOUT`) — معطّل في الإنتاج، submit + render محروسان، 3 اختبارات |
+| MC6 orchestration بالواجهة (خطر orphan عند فشل جزئي) | ✅ **production-safe** — `MARKETPLACE_CHECKOUT_ENABLED` (DEV أو `VITE_ENABLE_MARKETPLACE_CHECKOUT`) معطّل في الإنتاج. **بوابة render حقيقية** (early return تعرض صفحة "غير متاح" قبل أي فورم/زر) — أُصلح خطأ سابق كانت فيه البوابة داخل `submit` تُعيد JSX غير مُعروض فيُشحن الفورم للإنتاج. 5 اختبارات بنيوية. (المعماري: لا يزال يحتاج `POST /api/marketplace/checkout` backend قبل التفعيل) |
 
 ### عقد الـ endpoint المطلوب لاحقاً (لرفع الحظر بالكامل)
 `POST /api/marketplace/checkout` — الواجهة ترسل **intent فقط**:
