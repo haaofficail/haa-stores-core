@@ -470,6 +470,13 @@
       "when": 1782000066000,
       "tag": "0070_whatsapp_delivery",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1782000067000,
+      "tag": "0071_loyalty",
+      "breakpoints": true
     }
   ]
 }
