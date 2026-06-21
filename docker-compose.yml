@@ -1,3 +1,9 @@
+# ⚠ LOCAL DEVELOPMENT ONLY.
+# Do NOT use this file for staging or production.
+# Deployments use deploy/{staging,production}/docker-compose.yml with explicit env files.
+# The POSTGRES_PASSWORD fallback below is convenience for fresh local boots and is
+# expected to be overridden via .env (gitignored) for any non-trivial use.
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -5,6 +11,7 @@ services:
     environment:
       POSTGRES_DB: haastores
       POSTGRES_USER: haa
+      # ⚠ Fallback is LOCAL ONLY — production uses deploy/production/.env with no fallback.
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-haa_secret_2024}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
       LC_ALL: C.UTF-8
