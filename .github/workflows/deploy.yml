@@ -21,11 +21,88 @@ env:
 
 jobs:
   # ─────────────────────────────────────────────────────────────
-  # 1. Build & Push Docker images to GHCR
+  # 0. Quality gates — MUST pass before any image is built/pushed.
+  #    Self-contained guard so a deploy can never ship un-gated code
+  #    even if it races the separate CI workflow on the same commit.
+  # ─────────────────────────────────────────────────────────────
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: haa
+          POSTGRES_PASSWORD: haa_test_pw
+          POSTGRES_DB: haa_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://haa:haa_test_pw@localhost:5432/haa_test
+      TEST_DATABASE_URL: postgresql://haa:haa_test_pw@localhost:5432/haa_test
+      JWT_SECRET: ci-jwt-secret-at-least-16-chars # gitleaks:allow — known-fake CI value
+      ADMIN_JWT_SECRET: ci-admin-jwt-secret-at-least-16-chars # gitleaks:allow — known-fake CI value
+      ENCRYPTION_KEY: ci-encryption-key-32-chars-minimum-!! # gitleaks:allow — known-fake CI value
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace packages (cross-package type resolution)
+        run: pnpm -r --filter './packages/**' --workspace-concurrency=1 build
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Wait for Postgres
+        run: |
+          for i in $(seq 1 20); do
+            pg_isready -h localhost -p 5432 -U haa && break
+            echo "  Attempt $i/20 — retrying in 2s..."
+            sleep 2
+          done
+          pg_isready -h localhost -p 5432 -U haa \
+            || { echo "::error::Postgres did not become ready within 40s"; exit 1; }
+
+      - name: Prepare test database
+        run: |
+          pnpm db:bootstrap
+          pnpm db:seed
+
+      # The unit/integration suite encodes the product guards the review asked
+      # for (fake-payment production gate, theme/CSS scope isolation, landing
+      # add-to-cart, marketplace-checkout gate, etc.). Running it here blocks a
+      # deploy on any guard regression.
+      - name: Test (unit + integration guards)
+        run: pnpm test
+
+  # ─────────────────────────────────────────────────────────────
+  # 1. Build & Push Docker images to GHCR (only after gates pass)
   # ─────────────────────────────────────────────────────────────
   build-and-push:
     name: Build & Push — ${{ matrix.app }}
     runs-on: ubuntu-latest
+    needs: quality-gates
     permissions:
       contents: read
       packages: write
@@ -53,6 +130,10 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.app }}
+          # The immutable sha-<short> tag is the ONLY tag the compose files
+          # deploy from (image: ...:${IMAGE_TAG}). `latest`/`staging` are kept
+          # for human discoverability only — deploy & rollback never rely on
+          # them (both pin an explicit sha-* tag).
           tags: |
             type=sha,prefix=sha-,format=short
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
@@ -129,11 +210,11 @@ jobs:
         env:
           DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
           DEPLOY_USER: ${{ secrets.STAGING_USER }}
+          # Prefer a long-lived, read-only packages token; fall back to the
+          # run-scoped GITHUB_TOKEN when GHCR_READ_TOKEN isn't configured.
+          GHCR_TOKEN: ${{ secrets.GHCR_READ_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
-          # Pipe the run-scoped GITHUB_TOKEN over stdin (never in argv) so the
-          # server can pull the private app images. Persists in the server's
-          # docker config for this and subsequent `docker compose pull` calls.
-          echo "${{ secrets.GITHUB_TOKEN }}" \
+          echo "$GHCR_TOKEN" \
             | ssh "$DEPLOY_USER@$DEPLOY_HOST" \
                 "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
 
@@ -142,16 +223,16 @@ jobs:
           DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
           DEPLOY_USER: ${{ secrets.STAGING_USER }}
         run: |
-          ssh "$DEPLOY_USER@$DEPLOY_HOST" bash -s << 'G7_EOF'
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "PROJECT=haa-staging bash -s" << 'G7_EOF'
             set -euo pipefail
-            echo "==> G7: asserting ports 80 / 443 / 5433 are free or owned by haa-staging..."
+            echo "==> G7: asserting ports 80 / 443 / 5433 are free or owned by $PROJECT..."
             _failed=0
             for _p in 80 443 5433; do
               _busy=$(ss -Htlnp "sport = :${_p}" 2>/dev/null | head -1)
               if [ -z "$_busy" ]; then
                 echo "  :${_p} — free"
-              elif docker compose -p haa-staging ps 2>/dev/null | grep -qE ":${_p}->"; then
-                echo "  :${_p} — haa-staging (OK)"
+              elif docker compose -p "$PROJECT" ps 2>/dev/null | grep -qE ":${_p}->"; then
+                echo "  :${_p} — $PROJECT (OK)"
               else
                 echo "G7 ERROR: port ${_p} is occupied by a foreign process:"
                 ss -tlnp "sport = :${_p}" 2>/dev/null || true
@@ -174,25 +255,35 @@ jobs:
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
         run: |
-          ssh $DEPLOY_USER@$DEPLOY_HOST << EOF
+          # Runner-side values are injected into the REMOTE shell's environment
+          # via the ssh command prefix; the quoted heredoc body then runs on the
+          # server using those vars. This records the previous tag for a
+          # deterministic rollback (never relies on `latest`).
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' NEW_TAG='sha-${GIT_SHA:0:7}' REGISTRY='$REGISTRY' IMAGE_PREFIX='$IMAGE_PREFIX' bash -s" << 'REMOTE'
             set -euo pipefail
-            cd $DEPLOY_PATH
+            cd "$DEPLOY_PATH"
 
-            echo "==> Pulling new images (sha: ${GIT_SHA:0:7})"
-            export IMAGE_TAG=sha-${GIT_SHA:0:7}
-            export REGISTRY=$REGISTRY
-            export IMAGE_PREFIX=$IMAGE_PREFIX
+            # Capture the currently-deployed tag so rollback can restore it.
+            PREV_TAG="$(grep -E '^IMAGE_TAG=' .env 2>/dev/null | cut -d= -f2- || true)"
+            printf '%s\n' "${PREV_TAG:-}" > .deploy-prev-tag
+            echo "==> Previous tag: ${PREV_TAG:-<none>} | New tag: $NEW_TAG"
 
+            export IMAGE_TAG="$NEW_TAG" REGISTRY IMAGE_PREFIX
             docker compose pull
-
-            echo "==> Bringing up new containers"
             docker compose up -d --remove-orphans
 
-            echo "==> Cleaning up old images"
-            docker image prune -f --filter "until=24h"
+            # Persist the new tag so the server's compose state is consistent
+            # (so a later bare `docker compose up` won't silently revert).
+            if grep -qE '^IMAGE_TAG=' .env 2>/dev/null; then
+              sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=$NEW_TAG|" .env
+            else
+              echo "IMAGE_TAG=$NEW_TAG" >> .env
+            fi
 
-            echo "==> Deploy complete"
-          EOF
+            docker image prune -f --filter "until=24h"
+            echo "==> Deploy complete ($NEW_TAG)"
+          REMOTE
 
       - name: Post-deploy smoke gate — staging (G9)
         id: health-check
@@ -202,15 +293,13 @@ jobs:
           echo "Waiting for services to stabilize..."
           sleep 15
 
-          # Phase 1: wait for /health to respond (api process + DB + Redis)
+          # Phase 1: wait for /health (api process + DB + Redis)
           MAX_RETRIES=10
           RETRY_INTERVAL=10
           for i in $(seq 1 $MAX_RETRIES); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/health" || echo "000")
             echo "Attempt $i/$MAX_RETRIES — /health HTTP $STATUS"
-            if [ "$STATUS" = "200" ]; then
-              break
-            fi
+            if [ "$STATUS" = "200" ]; then break; fi
             if [ "$i" = "$MAX_RETRIES" ]; then
               echo "health=failed" >> "$GITHUB_OUTPUT"
               exit 1
@@ -218,33 +307,55 @@ jobs:
             sleep $RETRY_INTERVAL
           done
 
-          # Phase 2: run the full smoke suite (G9 — INC-21)
-          # Checks: /health JSON, storefront HTML, /api payment-methods contract
-          bash scripts/server/smoke-staging.sh "$STAGING_URL"
-          echo "health=ok" >> "$GITHUB_OUTPUT"
+          # Phase 2: full smoke suite. A smoke failure MUST also flag
+          # health=failed so the rollback step below actually fires (the old
+          # condition only caught /health timeouts, leaving broken deploys live).
+          if bash scripts/server/smoke-staging.sh "$STAGING_URL"; then
+            echo "health=ok" >> "$GITHUB_OUTPUT"
+          else
+            echo "health=failed" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
 
-      - name: Rollback staging on health failure
+      - name: Rollback staging on failure
         if: failure() && steps.health-check.outputs.health == 'failed'
         env:
           DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
           DEPLOY_USER: ${{ secrets.STAGING_USER }}
           DEPLOY_PATH: ${{ secrets.STAGING_DEPLOY_PATH }}
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
         run: |
-          echo "::error::Health check failed — initiating rollback"
-          ssh $DEPLOY_USER@$DEPLOY_HOST << EOF
+          echo "::error::Staging health/smoke failed — rolling back to previous tag"
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' REGISTRY='$REGISTRY' IMAGE_PREFIX='$IMAGE_PREFIX' bash -s" << 'REMOTE'
             set -euo pipefail
-            cd $DEPLOY_PATH
+            cd "$DEPLOY_PATH"
 
-            echo "==> Rolling back to previous images"
-            # إرجاع الـ containers للـ tag السابق (latest يشير للإصدار السابق قبل الـ pull)
-            docker compose down
-            docker compose up -d --no-pull
+            PREV_TAG="$(cat .deploy-prev-tag 2>/dev/null || true)"
+            if [ -z "$PREV_TAG" ]; then
+              echo "::error::No previous tag recorded — manual rollback required"
+              exit 1
+            fi
+            echo "==> Rolling back to $PREV_TAG"
 
-            echo "==> Rollback complete"
-          EOF
+            export IMAGE_TAG="$PREV_TAG" REGISTRY IMAGE_PREFIX
+            docker compose pull
+            docker compose up -d --remove-orphans
+
+            if grep -qE '^IMAGE_TAG=' .env 2>/dev/null; then
+              sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=$PREV_TAG|" .env
+            fi
+            echo "==> Rollback complete ($PREV_TAG)"
+          REMOTE
 
   # ─────────────────────────────────────────────────────────────
-  # 3. Deploy to Production (يدوي فقط + environment protection)
+  # 3. Deploy to Production
+  #    Manual only (workflow_dispatch + environment=production) AND gated
+  #    behind a green staging deploy (needs: deploy-staging) — production
+  #    ALWAYS ships a build that already passed gates, images, and the full
+  #    staging smoke. To ship to production: run the workflow manually with
+  #    environment=production; it will build → deploy staging → deploy prod.
   # ─────────────────────────────────────────────────────────────
   deploy-production:
     name: Deploy to Production
@@ -260,6 +371,28 @@ jobs:
       IMAGE_TAG: sha-${{ github.sha }}
 
     steps:
+      - name: Preflight — verify required production config
+        env:
+          PRODUCTION_SSH_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+          PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+          PRODUCTION_USER: ${{ secrets.PRODUCTION_USER }}
+          PRODUCTION_DEPLOY_PATH: ${{ secrets.PRODUCTION_DEPLOY_PATH }}
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+          PRODUCTION_HEALTH_URL: ${{ vars.PRODUCTION_HEALTH_URL }}
+        run: |
+          missing=()
+          for v in PRODUCTION_SSH_KEY PRODUCTION_HOST PRODUCTION_USER PRODUCTION_DEPLOY_PATH PRODUCTION_URL PRODUCTION_HEALTH_URL; do
+            if [ -z "${!v}" ]; then missing+=("$v"); fi
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing required production config: ${missing[*]}"
+            echo "Set them under Settings → Environments → production — secrets:"
+            echo "  PRODUCTION_SSH_KEY, PRODUCTION_HOST, PRODUCTION_USER, PRODUCTION_DEPLOY_PATH"
+            echo "and variables: PRODUCTION_URL, PRODUCTION_HEALTH_URL."
+            exit 1
+          fi
+          echo "✓ All required production secrets and variables are present."
+
       - name: Checkout
         uses: actions/checkout@v5
 
@@ -272,6 +405,44 @@ jobs:
         run: |
           ssh-keyscan -H ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Authenticate production server to GHCR
+        env:
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_HOST }}
+          DEPLOY_USER: ${{ secrets.PRODUCTION_USER }}
+          GHCR_TOKEN: ${{ secrets.GHCR_READ_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GHCR_TOKEN" \
+            | ssh "$DEPLOY_USER@$DEPLOY_HOST" \
+                "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
+
+      - name: Port ownership preflight (G7) — production
+        env:
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_HOST }}
+          DEPLOY_USER: ${{ secrets.PRODUCTION_USER }}
+        run: |
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "PROJECT=haa-production bash -s" << 'G7_EOF'
+            set -euo pipefail
+            echo "==> G7: asserting ports 80 / 443 / 5433 are free or owned by $PROJECT..."
+            _failed=0
+            for _p in 80 443 5433; do
+              _busy=$(ss -Htlnp "sport = :${_p}" 2>/dev/null | head -1)
+              if [ -z "$_busy" ]; then
+                echo "  :${_p} — free"
+              elif docker compose -p "$PROJECT" ps 2>/dev/null | grep -qE ":${_p}->"; then
+                echo "  :${_p} — $PROJECT (OK)"
+              else
+                echo "G7 ERROR: port ${_p} is occupied by a foreign process:"
+                ss -tlnp "sport = :${_p}" 2>/dev/null || true
+                _failed=1
+              fi
+            done
+            if [ "$_failed" -ne 0 ]; then
+              echo "G7 preflight FAILED — identify and stop the conflicting process, then re-run deploy"
+              exit 1
+            fi
+            echo "✓ G7: ports 80 / 443 / 5433 are clear"
+          G7_EOF
+
       - name: Deploy to production server
         env:
           DEPLOY_HOST: ${{ secrets.PRODUCTION_HOST }}
@@ -281,70 +452,94 @@ jobs:
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
         run: |
-          ssh $DEPLOY_USER@$DEPLOY_HOST << EOF
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' NEW_TAG='sha-${GIT_SHA:0:7}' REGISTRY='$REGISTRY' IMAGE_PREFIX='$IMAGE_PREFIX' bash -s" << 'REMOTE'
             set -euo pipefail
-            cd $DEPLOY_PATH
+            cd "$DEPLOY_PATH"
 
-            echo "==> [PRODUCTION] Pulling new images (sha: ${GIT_SHA:0:7})"
-            export IMAGE_TAG=sha-${GIT_SHA:0:7}
-            export REGISTRY=$REGISTRY
-            export IMAGE_PREFIX=$IMAGE_PREFIX
+            PREV_TAG="$(grep -E '^IMAGE_TAG=' .env 2>/dev/null | cut -d= -f2- || true)"
+            printf '%s\n' "${PREV_TAG:-}" > .deploy-prev-tag
+            echo "==> [PRODUCTION] Previous: ${PREV_TAG:-<none>} | New: $NEW_TAG"
 
-            # نسخ احتياطي من الـ compose state الحالي قبل النشر
             cp docker-compose.yml docker-compose.yml.bak 2>/dev/null || true
 
+            export IMAGE_TAG="$NEW_TAG" REGISTRY IMAGE_PREFIX
             docker compose pull
-
-            echo "==> Rolling update — zero-downtime"
             docker compose up -d --remove-orphans
 
-            echo "==> Cleaning up old images (keep last 3)"
+            if grep -qE '^IMAGE_TAG=' .env 2>/dev/null; then
+              sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=$NEW_TAG|" .env
+            else
+              echo "IMAGE_TAG=$NEW_TAG" >> .env
+            fi
+
             docker image prune -f --filter "until=72h"
+            echo "==> [PRODUCTION] Deploy complete ($NEW_TAG)"
+          REMOTE
 
-            echo "==> [PRODUCTION] Deploy complete"
-          EOF
-
-      - name: Health check — production
+      - name: Post-deploy smoke gate — production (G9)
         id: prod-health-check
         env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
           HEALTH_URL: ${{ vars.PRODUCTION_HEALTH_URL }}
         run: |
           echo "Waiting for services to stabilize..."
           sleep 20
 
+          # Phase 1: wait for /health
           MAX_RETRIES=15
           RETRY_INTERVAL=15
           for i in $(seq 1 $MAX_RETRIES); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL/health" || echo "000")
-            echo "Attempt $i/$MAX_RETRIES — HTTP $STATUS"
-            if [ "$STATUS" = "200" ]; then
-              echo "health=ok" >> "$GITHUB_OUTPUT"
-              exit 0
+            echo "Attempt $i/$MAX_RETRIES — /health HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then break; fi
+            if [ "$i" = "$MAX_RETRIES" ]; then
+              echo "health=failed" >> "$GITHUB_OUTPUT"
+              exit 1
             fi
             sleep $RETRY_INTERVAL
           done
 
-          echo "health=failed" >> "$GITHUB_OUTPUT"
-          exit 1
+          # Phase 2: full smoke suite — same coverage as staging (HTML, routing,
+          # payment-methods contract). Flags health=failed so rollback fires.
+          if bash scripts/server/smoke-staging.sh "$PRODUCTION_URL"; then
+            echo "health=ok" >> "$GITHUB_OUTPUT"
+          else
+            echo "health=failed" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
 
-      - name: Rollback production on health failure
+      - name: Rollback production on failure
         if: failure() && steps.prod-health-check.outputs.health == 'failed'
         env:
           DEPLOY_HOST: ${{ secrets.PRODUCTION_HOST }}
           DEPLOY_USER: ${{ secrets.PRODUCTION_USER }}
           DEPLOY_PATH: ${{ secrets.PRODUCTION_DEPLOY_PATH }}
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
         run: |
-          echo "::error::PRODUCTION health check failed — initiating rollback"
-          ssh $DEPLOY_USER@$DEPLOY_HOST << EOF
+          echo "::error::PRODUCTION health/smoke failed — rolling back to previous tag"
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' REGISTRY='$REGISTRY' IMAGE_PREFIX='$IMAGE_PREFIX' bash -s" << 'REMOTE'
             set -euo pipefail
-            cd $DEPLOY_PATH
+            cd "$DEPLOY_PATH"
 
-            echo "==> [PRODUCTION] Emergency rollback"
-            docker compose down
-            docker compose up -d --no-pull
+            PREV_TAG="$(cat .deploy-prev-tag 2>/dev/null || true)"
+            if [ -z "$PREV_TAG" ]; then
+              echo "::error::No previous tag recorded — manual rollback required"
+              exit 1
+            fi
+            echo "==> [PRODUCTION] Rolling back to $PREV_TAG"
 
-            echo "==> Rollback complete — please investigate immediately"
-          EOF
+            export IMAGE_TAG="$PREV_TAG" REGISTRY IMAGE_PREFIX
+            docker compose pull
+            docker compose up -d --remove-orphans
+
+            if grep -qE '^IMAGE_TAG=' .env 2>/dev/null; then
+              sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=$PREV_TAG|" .env
+            fi
+            echo "==> [PRODUCTION] Rollback complete ($PREV_TAG) — investigate immediately"
+          REMOTE
 
       - name: Notify deployment result
         if: always()
