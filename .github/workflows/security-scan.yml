@@ -12,6 +12,13 @@ on:
     paths:
       - "**/package.json"
       - "pnpm-lock.yaml"
+  # DECISION-OS-017: run on every PR to catch new vulns introduced by a PR
+  # without waiting for the weekly schedule.
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
 
 jobs:
   # ─────────────────────────────────────────────────────────────
@@ -31,7 +38,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
@@ -113,7 +120,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
@@ -177,7 +184,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
