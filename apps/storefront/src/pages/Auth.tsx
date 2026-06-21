@@ -372,7 +372,7 @@ export function SignupPage() {
                 type="submit"
                 variant="primary"
                 size="lg"
-                className="aurora-btn-primary w-full !rounded-2xl !text-base !font-bold"
+                className="aurora-btn-primary w-full !rounded-md !text-base !font-bold"
                 iconStart={submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowLeft className="h-4 w-4" />}
                 disabled={submitting}
               >
@@ -443,7 +443,7 @@ export function WaitlistPage() {
                 type="submit"
                 variant="primary"
                 size="lg"
-                className="aurora-btn-primary w-full !rounded-2xl !font-bold"
+                className="aurora-btn-primary w-full !rounded-md !font-bold"
                 iconStart={<ArrowLeft className="h-4 w-4" />}
                 disabled={status === 'submitting'}
               >
