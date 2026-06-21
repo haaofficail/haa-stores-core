@@ -45,7 +45,7 @@ export function Pricing({ t }: { t: TFn }) {
             </p>
 
           {/* Glass billing toggle: 40px height buttons, 14px font */}
-          <div role="group" aria-label="اختر دورة الفوترة" className="mt-8 inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/60 p-1 shadow-sm backdrop-blur-xl">
+          <div role="group" aria-label="اختر دورة الفوترة" className="mt-8 inline-flex items-center gap-1 rounded-full border border-border-subtle bg-surface-2 p-1 shadow-sm">
             <button
               type="button"
               onClick={() => setYearly(false)}
@@ -80,7 +80,7 @@ export function Pricing({ t }: { t: TFn }) {
                 className={`aurora-card relative overflow-hidden rounded-3xl p-8 transition-all duration-500 hover:-translate-y-2 sm:p-10 ${
                   highlight
                     ? 'border-2 border-primary-200 bg-gradient-to-br from-primary-50 via-white to-primary-50 shadow-2xl shadow-primary-500/20'
-                    : 'border border-white/40 bg-white/70 backdrop-blur-xl hover:shadow-xl'
+                    : 'border border-border-subtle bg-white hover:shadow-xl'
                 }`}
               >
                 {highlight && (
@@ -94,7 +94,7 @@ export function Pricing({ t }: { t: TFn }) {
                 {/* Price: 56px font-black (Linear convention for hero price)
                     If highlight, gradient text; otherwise slate-900 */}
                 <div className="mt-5 flex items-baseline gap-1">
-                  <span className={`text-[56px] font-black leading-none tracking-[-0.04em] ${highlight ? 'aurora-text-gradient' : 'text-text-primary'}`}>{price}</span>
+                  <span className={`text-[56px] font-black leading-none tracking-[-0.04em] ${highlight ? 'text-primary' : 'text-text-primary'}`}>{price}</span>
                   {period &&               <span className="text-sm font-medium text-text-tertiary">{period}</span>}
                 </div>
                 {/* Description: 15px line-height 1.6 */}
