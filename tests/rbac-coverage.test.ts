@@ -37,11 +37,11 @@ const DENY_LIST = new Set<string>([
   'admin/operations.ts',      // /admin/audit, /admin/webhooks, /admin/plans, etc.
   'admin/marketplace.ts',     // /admin/marketplace/* (admin auth)
   'marketplaces/index.ts',    // aggregator
-  'marketplaces/salla.ts',    // /webhooks/salla (signature-based)
-  'marketplaces/zid.ts',      // /webhooks/zid (signature-based)
-  'marketplaces/amazon.ts',   // /webhooks/amazon (signature-based)
-  'webhooks.ts',              // /webhooks/payments (signature-based)
-  'shipping-webhooks.ts',     // /webhooks/shipping, /webhooks/oto (signature-based)
+  'marketplaces/salla.ts',    // OAuth callbacks; requireAuth + requireStoreAccess at router-level (verified)
+  'marketplaces/zid.ts',      // OAuth callbacks; requireAuth + requireStoreAccess at router-level (verified)
+  'marketplaces/amazon.ts',   // OAuth callbacks; requireAuth + requireStoreAccess at router-level (verified)
+  'webhooks.ts',              // /webhooks/payments — verifyWebhookSignature + timingSafeEqual + dedup
+  'shipping-webhooks.ts',     // /webhooks/shipping, /webhooks/oto — verifyOtoWebhookSignature + auth header + dedup
   'landing-ai-agent.ts',      // pre-signup public trial
   'public-api.ts',            // API key auth (own middleware)
   'webhooks/shipping.ts',     // if exists
