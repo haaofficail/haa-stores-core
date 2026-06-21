@@ -25,7 +25,7 @@ export function CustomDomainGate({ children }: { children: ReactNode }) {
 
     (async () => {
       try {
-        const res = await request<{ slug: string | null }>(`/api/resolve-host`);
+        const res = await request<{ slug: string | null }>(`/resolve-host`);
         if (cancelled) return;
         if (res?.slug) {
           const rest = location.pathname === '/' ? '' : location.pathname;
