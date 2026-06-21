@@ -158,38 +158,38 @@
 
   /* Surface colors (matches tailwind.config extended colors.surface) */
   --surface-1: #ffffff;
-  --surface-2: #f9fafb;
-  --surface-3: #f3f4f6;
-  --surface-inverse: #111827;
+  --surface-2: #f5f5f7;
+  --surface-3: #e8e8ed;
+  --surface-inverse: #1d1d1f;
 
   /* Text colors (matches tailwind.config extended colors.text) */
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-  --text-tertiary: #6b7280;
-  --text-disabled: #d1d5db;
+  --text-primary: #1d1d1f;
+  --text-secondary: #86868b;
+  --text-tertiary: #aeaeb2;
+  --text-disabled: #c6c6c8;
   --text-link: var(--brand-primary);
 
-  /* Border colors (matches tailwind.config extended colors.border) */
-  --border-subtle: #f0f0f1;
-  --border-default: #e5e7eb;
-  --border-hover: #d1d5db;
+  /* Border colors — design system (Apple HIG) values */
+  --border-subtle: #d2d2d7;
+  --border-default: #c6c6c8;
+  --border-hover: #aeaeb2;
   --border-focus: var(--brand-primary);
-  --border-disabled: #f3f4f6;
+  --border-disabled: #e8e8ed;
 
-  /* Status colors (matches tailwind.config extended colors).
-     P2-#7 contrast: warning #f59e0b on white was 2.15:1
-     (below AA-large 3:1). We split into:
-     - color-warning:  #f59e0b (backgrounds, borders, icons only)
-     - color-warning-text: #b45309 (text only, 4.62:1 AA normal) */
-  --color-success: #15803d;
-  --color-success-subtle: #f0fdf4;
-  --color-success-text: #15803d;
-  --color-warning: #f59e0b;
-  --color-warning-subtle: #fffbeb;
-  --color-warning-text: #b45309;
-  --color-danger: #b91c1c;
-  --color-danger-subtle: #fef2f2;
-  --color-danger-text: #b91c1c;
+  /* Status colors — design system (Apple HIG) values.
+     -text tokens are the on-fill text color per the design system. */
+  --color-success: #34c759;
+  --color-success-subtle: #e8f8ee;
+  --color-success-soft: #e8f8ee;
+  --color-success-text: #ffffff;
+  --color-warning: #ff9500;
+  --color-warning-subtle: #fff4e5;
+  --color-warning-soft: #fff4e5;
+  --color-warning-text: #1d1d1f;
+  --color-danger: #ff3b30;
+  --color-danger-subtle: #ffebeb;
+  --color-danger-soft: #ffebeb;
+  --color-danger-text: #ffffff;
   --color-info: var(--brand-primary);
   --color-info-subtle: color-mix(in srgb, var(--brand-primary) 8%, #fff);
   --color-info-text: color-mix(in srgb, var(--brand-primary) 88%, #000);
@@ -409,27 +409,23 @@
       box-shadow 500ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* Primary button (gradient) — brand blue unified */
+  /* Primary button — design system: solid brand fill, flat, Apple-restrained.
+     primary-500 → hover primary-600, subtle shadow-sm, no gradient/lift/glow. */
   .aurora-btn-primary {
-    background-image: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--brand-primary) 70%, #fff) 0%,
-      var(--brand-primary) 50%,
-      color-mix(in srgb, var(--brand-primary) 70%, #000) 100%
-    );
-    box-shadow:
-      0 10px 30px -8px color-mix(in srgb, var(--brand-primary) 50%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.25);
-    transition: all 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    background-image: none;
+    background-color: var(--color-primary-500);
+    color: #fff;
+    box-shadow: var(--shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05));
+    transition:
+      background-color 200ms cubic-bezier(0, 0, 0.2, 1),
+      box-shadow 200ms cubic-bezier(0, 0, 0.2, 1),
+      transform 120ms cubic-bezier(0, 0, 0.2, 1);
   }
   .aurora-btn-primary:hover {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow:
-      0 16px 40px -8px color-mix(in srgb, var(--brand-primary) 60%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    background-color: var(--color-primary-600);
   }
   .aurora-btn-primary:active {
-    transform: translateY(0) scale(0.98);
+    transform: scale(0.98);
   }
 
   /* Ghost button (glass) */
