@@ -111,6 +111,7 @@ function LpProductCard({ product }: { product: LpProduct }) {
       {savingsPct > 0 && <span className="lp-pcard__save">خصم {savingsPct}٪</span>}
       <div className="lp-pcard__img">
         <img src={product.image} alt={product.name} loading="lazy" />
+        <span className="lp-pcard__avail">متاح للبيع<span className="lp-pcard__dot" /></span>
       </div>
       <div className="lp-pcard__body">
         <span className="lp-pcard__cat">{product.categoryName}</span>

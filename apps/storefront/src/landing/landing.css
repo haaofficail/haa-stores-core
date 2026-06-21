@@ -2056,11 +2056,27 @@
 }
 
 /* ── storefront-specific: مكوّنات غير موجودة في bundle المرجع المستقل ── */
+/* بطاقة المنتج — مطابقة لمرجع haa-pcn (ProductCard.jsx) */
+@keyframes lp-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.7); }
+}
+
 .lp-pcard {
-  background: var(--surface-1);
-  border-radius: 12px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0; /* السماح لعنصر الشبكة بالانكماش لتفادي فيض المحتوى وقصّه يساراً (RTL) */
+  background: linear-gradient(160deg, var(--surface-1) 35%, color-mix(in srgb, var(--color-primary-500) 12%, var(--surface-1)));
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 4px 12px -6px rgba(20, 40, 80, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 28px -14px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lp-pcard:hover {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-5px) scale(1.005);
 }
 
 .lp-pcard__img {
@@ -2085,63 +2101,189 @@
   transform: scale(1.08);
 }
 
+/* شارة الخصم — حمراء، أعلى يمين (inline-start في RTL) كما في المرجع */
+.lp-pcard__save {
+  position: absolute;
+  top: 12px;
+  inset-inline-start: 12px;
+  z-index: 3;
+  background: linear-gradient(135deg, #ff3b30, #ff6030);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 5px 10px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.4);
+  letter-spacing: 0.03em;
+}
+
+/* شارة "جديد" — أعلى يسار (inline-end في RTL) */
+.lp-pcard__badge {
+  position: absolute;
+  top: 12px;
+  inset-inline-end: 12px;
+  z-index: 3;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 8px;
+  letter-spacing: 0.04em;
+}
+
+/* مؤشر "متاح للبيع" — نقطة خضراء نابضة، أعلى اليسار (inline-end في RTL) */
+.lp-pcard__avail {
+  position: absolute;
+  bottom: 12px;
+  inset-inline-end: 12px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: color-mix(in srgb, var(--surface-1) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a7a3a;
+  box-shadow: 0 4px 12px -4px rgba(20, 40, 80, 0.22);
+}
+.lp-pcard__avail .lp-pcard__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: #34c759;
+  flex-shrink: 0;
+  animation: lp-pulse-dot 1.8s ease-in-out infinite;
+}
+
 .lp-pcard__body {
-  padding: 10px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 13px 14px 15px;
+  flex: 1;
+  min-width: 0; /* يمنع فيض الأبناء أفقياً */
 }
 
 .lp-pcard__cat {
   font-size: 10px;
-  color: var(--text-tertiary);
-  margin-bottom: 4px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--color-primary-600);
+  text-transform: uppercase;
+  min-height: 13px;
 }
 
 .lp-pcard__name {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 6px;
-  line-height: 1.4;
+  margin: 0;
+  line-height: 1.45;
+  display: -webkit-box;
+  height: 2.9em;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere; /* كسر الكلمات اللاتينية الطويلة (AirPods) بدل الفيض */
 }
 
 .lp-pcard__price {
-  font-size: 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+}
+.lp-pcard__now {
+  font-size: 24px;
   font-weight: 800;
-  color: var(--color-primary-700);
+  color: var(--text-primary);
+  line-height: 1;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  direction: ltr;
+  letter-spacing: -0.01em;
+}
+.lp-pcard__was {
+  font-size: 14px;
+  color: #ff3b30;
+  text-decoration: line-through;
+  text-decoration-color: #ff3b30;
+  text-decoration-thickness: 1.5px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  direction: ltr;
+  font-weight: 600;
+  opacity: 0.9;
 }
 
-.lp-pcard__old {
-  font-size: 11px;
+.lp-pcard__stars {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 16px;
+}
+.lp-pcard__rc {
+  font-size: 10px;
   color: var(--text-tertiary);
-  text-decoration: line-through;
-  margin-inline-start: 4px;
+}
+
+/* سطر "مشتري" — نقطة خضراء نابضة على اليسار كدليل نشاط */
+.lp-pcard__purchases {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .lp-pcard__bnpl {
   display: flex;
-  gap: 4px;
-  margin-top: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin-top: 2px;
+  min-width: 0;
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+.lp-pcard__bnpl span {
+  min-width: 0;
+  white-space: nowrap;
+}
+.lp-pcard__bnpl img {
+  height: 14px;
+  width: auto;
+  max-width: 38px;
+  object-fit: contain;
 }
 
 .lp-pcard__cta {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
-  margin-top: 10px;
+  margin-top: auto;
+  min-height: 46px;
   padding: 8px 10px;
-  border-radius: 10px;
-  background: var(--color-primary-500);
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--color-primary-400) 0%, var(--color-primary-600) 100%);
   color: #fff;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1;
+  box-shadow: 0 6px 20px -6px rgba(92, 156, 213, 0.6);
 }
-.lp-pcard__cta svg { width: 14px; height: 14px; flex-shrink: 0; }
-.lp-pcard__bnpl img {
-  height: 16px;
-  width: auto;
-}
+.lp-pcard__cta svg { width: 18px; height: 18px; flex-shrink: 0; }
 
 .lp-avatar {
   width: 40px;
