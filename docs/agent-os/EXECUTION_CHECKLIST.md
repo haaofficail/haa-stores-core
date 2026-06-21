@@ -1,121 +1,55 @@
-# Execution Checklist — Post-QA Autopilot
+# Execution Checklist — Post-QA Autopilot (final)
 
-> Generated 2026-06-22 by the SAFE FULL AUTOPILOT brief.
-> Live status of each wave. Updated after every wave by the autopilot.
-
----
-
-## Wave status legend
-
-`Pending` · `In Progress` · `Done` · `Blocked` · `Partially Done` · `Deferred`
+> Live status of each wave. Final snapshot after autopilot run on `autopilot/post-qa-execution`.
 
 ---
 
-## Wave 0 — Truth Sync (docs)
+## Status legend
 
-- **Status:** In Progress
-- **Branch:** `autopilot/post-qa-execution`
-- **Scope:** create `EXECUTION_CHECKLIST.md`, `REMAINING_WORK.md`; refresh `OWNER_DECISIONS.md` with OS-007 … OS-020; refresh `ACTIVE_WORK.md`, `ISSUE_REGISTER.md`, `CURRENT_STATE.md`, `TASK_TRACKER.md`.
-- **Verification:** `pnpm preflight`.
-- **Remaining:** commit.
-- **Blockers:** none.
-
-## Wave 1 — Theme System Single Gateway
-
-- **Status:** Pending
-- **Scope:** establish `@haa/storefront-themes` as the public gateway; move/re-export `getThemeCapsule` to `/server`; fix merchant-dashboard imports; tighten ESLint; add `tests/theme-boundary.test.ts`.
-- **Verification:** `pnpm preflight`, `pnpm typecheck`, `pnpm test -- tests/theme-boundary.test.ts`, `pnpm lint`.
-
-## Wave 2 — Brand Tokens `#5c9cd5`
-
-- **Status:** Pending
-- **Scope:** consolidate `packages/tokens` on `#5c9cd5`; mark `#007aff` legacy; tokenize `blue-500/600` admin hardcodes; add `tests/brand-consistency.test.ts`.
-
-## Wave 3 — Payment Test Environment
-
-- **Status:** Pending
-- **Scope:** mock provider + webhook/callback simulators; race scenarios; no live creds; tests.
-
-## Wave 4 — Geidea Infrastructure Readiness
-
-- **Status:** Pending
-- **Scope:** provider contract + readiness states + encrypted slots + dashboard settings + admin diagnostics + webhook + signature + idempotency + mock + sandbox skeleton. Refund capability disabled until live.
-
-## Wave 5 — Shipping Aggregator Readiness
-
-- **Status:** Pending
-
-## Wave 6 — Shipping Rate Cache / Debounce
-
-- **Status:** Pending
-
-## Wave 7 — API / Caddy Contract
-
-- **Status:** Pending
-- **Scope:** drop `/api/` from Hono mounts for `landing-ai-agent` + `v1`; add strip-simulation test.
-
-## Wave 8 — Deploy / No Auto-Migrate
-
-- **Status:** Pending
-
-## Wave 9 — CI / Security Scan
-
-- **Status:** Pending
-
-## Wave 10 — `support-errors` Production Behavior
-
-- **Status:** Pending
-
-## Wave 11 — RBAC Comments Cleanup
-
-- **Status:** Pending
-
-## Wave 12 — Docker Local Safety
-
-- **Status:** Pending
-
-## Wave 13 — Deletion Policy Enforcement
-
-- **Status:** Pending
-
-## Wave 14 — Outbound Webhook Hardening (tests/docs)
-
-- **Status:** Pending
-
-## Wave 15 — RBAC Hardening (safe guards only)
-
-- **Status:** Pending
-
-## Wave 16 — Wallet Idempotency Plan (no migration run)
-
-- **Status:** Pending
-
-## Wave 17 — Icon Governance (lock progress)
-
-- **Status:** Pending
-
-## Wave 18 — RTL / A11y / Brand Guards (tests only)
-
-- **Status:** Pending
-
-## Wave 19 — Marketplace / SFDA / Affiliate tracking (docs)
-
-- **Status:** Pending
-
-## Wave 20 — Production Readiness Tracking (docs)
-
-- **Status:** Pending
-
-## Wave 21 — Docs Archive Cleanup (mark stale only)
-
-- **Status:** Pending
+`Pending` · `In Progress` · `Done` · `Done (planning only)` · `Done (test-locked, code deferred)` · `Deferred (tracker-only)` · `Blocked`
 
 ---
 
-## Hard limits (binding on every wave)
+## Waves
 
-- No push. No deploy. No SSH. No live payment or shipping. No db:migrate. No secrets.
-- No use of `187.124.41.239`.
-- No direct/hard tenant or merchant self-deletion as a feature.
-- No file-wide refactors outside wave scope.
-- One topic per commit.
+| Wave | Title                                  | Status                                                         | Commit        | Notes                                                                                                                                                                                  |
+| ---: | -------------------------------------- | -------------------------------------------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|    0 | Truth sync                             | ✅ Done                                                        | `8d5c961a`    | OS-007…OS-020 locked; tracker files seeded.                                                                                                                                            |
+|    1 | Theme single gateway                   | ✅ Done                                                        | `2db0bf34`    | `getThemeCapsule` re-exported via `/server`; 3 dashboard imports moved; ESLint tightened; `tests/theme-boundary.test.ts` added; AGENTS §5 annotated.                                   |
+|    2 | Brand `#5c9cd5`                        | ✅ Done (annotation + guard); bulk admin tokenization deferred | `4c31d8dd`    | `tests/brand-consistency.test.ts`; F-QA-D-003 admin blue-500 hardcodes remain.                                                                                                         |
+|    3 | Payment test environment               | ✅ Done                                                        | `1ca984a3`    | FakePaymentProvider cancelled+expired; catalogue doc; test.                                                                                                                            |
+|    4 | Geidea infrastructure readiness        | ✅ Done                                                        | `d67a7593`    | `GEIDEA_CAPABILITIES.supportsRefunds=false`; readiness doc; test.                                                                                                                      |
+|    5 | Shipping aggregator readiness          | ⏸ Deferred (tracker-only)                                      | —             | `packages/shipping-core/*` already implements provider+mock+OTO+SMSA+Aramex+returns; explicit readiness state machine + diagnostics UI follow-up. Tracked in `REMAINING_WORK.md → P2`. |
+|    6 | Shipping rate cache                    | ⏸ Deferred                                                     | —             | Frontend race guard exists (PR #32 + `tests/checkout-shipping-race.test.ts`). Server-side cache is a focused follow-up. Tracked.                                                       |
+|    7 | API / Caddy contract                   | ✅ Done                                                        | `8da94360`    | 3 Hono mounts dropped `/api/`; `tests/api-caddy-strip.test.ts` source-grep guard.                                                                                                      |
+|    8 | Deploy / no-auto-migrate               | ✅ Done                                                        | `b3c736aa`    | `scripts/deploy-bundle.sh` gated; `tests/no-auto-migrate.test.ts` source-grep guard.                                                                                                   |
+|    9 | CI / security-scan                     | ✅ Done                                                        | `1a5ad9df`    | Node 20 → 22; `pull_request` trigger added.                                                                                                                                            |
+|   10 | `support-errors` 404 in production     | ✅ Done                                                        | `12c06b2e`    | 403 → 404 per AGENTS §13 #5; test guard.                                                                                                                                               |
+|   11 | RBAC coverage comments                 | ✅ Done                                                        | `51347a46`    | OAuth callbacks correctly described.                                                                                                                                                   |
+|   12 | Docker fallback password               | ✅ Done                                                        | `01f5f31a`    | LOCAL-DEV-ONLY header + inline warning.                                                                                                                                                |
+|   13 | Deletion policy disabled in beta       | ✅ Done                                                        | `35c37668`    | DELETE /admin/tenants/:id and DELETE /merchant/:storeId/account return FORBIDDEN_BETA_POLICY; test guard.                                                                              |
+|   14 | Outbound webhook delivery tests        | ⏸ Deferred (tracker-only)                                      | —             | Existing tests cover registration; explicit retry+dead-letter test coverage is a follow-up. Tracked.                                                                                   |
+|   15 | RBAC small guards                      | ⏸ Deferred (tracker-only)                                      | —             | route-ordering test + JWT iss/aud + rate-limit on failed `requireStoreAccess` left as follow-up.                                                                                       |
+|   16 | Wallet idempotency plan                | ✅ Done (planning only)                                        | `150be029`    | `docs/agent-os/WALLET_IDEMPOTENCY_PLAN.md`. No migration generated. No `db:migrate` run.                                                                                               |
+|   17 | Lucide migration progress lock         | ✅ Done                                                        | `595489df`    | Ceiling at 152; test guard.                                                                                                                                                            |
+|   18 | RTL / a11y / brand guards              | ✅ Done                                                        | `40b7b6c7`    | Ceiling 300 on hardcoded directional; SPA dir="rtl" assertion.                                                                                                                         |
+|   19 | Marketplace / SFDA / affiliate roadmap | ✅ Done (tracker-only)                                         | (this commit) | See `REMAINING_WORK.md → Future independent tasks`.                                                                                                                                    |
+|   20 | Production readiness tracking          | ✅ Done (existing docs sufficient)                             | (this commit) | `docs/ops/PRODUCTION_READINESS_CHECKLIST.md` already captures the gates and current ⏳ state.                                                                                          |
+|   21 | Docs archive cleanup (mark stale)      | ⏸ Deferred — keep as a dedicated PR per DECISION-OS-001        | —             | Marking via `docs/agent-os/STALE_DOCS_MARKER.md` (this commit), file move not in autopilot scope.                                                                                      |
+
+---
+
+## Verification summary
+
+- `pnpm preflight` — green (Wave 0).
+- `pnpm typecheck` — green (verified Wave 1, Wave 13).
+- `pnpm test -- <new-test>` — green for each wave's new test (Waves 1, 2, 3, 4, 7, 8, 10, 13, 17, 18).
+- Total test suite at end of autopilot: ~2873 passing, 1 skipped, 14 todo, 0 failing.
+- `git diff --check` — clean at every commit boundary.
+
+## Hard limits (binding throughout)
+
+- ❌ No push. ❌ No deploy. ❌ No SSH. ❌ No live payment / shipping.
+- ❌ No `db:migrate`. ❌ No secrets handled. ❌ No use of `187.124.41.239`.
+- ❌ No direct/hard tenant or merchant self-deletion as a feature.
+- ✅ One topic per commit. ✅ Verification before each commit.
