@@ -11,7 +11,7 @@ export function isSafeRedirectUrl(url: unknown): boolean {
   if (u.startsWith('/')) return true;              // مسار داخلي
   try {
     const parsed = new URL(u);
-    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+    return parsed.protocol === 'https:'; // https فقط — يمنع http downgrade (3DS ACS دائماً https)
   } catch {
     return false;                                   // javascript:, data:, نص غير صالح
   }
