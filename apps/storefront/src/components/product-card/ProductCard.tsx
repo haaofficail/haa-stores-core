@@ -180,7 +180,7 @@ export function ProductCard({
           )}
           {/* Theme-specific stock badge (separate from discount badge) */}
           {resolvedShowStockBadge && isLowStock && !isOutOfStock && (
-            <span className="absolute top-2 end-2 z-10 inline-flex items-center rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-bold text-amber-700 leading-none">
+            <span className="absolute top-2 end-2 z-10 inline-flex items-center rounded-md bg-warning-soft border border-warning-soft px-2 py-0.5 text-xs font-bold text-warning leading-none">
               {t('product.lowStock', 'مخزون محدود')}
             </span>
           )}
@@ -215,7 +215,7 @@ export function ProductCard({
           size={titleSize}
           weight={titleWeight}
           color="text-black"
-          hoverColor={variant === 'luxury' ? 'text-[#a65d4e]' : 'text-blue-600'}
+          hoverColor={variant === 'luxury' ? 'text-[#a65d4e]' : 'text-primary-600'}
           className="h-[2.5em]"
         />
 
@@ -224,7 +224,7 @@ export function ProductCard({
             <RatingStars rating={product.rating ?? null} count={product.reviewCount ?? null} size="3xs" />
           )}
           {resolvedShowStockBadge && isInStock && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700 leading-none">
+            <span className="inline-flex items-center gap-1 rounded-md bg-success-soft border border-success-soft px-2 py-0.5 text-xs font-bold text-success leading-none">
               ✓ {t('product.inStock', 'متوفر')}
             </span>
           )}

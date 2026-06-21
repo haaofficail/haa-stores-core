@@ -90,7 +90,7 @@ export function AddToCartButton({
       <button
         type="button"
         disabled
-        className={`w-full font-semibold flex items-center justify-center ${sizes.height} ${sizes.text} ${sizes.padding} rounded-xl bg-green-50 text-green-700 ${className}`}
+        className={`w-full font-semibold flex items-center justify-center ${sizes.height} ${sizes.text} ${sizes.padding} rounded-xl bg-success-soft text-success ${className}`}
       >
         <Icon icon={Check} size={sizes.icon as any} />
         <span>{children || 'تمت الإضافة'}</span>

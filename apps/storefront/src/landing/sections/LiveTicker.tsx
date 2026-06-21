@@ -125,8 +125,8 @@ export function LiveTicker({ t }: { t: TFn }) {
     <section className="relative py-6 sm:py-8" aria-label="نشاط مباشر">
       <StoreContainer>
         <div className="flex items-center gap-3 overflow-hidden rounded-2xl border border-white/30 bg-white/40 px-4 py-3 shadow-sm backdrop-blur-xl">
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-emerald-700">
-            <span className="h-1.5 w-1.5 animate-pulse motion-reduce:animate-none rounded-full bg-emerald-500" />
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-success">
+            <span className="h-1.5 w-1.5 animate-pulse motion-reduce:animate-none rounded-full bg-success" />
             {t('landing.ticker.label', 'نشاط مباشر')}
           </span>
           <div className="flex-1 overflow-hidden min-w-0">

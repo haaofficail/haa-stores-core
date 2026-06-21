@@ -45,7 +45,7 @@ export function Pricing({ t }: { t: TFn }) {
             </p>
 
           {/* Glass billing toggle: 40px height buttons, 14px font */}
-          <div role="group" aria-label="اختر دورة الفوترة" className="mt-8 inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/60 p-1 shadow-sm backdrop-blur-xl">
+          <div role="group" aria-label="اختر دورة الفوترة" className="mt-8 inline-flex items-center gap-1 rounded-full border border-border-subtle bg-surface-2 p-1 shadow-sm">
             <button
               type="button"
               onClick={() => setYearly(false)}
@@ -79,12 +79,12 @@ export function Pricing({ t }: { t: TFn }) {
                 key={key}
                 className={`aurora-card relative overflow-hidden rounded-3xl p-8 transition-all duration-500 hover:-translate-y-2 sm:p-10 ${
                   highlight
-                    ? 'border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-2xl shadow-blue-500/20'
-                    : 'border border-white/40 bg-white/70 backdrop-blur-xl hover:shadow-xl'
+                    ? 'border-2 border-primary-200 bg-gradient-to-br from-primary-50 via-white to-primary-50 shadow-2xl shadow-primary-500/20'
+                    : 'border border-border-subtle bg-white hover:shadow-xl'
                 }`}
               >
                 {highlight && (
-                  <span className="absolute top-6 end-6 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-white shadow-lg">
+                  <span className="absolute top-6 end-6 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-white shadow-lg">
                     <Sparkles className="h-3 w-3" />
                     {t('landing.pricing.popular', 'الأكثر شيوعًا')}
                   </span>
@@ -94,7 +94,7 @@ export function Pricing({ t }: { t: TFn }) {
                 {/* Price: 56px font-black (Linear convention for hero price)
                     If highlight, gradient text; otherwise slate-900 */}
                 <div className="mt-5 flex items-baseline gap-1">
-                  <span className={`text-[56px] font-black leading-none tracking-[-0.04em] ${highlight ? 'aurora-text-gradient' : 'text-text-primary'}`}>{price}</span>
+                  <span className={`text-[56px] font-black leading-none tracking-[-0.04em] ${highlight ? 'text-primary' : 'text-text-primary'}`}>{price}</span>
                   {period &&               <span className="text-sm font-medium text-text-tertiary">{period}</span>}
                 </div>
                 {/* Description: 15px line-height 1.6 */}
@@ -108,7 +108,7 @@ export function Pricing({ t }: { t: TFn }) {
                     : ['كل المميزات', 'دعم مخصص', 'استضافة خاصة']
                   ).map((f) => (
                     <li key={f} className="flex items-center gap-2">
-                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">✓</span>
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-600">✓</span>
                       {f}
                     </li>
                   ))}
@@ -118,7 +118,7 @@ export function Pricing({ t }: { t: TFn }) {
                   to={key === 'enterprise' ? '/contact' : '/signup' + (key === 'pro' ? '?plan=pro' : '')}
                   className={`mt-8 inline-flex h-12 min-h-[48px] w-full items-center justify-center rounded-full text-base font-semibold transition-all ${
                     highlight
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 hover:scale-[1.02] hover:shadow-xl hover:!text-white'
+                      ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30 hover:scale-[1.02] hover:shadow-xl hover:!text-white'
                       : 'border border-border bg-surface text-text-primary hover:border-text-primary'
                   }`}
                 >

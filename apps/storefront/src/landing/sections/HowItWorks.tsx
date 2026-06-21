@@ -42,7 +42,7 @@ export function HowItWorks({ t }: { t: TFn }) {
         <ol className="relative mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
           {/* Connector line: 1px height, position top-10 (40px) = middle of 80px icon containers */}
           <div aria-hidden="true" className="pointer-events-none absolute top-10 right-[12.5%] left-[12.5%] hidden h-px lg:block">
-            <div className="h-full w-full bg-gradient-to-r from-transparent via-blue-400/50 to-transparent" />
+            <div className="h-full w-full bg-gradient-to-r from-transparent via-primary-400/50 to-transparent" />
           </div>
           {steps.map(({ n, icon: Icon, time, title, desc }, idx) => {
             const isFinal = n === 4;
@@ -60,8 +60,8 @@ export function HowItWorks({ t }: { t: TFn }) {
                 <div
                   className={`relative mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl transition-all duration-500 group-hover:-translate-y-1 ${
                     isFinal
-                      ? 'bg-gradient-to-br from-blue-500 via-indigo-500 to-blue-600 text-white shadow-xl shadow-blue-500/40 ring-4 ring-blue-100'
-                      : 'bg-white text-text-primary shadow-lg ring-1 ring-border-subtle group-hover:shadow-xl group-hover:ring-blue-200'
+                      ? 'bg-gradient-to-br from-primary-500 via-primary-500 to-primary-600 text-white shadow-xl shadow-primary-500/40 ring-4 ring-primary-100'
+                      : 'bg-white text-text-primary shadow-lg ring-1 ring-border-subtle group-hover:shadow-xl group-hover:ring-primary-200'
                   }`}
                 >
                   {/* Icon: 36px (4.5 × 8 = 36), 1.75 stroke (slightly thicker for legibility at this size) */}
@@ -73,13 +73,13 @@ export function HowItWorks({ t }: { t: TFn }) {
                   <span>{time}</span>
                 </div>
                 {/* H3: 18px → 20px, tight tracking */}
-                <h3 className={`text-[18px] font-bold tracking-[-0.01em] sm:text-[20px] ${isFinal ? 'bg-gradient-to-br from-blue-600 to-indigo-700 bg-clip-text text-transparent' : 'text-text-primary'}`}>
+                <h3 className={`text-[18px] font-bold tracking-[-0.01em] sm:text-[20px] ${isFinal ? 'bg-gradient-to-br from-primary-600 to-primary-700 bg-clip-text text-transparent' : 'text-text-primary'}`}>
                   {title}
                 </h3>
                 {/* Body: 14px → 15px, line-height 1.6 */}
                 <p className="mt-2 text-[15px] leading-[1.6] text-text-secondary sm:text-base">{desc}</p>
                 {isFinal && (
-                  <span className="absolute -top-2 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-white shadow-lg shadow-blue-500/40">
+                  <span className="absolute -top-2 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-white shadow-lg shadow-primary-500/40">
                     <Sparkles className="h-3 w-3" />
                     {t('landing.how.outcome', 'النتيجة')}
                   </span>

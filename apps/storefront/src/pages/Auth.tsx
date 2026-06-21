@@ -29,11 +29,11 @@ import { ApiClientError as ApiError } from '@/lib/api';
 
 /* ─── Merchant avatar stack (decorative) ─── */
 const AVATAR_COLORS = [
-  'from-blue-400 to-blue-600',
-  'from-emerald-400 to-emerald-600',
-  'from-violet-400 to-violet-600',
-  'from-orange-400 to-orange-600',
-  'from-rose-400 to-rose-600',
+  'from-primary-400 to-primary-600',
+  'from-primary-200 to-primary-400',
+  'from-primary-600 to-primary-800',
+  'from-primary-300 to-primary-500',
+  'from-primary-500 to-primary-700',
 ];
 const AVATAR_INITIALS = ['م', 'س', 'ف', 'ن', 'خ'];
 
@@ -66,7 +66,7 @@ function AvatarStack() {
 /* ─── Stat card ─── */
 function StatCard({ icon: Icon, value, label }: { icon: React.ElementType; value: string; label: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-white/50 bg-white/60 px-4 py-3 shadow-sm backdrop-blur-md">
+    <div className="flex items-center gap-3 rounded-2xl border border-border-subtle bg-white px-4 py-3 shadow-sm">
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
         <Icon className="h-4 w-4" aria-hidden="true" />
       </div>
@@ -158,7 +158,7 @@ export function SignupPage() {
           {/* Headline */}
           <h1 className="mt-6 text-3xl font-extrabold leading-[1.1] tracking-tight text-text-primary sm:text-4xl lg:text-[2.75rem]">
             {t('auth.signup.title', 'أطلق متجرك')}
-            <span className="aurora-text-gradient block">{t('auth.signup.titleHighlight', 'خلال دقيقة واحدة')}</span>
+            <span className="block text-primary">{t('auth.signup.titleHighlight', 'خلال دقيقة واحدة')}</span>
           </h1>
 
           <p className="mt-4 max-w-sm text-base leading-relaxed text-text-secondary sm:text-lg">
@@ -211,7 +211,7 @@ export function SignupPage() {
             aria-hidden="true"
           />
 
-          <div className="rounded-3xl border border-white/50 bg-white/70 p-6 shadow-2xl shadow-primary-500/10 backdrop-blur-2xl sm:p-8">
+          <div className="rounded-3xl border border-border-subtle bg-white p-6 shadow-2xl shadow-primary-500/10 sm:p-8">
 
             {/* Form header */}
             <div className="mb-6">
@@ -270,7 +270,7 @@ export function SignupPage() {
                   <div className="w-full border-t border-border-subtle" />
                 </div>
                 <div className="relative flex justify-center">
-                  <span className="bg-white/70 px-3 text-[11px] font-semibold uppercase tracking-widest text-text-tertiary backdrop-blur-sm"> {/* small-text-allowed:badge */}
+                  <span className="bg-white px-3 text-[11px] font-semibold uppercase tracking-widest text-text-tertiary"> {/* small-text-allowed:badge */}
                     {t('auth.signup.sectionStore', 'معلومات متجرك')}
                   </span>
                 </div>
@@ -305,7 +305,7 @@ export function SignupPage() {
                   <div className="w-full border-t border-border-subtle" />
                 </div>
                 <div className="relative flex justify-center">
-                  <span className="bg-white/70 px-3 text-[11px] font-semibold uppercase tracking-widest text-text-tertiary backdrop-blur-sm"> {/* small-text-allowed:badge */}
+                  <span className="bg-white px-3 text-[11px] font-semibold uppercase tracking-widest text-text-tertiary"> {/* small-text-allowed:badge */}
                     {t('auth.signup.sectionSecurity', 'الأمان')}
                   </span>
                 </div>
@@ -411,7 +411,7 @@ export function WaitlistPage() {
   return (
     <AuthShell>
       <StoreContainer className="max-w-md">
-        <div className="rounded-3xl border border-white/50 bg-white/70 p-8 text-center shadow-2xl shadow-primary-500/10 backdrop-blur-2xl sm:p-10">
+        <div className="rounded-3xl border border-border-subtle bg-white p-8 text-center shadow-2xl shadow-primary-500/10 sm:p-10">
           <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary shadow-sm">
             <Bell className="h-7 w-7" aria-hidden="true" />
           </div>

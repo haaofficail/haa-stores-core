@@ -19,8 +19,8 @@ export function AboutSection() {
   return (
     <section id="about" className="relative py-16 sm:py-24 overflow-hidden" aria-labelledby="about-title">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <div className="absolute -end-16 -top-16 h-80 w-80 rounded-full bg-blue-100/30 blur-3xl" />
-        <div className="absolute -start-16 -bottom-16 h-80 w-80 rounded-full bg-emerald-100/20 blur-3xl" />
+        <div className="absolute -end-16 -top-16 h-80 w-80 rounded-full bg-primary-100/30 blur-3xl" />
+        <div className="absolute -start-16 -bottom-16 h-80 w-80 rounded-full bg-success-soft/20 blur-3xl" />
       </div>
       <StoreContainer>
         <div className="mx-auto max-w-4xl text-center">
@@ -37,7 +37,7 @@ export function AboutSection() {
           {stats.map(({ num, label }) => (
             <div key={label} className="rounded-2xl border border-white/20 bg-white/40 p-5 text-center backdrop-blur-sm sm:p-6">
               <p className="text-[28px] font-bold text-text-primary sm:text-[34px]">{num === 'دقيقة' ? (
-                <><span className="text-blue-600">١</span> {num}</>
+                <><span className="text-primary-600">١</span> {num}</>
               ) : num}
               </p>
               <p className="mt-1 text-sm font-medium text-text-secondary">{label}</p>

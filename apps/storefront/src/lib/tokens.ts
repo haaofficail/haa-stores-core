@@ -131,12 +131,12 @@ export const card = {
 
 // ─── Semantic Color Classes ──────────────────────────────────────
 export const badgeSemantic = {
-  sale: 'bg-red-50 text-red-600',
-  success: 'bg-green-50 text-green-700',
-  warning: 'bg-amber-50 text-amber-700',
-  error: 'bg-red-50 text-red-700',
-  info: 'bg-blue-50 text-blue-700',
-  neutral: 'bg-gray-100 text-gray-700',
+  sale: 'bg-danger-soft text-danger',
+  success: 'bg-success-soft text-success',
+  warning: 'bg-warning-soft text-warning-text',
+  error: 'bg-danger-soft text-danger-text',
+  info: 'bg-info-soft text-info',
+  neutral: 'bg-surface-2 text-text-secondary',
   brand: 'bg-primary-50 text-primary-700',
 } as const;
 

@@ -100,7 +100,7 @@ export default function Header() {
         {t('store.skipToContent', 'تخطى إلى المحتوى')}
       </a>
       {isDemo && (
-        <div className="bg-amber-100 text-amber-900 text-center py-1 text-xs sm:text-xs font-medium border-b border-amber-200">
+        <div className="bg-warning-soft text-warning text-center py-1 text-xs sm:text-xs font-medium border-b border-warning-soft">
           <div className="container-store flex items-center justify-center gap-1.5">
             <AlertTriangle className="w-3 h-3 inline-block" />
             <span>متجر تجريبي — جميع المنتجات لأغراض العرض والتجربة</span>

@@ -19,6 +19,6 @@ interface PriceStrikeProps {
   className?: string;
 }
 
-export function PriceStrike({ amount, size = 'sm', color = 'text-red-500', className = '' }: PriceStrikeProps) {
+export function PriceStrike({ amount, size = 'sm', color = 'text-danger', className = '' }: PriceStrikeProps) {
   return <CurrencyStrike amount={amount} size={size} color={color} className={className} />;
 }
