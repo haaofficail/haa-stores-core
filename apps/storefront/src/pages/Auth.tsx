@@ -461,23 +461,15 @@ export function WaitlistPage() {
   );
 }
 
-/* نفس مكوّن الخلفية في الصفحة الرئيسية تمامًا */
+/* Pure white background — no blobs, no tint. Per owner directive the auth
+   pages must be solid white. */
 function AuroraBackground() {
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      <div className="absolute inset-0 bg-white" />
-      <div className="aurora-blob aurora-blob-1" />
-      <div className="aurora-blob aurora-blob-2" />
-      <div className="aurora-blob aurora-blob-3" />
-      <div className="aurora-blob aurora-blob-4" />
-      <div
-        className="absolute inset-0 opacity-[0.035] mix-blend-overlay"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
-        }}
-      />
-    </div>
+    <div
+      aria-hidden="true"
+      className="pointer-events-none fixed inset-0 -z-10"
+      style={{ background: 'var(--surface-1, #fff)' }}
+    />
   );
 }
 

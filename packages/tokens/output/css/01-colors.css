@@ -82,9 +82,9 @@
   --color-danger: #ff3b30;
   --color-danger-text: #ffffff;
   --color-danger-subtle: #ffebeb;
-  --color-info: #007aff;
+  --color-info: #5c9cd5;
   --color-info-text: #ffffff;
-  --color-info-subtle: #e8f2ff;
+  --color-info-subtle: #f2f7fc;
 }
 
 [data-theme="dark"] {
@@ -110,7 +110,7 @@
   --color-danger: #ff453a;
   --color-danger-text: #1d1d1f;
   --color-danger-subtle: rgb(255 69 58 / 0.15);
-  --color-info: #0a84ff;
+  --color-info: #7db4e0;
   --color-info-text: #1d1d1f;
-  --color-info-subtle: rgb(10 132 255 / 0.15);
+  --color-info-subtle: rgb(124 180 224 / 0.16);
 }
