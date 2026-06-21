@@ -6,9 +6,14 @@ describe('isSafeRedirectUrl (QA CO5 / payment redirect safety)', () => {
     expect(isSafeRedirectUrl('/fake-3ds-challenge?x=1')).toBe(true);
     expect(isSafeRedirectUrl('/s/demo/order/ORD-1')).toBe(true);
   });
-  it('allows absolute http(s) provider URLs', () => {
+  it('allows absolute https provider/ACS URLs', () => {
     expect(isSafeRedirectUrl('https://checkout.tabby.ai/abc')).toBe(true);
     expect(isSafeRedirectUrl('https://api.moyasar.com/v1/3ds')).toBe(true);
+    expect(isSafeRedirectUrl('https://acs.some-issuer-bank.com/3ds')).toBe(true); // 3DS bank ACS
+  });
+  it('rejects http (downgrade) absolute URLs', () => {
+    expect(isSafeRedirectUrl('http://checkout.tabby.ai/abc')).toBe(false);
+    expect(isSafeRedirectUrl('http://evil.com')).toBe(false);
   });
   it('rejects javascript: and data: schemes (XSS)', () => {
     expect(isSafeRedirectUrl('javascript:alert(1)')).toBe(false);

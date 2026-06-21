@@ -53,6 +53,7 @@ export default function Checkout() {
   const [confirming, setConfirming] = useState(false);
   // مفتاح idempotency ثابت لكل محاولة checkout — لا يتغيّر مع كل ضغطة/إعادة محاولة (QA CO4)
   const idempotencyKeyRef = useRef<string>(generateIdempotencyKey());
+  const shippingReqRef = useRef(0); // حارس سباق جلب طرق الشحن
 
   const [customer, setCustomer] = useState({ name: '', phone: '', email: '' });
   const [address, setAddress] = useState({ city: '', district: '', street: '', details: '' });
@@ -115,16 +116,23 @@ export default function Checkout() {
 
   useEffect(() => {
     if (address.city.trim() && cart && slug) {
+      // حارس سباق: تغيّر المدينة بسرعة قد يُرجع استجابة مدينة قديمة بعد الجديدة.
+      // نطبّق أحدث طلب فقط عبر معرّف تصاعدي.
+      const reqId = ++shippingReqRef.current;
       setShippingLoading(true);
       checkoutApi.getShippingRates(slug, cart.id, address.city)
         .then((rates) => {
+          if (reqId !== shippingReqRef.current) return; // استجابة قديمة → تجاهل
           setShippingRates(rates);
-          if (rates.length > 0 && !selectedShippingId) {
-            setSelectedShippingId(rates[0].shippingMethodId);
-          }
+          // أبقِ اختيار العميل إن كان لا يزال متاحاً؛ وإلا اختر أول طريقة كافتراضي
+          setSelectedShippingId((cur) =>
+            cur && rates.some((r) => r.shippingMethodId === cur)
+              ? cur
+              : rates[0]?.shippingMethodId ?? null,
+          );
         })
-        .catch(() => toast.error(t('common.error', 'فشل تحميل طرق الشحن')))
-        .finally(() => setShippingLoading(false));
+        .catch(() => { if (reqId === shippingReqRef.current) toast.error(t('common.error', 'فشل تحميل طرق الشحن')); })
+        .finally(() => { if (reqId === shippingReqRef.current) setShippingLoading(false); });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address.city]);
