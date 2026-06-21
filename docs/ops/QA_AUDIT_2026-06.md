@@ -201,10 +201,10 @@
 | # | المشكلة | الخطورة | الحالة |
 |---|---------|---------|--------|
 | WA1 | لا consent/opt-in — يُرسل لكل العملاء | P0 | ✅ عمود `whatsapp_marketing_consent` (افتراضي false) + فلترة resolveRecipients (migration 0069) |
-| WA2 | رسائل حرة بلا قوالب WABA معتمدة + لا نافذة 24س | P0 | 📋 سجل قوالب + type:template + inbound webhook |
-| WA3 | لا opt-out | P0 | 🟡 عمود `whatsapp_opt_out` + فلترة مضافان؛ inbound webhook لكلمة STOP (WA2) لاحقاً |
+| WA2 | لا opt-out وارد (STOP) | P0 | ✅ `POST /webhooks/whatsapp/inbound` — تصنيف STOP/إيقاف (الكلمة الأولى)، مطابقة بالرقم عبر المتاجر، fail-closed + توكن ثابت الزمن. 9 اختبارات. (قوالب WABA: متابعة) |
+| WA3 | لا opt-out | P0 | ✅ عمود `whatsapp_opt_out` + فلترة + معالجة STOP الواردة (WA2) |
 | WA4 | إعادة دخول/إرسال مكرر (status='running' غير محروس، انتهاء القفل) | P1 | ✅ حارس running مضاف (atomic claim لاحقاً) |
-| WA5 | "sent" وهمي (fallback deeplink يُحتسب مُرسلاً) + لا تتبّع تسليم | P1 | 📋 webhook تسليم + عدم احتساب fallback |
+| WA5 | لا تتبّع تسليم | P1 | ✅ أعمدة delivered/read + `POST /webhooks/whatsapp/status` (DLR) — تقدّمي، idempotent، عدّادات حملة. هجرة 0070. 6 اختبارات |
 | WA6 | rate-limit ثابت بلا 429 backoff؛ مسار السلة المهجورة بلا throttle | P2 | 📋 |
 | WA7 | tenant isolation / authz | ✅ سليم |
 
@@ -212,15 +212,19 @@
 | # | المشكلة | الخطورة | الحالة |
 |---|---------|---------|--------|
 | INT1 | **بيانات اعتماد القنوات plaintext** | **P0** | ✅ مُشفّرة AES-256-GCM (`credential-cipher.ts`) في القنوات الأربع، متوافق مع القديم (decrypt fallback)، 4 اختبارات. (migration backfill للصفوف القديمة لاحقاً — تُعاد تشفيرها عند أول كتابة) |
-| INT2 | لا timeouts على fetch الصادر (sync يعلّق المجموعة) | P1 | 📋 `AbortSignal.timeout` (~12 موضع، آمن) |
-| INT3 | لا 429/Retry-After handling | P1 | 📋 |
-| INT4 | لا retry/backoff (idempotency-aware) | P1 | 📋 |
+| INT2 | لا timeouts على fetch الصادر (sync يعلّق المجموعة) | P1 | ✅ `resilientFetch` (AbortController 15s) في 9 مواقع عبر القنوات الأربع |
+| INT3 | لا 429/Retry-After handling | P1 | ✅ يحترم 429 + Retry-After (ثوانٍ/HTTP-date) + backoff أُسّي بـ jitter |
+| INT4 | لا retry/backoff (idempotency-aware) | P1 | ✅ إعادة محاولة محافِظة: 429 لأي طريقة، شبكة/5xx للطرق غير المتغيّرة فقط (لا ازدواج POST). 8 اختبارات |
 | INT5 | لا inbound webhooks (polling فقط) → توقيع/dedup N/A لكن غياب ingestion ملاحظة | P1 | 📋 |
 | INT6 | per-SKU `catch{}` يبتلع سبب الخطأ + لا details في syncLogs | P2 | 📋 |
 | INT7 | tenant isolation عبر storeId سليم (لا tenantId عمود — defense-in-depth) | P2 | 📋 |
 
-### الولاء — غير مبني (تصميم جاهز)
-لا schema/خدمة. تصميم كامل أُنتج: `loyalty.ts` (rules/accounts/transactions ledger مثل wallet) + `packages/loyalty-core` (earn/redeem/expiry نقي مختبَر) + 3 مسارات API (تاجr/عميل/earn-hook) + ربط في payment-webhook + COD + checkout + idempotency بـ partial-unique index. **الجهد ≈ 8.5-9.5 يوم**. = **بناء متعدّد الجلسات**.
+### الولاء — ✅ مبني (الـ backend كاملاً)
+- ✅ `packages/loyalty-core` — earn/redeem/expiry نقي بـ decimal.js، 14 اختباراً.
+- ✅ schema `loyalty.ts` (settings/accounts/transactions ledger) + هجرة 0071 + snapshot + **idempotency بفهرس جزئي** `loyalty_tx_earn_order_uniq` (earn واحد لكل طلب).
+- ✅ `LoyaltyService` (commerce-core): getRules/updateRules (upsert)، earnFromOrder (idempotent: fast-path + التقاط 23505)، redeem (إعادة حساب داخل معاملة من رصيد مقفل)، expireAccount (كنس FIFO، لا يتجاوز الرصيد)، previewRedemption/listTransactions/balanceValue. 10 اختبارات.
+- ✅ مسارات API `/merchant/:storeId/loyalty` (settings GET/PUT، رصيد العميل، expire) + ربط الكسب في payment-webhook (online) و collectCOD (COD) — كلاهما best-effort بعد commit. 5 اختبارات.
+- 📋 **متبقٍّ**: واجهة العميل في storefront (عرض الرصيد + استبدال عند الدفع) — متابعة frontend.
 
 ### ربط دومين خارجي — غير مبني (تصميم جاهز، infra يحتاج موافقتك)
 لا حقل domain. تصميم كامل: أعمدة stores (customDomain/status/token/ssl) + `packages/shared/custom-domain.ts` (normalize/verify نقي) + `resolveStoreByHost` + `GET /api/resolve-host` + bootstrap SPA لمضيف مخصّص. **TLS عبر Caddy on-demand مع `ask` guard** — يتطلب تعديل `Caddyfile` + DNS (CNAME→stores.haastores.com→72.61.108.208) = **يحتاج موافقتك الصريحة (CLAUDE.md)**. الجهد ≈ 7-11 يوم. مخاطر: domain takeover, cert-exhaustion DoS, host-header injection (محلولة بالتصميم).
