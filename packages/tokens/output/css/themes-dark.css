@@ -11,12 +11,13 @@
   --text-tertiary: #636366;
   --text-disabled: #48484a;
   --text-inverse: #1d1d1f;
-  --text-link: #0a84ff;
-  --text-link-hover: #409cff;
+  --text-link: #7db4e0;
+  --text-link-hover: #9cc6e8;
   --border-default: #38383a;
   --border-hover: #48484a;
-  --border-focus: #0a84ff;
+  --border-focus: #7db4e0;
   --border-disabled: #2c2c2e;
+  --border-subtle: #38383a;
   --divider: #38383a;
   --shadow-color: rgb(0 0 0 / 0.5);
   --shadow-colorStrong: rgb(0 0 0 / 0.7);
