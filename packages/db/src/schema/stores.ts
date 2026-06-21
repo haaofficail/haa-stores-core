@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, integer, timestamp, boolean, text, decimal, jsonb, unique } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, integer, timestamp, boolean, text, decimal, jsonb, unique, uniqueIndex } from 'drizzle-orm/pg-core';
 import { tenants } from './tenants.js';
 
 export const stores = pgTable('stores', {
@@ -35,10 +35,18 @@ export const stores = pgTable('stores', {
     terms?: string;
     contact?: string;
   }>(),
+  // ربط دومين خارجي (QA Custom Domain): النطاق العاري المُطبّع + حالة التحقّق
+  customDomain: varchar('custom_domain', { length: 253 }),
+  customDomainStatus: varchar('custom_domain_status', { length: 20 }).notNull().default('none')
+    .$type<'none' | 'pending' | 'verifying' | 'active' | 'failed'>(),
+  customDomainToken: varchar('custom_domain_token', { length: 64 }),
+  customDomainVerifiedAt: timestamp('custom_domain_verified_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({
   uniqueSlug: unique().on(table.slug),
+  // دومين مخصّص فريد عالمياً (يمنع اختطاف دومين متجرٍ آخر) — جزئي ليسمح بـ NULL متعدّد
+  uniqueCustomDomain: uniqueIndex('stores_custom_domain_uniq').on(table.customDomain),
 }));
 
 export const storeSettings = pgTable('store_settings', {

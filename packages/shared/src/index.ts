@@ -10,3 +10,4 @@ export * from './demo/demo-rules.js';
 export * from './restricted-categories.js';
 export * from './dto/storefront-dto.js';
 export * from './store-identity.js';
+export * from './custom-domain.js';

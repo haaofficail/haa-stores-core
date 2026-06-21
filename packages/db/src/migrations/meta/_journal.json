@@ -477,6 +477,13 @@
       "when": 1782000067000,
       "tag": "0071_loyalty",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1782000068000,
+      "tag": "0072_custom_domain",
+      "breakpoints": true
     }
   ]
 }
