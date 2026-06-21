@@ -86,7 +86,7 @@ export { PixelService } from './pixels.js';
 export type { PixelConfig } from './pixels.js';
 export { AbandonedCartCampaignService } from './abandoned-cart-campaigns.js';
 export type { CampaignInput, RecoveryStats } from './abandoned-cart-campaigns.js';
-export { WhatsAppCampaignService, classifyInboundMessage, significantDigits } from './whatsapp-campaigns.js';
+export { WhatsAppCampaignService, classifyInboundMessage, significantDigits, mapDeliveryStatus } from './whatsapp-campaigns.js';
 export type { CreateCampaignInput } from './whatsapp-campaigns.js';
 export { OutboundWebhookService } from './outbound-webhook.js';
 export { ShipmentsService } from './shipments-service.js';

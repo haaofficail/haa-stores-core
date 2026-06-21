@@ -192,6 +192,68 @@ export class WhatsAppCampaignService {
     return { action: 'opt_in', matched: matchedIds.length };
   }
 
+  /**
+   * سجّل إيصال تسليم/قراءة وارد من المزوّد (QA WA5).
+   * يطابق بالـ messageId. تقدّمي فقط: لا يتراجع read→delivered ولا يلمس الفاشل.
+   * يحدّث عدّادات الحملة عند أول انتقال لكل حالة (لتفادي العدّ المزدوج عند تكرار الإيصال).
+   * @returns هل طُوبق سجلٌ وحالته الجديدة.
+   */
+  async recordDeliveryStatus(input: { messageId: string; status: 'delivered' | 'read' | 'failed' }): Promise<{
+    matched: boolean;
+    status?: string;
+  }> {
+    const messageId = (input.messageId || '').trim();
+    if (!messageId) return { matched: false };
+
+    const [send] = await this.db.select().from(s.whatsappCampaignSends)
+      .where(eq(s.whatsappCampaignSends.messageId, messageId)).limit(1);
+    if (!send) return { matched: false };
+
+    const RANK: Record<string, number> = { pending: 0, sent: 1, delivered: 2, read: 3 };
+    const now = new Date();
+
+    if (input.status === 'failed') {
+      // علّم فشلاً فقط إن لم يكن قد وصل/قُرئ أصلاً
+      if (send.status === 'delivered' || send.status === 'read') return { matched: true, status: send.status };
+      await this.db.update(s.whatsappCampaignSends)
+        .set({ status: 'failed' })
+        .where(eq(s.whatsappCampaignSends.id, send.id));
+      await this.db.update(s.whatsappCampaigns)
+        .set({ failedCount: sql`${s.whatsappCampaigns.failedCount} + 1`, updatedAt: now })
+        .where(eq(s.whatsappCampaigns.id, send.campaignId));
+      return { matched: true, status: 'failed' };
+    }
+
+    // تقدّمي فقط: تجاهل الإيصال إن كانت الحالة الحالية أحدث أو مساوية
+    if ((RANK[send.status] ?? 0) >= RANK[input.status]) {
+      return { matched: true, status: send.status };
+    }
+
+    const patch: Record<string, unknown> = { status: input.status };
+    if (input.status === 'delivered') patch.deliveredAt = now;
+    if (input.status === 'read') {
+      patch.readAt = now;
+      if (!send.deliveredAt) patch.deliveredAt = now; // القراءة تستلزم التسليم
+    }
+
+    await this.db.update(s.whatsappCampaignSends).set(patch)
+      .where(eq(s.whatsappCampaignSends.id, send.id));
+
+    // حدّث عدّادات الحملة عند أول انتقال لكل حالة
+    const campaignPatch: Record<string, unknown> = { updatedAt: now };
+    const crossedDelivered = (RANK[send.status] ?? 0) < RANK.delivered; // لم يُحتسب delivered بعد
+    if (input.status === 'delivered') {
+      campaignPatch.deliveredCount = sql`${s.whatsappCampaigns.deliveredCount} + 1`;
+    } else if (input.status === 'read') {
+      campaignPatch.readCount = sql`${s.whatsappCampaigns.readCount} + 1`;
+      if (crossedDelivered) campaignPatch.deliveredCount = sql`${s.whatsappCampaigns.deliveredCount} + 1`;
+    }
+    await this.db.update(s.whatsappCampaigns).set(campaignPatch)
+      .where(eq(s.whatsappCampaigns.id, send.campaignId));
+
+    return { matched: true, status: input.status };
+  }
+
   private async resolveRecipients(
     storeId: number,
     _segmentType?: CustomerSegmentType,
@@ -240,6 +302,18 @@ export function classifyInboundMessage(body: string | null | undefined): 'opt_ou
   if (OPT_OUT_KEYWORDS.has(firstWord)) return 'opt_out';
   if (OPT_IN_KEYWORDS.has(firstWord)) return 'opt_in';
   return 'none';
+}
+
+/**
+ * طابِق حالة تسليم المزوّد إلى تصنيفنا (QA WA5).
+ * يغطّي تسميات Unifonic/WhatsApp الشائعة. يعيد null لما لا يُعرف (يُتجاهل).
+ */
+export function mapDeliveryStatus(raw: string | null | undefined): 'delivered' | 'read' | 'failed' | null {
+  const v = (raw || '').trim().toLowerCase();
+  if (['delivered', 'delivery', 'deliveredtohandset', 'dlvrd'].includes(v)) return 'delivered';
+  if (['read', 'seen'].includes(v)) return 'read';
+  if (['failed', 'undelivered', 'undeliverable', 'rejected', 'error', 'expired'].includes(v)) return 'failed';
+  return null;
 }
 
 function interpolateTemplate(template: string, vars: Record<string, string>): string {

@@ -463,6 +463,13 @@
       "when": 1782000065000,
       "tag": "0069_whatsapp_consent",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1782000066000,
+      "tag": "0070_whatsapp_delivery",
+      "breakpoints": true
     }
   ]
 }

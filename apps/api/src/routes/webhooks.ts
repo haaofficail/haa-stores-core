@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { timingSafeEqual } from 'node:crypto';
-import { PaymentWebhookService, type PaymentWebhookResult, WhatsAppCampaignService } from '@haa/commerce-core';
+import { PaymentWebhookService, type PaymentWebhookResult, WhatsAppCampaignService, mapDeliveryStatus } from '@haa/commerce-core';
 import type { ProviderCode } from '@haa/shared';
 
 const webhooksRouter = new Hono();
@@ -103,6 +103,49 @@ webhooksRouter.post('/whatsapp/inbound', async (c) => {
   }
 
   const result = await new WhatsAppCampaignService().processInboundMessage({ phone, body });
+  return c.json({ success: true, data: result });
+});
+
+/**
+ * WhatsApp delivery receipts — POST /webhooks/whatsapp/status  (QA WA5)
+ *
+ * يستقبل إيصالات التسليم/القراءة (DLR) من المزوّد ويحدّث حالة الإرسال
+ * وعدّادات الحملة. نفس حماية التوكن بزمن ثابت و fail-closed مثل inbound.
+ */
+webhooksRouter.post('/whatsapp/status', async (c) => {
+  const expected = process.env.WHATSAPP_WEBHOOK_SECRET;
+  if (!expected) {
+    return c.json({ success: false, error: { code: 'webhook_disabled', message: 'WhatsApp status webhook not configured' } }, 503);
+  }
+
+  const provided = c.req.header('x-webhook-token') || c.req.query('token') || '';
+  if (!tokenMatches(provided, expected)) {
+    return c.json({ success: false, error: { code: 'unauthorized', message: 'Invalid webhook token' } }, 401);
+  }
+
+  let payload: Record<string, unknown> = {};
+  try {
+    payload = (await c.req.json()) as Record<string, unknown>;
+  } catch {
+    return c.json({ success: false, error: { code: 'bad_request', message: 'Invalid JSON' } }, 400);
+  }
+
+  const pick = (...keys: string[]): string => {
+    for (const k of keys) {
+      const v = payload[k] ?? payload[k.toLowerCase()] ?? payload[k.toUpperCase()];
+      if (typeof v === 'string' && v.trim()) return v.trim();
+    }
+    return '';
+  };
+
+  const messageId = pick('MessageID', 'messageId', 'message_id', 'id');
+  const status = mapDeliveryStatus(pick('Status', 'status', 'event', 'MessageStatus'));
+
+  if (!messageId || !status) {
+    return c.json({ success: true, data: { matched: false } });
+  }
+
+  const result = await new WhatsAppCampaignService().recordDeliveryStatus({ messageId, status });
   return c.json({ success: true, data: result });
 });
 

@@ -49,6 +49,8 @@ export const whatsappCampaigns = pgTable('whatsapp_campaigns', {
   totalRecipients: integer('total_recipients').default(0),
   sentCount: integer('sent_count').default(0),
   failedCount: integer('failed_count').default(0),
+  deliveredCount: integer('delivered_count').default(0),
+  readCount: integer('read_count').default(0),
   scheduledAt: timestamp('scheduled_at'),
   startedAt: timestamp('started_at'),
   completedAt: timestamp('completed_at'),
@@ -61,13 +63,16 @@ export const whatsappCampaignSends = pgTable('whatsapp_campaign_sends', {
   campaignId: integer('campaign_id').notNull().references(() => whatsappCampaigns.id, { onDelete: 'cascade' }),
   customerId: integer('customer_id').references(() => customers.id),
   phone: varchar('phone', { length: 20 }).notNull(),
-  status: varchar('status', { length: 20 }).notNull().default('pending').$type<'pending' | 'sent' | 'failed'>(),
+  status: varchar('status', { length: 20 }).notNull().default('pending').$type<'pending' | 'sent' | 'delivered' | 'read' | 'failed'>(),
   messageId: varchar('message_id', { length: 100 }),
   errorMessage: text('error_message'),
   sentAt: timestamp('sent_at'),
+  deliveredAt: timestamp('delivered_at'),
+  readAt: timestamp('read_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (t) => ({
   campaignStatusIdx: index('wa_campaign_sends_campaign_status_idx').on(t.campaignId, t.status),
+  messageIdIdx: index('wa_campaign_sends_message_id_idx').on(t.messageId),
 }));
 
 export interface CampaignStep {
