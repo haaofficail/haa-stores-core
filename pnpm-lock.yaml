@@ -458,6 +458,9 @@ importers:
       '@haa/integration-core':
         specifier: workspace:*
         version: link:../integration-core
+      '@haa/loyalty-core':
+        specifier: workspace:*
+        version: link:../loyalty-core
       '@haa/notification-core':
         specifier: workspace:*
         version: link:../notification-core

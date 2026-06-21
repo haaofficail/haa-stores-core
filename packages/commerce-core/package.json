@@ -36,6 +36,7 @@
     "@haa/auth-core": "workspace:*",
     "@haa/db": "workspace:*",
     "@haa/integration-core": "workspace:*",
+    "@haa/loyalty-core": "workspace:*",
     "@haa/notification-core": "workspace:*",
     "@haa/payment-providers": "workspace:*",
     "@haa/shared": "workspace:*",
