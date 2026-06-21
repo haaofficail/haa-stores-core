@@ -3,7 +3,6 @@ import {
   PLATFORM_TERMS, PLATFORM_PRIVACY, PLATFORM_DATA_PROCESSING,
   PLATFORM_PROHIBITED_PRODUCTS, PLATFORM_TAKEDOWN,
   ALL_PLATFORM_LEGAL_DOCUMENTS, getPlatformLegalBySlug, getPlatformLegalById,
-  type LegalDocument,
 } from '../packages/shared/src/legal/platform-legal';
 
 describe('Platform Legal Documents', () => {

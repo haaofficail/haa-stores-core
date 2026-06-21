@@ -1,15 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-function createCountMock(total: number) {
-  const chain: any = {};
-  chain.from = vi.fn().mockReturnValue(chain);
-  chain.where = vi.fn().mockReturnValue(chain);
-  chain.innerJoin = vi.fn().mockReturnValue(chain);
-  chain.orderBy = vi.fn().mockReturnValue(chain);
-  chain.limit = vi.fn().mockResolvedValue([{ total }]);
-  return { select: vi.fn().mockReturnValue(chain) };
-}
-
 describe('LC2D — Shipping Experience', () => {
   describe('ShippingService.getOverview', () => {
     beforeEach(() => { vi.resetModules(); });

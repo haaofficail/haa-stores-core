@@ -1,6 +1,6 @@
 import { randomUUID, createHmac, timingSafeEqual } from 'crypto';
 import { mkdirSync, writeFileSync, existsSync, unlinkSync } from 'fs';
-import { join, normalize } from 'path';
+import { join } from 'path';
 import sharp from 'sharp';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 

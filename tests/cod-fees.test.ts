@@ -9,7 +9,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   type CodFeePolicy,
-  type CodFeeMode,
   COD_FEE_MODES,
   DEFAULT_COD_FEE_POLICY,
   MAX_COD_FEE_PCT,

@@ -3,7 +3,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { createDbClient } from '@haa/db';
 import { CartService } from '@haa/commerce-core';
 import { toPublicCart } from '@haa/shared/dto/storefront-dto';
 import { resolveActiveStore } from './_shared.js';

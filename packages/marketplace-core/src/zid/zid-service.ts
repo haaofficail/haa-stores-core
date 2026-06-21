@@ -413,7 +413,7 @@ export class ZidService {
     };
   }
 
-  async connect(config: Record<string, unknown>): Promise<ConnectionResult> {
+  async connect(_config: Record<string, unknown>): Promise<ConnectionResult> {
     throw new Error('Use OAuth flow to connect Zid. Call getOAuthUrl() first.');
   }
 

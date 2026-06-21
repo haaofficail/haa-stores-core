@@ -44,10 +44,6 @@ function nsColorInit(hex: string): string {
   return `NSColor(red: ${formatFloat(red)}, green: ${formatFloat(green)}, blue: ${formatFloat(blue)}, alpha: 1.0)`
 }
 
-function dynamicNSColor(lightHex: string, darkHex: string): string {
-  return `NSColor(name: nil) { appearance in\n      appearance.name == .darkAqua ? ${nsColorInit(darkHex)} : ${nsColorInit(lightHex)}\n    }`
-}
-
 interface Tokens {
   color: {
     primary: Record<string, { srgb: string }>

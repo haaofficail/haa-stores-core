@@ -10,8 +10,6 @@ import { isDemoStore, resolveStoreThemePrimaryColor } from '@haa/shared';
 import { toPublicStore } from '@haa/shared/dto/storefront-dto';
 import { resolveStore } from './_shared.js';
 
-type AnyRecord = Record<string, unknown>;
-
 export const storeInfoRouter = new Hono();
 
 storeInfoRouter.get('/:slug', async (c) => {

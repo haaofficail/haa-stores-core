@@ -3,7 +3,6 @@ import {
   PERMISSION_CATALOG,
   ROLE_PERMISSIONS,
   getPermissionsForRole,
-  type PermissionInfo,
 } from '@haa/shared';
 import type { UserRole } from '@haa/shared';
 

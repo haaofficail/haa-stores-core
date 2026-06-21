@@ -40,7 +40,7 @@ describe('LC3A — Storefront Home Experience', () => {
 
     it('does not expose cost in product list', () => {
       const product = { id: 1, name: 'Test', price: '100', cost: '50' };
-      const { cost, ...publicProduct } = product;
+      const { cost: _cost, ...publicProduct } = product;
       expect(publicProduct).not.toHaveProperty('cost');
       expect(publicProduct).toHaveProperty('price', '100');
     });

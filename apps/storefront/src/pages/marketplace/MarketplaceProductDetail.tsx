@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import {
   BadgeCheck, ChevronLeft, ChevronRight, Headphones, Heart, Info, Maximize2, Minus,
   PackageCheck, Plus, RotateCcw, Search, ShieldCheck, ShoppingBag, Store, TrendingUp, Truck,

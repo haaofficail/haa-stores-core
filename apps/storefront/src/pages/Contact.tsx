@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next';
 import { useStore } from '@/hooks/useStore';
 import { useSEO } from '@/hooks/useSEO';
 import { StoreContainer, StoreCard } from '@/components/ui';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Mail, Phone, MapPin, Clock, MessageCircle } from 'lucide-react';
 
 export default function Contact() {

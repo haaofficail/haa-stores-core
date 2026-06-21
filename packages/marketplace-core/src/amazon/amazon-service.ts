@@ -347,7 +347,7 @@ export class AmazonService {
       throw new Error('Amazon requires clientId, clientSecret, refreshToken, awsAccessKey, and awsSecretKey');
     }
 
-    const mp = this.getMarketplace(creds.marketplaceId || 'sa');
+    const _mp = this.getMarketplace(creds.marketplaceId || 'sa');
     const storedCreds: AmazonCredentials = {
       clientId: creds.clientId,
       clientSecret: creds.clientSecret,
@@ -446,7 +446,6 @@ export class AmazonService {
   }
 
   async listProducts(params?: Record<string, unknown>): Promise<ProductListing[]> {
-    const nextToken = params?.nextToken;
     const path = '/catalog/2022-04-01/items' + (params?.search ? `?keywords=${encodeURIComponent(String(params.search))}` : '');
     const data = await this.fetch<AmazonProductsResponse>('GET', path);
     return (data.payload?.products || []).map((p) => ({

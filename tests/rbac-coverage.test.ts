@@ -63,7 +63,6 @@ const DENY_LIST = new Set<string>([
   'index.ts',
 ]);
 
-const MUTATING_METHODS = ['post', 'put', 'patch', 'delete'];
 
 function walkRoutes(dir: string): string[] {
   const out: string[] = [];

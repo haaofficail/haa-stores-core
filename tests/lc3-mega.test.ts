@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 // NOTE: This is a local copy of toPublicProduct from apps/api/src/routes/storefront.ts
 // If the original changes, update this to match.
 const toPublicProduct = (product: Record<string, unknown>) => {
-  const { cost, images, createdAt, updatedAt, storeId, seoTitle, seoDescription, barcode, ...rest } = product;
+  const { cost: _cost, images, createdAt: _createdAt, updatedAt: _updatedAt, storeId: _storeId, seoTitle: _seoTitle, seoDescription: _seoDescription, barcode: _barcode, ...rest } = product;
   const imageUrls: string[] = Array.isArray(images) ? images.map((img: any) => img.url ?? img) : [];
   return { ...rest, images: imageUrls };
 };
@@ -11,7 +11,7 @@ const toPublicProduct = (product: Record<string, unknown>) => {
 // NOTE: This is a local copy of toPublicOrder from apps/api/src/routes/storefront.ts
 // If the original changes, update this to match.
 const toPublicOrder = (order: Record<string, unknown>) => {
-  const { id, storeId, checkoutSessionId, idempotencyKey, walletEntry, paymentIntentRaw, auditLogs, platformFee, customerId, createdAt, updatedAt, metadata, couponCode, couponDiscount, billingAddress, notes, ...rest } = order;
+  const { id: _id, storeId: _storeId, checkoutSessionId: _checkoutSessionId, idempotencyKey: _idempotencyKey, walletEntry: _walletEntry, paymentIntentRaw: _paymentIntentRaw, auditLogs: _auditLogs, platformFee: _platformFee, customerId: _customerId, createdAt: _createdAt, updatedAt: _updatedAt, metadata: _metadata, couponCode: _couponCode, couponDiscount: _couponDiscount, billingAddress: _billingAddress, notes: _notes, ...rest } = order;
   return rest;
 };
 
@@ -19,10 +19,10 @@ const toPublicOrder = (order: Record<string, unknown>) => {
 // If the original changes, update this to match.
 const toPublicCart = (cart: Record<string, unknown>) => {
   if (!cart) return cart;
-  const { sessionToken, isAbandoned, expiresAt, createdAt, updatedAt, ...cartRest } = cart;
+  const { sessionToken: _sessionToken, isAbandoned: _isAbandoned, expiresAt: _expiresAt, createdAt: _createdAt, updatedAt: _updatedAt, ...cartRest } = cart;
   const items = (cartRest.items as Record<string, unknown>[])?.map((item: Record<string, unknown>) => {
     if (item.product) {
-      const { cost, createdAt: pCreatedAt, updatedAt: pUpdatedAt, ...product } = item.product as Record<string, unknown>;
+      const { cost: _cost, createdAt: _pCreatedAt, updatedAt: _pUpdatedAt, ...product } = item.product as Record<string, unknown>;
       return { ...item, product };
     }
     return item;
@@ -428,7 +428,6 @@ describe('LC3 MEGA — Storefront Commerce Experience', () => {
 
     it('stores phone in sessionStorage', () => {
       const orderNumber = 'ORD-001';
-      const phone = '0500000000';
       const key = `track_phone_${orderNumber}`;
       expect(key).toBe('track_phone_ORD-001');
     });

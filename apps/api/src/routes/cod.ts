@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { OrdersService } from '@haa/commerce-core';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
-import { createDbClient } from '@haa/db';
 
 const codRouter = new Hono();
 

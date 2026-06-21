@@ -112,6 +112,7 @@ export default function Subscriptions() {
   useEffect(() => {
     if (!storeId) return;
     loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadAll recreated each render; effect intentionally runs on [storeId] only to avoid a fetch/re-run loop
   }, [storeId]);
 
   async function loadAll() {

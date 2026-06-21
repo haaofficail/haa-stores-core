@@ -6,7 +6,6 @@
  * Uses `Link` from react-router for the about-page CTA.
  */
 import { Link } from 'react-router-dom';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; ArrowLeft icon as plain JSX
 import { ArrowLeft } from 'lucide-react';
 import { StoreContainer } from '@/components/ui';
 

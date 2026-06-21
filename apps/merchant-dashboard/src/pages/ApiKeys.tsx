@@ -79,6 +79,7 @@ export default function ApiKeysPage() {
       .then(setLogs)
       .catch(() => toast.error(t('common.error', 'فشل تحميل سجل الاستخدام')))
       .finally(() => setLogsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is stable from useTranslation; effect intentionally runs on [storeId] only
   }, [storeId]);
 
   useEffect(() => {

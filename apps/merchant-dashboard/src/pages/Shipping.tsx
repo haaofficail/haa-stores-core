@@ -679,6 +679,7 @@ function ShippingStatusSection({ storeId, onTabChange }: { storeId: number; onTa
       .then(setStatus)
       .catch(() => toast.error(t('common.error', 'فشل تحميل حالة الشحن')))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is stable from useTranslation; effect intentionally runs on [storeId] only
   }, [storeId]);
 
   if (loading) return <div className="grid gap-4 md:grid-cols-4">{[1,2,3,4].map(i => <Skeleton key={i} className="h-32 rounded-3xl" />)}</div>;

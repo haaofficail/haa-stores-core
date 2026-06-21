@@ -20,7 +20,6 @@
 // uses a separate read-only surface (see wallet.ts).
 
 import { z } from 'zod';
-import { zValidator } from '@hono/zod-validator';
 import { createDbClient } from '@haa/db';
 import {
   StoreBillingSettingsService,

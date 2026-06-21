@@ -34,7 +34,7 @@ sallaRouter.get('/oauth/callback', async (c) => {
 
   try {
     const salla = getSallaService(storeId);
-    const result = await salla.handleCallback(code);
+    const _result = await salla.handleCallback(code);
     return c.redirect(`/channels/salla?connected=true`);
   } catch (error) {
     return c.redirect(`/channels/salla?error=${encodeURIComponent((error as Error).message)}`);

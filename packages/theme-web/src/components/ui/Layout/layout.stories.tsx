@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta } from '@storybook/react'
 import { Stack, Grid, Container } from '@/components/ui'
 
 const meta: Meta<typeof Stack> = {

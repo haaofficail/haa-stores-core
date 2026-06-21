@@ -1,8 +1,7 @@
-import { and, eq, gte, lte, sql, count, isNotNull } from 'drizzle-orm';
+import { and, eq, gte, lte } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { LivePresenceService } from './live-presence.js';
-import type { LivePageInfo } from '@haa/shared';
 
 const SNAPSHOT_INTERVAL_MS = 15 * 60 * 1000;
 
@@ -130,7 +129,7 @@ export class LiveSnapshotService {
   async getHistory(
     storeId: number,
     range: '24h' | '7d' = '24h',
-    interval: '15m' | '1h' = '15m'
+    _interval: '15m' | '1h' = '15m'
   ): Promise<LiveSnapshot[]> {
     const now_ = now();
     let startDate: Date;
@@ -139,11 +138,6 @@ export class LiveSnapshotService {
     } else {
       startDate = new Date(now_.getTime() - 7 * 24 * 60 * 60 * 1000);
     }
-
-    const intervalMs = interval === '15m' ? 15 * 60 * 1000 : 60 * 60 * 1000;
-    const bucketCol = interval === '15m'
-      ? sql`date_trunc('minute', ${s.liveRadarSnapshots.createdAt})`
-      : sql`date_trunc('hour', ${s.liveRadarSnapshots.createdAt})`;
 
     const rows = await this.db
       .select({

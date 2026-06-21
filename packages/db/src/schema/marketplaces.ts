@@ -1,4 +1,3 @@
-import { sql } from 'drizzle-orm';
 import { pgTable, serial, integer, varchar, boolean, timestamp, text, jsonb, decimal, uniqueIndex, index } from 'drizzle-orm/pg-core';
 import { stores } from './stores.js';
 import { products } from './products.js';

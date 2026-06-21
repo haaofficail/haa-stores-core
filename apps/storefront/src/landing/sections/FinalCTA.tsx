@@ -7,7 +7,6 @@
  * The HighlightNumbers helper is local to this section.
  */
 import { Link } from 'react-router-dom';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import {
   ArrowLeft,
   CreditCard,

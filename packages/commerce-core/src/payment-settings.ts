@@ -2,7 +2,6 @@ import { eq, and } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import type { ProviderCode } from '@haa/shared';
-import { isDemoStore } from '@haa/shared';
 import { encrypt, decrypt, redactCredential } from './encryption.js';
 export { redactCredential, isEncryptionKeySet } from './encryption.js';
 
@@ -304,8 +303,6 @@ export class PaymentProviderSettingsService {
       const mode = row?.mode ?? 'test';
       const currency = row?.currency ?? 'SAR';
       const displayNameAr = row?.displayNameAr ?? provider.ar;
-      const displayNameEn = row?.displayNameEn ?? provider.en;
-      const sortOrder = row?.sortOrder ?? 0;
       const minOrderAmount = row?.minOrderAmount ?? null;
       const maxOrderAmount = row?.maxOrderAmount ?? null;
       const configuredCountry = row?.country ?? null;

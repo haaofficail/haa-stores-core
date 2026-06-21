@@ -25,7 +25,7 @@ const productsPath = resolve(projectRoot, 'apps/api/src/routes/products.ts');
 const walletPath = resolve(projectRoot, 'apps/api/src/routes/wallet.ts');
 
 const orders = readFileSync(ordersPath, 'utf-8');
-const products = readFileSync(productsPath, 'utf-8');
+const _products = readFileSync(productsPath, 'utf-8');
 const wallet = readFileSync(walletPath, 'utf-8');
 
 describe('Audit Logging Depth (Quality Pass 3, Item 3)', () => {

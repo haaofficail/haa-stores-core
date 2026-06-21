@@ -8,7 +8,6 @@ import ThemedProductCard from '@/components/ThemedProductCard';
 import { Splide, SplideSlide } from '@splidejs/react-splide';
 import { AutoScroll } from '@splidejs/splide-extension-auto-scroll';
 import '@splidejs/react-splide/css/core';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { ArrowLeft, BadgeCheck, ChevronLeft, ChevronRight, ChevronDown, Ruler, Package } from 'lucide-react';
 import { TrustBadgesSection } from '@/components/ui/trust-badges';
 import { organizationJSONLD } from '@/lib/jsonld';

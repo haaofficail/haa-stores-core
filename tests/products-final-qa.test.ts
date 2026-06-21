@@ -474,9 +474,9 @@ describe('Scenario 6: Table/Grid UX', () => {
 
   it('switching table/grid does not lose filters', () => {
     const filters = { search: 'test', status: 'active', stock: 'in_stock', type: 'simple' };
-    let viewMode: 'table' | 'grid' = 'table';
+    let _viewMode: 'table' | 'grid' = 'table';
     // Switch to grid
-    viewMode = 'grid';
+    _viewMode = 'grid';
     // Filters are preserved
     expect(filters).toEqual({ search: 'test', status: 'active', stock: 'in_stock', type: 'simple' });
   });
@@ -678,7 +678,6 @@ describe('Scenario 8: Regression checks', () => {
   });
 
   it('archive is soft delete only', () => {
-    const action = 'archive';
     const product = { id: 1, status: 'active' };
     const archived = { ...product, status: 'archived' };
     expect(archived.status).toBe('archived');

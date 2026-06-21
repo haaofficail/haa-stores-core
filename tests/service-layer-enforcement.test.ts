@@ -83,7 +83,6 @@ describe('Quality Pass 5 — Service Layer Enforcement (Item 1)', () => {
 
     // Log for visibility — does NOT fail the test, just reports
     if (violations.length > 0) {
-      // eslint-disable-next-line no-console
       console.warn(
         `\n[Service Layer Migration Backlog] ${violations.length} route file(s) import drizzle-orm directly:\n` +
           violations.map(v => `  - ${v.file}`).join('\n') +
@@ -119,7 +118,6 @@ describe('Quality Pass 5 — Service Layer Enforcement (Item 1)', () => {
     // guarantee is the budget ceiling above.
     const routeFiles = walk(routesDir);
     const violations = routeFiles.filter(f => /from\s+['"]drizzle-orm['"]/.test(read(f)));
-    // eslint-disable-next-line no-console
     console.log(`[Service Layer] Current route → drizzle-orm violations: ${violations.length}`);
     expect(violations.length).toBeLessThanOrEqual(MAX_EXISTING_ROUTE_VIOLATIONS);
   });

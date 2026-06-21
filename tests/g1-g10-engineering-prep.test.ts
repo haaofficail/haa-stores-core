@@ -4,7 +4,7 @@
 // items G8 (hosting region), G10 (DR backup), and G6 (ASV scan
 // target config).
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 

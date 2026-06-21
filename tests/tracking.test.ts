@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 describe('Order Tracking Safety', () => {
   const toPublicOrder = (order: Record<string, unknown>) => {
-    const { id, storeId, checkoutSessionId, idempotencyKey, walletEntry, paymentIntentRaw, auditLogs, platformFee, ...rest } = order;
+    const { id: _id, storeId: _storeId, checkoutSessionId: _checkoutSessionId, idempotencyKey: _idempotencyKey, walletEntry: _walletEntry, paymentIntentRaw: _paymentIntentRaw, auditLogs: _auditLogs, platformFee: _platformFee, ...rest } = order;
     return rest;
   };
 
@@ -72,7 +72,6 @@ describe('Order Tracking Safety', () => {
 
   describe('phone verification', () => {
     it('requires phone to access tracking', () => {
-      const order = { orderNumber: 'ORD-001', customerPhone: '0500000000' };
       const inputPhone = '';
       expect(inputPhone.trim()).toBe('');
     });

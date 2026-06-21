@@ -16,7 +16,7 @@ function redactHeaders(headers: Record<string, string | string[]>): Record<strin
   return result;
 }
 
-function shouldLogBody(c: Context): boolean {
+function _shouldLogBody(c: Context): boolean {
   const path = c.req.path;
   // Skip binary / large bodies
   if (c.req.header('content-type')?.includes('multipart/form-data')) return false;
@@ -29,7 +29,7 @@ export function structuredLogger(): MiddlewareHandler {
     const start = Date.now();
     const requestId = c.get('requestId') || '-';
 
-    const reqLog: Record<string, unknown> = {
+    const _reqLog: Record<string, unknown> = {
       ts: new Date().toISOString(),
       level: 'info',
       msg: 'incoming request',

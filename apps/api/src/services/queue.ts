@@ -76,7 +76,6 @@ function tryCreateBullMqQueue(): QueueProducer | null {
     // The `as unknown` cast is the same pattern as observability.ts:
     // the package is optional and TS shouldn't reject this file when
     // it's absent.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const BullMQ = require('bullmq') as any;
 
     if (!process.env.QUEUE_REDIS_URL) return null;

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Minus, Package, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { StoreButton, StoreContainer, StoreEmptyState, StoreIconButton } from '@/components/ui';
 import { Icon } from '@/components/ui/icon';

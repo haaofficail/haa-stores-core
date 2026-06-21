@@ -27,7 +27,7 @@ describe('Products', () => {
 
     it('product cost never exposed in public', () => {
       const product = { id: 1, name: 'Test', cost: '50.00', price: '100.00' };
-      const publicDTO = (({ cost, ...rest }) => rest)(product);
+      const publicDTO = (({ cost: _cost, ...rest }) => rest)(product);
       expect(publicDTO).not.toHaveProperty('cost');
       expect(publicDTO).toHaveProperty('price', '100.00');
     });

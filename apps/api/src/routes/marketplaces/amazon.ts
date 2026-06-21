@@ -32,7 +32,7 @@ amazonRouter.get('/oauth/callback', async (c) => {
   }
 
   try {
-    const result = await getAmazonService(storeId).handleCallback(code, marketplaceId);
+    const _result = await getAmazonService(storeId).handleCallback(code, marketplaceId);
     return c.redirect(`/channels/amazon?connected=true`);
   } catch (error) {
     return c.redirect(`/channels/amazon?error=${encodeURIComponent((error as Error).message)}`);

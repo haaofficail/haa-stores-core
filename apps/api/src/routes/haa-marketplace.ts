@@ -5,12 +5,6 @@ import { zValidator } from '@hono/zod-validator';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { paginationSchema, validateProductForMarketplace, type SfdaValidation } from '@haa/shared';
-import {
-  isDemoStore,
-  shouldShowInMarketplace,
-  shouldUseDemoMarketplaceOrderFlow,
-  isMarketplaceOrderMixedWithDemo,
-} from '@haa/shared';
 
 const haaMarketplaceRouter = new Hono();
 

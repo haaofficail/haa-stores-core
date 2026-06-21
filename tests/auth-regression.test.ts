@@ -103,7 +103,6 @@ describe('Auth P0/P1 Regression Tests', () => {
       const user = { id: 1, tokenVersion: 0 };
       mockDb.users.push(user);
 
-      const userId = 1;
       // Simulate token version increment
       user.tokenVersion = (user.tokenVersion || 0) + 1;
 

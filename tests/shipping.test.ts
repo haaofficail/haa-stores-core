@@ -14,7 +14,7 @@ describe('Shipping', () => {
   describe('tracking DTO safety', () => {
     it('public tracking response does not leak shipment internal id', () => {
       const shipment = { id: 5, storeId: 1, orderId: 10, trackingNumber: 'TRK-001', carrierName: 'DHL', internalNotes: 'handle with care' };
-      const publicDTO = (({ id, storeId, internalNotes, ...rest }) => rest)(shipment);
+      const publicDTO = (({ id: _id, storeId: _storeId, internalNotes: _internalNotes, ...rest }) => rest)(shipment);
       expect(publicDTO).not.toHaveProperty('id');
       expect(publicDTO).not.toHaveProperty('storeId');
       expect(publicDTO).not.toHaveProperty('internalNotes');
@@ -23,13 +23,13 @@ describe('Shipping', () => {
 
     it('public tracking does not expose raw provider payload', () => {
       const tracking = { trackingNumber: 'TRK-001', rawProviderResponse: { status: 'delivered', raw: '...' } };
-      const safe = (({ rawProviderResponse, ...rest }) => rest)(tracking);
+      const safe = (({ rawProviderResponse: _rawProviderResponse, ...rest }) => rest)(tracking);
       expect(safe).not.toHaveProperty('rawProviderResponse');
     });
 
     it('public tracking does not expose webhook data', () => {
       const tracking = { trackingNumber: 'TRK-001', webhookData: { event: 'delivered', timestamp: '...' } };
-      const safe = (({ webhookData, ...rest }) => rest)(tracking);
+      const safe = (({ webhookData: _webhookData, ...rest }) => rest)(tracking);
       expect(safe).not.toHaveProperty('webhookData');
     });
   });

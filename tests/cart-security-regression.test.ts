@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 
 const cartServiceSource = readFileSync(new URL('../packages/commerce-core/src/cart.ts', import.meta.url), 'utf-8');
 const storefrontCartRoutesSource = readFileSync(new URL('../apps/api/src/routes/storefront/cart.ts', import.meta.url), 'utf-8');
-const storefrontCheckoutRoutesSource = readFileSync(new URL('../apps/api/src/routes/storefront/checkout.ts', import.meta.url), 'utf-8');
 const merchantCartRoutesSource = readFileSync(new URL('../apps/api/src/routes/cart.ts', import.meta.url), 'utf-8');
 
 describe('Cart tenant and inventory regression', () => {

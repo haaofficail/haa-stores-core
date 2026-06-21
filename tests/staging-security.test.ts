@@ -75,7 +75,7 @@ describe('P0A — Staging Security', () => {
       const originalNodeEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'production';
 
-      const err = new Error('Secret DB crash: connection refused');
+      const _err = new Error('Secret DB crash: connection refused');
       const formatted = {
         success: false,
         error: { code: 'INTERNAL_ERROR', message: 'Internal server error' },

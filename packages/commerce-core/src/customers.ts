@@ -1,4 +1,4 @@
-import { eq, and, count, like, or, sql } from 'drizzle-orm';
+import { eq, and, count, like, or } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 

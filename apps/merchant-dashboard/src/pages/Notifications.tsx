@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- icons passed through <Icon> wrapper
 import { Bell, Mail, MessageSquare, Smartphone, Save, Loader2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api';

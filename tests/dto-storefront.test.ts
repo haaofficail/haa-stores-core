@@ -7,7 +7,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 const dtoPath = resolve(projectRoot, 'packages/shared/src/dto/storefront-dto.ts');
 
-const splitFiles = [
+const _splitFiles = [
   'apps/api/src/routes/storefront/cart.ts',
   'apps/api/src/routes/storefront/products.ts',
   'apps/api/src/routes/storefront/checkout.ts',

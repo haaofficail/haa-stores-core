@@ -1,4 +1,4 @@
-import { eq, and, count, isNull, inArray, sql, ne } from "drizzle-orm";
+import { eq, and, count, isNull, inArray, ne } from "drizzle-orm";
 import { createDbClient, type DbClient } from "@haa/db";
 import * as s from "@haa/db/schema";
 import { createShippingProvider } from "./factory.js";

@@ -6,7 +6,6 @@ import {
   StoreContainer, StoreCard, StoreInput, StoreButton, StoreBadge,
   StoreSkeleton,
 } from '@/components/ui';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Package, Truck, CheckCircle, Clock, ArrowLeft, MapPin, CreditCard, ShoppingBag, Store, Gift, Phone, FileText } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { SarIcon } from '@/components/ui/SarIcon';
@@ -70,6 +69,7 @@ export default function TrackOrderResult() {
       setLoading(false);
     }
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t is stable from useTranslation; effect intentionally runs on [slug, orderNumber] only
   }, [slug, orderNumber]);
 
   const handleTrack = async () => {

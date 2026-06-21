@@ -78,6 +78,7 @@ export default function SupportTicketDetail() {
     if (ticket) {
       scrollToBottom();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- scroll should fire only when ticket.id changes
   }, [ticket?.id]);
 
   async function updateStatus(status: string) {

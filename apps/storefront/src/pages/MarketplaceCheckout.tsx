@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-// eslint-disable-next-line no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { ArrowLeft, CheckCircle2, CreditCard, Package, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { cartApi, checkoutApi, haaMarketplaceApi, type CheckoutConfirm } from '@/lib/api';

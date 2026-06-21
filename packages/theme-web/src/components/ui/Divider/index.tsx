@@ -9,7 +9,7 @@ interface DividerProps extends ComponentPropsWithoutRef<'hr'> {
 }
 
 export const Divider = forwardRef<ElementRef<'hr'>, DividerProps>(
-  ({ weight = 'default', style, ...props }, ref) => {
+  ({ weight: _weight = 'default', style, ...props }, ref) => {
     return (
       <hr
         ref={ref}

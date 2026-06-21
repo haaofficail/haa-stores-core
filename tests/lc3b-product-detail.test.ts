@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 // NOTE: This is a local copy of toPublicProduct from apps/api/src/routes/storefront.ts
 // If the original changes, update this to match.
 const toPublicProduct = (product: Record<string, unknown>) => {
-  const { cost, images, createdAt, updatedAt, storeId, seoTitle, seoDescription, barcode, ...rest } = product;
+  const { cost: _cost, images, createdAt: _createdAt, updatedAt: _updatedAt, storeId: _storeId, seoTitle: _seoTitle, seoDescription: _seoDescription, barcode: _barcode, ...rest } = product;
   const imageUrls: string[] = Array.isArray(images) ? images.map((img: any) => img.url ?? img) : [];
   return { ...rest, images: imageUrls };
 };

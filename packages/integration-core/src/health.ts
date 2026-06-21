@@ -15,7 +15,7 @@ export class HealthCheckService {
   constructor(private db: DbClient = createDbClient()) {}
 
   async check(): Promise<HealthStatus> {
-    const start = Date.now();
+    const _start = Date.now();
     const results: HealthStatus['checks'] = {
       api: { status: 'up' },
       database: { status: 'down', latency: 0 },

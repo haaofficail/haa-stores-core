@@ -4,9 +4,9 @@ import { Hono } from 'hono';
 import { eq, and, asc } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
-import { ProductsService, CategoriesService, BrandsService, TagsService, PromotionsService } from '@haa/commerce-core';
+import { ProductsService, PromotionsService } from '@haa/commerce-core';
 import { paginationSchema } from '@haa/shared';
-import { toPublicProduct, toPublicProducts, toPublicCategory } from '@haa/shared/dto/storefront-dto';
+import { toPublicProduct, toPublicCategory } from '@haa/shared/dto/storefront-dto';
 import { resolveActiveStore, getOfferEndDate } from './_shared.js';
 
 type AnyRecord = Record<string, unknown>;

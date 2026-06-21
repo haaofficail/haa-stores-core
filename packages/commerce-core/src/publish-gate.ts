@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { AuditLogService } from '@haa/integration-core';
-import { ComplianceChecklistService, type ComplianceCheckInput } from './compliance-checklist.js';
+import { ComplianceChecklistService } from './compliance-checklist.js';
 import { AcknowledgementService, type AcknowledgementStatus } from './acknowledgement.js';
 import type { PublishStatus, ComplianceCheckResult } from '@haa/shared';
 

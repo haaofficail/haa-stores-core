@@ -7,7 +7,7 @@
 type AnyRecord = Record<string, unknown>;
 
 export function toPublicProduct(product: AnyRecord): AnyRecord {
-  const { cost, images, createdAt, updatedAt, storeId, seoTitle, seoDescription, barcode, ...rest } = product;
+  const { cost: _cost, images, createdAt: _createdAt, updatedAt: _updatedAt, storeId: _storeId, seoTitle: _seoTitle, seoDescription: _seoDescription, barcode: _barcode, ...rest } = product;
   const imageUrls: string[] = Array.isArray(images)
     ? images.map((img: any) => {
         if (typeof img === 'string') return img;
@@ -27,14 +27,14 @@ export function toPublicProducts(products: AnyRecord[]): AnyRecord[] {
 }
 
 export function toPublicStore(store: AnyRecord, contactChannels?: AnyRecord): AnyRecord {
-  const { tenantId, createdAt, updatedAt, demoProfile, demoSeedVersion, ...rest } = store;
+  const { tenantId: _tenantId, createdAt: _createdAt, updatedAt: _updatedAt, demoProfile: _demoProfile, demoSeedVersion: _demoSeedVersion, ...rest } = store;
   return { ...rest, isDemo: store.isDemo ?? false, contactChannels };
 }
 
 export function toPublicOrder(order: AnyRecord): AnyRecord {
-  const { id, storeId, checkoutSessionId, idempotencyKey, walletEntry, paymentIntentRaw, auditLogs, platformFee, customerId, createdAt, updatedAt, metadata, couponCode, couponDiscount, billingAddress, notes, paidAmount, discount, customerEmail, ...rest } = order;
+  const { id: _id, storeId: _storeId, checkoutSessionId: _checkoutSessionId, idempotencyKey: _idempotencyKey, walletEntry: _walletEntry, paymentIntentRaw: _paymentIntentRaw, auditLogs: _auditLogs, platformFee: _platformFee, customerId: _customerId, createdAt: _createdAt, updatedAt: _updatedAt, metadata: _metadata, couponCode: _couponCode, couponDiscount: _couponDiscount, billingAddress: _billingAddress, notes: _notes, paidAmount: _paidAmount, discount: _discount, customerEmail: _customerEmail, ...rest } = order;
   const items = (rest.items as AnyRecord[])?.map((item: AnyRecord) => {
-    const { id, orderId, createdAt, updatedAt, ...itemRest } = item;
+    const { id: _id, orderId: _orderId, createdAt: _createdAt, updatedAt: _updatedAt, ...itemRest } = item;
     return {
       ...itemRest,
       giftWrapSelected: item.giftWrapSelected ?? false,
@@ -53,7 +53,7 @@ export function toPublicOrder(order: AnyRecord): AnyRecord {
 
 export function toPublicCart(cart: AnyRecord): AnyRecord {
   if (!cart) return cart;
-  const { sessionToken, isAbandoned, expiresAt, createdAt, updatedAt, ...cartRest } = cart;
+  const { sessionToken: _sessionToken, isAbandoned: _isAbandoned, expiresAt: _expiresAt, createdAt: _createdAt, updatedAt: _updatedAt, ...cartRest } = cart;
   const items = (cartRest.items as AnyRecord[])?.map((item: AnyRecord) => {
     const cartItem = (item.item && typeof item.item === 'object' ? item.item : item) as AnyRecord;
     const productSource = item.product as AnyRecord | undefined;
@@ -80,16 +80,16 @@ export function toPublicCart(cart: AnyRecord): AnyRecord {
 }
 
 export function toPublicCategory(category: AnyRecord): AnyRecord {
-  const { storeId, tenantId, parentId, metaDescription, createdAt, updatedAt, ...rest } = category;
+  const { storeId: _storeId, tenantId: _tenantId, parentId: _parentId, metaDescription: _metaDescription, createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = category;
   return rest;
 }
 
 export function toPublicShippingMethod(method: AnyRecord): AnyRecord {
-  const { storeId, providerAccountId, config, sortOrder, createdAt, updatedAt, ...rest } = method;
+  const { storeId: _storeId, providerAccountId: _providerAccountId, config: _config, sortOrder: _sortOrder, createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = method;
   return rest;
 }
 
 export function toPublicPolicy(policy: AnyRecord): AnyRecord {
-  const { storeId, id, createdBy, updatedBy, createdAt, updatedAt, ...rest } = policy;
+  const { storeId: _storeId, id: _id, createdBy: _createdBy, updatedBy: _updatedBy, createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = policy;
   return rest;
 }

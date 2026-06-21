@@ -2,10 +2,6 @@ import type { CSSProperties } from 'react'
 
 export type LogicalSide = 'start' | 'end'
 
-const rtlMap: Record<string, Record<string, string>> = {
-  // Physical → Logical (handled via CSS logical properties)
-}
-
 /**
  * Maps a physical CSS value to its logical equivalent for the current direction.
  * Uses CSS logical properties which automatically respect the dir attribute.

@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { db } from '../tests/setup.js';
 
 describe('Saudi Policy Generator', () => {
   it('generates privacy policy with complete data', async () => {

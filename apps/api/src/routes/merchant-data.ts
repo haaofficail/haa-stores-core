@@ -22,7 +22,7 @@
 //   - No 2FA confirmation step for deletion (TODO for Session #3+)
 
 import { Hono } from 'hono';
-import { eq, and, desc, inArray } from 'drizzle-orm';
+import { eq, desc, inArray } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';

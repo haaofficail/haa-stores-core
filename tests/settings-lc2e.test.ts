@@ -162,7 +162,7 @@ describe('LC2E — Settings & Store Setup', () => {
 
     it('public store data should not include financial data', () => {
       const store = { id: 1, name: 'Test', balance: '1000', totalSales: '5000' };
-      const { balance, totalSales, ...publicStore } = store;
+      const { balance: _balance, totalSales: _totalSales, ...publicStore } = store;
       expect(publicStore).not.toHaveProperty('balance');
       expect(publicStore).not.toHaveProperty('totalSales');
     });
