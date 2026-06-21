@@ -67,10 +67,10 @@ export default function Fake3DSChallengePage() {
     <div id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 overflow-x-hidden" dir="rtl">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
         {/* Bank-style header */}
-        <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white p-6 text-center">
-          <Icon icon={ShieldCheck} size="xl" className="mx-auto mb-3 text-blue-200" />
+        <div className="bg-gradient-to-r from-primary-700 to-primary-900 text-white p-6 text-center">
+          <Icon icon={ShieldCheck} size="xl" className="mx-auto mb-3 text-primary-200" />
           <h1 className="text-xl font-bold mb-1">3-D Secure Verification</h1>
-          <p className="text-xs text-blue-200 font-mono uppercase tracking-wider">{DEV_NOTICE}</p>
+          <p className="text-xs text-primary-200 font-mono uppercase tracking-wider">{DEV_NOTICE}</p>
         </div>
 
         {/* Challenge body */}
@@ -100,7 +100,7 @@ export default function Fake3DSChallengePage() {
               type="text"
               placeholder="••••"
               maxLength={6}
-              className="w-full px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
+              className="w-full px-4 py-3 text-center text-2xl font-mono tracking-[0.5em] border-2 border-slate-200 rounded-xl focus:border-primary-500 focus:outline-none"
               disabled={submitting}
               readOnly
               value="123456"
@@ -116,7 +116,7 @@ export default function Fake3DSChallengePage() {
             <button
               onClick={() => handleSubmit(true)}
               disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white font-bold py-4 rounded-xl transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-success hover:bg-success disabled:bg-slate-300 text-white font-bold py-4 rounded-xl transition-colors"
               data-testid="fake-3ds-succeed"
             >
               {submitting ? (
@@ -134,7 +134,7 @@ export default function Fake3DSChallengePage() {
             <button
               onClick={() => handleSubmit(false)}
               disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 bg-white hover:bg-red-50 disabled:bg-slate-100 text-red-600 font-semibold py-3 rounded-xl border-2 border-red-200 hover:border-red-400 transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-white hover:bg-danger-soft disabled:bg-slate-100 text-danger font-semibold py-3 rounded-xl border-2 border-danger hover:border-danger transition-colors"
               data-testid="fake-3ds-fail"
             >
               <Icon icon={XCircle} size="md" />
@@ -146,7 +146,7 @@ export default function Fake3DSChallengePage() {
           <div className="text-center text-xs text-slate-400 pt-3 border-t border-slate-100 space-y-1">
             <p>تأمين SAMA 3-D Secure — يحمي بياناتك ضد الاحتيال</p>
             <p>SAMA-compliant 3DS protection against fraud</p>
-            <Link to="/" className="text-blue-600 hover:underline">
+            <Link to="/" className="text-primary-600 hover:underline">
               العودة للمتجر / Back to store
             </Link>
           </div>

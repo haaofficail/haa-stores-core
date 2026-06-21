@@ -43,7 +43,7 @@ export function MarketplaceProductCard({
   return (
     <div className={`relative ${className}`}>
       {product.isDemoStore && (
-        <span className="absolute top-2 end-2 z-20 inline-flex h-[18px] shrink-0 items-center gap-0.5 rounded-md bg-amber-50 border border-amber-200 px-1.5 text-xs font-bold text-amber-700 leading-none pointer-events-none">
+        <span className="absolute top-2 end-2 z-20 inline-flex h-[18px] shrink-0 items-center gap-0.5 rounded-md bg-warning-soft border border-warning-soft px-1.5 text-xs font-bold text-warning leading-none pointer-events-none">
           <Info className="h-2.5 w-2.5" />
           متجر تجريبي
         </span>

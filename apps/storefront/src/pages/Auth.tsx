@@ -29,11 +29,11 @@ import { ApiClientError as ApiError } from '@/lib/api';
 
 /* ─── Merchant avatar stack (decorative) ─── */
 const AVATAR_COLORS = [
-  'from-blue-400 to-blue-600',
-  'from-emerald-400 to-emerald-600',
-  'from-violet-400 to-violet-600',
-  'from-orange-400 to-orange-600',
-  'from-rose-400 to-rose-600',
+  'from-primary-400 to-primary-600',
+  'from-primary-200 to-primary-400',
+  'from-primary-600 to-primary-800',
+  'from-primary-300 to-primary-500',
+  'from-primary-500 to-primary-700',
 ];
 const AVATAR_INITIALS = ['م', 'س', 'ف', 'ن', 'خ'];
 

@@ -294,7 +294,7 @@ export default function ProductDetail() {
           storefront. P1-#4 disclosure is reinforced: the merchant
           is the seller, not Haa. */}
       {cartSource === 'haa_marketplace' && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center text-xs sm:text-sm text-amber-900" role="status">
+        <div className="bg-warning-soft border-b border-warning-soft px-4 py-2 text-center text-xs sm:text-sm text-warning" role="status">
           <span className="font-semibold">جاي من سوق هاء؟</span>
           {' '}أنت الآن في متجر التاجر. الطلب من هذا المتجر مباشرةً، وليس من منصة هاء.
         </div>

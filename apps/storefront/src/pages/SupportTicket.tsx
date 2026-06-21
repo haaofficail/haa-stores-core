@@ -15,10 +15,10 @@ const statusLabels: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  open: 'bg-blue-100 text-blue-700',
-  in_progress: 'bg-amber-100 text-amber-700',
-  waiting_on_customer: 'bg-purple-100 text-purple-700',
-  resolved: 'bg-green-100 text-green-700',
+  open: 'bg-primary-100 text-primary-700',
+  in_progress: 'bg-warning-soft text-warning',
+  waiting_on_customer: 'bg-primary-100 text-primary-700',
+  resolved: 'bg-success-soft text-success',
   closed: 'bg-neutral-100 text-neutral-500',
 };
 
@@ -189,13 +189,13 @@ export default function SupportTicket() {
             placeholder={t('support.replyPlaceholder', 'اكتب ردك هنا...')}
           />
           {replySent && (
-            <p className="text-sm text-green-600 mb-3 flex items-center gap-1.5">
+            <p className="text-sm text-success mb-3 flex items-center gap-1.5">
               <CheckCircle className="h-4 w-4" />
               {t('support.replySent', 'تم إرسال ردك بنجاح')}
             </p>
           )}
           {replyError && (
-            <p className="text-sm text-red-600 mb-3">{replyError}</p>
+            <p className="text-sm text-danger mb-3">{replyError}</p>
           )}
           <button
             type="submit" disabled={sending || !reply.trim()}

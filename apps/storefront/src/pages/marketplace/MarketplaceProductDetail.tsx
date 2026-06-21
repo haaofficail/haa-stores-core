@@ -207,7 +207,7 @@ export default function MarketplaceProductDetail() {
           {/* ═══ Gallery ═══ */}
           <div className="min-w-0">
             <div className="relative overflow-hidden rounded-xl bg-white ring-1 ring-gray-100">
-              <button type="button" aria-label="حفظ المنتج" className="absolute top-3 end-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-400 shadow-sm hover:text-rose-500 transition-colors">
+              <button type="button" aria-label="حفظ المنتج" className="absolute top-3 end-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-white text-gray-400 shadow-sm hover:text-danger transition-colors">
                 <Icon icon={Heart} size="2xs" />
               </button>
               {activeImage && (
@@ -280,7 +280,7 @@ export default function MarketplaceProductDetail() {
                 <RatingStars rating={product.rating} count={product.reviewCount} size="3xs" />
               )}
               <span className="inline-flex items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs font-bold text-gray-600 ring-1 ring-gray-100">
-                <TrendingUp className="h-3 w-3 text-emerald-600" />
+                <TrendingUp className="h-3 w-3 text-success" />
                 {product.salesCount != null && product.salesCount > 0 ? product.salesCount : 0}+ مبيع
               </span>
             </div>
@@ -301,7 +301,7 @@ export default function MarketplaceProductDetail() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <p className="text-xs font-extrabold text-black">خذها الآن</p>
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-extrabold text-emerald-700 ring-1 ring-emerald-100">بدون فوائد</span>
+                      <span className="rounded-full bg-success-soft px-2 py-0.5 text-xs font-extrabold text-success ring-1 ring-success-soft">بدون فوائد</span>
                     </div>
                     <p className="mt-0.5 text-xs font-bold text-gray-500">قسّمها على 4 دفعات مع تابي أو تمارا</p>
                   </div>
@@ -391,7 +391,7 @@ export default function MarketplaceProductDetail() {
               </div>
             )}
             {isDemoStore && (
-              <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-bold text-amber-700">
+              <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-warning-soft border border-warning-soft px-2 py-0.5 text-xs font-bold text-warning">
                 <Info className="h-3 w-3" />
                 متجر تجريبي
               </div>

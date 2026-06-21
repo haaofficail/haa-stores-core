@@ -33,7 +33,7 @@ export function Footer({ t }: { t: TFn }) {
             )}
             <span className="font-extrabold text-text-primary">متاجر هاء</span>
             <span className="hidden text-text-tertiary/50 sm:inline select-none" aria-hidden="true">·</span>
-            <span className="flex items-center gap-1 text-sm font-medium text-emerald-700">
+            <span className="flex items-center gap-1 text-sm font-medium text-success">
               <span>صنع في السعودية</span>
               <img src="/assets/saudi-map.png" alt="" className="h-5 w-auto" aria-hidden="true" />
             </span>

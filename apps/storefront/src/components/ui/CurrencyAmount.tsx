@@ -57,7 +57,7 @@ const strikeSizeMap = {
   lg: 'text-base',
 };
 
-export function CurrencyStrike({ amount, size = 'sm', color = 'text-red-500', className = '', decimals = 0 }: CurrencyStrikeProps) {
+export function CurrencyStrike({ amount, size = 'sm', color = 'text-danger', className = '', decimals = 0 }: CurrencyStrikeProps) {
   return (
     <span
       dir="ltr"

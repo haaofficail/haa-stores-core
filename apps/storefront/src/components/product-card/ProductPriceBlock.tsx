@@ -32,8 +32,8 @@ export function ProductPriceBlock({
     <div className={`mt-2 grid min-h-[86px] grid-rows-[28px_28px_28px] gap-1 overflow-hidden ${className}`}>
       <div className="row-start-1 flex h-[28px] min-w-0 items-center overflow-hidden">
         {hasDiscount ? (
-          <span className="inline-flex h-[24px] w-[96px] shrink-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-md bg-red-50 px-1.5 text-xs font-semibold leading-none text-red-500 line-through">
-            <CurrencyAmount amount={oldPrice!} className="text-xs font-semibold line-through" color="text-red-500" />
+          <span className="inline-flex h-[24px] w-[96px] shrink-0 items-center justify-center gap-1 overflow-hidden whitespace-nowrap rounded-md bg-danger-soft px-1.5 text-xs font-semibold leading-none text-danger line-through">
+            <CurrencyAmount amount={oldPrice!} className="text-xs font-semibold line-through" color="text-danger" />
           </span>
         ) : (
           <span aria-hidden="true" className="invisible h-[24px] w-[96px]" />

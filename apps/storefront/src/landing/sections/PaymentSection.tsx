@@ -12,15 +12,15 @@ import { StoreContainer } from '@/components/ui';
 
 export function PaymentSection(_props: { t: import('./types').TFn }) {
   const payments = [
-    { title: 'بطاقات مدى والمدفوعات الحكومية', desc: 'مدى — شبكة المدفوعات الوطنية. تقبل البطاقات البنكية والمدفوعات الحكومية بالريال السعودي', logos: ['mada.svg'], color: 'from-green-500 to-emerald-600' },
-    { title: 'المحافظ الرقمية', desc: 'Apple Pay و STC Pay — أسرع وسيلة دفع بدون لمس بطاقة', logos: ['apple-pay.svg', 'stc-pay.svg'], color: 'from-blue-500 to-indigo-600' },
-    { title: 'اشتر الآن وادفع لاحقًا', desc: 'تابي وتمارا — قسّم مشترياتك على 3 دفعات بدون فوائد', logos: ['tabby.svg', 'tamara.svg'], color: 'from-violet-500 to-purple-600' },
-    { title: 'بطاقات ائتمانية وتقليدي', desc: 'فيزا وماستركارد — خيارات تناسب الجميع', logos: ['visa.svg', 'mastercard.svg'], color: 'from-amber-500 to-orange-600' },
+    { title: 'بطاقات مدى والمدفوعات الحكومية', desc: 'مدى — شبكة المدفوعات الوطنية. تقبل البطاقات البنكية والمدفوعات الحكومية بالريال السعودي', logos: ['mada.svg'], color: 'from-success to-success' },
+    { title: 'المحافظ الرقمية', desc: 'Apple Pay و STC Pay — أسرع وسيلة دفع بدون لمس بطاقة', logos: ['apple-pay.svg', 'stc-pay.svg'], color: 'from-primary-500 to-primary-600' },
+    { title: 'اشتر الآن وادفع لاحقًا', desc: 'تابي وتمارا — قسّم مشترياتك على 3 دفعات بدون فوائد', logos: ['tabby.svg', 'tamara.svg'], color: 'from-primary-500 to-primary-600' },
+    { title: 'بطاقات ائتمانية وتقليدي', desc: 'فيزا وماستركارد — خيارات تناسب الجميع', logos: ['visa.svg', 'mastercard.svg'], color: 'from-warning to-warning' },
   ];
   return (
     <section className="relative py-16 sm:py-24 overflow-hidden" aria-labelledby="payment-title">
-      <div aria-hidden="true" className="pointer-events-none absolute -end-32 -top-32 h-96 w-96 rounded-pill bg-green-100/40 blur-3xl" />
-      <div aria-hidden="true" className="pointer-events-none absolute -start-32 -bottom-32 h-96 w-96 rounded-pill bg-emerald-100/30 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute -end-32 -top-32 h-96 w-96 rounded-pill bg-success-soft/40 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute -start-32 -bottom-32 h-96 w-96 rounded-pill bg-success-soft/30 blur-3xl" />
       <StoreContainer>
         <div className="mx-auto max-w-3xl text-center">
           <span className="aurora-pill text-xs">{'الدفع السعودي'}</span>
@@ -61,7 +61,7 @@ export function PaymentSection(_props: { t: import('./types').TFn }) {
         <div className="mt-10 text-center">
           <Link
             to="/signup?ref=how-it-works"
-            className="group inline-flex min-h-[52px] items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 px-8 text-[16px] font-bold text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:!text-white"
+            className="group inline-flex min-h-[52px] items-center gap-2 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-8 text-[16px] font-bold text-white shadow-lg shadow-primary-500/30 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:!text-white"
           >
             {'أطلق متجرك بالريال السعودي'}
             <ArrowLeft className="h-5 w-5 transition-transform duration-300 group-hover:-translate-x-1 rtl:group-hover:translate-x-1" />

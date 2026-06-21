@@ -32,13 +32,13 @@ export function Hero({ t }: { t: TFn; onDemoOpen?: () => void }) {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute left-1/2 top-0 h-[600px] w-[800px] -translate-x-1/2 rounded-pill bg-gradient-to-b from-primary-100/40 via-primary-200/20 to-transparent blur-3xl" />
         <div className="absolute -end-32 top-40 h-72 w-72 rounded-full bg-primary-300/20 blur-3xl motion-reduce:hidden" />
-        <div className="absolute -start-24 top-1/3 h-64 w-64 rounded-full bg-emerald-200/15 blur-3xl motion-reduce:hidden" />
+        <div className="absolute -start-24 top-1/3 h-64 w-64 rounded-full bg-success-soft/15 blur-3xl motion-reduce:hidden" />
       </div>
 
       <StoreContainer className="relative">
         <div className="mx-auto max-w-4xl text-center">
           {/* Eyebrow */}
-          <span className="aurora-pill text-xs !border-emerald-200 !bg-transparent !text-emerald-700">
+          <span className="aurora-pill text-xs !border-success !bg-transparent !text-success">
             <img src="/assets/saudi-map.png" alt="" className="inline-block h-[1.1em] w-auto align-middle" aria-hidden="true" />
             {' '}
             {t('landing.hero.badge', 'منصة سعودية')}
@@ -135,7 +135,7 @@ export function Hero({ t }: { t: TFn; onDemoOpen?: () => void }) {
               { icon: MessageCircle, text: t('landing.hero.trust3', 'دعم بالعربي 24/7') },
             ].map(({ icon: Ic, text }) => (
               <li key={text} className="flex items-center gap-1.5">
-                <Icon icon={Ic} size="xs" className="text-emerald-500" aria-hidden="true" />
+                <Icon icon={Ic} size="xs" className="text-success" aria-hidden="true" />
                 <span>{text}</span>
               </li>
             ))}

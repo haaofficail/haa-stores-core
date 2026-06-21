@@ -252,19 +252,19 @@ export default function HeroAIChat({
       dir="rtl"
       className="mx-auto mt-8 w-full max-w-2xl sm:mt-10"
     >
-      <div className="relative overflow-hidden rounded-3xl border border-white/40 bg-white/70 shadow-xl shadow-blue-500/5 backdrop-blur-xl">
+      <div className="relative overflow-hidden rounded-3xl border border-white/40 bg-white/70 shadow-xl shadow-primary-500/5 backdrop-blur-xl">
         {/* Decorative top glow */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-16 start-1/2 -z-0 h-40 w-80 -translate-x-1/2 rounded-pill bg-gradient-to-b from-blue-200/40 via-indigo-100/20 to-transparent blur-2xl"
+          className="pointer-events-none absolute -top-16 start-1/2 -z-0 h-40 w-80 -translate-x-1/2 rounded-pill bg-gradient-to-b from-primary-200/40 via-primary-100/20 to-transparent blur-2xl"
         />
 
         <div className="relative z-10 p-5 sm:p-6">
           {/* Header — persona */}
           <div className="flex items-start gap-3">
-            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30">
+            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-md shadow-primary-500/30">
               <Bot className="h-5 w-5" aria-hidden="true" />
-              <span aria-hidden="true" className="absolute -bottom-0.5 -end-0.5 flex h-3 w-3 items-center justify-center rounded-full border-2 border-white bg-emerald-500" />
+              <span aria-hidden="true" className="absolute -bottom-0.5 -end-0.5 flex h-3 w-3 items-center justify-center rounded-full border-2 border-white bg-success" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
@@ -288,7 +288,7 @@ export default function HeroAIChat({
               <p className="mt-1 text-[13px] leading-relaxed text-text-secondary sm:text-sm">
                 {description}
               </p>
-              <p className="mt-1 text-xs font-medium text-blue-600/80">
+              <p className="mt-1 text-xs font-medium text-primary-600/80">
                 <Sparkles className="inline h-3 w-3 align-text-bottom" aria-hidden="true" /> {personaName} · {PERSONA_TAGLINE}
               </p>
             </div>
@@ -298,15 +298,15 @@ export default function HeroAIChat({
           {requiresSignup && (
             <div
               role="status"
-              className="mt-4 flex items-start gap-2.5 rounded-2xl border border-blue-200/70 bg-gradient-to-br from-blue-50 to-indigo-50 px-3 py-2.5 text-[12.5px] text-blue-900"
+              className="mt-4 flex items-start gap-2.5 rounded-2xl border border-primary-200/70 bg-gradient-to-br from-primary-50 to-primary-100 px-3 py-2.5 text-[12.5px] text-primary-900"
             >
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" aria-hidden="true" />
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary-600" aria-hidden="true" />
               <div>
                 <div className="font-semibold">استمريت بالتجربة المجانية — جاهز للخطوة الجاية؟</div>
-                <div className="mt-0.5 text-blue-800/85">سجّل كتاجر مجانًا (بدون بطاقة بنكية) عشان تطلق متجرك وتفعّل بوابات الدفع.</div>
+                <div className="mt-0.5 text-primary-800/85">سجّل كتاجر مجانًا (بدون بطاقة بنكية) عشان تطلق متجرك وتفعّل بوابات الدفع.</div>
                 <Link
                   to={primaryCtaHref}
-                  className="mt-2 inline-flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1 text-[12px] font-bold text-white shadow-sm transition-colors hover:bg-blue-700"
+                  className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary-600 px-3 py-1 text-[12px] font-bold text-white shadow-sm transition-colors hover:bg-primary-700"
                 >
                   سجّل كتاجر — مجانًا
                 </Link>
@@ -323,9 +323,9 @@ export default function HeroAIChat({
                   type="button"
                   onClick={() => onQuickPrompt(qp.seed)}
                   disabled={loading}
-                  className="group inline-flex items-center gap-1.5 rounded-full border border-blue-200/70 bg-white/80 px-3 py-1.5 text-[12.5px] font-medium text-text-primary shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                  className="group inline-flex items-center gap-1.5 rounded-full border border-primary-200/70 bg-white/80 px-3 py-1.5 text-[12.5px] font-medium text-text-primary shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary-300 hover:bg-primary-50 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <MessageCircle className="h-3.5 w-3.5 text-blue-500 transition-transform group-hover:scale-110" aria-hidden="true" />
+                  <MessageCircle className="h-3.5 w-3.5 text-primary-500 transition-transform group-hover:scale-110" aria-hidden="true" />
                   <span>{qp.label}</span>
                 </button>
               ))}
@@ -360,12 +360,12 @@ export default function HeroAIChat({
           {error && (
             <div
               role="alert"
-              className="mt-3 flex items-start gap-2 rounded-xl border border-red-200/70 bg-red-50/80 px-3 py-2 text-[12.5px] text-red-700"
+              className="mt-3 flex items-start gap-2 rounded-xl border border-danger-soft bg-danger-soft/80 px-3 py-2 text-[12.5px] text-danger"
             >
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               <div>
                 <div className="font-semibold">تعذّر توليد رد.</div>
-                <div className="text-red-600/90">{error}</div>
+                <div className="text-danger/90">{error}</div>
               </div>
             </div>
           )}
@@ -374,7 +374,7 @@ export default function HeroAIChat({
           {!requiresSignup && (
             <form
               onSubmit={onSubmit}
-              className="mt-3 flex items-center gap-2 rounded-full border border-text-primary/10 bg-white/90 p-1.5 shadow-sm transition-all focus-within:border-blue-300 focus-within:shadow-md"
+              className="mt-3 flex items-center gap-2 rounded-full border border-text-primary/10 bg-white/90 p-1.5 shadow-sm transition-all focus-within:border-primary-300 focus-within:shadow-md"
             >
               <input
                 ref={inputRef}
@@ -390,7 +390,7 @@ export default function HeroAIChat({
               <button
                 type="submit"
                 disabled={loading || input.trim().length === 0}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md shadow-blue-500/30 transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:from-blue-300 disabled:to-blue-400 disabled:shadow-none"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-md shadow-primary-500/30 transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:from-primary-300 disabled:to-primary-400 disabled:shadow-none"
                 aria-label="إرسال"
               >
                 <Send className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
@@ -402,7 +402,7 @@ export default function HeroAIChat({
           <div className="mt-4 flex justify-center">
             <Link
               to={primaryCtaHref}
-              className="aurora-btn-primary group inline-flex h-12 min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 px-6 text-[15px] font-bold text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:!text-white sm:w-auto"
+              className="aurora-btn-primary group inline-flex h-12 min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-6 text-[15px] font-bold text-white shadow-lg shadow-primary-500/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:!text-white sm:w-auto"
             >
               ابدأ التجربة الآن
             </Link>
@@ -414,7 +414,7 @@ export default function HeroAIChat({
             {usedFallback && (
               <>
                 <span aria-hidden="true">·</span>
-                <span className="text-amber-600/90">يعمل في وضع عدم الاتصال</span>
+                <span className="text-warning/90">يعمل في وضع عدم الاتصال</span>
               </>
             )}
             {remaining !== null && !requiresSignup && (
@@ -476,7 +476,7 @@ function MessageBubble({
         className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-[13.5px] leading-relaxed shadow-sm sm:text-sm ${
           isAssistant
             ? 'rounded-s-md bg-white text-text-primary ring-1 ring-text-primary/5'
-            : 'rounded-e-md bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+            : 'rounded-e-md bg-gradient-to-r from-primary-500 to-primary-600 text-white'
         }`}
       >
         <div className="whitespace-pre-wrap break-words">
@@ -489,7 +489,7 @@ function MessageBubble({
           <div className="mt-2 -mb-0.5">
             <Link
               to={primaryCtaHref}
-              className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[12px] font-semibold text-blue-700 transition-colors hover:bg-blue-100"
+              className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-[12px] font-semibold text-primary-700 transition-colors hover:bg-primary-100"
             >
               <Sparkles className="h-3 w-3" aria-hidden="true" />
               {message.ctaLabel}
@@ -503,7 +503,7 @@ function MessageBubble({
                 key={fu}
                 type="button"
                 onClick={() => onFollowUp(fu)}
-                className="rounded-full border border-text-primary/10 bg-white/70 px-2 py-0.5 text-[11.5px] font-medium text-text-secondary transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                className="rounded-full border border-text-primary/10 bg-white/70 px-2 py-0.5 text-[11.5px] font-medium text-text-secondary transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
               >
                 {fu}
               </button>
@@ -519,7 +519,7 @@ function LoadingBubble() {
   return (
     <div className="flex justify-start animate-fade-in-up">
       <div className="inline-flex items-center gap-1.5 rounded-2xl rounded-s-md bg-white px-4 py-3 text-text-secondary ring-1 ring-text-primary/5">
-        <Loader2 className="h-4 w-4 animate-spin text-blue-500" aria-hidden="true" />
+        <Loader2 className="h-4 w-4 animate-spin text-primary-500" aria-hidden="true" />
         <span className="text-[12.5px]">المساعد يكتب…</span>
       </div>
     </div>

@@ -46,8 +46,8 @@ export default function Support() {
   if (ticket) {
     return (
       <div className="container-store py-8 sm:py-12 max-w-2xl mx-auto text-center">
-        <div className="w-16 h-16 rounded-2xl bg-green-50 flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="h-8 w-8 text-green-600" />
+        <div className="w-16 h-16 rounded-2xl bg-success-soft flex items-center justify-center mx-auto mb-4">
+          <CheckCircle className="h-8 w-8 text-success" />
         </div>
         <h1 className="text-2xl font-bold text-text-primary mb-3">
           {t('support.submitted', 'تم إرسال طلب الدعم')}
@@ -152,7 +152,7 @@ export default function Support() {
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
+          <div className="p-3 rounded-xl bg-danger-soft border border-danger text-sm text-danger">
             {error}
           </div>
         )}
