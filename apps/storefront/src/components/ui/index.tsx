@@ -47,10 +47,12 @@ export function StoreContainer({ children, className = '', id }: { children: Rea
 
 type CardVariant = 'default' | 'interactive' | 'highlight';
 
+// Design-system card depth: soft, low-spread layered shadow (Apple feel).
 const cardVariantClasses: Record<CardVariant, string> = {
-  default: 'shadow-card',
-  interactive: 'shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300',
-  highlight: 'shadow-card border-primary-200',
+  default: 'shadow-[0_1px_3px_rgba(0,0,0,0.05),0_10px_28px_-14px_rgba(0,0,0,0.12)]',
+  interactive:
+    'shadow-[0_1px_3px_rgba(0,0,0,0.05),0_10px_28px_-14px_rgba(0,0,0,0.12)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.06),0_22px_50px_-18px_rgba(0,0,0,0.18)] hover:-translate-y-[3px] transition-all duration-300',
+  highlight: 'shadow-[0_10px_28px_-14px_rgba(0,0,0,0.12)] ring-2 ring-primary-200',
 };
 
 export function StoreCard({ children, variant = 'default', className = '' }: { children: ReactNode; variant?: CardVariant; className?: string }) {
