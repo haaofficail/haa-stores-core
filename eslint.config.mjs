@@ -43,6 +43,26 @@ export default tseslint.config(
     files: ['apps/merchant-dashboard/src/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': ['error', {
+        // DECISION-OS-009: dashboards must consume themes via the /server subpath only.
+        // `paths` matches exact bare specifiers — `/server` subpaths are allowed.
+        paths: [
+          {
+            name: '@haa/storefront-themes',
+            message: 'Merchant dashboard must import via @haa/storefront-themes/server (DECISION-OS-009).',
+          },
+          {
+            name: '@haa/theme-system',
+            message: 'Merchant dashboard must use @haa/theme-system/server (DECISION-OS-009).',
+          },
+          {
+            name: '@haa/theme-engine',
+            message: 'Merchant dashboard must not import internal theme runtime packages (DECISION-OS-009).',
+          },
+          {
+            name: '@haa/theme-web',
+            message: 'Merchant dashboard must not import the theme-web preview package (DECISION-OS-009).',
+          },
+        ],
         patterns: [{
           group: ['@haa/storefront', '@haa/storefront/**'],
           message: 'Merchant dashboard must never import storefront app code. This breaks app boundary isolation.',

@@ -63,4 +63,12 @@ export {
   getAllStorefrontThemeManifests,
   resolveStorefrontThemeKey,
   DEFAULT_STOREFRONT_THEME_KEY,
+  // DECISION-OS-009: re-exported here so dashboards can read the theme capsule
+  // registry through the dashboard-safe subpath. The registry is a pure
+  // in-memory Map read — no DOM, no analytics, no CSS variable mutation.
+  getThemeCapsule,
 } from './registry';
+
+// Editor schema types — erased at compile time, no runtime surface; safe for
+// dashboard theme-editor components that need to render field schemas.
+export type { ThemeEditorField, ThemeEditorGroup, ThemeEditorSchema } from './contracts/theme-capsule';

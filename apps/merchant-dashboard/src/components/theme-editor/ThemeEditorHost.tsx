@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getThemeCapsule } from '@haa/storefront-themes';
+import { getThemeCapsule } from '@haa/storefront-themes/server';
 import { SchemaFieldRenderer, saveThemeSpecificConfig, loadThemeSpecificConfig } from './SchemaFieldRenderer';
-import type { ThemeEditorGroup } from '@haa/storefront-themes';
+import type { ThemeEditorGroup } from '@haa/storefront-themes/server';
 
 export function ThemeEditorHost({
   config,
