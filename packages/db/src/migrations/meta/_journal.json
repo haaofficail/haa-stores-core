@@ -456,6 +456,34 @@
       "when": 1782000064000,
       "tag": "0068_brand_color_defaults",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1782000065000,
+      "tag": "0069_whatsapp_consent",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1782000066000,
+      "tag": "0070_whatsapp_delivery",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1782000067000,
+      "tag": "0071_loyalty",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1782000068000,
+      "tag": "0072_custom_domain",
+      "breakpoints": true
     }
   ]
 }

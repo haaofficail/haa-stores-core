@@ -20,6 +20,7 @@ export default defineConfig({
       '@haa/commerce-core': path.resolve(__dirname, 'packages/commerce-core/src'),
       '@haa/shipping-core': path.resolve(__dirname, 'packages/shipping-core/src'),
       '@haa/wallet-core': path.resolve(__dirname, 'packages/wallet-core/src'),
+      '@haa/loyalty-core': path.resolve(__dirname, 'packages/loyalty-core/src'),
       '@haa/integration-core': path.resolve(__dirname, 'packages/integration-core/src'),
       '@haa/notification-core': path.resolve(__dirname, 'packages/notification-core/src'),
       '@haa/payment-providers': path.resolve(__dirname, 'packages/payment-providers/src'),

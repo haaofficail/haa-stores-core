@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Layout from '@/components/Layout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { CustomDomainGate } from '@/components/CustomDomainGate';
 
 const Home = lazy(() => import('@/pages/Home'));
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
@@ -61,6 +62,7 @@ export default function App() {
     <>
       <Toaster position="top-right" richColors dir="rtl" />
       <ErrorBoundary>
+        <CustomDomainGate>
         <Suspense fallback={<PageSkeleton />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -104,6 +106,7 @@ export default function App() {
           <Route path="*" element={<StoreNotFound />} />
         </Routes>
         </Suspense>
+        </CustomDomainGate>
       </ErrorBoundary>
     </>
   );

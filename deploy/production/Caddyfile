@@ -13,6 +13,16 @@
 
 {
 	email haa.officail@gmail.com
+
+	# On-demand TLS for merchant custom domains (QA Custom Domain). Before
+	# issuing a Let's Encrypt cert for an unknown host, Caddy asks the API;
+	# it returns 200 only for an ACTIVE custom domain, blocking
+	# cert-exhaustion abuse from arbitrary hostnames. Rate limited.
+	on_demand_tls {
+		ask http://api:3001/api/internal/tls-check
+		interval 2m
+		burst 5
+	}
 }
 
 (spa_site) {
@@ -54,5 +64,19 @@ merchant.haastores.com {
 	import spa_site
 	handle {
 		reverse_proxy merchant-dashboard:80
+	}
+}
+
+# Merchant custom domains (QA Custom Domain). Any host NOT matched above is a
+# candidate custom domain: serve the storefront SPA with on-demand TLS. The
+# SPA bootstraps the right store via GET /api/resolve-host (Host header). The
+# on_demand ask gate above ensures certs are only issued for active domains.
+:443 {
+	tls {
+		on_demand
+	}
+	import spa_site
+	handle {
+		reverse_proxy storefront:80
 	}
 }

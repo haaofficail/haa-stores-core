@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { buildCheckoutStepKeys, clampStepIndex, type CheckoutStepKey } from '@/lib/checkout-steps';
+import { isSafeRedirectUrl } from '@/lib/safe-redirect';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useSharedCart } from '@/hooks/CartContext';
@@ -49,6 +51,8 @@ export default function Checkout() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [confirming, setConfirming] = useState(false);
+  // مفتاح idempotency ثابت لكل محاولة checkout — لا يتغيّر مع كل ضغطة/إعادة محاولة (QA CO4)
+  const idempotencyKeyRef = useRef<string>(generateIdempotencyKey());
 
   const [customer, setCustomer] = useState({ name: '', phone: '', email: '' });
   const [address, setAddress] = useState({ city: '', district: '', street: '', details: '' });
@@ -75,9 +79,10 @@ export default function Checkout() {
   const callbackOrderNumber = searchParams.get('orderNumber');
   useEffect(() => {
     if (callbackOrderNumber && slug) {
+      clearLocalCart(); // الدفع اكتمل والطلب موجود — آمن لمسح السلة الآن (QA CO5)
       navigate(`/s/${slug}/order/${callbackOrderNumber}`, { replace: true });
     }
-  }, [callbackOrderNumber, slug, navigate]);
+  }, [callbackOrderNumber, slug, navigate, clearLocalCart]);
 
   useEffect(() => {
     if (!slug) return;
@@ -124,23 +129,43 @@ export default function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address.city]);
 
+  // Safety clamp: when fulfillmentType changes, the dynamic step list
+  // shrinks/grows; ensure currentStep never points past the last step.
+  useEffect(() => {
+    const stepCount = buildCheckoutStepKeys(fulfillmentType).length;
+    setCurrentStep((s) => clampStepIndex(s, stepCount));
+  }, [fulfillmentType]);
+
+  // خطوات ديناميكية بمفاتيح ثابتة — pickup يحذف خطوة الشحن دون كسر الفهارس (QA CO3).
+  const STEP_LABELS: Record<CheckoutStepKey, string> = {
+    customer: t('checkout.stepCustomer', 'بيانات العميل'),
+    fulfillment: t('checkout.stepFulfillment', 'طريقة الاستلام'),
+    shipping: t('checkout.stepShipping', 'الشحن'),
+    payment: t('checkout.stepPayment', 'الدفع'),
+    review: t('checkout.stepReview', 'المراجعة'),
+  };
+  const stepKeys = buildCheckoutStepKeys(fulfillmentType);
+  const steps = stepKeys.map((key) => ({ key, label: STEP_LABELS[key] }));
+  const STEPS = steps.map((st) => st.label);
+  const activeStep = steps[currentStep]?.key;
+
   const validateStep = (step: number): boolean => {
     const errs: Record<string, string> = {};
-    switch (step) {
-      case 0:
+    switch (steps[step]?.key) {
+      case 'customer':
         if (!customer.name.trim()) errs.name = t('checkout.errNameRequired', 'الاسم مطلوب');
         if (!customer.phone.trim()) errs.phone = t('checkout.errPhoneRequired', 'رقم الجوال مطلوب');
         else if (!/^[0-9+\-\s]{8,20}$/.test(customer.phone.trim())) errs.phone = t('checkout.errPhoneInvalid', 'رقم جوال غير صالح');
         if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) errs.email = t('checkout.errEmailInvalid', 'بريد إلكتروني غير صالح');
         break;
-      case 1:
+      case 'fulfillment':
         if (fulfillmentType === 'shipping') {
           if (!address.city.trim()) errs.city = t('checkout.errCityRequired', 'المدينة مطلوبة');
         } else {
           if (!selectedPickupLocationId) errs.fulfillment = t('checkout.errPickupLocationRequired', 'اختر فرع الاستلام');
         }
         break;
-      case 2:
+      case 'shipping':
         if (fulfillmentType === 'shipping' && !selectedShippingId) errs.shipping = t('checkout.errShippingRequired', 'اختر طريقة الشحن');
         break;
     }
@@ -162,6 +187,7 @@ export default function Checkout() {
   const isBNPL = paymentMethod === 'tabby_installments' || paymentMethod === 'tamara_installments';
 
   const handleConfirm = async () => {
+    if (confirming) return; // امنع الإرسال المزدوج فعلياً (QA CO4)
     if (!slug || !cart) return;
     if (fulfillmentType === 'shipping' && !selectedShippingId) return;
     if (fulfillmentType === 'pickup' && !selectedPickupLocationId) return;
@@ -183,7 +209,7 @@ export default function Checkout() {
         pickupLocationId: fulfillmentType === 'pickup' ? selectedPickupLocationId! : undefined,
         gift: orderGift.sendAsGift ? { sendAsGift: true, message: orderGift.message || undefined } : undefined,
         paymentMethod,
-        idempotencyKey: generateIdempotencyKey(),
+        idempotencyKey: idempotencyKeyRef.current,
         couponCode,
       });
 
@@ -196,7 +222,12 @@ export default function Checkout() {
           cancelUrl,
           failureUrl: cancelUrl,
         });
-        clearLocalCart();
+        // لا نمسح السلة قبل تأكيد الدفع — تُمسح عند العودة بـ orderNumber (QA CO5)
+        if (!isSafeRedirectUrl(bnplResult.redirectUrl)) {
+          toast.error(t('checkout.paymentError', 'تعذّر بدء الدفع.'));
+          setConfirming(false);
+          return;
+        }
         tracker.trackPurchase(slug, bnplResult.order.id, cart.id, { orderNumber: bnplResult.order.orderNumber, paymentMethod: 'bnpl' });
         if (couponCode) {
           tracker.trackCouponApplied(slug, couponCode, cart.id);
@@ -212,7 +243,12 @@ export default function Checkout() {
       // the issuer will redirect the customer back to a callback that
       // finalizes the payment.
       if (result.paymentStatus === 'requires_3ds' && result.redirectUrl) {
-        clearLocalCart();
+        // لا نمسح السلة قبل اكتمال تحدّي 3DS — تُمسح عند العودة المؤكّدة (QA CO5)
+        if (!isSafeRedirectUrl(result.redirectUrl)) {
+          toast.error(t('checkout.paymentError', 'تعذّر بدء التحقق من الدفع.'));
+          setConfirming(false);
+          return;
+        }
         tracker.trackPurchase(slug, result.order.id, cart.id, { orderNumber: result.order.orderNumber, paymentMethod: '3ds_pending' });
         toast.info(t('checkout.threeDsRedirect', 'جاري التحقق من بطاقتك…'));
         // Use a relative path for the fake provider's local 3DS page;
@@ -255,13 +291,6 @@ export default function Checkout() {
   const shippingCost = toMoneyNumber(selectedRate?.baseRate);
   const total = Math.max(0, subtotal + shippingCost);
 
-  const STEPS = [
-    t('checkout.stepCustomer', 'بيانات العميل'),
-    t('checkout.stepFulfillment', 'طريقة الاستلام'),
-    ...(fulfillmentType === 'shipping' ? [t('checkout.stepShipping', 'الشحن')] : []),
-    t('checkout.stepPayment', 'الدفع'),
-    t('checkout.stepReview', 'المراجعة'),
-  ];
 
   const bnplOptions = bnplMethods.map(m => {
     const isTabby = m.provider === 'tabby';
@@ -303,7 +332,7 @@ export default function Checkout() {
 
         <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
           <div className="lg:col-span-2">
-            {currentStep === 0 && (
+            {activeStep === 'customer' && (
               <StoreCard className="p-6">
                 <h2 className="font-bold text-lg mb-4">{t('checkout.customerInfo')}</h2>
                 <div className="space-y-4">
@@ -314,7 +343,7 @@ export default function Checkout() {
               </StoreCard>
             )}
 
-            {currentStep === 1 && (
+            {activeStep === 'fulfillment' && (
               <StoreCard className="p-6">
                 <h2 className="font-bold text-lg mb-4">{t('checkout.fulfillmentType', 'طريقة الاستلام')}</h2>
                 {(features?.pickup !== false) && pickupLocations.length > 0 && (
@@ -422,7 +451,7 @@ export default function Checkout() {
               </StoreCard>
             )}
 
-            {currentStep === 2 && fulfillmentType === 'shipping' && (
+            {activeStep === 'shipping' && (
               <StoreCard className="p-6">
                 <h2 className="font-bold text-lg mb-4">{t('checkout.shippingMethod')}</h2>
                 {shippingLoading ? (
@@ -467,7 +496,7 @@ export default function Checkout() {
               </StoreCard>
             )}
 
-            {currentStep === 3 && (
+            {activeStep === 'payment' && (
               <StoreCard className="p-6">
                 <h2 className="font-bold text-lg mb-4">{t('checkout.paymentMethod')}</h2>
                 <div className="space-y-3">
@@ -504,7 +533,7 @@ export default function Checkout() {
               </StoreCard>
             )}
 
-            {currentStep === 4 && (
+            {activeStep === 'review' && (
               <StoreCard className="p-6">
                 <h2 className="font-bold text-lg mb-4">{t('checkout.orderSummary')} — {t('checkout.stepReview', 'المراجعة')}</h2>
                 <div className="space-y-4">
@@ -551,7 +580,7 @@ export default function Checkout() {
                               )}
                               {item.item?.giftMessage &&                       <p className="text-[var(--badge-font-size)] text-text-tertiary mt-0.5"><Icon icon={Gift} size="2xs" className="inline align-middle ms-0.5" />{item.item.giftMessage}</p>}
                             </div>
-                            <span className="font-medium tabular-nums">{Number(item.item?.totalPrice ?? item.totalPrice).toFixed(2)} <SarIcon size="sm" /></span>
+                            <span className="font-medium tabular-nums">{toMoneyNumber(item.item?.totalPrice ?? item.totalPrice).toFixed(2)} <SarIcon size="sm" /></span>
                           </div>
                         ))}
                       </div>
@@ -620,10 +649,10 @@ export default function Checkout() {
                       {getVariantLabel(item)}
                     </p>
                   )}
-                  <p className="text-xs text-text-tertiary">{item.quantity} × {Number(item.unitPrice).toFixed(2)} <SarIcon size="sm" /></p>
+                  <p className="text-xs text-text-tertiary">{item.quantity} × {toMoneyNumber(item.unitPrice).toFixed(2)} <SarIcon size="sm" /></p>
                   {item.notes && <p className="text-[var(--badge-font-size)] text-text-tertiary mt-0.5">{item.notes}</p>}
                 </div>
-                    <p className="font-medium text-sm">{Number(item.totalPrice).toFixed(2)} <SarIcon size="sm" /></p>
+                    <p className="font-medium text-sm">{toMoneyNumber(item.totalPrice).toFixed(2)} <SarIcon size="sm" /></p>
                   </div>
                 ))}
               </div>

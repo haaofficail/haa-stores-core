@@ -39,3 +39,4 @@ export * from './membership_permissions.js';
 export * from './marketing_actions.js';
 export * from './pixels.js';
 export * from './campaigns.js';
+export * from './loyalty.js';

@@ -111,6 +111,7 @@ function LpProductCard({ product }: { product: LpProduct }) {
       {savingsPct > 0 && <span className="lp-pcard__save">خصم {savingsPct}٪</span>}
       <div className="lp-pcard__img">
         <img src={product.image} alt={product.name} loading="lazy" />
+        <span className="lp-pcard__avail">متاح للبيع<span className="lp-pcard__dot" /></span>
       </div>
       <div className="lp-pcard__body">
         <span className="lp-pcard__cat">{product.categoryName}</span>
@@ -145,6 +146,10 @@ function LpProductCard({ product }: { product: LpProduct }) {
         {product.purchaseCount && (
           <div className="lp-pcard__purchases">{product.purchaseCount.toLocaleString('ar-SA-u-nu-arab')} مشتري</div>
         )}
+        {/* عنصر توضيحي ضمن معاينة المتجر — ليس زراً تفاعلياً (a11y) */}
+        <span className="lp-pcard__cta" aria-hidden="true">
+          <ShoppingCart size={14} /> أضف للسلة
+        </span>
       </div>
     </div>
   );

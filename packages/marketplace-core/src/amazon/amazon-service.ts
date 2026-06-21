@@ -3,6 +3,8 @@ import * as s from '@haa/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { createHmac, createHash } from 'node:crypto';
 import type { ConnectionResult, ProductListing, ChannelOrder, SyncResult, SalesReport } from '../types.js';
+import { resilientFetch } from '../resilient-fetch.js';
+import { encryptCredentials, decryptCredentials } from '../credential-cipher.js';
 
 interface AmazonCredentials {
   clientId: string;
@@ -123,7 +125,7 @@ async function getLwaAccessToken(
   clientSecret: string,
   refreshToken: string,
 ): Promise<string> {
-  const res = await fetch('https://api.amazon.com/auth/o2/token', {
+  const res = await resilientFetch('https://api.amazon.com/auth/o2/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -178,7 +180,7 @@ async function amazonFetch<T>(
 
   const authHeader = `AWS4-HMAC-SHA256 Credential=${awsAccessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
-  const response = await fetch(url.toString(), {
+  const response = await resilientFetch(url.toString(), {
     method,
     headers: {
       ...userHeaders,
@@ -226,8 +228,8 @@ export class AmazonService {
 
     if (!connection[0]?.credentials) throw new Error('Amazon not connected');
 
-    const creds = connection[0].credentials as unknown as AmazonCredentials;
-    if (!creds.clientId || !creds.clientSecret || !creds.refreshToken || !creds.awsAccessKey || !creds.awsSecretKey) {
+    const creds = decryptCredentials<AmazonCredentials>(connection[0].credentials);
+    if (!creds || !creds.clientId || !creds.clientSecret || !creds.refreshToken || !creds.awsAccessKey || !creds.awsSecretKey) {
       throw new Error('Amazon credentials incomplete');
     }
 
@@ -257,7 +259,7 @@ export class AmazonService {
     const clientId = process.env.AMAZON_CLIENT_ID || '';
     const clientSecret = process.env.AMAZON_CLIENT_SECRET || '';
 
-    const res = await fetch('https://api.amazon.com/auth/o2/token', {
+    const res = await resilientFetch('https://api.amazon.com/auth/o2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
@@ -314,7 +316,7 @@ export class AmazonService {
       await this.db
         .update(s.marketplaceConnections)
         .set({
-          credentials: storedCreds as unknown as ConnectionResult['credentials'],
+          credentials: encryptCredentials(storedCreds) as unknown as ConnectionResult['credentials'],
           isConnected: true,
           status: 'connected',
           connectedAt: new Date(),
@@ -326,7 +328,7 @@ export class AmazonService {
         storeId: this.storeId,
         providerId,
         isConnected: true,
-        credentials: storedCreds as unknown as ConnectionResult['credentials'],
+        credentials: encryptCredentials(storedCreds) as unknown as ConnectionResult['credentials'],
         status: 'connected',
         connectedAt: new Date(),
       });
@@ -388,7 +390,7 @@ export class AmazonService {
       await this.db
         .update(s.marketplaceConnections)
         .set({
-          credentials: storedCreds as unknown as ConnectionResult['credentials'],
+          credentials: encryptCredentials(storedCreds) as unknown as ConnectionResult['credentials'],
           isConnected: true,
           status: 'connected',
           storeName: creds.sellerName,
@@ -401,7 +403,7 @@ export class AmazonService {
         storeId: this.storeId,
         providerId,
         isConnected: true,
-        credentials: storedCreds as unknown as ConnectionResult['credentials'],
+        credentials: encryptCredentials(storedCreds) as unknown as ConnectionResult['credentials'],
         status: 'connected',
         storeName: creds.sellerName,
         connectedAt: new Date(),

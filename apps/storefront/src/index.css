@@ -617,6 +617,7 @@
    wrapper sets these tokens inline; this rule applies them to
    utility classes. */
 .auth-scope {
+  font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
   /* ── Brand ── */
   --brand-primary: #5c9cd5;
   --brand-primary-soft: color-mix(in srgb, #5c9cd5 14%, #fff);

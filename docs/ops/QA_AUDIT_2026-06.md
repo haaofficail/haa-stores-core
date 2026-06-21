@@ -137,3 +137,100 @@
 | TW1 | tailwind: surface/text/status قيم ثابتة بدل CSS vars (اتساق الثيم) | 📋 متابعة — تغيير color-resolution عام، يتطلب تحقق بصري |
 | REG1 | Theme Registry بلا guard ضد التسجيل المكرر (HMR/tests) | 📋 متابعة — idempotency في `@haa/storefront-themes` |
 | COV1 | **تغطية اختبارات منخفضة في المسارات الحرجة** (shipping-core 10%, theme-system 8%, payment-providers 20%, api routes branch/fn 0%, commerce-core 30%) | 📋 **P0 اختبارات** — رفع التغطية في الدفع/الشحن/الطلبات/routes (نجاح+فشل+3DS+مخزون+عزل) قبل الإطلاق التجاري |
+
+## مراجعة Dockerfile/Auth/Cart/Checkout (دفعة رابعة)
+
+### Dockerfile (DK) — أغلبها إيجابيات كاذبة/تحسينات
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| DK1 | `/healthz` غير موجود في nginx.conf | ✅ إيجابية كاذبة — موجود (nginx.conf:72) |
+| DK2 | `.dockerignore` ناقص | ✅ إيجابية كاذبة — موجود وقوي |
+| DK3 | casing لـ SarIcon/ملفات | ✅ إيجابية كاذبة — PascalCase فعلاً |
+| DK4 | `MAINTAINER` ARG غير معاد تعريفه في stages، cache، non-root nginx، BuildKit | 📋 متابعة (تحسينات/label تجميلي، البناء يعمل) |
+
+### Auth (AU) — آمن
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| AU1 | توليد slug من اسم عربي ينتج فارغاً (`\w`) | ✅ PR #27 — `normalizeStoreSlug` (NFKD) |
+| AU2 | slug يتوقف بعد أول حرف (لا slugTouched) | ✅ PR #27 — `slugTouched` |
+| AU3 | لا تحقق من صيغة الجوال | ✅ PR #27 — `/^05\d{8}$/` قبل الإرسال |
+| AU4 | WaitlistPage نجاح وهمي | ✅ لا يدّعي حفظاً — مقبول |
+| AU5 | `id=storefront-scope` بدل auth-scope (عزل) | 📋 متابعة — عملياً منخفض الأثر (auth خارج متجر؛ التوكن #5c9cd5)، تغييره يمسّ focus styles |
+| AU6 | أرقام تسويقية hardcoded، Nav authMode | 📋 متابعة |
+
+### Cart (CT) — آمن
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| CT1 | كوبون قديم بعد تغيّر السلة | ✅ PR #27 — مسح عند التغيّر |
+| CT2 | NaN في الأسعار | ✅ PR #27 — `toMoneyNumber/formatAmount` |
+| CT3 | إجمالي سالب | ✅ PR #27 — `Math.max(0,...)` |
+| CT4 | maxQty: `Math.max(1, undefined)=NaN`، 0→1 يسمح بالشراء | ✅ PR #27 — stock آمن + isOutOfStock |
+| CT5 | `slug!`/`cart!` | ✅ PR #27 — guards |
+| CT6 | كوبون/سعر يعتمد على الواجهة | 📋 backend يحسم (موثّق) |
+
+### Checkout (CO) — آمن طُبّق، تدفّق الدفع مؤجّل لاختبار مخصّص
+| # | المشكلة | الحالة |
+|---|---------|--------|
+| CO1 | NaN في الأسعار | ✅ PR #27 — `toMoneyNumber` |
+| CO2 | currentStep يخرج عن النطاق عند تغيير fulfillment | ✅ PR #27 — clamp |
+| CO3 | **خطوات checkout تنكسر مع pickup (فهارس ثابتة)** | 📋 **P0** — refactor لمفاتيح الخطوات (`step keys`)، يتطلب اختبار تدفّق الدفع |
+| CO4 | idempotencyKey يتغيّر كل ضغطة | 📋 P1 — مفتاح ثابت لكل محاولة (useRef) |
+| CO5 | مسح السلة قبل اكتمال 3DS/BNPL | 📋 P1 — مسح بعد callback مؤكّد فقط |
+| CO6 | redirectUrl بلا allowlist، callback URLs، VAT naming | 📋 P1 — تشديد + اختبار |
+| CO7 | `: any` في cart.items + دين `item.item?` | 📋 متابعة — يتطلب تنظيف شكل الـ item |
+
+## Batch 3 — Marketplace Orchestration (B3 / MC6) — production-safe via gating
+
+**القرار:** بناء endpoint backend موحّد بـ rollback يتطلب إعادة هيكلة دفع متعدّد المتاجر (مخاطر دفع حقيقية — قاعدة AGENTS/التاسك 15: سلامة الإنتاج أولاً). الإغلاق الـ production-safe المقبول في التاسك = **feature-gating**.
+
+| البند | الحالة |
+|---|---|
+| MC6 orchestration بالواجهة (خطر orphan عند فشل جزئي) | ✅ **production-safe** — `MARKETPLACE_CHECKOUT_ENABLED` (DEV أو `VITE_ENABLE_MARKETPLACE_CHECKOUT`) — معطّل في الإنتاج، submit + render محروسان، 3 اختبارات |
+
+### عقد الـ endpoint المطلوب لاحقاً (لرفع الحظر بالكامل)
+`POST /api/marketplace/checkout` — الواجهة ترسل **intent فقط**:
+```
+{ items:[{storeSlug,productId,quantity}], customer, shippingAddress, paymentMethod, idempotencyKey }
+```
+الـ backend (في معاملة واحدة): تحقّق المنتجات/النشر/التاجر · إعادة حساب الأسعار/VAT/الشحن من DB · تحقّق المخزون الذرّي · تجميع per-seller · إنشاء master order + child orders + links · idempotency على المفتاح · rollback عند أي فشل · جلسة دفع موحّدة. الواجهة لا تحسم ماليّاً ولا تنشئ child orders.
+**ملاحظة:** المسارات ذات إعادة التوجيه (card/BNPL/3DS) تحتاج تصميم callback موحّد — لذلك البناء الكامل خارج نطاق جلسة واحدة آمنة.
+
+## تدقيق المجالات الأربعة (واتساب/تكاملات/ولاء/دومين) — معايير عالمية
+
+### واتساب وحملاته — موجود، لكن P0 امتثال
+| # | المشكلة | الخطورة | الحالة |
+|---|---------|---------|--------|
+| WA1 | لا consent/opt-in — يُرسل لكل العملاء | P0 | ✅ عمود `whatsapp_marketing_consent` (افتراضي false) + فلترة resolveRecipients (migration 0069) |
+| WA2 | لا opt-out وارد (STOP) | P0 | ✅ `POST /webhooks/whatsapp/inbound` — تصنيف STOP/إيقاف (الكلمة الأولى)، مطابقة بالرقم عبر المتاجر، fail-closed + توكن ثابت الزمن. 9 اختبارات. (قوالب WABA: متابعة) |
+| WA3 | لا opt-out | P0 | ✅ عمود `whatsapp_opt_out` + فلترة + معالجة STOP الواردة (WA2) |
+| WA4 | إعادة دخول/إرسال مكرر (status='running' غير محروس، انتهاء القفل) | P1 | ✅ حارس running مضاف (atomic claim لاحقاً) |
+| WA5 | لا تتبّع تسليم | P1 | ✅ أعمدة delivered/read + `POST /webhooks/whatsapp/status` (DLR) — تقدّمي، idempotent، عدّادات حملة. هجرة 0070. 6 اختبارات |
+| WA6 | rate-limit ثابت بلا 429 backoff؛ مسار السلة المهجورة بلا throttle | P2 | 📋 |
+| WA7 | tenant isolation / authz | ✅ سليم |
+
+### التكاملات (salla/noon/amazon/zid) — موجودة، P0 أمني
+| # | المشكلة | الخطورة | الحالة |
+|---|---------|---------|--------|
+| INT1 | **بيانات اعتماد القنوات plaintext** | **P0** | ✅ مُشفّرة AES-256-GCM (`credential-cipher.ts`) في القنوات الأربع، متوافق مع القديم (decrypt fallback)، 4 اختبارات. (migration backfill للصفوف القديمة لاحقاً — تُعاد تشفيرها عند أول كتابة) |
+| INT2 | لا timeouts على fetch الصادر (sync يعلّق المجموعة) | P1 | ✅ `resilientFetch` (AbortController 15s) في 9 مواقع عبر القنوات الأربع |
+| INT3 | لا 429/Retry-After handling | P1 | ✅ يحترم 429 + Retry-After (ثوانٍ/HTTP-date) + backoff أُسّي بـ jitter |
+| INT4 | لا retry/backoff (idempotency-aware) | P1 | ✅ إعادة محاولة محافِظة: 429 لأي طريقة، شبكة/5xx للطرق غير المتغيّرة فقط (لا ازدواج POST). 8 اختبارات |
+| INT5 | لا inbound webhooks (polling فقط) → توقيع/dedup N/A لكن غياب ingestion ملاحظة | P1 | 📋 |
+| INT6 | per-SKU `catch{}` يبتلع سبب الخطأ + لا details في syncLogs | P2 | 📋 |
+| INT7 | tenant isolation عبر storeId سليم (لا tenantId عمود — defense-in-depth) | P2 | 📋 |
+
+### الولاء — ✅ مبني (الـ backend كاملاً)
+- ✅ `packages/loyalty-core` — earn/redeem/expiry نقي بـ decimal.js، 14 اختباراً.
+- ✅ schema `loyalty.ts` (settings/accounts/transactions ledger) + هجرة 0071 + snapshot + **idempotency بفهرس جزئي** `loyalty_tx_earn_order_uniq` (earn واحد لكل طلب).
+- ✅ `LoyaltyService` (commerce-core): getRules/updateRules (upsert)، earnFromOrder (idempotent: fast-path + التقاط 23505)، redeem (إعادة حساب داخل معاملة من رصيد مقفل)، expireAccount (كنس FIFO، لا يتجاوز الرصيد)، previewRedemption/listTransactions/balanceValue. 10 اختبارات.
+- ✅ مسارات API `/merchant/:storeId/loyalty` (settings GET/PUT، رصيد العميل، expire) + ربط الكسب في payment-webhook (online) و collectCOD (COD) — كلاهما best-effort بعد commit. 5 اختبارات.
+- 📋 **متبقٍّ**: واجهة العميل في storefront (عرض الرصيد + استبدال عند الدفع) — متابعة frontend.
+
+### ربط دومين خارجي — ✅ الكود + البنية كـكود مكتمل (DNS محجوب)
+- ✅ `packages/shared/custom-domain.ts` (normalize/validate/verify-record نقي، anti-takeover) — 11 اختباراً.
+- ✅ أعمدة stores (custom_domain/status/token/verified_at) + هجرة 0072 + فهرس فريد (لا اختطاف). 
+- ✅ `CustomDomainService` (set/verify عبر DNS TXT+CNAME/remove/getStatus، DNS قابل للحقن، `checkDnsRecords` نقي) — 14 اختباراً.
+- ✅ `resolveStoreByHost` + `GET /api/resolve-host` + مسار التاجr `/merchant/:storeId/domain` + `CustomDomainGate` في SPA (يحوّل `/`→`/s/:slug`) — 4 اختبارات.
+- ✅ **on-demand TLS كـكود**: `GET /api/internal/tls-check` (ask gate يمنع cert-exhaustion) + Caddyfiles staging/production (on_demand_tls + catch-all :443). 5 اختبارات.
+- 🔴 **محجوب (يحتاجك)**: سجل DNS `stores.haastores.com A 72.61.108.208` + نشر الـ Caddyfiles. زون haastores.com **ليس في حساب Hostinger المتصل** (`DNS_getDNSRecordsV1`→404) رغم أن staging.haastores.com يعمل — أي أن DNS مُدار في مكان آخر. لزم توجيهك.
+- مخاطر محلولة بالتصميم: domain takeover (فهرس فريد + تحقّق ملكية)، cert-exhaustion DoS (ask gate)، host-header injection (تطبيع صارم).

@@ -39,6 +39,8 @@ import { walletRouter } from './routes/wallet.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { settingsRouter } from './routes/settings.js';
 import { storefrontRouter } from './routes/storefront/index.js';
+import { resolveStoreByHost } from './routes/storefront/_shared.js';
+import { CustomDomainService } from '@haa/commerce-core';
 import { merchantDataRouter } from './routes/merchant-data.js';
 import { couponsRouter } from './routes/coupons.js';
 import { exportsRouter } from './routes/exports.js';
@@ -75,6 +77,8 @@ import { permissionsRouter } from './routes/permissions.js';
 import { pixelsRouter } from './routes/pixels.js';
 import { cartCampaignsRouter } from './routes/cart-campaigns.js';
 import { whatsappCampaignsRouter } from './routes/whatsapp-campaigns.js';
+import { loyaltyRouter } from './routes/loyalty.js';
+import { customDomainRouter } from './routes/custom-domain.js';
 import { outboundWebhooksRouter } from './routes/outbound-webhooks.js';
 import { zatcaRouter } from './routes/zatca.js';
 import { createDbClient, closeDbClient } from '@haa/db';
@@ -285,6 +289,32 @@ app.use('/marketplace*', async (c, next) => {
   await next();
 });
 
+// Resolve the store for the current Host (QA Custom Domain). Lets the SPA,
+// when served on a merchant custom domain or a *.haastores.com subdomain,
+// discover which store slug to bootstrap. Reads the forwarded/real Host.
+app.get('/api/resolve-host', async (c) => {
+  const host = c.req.header('x-forwarded-host')?.split(',')[0]?.trim()
+    || c.req.header('host')
+    || '';
+  const store = await resolveStoreByHost(host);
+  if (!store || store.status !== 'active' || !store.isActive || store.publishStatus !== 'published') {
+    return c.json({ success: true, data: { slug: null } });
+  }
+  return c.json({ success: true, data: { slug: store.slug, name: store.name } });
+});
+
+// On-demand TLS gate for Caddy (QA Custom Domain). Caddy calls this before
+// issuing a Let's Encrypt cert for an unknown host. We return 200 ONLY for a
+// genuinely active custom domain, so an attacker can't force cert issuance for
+// arbitrary hostnames (cert-exhaustion / rate-limit DoS). Any other host -> 404.
+app.get('/api/internal/tls-check', async (c) => {
+  const domain = c.req.query('domain') || '';
+  if (!domain) return c.json({ ok: false }, 400);
+  const store = await new CustomDomainService().getStoreByActiveDomain(domain);
+  if (!store) return c.json({ ok: false }, 404);
+  return c.json({ ok: true });
+});
+
 // Storefront API routes (JSON responses)
 app.route('/s', storefrontRouter);
 app.route('/marketplace', haaMarketplaceRouter);
@@ -331,6 +361,8 @@ app.route('/merchant/:storeId/audit', auditRouter);
 app.route('/merchant/:storeId/marketing', marketingRouter);
 app.route('/merchant/:storeId/abandoned-carts/campaigns', cartCampaignsRouter);
 app.route('/merchant/:storeId/whatsapp-campaigns', whatsappCampaignsRouter);
+app.route('/merchant/:storeId/loyalty', loyaltyRouter);
+app.route('/merchant/:storeId/domain', customDomainRouter);
 app.route('/merchant/:storeId/outbound-webhooks', outboundWebhooksRouter);
 app.route('/merchant/:storeId', zatcaRouter);
 

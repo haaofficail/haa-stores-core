@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { toMoneyNumber, formatAmount } from '@/lib/money';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { useSharedCart } from '@/hooks/CartContext';
@@ -23,6 +24,7 @@ function getVariantLabel(item: Cart['items'][number]): string {
   return '';
 }
 
+
 export default function Cart() {
   const { t } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
@@ -40,13 +42,25 @@ export default function Cart() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
 
+  useEffect(() => {
+    if (couponData) {
+      setCouponData(null);
+      setCouponError('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart?.subtotal, cart?.items.length]);
+
   const handleApplyCoupon = useCallback(async () => {
     const code = couponCode.trim();
     if (!code) return;
+    if (!slug || !cart) {
+      setCouponError(t('cart.couponInvalid', 'كود الخصم غير صالح'));
+      return;
+    }
     setCouponLoading(true);
     setCouponError('');
     try {
-      const result = await checkoutApi.validateCoupon(slug!, code, Number(cart!.subtotal));
+      const result = await checkoutApi.validateCoupon(slug, code, toMoneyNumber(cart.subtotal));
       if (result.valid) {
         setCouponData(result);
         toast.success(t('cart.couponApplied', 'تم تطبيق كود الخصم'));
@@ -165,8 +179,11 @@ export default function Cart() {
           <div className="lg:col-span-2 space-y-2">
             {cart.items.map((item) => {
               const variantLabel = getVariantLabel(item);
-              const availableStock = item.variant ? item.variant.stockQuantity : item.product.stockQuantity;
-              const maxQty = item.product.trackInventory ? Math.max(1, availableStock) : 99;
+              const rawStock = item.variant?.stockQuantity ?? item.product.stockQuantity ?? 0;
+              const availableStock = Number.isFinite(Number(rawStock)) ? Number(rawStock) : 0;
+              const maxQty = item.product.trackInventory ? availableStock : 99;
+              const isOutOfStock = item.product.trackInventory && availableStock < 1;
+              void isOutOfStock;
               return (
                 <StoreCard key={item.id} className="p-3">
                   <div className="flex items-center gap-3">
@@ -194,7 +211,7 @@ export default function Cart() {
                         </p>
                       )}
                       <p className="text-primary-600 font-semibold text-xs mt-0.5">
-                        {Number(item.unitPrice).toFixed(2)} <SarIcon size="md" />
+                        {formatAmount(item.unitPrice)} <SarIcon size="md" />
                       </p>
                       {(item.giftWrapSelected || item.sendAsGift) && (
                         <div className="flex flex-wrap gap-1 mt-0.5">
@@ -213,7 +230,7 @@ export default function Cart() {
                         disabled={updating === item.id}
                       />
                       <p className="font-semibold text-xs sm:w-16 sm:text-start">
-                        {Number(item.totalPrice).toFixed(2)} <SarIcon size="md" />
+                        {formatAmount(item.totalPrice)} <SarIcon size="md" />
                       </p>
                       <button
                         onClick={() => handleSaveForLater(item)}
@@ -273,7 +290,7 @@ export default function Cart() {
                             );
                           })()}
                           <p className="text-primary-600 font-semibold text-xs mt-0.5">
-                            {Number(item.unitPrice).toFixed(2)} <SarIcon size="md" />
+                            {formatAmount(item.unitPrice)} <SarIcon size="md" />
                           </p>
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -338,7 +355,7 @@ export default function Cart() {
                   <div>
                     <p className="text-xs font-bold text-primary-700">{couponData.code}</p>
                       <p className="text-[var(--badge-font-size)] text-primary-600">
-                        {t('cart.couponDiscount', 'الخصم')}: -{Number(couponData.discount).toFixed(2)} <SarIcon size="md" />
+                        {t('cart.couponDiscount', 'الخصم')}: -{formatAmount(couponData.discount)} <SarIcon size="md" />
                       </p>
                   </div>
                   <button
@@ -394,7 +411,7 @@ export default function Cart() {
                           {getVariantLabel(item)}
                         </p>
                       )}
-                      <p className="text-[var(--badge-font-size)] text-text-tertiary">{item.quantity} × {Number(item.unitPrice).toFixed(2)} <SarIcon size="sm" /></p>
+                      <p className="text-[var(--badge-font-size)] text-text-tertiary">{item.quantity} × {formatAmount(item.unitPrice)} <SarIcon size="sm" /></p>
                       {(item.giftWrapSelected || item.sendAsGift) && (
                          <div className="flex flex-wrap gap-1 mt-0.5">
                             {item.giftWrapSelected && <StoreBadge variant="info" size="sm"><Icon icon={Gift} size="2xs" className="inline align-middle ms-0.5" />{t('cart.giftWrap', 'تغليف')}</StoreBadge>}
@@ -402,7 +419,7 @@ export default function Cart() {
                          </div>
                       )}
                     </div>
-                    <p className="font-medium text-xs">{Number(item.totalPrice).toFixed(2)} <SarIcon size="md" /></p>
+                    <p className="font-medium text-xs">{formatAmount(item.totalPrice)} <SarIcon size="md" /></p>
                   </div>
                 ))}
               </div>
@@ -410,22 +427,28 @@ export default function Cart() {
               <div className="pt-3 space-y-1.5 border-t border-border">
                 <div className="flex justify-between text-xs">
                   <span className="text-text-secondary">{t('cart.subtotal')}</span>
-                  <span className="font-medium">{subtotal.toFixed(2)} <SarIcon size="md" /></span>
+                  <span className="font-medium">{formatAmount(subtotal)} <SarIcon size="md" /></span>
                 </div>
                 {couponData?.valid && (
                   <div className="flex justify-between text-xs">
                     <span className="text-text-secondary">{t('cart.couponDiscount', 'الخصم')}</span>
-                    <span className="font-medium text-primary-600">-{Number(couponData.discount).toFixed(2)} <SarIcon size="md" /></span>
+                    <span className="font-medium text-primary-600">-{formatAmount(couponData.discount)} <SarIcon size="md" /></span>
                   </div>
                 )}
                 <p className="text-xs text-text-tertiary text-start">{t('cart.shippingCalculated', 'سيتم حساب الشحن عند إتمام الطلب')}</p>
               </div>
 
               <div className="pt-3 mt-3 border-t border-border">
+                {(() => {
+                  const discountAmt = toMoneyNumber(couponData?.discount);
+                  const total = Math.max(0, toMoneyNumber(subtotal) - discountAmt);
+                  return (
                 <div className="flex justify-between items-center mb-3">
                   <span className="font-bold text-sm">{t('cart.total', 'الإجمالي')}</span>
-                  <span className="font-bold text-base text-primary-600">{(subtotal - (couponData?.discount || 0)).toFixed(2)} <SarIcon size="md" /></span>
+                  <span className="font-bold text-base text-primary-600">{formatAmount(total)} <SarIcon size="md" /></span>
                 </div>
+                  );
+                })()}
                 <StoreButton
                   href={`/s/${slug}/checkout${couponData?.valid && couponData.code ? `?coupon=${encodeURIComponent(couponData.code)}` : ''}`}
                   className="w-full"

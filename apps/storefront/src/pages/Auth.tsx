@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { normalizeStoreSlug, isSaudiPhone } from '@/lib/validation';
 import { merchantDashboardUrl } from '@/lib/merchant';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -19,6 +20,7 @@ function passwordStrength(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string
   if (score === 3) return { score: 3, label: 'جيدة', color: 'text-primary-500' };
   return { score: 4, label: 'قوية', color: 'text-success' };
 }
+
 
 import { StoreButton, StoreContainer, StoreInput } from '@/components/ui';
 import { useSEO } from '@/hooks/useSEO';
@@ -88,6 +90,7 @@ export function SignupPage() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [slugTouched, setSlugTouched] = useState(false);
 
   useSEO({
     title: t('auth.signup.metaTitle', 'سجّل كتاجر — Haa'),
@@ -96,21 +99,20 @@ export function SignupPage() {
 
   const onStoreNameChange = (value: string) => {
     setStoreName(value);
-    if (!storeSlug) {
-      const derived = value
-        .trim()
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-      setStoreSlug(derived);
+    if (!slugTouched) {
+      setStoreSlug(normalizeStoreSlug(value));
     }
   };
+
+  const phoneValid = isSaudiPhone(phone);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!phoneValid) {
+      setError(t('auth.signup.errors.invalidPhone', 'أدخل رقم جوال سعودي صحيح بصيغة 05XXXXXXXX.'));
+      return;
+    }
     setSubmitting(true);
     try {
       await authApi.register({
@@ -288,7 +290,7 @@ export function SignupPage() {
                   label={t('auth.signup.storeSlugLabel', 'رابط المتجر')}
                   required
                   value={storeSlug}
-                  onChange={(e) => setStoreSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                  onChange={(e) => { setSlugTouched(true); setStoreSlug(normalizeStoreSlug(e.target.value)); }}
                   placeholder="elegance-store"
                   pattern="[a-z0-9-]+"
                   minLength={3}
@@ -485,7 +487,7 @@ function AuthShell({ children }: { children: React.ReactNode }) {
     i18nT(key, fallback ?? key) as string;
 
   return (
-    <div id="storefront-scope" dir="rtl" className="relative min-h-screen overflow-x-hidden text-text-primary auth-scope">
+    <div id="auth-scope" data-theme-scope="auth" dir="rtl" className="relative min-h-screen overflow-x-hidden text-text-primary auth-scope">
 
       <AuroraBackground />
 
