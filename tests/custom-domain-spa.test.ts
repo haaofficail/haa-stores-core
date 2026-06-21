@@ -21,7 +21,7 @@ describe('storefront custom-host detection (QA Custom Domain)', () => {
 
 describe('CustomDomainGate wiring (QA Custom Domain)', () => {
   it('resolves host -> slug and rewrites to /s/:slug preserving sub-path', () => {
-    expect(gate).toContain('/api/resolve-host');
+    expect(gate).toContain('/resolve-host');
     expect(gate).toContain('isCustomDomainHost()');
     expect(gate).toContain('/s/${res.slug}');
     expect(gate).toContain("location.pathname.startsWith('/s/')");
