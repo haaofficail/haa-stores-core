@@ -259,17 +259,17 @@ describe('Final Compliance Regression Gate', () => {
 
     it('apiKey is fully masked', async () => {
       const { maskObject } = await import('../packages/shared/src/index.js');
-      expect(maskObject({ apiKey: 'sk_live_abc123' }).apiKey).toBe('***MASKED***');
+      expect(maskObject({ apiKey: 'TEST_API_KEY_PLACEHOLDER' }).apiKey).toBe('***MASKED***');
     });
 
     it('API_KEY (case-insensitive) is fully masked', async () => {
       const { maskObject } = await import('../packages/shared/src/index.js');
-      expect(maskObject({ API_KEY: 'sk_live_abc123' }).API_KEY).toBe('***MASKED***');
+      expect(maskObject({ API_KEY: 'TEST_API_KEY_PLACEHOLDER' }).API_KEY).toBe('***MASKED***');
     });
 
     it('ApiKey (mixed case) is fully masked', async () => {
       const { maskObject } = await import('../packages/shared/src/index.js');
-      expect(maskObject({ ApiKey: 'sk_live_abc123' }).ApiKey).toBe('***MASKED***');
+      expect(maskObject({ ApiKey: 'TEST_API_KEY_PLACEHOLDER' }).ApiKey).toBe('***MASKED***');
     });
 
     it('accessToken is fully masked', async () => {

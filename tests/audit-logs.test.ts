@@ -60,8 +60,8 @@ describe('AuditLogService', () => {
         storeId: 1,
         action: 'payment_settings_changed',
         entityType: 'payment',
-        oldValue: { secretKey: 'sk_live_abcdef123456', password: 'my_secret_pass' },
-        newValue: { secretKey: 'sk_live_xyz78901234', password: 'new_pass_123' },
+        oldValue: { secretKey: 'TEST_SECRET_PLACEHOLDER_OLD', password: 'TEST_PASSWORD_PLACEHOLDER_OLD' },
+        newValue: { secretKey: 'TEST_SECRET_PLACEHOLDER_NEW', password: 'TEST_PASSWORD_PLACEHOLDER_NEW' },
         ipAddress: '10.0.0.1',
         userAgent: 'TestAgent',
       });
@@ -191,8 +191,8 @@ describe('AuditLogService', () => {
       await service.record({
         action: 'payment_settings_changed',
         entityType: 'payment',
-        oldValue: { apiKey: 'sk_live_abcdef1234567890' },
-        newValue: { apiKey: 'sk_live_xyz78901234567890' },
+        oldValue: { apiKey: 'TEST_API_KEY_PLACEHOLDER_OLD' },
+        newValue: { apiKey: 'TEST_API_KEY_PLACEHOLDER_NEW' },
       });
       expect(db.insert).toHaveBeenCalled();
     });
@@ -203,8 +203,8 @@ describe('AuditLogService', () => {
       await service.record({
         action: 'payment_settings_changed',
         entityType: 'payment',
-        oldValue: { token: 'bearer_abc123secret' },
-        newValue: { token: 'bearer_xyz789newsecret' },
+        oldValue: { token: 'TEST_TOKEN_PLACEHOLDER_OLD' },
+        newValue: { token: 'TEST_TOKEN_PLACEHOLDER_NEW' },
       });
       expect(db.insert).toHaveBeenCalled();
     });
