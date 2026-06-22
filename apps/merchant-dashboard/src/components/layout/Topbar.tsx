@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Bell, Search, User, Menu } from 'lucide-react';
 import { useState } from 'react';
+import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
 
 export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
   const { t } = useTranslation();
@@ -10,6 +11,10 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // Cmd+K (macOS) / Ctrl+K (other) opens the search input — a standard
+  // power-user shortcut in modern dashboards.
+  useKeyboardShortcut({ key: 'k', onTrigger: () => setSearchOpen(true) });
 
   const pageTitles: Record<string, { title: string; subtitle: string }> = {
     '/dashboard': { title: t('pageTitle.dashboard', 'لوحة التحكم'), subtitle: t('pageTitle.dashboardSub', 'نظرة عامة على متجرك') },
@@ -43,7 +48,7 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
     <header className="h-16 bg-surface-1/80 backdrop-blur-xl flex items-center justify-between px-6 shrink-0 shadow-sm">
       <div className="flex items-center gap-4">
         {onToggleSidebar && (
-          <button onClick={onToggleSidebar} className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 lg:hidden transition-colors">
+          <button onClick={onToggleSidebar} className="min-h-11 min-w-11 p-3 rounded-lg text-neutral-500 hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 lg:hidden transition-colors">
             <Menu className="h-5 w-5" />
           </button>
         )}
@@ -72,7 +77,7 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
         ) : (
           <button
             onClick={() => setSearchOpen(true)}
-            className="p-2.5 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 hover:shadow-sm transition-all"
+            className="min-h-11 min-w-11 p-3 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 transition-all"
             title={t('topbar.search', 'بحث')}
             aria-label={t('topbar.search', 'بحث')}
           >
@@ -81,13 +86,13 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
         )}
 
         <button
-          className="relative p-2.5 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 hover:shadow-sm transition-all"
+          className="relative min-h-11 min-w-11 p-3 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 transition-all"
           title={t('topbar.notifications', 'الإشعارات')}
           aria-label={t('topbar.notifications', 'الإشعارات')}
           onClick={() => navigate('/notifications')}
         >
           <Bell className="h-5 w-5" />
-          <span className="absolute top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" style={{ insetInlineStart: '0.5rem' }} />
+          <span className="absolute top-2 h-2 w-2 rounded-full bg-danger ring-2 ring-white" style={{ insetInlineStart: '0.5rem' }} />
         </button>
 
         <div className="h-8 w-px bg-neutral-200 mx-1" />

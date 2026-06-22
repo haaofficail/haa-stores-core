@@ -12,8 +12,15 @@
 
 import { Crown } from "lucide-react";
 import type { TFunction } from "i18next";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { getRemainingDays } from "./constants";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type Props = {
   subscription: {
@@ -26,8 +33,16 @@ type Props = {
 
 export function SubscriptionBadge({ subscription, t }: Props) {
   if (!subscription) return null;
+  const days = getRemainingDays(subscription.currentPeriodEnd);
   return (
-    <div className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl bg-white/80 border border-neutral-200/50 shadow-sm w-fit">
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl bg-white/80 border border-neutral-200/50 shadow-sm w-fit min-h-11 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+            aria-label={t('subscriptions.viewPlan', 'تفاصيل الباقة')}
+          >
       <Crown className="h-3 w-3 text-amber-500 shrink-0" />
       <span className="font-medium text-neutral-600">
         {subscription.planName}
@@ -53,7 +68,6 @@ export function SubscriptionBadge({ subscription, t }: Props) {
                 : subscription.status}
       </span>
       {(() => {
-        const days = getRemainingDays(subscription.currentPeriodEnd);
         const color =
           days <= 7
             ? "text-red-600"
@@ -69,6 +83,33 @@ export function SubscriptionBadge({ subscription, t }: Props) {
           </span>
         );
       })()}
-    </div>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs space-y-2 p-3">
+          <div className="space-y-1">
+            <p className="text-xs font-bold text-neutral-900">
+              {subscription.planName} —{' '}
+              {t('subscriptions.remainingDays', '{{count}} يوم').replace(
+                '{{count}}',
+                String(days),
+              )}
+            </p>
+            <p className="text-xs text-neutral-500 leading-relaxed">
+              {days <= 7
+                ? t('subscriptions.trialEndingSoon', 'الفترة التجريبية تنتهي قريباً. رقّ خطتك لتجنّب إيقاف المتجر.')
+                : days <= 30
+                  ? t('subscriptions.trialEnding', 'تنتهي الفترة الحالية خلال شهر. يمكنك الترقية الآن.')
+                  : t('subscriptions.activeHint', 'باقتك نشطة. يمكنك إدارة الفوترة من الإعدادات.')}
+            </p>
+          </div>
+          <Link
+            to="/settings/subscription"
+            className="inline-flex h-9 items-center justify-center rounded-lg bg-primary-500 px-3 text-xs font-bold text-white hover:bg-primary-600 transition-colors"
+          >
+            {t('subscriptions.upgrade', 'ترقية الباقة')}
+          </Link>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

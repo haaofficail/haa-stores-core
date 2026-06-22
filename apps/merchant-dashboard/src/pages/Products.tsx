@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { productsApi, categoriesApi, brandsApi, tagsApi, marketplaceApi, settingsApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -566,19 +567,26 @@ export default function Products() {
             <Button variant="outline" size="sm" className="h-8 text-sm" onClick={loadProducts}>{t('common.retry')}</Button>
           </div>
         ) : products.length === 0 ? (
-          <div className="p-12 text-center">
-            <div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4">
-              <Package className="h-8 w-8 text-neutral-400" />
-            </div>
-            <p className="text-sm text-neutral-500">
-              {(search || statusFilter || categoryFilter || brandFilter || tagFilter || stockFilter || typeFilter)
-                ? t('products.noMatch')
-                : t('products.noProducts')}
-            </p>
-            {!(search || statusFilter || categoryFilter || brandFilter || tagFilter || stockFilter || typeFilter) && (
-              <PermissionGate permission="products:create" fallback={null}><Button variant="outline" size="sm" className="h-8 text-sm mt-4" onClick={openCreate}>{t('products.create')}</Button></PermissionGate>
-            )}
-          </div>
+          <EmptyState
+            icon={<Package className="h-8 w-8" />}
+            title={
+              (search || statusFilter || categoryFilter || brandFilter || tagFilter || stockFilter || typeFilter)
+                ? t('products.noMatchTitle', 'لا توجد نتائج مطابقة')
+                : t('products.noProductsTitle', 'لا توجد منتجات بعد')
+            }
+            description={
+              (search || statusFilter || categoryFilter || brandFilter || tagFilter || stockFilter || typeFilter)
+                ? t('products.noMatch', 'لم نجد منتجات تطابق الفلاتر. جرّب مسح الفلاتر أو تعديل البحث.')
+                : t('products.noProductsDesc', 'أضف منتجك الأول وابدأ البيع. يمكنك الاستيراد لاحقاً من Excel أو CSV.')
+            }
+            action={
+              !(search || statusFilter || categoryFilter || brandFilter || tagFilter || stockFilter || typeFilter) && (
+                <PermissionGate permission="products:create" fallback={null}>
+                  <Button className="h-11 px-5 text-sm" onClick={openCreate}>{t('products.create')}</Button>
+                </PermissionGate>
+              )
+            }
+          />
         ) : (<>
           <ProductBulkActionsBar
             selectedCount={selectedIds.size}
