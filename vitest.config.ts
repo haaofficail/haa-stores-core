@@ -31,7 +31,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     // Smoke test excluded from regular runs because it requires a running API server with seeded data.
     // Run manually with: pnpm smoke
     exclude: ['tests/smoke.test.ts', 'tests/**/*.integration.test.ts'],

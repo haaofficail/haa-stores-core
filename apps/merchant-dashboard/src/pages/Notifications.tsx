@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { notificationApi, providerStatusApi, type ProviderStatus } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -7,11 +8,17 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Mail, MessageSquare, Smartphone, Save, Loader2, Clock } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
+import { Bell, Mail, MessageSquare, Smartphone, Save, Loader2, Clock, Settings as SettingsIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { ApiClientError } from '@/lib/api';
 import { useTranslation } from 'react-i18next';
 import { PermissionGate } from '@/lib/permissions';
+import { messageFromError } from '@/lib/error-mapper';
 
 interface NotificationPreferences {
   id: number;
@@ -85,13 +92,11 @@ export default function Notifications() {
       if (logsData) setLogs(logsData);
       setProviderStatus(providerData);
     } catch (e) {
-      if (e instanceof ApiClientError) {
-        toast.error(e.message);
-      }
+      toast.error(messageFromError(e, t));
     } finally {
       setLoading(false);
     }
-  }, [storeId]);
+  }, [storeId, t]);
 
   useEffect(() => {
     loadData();
@@ -120,13 +125,22 @@ export default function Notifications() {
       }
       toast.success(t('notifications.saved'));
     } catch (e) {
-      if (e instanceof ApiClientError) {
-        toast.error(e.message);
-      }
+      toast.error(messageFromError(e, t));
     } finally {
       setSaving(false);
     }
   };
+
+  // Audit Part 5 P0 #2 — gate channel switches on provider configuration.
+  // Before this, flipping SMS or WhatsApp ON would show "saved" but no
+  // message would ever leave the system because the underlying provider
+  // wasn't configured. We now require providerStatus.<channel>.status to
+  // be 'configured' before the switch becomes interactive, and surface
+  // an inline link to the IntegrationHub so the merchant knows where to
+  // fix it. SMS has no provider in this codebase yet — it is treated as
+  // permanently "not_configured" until one is wired up.
+  const whatsappConfigured = providerStatus?.whatsapp.status === 'configured';
+  const smsConfigured = false; // No SMS provider field exists on ProviderStatus yet.
 
   const channelIcon = (channel: string) => {
     switch (channel) {
@@ -156,7 +170,7 @@ export default function Notifications() {
     <div className="space-y-6 max-w-4xl mx-auto animate-fade-in">
       <div className="flex items-center gap-3">
         <Bell className="h-6 w-6 text-primary-500" />
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('notifications.title')}</h1>
+        <h1 className="text-2xl font-bold text-neutral-900">{t('notifications.title')}</h1>
       </div>
 
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
@@ -217,55 +231,153 @@ export default function Notifications() {
               )}
             </div>
 
-            <div className="border border-neutral-100 rounded-2xl bg-white/50 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Smartphone className="h-5 w-5 text-neutral-400" />
-                  <span className="font-medium text-sm text-neutral-900">{t('notifications.sms')}</span>
+            {/*
+              Audit Part 5 P0 #2 — SMS gating.
+              The switch is non-interactive until a real SMS provider is
+              configured. Today, ProviderStatus has no `sms` field at all,
+              so smsConfigured is hard-coded false. A tooltip explains why
+              and the inline link sends the merchant to IntegrationHub.
+            */}
+            <TooltipProvider>
+              <div
+                data-testid="sms-channel-row"
+                data-configured={smsConfigured ? 'true' : 'false'}
+                className="border border-neutral-100 rounded-2xl bg-white/50 p-4 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Smartphone className="h-5 w-5 text-neutral-400" />
+                    <span className="font-medium text-sm text-neutral-900">{t('notifications.sms')}</span>
+                    {!smsConfigured && (
+                      <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                        {t('notifications.providerNotConfiguredBadge', 'لم يُعدّ بعد')}
+                      </Badge>
+                    )}
+                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex">
+                        <Switch
+                          data-testid="sms-channel-switch"
+                          aria-label={t('notifications.sms')}
+                          checked={smsConfigured ? prefs.smsEnabled : false}
+                          disabled={!smsConfigured}
+                          onCheckedChange={(v) => setPrefs(p => ({ ...p, smsEnabled: v }))}
+                        />
+                      </span>
+                    </TooltipTrigger>
+                    {!smsConfigured && (
+                      <TooltipContent>
+                        {t(
+                          'notifications.providerNotConfiguredTooltip',
+                          'فعّل مزود الخدمة أولاً قبل تشغيل هذه القناة',
+                        )}
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
                 </div>
-                <Switch
-                  checked={prefs.smsEnabled}
-                  onCheckedChange={(v) => setPrefs(p => ({ ...p, smsEnabled: v }))}
-                />
+                {!smsConfigured && (
+                  <p className="text-xs text-amber-700">
+                    {t(
+                      'notifications.smsProviderNotConfigured',
+                      'قناة SMS غير مُعدّة. ',
+                    )}
+                    <Link
+                      data-testid="sms-configure-link"
+                      to="/settings/integrations"
+                      className="inline-flex items-center gap-1 font-semibold text-primary-600 hover:underline"
+                    >
+                      <SettingsIcon className="h-3.5 w-3.5" />
+                      {t('notifications.configureProvider', 'اذهب إلى إعداد المزود')}
+                    </Link>
+                  </p>
+                )}
+                {smsConfigured && prefs.smsEnabled && (
+                  <div>
+                    <Label htmlFor="smsPhone" className="text-sm text-neutral-500">{t('notifications.smsLabel')}</Label>
+                    <Input
+                      id="smsPhone"
+                      value={prefs.smsPhone || ''}
+                      onChange={e => setPrefs(p => ({ ...p, smsPhone: e.target.value }))}
+                      placeholder={t('notifications.phonePlaceholder')}
+                      className="h-9 text-sm mt-1"
+                    />
+                  </div>
+                )}
               </div>
-              {prefs.smsEnabled && (
-                <div>
-                  <Label htmlFor="smsPhone" className="text-sm text-neutral-500">{t('notifications.smsLabel')}</Label>
-                  <Input
-                    id="smsPhone"
-                    value={prefs.smsPhone || ''}
-                    onChange={e => setPrefs(p => ({ ...p, smsPhone: e.target.value }))}
-                    placeholder={t('notifications.phonePlaceholder')}
-                    className="h-9 text-sm mt-1"
-                  />
-                </div>
-              )}
-            </div>
 
-            <div className="border border-neutral-100 rounded-2xl bg-white/50 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-neutral-400" />
-                  <span className="font-medium text-sm text-neutral-900">{t('notifications.whatsapp')}</span>
+              {/*
+                Audit Part 5 P0 #2 — WhatsApp gating.
+                Reads providerStatus.whatsapp.status. When not 'configured'
+                the switch is disabled with the same tooltip + link pattern.
+              */}
+              <div
+                data-testid="whatsapp-channel-row"
+                data-configured={whatsappConfigured ? 'true' : 'false'}
+                className="border border-neutral-100 rounded-2xl bg-white/50 p-4 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-neutral-400" />
+                    <span className="font-medium text-sm text-neutral-900">{t('notifications.whatsapp')}</span>
+                    {!whatsappConfigured && (
+                      <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                        {t('notifications.providerNotConfiguredBadge', 'لم يُعدّ بعد')}
+                      </Badge>
+                    )}
+                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex">
+                        <Switch
+                          data-testid="whatsapp-channel-switch"
+                          aria-label={t('notifications.whatsapp')}
+                          checked={whatsappConfigured ? prefs.whatsappEnabled : false}
+                          disabled={!whatsappConfigured}
+                          onCheckedChange={(v) => setPrefs(p => ({ ...p, whatsappEnabled: v }))}
+                        />
+                      </span>
+                    </TooltipTrigger>
+                    {!whatsappConfigured && (
+                      <TooltipContent>
+                        {t(
+                          'notifications.providerNotConfiguredTooltip',
+                          'فعّل مزود الخدمة أولاً قبل تشغيل هذه القناة',
+                        )}
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
                 </div>
-                <Switch
-                  checked={prefs.whatsappEnabled}
-                  onCheckedChange={(v) => setPrefs(p => ({ ...p, whatsappEnabled: v }))}
-                />
+                {!whatsappConfigured && (
+                  <p className="text-xs text-amber-700">
+                    {t(
+                      'notifications.whatsappProviderNotConfigured',
+                      'قناة واتساب غير مُعدّة. ',
+                    )}
+                    <Link
+                      data-testid="whatsapp-configure-link"
+                      to="/settings/integrations"
+                      className="inline-flex items-center gap-1 font-semibold text-primary-600 hover:underline"
+                    >
+                      <SettingsIcon className="h-3.5 w-3.5" />
+                      {t('notifications.configureProvider', 'اذهب إلى إعداد المزود')}
+                    </Link>
+                  </p>
+                )}
+                {whatsappConfigured && prefs.whatsappEnabled && (
+                  <div>
+                    <Label htmlFor="whatsappPhone" className="text-sm text-neutral-500">{t('notifications.whatsappLabel')}</Label>
+                    <Input
+                      id="whatsappPhone"
+                      value={prefs.whatsappPhone || ''}
+                      onChange={e => setPrefs(p => ({ ...p, whatsappPhone: e.target.value }))}
+                      placeholder={t('notifications.phonePlaceholder')}
+                      className="h-9 text-sm mt-1"
+                    />
+                  </div>
+                )}
               </div>
-              {prefs.whatsappEnabled && (
-                <div>
-                  <Label htmlFor="whatsappPhone" className="text-sm text-neutral-500">{t('notifications.whatsappLabel')}</Label>
-                  <Input
-                    id="whatsappPhone"
-                    value={prefs.whatsappPhone || ''}
-                    onChange={e => setPrefs(p => ({ ...p, whatsappPhone: e.target.value }))}
-                    placeholder={t('notifications.phonePlaceholder')}
-                    className="h-9 text-sm mt-1"
-                  />
-                </div>
-              )}
-            </div>
+            </TooltipProvider>
           </div>
 
           <div className="space-y-4">
