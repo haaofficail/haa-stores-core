@@ -167,7 +167,7 @@ export default function Brands() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">الماركات</h1>
         <PermissionGate permission="brands:manage">
-          <Button onClick={openCreate} className="h-9 text-sm px-4"><Plus className="h-4 w-4 mr-2" />إضافة ماركة</Button>
+          <Button onClick={openCreate} className="h-9 text-sm px-4"><Plus className="h-4 w-4 me-2" />إضافة ماركة</Button>
         </PermissionGate>
       </div>
 

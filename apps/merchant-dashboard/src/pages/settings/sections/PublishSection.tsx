@@ -146,12 +146,12 @@ export function PublishSection({ storeId }: { storeId: number | null }) {
           <Badge className={`${statusConfig.bg} ${statusConfig.color} border-0`}>{statusConfig.label}</Badge>
           {publishStatus === 'published' ? (
             <PermissionGate permission="settings:update"><Button variant="outline" size="sm" onClick={handleUnpublish} disabled={publishing}>
-              {publishing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {publishing && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
               {t('settings.publish.unpublish', 'إلغاء النشر')}
             </Button></PermissionGate>
           ) : (
             <PermissionGate permission="settings:update"><Button size="sm" onClick={handlePublish} disabled={publishing || !canPublish}>
-              {publishing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {publishing && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
               {t('settings.publish.publish', 'نشر المتجر')}
             </Button></PermissionGate>
           )}
@@ -218,7 +218,7 @@ export function PublishSection({ storeId }: { storeId: number | null }) {
           <div className="flex gap-3 mt-6">
             <Button variant="outline" onClick={() => setShowAckDialog(false)} className="flex-1">إلغاء</Button>
             <PermissionGate permission="settings:update"><Button onClick={handleAcknowledge} disabled={!allChecked || ackSubmitting} className="flex-1">
-              {ackSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {ackSubmitting && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
               تأكيد الإقرار
             </Button></PermissionGate>
           </div>

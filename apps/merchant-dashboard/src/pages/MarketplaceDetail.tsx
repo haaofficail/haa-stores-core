@@ -160,18 +160,18 @@ export default function MarketplaceDetailPage() {
             <p className="text-sm text-neutral-500 mb-6">{t('marketplaceDetail.connectPrompt', `اربط متجر ${meta.name} للبدء في مزامنة المنتجات والطلبات`)}</p>
 
             {usesManualCreds && provider === 'noon' && (
-              <div className="max-w-md mx-auto text-right space-y-4 mb-6">
+              <div className="max-w-md mx-auto text-start space-y-4 mb-6">
                 {(['clientId', 'privateKey', 'sellerName', 'partnerId', 'warehouseCode'] as const).map(field => (
                   <div key={field} className="space-y-1.5">
                     <Label className="text-sm font-medium text-neutral-700">
                       {field === 'clientId' ? 'Client ID' : field === 'privateKey' ? 'Private Key' : field === 'sellerName' ? 'Seller Name' : field === 'partnerId' ? 'Partner ID' : 'Warehouse Code'}
                     </Label>
                     {field === 'privateKey' ? (
-                      <textarea dir="ltr" className="w-full rounded-xl border border-neutral-200 bg-white/50 p-3 text-sm font-mono text-left resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" rows={3}
+                      <textarea dir="ltr" className="w-full rounded-xl border border-neutral-200 bg-white/50 p-3 text-sm font-mono text-end resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" rows={3}
                         placeholder="-----BEGIN RSA PRIVATE KEY----- ..."
                         value={noonCreds[field]} onChange={(e) => setNoonCreds({ ...noonCreds, [field]: e.target.value })} />
                     ) : (
-                      <Input dir="ltr" className="text-left rounded-xl border-neutral-200 bg-white/50" placeholder={t('marketplaceDetail.enterField', `ادخل ${field}`)}
+                      <Input dir="ltr" className="text-end rounded-xl border-neutral-200 bg-white/50" placeholder={t('marketplaceDetail.enterField', `ادخل ${field}`)}
                         value={noonCreds[field]} onChange={(e) => setNoonCreds({ ...noonCreds, [field]: e.target.value })} />
                     )}
                   </div>
@@ -179,18 +179,18 @@ export default function MarketplaceDetailPage() {
               </div>
             )}
             {usesManualCreds && provider === 'amazon' && (
-              <div className="max-w-md mx-auto text-right space-y-4 mb-6">
+              <div className="max-w-md mx-auto text-start space-y-4 mb-6">
                 {(['clientId', 'clientSecret', 'refreshToken', 'awsAccessKey', 'awsSecretKey'] as const).map(field => (
                   <div key={field} className="space-y-1.5">
                     <Label className="text-sm font-medium text-neutral-700">
                       {field === 'clientId' ? 'Client ID' : field === 'clientSecret' ? 'Client Secret' : field === 'refreshToken' ? 'Refresh Token' : field === 'awsAccessKey' ? 'AWS Access Key' : 'AWS Secret Key'}
                     </Label>
                     {field === 'clientSecret' ? (
-                      <textarea dir="ltr" className="w-full rounded-xl border border-neutral-200 bg-white/50 p-3 text-sm font-mono text-left resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" rows={3}
+                      <textarea dir="ltr" className="w-full rounded-xl border border-neutral-200 bg-white/50 p-3 text-sm font-mono text-end resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" rows={3}
                         placeholder="SP-API Client Secret"
                         value={amazonCreds[field]} onChange={(e) => setAmazonCreds({ ...amazonCreds, [field]: e.target.value })} />
                     ) : (
-                      <Input dir="ltr" className="text-left rounded-xl border-neutral-200 bg-white/50" placeholder={t('marketplaceDetail.enterField', `ادخل ${field}`)}
+                      <Input dir="ltr" className="text-end rounded-xl border-neutral-200 bg-white/50" placeholder={t('marketplaceDetail.enterField', `ادخل ${field}`)}
                         value={amazonCreds[field]} onChange={(e) => setAmazonCreds({ ...amazonCreds, [field]: e.target.value })} />
                     )}
                   </div>

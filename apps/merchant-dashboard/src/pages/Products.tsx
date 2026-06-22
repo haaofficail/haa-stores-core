@@ -459,7 +459,7 @@ export default function Products() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">{t('products.title')}</h1>
         <PermissionGate permission="products:create" fallback={null}><Button onClick={openCreate} className="h-9 text-sm px-4">
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 me-2" />
           {t('products.create')}
         </Button></PermissionGate>
       </div>
@@ -761,7 +761,7 @@ export default function Products() {
                   setPublishProductData(null);
                   loadProducts();
                 }}>
-                {publishing ? <Loader2 className="h-4 w-4 ml-1 animate-spin" /> : <Globe className="h-4 w-4 ml-1" />}
+                {publishing ? <Loader2 className="h-4 w-4 ms-1 animate-spin" /> : <Globe className="h-4 w-4 ms-1" />}
                 {publishing ? 'جاري النشر...' : selectedChannels.length === 0 ? 'نشر' : `نشر في ${selectedChannels.length} ${selectedChannels.length === 1 ? 'قناة' : 'قنوات'}`}
               </Button>
             </div>

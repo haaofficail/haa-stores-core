@@ -346,7 +346,7 @@ export default function WalletPage() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className="pr-9 h-9 text-sm"
+                className="pe-9 h-9 text-sm"
               />
             </div>
             <Button variant="outline" className="h-9 text-sm" onClick={handleSearch}>{t('common.search')}</Button>
@@ -436,7 +436,7 @@ export default function WalletPage() {
                   <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('wallet.date')}</TableHead>
                   <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('wallet.type')}</TableHead>
                   <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('wallet.direction')}</TableHead>
-                  <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right">{t('wallet.amount')}</TableHead>
+                  <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start">{t('wallet.amount')}</TableHead>
                   <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('wallet.status')}</TableHead>
                   <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('wallet.description')}</TableHead>
                   <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('wallet.reference')}</TableHead>
@@ -465,7 +465,7 @@ export default function WalletPage() {
                         {t(`wallet.${e.direction}` as any)}
                       </span>
                     </TableCell>
-                    <TableCell className={`text-sm font-medium text-right tabular-nums p-3 ${e.direction === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                    <TableCell className={`text-sm font-medium text-start tabular-nums p-3 ${e.direction === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
                       {e.direction === 'credit' ? '+' : '-'}{fmt(e.amount)} {t('common.sar')}
                     </TableCell>
                     <TableCell className="p-3">

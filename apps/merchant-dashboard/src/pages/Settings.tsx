@@ -302,7 +302,7 @@ export default function SettingsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm text-neutral-500">{t('settings.storeSlug')} <span className="text-red-500">*</span></Label>
-                <Input value={form.slug} onChange={e => updateField('slug', e.target.value)} dir="ltr" className="text-left h-9 text-sm" />
+                <Input value={form.slug} onChange={e => updateField('slug', e.target.value)} dir="ltr" className="text-end h-9 text-sm" />
                 <p className="text-xs text-neutral-400">{t('settings.slugHint')}</p>
                 <FieldError message={errors.slug} />
               </div>
@@ -366,7 +366,7 @@ export default function SettingsPage() {
                 <Label className="text-sm text-neutral-500">{t('settings.primaryColor')}</Label>
                 <div className="flex gap-2 items-center">
                   <input type="color" value={form.primaryColor} onChange={e => updateField('primaryColor', e.target.value)} className="h-9 w-9 rounded-xl border cursor-pointer" />
-                  <Input value={form.primaryColor} onChange={e => updateField('primaryColor', e.target.value)} dir="ltr" className="text-left flex-1 h-9 text-sm" />
+                  <Input value={form.primaryColor} onChange={e => updateField('primaryColor', e.target.value)} dir="ltr" className="text-end flex-1 h-9 text-sm" />
                 </div>
                 <FieldError message={errors.primaryColor} />
               </div>
@@ -398,11 +398,11 @@ export default function SettingsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-sm text-neutral-500">{t('settings.phone')}</Label>
-                <Input value={form.phone} onChange={e => updateField('phone', e.target.value)} dir="ltr" className="text-left h-9 text-sm" placeholder="+966..." />
+                <Input value={form.phone} onChange={e => updateField('phone', e.target.value)} dir="ltr" className="text-end h-9 text-sm" placeholder="+966..." />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm text-neutral-500">{t('settings.email')}</Label>
-                <Input value={form.email} onChange={e => updateField('email', e.target.value)} dir="ltr" className="text-left h-9 text-sm" placeholder="store@example.com" />
+                <Input value={form.email} onChange={e => updateField('email', e.target.value)} dir="ltr" className="text-end h-9 text-sm" placeholder="store@example.com" />
                 <FieldError message={errors.email} />
               </div>
             </div>
@@ -562,7 +562,7 @@ export default function SettingsPage() {
                 } catch { toast.error(t('common.error')); }
                 finally { setStoreConfigSaving(false); }
               }}>
-                {storeConfigSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {storeConfigSaving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
                 {storeConfigSaving ? t('common.saving') : t('common.save')}
               </Button></PermissionGate>
             </div>
@@ -633,7 +633,7 @@ export default function SettingsPage() {
                 } catch { toast.error(t('common.error')); }
                 finally { setFeaturesSaving(false); }
               }}>
-                {featuresSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {featuresSaving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
                 {featuresSaving ? t('common.saving') : t('common.save')}
               </Button></PermissionGate>
             </div>
@@ -678,7 +678,7 @@ export default function SettingsPage() {
                 <div className="space-y-1.5">
                   <Label className="text-sm text-neutral-500">الجدول CSV</Label>
                   <textarea
-                    className="flex min-h-36 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-mono text-left direction-ltr focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
+                    className="flex min-h-36 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-mono text-end direction-ltr focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                     dir="ltr"
                     value={sizeGuideForm.rowsText}
                     onChange={e => setSizeGuideForm(p => ({ ...p, rowsText: e.target.value }))}
@@ -717,7 +717,7 @@ export default function SettingsPage() {
                 <div className="flex justify-end gap-2 border-t border-neutral-100 pt-4">
                   {sizeGuideEditId && <Button variant="outline" className="h-9 text-sm" onClick={resetSizeGuideForm}>إلغاء التعديل</Button>}
                   <PermissionGate permission="settings:update"><Button className="h-9 text-sm" onClick={saveSizeGuide} disabled={sizeGuideSaving}>
-                    {sizeGuideSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {sizeGuideSaving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
                     {sizeGuideEditId ? 'تحديث الدليل' : 'إضافة الدليل'}
                   </Button></PermissionGate>
                 </div>
@@ -797,7 +797,7 @@ export default function SettingsPage() {
             <SectionHeader title={t('settings.sectionGift', 'الهدايا والتغليف')} description={t('settings.sectionGiftDesc', 'إعدادات تغليف الهدايا وإرسالها')} />
             {!features.giftWrap && !features.sendAsGift ? (
               <div className="p-4 bg-amber-50 text-amber-700 rounded-2xl text-sm">
-                <AlertTriangle className="h-4 w-4 inline ml-1" />
+                <AlertTriangle className="h-4 w-4 inline ms-1" />
                 {t('settings.giftDisabledHint', 'فعّل خيار تغليف الهدايا أو إرسال كهدية من تبويب الميزات لاستخدام هذه الإعدادات')}
               </div>
             ) : giftOptionsLoading ? (
@@ -846,7 +846,7 @@ export default function SettingsPage() {
                       } catch { toast.error(t('common.error')); }
                       finally { setGiftOptionsSaving(false); }
                     }}>
-                    {giftOptionsSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {giftOptionsSaving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
                     {giftOptionsSaving ? t('common.saving') : t('common.save')}
                   </Button></PermissionGate>
                 </div>
@@ -864,7 +864,7 @@ export default function SettingsPage() {
                 setPickupEditId(null);
                 setPickupForm({ nameAr: '', nameEn: '', address: '', mapsUrl: '', phone: '', hours: '{}', instructions: '', isActive: true });
                 setPickupDialog(true);
-              }} className="h-9 text-sm"><Plus className="h-4 w-4 mr-2" />{t('settings.createPickup', 'إضافة فرع')}</Button></PermissionGate>
+              }} className="h-9 text-sm"><Plus className="h-4 w-4 me-2" />{t('settings.createPickup', 'إضافة فرع')}</Button></PermissionGate>
             </div>
             {pickupLocationsLoading ? (
               <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
@@ -955,7 +955,7 @@ export default function SettingsPage() {
                     } catch { toast.error(t('common.error')); }
                     finally { setGiftOptionsSaving(false); }
                   }}>
-                  {giftOptionsSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                  {giftOptionsSaving && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
                   {t('common.save')}
                 </Button></PermissionGate>
               </div>
@@ -980,7 +980,7 @@ export default function SettingsPage() {
           }
         }}>{t('common.cancel')}</Button>
         <PermissionGate permission="settings:update"><Button className="h-9 text-sm" onClick={save} disabled={saving}>
-          {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          {saving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
           {saving ? t('common.loading') : t('common.save')}
         </Button></PermissionGate>
       </div>
@@ -1079,7 +1079,7 @@ export default function SettingsPage() {
                   toast.error(err instanceof ApiClientError ? err.message : t('common.error'));
                 } finally { setPickupSaving(false); }
               }}>
-              {pickupSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {pickupSaving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
               {pickupSaving ? t('common.saving') : t('common.save')}
             </Button></PermissionGate>
           </div>

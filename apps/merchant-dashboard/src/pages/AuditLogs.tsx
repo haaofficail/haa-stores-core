@@ -226,9 +226,9 @@ export default function AuditLogs() {
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
-          <Filter className="h-4 w-4 ml-2" />
+          <Filter className="h-4 w-4 ms-2" />
           {t('audit.filters', 'الفلاتر')}
-          {hasFilters && <Badge className="mr-2 bg-primary-500 text-white border-0 h-5 w-5 p-0 flex items-center justify-center text-xs">!</Badge>}
+          {hasFilters && <Badge className="me-2 bg-primary-500 text-white border-0 h-5 w-5 p-0 flex items-center justify-center text-xs">!</Badge>}
         </Button>
       </div>
 
@@ -272,7 +272,7 @@ export default function AuditLogs() {
             {hasFilters && (
               <div className="mt-3 flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  <X className="h-3.5 w-3.5 ml-1" />
+                  <X className="h-3.5 w-3.5 ms-1" />
                   {t('audit.clearFilters', 'مسح الفلاتر')}
                 </Button>
                 <span className="text-xs text-neutral-400">{total} نتيجة</span>

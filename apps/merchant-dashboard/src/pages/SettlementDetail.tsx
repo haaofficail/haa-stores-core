@@ -256,13 +256,13 @@ export default function SettlementDetail() {
               <TableRow className="border-neutral-100 hover:bg-transparent">
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium whitespace-nowrap">{t('settlement.orderNumber', 'رقم الطلب')}</TableHead>
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium whitespace-nowrap">{t('settlement.paymentDate', 'تاريخ الدفع')}</TableHead>
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right whitespace-nowrap">{t('settlement.grossAmount', 'إجمالي الطلب')}</TableHead>
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right whitespace-nowrap">{t('settlement.gatewayFees', 'رسوم البوابة')}</TableHead>
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right whitespace-nowrap">{t('settlement.platformFees', 'رسوم المنصة')}</TableHead>
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right whitespace-nowrap">{t('settlement.shippingAmount', 'مبلغ الشحن')}</TableHead>
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right whitespace-nowrap">{t('settlement.discountAmount', 'الخصم')}</TableHead>
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right whitespace-nowrap">{t('settlement.refundReserve', 'احتياطي الاسترداد')}</TableHead>
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right whitespace-nowrap">{t('settlement.netPayable', 'صافي المستحق')}</TableHead>
+                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start whitespace-nowrap">{t('settlement.grossAmount', 'إجمالي الطلب')}</TableHead>
+                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start whitespace-nowrap">{t('settlement.gatewayFees', 'رسوم البوابة')}</TableHead>
+                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start whitespace-nowrap">{t('settlement.platformFees', 'رسوم المنصة')}</TableHead>
+                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start whitespace-nowrap">{t('settlement.shippingAmount', 'مبلغ الشحن')}</TableHead>
+                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start whitespace-nowrap">{t('settlement.discountAmount', 'الخصم')}</TableHead>
+                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start whitespace-nowrap">{t('settlement.refundReserve', 'احتياطي الاسترداد')}</TableHead>
+                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start whitespace-nowrap">{t('settlement.netPayable', 'صافي المستحق')}</TableHead>
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium whitespace-nowrap">{t('settlement.reconciliationStatus', 'حالة المطابقة')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -288,25 +288,25 @@ export default function SettlementDetail() {
                     <TableCell className="text-xs text-neutral-400 p-3 whitespace-nowrap">
                       {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString('ar-SA') : '-'}
                     </TableCell>
-                    <TableCell className="text-sm font-medium text-right tabular-nums p-3 whitespace-nowrap">
+                    <TableCell className="text-sm font-medium text-start tabular-nums p-3 whitespace-nowrap">
                       {formatCurrency(tx.amount ?? 0)} {t('common.sar')}
                     </TableCell>
-                    <TableCell className="text-sm text-right tabular-nums text-red-600 p-3 whitespace-nowrap">
+                    <TableCell className="text-sm text-start tabular-nums text-red-600 p-3 whitespace-nowrap">
                       {formatCurrency(tx.gatewayFees ?? 0)} {t('common.sar')}
                     </TableCell>
-                    <TableCell className="text-sm text-right tabular-nums text-orange-600 p-3 whitespace-nowrap">
+                    <TableCell className="text-sm text-start tabular-nums text-orange-600 p-3 whitespace-nowrap">
                       {formatCurrency(tx.platformFees ?? 0)} {t('common.sar')}
                     </TableCell>
-                    <TableCell className="text-sm text-right tabular-nums text-neutral-900 p-3 whitespace-nowrap">
+                    <TableCell className="text-sm text-start tabular-nums text-neutral-900 p-3 whitespace-nowrap">
                       {tx.shippingAmount != null ? `${formatCurrency(tx.shippingAmount)} ${t('common.sar')}` : '-'}
                     </TableCell>
-                    <TableCell className="text-sm text-right tabular-nums text-rose-600 p-3 whitespace-nowrap">
+                    <TableCell className="text-sm text-start tabular-nums text-rose-600 p-3 whitespace-nowrap">
                       {tx.discountAmount != null ? `${formatCurrency(tx.discountAmount)} ${t('common.sar')}` : '-'}
                     </TableCell>
-                    <TableCell className="text-sm text-right tabular-nums text-amber-600 p-3 whitespace-nowrap">
+                    <TableCell className="text-sm text-start tabular-nums text-amber-600 p-3 whitespace-nowrap">
                       {tx.refundReserve != null ? `${formatCurrency(tx.refundReserve)} ${t('common.sar')}` : '-'}
                     </TableCell>
-                    <TableCell className="text-sm font-semibold text-right tabular-nums text-emerald-600 p-3 whitespace-nowrap">
+                    <TableCell className="text-sm font-semibold text-start tabular-nums text-emerald-600 p-3 whitespace-nowrap">
                       {formatCurrency(tx.merchantPayable ?? 0)} {t('common.sar')}
                     </TableCell>
                     <TableCell className="p-3 whitespace-nowrap">

@@ -233,11 +233,11 @@ export default function MarketingActions() {
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={() => { setEditingThresholds(thresholds ? { ...thresholds } : null); setShowSettings(true); }}>
-            <Settings className="h-4 w-4 ml-2" />
+            <Settings className="h-4 w-4 ms-2" />
             الإعدادات
           </Button>
           <Button onClick={handleGenerate} disabled={generating}>
-            <Zap className="h-4 w-4 ml-2" />
+            <Zap className="h-4 w-4 ms-2" />
             {generating ? 'جاري التوليد...' : 'توليد إجراءات'}
           </Button>
         </div>
@@ -323,7 +323,7 @@ export default function MarketingActions() {
                             onClick={() => handleUpdateStatus(action.id, 'done')}
                             className="h-7 text-xs"
                           >
-                            <CheckCircle2 className="h-3 w-3 ml-1" />
+                            <CheckCircle2 className="h-3 w-3 ms-1" />
                             تم التعامل
                           </Button>
                           <Button
@@ -332,7 +332,7 @@ export default function MarketingActions() {
                             onClick={() => handleUpdateStatus(action.id, 'dismissed')}
                             className="h-7 text-xs"
                           >
-                            <EyeOff className="h-3 w-3 ml-1" />
+                            <EyeOff className="h-3 w-3 ms-1" />
                             تجاهل
                           </Button>
                           <Select
@@ -344,7 +344,7 @@ export default function MarketingActions() {
                             }}
                           >
                             <SelectTrigger className="w-28 h-7 text-xs">
-                              <Clock className="h-3 w-3 ml-1" />
+                              <Clock className="h-3 w-3 ms-1" />
                               <SelectValue placeholder="تأجيل" />
                             </SelectTrigger>
                             <SelectContent>
@@ -363,7 +363,7 @@ export default function MarketingActions() {
                         </p>
                       )}
                     </div>
-                    <div className="text-left shrink-0">
+                    <div className="text-end shrink-0">
                       <p className="text-xs text-neutral-400">
                         {new Date(action.createdAt).toLocaleDateString('ar-SA')}
                       </p>

@@ -165,7 +165,7 @@ export default function Coupons() {
         <h1 className="text-2xl font-bold text-neutral-900">{t('coupons.title')}</h1>
         <PermissionGate permission="coupons:create">
           <Button onClick={openCreate} className="h-9 text-sm px-4">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t('coupons.create')}
           </Button>
         </PermissionGate>
@@ -175,7 +175,7 @@ export default function Coupons() {
         <div className="flex gap-3 items-center flex-wrap">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-            <Input placeholder={t('coupons.search')} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="pr-10 h-9 text-sm" />
+            <Input placeholder={t('coupons.search')} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="pe-10 h-9 text-sm" />
           </div>
           <Select value={statusFilter || undefined} onValueChange={v => setStatusFilter(v === 'all' ? '' : v)}>
             <SelectTrigger className="w-40 h-9 text-sm"><SelectValue placeholder={t('coupons.filterStatus')} /></SelectTrigger>
@@ -246,9 +246,9 @@ export default function Coupons() {
                       {expired ? (
                         <Badge variant="destructive" className="text-xs">{t('coupons.expired')}</Badge>
                       ) : c.isActive ? (
-                        <Badge variant="success" className="gap-1 text-xs"><CheckCircle2 className="h-3 w-3 mr-1" />{t('coupons.active')}</Badge>
+                        <Badge variant="success" className="gap-1 text-xs"><CheckCircle2 className="h-3 w-3 me-1" />{t('coupons.active')}</Badge>
                       ) : (
-                        <Badge variant="secondary" className="gap-1 text-xs"><XCircle className="h-3 w-3 mr-1" />{t('coupons.inactive')}</Badge>
+                        <Badge variant="secondary" className="gap-1 text-xs"><XCircle className="h-3 w-3 me-1" />{t('coupons.inactive')}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-sm text-neutral-400 p-3">
@@ -285,7 +285,7 @@ export default function Coupons() {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label className="text-sm text-neutral-500">{t('coupons.labelCode')} <span className="text-red-500">*</span></Label>
-              <Input value={form.code} onChange={(e) => updateField('code', e.target.value.toUpperCase())} placeholder={t('coupons.codePlaceholder')} dir="ltr" className="text-left font-mono h-9 text-sm" />
+              <Input value={form.code} onChange={(e) => updateField('code', e.target.value.toUpperCase())} placeholder={t('coupons.codePlaceholder')} dir="ltr" className="text-end font-mono h-9 text-sm" />
               {errors.code && <p className="text-xs text-red-500">{errors.code}</p>}
             </div>
             <div className="space-y-1.5">
@@ -351,7 +351,7 @@ export default function Coupons() {
           <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-neutral-100">
             <Button variant="outline" className="h-9 text-sm" onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button>
             <Button className="h-9 text-sm" onClick={save} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {saving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
               {saving ? t('common.saving') : t('common.save')}
             </Button>
           </div>

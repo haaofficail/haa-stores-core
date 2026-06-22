@@ -360,7 +360,7 @@ export default function SettlementOverview() {
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium">رقم الطلب</TableHead>
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium">تاريخ الطلب</TableHead>
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium">الحالة</TableHead>
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right">المبلغ</TableHead>
+                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start">المبلغ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -377,7 +377,7 @@ export default function SettlementOverview() {
                       {payoutStatusLabels[payout.status] ?? payout.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm font-semibold tabular-nums text-right text-emerald-600 p-3">
+                  <TableCell className="text-sm font-semibold tabular-nums text-start text-emerald-600 p-3">
                     {formatCurrency(payout.amount)} {t('common.sar')}
                   </TableCell>
                 </TableRow>
@@ -402,8 +402,8 @@ export default function SettlementOverview() {
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('settlement.orderNumber')}</TableHead>
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('settlement.paymentDate')}</TableHead>
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('settlement.status')}</TableHead>
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right">{t('settlement.grossAmount')}</TableHead>
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right">{t('settlement.netPayable')}</TableHead>
+                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start">{t('settlement.grossAmount')}</TableHead>
+                <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start">{t('settlement.netPayable')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -427,10 +427,10 @@ export default function SettlementOverview() {
                         {batch.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm tabular-nums text-right p-3">
+                    <TableCell className="text-sm tabular-nums text-start p-3">
                       {batch.grossAmount ? `${formatCurrency(batch.grossAmount)} ${t('common.sar')}` : '-'}
                     </TableCell>
-                    <TableCell className="text-sm font-semibold tabular-nums text-right text-emerald-600 p-3">
+                    <TableCell className="text-sm font-semibold tabular-nums text-start text-emerald-600 p-3">
                       {batch.merchantPayable ? `${formatCurrency(batch.merchantPayable)} ${t('common.sar')}` : '-'}
                     </TableCell>
                   </TableRow>

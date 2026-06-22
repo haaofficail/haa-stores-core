@@ -133,7 +133,7 @@ export function PermissionCheckboxMatrix({
       </div>
 
       <div className="text-xs text-neutral-500 bg-neutral-50 rounded-lg p-3">
-        <Info className="h-3.5 w-3.5 inline ml-1" />
+        <Info className="h-3.5 w-3.5 inline ms-1" />
         ملاحظة: الصلاحيات المخصصة (تعديل الصلاحيات بشكل فردي) غير مدعومة حاليًا في النظام.
         يتم تحديد الصلاحيات بناءً على الدور فقط. التعديلات أدناه هي معاينة فقط ولا يتم حفظها حاليًا.
       </div>

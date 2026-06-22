@@ -54,11 +54,11 @@ export default function AuditLogs() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('auditLogs.event', 'الحدث')}</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('auditLogs.user', 'المستخدم')}</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('auditLogs.target', 'الهدف')}</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('auditLogs.details', 'التفاصيل')}</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('auditLogs.date', 'التاريخ')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('auditLogs.event', 'الحدث')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('auditLogs.user', 'المستخدم')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('auditLogs.target', 'الهدف')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('auditLogs.details', 'التفاصيل')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('auditLogs.date', 'التاريخ')}</th>
               </tr>
             </thead>
             <tbody>

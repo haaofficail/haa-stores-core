@@ -85,11 +85,11 @@ export default function KycReview() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('kyc.store', 'المتجر')}</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('kyc.type', 'النوع')}</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('kyc.legalName', 'الاسم التجاري')}</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('kyc.status', 'الحالة')}</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('common.actions', 'الإجراءات')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('kyc.store', 'المتجر')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('kyc.type', 'النوع')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('kyc.legalName', 'الاسم التجاري')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('kyc.status', 'الحالة')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('common.actions', 'الإجراءات')}</th>
               </tr>
             </thead>
             <tbody>

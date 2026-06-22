@@ -86,7 +86,7 @@ export function NextActionBanner({ items, t }: Props) {
             >
               {item.count}
             </span>
-            <div className="text-right sm:mt-1">
+            <div className="text-start sm:mt-1">
               <p className={`text-xs sm:text-sm font-bold ${item.textColor}`}>
                 {item.label}
               </p>

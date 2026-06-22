@@ -116,7 +116,7 @@ export function LuxuryProductInfoPanel({
           <div className="flex flex-wrap items-baseline gap-3">
             <span className="text-3xl font-light tracking-tight" style={{ color: 'var(--lux-text, #2B2520)' }}>
               {formatCurrency(price)}
-              <SarIcon size="md" className="mr-1" />
+              <SarIcon size="md" className="me-1" />
             </span>
             {comparePrice ? (
               <span className="text-sm font-light line-through" style={{ color: 'var(--lux-muted, #756B61)' }}>

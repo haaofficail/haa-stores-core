@@ -104,7 +104,7 @@ function MethodsTab({ storeId }: { storeId: number }) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-neutral-400">{t('shipping.methodsDesc')}</p>
-        <PermissionGate permission="shipping:manage"><Button onClick={openCreate} className="h-9 text-sm"><Plus className="h-4 w-4 mr-2" />{t('shipping.createMethod')}</Button></PermissionGate>
+        <PermissionGate permission="shipping:manage"><Button onClick={openCreate} className="h-9 text-sm"><Plus className="h-4 w-4 me-2" />{t('shipping.createMethod')}</Button></PermissionGate>
       </div>
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         {loading ? <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
@@ -247,7 +247,7 @@ function ZonesTab({ storeId }: { storeId: number }) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-neutral-400">{t('shipping.zonesDesc')}</p>
-        <PermissionGate permission="shipping:manage"><Button onClick={openCreate} className="h-9 text-sm"><Plus className="h-4 w-4 mr-2" />{t('shipping.createZone')}</Button></PermissionGate>
+        <PermissionGate permission="shipping:manage"><Button onClick={openCreate} className="h-9 text-sm"><Plus className="h-4 w-4 me-2" />{t('shipping.createZone')}</Button></PermissionGate>
       </div>
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         {loading ? <div className="p-6 space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
@@ -358,7 +358,7 @@ function RatesTab({ storeId }: { storeId: number }) {
       <div className="flex justify-between items-center">
         <p className="text-sm text-neutral-400">{t('shipping.ratesDesc')}</p>
         <PermissionGate permission="shipping:manage"><Button onClick={() => { setForm({ shippingMethodId: '', shippingZoneId: '', baseRate: '', perKgRate: '', freeAboveAmount: '', estimatedDaysMin: '', estimatedDaysMax: '' }); setDialog(true); }} disabled={!methods.length || !zones.length} className="h-9 text-sm">
-          <Plus className="h-4 w-4 mr-2" />{t('shipping.createRate')}
+          <Plus className="h-4 w-4 me-2" />{t('shipping.createRate')}
         </Button></PermissionGate>
       </div>
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
@@ -376,18 +376,18 @@ function RatesTab({ storeId }: { storeId: number }) {
             <TableHeader><TableRow className="border-neutral-100 hover:bg-transparent">
               <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('shipping.methodName')}</TableHead>
               <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('shipping.zoneName')}</TableHead>
-              <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right">{t('shipping.baseRate')}</TableHead>
-              <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right">{t('shipping.perKgRate')}</TableHead>
-              <TableHead className="h-10 text-sm text-neutral-500 font-medium text-right">{t('shipping.freeAbove')}</TableHead>
+              <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start">{t('shipping.baseRate')}</TableHead>
+              <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start">{t('shipping.perKgRate')}</TableHead>
+              <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start">{t('shipping.freeAbove')}</TableHead>
               <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('shipping.deliveryDays')}</TableHead>
             </TableRow></TableHeader>
             <TableBody>{items.map((r: any, i: number) => (
               <TableRow key={r.rate?.id ?? i} className="border-neutral-100 hover:bg-neutral-50">
                 <TableCell className="text-sm font-medium text-neutral-900 p-3">{r.methodName ?? '-'}</TableCell>
                 <TableCell className="text-sm text-neutral-900 p-3">{r.zoneName ?? '-'}</TableCell>
-                <TableCell className="text-sm font-semibold text-neutral-900 text-right p-3">{formatCurrency(r.rate?.baseRate ?? 0)} {t('common.sar')}</TableCell>
-                <TableCell className="text-sm text-neutral-400 text-right p-3">{r.rate?.perKgRate ? `${formatCurrency(r.rate.perKgRate)} ${t('common.sar')}` : '-'}</TableCell>
-                <TableCell className="text-sm text-neutral-400 text-right p-3">{r.rate?.freeAboveAmount ? `${Number(r.rate.freeAboveAmount).toFixed(0)} ${t('common.sar')}` : '-'}</TableCell>
+                <TableCell className="text-sm font-semibold text-neutral-900 text-start p-3">{formatCurrency(r.rate?.baseRate ?? 0)} {t('common.sar')}</TableCell>
+                <TableCell className="text-sm text-neutral-400 text-start p-3">{r.rate?.perKgRate ? `${formatCurrency(r.rate.perKgRate)} ${t('common.sar')}` : '-'}</TableCell>
+                <TableCell className="text-sm text-neutral-400 text-start p-3">{r.rate?.freeAboveAmount ? `${Number(r.rate.freeAboveAmount).toFixed(0)} ${t('common.sar')}` : '-'}</TableCell>
                 <TableCell className="text-sm text-neutral-400 p-3">{r.rate?.estimatedDaysMin != null && r.rate?.estimatedDaysMax != null ? `${r.rate.estimatedDaysMin}-${r.rate.estimatedDaysMax} ${t('shipping.days')}` : '-'}</TableCell>
               </TableRow>
             ))}</TableBody>
@@ -541,7 +541,7 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
           <div className="flex gap-3 items-center flex-wrap">
             <div className="relative flex-1 max-w-xs">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-              <Input placeholder={t('shipping.searchCity')} value={cityInput} onChange={e => setCityInput(e.target.value)} onKeyDown={handleCityKeyDown} className="pr-10 h-9 text-sm" />
+              <Input placeholder={t('shipping.searchCity')} value={cityInput} onChange={e => setCityInput(e.target.value)} onKeyDown={handleCityKeyDown} className="pe-10 h-9 text-sm" />
             </div>
             <Button variant="outline" size="sm" className="h-9 text-sm" onClick={handleCitySearch}>{t('common.search')}</Button>
             {hasActiveFilters && (
@@ -620,22 +620,22 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
                     <div className="flex gap-1">
                       {(s.status === 'draft' || s.status === 'label_created') && (
                         <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleCreateLabel(s)}>
-                          <FileText className="h-3 w-3 mr-1" />{t('shipping.createLabel')}
+                          <FileText className="h-3 w-3 me-1" />{t('shipping.createLabel')}
                         </Button>
                       )}
                       {s.labelUrl && (
                         <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleViewLabel(s)}>
-                          <FileText className="h-3 w-3 mr-1" />{t('shipping.viewLabel')}
+                          <FileText className="h-3 w-3 me-1" />{t('shipping.viewLabel')}
                         </Button>
                       )}
                       {s.status !== 'delivered' && s.status !== 'cancelled' && s.status !== 'returned' && s.status !== 'delivery_failed' && (
                         <Button variant="ghost" size="sm" className="h-7 text-xs text-red-500" onClick={() => handleCancel(s)}>
-                          <XCircle className="h-3 w-3 mr-1" />{t('shipping.cancelShipment')}
+                          <XCircle className="h-3 w-3 me-1" />{t('shipping.cancelShipment')}
                         </Button>
                       )}
                       {s.status === 'delivered' && (
                         <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleCreateReturn(s)}>
-                          <Undo2 className="h-3 w-3 mr-1" />{t('shipping.return')}
+                          <Undo2 className="h-3 w-3 me-1" />{t('shipping.return')}
                         </Button>
                       )}
                       <PermissionGate permission="shipping:manage"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTracking(s)}>
@@ -653,11 +653,11 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
         <DialogContent className="bg-white/95 backdrop-blur-2xl border border-neutral-100 shadow-2xl rounded-3xl">
           <DialogHeader><DialogTitle className="text-lg font-bold text-neutral-900">{t('shipping.trackingUpdate')}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5"><Label className="text-sm text-neutral-500">{t('shipping.trackingNumber')} <span className="text-red-500">*</span></Label><Input value={trackForm.trackingNumber} onChange={e => setTrackForm({...trackForm, trackingNumber: e.target.value})} dir="ltr" className="text-left h-9 text-sm" /></div>
+            <div className="space-y-1.5"><Label className="text-sm text-neutral-500">{t('shipping.trackingNumber')} <span className="text-red-500">*</span></Label><Input value={trackForm.trackingNumber} onChange={e => setTrackForm({...trackForm, trackingNumber: e.target.value})} dir="ltr" className="text-end h-9 text-sm" /></div>
             <div className="space-y-1.5"><Label className="text-sm text-neutral-500">{t('shipping.carrier')}</Label><Input value={trackForm.carrierName} onChange={e => setTrackForm({...trackForm, carrierName: e.target.value})} className="h-9 text-sm" /></div>
             <div className="space-y-1.5">
               <Label className="text-sm text-neutral-500">{t('shipping.trackingUrl')}</Label>
-              <Input value={trackForm.trackingUrl} onChange={e => setTrackForm({...trackForm, trackingUrl: e.target.value})} dir="ltr" className="text-left h-9 text-sm" placeholder="https://" />
+              <Input value={trackForm.trackingUrl} onChange={e => setTrackForm({...trackForm, trackingUrl: e.target.value})} dir="ltr" className="text-end h-9 text-sm" placeholder="https://" />
               {trackForm.trackingUrl && !/^https?:\/\/.+/.test(trackForm.trackingUrl) && <p className="text-xs text-red-500">{t('shipping.err_tracking_url')}</p>}
             </div>
           </div>

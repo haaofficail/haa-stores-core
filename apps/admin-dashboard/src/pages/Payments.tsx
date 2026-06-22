@@ -54,11 +54,11 @@ export default function Payments() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('payments.id', 'المعرف')}</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('payments.amount', 'المبلغ')}</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('payments.method', 'الطريقة')}</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('payments.status', 'الحالة')}</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">{t('payments.date', 'التاريخ')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('payments.id', 'المعرف')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('payments.amount', 'المبلغ')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('payments.method', 'الطريقة')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('payments.status', 'الحالة')}</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('payments.date', 'التاريخ')}</th>
               </tr>
             </thead>
             <tbody>

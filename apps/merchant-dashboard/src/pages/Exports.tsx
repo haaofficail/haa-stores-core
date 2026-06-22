@@ -97,9 +97,9 @@ export default function Exports() {
                     className="h-9 text-sm px-4"
                   >
                     {downloading === type ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 me-2 animate-spin" />
                     ) : (
-                      <Download className="h-4 w-4 mr-2" />
+                      <Download className="h-4 w-4 me-2" />
                     )}
                     {downloading === type ? t('exports.downloading') : t('exports.download')}
                   </Button>

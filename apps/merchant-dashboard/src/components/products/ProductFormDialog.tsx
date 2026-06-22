@@ -91,7 +91,7 @@ export function ProductFormDialog({
               </div>
               <div className="col-span-2 space-y-1.5">
                 <Label className="text-sm text-neutral-500">{t('products.slug')} <span className="text-red-500">*</span></Label>
-                <Input value={form.slug} onChange={(e) => onSlugChange(e.target.value)} dir="ltr" className="text-left h-9 text-sm" />
+                <Input value={form.slug} onChange={(e) => onSlugChange(e.target.value)} dir="ltr" className="text-end h-9 text-sm" />
                 <p className="text-xs text-neutral-400">{t('products.slugHint')}</p>
                 <FieldError message={getError('slug') ? t(`products.err_${getError('slug')}`) : undefined} />
               </div>
@@ -147,11 +147,11 @@ export function ProductFormDialog({
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm text-neutral-500">{t('products.sku')}</Label>
-                <Input value={form.sku ?? ''} onChange={(e) => onFieldChange('sku', e.target.value)} dir="ltr" className="text-left h-9 text-sm" />
+                <Input value={form.sku ?? ''} onChange={(e) => onFieldChange('sku', e.target.value)} dir="ltr" className="text-end h-9 text-sm" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm text-neutral-500">{t('products.barcode')}</Label>
-                <Input value={form.barcode ?? ''} onChange={(e) => onFieldChange('barcode', e.target.value)} dir="ltr" className="text-left h-9 text-sm" />
+                <Input value={form.barcode ?? ''} onChange={(e) => onFieldChange('barcode', e.target.value)} dir="ltr" className="text-end h-9 text-sm" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm text-neutral-500">{t('products.stock')}</Label>
@@ -432,7 +432,7 @@ export function ProductFormDialog({
         <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-neutral-100">
           <Button variant="outline" className="h-9 text-sm px-4" onClick={() => onOpenChange(false)}>{t('common.cancel')}</Button>
           <Button className="h-9 text-sm px-4" onClick={onSave} disabled={saving}>
-            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {saving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
             {saving ? t('common.loading') : t('common.save')}
           </Button>
         </div>

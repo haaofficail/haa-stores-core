@@ -117,7 +117,7 @@ export function DetailRow({ label, children }: { label: string; children: React.
   return (
     <div className="flex justify-between items-start text-sm">
       <span className="text-neutral-400">{label}</span>
-      <span className="text-right max-w-[60%] text-neutral-900">{children}</span>
+      <span className="text-start max-w-[60%] text-neutral-900">{children}</span>
     </div>
   );
 }

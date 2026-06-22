@@ -35,7 +35,7 @@ export function StoreReadinessBanner({ readiness, t }: Props) {
     <button
       type="button"
       onClick={() => navigate("/settings")}
-      className="w-full flex items-center gap-2 px-4 py-3 rounded-2xl border border-red-100 bg-red-50/50 hover:bg-red-50 transition-colors text-right"
+      className="w-full flex items-center gap-2 px-4 py-3 rounded-2xl border border-red-100 bg-red-50/50 hover:bg-red-50 transition-colors text-start"
     >
       <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
       <span className="text-xs font-bold text-red-700 flex-1 truncate">

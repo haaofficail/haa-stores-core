@@ -137,7 +137,7 @@ export default function IntegrationHub() {
               onClick={handleSyncAll}
               disabled={syncing}
             >
-              {syncing ? <Loader2 className="h-4 w-4 ml-1 animate-spin" /> : <ListChecks className="h-4 w-4 ml-1" />}
+              {syncing ? <Loader2 className="h-4 w-4 ms-1 animate-spin" /> : <ListChecks className="h-4 w-4 ms-1" />}
               {syncing ? t('integrationHub.syncing', 'جاري المزامنة...') : t('integrationHub.syncAll', 'مزامنة الكل')}
             </Button>
           )}
@@ -146,7 +146,7 @@ export default function IntegrationHub() {
             className="rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40"
             onClick={loadHub}
           >
-            <RefreshCw className="h-4 w-4 ml-1" />
+            <RefreshCw className="h-4 w-4 ms-1" />
             {t('integrationHub.refresh', 'تحديث')}
           </Button>
         </div>
@@ -168,7 +168,7 @@ export default function IntegrationHub() {
               </div>
               <p className="text-4xl font-bold text-neutral-900 tabular-nums leading-none mb-2">
                 {s.value}
-                {s.suffix && <span className="text-base font-medium text-neutral-400 mr-1">{s.suffix}</span>}
+                {s.suffix && <span className="text-base font-medium text-neutral-400 me-1">{s.suffix}</span>}
               </p>
               <p className="text-sm text-neutral-500 font-medium">{s.label}</p>
             </div>
@@ -249,7 +249,7 @@ export default function IntegrationHub() {
                         className="rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 text-xs"
                         onClick={() => navigate(`/channels/${provider.code}/listings`)}
                       >
-                        <Database className="h-3.5 w-3.5 ml-1" />
+                        <Database className="h-3.5 w-3.5 ms-1" />
                         {t('integrationHub.viewProducts', 'المنتجات')}
                       </Button>
                       <Button
@@ -273,7 +273,7 @@ export default function IntegrationHub() {
                           }
                         }}
                       >
-                        <RefreshCw className="h-3.5 w-3.5 ml-1" />
+                        <RefreshCw className="h-3.5 w-3.5 ms-1" />
                         {t('integrationHub.sync', 'مزامنة')}
                       </Button>
                       <Button
@@ -282,7 +282,7 @@ export default function IntegrationHub() {
                         className="rounded-full text-red-500 hover:text-red-700 hover:bg-red-50 text-xs mr-auto"
                         onClick={() => setDisconnectConfirm(provider.code)}
                       >
-                        <Unlink className="h-3.5 w-3.5 ml-1" />
+                        <Unlink className="h-3.5 w-3.5 ms-1" />
                         {t('marketplaces.disconnect', 'فصل')}
                       </Button>
                     </>
@@ -292,7 +292,7 @@ export default function IntegrationHub() {
                       className="rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 text-xs"
                       onClick={() => navigate(`/channels/${provider.code}`)}
                     >
-                      <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                      <ExternalLink className="h-3.5 w-3.5 ms-1" />
                       {t('marketplaces.connect', 'ربط السوق')}
                     </Button>
                   )}
@@ -313,7 +313,7 @@ export default function IntegrationHub() {
             </CardTitle>
             <Button variant="ghost" size="sm" className="rounded-full text-xs" onClick={() => navigate('/channels/sync-logs')}>
               {t('integrationHub.viewAll', 'عرض الكل')}
-              <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+              <ArrowLeft className="h-3.5 w-3.5 me-1" />
             </Button>
           </div>
         </CardHeader>
@@ -349,17 +349,17 @@ export default function IntegrationHub() {
                     <div className="shrink-0">
                       {log.status === 'completed' ? (
                         <Badge className="bg-green-500/10 text-green-700 border-green-200 text-xs">
-                          <CheckCircle2 className="h-3 w-3 ml-1" />
+                          <CheckCircle2 className="h-3 w-3 ms-1" />
                           {t('integrationSync.completed', 'تم')}
                         </Badge>
                       ) : log.status === 'failed' ? (
                         <Badge className="bg-red-500/10 text-red-700 border-red-200 text-xs" title={log.errorMessage || ''}>
-                          <XCircle className="h-3 w-3 ml-1" />
+                          <XCircle className="h-3 w-3 ms-1" />
                           {t('integrationSync.failed', 'فشل')}
                         </Badge>
                       ) : (
                         <Badge className="bg-amber-500/10 text-amber-700 border-amber-200 text-xs">
-                          <RefreshCw className="h-3 w-3 ml-1 animate-spin" />
+                          <RefreshCw className="h-3 w-3 ms-1 animate-spin" />
                           {t('integrationSync.running', 'قيد التشغيل')}
                         </Badge>
                       )}

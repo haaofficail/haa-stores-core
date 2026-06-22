@@ -135,11 +135,11 @@ export default function StoreBillingSettings() {
               <button
                 key={s.id}
                 onClick={() => { setSelectedId(s.id); setParams({ storeId: String(s.id) }); }}
-                className={`w-full text-right px-3 py-2 rounded-lg text-sm transition-colors ${
+                className={`w-full text-start px-3 py-2 rounded-lg text-sm transition-colors ${
                   selectedId === s.id ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <span className="text-xs text-gray-400 font-mono ml-1">#{s.id}</span>
+                <span className="text-xs text-gray-400 font-mono ms-1">#{s.id}</span>
                 {s.name}
               </button>
             ))}

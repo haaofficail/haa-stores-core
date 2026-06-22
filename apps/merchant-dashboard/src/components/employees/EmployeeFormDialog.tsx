@@ -139,7 +139,7 @@ export function EmployeeFormDialog({
           {loading && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 text-primary-500 animate-spin" />
-              <span className="ml-2 text-sm text-neutral-500">جاري تحميل الصلاحيات...</span>
+              <span className="ms-2 text-sm text-neutral-500">جاري تحميل الصلاحيات...</span>
             </div>
           )}
 
@@ -184,7 +184,7 @@ export function EmployeeFormDialog({
                     type={showPassword ? 'text' : 'password'}
                     value={form.password ?? ''}
                     onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm pl-9"
+                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm ps-9"
                     placeholder="6 أحرف على الأقل"
                     autoComplete="new-password"
                   />

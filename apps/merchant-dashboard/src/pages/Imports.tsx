@@ -72,7 +72,7 @@ export default function Imports() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">{t('imports.title')}</h1>
         <Button variant="outline" className="h-9 text-sm" onClick={handleDownloadTemplate}>
-          <Download className="h-4 w-4 mr-2" />
+          <Download className="h-4 w-4 me-2" />
           {t('imports.downloadTemplate')}
         </Button>
       </div>
@@ -93,12 +93,12 @@ export default function Imports() {
             />
             <div className="flex gap-3">
               <Button onClick={handlePreview} disabled={!csvContent.trim() || previewLoading} className="h-9 text-sm px-4">
-                {previewLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-2" />}
+                {previewLoading ? <Loader2 className="h-4 w-4 me-2 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 me-2" />}
                 {previewLoading ? t('imports.previewLoading') : t('imports.preview')}
               </Button>
               <PermissionGate permission="imports:create">
                 <Button onClick={handleImport} disabled={!csvContent.trim() || importing} className="h-9 text-sm px-4 bg-green-600 hover:bg-green-700">
-                  {importing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                  {importing ? <Loader2 className="h-4 w-4 me-2 animate-spin" /> : <Upload className="h-4 w-4 me-2" />}
                   {importing ? t('imports.importLoading') : t('imports.import')}
                 </Button>
               </PermissionGate>

@@ -501,10 +501,10 @@ export default function SettlementBatchDetailPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">المتجر</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">عدد الطلبات</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">صافي المستحق</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">حالة التسوية</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">المتجر</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">عدد الطلبات</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">صافي المستحق</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">حالة التسوية</th>
               </tr>
             </thead>
             <tbody>
@@ -541,13 +541,13 @@ export default function SettlementBatchDetailPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">رقم الطلب</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">المتجر</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">إجمالي الطلب</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">رسوم البوابة</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">عمولة المنصة</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">صافي المستحق</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">حالة المطابقة</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">رقم الطلب</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">المتجر</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">إجمالي الطلب</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">رسوم البوابة</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">عمولة المنصة</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">صافي المستحق</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">حالة المطابقة</th>
               </tr>
             </thead>
             <tbody>

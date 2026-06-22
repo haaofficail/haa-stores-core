@@ -80,10 +80,10 @@ export function ProductVariantsSection({ hasVariants, options, variants, onHasVa
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-200">
-                    <th className="text-right py-2 px-2 text-neutral-500 font-medium">الخيارات</th>
-                    <th className="text-right py-2 px-2 text-neutral-500 font-medium">SKU</th>
-                    <th className="text-right py-2 px-2 text-neutral-500 font-medium">السعر</th>
-                    <th className="text-right py-2 px-2 text-neutral-500 font-medium">المخزون</th>
+                    <th className="text-start py-2 px-2 text-neutral-500 font-medium">الخيارات</th>
+                    <th className="text-start py-2 px-2 text-neutral-500 font-medium">SKU</th>
+                    <th className="text-start py-2 px-2 text-neutral-500 font-medium">السعر</th>
+                    <th className="text-start py-2 px-2 text-neutral-500 font-medium">المخزون</th>
                     <th className="text-center py-2 px-2 text-neutral-500 font-medium">مفعّل</th>
                   </tr>
                 </thead>

@@ -134,7 +134,7 @@ export default function SupportKb() {
       <div className="relative mb-4">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
         <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-          className="w-full pr-10 px-4 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full pe-10 px-4 py-2 rounded-lg border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           placeholder={t('support.kb.search', 'بحث...')} />
       </div>
 

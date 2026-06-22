@@ -371,7 +371,7 @@ function HistoryCard({ label, value, icon, color, suffix = '' }: { label: string
                 <div className="space-y-3">
                   {pages.topViewedProductsNow.map((p, idx) => (
                     <div key={idx} className="flex items-center justify-between py-2 border-b border-neutral-100 last:border-0">
-                      <span className="text-sm font-medium truncate ml-4">{p.productName}</span>
+                      <span className="text-sm font-medium truncate ms-4">{p.productName}</span>
                       <span className="text-sm text-neutral-500 shrink-0">{p.viewers} زائر</span>
                     </div>
                   ))}
@@ -527,7 +527,7 @@ function HistoryCard({ label, value, icon, color, suffix = '' }: { label: string
                   <HistoryCard label="أعلى إيراد" value={Number(Math.max(...history.map(h => Number(h.revenueLast30Min)))).toFixed(0)} icon={<DollarSign className="h-4 w-4" />} color="text-emerald-500" suffix="ر.س" />
                 </div>
                 <div className="mt-4 overflow-x-auto">
-                  <table className="w-full text-sm text-right">
+                  <table className="w-full text-sm text-start">
                     <thead>
                       <tr className="border-b border-neutral-200">
                         <th className="py-2 px-3 font-medium text-neutral-500">الوقت</th>
@@ -602,7 +602,7 @@ function DeviceGroup({ label, data, icon }: { label: string; data: { label: stri
               <div className="flex-1 h-2 bg-neutral-100 rounded-full overflow-hidden">
                 <div className="h-full bg-primary-500 rounded-full" style={{ width: `${total > 0 ? (d.count / total) * 100 : 0}%` }} />
               </div>
-              <span className="text-xs text-neutral-500 w-8 text-left">{d.count}</span>
+              <span className="text-xs text-neutral-500 w-8 text-end">{d.count}</span>
             </div>
           ))}
         </div>

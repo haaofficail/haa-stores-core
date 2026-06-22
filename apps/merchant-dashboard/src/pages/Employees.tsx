@@ -213,13 +213,13 @@ export default function EmployeesPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-neutral-100 bg-neutral-50">
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الاسم</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">البريد</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الدور</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الحالة</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">آخر نشاط</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الصلاحيات</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الإجراءات</th>
+                  <th className="text-start px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الاسم</th>
+                  <th className="text-start px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">البريد</th>
+                  <th className="text-start px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الدور</th>
+                  <th className="text-start px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الحالة</th>
+                  <th className="text-start px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">آخر نشاط</th>
+                  <th className="text-start px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الصلاحيات</th>
+                  <th className="text-end px-4 py-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider">الإجراءات</th>
                 </tr>
               </thead>
               <tbody>
