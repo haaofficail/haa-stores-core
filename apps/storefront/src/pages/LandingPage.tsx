@@ -118,7 +118,7 @@ function LpProductCard({ product }: { product: LpProduct }) {
         <p className="lp-pcard__name">{product.name}</p>
         <div className="lp-pcard__price">
           <span className="lp-pcard__now" dir="ltr">
-            {product.price.toLocaleString('ar-SA-u-nu-arab')} <SarIcon />
+            <SarIcon /> {product.price.toLocaleString('ar-SA-u-nu-arab')}
           </span>
           {product.compareAtPrice && (
             <span className="lp-pcard__was" dir="ltr">
@@ -417,7 +417,7 @@ export default function LandingPage() {
               </span>
               <div>
                 <b style={{ display: 'inline-flex', alignItems: 'baseline', gap: 3, direction: 'ltr' }}>
-                  ٣٬٨٤٠<SarIcon />
+                  <SarIcon />٣٬٨٤٠
                 </b>
                 <span>مبيعات اليوم</span>
               </div>
@@ -584,7 +584,7 @@ export default function LandingPage() {
                       <span className="lp-kpi__d">{delta}</span>
                     </div>
                     <div className="lp-kpi__v" style={withSar ? { display: 'inline-flex', alignItems: 'baseline', gap: 3, direction: 'ltr' } : undefined}>
-                      {val}{withSar && <SarIcon />}
+                      {withSar && <SarIcon />}{val}
                     </div>
                     <div className="lp-kpi__l">{label}</div>
                   </div>
@@ -727,7 +727,7 @@ export default function LandingPage() {
           <div className="lp-plans reveal-stagger">
             <div className="lp-plan">
               <h3>المجانية</h3>
-              <div className="lp-plan__price"><b>0</b><SarIcon /><span>/شهريًا</span></div>
+              <div className="lp-plan__price"><SarIcon /><b>0</b><span>/شهريًا</span></div>
               <p className="lp-plan__desc">للبدء وتجربة المنصة</p>
               <ul>
                 <li><span className="lp-plan__check"><Ck /></span> حتى ٢٠ منتج</li>
@@ -740,7 +740,7 @@ export default function LandingPage() {
             <div className="lp-plan lp-plan--pro">
               <span className="lp-plan__tag">الأكثر شيوعًا</span>
               <h3>الاحترافية</h3>
-              <div className="lp-plan__price"><b>٢٩٩</b><SarIcon /><span>/شهريًا</span></div>
+              <div className="lp-plan__price"><SarIcon /><b>٢٩٩</b><span>/شهريًا</span></div>
               <p className="lp-plan__desc">لمتجر ينمو بسرعة</p>
               <ul>
                 <li><span className="lp-plan__check"><Ck /></span> منتجات غير محدودة</li>
