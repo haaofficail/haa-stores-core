@@ -4,6 +4,27 @@
 
 ---
 
+### TASK-0077: Staging login deep audit + closure (PRs #55 → #60)
+
+- **Type:** Quality / UX / Security (multi-area)
+- **Priority:** P1
+- **Status:** Done
+- **Created:** 2026-06-22
+- **Updated:** 2026-06-22
+- **Branches:** single-purpose branches per PR.
+- **Skills Used:** `haa-command-orchestrator`, `verification-before-completion`, Playwright staging-probe.
+- **Scope:** Audited `https://merchant.staging.haastores.com/login` end-to-end and shipped fixes in 6 PRs:
+  - **#55** docs(agent-os): refresh remaining work after PRs 39-54.
+  - **#56** `@haa/tokens` primary palette aligned to canonical `#5c9cd5` (50–950 ramp regenerated; CSS outputs rebuilt; 6 guard tests).
+  - **#57** Login P0 — `<form method="post">` defense-in-depth + HSTS / CSP / COOP / X-Frame-Options in three nginx.conf files (later moved to Caddy in #60 due to inheritance bug).
+  - **#58** Login P1 — forgot-password page + remember-me checkbox + show/hide password toggle + Haa favicon + manifest.webmanifest + meta description + theme-color + Open Graph + Twitter Card.
+  - **#59** Login P2 — logo `srcset` 64/192/512 + decorative `alt=""` + `max-w-6xl` outer balance + resized public assets generated via sips.
+  - **#60** Deep staging fixes — Caddy-level security headers (nginx `add_header` was silently dropped inside location blocks); logo container swapped from blue gradient → white-on-ring (logo was rendered in the brand blue and invisible on the gradient); signup link uses runtime-derived storefront origin via `resolveSignupHref()` instead of broken `haa.store` fallback; `usePlatformBrand` fetches `${BASE_URL}/brand` instead of `${BASE_URL}/api/brand` (`/api/api/brand` 404 fix).
+- **Out of Scope:** Production secrets, Cloudflare DNS, db:migrate execution, live payments/shipping credentials.
+- **Trackers:** `docs/agent-os/REMAINING_WORK.md`, this file.
+
+---
+
 ### TASK-0076: Post-autopilot engineering drive (PRs #39 → #54)
 
 - **Type:** Quality / Multi-area (orchestrated follow-ups)
