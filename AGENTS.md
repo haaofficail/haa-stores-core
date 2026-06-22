@@ -295,143 +295,187 @@ Before any significant development or bug fix:
 
 ---
 
-## 14. Mandatory Skill Selection Rule (NEW — 2026-06-14)
+## 14. Mandatory Skill Gate (REVISED — 2026-06-22)
 
-> **No task, sub-task, or significant action may begin without first declaring and loading the relevant skill(s).**
+> **No task, sub-task, file edit, commit, push, or "done" claim may begin
+> without a written Mandatory Skill Gate. This is a hard rule, not a guideline.
+> A task without a documented Skill Gate is treated as a task failure.**
 
-### The 4-Step Skill Gate (apply before EVERY action)
+> **Terminology — read this first.** "Skills" in this repository means
+> Claude Code execution skills and task governance, defined in
+> `.claude/skills/<name>/SKILL.md`. It does **NOT** mean CSS classes,
+> Tailwind utilities, design tokens, theme files, or UI visual changes.
+> Any report that proves "skills applied" via CSS or asset-hash evidence is
+> invalid and will be rejected.
 
-For every action — no matter how small — complete these 4 steps **in order, in writing, before touching any file or command**:
+### 14.1 Source of truth
 
-#### Step 1: **STATE** the task
+- All available skills live in `.claude/skills/<slug>/SKILL.md`.
+- The human-readable catalogue is `docs/agent-os/SKILLS_REGISTRY.md`.
+- The short reference cards are `docs/agent-os/SKILL_CARDS.md`.
+- The file-glob → required-skill map is `docs/agent-os/SKILL_FILE_MAPPING.md`.
+- The compliance report template is
+  `docs/agent-os/templates/SKILL_COMPLIANCE_REPORT.md`.
 
-One sentence. What are you about to do?
+### 14.2 The Skill Gate (declare in writing BEFORE any edit)
 
-#### Step 2: **SELECT** the skill(s)
-
-Which skill(s) apply? List them by name. If unsure, consult `~/.mavis/skills/` or use the `find-skills` skill.
-
-Common skill triggers:
-
-| Task pattern                                 | Required skill                   |
-| -------------------------------------------- | -------------------------------- |
-| Any new feature, bug fix, or refactor        | `plan-mode`                      |
-| Any bug investigation or unexpected behavior | `systematic-debugging`           |
-| Any new code or test                         | `test-driven-development`        |
-| Before claiming "done"                       | `verification-before-completion` |
-| After any significant change                 | `requesting-code-review`         |
-| Any creative/design work                     | `brainstorming-2`                |
-| Any complex multi-step task                  | `plan-mode`                      |
-| Stuck / unsure why                           | `mavis-doctor`                   |
-| Multi-step parallel work                     | `mavis-team`                     |
-| Code review of existing code                 | `code-review`                    |
-
-#### Step 3: **STATE WHY** the skill fits
-
-One sentence per skill. Why does this skill apply to this specific task?
-
-#### Step 4: **LOAD** the skill(s)
-
-Use the `skill` tool to load each selected skill. Do not proceed until loaded.
-
-### Enforcement Format (use this exact template)
-
-Before EVERY sub-task, write this in your response:
+Before touching any file or running any state-changing command, the agent
+MUST publish — in the user-visible response — a Skill Gate block. Use this
+exact template:
 
 ```markdown
-## Pre-Action Skill Gate
+## Mandatory Skill Gate
 
-**Task:** [one sentence]
-**Skills selected:**
+**Task type:** <one of the 13 task types in §14.4>
+**Task title:** <one sentence>
+**Risk level:** <low | medium | high>
+**Skills selected (1–4):**
 
-- `[skill-name]` — [why it fits]
-- `[skill-name]` — [why it fits]
+- `<skill-slug>` — <one-line why it fits>
+- `<skill-slug>` — <one-line why it fits>
 
-**Loading now...**
-[then call the skill tool]
+**Files expected to change:** <comma-separated paths or globs>
+**Verification planned:** <exact commands the agent will run later>
+**Safety constraints respected:** no deploy · no db:migrate · no secrets · no production action
 ```
 
-### Examples
+The gate is required for: any code change, any test, any commit, any push,
+any new task entry, and any "done" claim.
 
-#### Example 1: Merging duplicate schemas
+### 14.3 If no skill fits
+
+Write the literal line `**No matching skill found**`, then:
+
+1. Explain in one paragraph why no existing skill covers the task.
+2. Pick a fallback method (closest sibling skill + explicit additional
+   safety steps).
+3. Log a follow-up to add the missing skill — add an entry to
+   `docs/agent-os/SKILLS_REGISTRY.md` "Pending additions" section so it
+   becomes a real skill on the next pass.
+
+Do not silently skip the gate.
+
+### 14.4 Task types (must classify into exactly one)
+
+The 13 canonical task types — pick the dominant one even if the work
+crosses categories:
+
+1. `frontend/design` — UI, components, theme tokens, RTL, visual polish
+2. `backend/api` — Hono routes, services, RBAC, validation
+3. `database/migration` — Drizzle schema, migrations, seeds, indexes
+4. `payments/wallet` — wallet ledger, idempotency, refunds, providers
+5. `shipping` — shipping-core providers, rates, cache, label flow
+6. `security` — auth, sessions, CSRF, secrets, dependency CVEs
+7. `ci/deploy` — workflows, Docker, Caddy, runners, environments
+8. `docs/truth-sync` — docs alignment, decision logs, registries
+9. `launch-readiness` — gates, owner-action separation, go/no-go
+10. `observability` — monitoring, queues, alerts, error capture, Sentry
+11. `performance` — bundle size, queries, caching, Lighthouse, images
+12. `accessibility` — WCAG, keyboard nav, screen reader, RTL keyboard
+13. `testing/e2e` — vitest, playwright, smoke, regression, contracts
+
+If a task is genuinely multi-category, pick the dominant type and call out
+the secondary type in the gate's *why* lines.
+
+### 14.5 Common gate examples (mirroring real repo skills)
 
 ```markdown
-## Pre-Action Skill Gate
-
-**Task:** Delete duplicate `marketing-actions.ts` schema file.
-
+## Mandatory Skill Gate
+**Task type:** backend/api
+**Task title:** Add `requirePermission` to dashboard routes
+**Risk level:** medium
 **Skills selected:**
-
-- `plan-mode` — this is a data-integrity change requiring deliberate planning
-- `systematic-debugging` — need to confirm root cause of duplication before removal
-- `verification-before-completion` — must verify no test breaks after removal
-
-**Loading now...**
+- `acceptance-criteria-gate` — endpoint contract must be defined first
+- `regression-safety-gate` — RBAC change can silently break existing clients
+- `verification-before-completion` — git diff + boundary tests are mandatory
+**Files expected to change:** apps/api/src/routes/dashboard/*.ts, tests/rbac-*.test.ts
+**Verification planned:** pnpm typecheck && pnpm vitest run tests/rbac
+**Safety constraints respected:** no deploy · no db:migrate · no secrets · no production action
 ```
-
-#### Example 2: Adding a new API endpoint
 
 ```markdown
-## Pre-Action Skill Gate
-
-**Task:** Add `requirePermission` to `dashboard.ts` routes.
-
+## Mandatory Skill Gate
+**Task type:** database/migration
+**Task title:** Add wallet-entries idempotency unique index
+**Risk level:** high
 **Skills selected:**
-
-- `plan-mode` — multi-step change across multiple endpoints
-- `test-driven-development` — need boundary tests before applying changes
-- `verification-before-completion` — must verify all tests pass
-
-**Loading now...**
+- `environment-safety-gate` — no auto-migrate; owner runs db:migrate
+- `regression-safety-gate` — existing wallet flows must keep passing
+- `evidence-led-reporting` — final report must show fresh-DB replay output
+**Files expected to change:** packages/db/src/schema/*.ts, packages/db/migrations/*.sql
+**Verification planned:** pnpm db:generate; tests against staging snapshot only
+**Safety constraints respected:** no deploy · no db:migrate · no secrets · no production action
 ```
-
-#### Example 3: Investigating a failing test
 
 ```markdown
-## Pre-Action Skill Gate
-
-**Task:** Investigate why `compliance-regression-gate.test.ts` fails on local DB.
-
+## Mandatory Skill Gate
+**Task type:** ci/deploy
+**Task title:** Fix Caddyfile syntax that blocks reload
+**Risk level:** medium
 **Skills selected:**
-
-- `systematic-debugging` — debugging a test failure requires root cause analysis
-- `mavis-doctor` — could be environment, migration state, or seed data issue
-
-**Loading now...**
+- `environment-safety-gate` — staging-only file, must not touch production
+- `evidence-led-reporting` — paste actual failure line from Deploy logs
+- `verification-before-completion` — PR CI must pass before commit-to-done claim
+**Files expected to change:** deploy/staging/Caddyfile
+**Verification planned:** gh run watch + smoke gate on staging URL
+**Safety constraints respected:** no deploy · no db:migrate · no secrets · no production action
 ```
 
-### Why This Rule Exists
+### 14.6 Final Skill Compliance Report (required at "done")
 
-- LLMs forget skills between turns without explicit invocation
-- The system prompt lists skill triggers but does not enforce them
-- Without this rule, agents default to "fast obvious solution" and skip methodology
-- Skills exist to cover known gaps in agent reasoning (test coverage, verification, root cause analysis)
+Before claiming a task is done, the agent MUST publish (and link from the PR
+body) a Final Skill Compliance Report using
+`docs/agent-os/templates/SKILL_COMPLIANCE_REPORT.md`. The report must answer
+every checkbox in the template — including the four safety confirmations
+(no deploy / no db:migrate / no secrets / no production action) — or the
+task is incomplete.
 
-### When This Rule Does NOT Apply
+### 14.7 Forbidden actions inside any gated task
 
-- Pure conversational answers (questions, explanations, greetings)
-- Reading files for context
-- Format conversions (markdown, JSON parsing)
-- Quick lookups (grep, glob, single reads)
+No matter which skill is selected, the following are NEVER permitted
+without explicit, written owner approval in the same PR:
 
-### When This Rule APPLIES (default)
+- `db:migrate` execution (file generation is fine; running it is owner-only)
+- production deploy of any kind
+- SSH to production hosts
+- printing secrets or `.env` contents
+- live payment-provider calls
+- live shipping-provider calls
+- editing `main` directly or force-pushing to any protected branch
+- using the forbidden server `187.124.41.239`
+- changing DNS, Nginx, firewall, or SSH keys
 
-- Any code change (any file, any line)
-- Any new task
-- Any decision that affects architecture, security, or data
-- Any commit, push, or merge
-- Any test run considered "verification"
+### 14.8 When the gate does NOT apply
 
-### Violation Penalty
+The gate is skippable only for:
 
-- Every task entry in `TASK_TRACKER.md` must now include a `**Skills Used:**` field
-- A task with `**Skills Used:**` blank will be treated as incomplete
-- The owner may reject work that did not follow the skill gate
+- Pure conversational answers (no file or state change).
+- Reading files for context (`Read`, `Grep`, `Glob` without follow-up edits).
+- Single-line quick lookups whose result is shown to the user verbatim.
 
-### Related
+Anything that mutates the repo, the registry files, or external state (PRs,
+issues, CI) requires the gate.
 
-- Full skill list: `~/.mavis/skills/`
-- Skill description: see the `available_skills` block in this session's system prompt
-- `find-skills` skill can be used to discover relevant skills when unsure
+### 14.9 Violation penalty
+
+A PR or task that lacks a published Skill Gate or a Final Skill Compliance
+Report will be:
+
+1. Treated as incomplete in `docs/ops/TASK_TRACKER.md` (`Skills Used:` blank
+   counts as failure).
+2. Subject to revert at owner discretion.
+3. Logged as a process deviation in `docs/agent-os/DECISIONS.md` if
+   recurring.
+
+### 14.10 Related references
+
+- All skills: `.claude/skills/<slug>/SKILL.md`
+- Registry: `docs/agent-os/SKILLS_REGISTRY.md`
+- Short cards: `docs/agent-os/SKILL_CARDS.md`
+- File mapping: `docs/agent-os/SKILL_FILE_MAPPING.md`
+- Compliance template: `docs/agent-os/templates/SKILL_COMPLIANCE_REPORT.md`
+- PR checklist: `.github/pull_request_template.md`
+- Pre-execution gate checklist: `docs/agent-os/EXECUTION_CHECKLIST.md`
+- Enforcement check script: `pnpm check:skills`
 
 ---

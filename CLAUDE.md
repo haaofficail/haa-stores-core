@@ -2,6 +2,27 @@
 
 You are working on Haa Stores / متاجر هاء.
 
+## Read this first — Mandatory Skill Gate
+
+Before any task that mutates files, the repo, or external state (PRs, CI,
+infrastructure), you MUST publish a written **Mandatory Skill Gate**.
+
+- The full rule is **`AGENTS.md` §14** — that file is the authoritative
+  source. This file (CLAUDE.md) carries infrastructure rules only; do not
+  duplicate §14 here. Read AGENTS.md before your first edit on this repo.
+- Skills are defined in `.claude/skills/<slug>/SKILL.md`. The catalogue is
+  `docs/agent-os/SKILLS_REGISTRY.md`; short cards live in
+  `docs/agent-os/SKILL_CARDS.md`; the file→skill map is
+  `docs/agent-os/SKILL_FILE_MAPPING.md`.
+- "Skills" in this repository means **Claude Code execution skills and
+  task governance** — NOT CSS classes, Tailwind utilities, design tokens,
+  or any visual UI change. A report that proves "skills applied" via CSS
+  or asset-hash evidence is invalid and will be rejected.
+- "Done" requires the Final Skill Compliance Report (template:
+  `docs/agent-os/templates/SKILL_COMPLIANCE_REPORT.md`) referenced from
+  the PR body, plus the four safety confirmations in §14.6.
+- The enforcement script is `pnpm check:skills`; CI uses it.
+
 ## Canonical project path
 
 `~/Desktop/haa-stores-core`
