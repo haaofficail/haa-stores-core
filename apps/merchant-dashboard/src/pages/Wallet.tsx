@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { walletApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import { SarIcon } from '@/components/ui/SarIcon';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -174,7 +175,7 @@ export default function WalletPage() {
                 {t('wallet.youWillReceive', 'ستحصل على')}
               </p>
               <p className="text-3xl font-bold text-primary-700 mt-1">
-                {fmt(summary?.netBalance)} {t('common.sar')}
+                {fmt(summary?.netBalance)} <SarIcon size="md" />
               </p>
               <p className="text-xs text-neutral-500 mt-1">
                 {t('wallet.youWillReceiveHint', 'صافي رصيدك بعد خصم رسوم المنصة ورسوم معالجة الدفع ورسوم الشحن')}
@@ -190,21 +191,21 @@ export default function WalletPage() {
                   <span className="text-neutral-600 text-xs">{t('wallet.totalSales')}</span>
                   <span className="tabular-nums text-sm text-emerald-700">
                     <span className="text-neutral-400 me-1">+</span>
-                    {fmt(summary?.totalSales)} {t('common.sar')}
+                    {fmt(summary?.totalSales)} <SarIcon size="sm" />
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-neutral-600 text-xs">{t('wallet.platformFees')}</span>
                   <span className="tabular-nums text-sm text-rose-600">
                     <span className="text-neutral-400 me-1">−</span>
-                    {fmt(summary?.platformFees)} {t('common.sar')}
+                    {fmt(summary?.platformFees)} <SarIcon size="sm" />
                   </span>
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-neutral-600 text-xs">{t('wallet.paymentFees')}</span>
                   <span className="tabular-nums text-sm text-orange-600">
                     <span className="text-neutral-400 me-1">−</span>
-                    {fmt(summary?.paymentFees)} {t('common.sar')}
+                    {fmt(summary?.paymentFees)} <SarIcon size="sm" />
                   </span>
                 </div>
                 {Number(summary?.shippingFees ?? 0) > 0 && (
@@ -212,7 +213,7 @@ export default function WalletPage() {
                     <span className="text-neutral-600 text-xs">{t('wallet.shippingFees')}</span>
                     <span className="tabular-nums text-sm text-purple-600">
                       <span className="text-neutral-400 me-1">−</span>
-                      {fmt(summary?.shippingFees)} {t('common.sar')}
+                      {fmt(summary?.shippingFees)} <SarIcon size="sm" />
                     </span>
                   </div>
                 )}
@@ -221,7 +222,7 @@ export default function WalletPage() {
                     <span className="text-neutral-900 text-xs">{t('wallet.netBalance')}</span>
                     <span className="tabular-nums text-sm text-primary-700">
                       <span className="text-neutral-400 me-1">=</span>
-                      {fmt(summary?.netBalance)} {t('common.sar')}
+                      {fmt(summary?.netBalance)} <SarIcon size="md" />
                     </span>
                   </div>
                 </div>
@@ -466,7 +467,7 @@ export default function WalletPage() {
                       </span>
                     </TableCell>
                     <TableCell className={`text-sm font-medium text-start tabular-nums p-3 ${e.direction === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
-                      {e.direction === 'credit' ? '+' : '-'}{fmt(e.amount)} {t('common.sar')}
+                      {e.direction === 'credit' ? '+' : '-'}{fmt(e.amount)} <SarIcon size="sm" />
                     </TableCell>
                     <TableCell className="p-3">
                       <Badge variant={statusColors[e.status] ?? 'default'} className="text-xs px-2.5 py-0.5">
