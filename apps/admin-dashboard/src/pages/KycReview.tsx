@@ -75,7 +75,7 @@ export default function KycReview() {
         ) : error ? (
           <div className="p-12 text-center">
             <p className="text-sm text-gray-500 mb-3">{t('kyc.loadError', 'فشل تحميل ملفات التحقق')}</p>
-            <button onClick={() => load()} className="text-sm text-blue-600 hover:text-blue-800 font-medium">{t('common.retry', 'إعادة المحاولة')}</button>
+            <button onClick={() => load()} className="text-sm text-primary-600 hover:text-primary-700 font-medium">{t('common.retry', 'إعادة المحاولة')}</button>
           </div>
         ) : profiles.length === 0 ? (
           <div className="p-12 text-center">
@@ -102,7 +102,7 @@ export default function KycReview() {
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
                       p.status === 'approved' ? 'bg-green-100 text-green-700' :
                       p.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                      p.status === 'submitted' ? 'bg-blue-100 text-blue-700' :
+                      p.status === 'submitted' ? 'bg-primary-100 text-primary-700' :
                       'bg-gray-100 text-gray-700'
                     }`}>{statusLabel(p.status)}</span>
                   </td>
@@ -169,7 +169,7 @@ export default function KycReview() {
                       <span className="text-sm text-gray-700">{doc.type}</span>
                     </div>
                     {doc.fileUrl ? (
-                      <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline">{t('kyc.viewFile', 'عرض الملف')}</a>
+                      <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline">{t('kyc.viewFile', 'عرض الملف')}</a>
                     ) : (
                       <span className="text-xs text-gray-400">{t('kyc.fileNotAvailable', 'الملف غير متاح')}</span>
                     )}

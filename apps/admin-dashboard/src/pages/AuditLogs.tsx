@@ -41,7 +41,7 @@ export default function AuditLogs() {
             <p className="text-sm text-gray-500 mb-3">{t('auditLogs.loadError', 'فشل تحميل سجل التدقيق')}</p>
             <button
               onClick={() => load()}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
             >
               {t('common.retry', 'إعادة المحاولة')}
             </button>

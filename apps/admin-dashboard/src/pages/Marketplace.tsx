@@ -151,7 +151,7 @@ export default function Marketplace() {
                       <button onClick={() => review(product.id, 'approved')} className="rounded bg-green-600 px-2 py-1 text-xs text-white">اعتماد</button>
                       <button onClick={() => review(product.id, 'rejected')} className="rounded bg-red-600 px-2 py-1 text-xs text-white">رفض</button>
                       <button onClick={() => review(product.id, 'suspended')} className="rounded bg-gray-700 px-2 py-1 text-xs text-white">إيقاف</button>
-                      <button onClick={() => toggleFeature(product)} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">{product.haaMarketplaceFeatured ? 'إلغاء التمييز' : 'تمييز'}</button>
+                      <button onClick={() => toggleFeature(product)} className="rounded bg-primary-600 px-2 py-1 text-xs text-white">{product.haaMarketplaceFeatured ? 'إلغاء التمييز' : 'تمييز'}</button>
                     </div>
                   </td>
                 </tr>
@@ -174,7 +174,7 @@ export default function Marketplace() {
                   <p className="font-semibold">{seller.name}</p>
                   <p className="text-xs text-gray-500">{seller.city || 'بدون مدينة'} · {seller.approvedCount} معتمد · {seller.pendingCount} معلق</p>
                 </div>
-                <a href={`/marketplace/sellers/${seller.slug}`} target="_blank" rel="noreferrer" className="text-blue-600">عرض</a>
+                <a href={`/marketplace/sellers/${seller.slug}`} target="_blank" rel="noreferrer" className="text-primary-600">عرض</a>
               </div>
             ))}
           </div>
@@ -186,7 +186,7 @@ export default function Marketplace() {
               <h3 className="text-lg font-bold">التسويات والعمولات</h3>
               <p className="mt-1 text-xs text-gray-500">تقرير رقابي فقط؛ تنفيذ التحويلات يتم عبر مسار التسويات اليدوية.</p>
             </div>
-            <a href="/payments/settlements" className="rounded-lg border px-3 py-2 text-xs font-semibold text-blue-600 hover:bg-blue-50">فتح التسويات اليدوية</a>
+            <a href="/payments/settlements" className="rounded-lg border px-3 py-2 text-xs font-semibold text-primary-600 hover:bg-primary-50">فتح التسويات اليدوية</a>
           </div>
           <div className="space-y-2">
             {settlements.map((row) => (

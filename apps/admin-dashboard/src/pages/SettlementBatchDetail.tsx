@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 const settlementStatusColors: Record<string, string> = {
   completed: 'bg-emerald-100 text-emerald-700',
   pending: 'bg-amber-100 text-amber-700',
-  processing: 'bg-blue-100 text-blue-700',
+  processing: 'bg-primary-100 text-primary-700',
   cancelled: 'bg-gray-100 text-gray-700',
 };
 
@@ -222,7 +222,7 @@ export default function SettlementBatchDetailPage() {
         <h2 className="text-2xl font-bold mb-6">تفاصيل دفعة التسوية</h2>
         <div className="bg-white rounded-xl shadow-sm p-12 text-center">
           <p className="text-sm text-gray-500">لم يتم العثور على التسوية</p>
-          <Link to="/payments" className="text-sm text-blue-600 hover:text-blue-800 font-medium mt-2 inline-block">
+          <Link to="/payments" className="text-sm text-primary-600 hover:text-primary-700 font-medium mt-2 inline-block">
             العودة للمدفوعات
           </Link>
         </div>
@@ -275,7 +275,7 @@ export default function SettlementBatchDetailPage() {
             <button
               onClick={() => performAction('review', () => adminApi.reviewPayout(payout.id))}
               disabled={actionLoading['review']}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 disabled:opacity-50"
             >
               {actionLoading['review'] ? 'جاري...' : 'بدء المراجعة'}
             </button>
@@ -306,7 +306,7 @@ export default function SettlementBatchDetailPage() {
             <button
               onClick={() => performAction('markTransferPending', () => adminApi.markTransferPending(payout.id))}
               disabled={actionLoading['markTransferPending']}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 disabled:opacity-50"
             >
               {actionLoading['markTransferPending'] ? 'جاري...' : 'تأكيد بدء التحويل'}
             </button>
@@ -315,7 +315,7 @@ export default function SettlementBatchDetailPage() {
             <button
               onClick={() => performAction('markTransferred', () => adminApi.markTransferred(payout.id))}
               disabled={actionLoading['markTransferred']}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 disabled:opacity-50"
             >
               {actionLoading['markTransferred'] ? 'جاري...' : 'تسجيل التحويل'}
             </button>
@@ -379,8 +379,8 @@ export default function SettlementBatchDetailPage() {
           {sorted.map((ev, idx) => (
             <div key={ev.id} className="flex gap-3">
               <div className="flex flex-col items-center">
-                <div className="w-3 h-3 rounded-full bg-blue-600 mt-1.5" />
-                {idx < sorted.length - 1 && <div className="w-0.5 flex-1 bg-blue-200" />}
+                <div className="w-3 h-3 rounded-full bg-primary-600 mt-1.5" />
+                {idx < sorted.length - 1 && <div className="w-0.5 flex-1 bg-primary-100" />}
               </div>
               <div className="pb-4 flex-1">
                 <p className="text-sm font-medium text-gray-900">
@@ -406,7 +406,7 @@ export default function SettlementBatchDetailPage() {
   return (
     <div>
       <div className="flex items-center gap-3 mb-6 flex-wrap">
-        <Link to="/payments" className="text-sm text-blue-600 hover:text-blue-800">← العودة للمدفوعات</Link>
+        <Link to="/payments" className="text-sm text-primary-600 hover:text-primary-700">← العودة للمدفوعات</Link>
         <h2 className="text-2xl font-bold">تفاصيل دفعة التسوية</h2>
         <span className="font-mono text-sm text-gray-500">{settlementRef}</span>
         <span className={`px-2 py-1 rounded text-xs font-medium ${settlementStatusColors[detail.status] || 'bg-gray-100 text-gray-700'}`}>
@@ -558,7 +558,7 @@ export default function SettlementBatchDetailPage() {
                       href={`/admin/orders?storeId=${tx.storeId}&orderId=${tx.orderId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-mono text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                      className="font-mono text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline"
                     >
                       {tx.orderNumber ?? `#${tx.orderId}`}
                     </a>
