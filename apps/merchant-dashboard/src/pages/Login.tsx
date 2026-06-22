@@ -7,17 +7,31 @@ import { Label } from '@/components/ui/label';
 import { useNavigate, Link } from 'react-router-dom';
 import { ApiClientError } from '@/lib/api';
 import { toast } from 'sonner';
-import { Sparkles, ArrowLeft, Lock, Mail } from 'lucide-react';
+import { Sparkles, ArrowLeft, Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import OperationFeed from '@/components/OperationFeed';
 
 export default function Login() {
   const { t } = useTranslation();
   const { login, user } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => {
+    try {
+      return localStorage.getItem('haa-remember-email') ?? '';
+    } catch {
+      return '';
+    }
+  });
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => {
+    try {
+      return localStorage.getItem('haa-remember-email') !== null;
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -35,6 +49,13 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
+      // Persist email only — never the password — when "remember me" is on.
+      try {
+        if (rememberMe) localStorage.setItem('haa-remember-email', email);
+        else localStorage.removeItem('haa-remember-email');
+      } catch {
+        // localStorage may throw in privacy modes; the login still works.
+      }
       await login(email, password);
     } catch (err) {
       if (err instanceof ApiClientError) {
@@ -142,24 +163,55 @@ export default function Login() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="password" className="text-sm font-medium text-neutral-800">
-                      كلمة المرور
-                    </Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password" className="text-sm font-medium text-neutral-800">
+                        كلمة المرور
+                      </Label>
+                      <Link
+                        to="/forgot-password"
+                        className="text-xs font-medium text-primary-600 hover:text-primary-700 hover:underline"
+                      >
+                        نسيت كلمة المرور؟
+                      </Link>
+                    </div>
                     <div className="relative">
                       <Lock className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" aria-hidden="true" />
                       <Input
                         id="password"
-                        type="password"
+                        type={showPassword ? 'text' : 'password'}
                         dir="ltr"
                         autoComplete="current-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className="h-11 rounded-xl border-neutral-200 bg-white/80 ps-10 text-sm transition-all focus:border-primary-400 focus:bg-white focus:shadow-md focus:shadow-primary-500/10 focus:ring-1 focus:ring-primary-400"
+                        className="h-11 rounded-xl border-neutral-200 bg-white/80 pe-10 ps-10 text-sm transition-all focus:border-primary-400 focus:bg-white focus:shadow-md focus:shadow-primary-500/10 focus:ring-1 focus:ring-primary-400"
                         placeholder="••••••••"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+                        aria-pressed={showPassword}
+                        className="absolute end-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" aria-hidden="true" />
+                        ) : (
+                          <Eye className="h-4 w-4" aria-hidden="true" />
+                        )}
+                      </button>
                     </div>
                   </div>
+
+                  <label className="flex cursor-pointer items-center gap-2 text-sm text-neutral-700 select-none">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-2 focus:ring-primary-400"
+                    />
+                    تذكّر بريدي
+                  </label>
 
                   <Button
                     type="submit"
