@@ -4,6 +4,35 @@
 
 ---
 
+### TASK-0076: Post-autopilot engineering drive (PRs #39 → #54)
+
+- **Type:** Quality / Multi-area (orchestrated follow-ups)
+- **Priority:** P1
+- **Status:** Done
+- **Created:** 2026-06-22
+- **Updated:** 2026-06-22
+- **Branches:** sequence of single-purpose branches per PR (see commit history).
+- **Skills Used:** `haa-command-orchestrator`, `verification-before-completion`.
+- **Scope:** Drove down the engineering side of the QA audit backlog that TASK-0075 left for review. 16 PRs merged on `main`:
+  - **#39** SAFE FULL AUTOPILOT — 14 waves landed with E2E fix.
+  - **#40** Shipping readiness states + rate cache.
+  - **#41** Webhook hardening + RBAC chain-ordering tests.
+  - **#42** Wallet idempotency migration FILE (execution still owner-gated).
+  - **#43 / #44** Lucide migration 12 + 15 = 27 patterns.
+  - **#46** Admin `blue-*` → `primary-*` tokens (62 occurrences).
+  - **#47** RTL Tailwind directional → logical codemod (298 replacements).
+  - **#48** JWT iss/aud lenient rollout + `verifyTokenStrict` for future flip.
+  - **#49** Rate-limit on failed `requireStoreAccess` (BOLA layer 2).
+  - **#50** Landing-page SAR icon position + RTL-aware scroll bar.
+  - **#51** Wired `ShippingRateCache` into checkout route + counters + `GET /shipping/rate-cache/stats`.
+  - **#52** Webhook dedup metrics + `GET /admin/webhooks/dedup-stats`.
+  - **#53** HTTP `Idempotency-Key` middleware (IETF draft subset) + diagnostics + applied to refund.
+  - **#54** Tenant status change audit log (F-QA-B-004).
+- **Out of Scope:** push to remote without owner GO; deploy; `db:migrate` execution; live integration credentials; production secrets; SSH.
+- **Trackers:** `docs/agent-os/REMAINING_WORK.md`, this file.
+
+---
+
 ### TASK-0075: Post-QA Autopilot — wave plan execution
 
 - **Type:** Quality / Multi-area (orchestration)

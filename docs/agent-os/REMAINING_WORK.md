@@ -7,10 +7,10 @@
 
 ## Last Completed
 
-- **Task:** Wave 18 — RTL/a11y guards + brand-consistency.
-- **Last commit:** `40b7b6c7 test(quality): add RTL accessibility and brand guards`
-- **Verification:** `pnpm test -- tests/rtl-accessibility-guards.test.ts` (1 file, all green).
-- **Notes:** All in-scope safe waves executed; remaining items are tracker-only (no engineering scope cleared in autopilot) or owner/credential-gated.
+- **Task:** Tenant status change audit log (F-QA-B-004).
+- **Last commit:** `81806140 feat(audit): write audit log on tenant status change (#54)`.
+- **Verification:** `pnpm vitest run tests/tenant-status-audit.test.ts` — 6/6 pass.
+- **Notes:** Sixteen engineering follow-ups (PRs #39 → #54) have landed on `main` since the post-QA autopilot closed. The remaining items are now exclusively owner-gated, credential-gated, deploy-gated, or migration-gated.
 
 ## Done in this autopilot run (chronological)
 
@@ -35,44 +35,60 @@
 
 _(none — autopilot has executed every safe wave in scope)_
 
+## Engineering follow-ups landed post-autopilot (PRs #39 → #54)
+
+All items below are **shipped on `main`** unless explicitly noted otherwise. They closed the gaps that the post-QA autopilot deferred for review.
+
+- [x] **Wave 5 / F-QA-C-005** — Shipping aggregator readiness states (`getShippingReadinessStates()` 7-state model). **PR #40.**
+- [x] **F-QA-C-004 / Wave 6** — Shipping rate cache + single-flight debounce. **PR #40.**
+- [x] **F-QA-C-004 (wiring + diagnostics)** — `POST /:slug/checkout/shipping-rates` wrapped in `getDefaultShippingRateCache().getOrLoad(...)`; hit/miss/coalesced/error counters; `GET /shipping/rate-cache/stats`. **PR #51.**
+- [x] **Wave 14** — Outbound webhook hardening test coverage (6 invariants). **PR #41.**
+- [x] **Wave 15** — RBAC chain-ordering guard (`requireStoreAccess` precedes `requirePermission`). **PR #41.**
+- [x] **F-QA-B-NEXT (JWT iss/aud, lenient rollout)** — `signToken` embeds iss + aud; `verifyToken` accepts legacy tokens; `verifyTokenStrict` for future flip. **PR #48.**
+- [x] **F-QA-B-NEXT (failed `requireStoreAccess` rate-limit)** — BOLA layer 2: in-memory bucket per `(userId, tenantId, ip)` over a rolling window; 429 + `Retry-After` after budget exhausted. **PR #49.**
+- [x] **F-QA-B-NEXT (webhook dedup metrics)** — per-process counters (`total`/`duplicates`/`fresh`/`errors`) + per-provider buckets + `GET /admin/webhooks/dedup-stats`. **PR #52.**
+- [x] **F-QA-B-NEXT (HTTP Idempotency-Key middleware)** — IETF draft subset; applied to `POST /stores/:storeId/orders/:orderId/refund`; `GET /admin/idempotency-key/stats` diagnostics; `Idempotency-Replay` response header. **PR #53.**
+- [x] **F-QA-B-004** — Tenant status change audit log; 404 on missing tenant; no-op short-circuit; `AuditAction` union + Arabic label added. **PR #54.**
+- [x] **F-QA-D-003** — Admin `blue-500/600` → `primary-*` tokens (62 occurrences). **PR #46.**
+- [x] **F-QA-D-004** (partial) — Lucide migrations: 12 then 15 patterns. **PRs #43 + #44.**
+- [x] **F-QA-D-005** — RTL Tailwind logical codemod (298 replacements); landing-page SAR icon + scroll-bar logical-properties polish. **PRs #47 + #50.**
+- [~] **F-QA-C-001** — Wallet DB idempotency migration FILE (`packages/db/src/migrations/0073_wallet_idempotency.sql`). **PR #42.** Migration EXECUTION still owner-gated.
+
 ## Remaining — P1
 
-- [ ] F-QA-B-001 — admin tenant DELETE soft-delete + audit log + re-auth (when the feature is re-enabled past beta). Currently the endpoint is locked by DECISION-OS-014 (Wave 13).
+- [ ] F-QA-B-001 — admin tenant DELETE soft-delete + audit log + re-auth (when the feature is re-enabled past beta). Currently locked by DECISION-OS-014 (Wave 13).
 - [ ] F-QA-B-002 — 2FA on merchant `DELETE /account` (when re-enabled past beta). Currently locked.
-- [~] F-QA-C-001 — Wallet DB idempotency migration FILE landed in PR #42 (`packages/db/src/migrations/0073_wallet_idempotency.sql` + schema delta + ledger code path + tests). **Migration EXECUTION still requires explicit owner approval to run `pnpm db:migrate` against staging/production.**
-- [ ] F-QA-C-002 — Geidea live refund implementation. Capability flags disabled in Wave 4; re-enable when implementation lands.
-- [ ] F-QA-E-007 — Production readiness promotion checklist against the official server `72.61.108.208` + production secrets (owner). No server-vs-server decision — the server is locked by DECISION-OS-007.
+- [~] F-QA-C-001 — Wallet idempotency migration EXECUTION still owner-gated (`pnpm db:migrate` against staging/production). File + tests already in `main` via PR #42.
+- [ ] F-QA-C-002 — Geidea live refund implementation. Capability flags disabled in Wave 4; re-enable when implementation lands. **Blocked on Geidea credentials.**
+- [ ] F-QA-E-007 — Production readiness promotion checklist against the official server `72.61.108.208` + production secrets (owner). No server-vs-server decision — server locked by DECISION-OS-007.
 
 ## Remaining — P2
 
-- [ ] F-QA-B-004 — Tenant status change audit log (covered by Wave 13 only for direct delete; status route still needs an audit log entry).
-- [x] F-QA-C-004 / Wave 6 — Server-side shipping rate cache/debounce. **DONE in PR #40** (`packages/shipping-core/src/rate-cache.ts` + tests).
-- [ ] F-QA-D-002 — `@haa/tokens` palette full alignment to `#5c9cd5` (Wave 2 annotated tokens but did not regenerate the 50–950 scale).
-- [ ] F-QA-D-003 — Admin `blue-500/600` hardcodes (Wave 2 deferred bulk replacement; 5 admin pages with ~39 classes).
-- [ ] F-QA-D-004 — Lucide migration progress (ceiling locked at 152 in Wave 17; need to drive down).
-- [x] Wave 5 — Shipping aggregator readiness states. **DONE in PR #40** (`packages/shipping-core/src/readiness.ts` exposes `getShippingReadinessStates()` returning the 7-state model: not_configured/mock_ready/sandbox_configured/sandbox_verified/live_locked/live_ready/provider_error). Diagnostics UI in dashboards remains a follow-up.
-- [x] Wave 14 — Outbound webhook delivery hardening test coverage. **DONE in PR #41** (`tests/outbound-webhook-hardening.test.ts` locks 6 invariants: signing, body cap, circuit breaker, paused short-circuit, max-attempts dead-letter, secret never persisted/logged).
-- [x] Wave 15 — RBAC chain-ordering guard. **DONE in PR #41** (`tests/rbac-chain-ordering.test.ts` asserts `requireStoreAccess` precedes `requirePermission` across every non-exempt tenant route). JWT iss/aud + rate-limit on failed store-access remain as separate P2 follow-ups.
+- [ ] F-QA-D-002 — `@haa/tokens` palette full 50–950 alignment to `#5c9cd5` (Wave 2 annotated; full regenerate still pending).
+- [ ] F-QA-D-004 (continued) — Lucide migration drive-down beyond PRs #43/#44 (ceiling test in place; remaining files in `themes/luxury-showcase/*`).
+- [ ] Shipping diagnostics UI tile in admin/merchant dashboards consuming `/shipping/rate-cache/stats` + `/admin/webhooks/dedup-stats` + `/admin/idempotency-key/stats`.
 
 ## Remaining — P3
 
-- [ ] F-QA-B-005 — already done in Wave 10.
-- [ ] F-QA-D-005 — RTL Tailwind logical migration (ceiling locked in Wave 18 at 300).
-- [ ] F-QA-D-006 — extra a11y test files (RTL + a11y + brand guards added in Waves 2 + 18).
-- [ ] Wave 21 (deferred) — Archive cleanup of 11 root-level legacy reports (DECISION-OS-001 says cleanup in dedicated `docs/archive-cleanup` PR; this autopilot adds only tracker entries, does not move files).
+- [ ] F-QA-B-005 — already done in Wave 10 (parked as tracker-only).
+- [ ] F-QA-D-006 — extra a11y test files (RTL + a11y + brand guards added in Waves 2 + 18; more granular tests optional).
+- [ ] Wave 21 — Archive cleanup of 11 root-level legacy reports — dedicated `docs/archive-cleanup` PR per DECISION-OS-001.
 - [ ] `docs/operations/` merge into `docs/ops/` (ISSUE-0005).
 - [ ] `docs/agent-os/PROVIDER_HANDOFF.md` historical phrasing post-Batch-C.
+- [ ] **PR #45 decision/update** — was opened during the post-autopilot drive but not merged; owner ruling required (keep / rebase / close).
 
 ## Blocked (owner / credentials / deploy)
 
-- [ ] **Production readiness promotion** — the official server is `72.61.108.208` (locked by DECISION-OS-007). Execute the promotion checklist in `docs/ops/PRODUCTION_READINESS_CHECKLIST.md` §1.5–1.7 (server hardening review, prod DNS, prod TLS auto-issue). No server-vs-server decision remains.
+- [ ] **Wallet idempotency migration EXECUTION** — owner approval to run `pnpm db:generate` + `pnpm db:migrate` per `WALLET_IDEMPOTENCY_PLAN.md`. File + ledger code + tests already on `main`.
+- [ ] **Cloudflare DNS configuration** — owner to set up zone + records per DECISION-OS-008.
 - [ ] **Production secrets** — owner to generate + load per `docs/ops/PRODUCTION_READINESS_CHECKLIST §2` (JWT_SECRET, ADMIN_JWT_SECRET, ENCRYPTION_KEY, DATABASE_URL, REDIS_URL, etc).
 - [ ] **GitHub `production` environment secrets** — owner to set in repo settings.
 - [ ] **Geidea live API wiring** — needs official endpoints/credentials/signature rules.
 - [ ] **Shipping aggregator live selection** — owner picks provider + credentials.
-- [ ] **Wallet idempotency migration EXECUTION** — owner approval to run `pnpm db:generate` + `pnpm db:migrate` per `WALLET_IDEMPOTENCY_PLAN.md`.
-- [ ] **Cloudflare DNS configuration** — owner to set up zone + records per OS-008.
+- [ ] **Production readiness promotion** — execute checklist in `docs/ops/PRODUCTION_READINESS_CHECKLIST.md` §1.5–1.7 against `72.61.108.208`.
+- [ ] **Deploy approval** — every staging/production deploy run requires owner GO; no auto-deploy.
 - [ ] **G1–G10 owner gates** — independent owner track (`docs/ops/OWNER_ACTION_G*.md`).
+- [ ] **Docs archive cleanup** — dedicated PR per DECISION-OS-001 (see Remaining — P3).
 
 ## Owner Gates (G1–G10) — unchanged
 
