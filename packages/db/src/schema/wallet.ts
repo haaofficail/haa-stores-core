@@ -1,4 +1,5 @@
-import { pgTable, serial, varchar, integer, timestamp, decimal, jsonb, text, index, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, integer, timestamp, decimal, jsonb, text, index, uniqueIndex, boolean } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { stores } from './stores.js';
 import { users } from './users.js';
 
@@ -44,6 +45,32 @@ export const walletEntries = pgTable('wallet_entries', {
   storeStatusCreatedAtIdx: index('wallet_entries_store_status_created_at_idx').on(table.storeId, table.status, table.createdAt),
   walletAccountCreatedAtIdx: index('wallet_entries_account_created_at_idx').on(table.walletAccountId, table.createdAt),
   referenceIdx: index('wallet_entries_reference_idx').on(table.referenceType, table.referenceId),
+  // DECISION-OS-018: DB-level idempotency for the 7 entry types that previously
+  // relied on the in-memory WalletPostingService.dedupMap. Mirrors the
+  // platform_fee partial unique index (migration 0062) so concurrent webhooks
+  // cannot double-credit / double-debit a wallet entry. See
+  // docs/agent-os/WALLET_IDEMPOTENCY_PLAN.md.
+  saleUniq: uniqueIndex('wallet_entries_sale_uniq')
+    .on(table.storeId, table.referenceId)
+    .where(sql`type = 'sale' AND reference_type = 'order'`),
+  codFeeUniq: uniqueIndex('wallet_entries_cod_fee_uniq')
+    .on(table.storeId, table.referenceId)
+    .where(sql`type = 'cod_fee' AND reference_type = 'order'`),
+  refundUniq: uniqueIndex('wallet_entries_refund_uniq')
+    .on(table.storeId, table.referenceId)
+    .where(sql`type = 'refund' AND reference_type = 'refund'`),
+  gatewayFeeUniq: uniqueIndex('wallet_entries_gateway_fee_uniq')
+    .on(table.storeId, table.referenceId)
+    .where(sql`type = 'gateway_fee' AND reference_type = 'order'`),
+  payoutDebitUniq: uniqueIndex('wallet_entries_payout_debit_uniq')
+    .on(table.storeId, table.referenceId)
+    .where(sql`type = 'payout_debit' AND reference_type = 'payout'`),
+  payoutReversalUniq: uniqueIndex('wallet_entries_payout_reversal_uniq')
+    .on(table.storeId, table.referenceId)
+    .where(sql`type = 'payout_reversal' AND reference_type = 'payout'`),
+  settlementDiffUniq: uniqueIndex('wallet_entries_settlement_diff_uniq')
+    .on(table.storeId, table.referenceId)
+    .where(sql`type = 'settlement_difference' AND reference_type = 'adjustment'`),
 }));
 
 export const settlementBatches = pgTable('settlement_batches', {

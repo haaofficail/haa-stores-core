@@ -484,6 +484,13 @@
       "when": 1782000068000,
       "tag": "0072_custom_domain",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1782000069000,
+      "tag": "0073_wallet_idempotency",
+      "breakpoints": true
     }
   ]
 }
