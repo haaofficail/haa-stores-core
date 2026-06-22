@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
 import { usePermissions } from '@/lib/permissions';
 import {
-  LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, UserCog, TrendingUp, Activity, ExternalLink, AlertTriangle,
+  LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, UserCog, TrendingUp, Activity, ExternalLink, AlertTriangle, MessageSquare,
 } from 'lucide-react';
 
 interface NavItem {
@@ -54,6 +54,7 @@ const navGroups: Array<{
     title: 'التسويق',
     items: [
       { to: '/promotions', icon: Percent, label: 'nav.promotions', fallback: 'العروض', permission: 'promotions:read' },
+      { to: '/whatsapp', icon: MessageSquare, label: 'nav.whatsapp', fallback: 'الواتساب المحلي', permission: 'settings:read' },
       { to: '/abandoned-carts', icon: ShoppingBag, label: 'nav.abandonedCarts', fallback: 'العربات المتروكة', permission: 'orders:read' },
       { to: '/policies', icon: FileText, label: 'nav.policies', fallback: 'الصفحات والسياسات', permission: 'settings:read' },
     ],

@@ -1049,3 +1049,48 @@ export const supportApi = {
   deleteArticle: (storeId: number, articleId: number) =>
     request<{ id: number }>(`/merchant/${storeId}/support/kb/${articleId}`, { method: 'DELETE' }),
 };
+
+// WhatsApp Local pairing (WA-PR-2).
+//
+// The pairing flow is: POST /pair to start, then subscribe to the
+// /qr-stream Server-Sent Events endpoint to receive `qr` /
+// `connected` / `disconnected` / `failure` events as they happen.
+// EventSource carries Authorization via `credentials: 'include'`
+// using the cookie session — but our `request()` helper attaches
+// the Authorization header itself, which EventSource cannot. So we
+// pass the token in the URL only for the SSE channel, and only the
+// SSE channel; mutating calls keep using `request()`.
+const apiBase = BASE_URL;
+function getActiveStoreId(): number {
+  const id = Number(localStorage.getItem('active_store_id'));
+  return Number.isFinite(id) && id > 0 ? id : 0;
+}
+export const whatsappApi = {
+  pair: () =>
+    request<{ status: 'disconnected' | 'pairing' | 'connected' }>(
+      `/merchant/${getActiveStoreId()}/whatsapp/pair`,
+      { method: 'POST' },
+    ),
+  status: () =>
+    request<{ status: 'disconnected' | 'pairing' | 'connected' }>(
+      `/merchant/${getActiveStoreId()}/whatsapp/status`,
+    ),
+  disconnect: () =>
+    request<{ status: 'disconnected' }>(
+      `/merchant/${getActiveStoreId()}/whatsapp/disconnect`,
+      { method: 'POST' },
+    ),
+  /**
+   * EventSource for the /qr-stream SSE channel. EventSource cannot
+   * attach an Authorization header, so the token is appended as a
+   * query param. The route reads it via the same JWT verification
+   * helper that consumes Authorization headers.
+   */
+  openQrStream(): EventSource {
+    const token = getToken();
+    const url = `${apiBase}/merchant/${getActiveStoreId()}/whatsapp/qr-stream${
+      token ? `?token=${encodeURIComponent(token)}` : ''
+    }`;
+    return new EventSource(url, { withCredentials: true });
+  },
+};
