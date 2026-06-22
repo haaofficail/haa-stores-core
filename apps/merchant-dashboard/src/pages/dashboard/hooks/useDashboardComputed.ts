@@ -80,6 +80,7 @@ export function useDashboardComputed(
       items.push({
         key: "ship",
         count: ac.readyToShipCount,
+        label: "جاهز للشحن",
         // Brand fidelity: ship uses a darker primary shade to differentiate
         // from "new orders" (also primary) without leaving the Haa palette.
         color: "from-primary-600 to-primary-700",
