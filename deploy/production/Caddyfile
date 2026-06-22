@@ -25,6 +25,36 @@
 	}
 }
 
+(security_headers) {
+	# Edge-level security headers. Defined on Caddy because the SPA nginx
+	# `add_header` directives are silently overridden by per-location
+	# blocks (nginx inheritance gotcha) — moving them up here guarantees
+	# every response carries them regardless of which nginx location
+	# served the request.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		-Server
+	}
+}
+
+(admin_security_headers) {
+	# Admin gets the stricter set — DENY framing + no-referrer.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Frame-Options "DENY"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		-Server
+	}
+}
+
 (spa_site) {
 	handle /health* {
 		reverse_proxy api:3001
@@ -33,13 +63,6 @@
 		reverse_proxy api:3001
 	}
 	encode gzip zstd
-
-	header {
-		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
-		Referrer-Policy "strict-origin-when-cross-origin"
-	}
 }
 
 www.haastores.com {
@@ -47,6 +70,7 @@ www.haastores.com {
 }
 
 haastores.com {
+	import security_headers
 	import spa_site
 	handle {
 		reverse_proxy storefront:80
@@ -54,6 +78,7 @@ haastores.com {
 }
 
 admin.haastores.com {
+	import admin_security_headers
 	import spa_site
 	handle {
 		reverse_proxy admin-dashboard:80
@@ -61,6 +86,7 @@ admin.haastores.com {
 }
 
 merchant.haastores.com {
+	import security_headers
 	import spa_site
 	handle {
 		reverse_proxy merchant-dashboard:80
@@ -75,6 +101,7 @@ merchant.haastores.com {
 	tls {
 		on_demand
 	}
+	import security_headers
 	import spa_site
 	handle {
 		reverse_proxy storefront:80
