@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { walletApi } from '@/lib/api';
+import { messageFromError } from '@/lib/error-mapper';
 import { formatCurrency } from '@/lib/utils';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -86,6 +87,7 @@ export default function WalletPage() {
   const [loading, setLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(false);
   const [fetchError, setFetchError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [page, setPage] = useState(1);
   const isFirstLoad = useRef(true);
 
@@ -108,6 +110,7 @@ export default function WalletPage() {
       setTableLoading(true);
     }
     setFetchError(false);
+    setErrorMessage('');
     Promise.all([
       walletApi.summary(storeId).catch(() => null),
       walletApi.entries(storeId, {
@@ -118,7 +121,15 @@ export default function WalletPage() {
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
         search: search || undefined,
-      }).catch(() => { setFetchError(true); return null; }),
+      }).catch((err: unknown) => {
+        // Audit PART 3 P0 #4 follow-up: route fetch errors through
+        // the central messageFromError mapper so the empty-state
+        // panel surfaces a translated reason instead of a generic
+        // banner.
+        setFetchError(true);
+        setErrorMessage(messageFromError(err, t));
+        return null;
+      }),
     ]).then(([s, e]) => {
       if (s) setSummary(s);
       if (e) { setEntries(e.data ?? []); setTotal(e.total ?? 0); }
@@ -126,7 +137,7 @@ export default function WalletPage() {
       setLoading(false);
       setTableLoading(false);
     });
-  }, [storeId, page, typeFilter, directionFilter, statusFilter, dateFrom, dateTo, search]);
+  }, [storeId, page, typeFilter, directionFilter, statusFilter, dateFrom, dateTo, search, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -167,15 +178,31 @@ export default function WalletPage() {
             Owner decision (2026-06-16): show the net amount prominently
             with a collapsible breakdown, matching Saudi BNPL UX
             conventions. The native <details>/<summary> is used to keep
-            the change dependency-free (no Radix Collapsible or similar). */}
+            the change dependency-free (no Radix Collapsible or similar).
+
+            Audit PART 3 P0 #4 (Wallet.tsx:171-182): hero card used to
+            render any value — including a NEGATIVE net balance — in
+            `text-primary-700` (positive brand color), misleading the
+            merchant about owed money. We now compute the value once,
+            mirror the same `>= 0` guard already used by the lower
+            SummaryCard (line 263), and render negatives in `text-red-600`
+            with an explicit "−" prefix on the absolute value. */}
+        {(() => {
+          const rawNet = Number(summary?.netBalance ?? 0);
+          const netIsNegative = Number.isFinite(rawNet) && rawNet < 0;
+          const heroColor = netIsNegative ? 'text-red-600' : 'text-primary-700';
+          const heroDisplay = netIsNegative
+            ? `-${fmt(Math.abs(rawNet))}`
+            : fmt(summary?.netBalance);
+          return (
         <div className="bg-gradient-to-br from-primary-50 to-emerald-50/50 border border-primary-200/60 rounded-3xl p-5 shadow-card">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="min-w-0">
               <p className="text-sm text-neutral-600">
                 {t('wallet.youWillReceive', 'ستحصل على')}
               </p>
-              <p className="text-3xl font-bold text-primary-700 mt-1">
-                {fmt(summary?.netBalance)} <SarIcon size="md" />
+              <p className={`text-3xl font-bold ${heroColor} mt-1`}>
+                {heroDisplay} <SarIcon size="md" />
               </p>
               <p className="text-xs text-neutral-500 mt-1">
                 {t('wallet.youWillReceiveHint', 'صافي رصيدك بعد خصم رسوم المنصة ورسوم معالجة الدفع ورسوم الشحن')}
@@ -220,9 +247,9 @@ export default function WalletPage() {
                 <div className="border-t border-neutral-200 pt-2 mt-2">
                   <div className="flex items-center justify-between gap-3 font-bold">
                     <span className="text-neutral-900 text-xs">{t('wallet.netBalance')}</span>
-                    <span className="tabular-nums text-sm text-primary-700">
+                    <span className={`tabular-nums text-sm ${heroColor}`}>
                       <span className="text-neutral-400 me-1">=</span>
-                      {fmt(summary?.netBalance)} <SarIcon size="md" />
+                      {heroDisplay} <SarIcon size="md" />
                     </span>
                   </div>
                 </div>
@@ -230,6 +257,8 @@ export default function WalletPage() {
             </details>
           </div>
         </div>
+          );
+        })()}
 
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           <SummaryCard
@@ -411,7 +440,7 @@ export default function WalletPage() {
               <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4">
                 <AlertTriangle className="h-8 w-8 text-red-500" />
               </div>
-              <p className="text-sm text-neutral-500 mb-3">{t('wallet.loadError')}</p>
+              <p className="text-sm text-neutral-500 mb-3">{errorMessage || t('wallet.loadError')}</p>
               <Button variant="outline" className="h-9 text-sm" onClick={load}>{t('common.retry')}</Button>
             </div>
           ) : entries.length === 0 ? (
