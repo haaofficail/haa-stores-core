@@ -96,19 +96,28 @@ export default function Login() {
       </div>
 
       <div
-        className={`mx-auto flex min-h-screen max-w-7xl items-center justify-center transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:opacity-100 motion-reduce:translate-y-0 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+        className={`mx-auto flex min-h-screen max-w-6xl items-center justify-center transition-all duration-700 ease-out motion-reduce:transition-none motion-reduce:opacity-100 motion-reduce:translate-y-0 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
       >
         <div className="grid w-full items-stretch gap-8 lg:grid-cols-5 lg:gap-12">
 
           {/* ── Login panel (2/5) ── */}
           <div className="flex flex-col items-center justify-center gap-8 lg:col-span-2">
 
-            {/* Logo + brand */}
+            {/* Logo + brand. Logo is decorative — the brand name is
+                already announced by the <h1> below, so alt="" prevents
+                screen readers from reading "هاء متاجر هاء". srcset lets
+                the browser pick the right size instead of downloading
+                the 6000x6000 master at every visit. */}
             <div className="text-center">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 shadow-lg shadow-primary-500/30">
                 <img
-                  src="/haa-logo.png"
-                  alt="هاء"
+                  src="/haa-logo-192.png"
+                  srcSet="/haa-logo-64.png 64w, /haa-logo-192.png 192w, /haa-logo-512.png 512w"
+                  sizes="40px"
+                  alt=""
+                  width={40}
+                  height={40}
+                  decoding="async"
                   className="h-10 w-auto"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display = 'none';
