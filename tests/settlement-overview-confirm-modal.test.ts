@@ -123,13 +123,15 @@ describe('SettlementOverview payout — confirm modal + double-click guard (audi
     expect(triggerBlockMatch).toBeDefined();
   });
 
-  it('openPayoutModal guards against re-opening an already-open modal', () => {
+  it('handleRequestPayout guards against re-opening an already-open modal', () => {
     const src = readPage();
     // The handler that opens the modal must itself short-circuit if the
     // modal is already open, so a fast double-click that lands before
     // React commits the first `setRequestModalOpen(true)` cannot fire
-    // the open path twice with stale state.
-    const openFnMatch = src.match(/const\s+openPayoutModal\s*=\s*\(\)\s*=>\s*\{[\s\S]*?\n\s*\};/);
+    // the open path twice with stale state. Named `handleRequestPayout`
+    // to preserve the symbol contract asserted by
+    // `tests/manual-settlement-dashboard-ux.test.ts` (already on main).
+    const openFnMatch = src.match(/const\s+handleRequestPayout\s*=\s*\(\)\s*=>\s*\{[\s\S]*?\n\s*\};/);
     expect(openFnMatch).not.toBeNull();
     expect(openFnMatch?.[0]).toMatch(/if\s*\(\s*requestModalOpen\s*\|\|\s*requesting\s*\)\s*return\s*;?/);
   });

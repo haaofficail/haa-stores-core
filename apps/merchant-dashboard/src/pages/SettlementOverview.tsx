@@ -232,8 +232,10 @@ export default function SettlementOverview() {
 
   // Single entry-point from the page header. Guarded so a fast
   // double-click on the trigger cannot open the modal twice or
-  // bypass the confirm stage.
-  const openPayoutModal = () => {
+  // bypass the confirm stage. Named `handleRequestPayout` to preserve
+  // the symbol contract asserted by
+  // `tests/manual-settlement-dashboard-ux.test.ts` (already on main).
+  const handleRequestPayout = () => {
     if (requestModalOpen || requesting) return;
     setRequestAmount(String(availableBalance));
     setConfirmStage('input');
@@ -252,7 +254,7 @@ export default function SettlementOverview() {
         </div>
         <Button
           className="h-10 gap-2"
-          onClick={openPayoutModal}
+          onClick={handleRequestPayout}
           disabled={!isEligible || Number(availableBalance) <= 0 || requesting || requestModalOpen}
           data-testid="settlement-trigger"
         >
