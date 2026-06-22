@@ -10,10 +10,29 @@ import { CheckCircle2, Sparkles, Store, ArrowLeft, BarChart3, ShoppingBag, Palet
 import { toast } from 'sonner';
 
 function Confetti() {
-  const colors = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'];
+  // Confetti palette = Haa primary scale only (no indigo/violet drift).
+  // Tokens resolved from `apps/merchant-dashboard/src/index.css` so the
+  // celebration animation respects brand tokens and stays in lockstep
+  // with any future palette tweak. See
+  // `docs/agent/audit/MD_PAGES_AUDIT_PART_1_AUTH.md` Finding #1.
+  const colors = [
+    'var(--haa-primary-200)',
+    'var(--haa-primary-300)',
+    'var(--haa-primary-400)',
+    'var(--haa-primary-500)',
+    'var(--haa-primary-600)',
+    'var(--haa-primary-700)',
+    'var(--haa-primary-800)',
+  ];
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
+    // `motion-reduce:hidden` — users with `prefers-reduced-motion: reduce`
+    // skip the animation entirely (WCAG 2.3.3, vestibular safety). See
+    // `docs/agent/audit/MD_PAGES_AUDIT_PART_1_AUTH.md` Finding #3.
+    <div
+      aria-hidden="true"
+      className="fixed inset-0 pointer-events-none overflow-hidden z-50 motion-reduce:hidden"
+    >
       {Array.from({ length: 60 }).map((_, i) => (
         <div
           key={i}

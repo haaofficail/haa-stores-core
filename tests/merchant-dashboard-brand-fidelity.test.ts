@@ -141,4 +141,35 @@ describe('Merchant Dashboard — brand fidelity (Haa primary chrome)', () => {
     // duplicate the adjacent <span>{t('app.title', 'متاجر هاء')}</span>).
     expect(block).not.toMatch(/alt="(?:متاجر هاء|هاء|Haa)"/);
   });
+
+  // Pinned by `docs/agent/audit/MD_PAGES_AUDIT_PART_1_AUTH.md` Finding #1.
+  // The original brand-fidelity guard above only catches Tailwind class
+  // names — raw `#hex` colors in inline styles slipped through. The
+  // OnboardingSuccess confetti hardcoded `#6366f1` (indigo-500) and
+  // `#8b5cf6` (violet-500), bypassing the chrome check entirely.
+  it('OnboardingSuccess.tsx confetti uses no raw indigo/violet hex (use --haa-primary-* tokens)', () => {
+    const file = resolve(MERCHANT_SRC, 'pages/OnboardingSuccess.tsx');
+    const text = readFileSync(file, 'utf-8');
+    // Indigo-500 / violet-500 are the two specific hexes that drifted; the
+    // assertion is intentionally narrow to avoid false positives on the
+    // wider Tailwind ramp (those are caught by the chrome test above when
+    // expressed as class names).
+    expect(text).not.toMatch(/#6366f1/i);
+    expect(text).not.toMatch(/#8b5cf6/i);
+  });
+
+  // Pinned by `docs/agent/audit/MD_PAGES_AUDIT_PART_1_AUTH.md` Finding #3.
+  // WCAG 2.3.3: animation that is not essential MUST honor
+  // `prefers-reduced-motion: reduce`. The confetti container must declare
+  // a motion-reduce opt-out so vestibular-impaired users skip the
+  // animation entirely.
+  it('OnboardingSuccess.tsx confetti container honors prefers-reduced-motion', () => {
+    const file = resolve(MERCHANT_SRC, 'pages/OnboardingSuccess.tsx');
+    const text = readFileSync(file, 'utf-8');
+    // Tailwind's `motion-reduce:hidden` compiles to
+    // `@media (prefers-reduced-motion: reduce) { display: none }`.
+    // Either form is acceptable; the regex covers both.
+    const motionGate = /motion-reduce:hidden|prefers-reduced-motion:\s*reduce/;
+    expect(text).toMatch(motionGate);
+  });
 });
