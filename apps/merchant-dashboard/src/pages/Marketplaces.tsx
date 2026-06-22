@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import MarketplaceGuideModal from '@/components/modals/MarketplaceGuideModal';
+import { messageFromError } from '@/lib/error-mapper';
 
 const PROVIDERS = [
   { code: 'salla', name: 'سلة', color: 'from-emerald-400 via-emerald-500 to-emerald-700' },
@@ -98,12 +99,49 @@ export default function MarketplacesPage() {
     if (!storeId || syncing) return;
     setSyncing(true);
     try {
+      // Audit PART 4 P0 #2 — branch the toast on actual outcome.
+      // API returns `{ totalSynced, totalFailed }`; treat `totalSynced` as
+      // the succeeded count. A previous version showed `toast.success`
+      // even when `totalFailed > 0`, which made partial failures look
+      // like full success and merchants didn't realize items were
+      // missing.
       const result = await marketplaceApi.syncAll(storeId);
-      toast.success(t('marketplaces.syncAllSuccess', 'تمت المزامنة الكلية'), {
-        description: t('marketplaces.syncAllDescription', `${result.totalSynced} عنصر مستورد، ${result.totalFailed} فشل`),
-      });
+      const totalSucceeded = Number(result?.totalSynced ?? 0);
+      const totalFailed = Number(result?.totalFailed ?? 0);
+
+      if (totalFailed > 0 && totalSucceeded === 0) {
+        // Total failure — all attempted items failed.
+        toast.error(t('marketplaces.syncAllAllFailed', 'فشلت المزامنة الكلية'), {
+          description: t(
+            'marketplaces.syncAllAllFailedDesc',
+            `لم يتم استيراد أي عنصر — ${totalFailed} فشل. راجع سجل المزامنة للتفاصيل.`,
+          ),
+        });
+      } else if (totalFailed > 0 && totalSucceeded > 0) {
+        // Partial — surface the imbalance clearly.
+        const totalAttempted = totalSucceeded + totalFailed;
+        toast.warning(t('marketplaces.syncAllPartial', 'مزامنة جزئية'), {
+          description: t(
+            'marketplaces.syncAllPartialDesc',
+            `نجح ${totalSucceeded} من ${totalAttempted} — ${totalFailed} فشل. راجع سجل المزامنة.`,
+          ),
+        });
+      } else if (totalSucceeded > 0) {
+        // Clean success.
+        toast.success(t('marketplaces.syncAllSuccess', 'تمت المزامنة الكلية'), {
+          description: t(
+            'marketplaces.syncAllSuccessDesc',
+            `تم استيراد ${totalSucceeded} عنصر`,
+          ),
+        });
+      } else {
+        // Nothing to do — neither failed nor succeeded.
+        toast.success(t('marketplaces.syncAllEmpty', 'لا توجد عناصر جديدة للمزامنة'));
+      }
       load();
-    } catch { toast.error(t('marketplaces.syncAllFailed', 'فشلت المزامنة الكلية')); }
+    } catch (e) {
+      toast.error(messageFromError(e, t));
+    }
     finally { setSyncing(false); }
   }, [storeId, syncing, load, t]);
 
