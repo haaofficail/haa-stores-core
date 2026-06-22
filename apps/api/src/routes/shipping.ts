@@ -93,6 +93,55 @@ shippingRouter.post('/rates', requirePermission('shipping:manage'), zValidator('
   return c.json({ success: true, data: rate }, 201);
 });
 
+// MD_PAGES_AUDIT_PART_3_COMMERCE.md P0 #2 — RatesTab was create-only.
+// A misconfigured rate (50 SAR instead of 5) overcharged every customer
+// until the zone was rebuilt. PUT + DELETE close that money-risk gap.
+//
+// Both endpoints sit behind `shipping:manage` and the storeId is bound
+// by `requireStoreAccess()` higher in this router; `updateRate` /
+// `deleteRate` re-verify ownership via the joined method.storeId so
+// cross-tenant tampering on `/rates/:id` returns 404, not silent success.
+shippingRouter.put('/rates/:id', requirePermission('shipping:manage'), zValidator('json', createShippingRateSchema.partial()), async (c) => {
+  const storeId = Number(c.req.param('storeId'));
+  const id = Number(c.req.param('id'));
+  const body = c.req.valid('json');
+  const rate = await new ShippingService().updateRate(storeId, id, body);
+  if (!rate) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Rate not found' } }, 404);
+  await new AuditLogService().record({
+    actorUserId: getAuth(c)?.userId ?? null,
+    tenantId: getAuth(c)?.tenantId ?? null,
+    storeId,
+    action: 'shipping_settings_changed',
+    entityType: 'shipping_rate',
+    entityId: id,
+    oldValue: { rateId: id },
+    newValue: body,
+    ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
+    userAgent: c.req.header('user-agent'),
+  });
+  return c.json({ success: true, data: rate });
+});
+
+shippingRouter.delete('/rates/:id', requirePermission('shipping:manage'), async (c) => {
+  const storeId = Number(c.req.param('storeId'));
+  const id = Number(c.req.param('id'));
+  const ok = await new ShippingService().deleteRate(storeId, id);
+  if (!ok) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Rate not found' } }, 404);
+  await new AuditLogService().record({
+    actorUserId: getAuth(c)?.userId ?? null,
+    tenantId: getAuth(c)?.tenantId ?? null,
+    storeId,
+    action: 'shipping_settings_changed',
+    entityType: 'shipping_rate',
+    entityId: id,
+    oldValue: { rateId: id, deleted: true },
+    newValue: null,
+    ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
+    userAgent: c.req.header('user-agent'),
+  });
+  return c.json({ success: true, data: { id } });
+});
+
 shippingRouter.get('/shipments', requirePermission('shipping:manage'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const status = c.req.query('status');
