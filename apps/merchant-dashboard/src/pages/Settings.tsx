@@ -256,7 +256,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="space-y-6 max-w-7xl mx-auto">
-        <h1 className="text-2xl font-bold text-neutral-900">{t('settings.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('settings.title')}</h1>
         <Skeleton className="h-96 w-full rounded-3xl" />
       </div>
     );
@@ -265,7 +265,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-neutral-900">{t('settings.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('settings.title')}</h1>
         {form.slug && (
           <a href={`${import.meta.env.VITE_STOREFRONT_URL || 'http://localhost:5174'}/s/${form.slug}`} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 text-neutral-700 text-sm font-medium rounded-xl hover:bg-neutral-200 transition-colors">

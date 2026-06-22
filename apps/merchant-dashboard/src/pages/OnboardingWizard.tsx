@@ -211,7 +211,7 @@ export default function OnboardingWizard() {
                     <Store className="h-6 w-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-neutral-900">{t('onboarding.storeStepTitle')}</h2>
+                    <h2 className="text-xl font-bold tracking-tight text-neutral-900">{t('onboarding.storeStepTitle')}</h2>
                     <p className="text-sm text-neutral-400">{t('onboarding.storeStepDesc')}</p>
                   </div>
                 </div>
@@ -310,7 +310,7 @@ export default function OnboardingWizard() {
                     <Package className="h-6 w-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-neutral-900">{t('onboarding.productsStepTitle')}</h2>
+                    <h2 className="text-xl font-bold tracking-tight text-neutral-900">{t('onboarding.productsStepTitle')}</h2>
                     <p className="text-sm text-neutral-400">{t('onboarding.productsStepDesc')}</p>
                   </div>
                 </div>
@@ -423,7 +423,7 @@ export default function OnboardingWizard() {
                     <Rocket className="h-6 w-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-neutral-900">{t('onboarding.launchStepTitle')}</h2>
+                    <h2 className="text-xl font-bold tracking-tight text-neutral-900">{t('onboarding.launchStepTitle')}</h2>
                     <p className="text-sm text-neutral-400">{t('onboarding.launchStepDesc')}</p>
                   </div>
                 </div>

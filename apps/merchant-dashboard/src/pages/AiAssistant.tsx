@@ -215,7 +215,7 @@ export default function AiAssistant() {
             <div className="w-20 h-20 rounded-3xl bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center shadow-2xl shadow-primary-500/30 mb-6 ring-8 ring-primary-100/50">
               <BrainCircuit className="h-10 w-10 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-neutral-900 mb-2">مرحباً، أحمد 👋</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-neutral-900 mb-2">مرحباً، أحمد 👋</h2>
             <p className="text-neutral-500 max-w-md leading-relaxed mb-8">
               أنا مساعدك الذكي في إدارة متجرك. يمكنني مساعدتك في تحليل المبيعات، 
               مراجعة المخزون، واقتراح أفضل الاستراتيجيات لنمو أرباحك.

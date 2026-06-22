@@ -184,7 +184,7 @@ export default function MarketplacesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">قنوات البيع</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">قنوات البيع</h1>
           <p className="text-sm text-neutral-500 mt-0.5">اربط متجرك بمنصات البيع الإلكترونية وأدر مزامنة المنتجات والطلبات</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -216,7 +216,7 @@ export default function MarketplacesPage() {
                   <s.icon className="h-4 w-4" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-neutral-900 tabular-nums leading-none mb-1">
+              <div className="text-2xl font-bold tracking-tight text-neutral-900 tabular-nums leading-none mb-1">
                 {s.value}<span className="text-sm font-medium text-neutral-400 ms-1">{s.suffix}</span>
               </div>
               <p className="text-xs text-neutral-500 font-medium">{s.label}</p>

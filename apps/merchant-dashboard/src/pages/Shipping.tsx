@@ -744,7 +744,7 @@ export default function Shipping() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <h1 className="text-2xl font-bold text-neutral-900">{t('shipping.title')}</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('shipping.title')}</h1>
 
       <ShippingStatusSection storeId={storeId} onTabChange={setActiveTab} />
 

@@ -115,7 +115,7 @@ export default function MigrationHub() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900">{t('migration.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('migration.title')}</h1>
         <p className="text-neutral-400 mt-1">{t('migration.subtitle')}</p>
       </div>
 

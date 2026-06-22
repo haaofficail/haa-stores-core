@@ -154,7 +154,7 @@ export default function Tags() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-neutral-900">التاجات</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">التاجات</h1>
         <PermissionGate permission="tags:manage">
           <Button onClick={openCreate} className="h-9 text-sm px-4"><Plus className="h-4 w-4 me-2" />إضافة تاج</Button>
         </PermissionGate>

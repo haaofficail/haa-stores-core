@@ -55,7 +55,7 @@ export default function AbandonedCarts() {
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">{t('abandonedCarts.title')}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('abandonedCarts.title')}</h1>
           <p className="text-neutral-400 text-sm mt-1">{t('abandonedCarts.description')}</p>
         </div>
         <Select value={String(hours)} onValueChange={(v) => setHours(Number(v))}>
@@ -78,7 +78,7 @@ export default function AbandonedCarts() {
               <p className="text-sm text-neutral-500">{t('abandonedCarts.stats.count')}</p>
               <Users className="h-4 w-4 text-neutral-400" />
             </div>
-            <div className="text-2xl font-bold text-neutral-900 mt-2">{stats.count}</div>
+            <div className="text-2xl font-bold tracking-tight text-neutral-900 mt-2">{stats.count}</div>
             <p className="text-xs text-neutral-400 mt-1">{t('abandonedCarts.stats.hours', { hours })}</p>
           </div>
           <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
@@ -86,7 +86,7 @@ export default function AbandonedCarts() {
               <p className="text-sm text-neutral-500">{t('abandonedCarts.stats.recoverableTotal')}</p>
               <DollarSign className="h-4 w-4 text-neutral-400" />
             </div>
-            <div className="text-2xl font-bold text-neutral-900 mt-2">{formatCurrency(stats.recoverableTotal)} {t('common.sar')}</div>
+            <div className="text-2xl font-bold tracking-tight text-neutral-900 mt-2">{formatCurrency(stats.recoverableTotal)} {t('common.sar')}</div>
             <p className="text-xs text-neutral-400 mt-1">{t('abandonedCarts.stats.hours', { hours })}</p>
           </div>
         </div>

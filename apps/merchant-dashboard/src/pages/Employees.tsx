@@ -166,7 +166,7 @@ export default function EmployeesPage() {
     <div className="p-6 space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">الموظفين</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">الموظفين</h1>
           <p className="text-sm text-neutral-500 mt-1">إدارة موظفي المتجر والصلاحيات</p>
         </div>
         <div className="flex items-center gap-2">
