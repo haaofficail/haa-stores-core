@@ -54,4 +54,27 @@ describe('Deploy workflow — no ssh-keyscan probing', () => {
   it('configures a sensible ConnectTimeout to avoid hanging on a banned IP', () => {
     expect(DEPLOY).toMatch(/ConnectTimeout 30/);
   });
+
+  describe('Caddyfile + docker-compose.yml sync (PR #60 follow-up)', () => {
+    it('staging deploy scps deploy/staging/Caddyfile to the server', () => {
+      expect(DEPLOY).toMatch(/scp\s+-o\s+BatchMode=yes\s+deploy\/staging\/Caddyfile/);
+    });
+
+    it('staging deploy scps deploy/staging/docker-compose.yml to the server', () => {
+      expect(DEPLOY).toMatch(/scp\s+-o\s+BatchMode=yes\s+deploy\/staging\/docker-compose\.yml/);
+    });
+
+    it('production deploy scps deploy/production/Caddyfile + docker-compose.yml', () => {
+      expect(DEPLOY).toMatch(/scp\s+-o\s+BatchMode=yes\s+deploy\/production\/Caddyfile/);
+      expect(DEPLOY).toMatch(/scp\s+-o\s+BatchMode=yes\s+deploy\/production\/docker-compose\.yml/);
+    });
+
+    it('validates Caddyfile before reload (so a bad config does not break Caddy)', () => {
+      expect(DEPLOY).toMatch(/caddy validate --config \/etc\/caddy\/Caddyfile/);
+    });
+
+    it('reloads Caddy after deploy so the new Caddyfile is picked up', () => {
+      expect(DEPLOY).toMatch(/caddy reload --config \/etc\/caddy\/Caddyfile/);
+    });
+  });
 });
