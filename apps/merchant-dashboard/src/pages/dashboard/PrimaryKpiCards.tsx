@@ -37,7 +37,7 @@ export function PrimaryKpiCards({
   return (
     <div className="grid gap-3 grid-cols-2">
       {/* Today's Sales */}
-      <div className="relative overflow-hidden bg-white/80 backdrop-blur-xl rounded-2xl p-4 border border-white/50 shadow-card">
+      <div className="dashboard-card relative overflow-hidden p-4">
         <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-full translate-x-10 -translate-y-10 blur-2xl" />
         <div className="relative">
           <div className="flex items-start justify-between mb-2">
@@ -68,7 +68,7 @@ export function PrimaryKpiCards({
         </div>
       </div>
       {/* Actionable Orders */}
-      <div className="relative overflow-hidden bg-white/80 backdrop-blur-xl rounded-2xl p-4 border border-white/50 shadow-card">
+      <div className="dashboard-card relative overflow-hidden p-4">
         <div className="absolute top-0 right-0 w-20 h-20 bg-primary-500/5 rounded-full translate-x-10 -translate-y-10 blur-2xl" />
         <div className="relative">
           <div className="flex items-start justify-between mb-2">

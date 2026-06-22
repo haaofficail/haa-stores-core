@@ -136,7 +136,7 @@ export function PublishSection({ storeId }: { storeId: number | null }) {
 
   return (
     <>
-    <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
+    <div className="dashboard-card p-6">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-bold text-base text-neutral-900">{t('settings.publish.title', 'نشر المتجر')}</h3>

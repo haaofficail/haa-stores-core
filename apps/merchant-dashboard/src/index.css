@@ -223,3 +223,22 @@
 .animate-slide-in-left {
   animation: slideInLeft 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
+
+/* ── dashboard-card ──
+   Single source of truth for high-visibility merchant cards.
+   Mirrors the landing `.lp-pcard` / `.lp-card` look:
+   - 24px radius (rounded-3xl)
+   - white/80 glass with backdrop-blur-xl + thin white border
+   - 2-layer landing shadow via shadow-card token
+   - hover: subtle 1px lift + slightly stronger shadow
+   - transition uses cubic-bezier(0.4, 0, 0.2, 1) for Apple-grade ease
+*/
+@layer components {
+  .dashboard-card {
+    @apply rounded-3xl bg-white/80 backdrop-blur-xl border border-white/50 shadow-card transition-all duration-200;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .dashboard-card:hover {
+    @apply shadow-card-hover -translate-y-[1px];
+  }
+}

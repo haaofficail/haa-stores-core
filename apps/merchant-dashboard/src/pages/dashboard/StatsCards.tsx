@@ -43,7 +43,7 @@ export function StatsCards({ stats, showOnMobile }: Props) {
       {stats.map((s) => (
         <div
           key={s.label}
-          className="relative overflow-hidden bg-white/80 backdrop-blur-xl rounded-2xl p-4 border border-white/50 shadow-card"
+          className="dashboard-card relative overflow-hidden p-4"
         >
           <div
             className={`absolute top-0 right-0 w-20 h-20 ${s.bgGlow} rounded-full translate-x-10 -translate-y-10 blur-2xl`}

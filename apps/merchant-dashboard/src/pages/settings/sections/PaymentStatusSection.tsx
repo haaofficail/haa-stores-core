@@ -29,7 +29,7 @@ interface PlaceholderCardProps {
 
 function PlaceholderCard({ icon, title, description, href, linkLabel }: PlaceholderCardProps) {
   return (
-    <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-5">
+    <div className="dashboard-card p-5">
       <div className="flex items-start gap-3">
         <div className="p-2.5 rounded-xl bg-neutral-100 text-neutral-400">{icon}</div>
         <div className="flex-1">

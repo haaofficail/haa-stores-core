@@ -58,7 +58,7 @@ function SummaryCard({ title, value, icon, color, subtitle }: {
   title: string; value: string; icon: React.ReactNode; color: string; subtitle?: string;
 }) {
   return (
-    <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-4">
+    <div className="dashboard-card p-4">
       <div className="flex items-center justify-between">
         <div className="min-w-0">
           <p className="text-sm text-neutral-500 truncate">{title}</p>
