@@ -3,16 +3,36 @@ import { useAuth } from '@/hooks/useAuth';
 import { marketplaceApi } from '@/lib/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { formatNumber } from '@/lib/utils';
+import { messageFromError } from '@/lib/error-mapper';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  ArrowRight, RefreshCw, Unlink, Package, ExternalLink, Trash2, Loader2,
+  ArrowRight, RefreshCw, Unlink, Package, ExternalLink, Trash2, Loader2, Eye, EyeOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+
+/**
+ * Sensitive credential fields — audit PART 4 P0 #1.
+ *
+ * Vendor API secrets (Noon privateKey, Amazon clientSecret, AWS keys) must
+ * NEVER render as plain-text in the DOM. These are entered as masked
+ * password inputs with an optional eye-toggle that auto-hides on blur and
+ * are kept out of the React tree as `value=` after submit.
+ *
+ * Matches the task spec: any field name containing "Secret", "Key",
+ * "Password", or "Token" (case-insensitive).
+ */
+const SENSITIVE_FIELD_RE = /(secret|key|password|token)/i;
+function isSensitiveField(name: string): boolean {
+  return SENSITIVE_FIELD_RE.test(name);
+}
+
+/** Redacted placeholder for sensitive fields with a stored value upstream. */
+const MASKED_PLACEHOLDER = '•'.repeat(8); // "••••••••"
 
 const PROVIDER_META: Record<string, { name: string; color: string }> = {
   salla: { name: 'سلة', color: 'from-green-400 via-green-600 to-green-800' },
@@ -20,6 +40,75 @@ const PROVIDER_META: Record<string, { name: string; color: string }> = {
   noon: { name: 'نون', color: 'from-amber-300 via-amber-500 to-amber-600' },
   amazon: { name: 'أمازون', color: 'from-orange-400 via-orange-600 to-gray-900' },
 };
+
+/**
+ * SecretInput — mask-on-blur credential field (audit PART 4 P0 #1).
+ *
+ * Renders a `type="password"` input with an eye-toggle button. The toggle
+ * briefly reveals the value while the user verifies their paste; ANY blur
+ * on the field (or on the toggle) snaps the input back to masked. The
+ * input is never pre-populated from a server-side secret — if `hasStoredValue`
+ * is true and the user has not typed anything, the placeholder displays the
+ * redacted `••••••••` glyph and the merchant must re-enter to update.
+ *
+ * Why a toggle exists at all: pasted private keys are long and a fully
+ * blind paste is hostile UX. A *brief* reveal that snaps back on focus
+ * loss is the standard banking/IdP pattern.
+ */
+function SecretInput(props: {
+  id?: string;
+  label: string;
+  value: string;
+  onChange: (next: string) => void;
+  placeholder?: string;
+  hasStoredValue?: boolean;
+  dir?: 'ltr' | 'rtl';
+  testId?: string;
+}) {
+  const {
+    id, label, value, onChange, placeholder,
+    hasStoredValue, dir = 'ltr', testId,
+  } = props;
+  const [revealed, setRevealed] = useState(false);
+  const inputId = id || `secret-${label.replace(/\s+/g, '-').toLowerCase()}`;
+  const effectivePlaceholder = !value && hasStoredValue ? MASKED_PLACEHOLDER : placeholder;
+
+  return (
+    <div className="relative">
+      <input
+        id={inputId}
+        dir={dir}
+        type={revealed ? 'text' : 'password'}
+        aria-label={label}
+        autoComplete="off"
+        spellCheck={false}
+        autoCorrect="off"
+        autoCapitalize="off"
+        // mask-on-blur — ALWAYS snap back to masked when focus leaves
+        // the input itself. The toggle button has its own blur handler.
+        onBlur={() => setRevealed(false)}
+        className="w-full h-11 rounded-xl border border-neutral-200 bg-white/50 px-3 pe-12 text-sm text-end focus:outline-none focus:ring-2 focus:ring-primary-500/30 font-mono"
+        placeholder={effectivePlaceholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        data-testid={testId}
+      />
+      <button
+        type="button"
+        aria-pressed={revealed}
+        aria-label={revealed
+          ? `إخفاء قيمة ${label}`
+          : `إظهار قيمة ${label}`}
+        onClick={() => setRevealed(v => !v)}
+        onBlur={() => setRevealed(false)}
+        className="absolute end-2 top-1/2 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+        data-testid={testId ? `${testId}-toggle` : undefined}
+      >
+        {revealed ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+      </button>
+    </div>
+  );
+}
 
 export default function MarketplaceDetailPage() {
   const { t } = useTranslation();
@@ -78,7 +167,7 @@ export default function MarketplaceDetailPage() {
       try {
         const res: any = await marketplaceApi.connect(storeId, provider, {});
         if (res.url) window.location.href = res.url;
-      } catch (err: any) { toast.error(err?.message || t('marketplaceDetail.error', 'حدث خطأ')); }
+      } catch (err) { toast.error(messageFromError(err, t)); }
       finally { setConnecting(false); }
       return;
     }
@@ -94,8 +183,13 @@ export default function MarketplaceDetailPage() {
           : { clientId: amazonCreds.clientId, clientSecret: amazonCreds.clientSecret, refreshToken: amazonCreds.refreshToken, awsAccessKey: amazonCreds.awsAccessKey, awsSecretKey: amazonCreds.awsSecretKey, marketplaceId: amazonMarketplaceId };
         await marketplaceApi.connect(storeId, provider, creds);
         toast.success(t('marketplaceDetail.connectedSuccess', 'تم الربط بنجاح'));
+        // Audit PART 4 P0 #1 — clear all credential state from React
+        // memory after a successful connect, so the secrets don't sit
+        // in the page state once the API has accepted them.
+        setNoonCreds({ clientId: '', privateKey: '', sellerName: '', partnerId: '', warehouseCode: '' });
+        setAmazonCreds({ clientId: '', clientSecret: '', refreshToken: '', awsAccessKey: '', awsSecretKey: '' });
         loadInfo();
-      } catch (err: any) { toast.error(err?.message || t('marketplaceDetail.error', 'حدث خطأ')); }
+      } catch (err) { toast.error(messageFromError(err, t)); }
       finally { setConnecting(false); }
     }
   }
@@ -162,40 +256,77 @@ export default function MarketplaceDetailPage() {
 
             {usesManualCreds && provider === 'noon' && (
               <div className="max-w-md mx-auto text-start space-y-4 mb-6">
-                {(['clientId', 'privateKey', 'sellerName', 'partnerId', 'warehouseCode'] as const).map(field => (
-                  <div key={field} className="space-y-1.5">
-                    <Label className="text-sm font-medium text-neutral-700">
-                      {field === 'clientId' ? 'Client ID' : field === 'privateKey' ? 'Private Key' : field === 'sellerName' ? 'Seller Name' : field === 'partnerId' ? 'Partner ID' : 'Warehouse Code'}
-                    </Label>
-                    {field === 'privateKey' ? (
-                      <textarea dir="ltr" className="w-full rounded-xl border border-neutral-200 bg-white/50 p-3 text-sm font-mono text-end resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" rows={3}
-                        placeholder="-----BEGIN RSA PRIVATE KEY----- ..."
-                        value={noonCreds[field]} onChange={(e) => setNoonCreds({ ...noonCreds, [field]: e.target.value })} />
-                    ) : (
-                      <Input dir="ltr" className="text-end rounded-xl border-neutral-200 bg-white/50" placeholder={t('marketplaceDetail.enterField', `ادخل ${field}`)}
-                        value={noonCreds[field]} onChange={(e) => setNoonCreds({ ...noonCreds, [field]: e.target.value })} />
-                    )}
-                  </div>
-                ))}
+                {(['clientId', 'privateKey', 'sellerName', 'partnerId', 'warehouseCode'] as const).map(field => {
+                  const fieldLabel = field === 'clientId' ? 'Client ID' : field === 'privateKey' ? 'Private Key' : field === 'sellerName' ? 'Seller Name' : field === 'partnerId' ? 'Partner ID' : 'Warehouse Code';
+                  // Audit PART 4 P0 #1 — never render secret as plain text.
+                  // `isSensitiveField` matches *Secret*/*Key*/*Password*/*Token*.
+                  const sensitive = isSensitiveField(field);
+                  return (
+                    <div key={field} className="space-y-1.5">
+                      <Label className="text-sm font-medium text-neutral-700" htmlFor={`noon-${field}`}>
+                        {fieldLabel}
+                      </Label>
+                      {sensitive ? (
+                        <SecretInput
+                          id={`noon-${field}`}
+                          label={fieldLabel}
+                          value={noonCreds[field]}
+                          onChange={(next) => setNoonCreds({ ...noonCreds, [field]: next })}
+                          placeholder={t('marketplaceDetail.enterField', `ادخل ${field}`)}
+                          testId={`secret-noon-${field}`}
+                        />
+                      ) : (
+                        <Input
+                          id={`noon-${field}`}
+                          dir="ltr"
+                          className="text-end rounded-xl border-neutral-200 bg-white/50"
+                          placeholder={t('marketplaceDetail.enterField', `ادخل ${field}`)}
+                          value={noonCreds[field]}
+                          onChange={(e) => setNoonCreds({ ...noonCreds, [field]: e.target.value })}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
             {usesManualCreds && provider === 'amazon' && (
               <div className="max-w-md mx-auto text-start space-y-4 mb-6">
-                {(['clientId', 'clientSecret', 'refreshToken', 'awsAccessKey', 'awsSecretKey'] as const).map(field => (
-                  <div key={field} className="space-y-1.5">
-                    <Label className="text-sm font-medium text-neutral-700">
-                      {field === 'clientId' ? 'Client ID' : field === 'clientSecret' ? 'Client Secret' : field === 'refreshToken' ? 'Refresh Token' : field === 'awsAccessKey' ? 'AWS Access Key' : 'AWS Secret Key'}
-                    </Label>
-                    {field === 'clientSecret' ? (
-                      <textarea dir="ltr" className="w-full rounded-xl border border-neutral-200 bg-white/50 p-3 text-sm font-mono text-end resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" rows={3}
-                        placeholder="SP-API Client Secret"
-                        value={amazonCreds[field]} onChange={(e) => setAmazonCreds({ ...amazonCreds, [field]: e.target.value })} />
-                    ) : (
-                      <Input dir="ltr" className="text-end rounded-xl border-neutral-200 bg-white/50" placeholder={t('marketplaceDetail.enterField', `ادخل ${field}`)}
-                        value={amazonCreds[field]} onChange={(e) => setAmazonCreds({ ...amazonCreds, [field]: e.target.value })} />
-                    )}
-                  </div>
-                ))}
+                {(['clientId', 'clientSecret', 'refreshToken', 'awsAccessKey', 'awsSecretKey'] as const).map(field => {
+                  const fieldLabel = field === 'clientId' ? 'Client ID' : field === 'clientSecret' ? 'Client Secret' : field === 'refreshToken' ? 'Refresh Token' : field === 'awsAccessKey' ? 'AWS Access Key' : 'AWS Secret Key';
+                  // Audit PART 4 P0 #1 — `clientSecret`, `refreshToken`,
+                  // `awsAccessKey`, `awsSecretKey` all match the sensitive
+                  // regex (*Secret*/*Key*/*Password*/*Token*) and render as
+                  // mask-on-blur password inputs. `clientId` is treated as
+                  // public identifier and remains plain Input.
+                  const sensitive = isSensitiveField(field);
+                  return (
+                    <div key={field} className="space-y-1.5">
+                      <Label className="text-sm font-medium text-neutral-700" htmlFor={`amazon-${field}`}>
+                        {fieldLabel}
+                      </Label>
+                      {sensitive ? (
+                        <SecretInput
+                          id={`amazon-${field}`}
+                          label={fieldLabel}
+                          value={amazonCreds[field]}
+                          onChange={(next) => setAmazonCreds({ ...amazonCreds, [field]: next })}
+                          placeholder={t('marketplaceDetail.enterField', `ادخل ${field}`)}
+                          testId={`secret-amazon-${field}`}
+                        />
+                      ) : (
+                        <Input
+                          id={`amazon-${field}`}
+                          dir="ltr"
+                          className="text-end rounded-xl border-neutral-200 bg-white/50"
+                          placeholder={t('marketplaceDetail.enterField', `ادخل ${field}`)}
+                          value={amazonCreds[field]}
+                          onChange={(e) => setAmazonCreds({ ...amazonCreds, [field]: e.target.value })}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-neutral-700">{t('marketplaceDetail.marketplace', 'السوق')}</Label>
                   <select value={amazonMarketplaceId} onChange={(e) => setAmazonMarketplaceId(e.target.value)} className="w-full rounded-xl border border-neutral-200 bg-white/50 p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30">
