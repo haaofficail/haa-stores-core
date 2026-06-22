@@ -83,7 +83,12 @@ import { outboundWebhooksRouter } from './routes/outbound-webhooks.js';
 import { zatcaRouter } from './routes/zatca.js';
 import { createDbClient, closeDbClient } from '@haa/db';
 import { eq, sql } from 'drizzle-orm';
-import { setTokenVersionVerifier, setStoreTenantResolver } from '@haa/auth-core';
+import {
+  setTokenVersionVerifier,
+  setStoreTenantResolver,
+  setStoreAccessFailureTracker,
+  createInMemoryStoreAccessFailureTracker,
+} from '@haa/auth-core';
 import * as s from '@haa/db/schema';
 
 const app = new Hono();
@@ -420,6 +425,17 @@ setStoreTenantResolver(async (storeId) => {
     return null;
   }
 });
+
+// BOLA/IDOR Defense layer 2: throttle repeated cross-tenant / not-found
+// denials so a probe sweeping store IDs can't run unbounded. Tunables:
+//   - STORE_ACCESS_FAIL_WINDOW_MS (default 60_000)
+//   - STORE_ACCESS_FAIL_MAX       (default 10)
+setStoreAccessFailureTracker(
+  createInMemoryStoreAccessFailureTracker({
+    windowMs: Number(process.env.STORE_ACCESS_FAIL_WINDOW_MS ?? 60_000),
+    maxFailures: Number(process.env.STORE_ACCESS_FAIL_MAX ?? 10),
+  }),
+);
 
 serve({ fetch: app.fetch, port }, (info) => {
   console.log(`🚀 Haa Stores API ready at http://localhost:${info.port}`);
