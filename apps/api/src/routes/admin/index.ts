@@ -31,6 +31,7 @@ import {
   auditRoute,
   webhooksRoute,
   webhookDedupStatsRoute,
+  idempotencyKeyStatsRoute,
   plansRoutes,
   uploadRoute,
   settingsRoutes,
@@ -243,6 +244,7 @@ adminRouter.get('/audit', requireAdminAuth(), auditRoute);
 // /webhooks
 adminRouter.get('/webhooks', requireAdminAuth(), webhooksRoute);
 adminRouter.get('/webhooks/dedup-stats', requireAdminAuth(), webhookDedupStatsRoute);
+adminRouter.get('/idempotency-key/stats', requireAdminAuth(), idempotencyKeyStatsRoute);
 
 // /plans
 adminRouter.get('/plans', requireAdminAuth(), plansRoutes.list);

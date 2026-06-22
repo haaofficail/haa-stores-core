@@ -7,6 +7,7 @@ import { AuditLogService } from '@haa/integration-core';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
 import { paginationSchema, updateOrderStatusSchema, ORDER_STATUS_TRANSITIONS } from '@haa/shared';
 import { createDbClient } from '@haa/db';
+import { idempotencyKey } from '../middleware/idempotency-key.js';
 
 const ordersRouter = new Hono();
 
@@ -101,7 +102,7 @@ ordersRouter.patch('/:orderId/status', requirePermission('orders:update_status')
 // This route is intentionally removed for safety in sandbox/live modes.
 // In local/fake mode, use the checkout confirm endpoint instead.
 
-ordersRouter.post('/:orderId/refund', requirePermission('orders:refund'), zValidator('json', z.object({
+ordersRouter.post('/:orderId/refund', requirePermission('orders:refund'), idempotencyKey(), zValidator('json', z.object({
   amount: z.number().positive().optional(),
   reason: z.string().max(500).optional(),
 })), async (c) => {
