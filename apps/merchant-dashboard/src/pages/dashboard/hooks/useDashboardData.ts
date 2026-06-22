@@ -295,7 +295,7 @@ export function useDashboardData(): DashboardData {
         value: String(summary?.totalOrders ?? 0),
         suffix: "",
         icon: ShoppingCart,
-        gradient: "from-primary-400 via-primary-500 to-indigo-600",
+        gradient: "from-primary-400 via-primary-500 to-primary-700",
         shadow: "shadow-primary-500/25",
         bgGlow: "bg-primary-500/5",
         trend: "neutral",

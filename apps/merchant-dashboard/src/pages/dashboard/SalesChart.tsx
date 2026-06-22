@@ -37,7 +37,7 @@ export function SalesChart({ salesData, t, i18nLanguage }: Props) {
         {salesData && (
           <div className="flex items-center gap-3 text-xs text-neutral-500">
             <span className="flex items-center gap-1">
-              <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" />{" "}
+              <span className="h-2.5 w-2.5 rounded-full bg-primary-500" />{" "}
               {t("common.total", "الإجمالي:")}{" "}
               {formatNumber(salesData.totalSales ?? 0)}{" "}
               {t("common.sar", "ر.س")}

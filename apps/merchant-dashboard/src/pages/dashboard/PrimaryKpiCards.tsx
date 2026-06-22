@@ -72,7 +72,7 @@ export function PrimaryKpiCards({
         <div className="absolute top-0 right-0 w-20 h-20 bg-primary-500/5 rounded-full translate-x-10 -translate-y-10 blur-2xl" />
         <div className="relative">
           <div className="flex items-start justify-between mb-2">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-primary-400 via-primary-500 to-indigo-600 text-white shadow-lg shadow-primary-500/25">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-primary-400 via-primary-500 to-primary-700 text-white shadow-lg shadow-primary-500/25">
               <ShoppingCart className="h-3.5 w-3.5" />
             </div>
             {actionableOrderTotal > 0 && (

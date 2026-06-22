@@ -60,7 +60,7 @@ export function RecentCustomersList({ customers, t }: Props) {
                 className="flex items-center justify-between p-2 rounded-xl border border-neutral-100"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-indigo-400 to-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                  <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
                     {c.name?.charAt(0) || "?"}
                   </div>
                   <div className="min-w-0">
