@@ -203,8 +203,47 @@ jobs:
           ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
 
       - name: Add server to known hosts
+        # Replaces the previous `ssh-keyscan -H` probe. ssh-keyscan opens a
+        # TCP connection to port 22 just to read the host key; staging's
+        # fail2ban (sshd jail) treats repeated probes from GitHub runner IPs
+        # as brute-force attempts and banhammers the source IP, which then
+        # breaks every subsequent SSH step in this job.
+        #
+        # New behavior (in priority order):
+        #   1. If STAGING_KNOWN_HOSTS secret is set → write it verbatim. Zero
+        #      probing, fully authenticated, MITM-safe.
+        #   2. Otherwise → configure SSH client with `StrictHostKeyChecking
+        #      accept-new`. The first real SSH command (the ones that actually
+        #      need to run anyway, e.g. `docker login`) adds the key on its
+        #      own. No separate probe → no extra connection → no fail2ban
+        #      trigger.
+        env:
+          STAGING_KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
         run: |
-          ssh-keyscan -H ${{ secrets.STAGING_HOST }} >> ~/.ssh/known_hosts
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if [ -n "${STAGING_KNOWN_HOSTS:-}" ]; then
+            printf '%s\n' "$STAGING_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+            chmod 644 ~/.ssh/known_hosts
+            echo "✓ Used pre-baked STAGING_KNOWN_HOSTS (no probing)."
+          else
+            cat >> ~/.ssh/config <<EOF
+          Host ${STAGING_HOST}
+            StrictHostKeyChecking accept-new
+            UserKnownHostsFile ~/.ssh/known_hosts
+            ConnectTimeout 30
+            ServerAliveInterval 30
+            ServerAliveCountMax 3
+          EOF
+            chmod 600 ~/.ssh/config
+            touch ~/.ssh/known_hosts && chmod 644 ~/.ssh/known_hosts
+            echo "⚠ STAGING_KNOWN_HOSTS secret not set — falling back to accept-new on first connect."
+            echo "  This is one SSH connection (the docker login that follows) instead of two."
+            echo "  To eliminate the fallback, add STAGING_KNOWN_HOSTS as a repo secret:"
+            echo "    ssh-keyscan -H <staging-host> | base64  → paste decoded value as secret"
+          fi
 
       - name: Authenticate staging server to GHCR
         env:
@@ -246,6 +285,25 @@ jobs:
             echo "✓ G7: ports 80 / 443 / 5433 are clear"
           G7_EOF
 
+      - name: Sync deploy config to staging server
+        # Caddyfile + docker-compose.yml are volume-bind / config-on-host
+        # in the staging compose stack, so the server keeps stale copies
+        # until we explicitly scp them up. Without this step, edits to
+        # deploy/staging/Caddyfile (e.g. the security_headers snippet
+        # introduced in PR #60) silently never reach Caddy on staging.
+        env:
+          DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
+          DEPLOY_USER: ${{ secrets.STAGING_USER }}
+          DEPLOY_PATH: ${{ secrets.STAGING_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          # -o BatchMode=yes prevents an interactive prompt if the host key
+          # path hits an unexpected condition; the previous step already
+          # populated ~/.ssh/known_hosts (or set accept-new in ssh config).
+          scp -o BatchMode=yes deploy/staging/Caddyfile "$DEPLOY_USER@$DEPLOY_HOST":"$DEPLOY_PATH/Caddyfile"
+          scp -o BatchMode=yes deploy/staging/docker-compose.yml "$DEPLOY_USER@$DEPLOY_HOST":"$DEPLOY_PATH/docker-compose.yml"
+          echo "✓ Synced Caddyfile + docker-compose.yml to $DEPLOY_PATH"
+
       - name: Deploy to staging server
         env:
           DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
@@ -272,6 +330,19 @@ jobs:
             export IMAGE_TAG="$NEW_TAG" REGISTRY IMAGE_PREFIX
             docker compose pull
             docker compose up -d --remove-orphans
+
+            # Caddy mounts Caddyfile via volume bind; `docker compose up`
+            # doesn't restart caddy when only its Caddyfile changed.
+            # `caddy reload` re-reads the config without dropping connections.
+            # The validate step before reload catches a malformed Caddyfile
+            # so we don't leave Caddy stuck on the previous good config.
+            if docker compose exec -T caddy caddy validate --config /etc/caddy/Caddyfile 2>&1; then
+              docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile 2>&1 \
+                && echo "✓ Caddy reloaded with new config" \
+                || echo "⚠ caddy reload returned non-zero (continuing — verify with curl post-deploy)"
+            else
+              echo "⚠ caddy validate failed — Caddyfile not reloaded; previous good config still active"
+            fi
 
             # Persist the new tag so the server's compose state is consistent
             # (so a later bare `docker compose up` won't silently revert).
@@ -402,8 +473,32 @@ jobs:
           ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
 
       - name: Add server to known hosts
+        # See staging job above for the rationale: ssh-keyscan probes trigger
+        # the server's fail2ban (sshd jail) and banhammer the runner IP.
+        env:
+          PRODUCTION_KNOWN_HOSTS: ${{ secrets.PRODUCTION_KNOWN_HOSTS }}
+          PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
         run: |
-          ssh-keyscan -H ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if [ -n "${PRODUCTION_KNOWN_HOSTS:-}" ]; then
+            printf '%s\n' "$PRODUCTION_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+            chmod 644 ~/.ssh/known_hosts
+            echo "✓ Used pre-baked PRODUCTION_KNOWN_HOSTS (no probing)."
+          else
+            cat >> ~/.ssh/config <<EOF
+          Host ${PRODUCTION_HOST}
+            StrictHostKeyChecking accept-new
+            UserKnownHostsFile ~/.ssh/known_hosts
+            ConnectTimeout 30
+            ServerAliveInterval 30
+            ServerAliveCountMax 3
+          EOF
+            chmod 600 ~/.ssh/config
+            touch ~/.ssh/known_hosts && chmod 644 ~/.ssh/known_hosts
+            echo "⚠ PRODUCTION_KNOWN_HOSTS secret not set — falling back to accept-new on first connect."
+          fi
 
       - name: Authenticate production server to GHCR
         env:
@@ -443,6 +538,17 @@ jobs:
             echo "✓ G7: ports 80 / 443 / 5433 are clear"
           G7_EOF
 
+      - name: Sync deploy config to production server
+        env:
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_HOST }}
+          DEPLOY_USER: ${{ secrets.PRODUCTION_USER }}
+          DEPLOY_PATH: ${{ secrets.PRODUCTION_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          scp -o BatchMode=yes deploy/production/Caddyfile "$DEPLOY_USER@$DEPLOY_HOST":"$DEPLOY_PATH/Caddyfile"
+          scp -o BatchMode=yes deploy/production/docker-compose.yml "$DEPLOY_USER@$DEPLOY_HOST":"$DEPLOY_PATH/docker-compose.yml"
+          echo "✓ Synced production Caddyfile + docker-compose.yml to $DEPLOY_PATH"
+
       - name: Deploy to production server
         env:
           DEPLOY_HOST: ${{ secrets.PRODUCTION_HOST }}
@@ -466,6 +572,16 @@ jobs:
             export IMAGE_TAG="$NEW_TAG" REGISTRY IMAGE_PREFIX
             docker compose pull
             docker compose up -d --remove-orphans
+
+            # Validate + reload Caddy so the newly-synced Caddyfile takes
+            # effect without dropping connections. See staging job above.
+            if docker compose exec -T caddy caddy validate --config /etc/caddy/Caddyfile 2>&1; then
+              docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile 2>&1 \
+                && echo "✓ [PRODUCTION] Caddy reloaded with new config" \
+                || echo "⚠ [PRODUCTION] caddy reload returned non-zero — verify with curl"
+            else
+              echo "⚠ [PRODUCTION] caddy validate failed — Caddyfile not reloaded; previous good config still active"
+            fi
 
             if grep -qE '^IMAGE_TAG=' .env 2>/dev/null; then
               sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=$NEW_TAG|" .env
