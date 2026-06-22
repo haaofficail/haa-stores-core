@@ -60,7 +60,7 @@ export default function MarketplaceGuide() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">{t('marketplaceGuide.title', 'دليل الربط')}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('marketplaceGuide.title', 'دليل الربط')}</h1>
           <p className="text-sm text-neutral-500 mt-1">{t('marketplaceGuide.subtitle', 'خطوات ربط متجرك بمنصات البيع الإلكترونية')}</p>
         </div>
         <Button
@@ -103,7 +103,7 @@ export default function MarketplaceGuide() {
               <Store className="h-7 w-7" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-neutral-900">{current.name}</h2>
+              <h2 className="text-xl font-bold tracking-tight text-neutral-900">{current.name}</h2>
               <p className="text-sm text-neutral-500">{t(current.subtitle, '')}</p>
             </div>
           </div>

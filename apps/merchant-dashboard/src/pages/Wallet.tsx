@@ -145,7 +145,7 @@ export default function WalletPage() {
   if (loading && !summary) {
     return (
       <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
-        <h1 className="text-2xl font-bold text-neutral-900">{t('wallet.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('wallet.title')}</h1>
         <div className="grid gap-3 md:grid-cols-5">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-24 rounded-3xl" />)}</div>
         <Skeleton className="h-64 w-full rounded-3xl" />
       </div>
@@ -156,7 +156,7 @@ export default function WalletPage() {
     <TooltipProvider>
       <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-neutral-900">{t('wallet.title')}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('wallet.title')}</h1>
           <Button variant="outline" className="h-9 text-sm gap-1.5" asChild>
             <Link to="/wallet/settlements">{t('wallet.viewSettlements', 'التسويات')}</Link>
           </Button>

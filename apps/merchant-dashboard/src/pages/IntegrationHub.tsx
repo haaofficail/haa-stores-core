@@ -125,7 +125,7 @@ export default function IntegrationHub() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">{t('integrationHub.title', 'مركز الربط')}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('integrationHub.title', 'مركز الربط')}</h1>
           <p className="text-sm text-neutral-500 mt-1">{t('integrationHub.subtitle', 'لوحة تحكم ربط المتجر بمنصات البيع')}</p>
         </div>
         <div className="flex items-center gap-2">

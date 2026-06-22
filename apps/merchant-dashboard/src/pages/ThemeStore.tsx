@@ -119,7 +119,7 @@ export default function ThemeStore() {
     <div className="p-4 sm:p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2">
             <Palette className="h-6 w-6" /> متجر الثيمات
           </h1>
           <p className="text-sm text-neutral-500 mt-1">اختر ثيماً لمتجرك وخصصه كما تريد</p>

@@ -116,7 +116,7 @@ export default function SettlementDetail() {
           <Button variant="ghost" size="icon" className="h-11 w-11" asChild>
             <Link to="/wallet" aria-label={t('common.back', 'رجوع')}><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
-          <h1 className="text-2xl font-bold text-neutral-900">{t('settlement.detailTitle', 'تفاصيل التسوية')}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('settlement.detailTitle', 'تفاصيل التسوية')}</h1>
         </div>
         <div className="p-12 text-center">
           <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4">
@@ -146,7 +146,7 @@ export default function SettlementDetail() {
         </Button>
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-neutral-900">{t('settlement.detailTitle', 'تفاصيل التسوية')}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('settlement.detailTitle', 'تفاصيل التسوية')}</h1>
             <Badge variant={settlementStatusColors[detail.status] ?? 'default'} className="text-xs px-3 py-1">
               {arabicStatusLabels[detail.status] ?? detail.status}
             </Badge>

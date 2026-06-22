@@ -348,7 +348,7 @@ export default function CompliancePage() {
   if (loading) {
     return (
       <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
-        <h1 className="text-2xl font-bold text-neutral-900">{t('compliance.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('compliance.title')}</h1>
         <Skeleton className="h-32 w-full rounded-3xl" />
         <Skeleton className="h-48 w-full rounded-3xl" />
         <Skeleton className="h-64 w-full rounded-3xl" />
@@ -360,7 +360,7 @@ export default function CompliancePage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in" dir="rtl">
-      <h1 className="text-2xl font-bold text-neutral-900">{t('compliance.title')}</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('compliance.title')}</h1>
 
       {/* Privacy Alert */}
       <div className="bg-primary-50/50 border border-primary-200/50 rounded-3xl p-4 flex items-start gap-3">
