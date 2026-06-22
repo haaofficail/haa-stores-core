@@ -9,6 +9,7 @@ import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { SubscriptionService } from '@haa/commerce-core';
 import { createMediaAdapter } from '@haa/shared/media';
+import { getWebhookDedupStats } from '@haa/integration-core';
 
 // ── /audit ────────────────────────────────────────────────────────────────
 export async function auditRoute(c: any) {
@@ -23,6 +24,14 @@ export async function auditRoute(c: any) {
   if (storeId) conditions.push(eq(s.auditLogs.storeId, Number(storeId)));
   const logs = await db.select().from(s.auditLogs).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(s.auditLogs.createdAt)).limit(200);
   return c.json({ success: true, data: logs });
+}
+
+// ── /webhooks/dedup-stats ─────────────────────────────────────────────────
+// Per-process counters for the webhook-dedup helper. Useful when an operator
+// wants to verify a noisy provider's redelivery rate or confirm the helper
+// fired at all without scrolling paymentWebhookEvents.
+export async function webhookDedupStatsRoute(c: any) {
+  return c.json({ success: true, data: getWebhookDedupStats() });
 }
 
 // ── /webhooks ─────────────────────────────────────────────────────────────
