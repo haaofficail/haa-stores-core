@@ -51,8 +51,8 @@ _(none — autopilot has executed every safe wave in scope)_
 - [ ] F-QA-D-003 — Admin `blue-500/600` hardcodes (Wave 2 deferred bulk replacement; 5 admin pages with ~39 classes).
 - [ ] F-QA-D-004 — Lucide migration progress (ceiling locked at 152 in Wave 17; need to drive down).
 - [x] Wave 5 — Shipping aggregator readiness states. **DONE in PR #40** (`packages/shipping-core/src/readiness.ts` exposes `getShippingReadinessStates()` returning the 7-state model: not_configured/mock_ready/sandbox_configured/sandbox_verified/live_locked/live_ready/provider_error). Diagnostics UI in dashboards remains a follow-up.
-- [ ] Wave 14 (deferred) — Outbound webhook delivery/retry/dead-letter test coverage. The infrastructure exists in `apps/api/src/routes/outbound-webhooks.ts` + `OutboundWebhookService`; explicit retry/dead-letter test coverage is missing.
-- [ ] Wave 15 (deferred) — RBAC small guards (route-ordering test, JWT iss/aud, rate-limit on failed store access).
+- [x] Wave 14 — Outbound webhook delivery hardening test coverage. **DONE in PR #41** (`tests/outbound-webhook-hardening.test.ts` locks 6 invariants: signing, body cap, circuit breaker, paused short-circuit, max-attempts dead-letter, secret never persisted/logged).
+- [x] Wave 15 — RBAC chain-ordering guard. **DONE in PR #41** (`tests/rbac-chain-ordering.test.ts` asserts `requireStoreAccess` precedes `requirePermission` across every non-exempt tenant route). JWT iss/aud + rate-limit on failed store-access remain as separate P2 follow-ups.
 
 ## Remaining — P3
 
