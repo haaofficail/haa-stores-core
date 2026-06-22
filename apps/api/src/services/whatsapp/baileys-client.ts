@@ -65,7 +65,6 @@ async function loadBaileys(): Promise<BaileysModule> {
 let pinoLogger: pino.Logger | null = null;
 async function loadLogger(): Promise<pino.Logger> {
   if (pinoLogger) return pinoLogger;
-  // @ts-expect-error — runtime resolved
   const { default: pinoFactory } = await import('pino');
   pinoLogger = pinoFactory({ level: 'warn' });
   return pinoLogger!;
