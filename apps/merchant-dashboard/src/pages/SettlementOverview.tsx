@@ -2,11 +2,20 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { walletApi } from '@/lib/api';
+import { messageFromError } from '@/lib/error-mapper';
 import { formatCurrency } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, CheckCircle2, XCircle, Clock, Wallet, CalendarDays, Banknote, Package, ArrowLeft, Info, Send } from 'lucide-react';
 import { toast } from 'sonner';
@@ -90,6 +99,14 @@ export default function SettlementOverview() {
   const [requesting, setRequesting] = useState(false);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [requestAmount, setRequestAmount] = useState('');
+  // Two-stage confirm flow — MD_PAGES_AUDIT_PART_3_COMMERCE finding #1.
+  // Stage `input` collects the amount; stage `confirm` shows a final
+  // review screen and is the ONLY stage that fires the POST. This,
+  // combined with `requesting` button-disable, blocks a double-click
+  // from firing two payout POSTs before the first network round-trip
+  // completes. (Network-layer idempotency is also enforced by
+  // `Idempotency-Key` auto-attached in `lib/api.ts` request().)
+  const [confirmStage, setConfirmStage] = useState<'input' | 'confirm'>('input');
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -163,7 +180,10 @@ export default function SettlementOverview() {
     { key: 'noBalance', label: t('settlement.reasonNoBalance'), check: Number(availableBalance) <= 0 },
   ];
 
-  const handleRequestPayout = async () => {
+  // Validate amount and advance from `input` to `confirm` stage. The
+  // POST only fires from `submitPayout()` after the user clicks the
+  // confirm button in the second stage.
+  const handleReviewPayout = () => {
     if (!storeId || !isEligible || Number(availableBalance) <= 0) return;
     const amount = Number(requestAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -174,6 +194,17 @@ export default function SettlementOverview() {
       toast.error('مبلغ التسوية لا يمكن أن يتجاوز الرصيد المتاح');
       return;
     }
+    setConfirmStage('confirm');
+  };
+
+  // The single point that fires the payout POST. Guarded by `requesting`
+  // so a fast double-click cannot fire two requests. `Idempotency-Key`
+  // is auto-attached by `lib/api.ts` request() as a defense-in-depth
+  // second layer at the network boundary (PR #82).
+  const submitPayout = async () => {
+    if (!storeId || requesting) return;
+    const amount = Number(requestAmount);
+    if (!Number.isFinite(amount) || amount <= 0) return;
     setRequesting(true);
     try {
       await walletApi.requestPayout(storeId, amount);
@@ -181,12 +212,32 @@ export default function SettlementOverview() {
       setPayouts(updated as SettlementOverviewPayout[]);
       setRequestModalOpen(false);
       setRequestAmount('');
+      setConfirmStage('input');
       toast.success('تم إنشاء طلب التسوية');
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'فشل إنشاء طلب التسوية');
+      // Surface the actual API error code via central mapper instead
+      // of a generic toast — Audit Part 4 cross-cutting fix.
+      toast.error(messageFromError(e, t));
     } finally {
       setRequesting(false);
     }
+  };
+
+  const closeModal = () => {
+    if (requesting) return;
+    setRequestModalOpen(false);
+    setRequestAmount('');
+    setConfirmStage('input');
+  };
+
+  // Single entry-point from the page header. Guarded so a fast
+  // double-click on the trigger cannot open the modal twice or
+  // bypass the confirm stage.
+  const openPayoutModal = () => {
+    if (requestModalOpen || requesting) return;
+    setRequestAmount(String(availableBalance));
+    setConfirmStage('input');
+    setRequestModalOpen(true);
   };
 
   return (
@@ -201,11 +252,9 @@ export default function SettlementOverview() {
         </div>
         <Button
           className="h-10 gap-2"
-          onClick={() => {
-            setRequestAmount(String(availableBalance));
-            setRequestModalOpen(true);
-          }}
-          disabled={!isEligible || Number(availableBalance) <= 0 || requesting}
+          onClick={openPayoutModal}
+          disabled={!isEligible || Number(availableBalance) <= 0 || requesting || requestModalOpen}
+          data-testid="settlement-trigger"
         >
           <Send className="h-4 w-4" />
           {requesting ? 'جاري الطلب...' : 'طلب تسوية'}
@@ -319,37 +368,99 @@ export default function SettlementOverview() {
         </div>
       )}
 
-      {requestModalOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl shadow-xl p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-bold text-neutral-900 mb-2">طلب تسوية</h3>
-            <p className="text-sm text-neutral-500 mb-4">
-              الرصيد المتاح: {formatCurrency(availableBalance)} {t('common.sar')}
-            </p>
-            <label className="block text-xs text-neutral-500 mb-1">مبلغ التسوية</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={requestAmount}
-              onChange={(e) => setRequestAmount(e.target.value)}
-              className="w-full border border-neutral-200 rounded-2xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-            <div className="flex justify-end gap-2 mt-5">
-              <Button
-                variant="outline"
-                onClick={() => { setRequestModalOpen(false); setRequestAmount(''); }}
-                disabled={requesting}
-              >
-                إلغاء
-              </Button>
-              <Button onClick={handleRequestPayout} disabled={requesting || !requestAmount}>
-                {requesting ? 'جاري الطلب...' : 'تأكيد الطلب'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog
+        open={requestModalOpen}
+        onOpenChange={(open) => {
+          // Block close while in-flight to avoid orphaning a payout
+          // request the merchant cannot see the result of.
+          if (!open && !requesting) closeModal();
+        }}
+      >
+        <DialogContent className="max-w-md" data-testid="settlement-dialog">
+          {confirmStage === 'input' ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>طلب تسوية</DialogTitle>
+                <DialogDescription>
+                  الرصيد المتاح: {formatCurrency(availableBalance)} {t('common.sar')}
+                </DialogDescription>
+              </DialogHeader>
+              <div>
+                <label htmlFor="payout-amount" className="block text-xs text-neutral-500 mb-1">
+                  مبلغ التسوية
+                </label>
+                <input
+                  id="payout-amount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={requestAmount}
+                  onChange={(e) => setRequestAmount(e.target.value)}
+                  className="w-full border border-neutral-200 rounded-2xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  data-testid="settlement-amount-input"
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={closeModal} disabled={requesting}>
+                  إلغاء
+                </Button>
+                <Button
+                  onClick={handleReviewPayout}
+                  disabled={requesting || !requestAmount}
+                  data-testid="settlement-review"
+                >
+                  متابعة
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>تأكيد طلب التحويل</DialogTitle>
+                <DialogDescription>
+                  راجع التفاصيل قبل إرسال الطلب — لا يمكن التراجع بعد التأكيد.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="rounded-2xl bg-neutral-50 border border-neutral-100 p-4 space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500">المبلغ</span>
+                  <span className="font-bold tabular-nums text-neutral-900">
+                    {formatCurrency(requestAmount)} {t('common.sar')}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500">الوجهة</span>
+                  <span className="text-neutral-900">
+                    الحساب البنكي الموثَّق المسجَّل في إعدادات المتجر
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500">الرصيد المتاح</span>
+                  <span className="tabular-nums text-neutral-900">
+                    {formatCurrency(availableBalance)} {t('common.sar')}
+                  </span>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setConfirmStage('input')}
+                  disabled={requesting}
+                >
+                  رجوع
+                </Button>
+                <Button
+                  onClick={submitPayout}
+                  disabled={requesting}
+                  data-testid="settlement-confirm"
+                >
+                  {requesting ? 'جاري الطلب...' : 'تأكيد طلب التحويل'}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         <div className="p-4 border-b border-neutral-100">
