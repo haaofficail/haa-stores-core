@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { walletApi } from '@/lib/api';
+import { messageFromError } from '@/lib/error-mapper';
 import { formatCurrency } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -87,16 +88,24 @@ export default function SettlementDetail() {
   const [detail, setDetail] = useState<BatchDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
     if (!storeId || !batchId) return;
     setLoading(true);
     setError(false);
+    setErrorMessage('');
     walletApi.settlementBatchDetail(storeId, Number(batchId))
       .then((data) => setDetail(data as BatchDetail))
-      .catch(() => setError(true))
+      .catch((err: unknown) => {
+        // Audit PART 3 P0 #3 follow-up: surface a translated, mapped
+        // reason rather than a generic "load failed" string so the
+        // merchant can tell network failure from access denial etc.
+        setError(true);
+        setErrorMessage(messageFromError(err, t));
+      })
       .finally(() => setLoading(false));
-  }, [storeId, batchId]);
+  }, [storeId, batchId, t]);
 
   if (loading) {
     return (
@@ -122,7 +131,7 @@ export default function SettlementDetail() {
           <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4">
             <AlertTriangle className="h-8 w-8 text-red-500" />
           </div>
-          <p className="text-sm text-neutral-500">{t('settlement.loadError', 'فشل تحميل تفاصيل التسوية')}</p>
+          <p className="text-sm text-neutral-500">{errorMessage || t('settlement.loadError', 'فشل تحميل تفاصيل التسوية')}</p>
         </div>
       </div>
     );
@@ -130,9 +139,40 @@ export default function SettlementDetail() {
 
   const settlementRef = `SET-${String(detail.id).padStart(6, '0')}`;
   const transactions = detail.transactions ?? [];
-  const totalGateway = transactions.reduce((sum, tx) => sum + (tx.gatewayFees ?? 0), 0);
-  const totalPlatform = transactions.reduce((sum, tx) => sum + (tx.platformFees ?? 0), 0);
-  const totalFees = totalGateway + totalPlatform;
+
+  // Audit PART 3 P0 #3 (SettlementDetail.tsx:133-135,170):
+  //
+  // The page used to render TWO different fee totals on the same view:
+  // the summary cells preferred the batch-level `detail.gatewayFees` /
+  // `detail.platformFees`, while the "Total Fees" cell summed the
+  // per-row `tx.gatewayFees` / `tx.platformFees`. When backend rounding
+  // diverges between the batch aggregate and the per-row aggregate the
+  // merchant sees two different numbers — a clear money-correctness bug.
+  //
+  // Single source of truth (decision): batch-level fees are the
+  // accounting record of what was settled; the per-row breakdown is an
+  // explanatory denormalisation. We therefore READ FROM THE BATCH when
+  // it is available, and only fall back to the per-row sum when the
+  // batch field is null/undefined. Every fee cell on this page derives
+  // from `gatewayFees`/`platformFees`/`totalFees` below, so the numbers
+  // are guaranteed to reconcile.
+  const rowGateway = transactions.reduce((sum, tx) => sum + (tx.gatewayFees ?? 0), 0);
+  const rowPlatform = transactions.reduce((sum, tx) => sum + (tx.platformFees ?? 0), 0);
+  const gatewayFees = detail.gatewayFees ?? rowGateway;
+  const platformFees = detail.platformFees ?? rowPlatform;
+  const totalFees = gatewayFees + platformFees;
+
+  // Gross-amount fallback: the previous formula combined the per-row
+  // fee sums with the merchant payable, which is equivalent to
+  // (fees + net) — it silently DROPPED shipping, discount and refund
+  // reserve, so a missing `detail.grossAmount` displayed a value
+  // smaller than reality. Compute gross from the per-row `tx.amount`
+  // field instead (the row's reported full order amount already
+  // includes shipping/discount/reserve), and only use it when
+  // `detail.grossAmount` is absent.
+  const rowGross = transactions.reduce((sum, tx) => sum + (tx.amount ?? 0), 0);
+  const grossAmount = detail.grossAmount ?? rowGross;
+
   const currentTimelineIdx = STATUS_TIMELINE_INDEX[detail.status] ?? -1;
   const isCancelled = detail.status === 'cancelled';
 
@@ -167,15 +207,15 @@ export default function SettlementDetail() {
       <div className="grid gap-3 md:grid-cols-3">
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-4">
           <p className="text-sm text-neutral-500">{t('settlement.grossAmount', 'الإجمالي')}</p>
-          <p className="text-lg font-bold text-neutral-900 mt-1">{formatCurrency(detail.grossAmount ?? totalGateway + totalPlatform + (detail.merchantPayable ?? 0))} {t('common.sar')}</p>
+          <p className="text-lg font-bold text-neutral-900 mt-1">{formatCurrency(grossAmount)} {t('common.sar')}</p>
         </div>
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-4">
           <p className="text-sm text-neutral-500">{t('settlement.gatewayFees', 'رسوم البوابة')}</p>
-          <p className="text-lg font-bold text-red-600 mt-1">{formatCurrency(detail.gatewayFees ?? totalGateway)} {t('common.sar')}</p>
+          <p className="text-lg font-bold text-red-600 mt-1">{formatCurrency(gatewayFees)} {t('common.sar')}</p>
         </div>
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-4">
           <p className="text-sm text-neutral-500">{t('settlement.platformFees', 'رسوم المنصة')}</p>
-          <p className="text-lg font-bold text-orange-600 mt-1">{formatCurrency(detail.platformFees ?? totalPlatform)} {t('common.sar')}</p>
+          <p className="text-lg font-bold text-orange-600 mt-1">{formatCurrency(platformFees)} {t('common.sar')}</p>
         </div>
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-4">
           <p className="text-sm text-neutral-500">{t('settlement.netPayable', 'صافي المستحق')}</p>
