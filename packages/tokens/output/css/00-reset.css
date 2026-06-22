@@ -24,12 +24,19 @@ body {
   min-height: 100dvh;
 }
 
-img, picture, video, canvas, svg {
+img,
+picture,
+video,
+canvas,
+svg {
   display: block;
   max-width: 100%;
 }
 
-input, button, textarea, select {
+input,
+button,
+textarea,
+select {
   font: inherit;
   color: inherit;
 }
@@ -40,12 +47,23 @@ button {
   background: none;
 }
 
-a {
+/* Anchors:
+   - Bare anchors (in-content links — body text, policies, support
+     pages, signup forms) inherit the brand link color + underline
+     on hover.
+   - Anchors that already carry a Tailwind color/background utility
+     (text-*, bg-*, from-*) opt OUT of these defaults. This stops
+     sidebar NavLinks, dashboard pills, marketing CTAs, and any
+     <Link> styled as a button from picking up the link color +
+     underline on hover. Without this scope, every navigation link
+     turned blue + underlined on hover — a UX regression caught in
+     the merchant-dashboard live audit. */
+a:not([class*="text-"]):not([class*="bg-"]):not([class*="from-"]) {
   color: var(--text-link);
   text-decoration: none;
 }
 
-a:hover {
+a:not([class*="text-"]):not([class*="bg-"]):not([class*="from-"]):hover {
   color: var(--text-link-hover);
   text-decoration: underline;
 }
@@ -65,7 +83,9 @@ a:hover {
   color: var(--placeholder-text);
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   transition:
     background-color 0.3s var(--ease-spring-smooth, ease),
     color 0.3s var(--ease-spring-smooth, ease),
@@ -74,7 +94,9 @@ a:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     transition: none !important;
   }
 }

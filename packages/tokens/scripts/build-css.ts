@@ -451,12 +451,23 @@ button {
   background: none;
 }
 
-a {
+/* Anchors:
+   - Bare anchors (in-content links — body text, policies, support
+     pages, signup forms) inherit the brand link color + underline
+     on hover.
+   - Anchors that already carry a Tailwind color/background utility
+     (text-*, bg-*, from-*) opt OUT of these defaults. This stops
+     sidebar NavLinks, dashboard pills, marketing CTAs, and any
+     <Link> styled as a button from picking up the link color +
+     underline on hover. Without this scope, every navigation link
+     turned blue + underlined on hover — a UX regression caught in
+     the merchant-dashboard live audit. */
+a:not([class*="text-"]):not([class*="bg-"]):not([class*="from-"]) {
   color: var(--text-link);
   text-decoration: none;
 }
 
-a:hover {
+a:not([class*="text-"]):not([class*="bg-"]):not([class*="from-"]):hover {
   color: var(--text-link-hover);
   text-decoration: underline;
 }
