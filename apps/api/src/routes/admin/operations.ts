@@ -10,6 +10,7 @@ import * as s from '@haa/db/schema';
 import { SubscriptionService } from '@haa/commerce-core';
 import { createMediaAdapter } from '@haa/shared/media';
 import { getWebhookDedupStats } from '@haa/integration-core';
+import { getIdempotencyKeyStats } from '../../middleware/idempotency-key.js';
 
 // ── /audit ────────────────────────────────────────────────────────────────
 export async function auditRoute(c: any) {
@@ -32,6 +33,13 @@ export async function auditRoute(c: any) {
 // fired at all without scrolling paymentWebhookEvents.
 export async function webhookDedupStatsRoute(c: any) {
   return c.json({ success: true, data: getWebhookDedupStats() });
+}
+
+// ── /idempotency-key/stats ────────────────────────────────────────────────
+// Per-process counters for the Idempotency-Key middleware. Used by ops to
+// verify that retries are actually being deduplicated against the cache.
+export async function idempotencyKeyStatsRoute(c: any) {
+  return c.json({ success: true, data: getIdempotencyKeyStats() });
 }
 
 // ── /webhooks ─────────────────────────────────────────────────────────────
