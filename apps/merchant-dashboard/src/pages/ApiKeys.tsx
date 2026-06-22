@@ -25,6 +25,11 @@ interface ApiKeyRecord {
   createdAt: string;
 }
 
+// Auto-mask the freshly-minted plaintext key after 5 minutes so it
+// cannot survive an unattended session. Module-scoped so the timer
+// effect's dependency array doesn't trip eslint react-hooks rules.
+const AUTO_CLEAR_MS = 5 * 60 * 1000;
+
 interface IntegrationLog {
   id: number;
   storeId: number;
@@ -62,6 +67,12 @@ export default function ApiKeysPage() {
   const [revokeConfirm, setRevokeConfirm] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', scopes: [] as string[] });
   const [creating, setCreating] = useState(false);
+  // Security gate (audit PART_5 §ApiKeys row 1, P1): the freshly-minted
+  // plaintext key MUST not linger in DOM/React state indefinitely. We
+  // require the merchant to tick "I have saved this key" before the
+  // dismiss control is enabled, AND we auto-mask it after 5 minutes so
+  // it cannot survive an unattended session.
+  const [savedConfirmed, setSavedConfirmed] = useState(false);
 
   const loadKeys = useCallback(() => {
     if (!storeId) return;
@@ -87,6 +98,20 @@ export default function ApiKeysPage() {
     loadLogs();
   }, [loadKeys, loadLogs]);
 
+  // Auto-mask the freshly-minted key after 5 minutes. Even if the
+  // merchant walks away from the screen with the panel still open, the
+  // plaintext value is wiped from React state — only the masked
+  // representation remains in the DOM until they explicitly dismiss it.
+  // Audit PART_5 §ApiKeys row 1 (P1).
+  useEffect(() => {
+    if (!newKey) return;
+    const timer = setTimeout(() => {
+      setNewKey(null);
+      setSavedConfirmed(false);
+    }, AUTO_CLEAR_MS);
+    return () => clearTimeout(timer);
+  }, [newKey]);
+
   const toggleScope = (code: string) => {
     setForm(prev => ({
       ...prev,
@@ -105,6 +130,7 @@ export default function ApiKeysPage() {
     try {
       const result = await apiKeysApi.create(storeId, form.name.trim(), form.scopes);
       setNewKey(result.key);
+      setSavedConfirmed(false);
       setForm({ name: '', scopes: [] });
       setShowDialog(false);
       loadKeys();
@@ -136,7 +162,10 @@ export default function ApiKeysPage() {
     }
   };
 
-  const dismissNewKey = () => setNewKey(null);
+  const dismissNewKey = () => {
+    setNewKey(null);
+    setSavedConfirmed(false);
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
@@ -149,23 +178,60 @@ export default function ApiKeysPage() {
       </div>
 
       {newKey && (
-        <div className="bg-emerald-50/50 border border-emerald-200/50 rounded-3xl p-6">
+        <div
+          data-testid="newkey-panel"
+          className="bg-emerald-50/50 border border-emerald-200/50 rounded-3xl p-6"
+        >
           <div className="flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
             <div className="flex-1">
               <h3 className="font-bold text-green-800">{t('apikeys.created')}</h3>
               <p className="text-sm text-green-700 mt-1">{t('apikeys.createdDesc')}</p>
               <div className="mt-3 flex items-center gap-2">
-                <code className="bg-green-100 border border-green-300 rounded-xl px-3 py-1.5 text-sm font-mono text-green-900 flex-1 break-all" dir="ltr">
+                <code
+                  data-testid="newkey-value"
+                  className="bg-green-100 border border-green-300 rounded-xl px-3 py-1.5 text-sm font-mono text-green-900 flex-1 break-all"
+                  dir="ltr"
+                >
                   {newKey}
                 </code>
-                <Button variant="outline" className="h-9 text-sm" onClick={copyKey}>
+                <Button
+                  variant="outline"
+                  className="h-9 text-sm"
+                  onClick={copyKey}
+                  aria-label={t('apikeys.copy', 'نسخ المفتاح')}
+                  data-testid="newkey-copy"
+                >
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
+              {/* "I've saved this key" gate — the dismiss control is
+                  disabled until the merchant explicitly confirms.
+                  Audit PART_5 §ApiKeys row 1 (P1, security). */}
+              <label className="mt-4 flex items-center gap-2 cursor-pointer text-sm text-green-800">
+                <input
+                  type="checkbox"
+                  checked={savedConfirmed}
+                  onChange={(e) => setSavedConfirmed(e.target.checked)}
+                  className="rounded border-green-400 h-4 w-4"
+                  data-testid="newkey-saved-checkbox"
+                />
+                <span>{t('apikeys.savedConfirm', 'لقد حفظت هذا المفتاح في مكان آمن')}</span>
+              </label>
+              <p className="mt-2 text-xs text-green-700/80">
+                {t('apikeys.autoClearNote', 'سيختفي المفتاح تلقائياً بعد 5 دقائق لأسباب أمنية.')}
+              </p>
             </div>
             {/* Touch target ≥ 44x44 (WCAG 2.5.5). */}
-            <Button variant="ghost" size="icon" className="h-11 w-11" onClick={dismissNewKey} aria-label="إغلاق">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11"
+              onClick={dismissNewKey}
+              disabled={!savedConfirmed}
+              aria-label="إغلاق"
+              data-testid="newkey-dismiss"
+            >
               <XCircle className="h-4 w-4" />
             </Button>
           </div>

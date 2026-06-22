@@ -57,19 +57,43 @@ export default function MigrationHub() {
     },
   ];
 
+  // Fetch a binary asset (CSV/JSON feed) and stream it to the browser
+  // as a file. We MUST check `res.ok` BEFORE calling `res.blob()` —
+  // otherwise a 401/500 returns an HTML/JSON error body which the
+  // browser happily saves as `*.csv` / `*.txt`, leaving the merchant
+  // staring at an error page they can't open.
+  //
+  // Pattern mirrored from `Exports.tsx:54-67` (the reference). See
+  // audit PART_5 §MigrationHub row 1 (P1).
+  const downloadBlob = async (path: string, filename: string) => {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({} as { error?: { message?: string } }));
+      throw new ApiClientError(
+        'SERVER_ERROR',
+        json?.error?.message || t('common.error'),
+      );
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleDownloadTemplate = async (source: string) => {
     if (!storeId) return;
     try {
-      const res = await fetch(`${BASE_URL}${feedsApi.getTemplateCsv(storeId, source)}`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${source}-template.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadBlob(
+        feedsApi.getTemplateCsv(storeId, source),
+        `${source}-template.csv`,
+      );
       toast.success(t('migration.templateDownloaded'));
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : t('common.error'));
@@ -79,16 +103,10 @@ export default function MigrationHub() {
   const handleDownloadGoogleFeed = async () => {
     if (!storeId) return;
     try {
-      const res = await fetch(`${BASE_URL}${feedsApi.getGoogleFeed(storeId)}`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'google-merchant-feed.txt';
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadBlob(
+        feedsApi.getGoogleFeed(storeId),
+        'google-merchant-feed.txt',
+      );
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : t('common.error'));
     }
@@ -97,16 +115,10 @@ export default function MigrationHub() {
   const handleDownloadMetaFeed = async () => {
     if (!storeId) return;
     try {
-      const res = await fetch(`${BASE_URL}${feedsApi.getMetaFeed(storeId)}`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'meta-catalog-feed.json';
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadBlob(
+        feedsApi.getMetaFeed(storeId),
+        'meta-catalog-feed.json',
+      );
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : t('common.error'));
     }
