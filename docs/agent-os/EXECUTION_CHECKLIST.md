@@ -4,6 +4,38 @@
 
 ---
 
+## Mandatory Skill Gate Checklist (pre-execution — required for every task)
+
+> Run this checklist BEFORE any edit. It is the operational form of
+> AGENTS.md §14. Empty boxes = task not yet eligible to start.
+>
+> "Skills" = Claude Code execution skills in `.claude/skills/`. NOT CSS,
+> tokens, or visual UI work.
+
+- [ ] Task classified into one of the 13 task types (AGENTS.md §14.4)
+- [ ] 1–4 skills selected from `docs/agent-os/SKILLS_REGISTRY.md`
+- [ ] Each skill has a one-line "why it fits" justification
+- [ ] Expected files listed (paths or globs)
+- [ ] Verification commands mapped per selected skill
+- [ ] Risk level assigned (low / medium / high)
+- [ ] Final Skill Compliance Report template loaded
+  (`docs/agent-os/templates/SKILL_COMPLIANCE_REPORT.md`)
+- [ ] Safety constraints reviewed (AGENTS.md §14.7) — no deploy,
+  no `db:migrate`, no secrets, no production action, no forbidden server
+  `187.124.41.239`
+- [ ] Mandatory Skill Gate block published in the response BEFORE first edit
+- [ ] `pnpm check:skills` passes locally
+
+Once every box is ticked, proceed to the task type's specific gates below
+(e.g. for `database/migration` start with `environment-safety-gate`; for
+`frontend/design` start with `design-ux-excellence-gate`).
+
+If no skill fits, follow AGENTS.md §14.3 (declare `**No matching skill
+found**`, pick fallback, log Pending addition in
+`docs/agent-os/SKILLS_REGISTRY.md`).
+
+---
+
 ## Status legend
 
 `Pending` · `In Progress` · `Done` · `Done (planning only)` · `Done (test-locked, code deferred)` · `Deferred (tracker-only)` · `Blocked`
