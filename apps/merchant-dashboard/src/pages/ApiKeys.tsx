@@ -164,7 +164,8 @@ export default function ApiKeysPage() {
                 </Button>
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={dismissNewKey}>
+            {/* Touch target ≥ 44x44 (WCAG 2.5.5). */}
+            <Button variant="ghost" size="icon" className="h-11 w-11" onClick={dismissNewKey} aria-label="إغلاق">
               <XCircle className="h-4 w-4" />
             </Button>
           </div>

@@ -60,7 +60,8 @@ export default function MarketplaceListingsPage() {
   return (
     <div className="p-6 space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(`/channels/${provider}`)}>
+        {/* Touch target ≥ 44x44 (WCAG 2.5.5). */}
+        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => navigate(`/channels/${provider}`)} aria-label={t('common.back', 'رجوع')}>
           <ArrowRight className="h-5 w-5" />
         </Button>
         <div className="flex items-center gap-3">
@@ -114,14 +115,15 @@ export default function MarketplaceListingsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        {/* Row action icons — hit area ≥ 44x44 (WCAG 2.5.5). */}
                         {listing.marketplaceUrl && (
-                          <a href={listing.marketplaceUrl} target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <a href={listing.marketplaceUrl} target="_blank" rel="noopener noreferrer" aria-label={t('marketplaces.openListing', 'فتح المنتج في المنصة')}>
+                            <Button variant="ghost" size="icon" className="h-11 w-11" aria-hidden="true" tabIndex={-1}>
                               <ExternalLink className="h-4 w-4" />
                             </Button>
                           </a>
                         )}
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-50" onClick={() => setDeleteConfirm(String(listing.id))} disabled={deletingId === listing.id}>
+                        <Button variant="ghost" size="icon" className="h-11 w-11 text-red-500 hover:bg-red-50" onClick={() => setDeleteConfirm(String(listing.id))} disabled={deletingId === listing.id} aria-label={t('common.delete', 'حذف')}>
                           {deletingId === listing.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         </Button>
                       </div>

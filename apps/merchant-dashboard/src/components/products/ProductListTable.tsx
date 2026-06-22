@@ -224,11 +224,22 @@ export function ProductListTable({
         <div className="flex items-center justify-between pt-4 pb-4 px-6 border-t border-neutral-100">
           <p className="text-sm text-neutral-500">{t('products.showing', 'عرض')} {products.length} {t('products.of', 'من')} {total} {t('products.products', 'منتج')}</p>
           <div className="flex items-center gap-2">
-            <button onClick={() => onPageChange(Math.max(1, page - 1))} disabled={page <= 1} className="p-2 rounded-xl hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+            {/* Pagination icon-only buttons — hit area ≥ 44x44 (WCAG 2.5.5). */}
+            <button
+              onClick={() => onPageChange(Math.max(1, page - 1))}
+              disabled={page <= 1}
+              aria-label={t('products.prevPage', 'الصفحة السابقة')}
+              className="h-11 w-11 inline-flex items-center justify-center rounded-xl hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400"
+            >
               <ChevronRight className="h-4 w-4" />
             </button>
             <span className="text-sm font-medium text-neutral-700">{page} / {totalPages}</span>
-            <button onClick={() => onPageChange(Math.min(totalPages, page + 1))} disabled={page >= totalPages} className="p-2 rounded-xl hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+            <button
+              onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+              disabled={page >= totalPages}
+              aria-label={t('products.nextPage', 'الصفحة التالية')}
+              className="h-11 w-11 inline-flex items-center justify-center rounded-xl hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400"
+            >
               <ChevronLeft className="h-4 w-4" />
             </button>
           </div>

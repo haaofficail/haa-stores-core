@@ -130,7 +130,13 @@ export function EmployeeFormDialog({
           <h2 className="text-lg font-semibold text-neutral-900">
             {mode === 'create' ? 'إضافة موظف' : 'تعديل بيانات الموظف'}
           </h2>
-          <button onClick={onClose} className="p-1 hover:bg-neutral-100 rounded-lg transition-colors" disabled={loading || saving}>
+          {/* Modal close — touch target ≥ 44x44 (WCAG 2.5.5). */}
+          <button
+            onClick={onClose}
+            disabled={loading || saving}
+            aria-label="إغلاق"
+            className="h-11 w-11 inline-flex items-center justify-center hover:bg-neutral-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400 disabled:opacity-40"
+          >
             <X className="h-5 w-5 text-neutral-500" />
           </button>
         </div>

@@ -65,7 +65,12 @@ export default function MarketplaceGuideModal({ open, onClose }: { open: boolean
               <p className="text-xs text-neutral-500">خطوات ربط متجرك بمنصات البيع</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-neutral-100 transition-colors">
+          {/* Modal close — touch target ≥ 44x44 (WCAG 2.5.5). */}
+          <button
+            onClick={onClose}
+            aria-label="إغلاق"
+            className="h-11 w-11 inline-flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400"
+          >
             <X className="h-5 w-5 text-neutral-400" />
           </button>
         </div>

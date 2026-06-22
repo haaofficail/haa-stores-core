@@ -48,7 +48,13 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
     <header className="h-16 bg-surface-1/80 backdrop-blur-xl flex items-center justify-between px-6 shrink-0 shadow-sm">
       <div className="flex items-center gap-4">
         {onToggleSidebar && (
-          <button onClick={onToggleSidebar} className="min-h-11 min-w-11 p-3 rounded-lg text-neutral-500 hover:bg-neutral-100 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 lg:hidden transition-colors">
+          // Touch target ≥ 44x44 (WCAG 2.5.5). Icon stays 20px; the
+          // wrapping button is h-11 w-11 with a visible focus ring.
+          <button
+            onClick={onToggleSidebar}
+            className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 lg:hidden transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500"
+            aria-label={t('topbar.toggleSidebar', 'فتح القائمة الجانبية')}
+          >
             <Menu className="h-5 w-5" />
           </button>
         )}
@@ -75,9 +81,10 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
             <Search className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" style={{ insetInlineEnd: '0.75rem' }} />
           </div>
         ) : (
+          // Touch target ≥ 44x44 (WCAG 2.5.5).
           <button
             onClick={() => setSearchOpen(true)}
-            className="min-h-11 min-w-11 p-3 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 transition-all"
+            className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500"
             title={t('topbar.search', 'بحث')}
             aria-label={t('topbar.search', 'بحث')}
           >
@@ -85,14 +92,16 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
           </button>
         )}
 
+        {/* Notification bell — hit area bumped to 44x44 (WCAG 2.5.5).
+            The red dot keeps its position relative to the icon via top-3/start-3. */}
         <button
-          className="relative min-h-11 min-w-11 p-3 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 transition-all"
+          className="relative h-11 w-11 inline-flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500"
           title={t('topbar.notifications', 'الإشعارات')}
           aria-label={t('topbar.notifications', 'الإشعارات')}
           onClick={() => navigate('/notifications')}
         >
           <Bell className="h-5 w-5" />
-          <span className="absolute top-2 h-2 w-2 rounded-full bg-danger ring-2 ring-white" style={{ insetInlineStart: '0.5rem' }} />
+          <span className="absolute top-2.5 h-2 w-2 rounded-full bg-danger ring-2 ring-white" style={{ insetInlineStart: '0.75rem' }} />
         </button>
 
         <div className="h-8 w-px bg-neutral-200 mx-1" />
@@ -107,9 +116,10 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
               <span className="text-xs text-neutral-500 leading-tight">{t('topbar.merchant', 'تاجر')}</span>
             </div>
           </div>
+          {/* Touch target ≥ 44x44 (WCAG 2.5.5). */}
           <button
             onClick={logout}
-            className="p-2.5 rounded-lg text-neutral-500 hover:bg-red-50 hover:text-red-600 transition-all"
+            className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-neutral-500 hover:bg-red-50 hover:text-red-600 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400"
             title={t('auth.logout', 'تسجيل الخروج')}
             aria-label={t('auth.logout', 'تسجيل الخروج')}
           >

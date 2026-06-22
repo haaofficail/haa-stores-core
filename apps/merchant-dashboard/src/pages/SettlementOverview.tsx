@@ -128,8 +128,9 @@ export default function SettlementOverview() {
     return (
       <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
-            <Link to="/wallet"><ArrowLeft className="h-4 w-4" /></Link>
+          {/* Back nav — touch target ≥ 44x44 (WCAG 2.5.5). */}
+          <Button variant="ghost" size="icon" className="h-11 w-11" asChild>
+            <Link to="/wallet" aria-label={t('common.back', 'رجوع')}><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
           <h1 className="text-2xl font-bold text-neutral-900">{t('settlement.overviewTitle')}</h1>
         </div>
@@ -192,8 +193,9 @@ export default function SettlementOverview() {
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
-            <Link to="/wallet"><ArrowLeft className="h-4 w-4" /></Link>
+          {/* Back nav — touch target ≥ 44x44 (WCAG 2.5.5). */}
+          <Button variant="ghost" size="icon" className="h-11 w-11" asChild>
+            <Link to="/wallet" aria-label={t('common.back', 'رجوع')}><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
           <h1 className="text-2xl font-bold text-neutral-900">{t('settlement.overviewTitle')}</h1>
         </div>

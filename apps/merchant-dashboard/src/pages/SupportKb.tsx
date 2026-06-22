@@ -228,17 +228,21 @@ export default function SupportKb() {
                 </div>
               </div>
               <div className="flex items-center gap-1">
+                {/* Row action icons — hit area ≥ 44x44 (WCAG 2.5.5). */}
                 <button onClick={() => togglePublish(article)}
-                  className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-green-600 transition-colors"
+                  aria-label={article.isPublished ? t('support.kb.unpublish', 'إلغاء النشر') : t('support.kb.publish', 'نشر')}
+                  className="h-11 w-11 inline-flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-green-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400"
                   title={article.isPublished ? t('support.kb.unpublish', 'إلغاء النشر') : t('support.kb.publish', 'نشر')}>
                   {article.isPublished ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                 </button>
                 <button onClick={() => startEdit(article)}
-                  className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-primary-600 transition-colors">
+                  aria-label={t('common.edit', 'تعديل')}
+                  className="h-11 w-11 inline-flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-primary-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400">
                   <Edit3 className="h-4 w-4" />
                 </button>
                 <button onClick={() => handleDelete(article.id)}
-                  className="p-2 rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-red-600 transition-colors">
+                  aria-label={t('common.delete', 'حذف')}
+                  className="h-11 w-11 inline-flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-500 hover:text-red-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>

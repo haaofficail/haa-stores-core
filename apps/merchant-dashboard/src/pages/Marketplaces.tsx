@@ -276,8 +276,9 @@ export default function MarketplacesPage() {
                           </div>
                         </div>
                       </div>
-                      <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => navigate(`/channels/${p.code}`)}>
+                      {/* Touch target ≥ 44x44 (WCAG 2.5.5). */}
+                      <Button variant="ghost" size="icon" className="h-11 w-11 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => navigate(`/channels/${p.code}`)} aria-label={t('marketplaces.viewChannel', 'عرض القناة')}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     </div>

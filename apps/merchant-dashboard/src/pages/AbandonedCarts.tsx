@@ -139,10 +139,11 @@ export default function AbandonedCarts() {
                     {cart.expiresAt ? new Date(cart.expiresAt).toLocaleDateString('ar-SA') : '-'}
                   </TableCell>
                   <TableCell className="p-3">
+                    {/* Touch target ≥ 44x44 (WCAG 2.5.5). */}
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9 opacity-40 cursor-not-allowed"
+                      className="h-11 w-11 opacity-40 cursor-not-allowed"
                       title="إرسال تذكير — قيد التطوير"
                       aria-label="إرسال تذكير — قيد التطوير"
                       disabled

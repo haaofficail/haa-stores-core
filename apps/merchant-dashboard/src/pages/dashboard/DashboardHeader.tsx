@@ -48,20 +48,23 @@ export function DashboardHeader({ t, visibleAlerts, onRefresh }: Props) {
         </div>
       </div>
       <div className="flex items-center gap-1.5">
+        {/* Header icon buttons — hit area ≥ 44x44 (WCAG 2.5.5). */}
         <button
           type="button"
-          className="p-2 rounded-xl hover:bg-neutral-100 transition-colors relative"
+          aria-label={t("common.notifications", "الإشعارات")}
+          className="h-11 w-11 inline-flex items-center justify-center rounded-xl hover:bg-neutral-100 transition-colors relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400"
           title={t("common.notifications", "الإشعارات")}
         >
           <Bell className="h-5 w-5 text-neutral-600" />
           {hasUrgent && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
+            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
           )}
         </button>
         <button
           type="button"
-          className="p-2 rounded-xl hover:bg-neutral-100 transition-colors"
           onClick={onRefresh}
+          aria-label={t("common.refresh", "تحديث")}
+          className="h-11 w-11 inline-flex items-center justify-center rounded-xl hover:bg-neutral-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400"
           title={t("common.refresh", "تحديث")}
         >
           <RotateCw className="h-4 w-4 text-neutral-600" />
