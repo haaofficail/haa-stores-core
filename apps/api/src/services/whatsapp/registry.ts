@@ -18,6 +18,7 @@
 import { SessionManager } from './session-manager.js';
 import type { IBaileysClient, SessionEventListener } from './types.js';
 import { DrizzleSessionStore } from './session-store.js';
+import { BaileysClient } from './baileys-client.js';
 
 let singleton: SessionManager | null = null;
 
@@ -73,9 +74,9 @@ export function getWhatsappManager(): SessionManager {
             // these imports fail (e.g. test sandbox without the DB),
             // the store methods will reject — which the session
             // manager already swallows.
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
+             
             const dbModule = require('@haa/db');
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
+             
             const schemaModule = require('@haa/db/schema');
             storeDeps = { db: dbModule.db, schema: schemaModule };
           }
@@ -85,8 +86,17 @@ export function getWhatsappManager(): SessionManager {
     ) as never,
   );
 
+  // Feature gate — flip to the real Baileys runtime only when the
+  // owner has set FEATURE_WHATSAPP_LIVE=1 on the environment. Keeps
+  // the stub on by default so the page renders cleanly without any
+  // live socket attempts on environments that don't have the
+  // ENCRYPTION_KEY or the Redis worker plumbed.
+  const live = process.env.FEATURE_WHATSAPP_LIVE === '1';
+
   singleton = new SessionManager({
-    clientFactory: createStubClient,
+    clientFactory: live
+      ? ({ storeId, store }) => new BaileysClient({ storeId, store })
+      : createStubClient,
     store: lazyStore,
   });
   return singleton;

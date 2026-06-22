@@ -28,9 +28,12 @@
 
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
+import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
 import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';
 import type { SessionEvent } from '../services/whatsapp/types.js';
 import { getWhatsappManager } from '../services/whatsapp/registry.js';
+import { sendWhatsappMessage, WhatsappSendException } from '../services/whatsapp/send-service.js';
 
 export const whatsappRouter = new Hono();
 whatsappRouter.use('*', requireAuth(), requireStoreAccess());
@@ -57,6 +60,36 @@ whatsappRouter.post('/disconnect', requirePermission('settings:update'), async (
   const mgr = getWhatsappManager();
   await mgr.disconnect(storeId, 'admin_disconnect');
   return c.json({ success: true, data: { status: 'disconnected' } });
+});
+
+// POST /merchant/:storeId/whatsapp/send — single-message test send.
+//
+// Body: { to: '+966...', body: 'text' }. The campaign worker has its
+// own send path (WA-PR-4) that writes whatsapp_delivery rows; this
+// route is the merchant's "send to my own number" smoke test and the
+// stub for transactional sends.
+const sendSchema = z.object({
+  to: z.string().min(8).max(30),
+  body: z.string().min(1).max(4000),
+});
+whatsappRouter.post('/send', requirePermission('promotions:update'), zValidator('json', sendSchema), async (c) => {
+  const storeId = Number(c.req.param('storeId'));
+  const { to, body } = c.req.valid('json');
+  const mgr = getWhatsappManager();
+  try {
+    await sendWhatsappMessage(mgr, storeId, to, body);
+    return c.json({ success: true, data: { sent: true } });
+  } catch (err) {
+    if (err instanceof WhatsappSendException) {
+      const info = err.info;
+      // Map the typed error onto the API contract that the dashboard
+      // error mapper recognises.
+      const code = info.code;
+      const status = code === 'RATE_LIMITED' ? 429 : code === 'SESSION_NOT_CONNECTED' ? 409 : 400;
+      return c.json({ success: false, error: { code, message: code, details: info } }, status);
+    }
+    throw err;
+  }
 });
 
 // GET /merchant/:storeId/whatsapp/qr-stream — Server-Sent Events
