@@ -39,9 +39,12 @@ const ROOTS = [
 // Captured 2026-06-22 during Wave 17 (152). Raised to 153 on 2026-06-22 to
 // accommodate the new ForgotPassword.tsx page in merchant-dashboard (P1 audit
 // follow-up; ArrowLeft + LifeBuoy + Mail icons used in a brand-new page that
-// did not previously exist). Lower this when files are migrated; increasing
-// again requires an explicit owner ruling.
-const CEILING = 153;
+// did not previously exist). Raised to 154 on 2026-06-22 to accommodate the
+// new WhatsApp.tsx pairing page in merchant-dashboard (WA-PR-2;
+// Smartphone + QrCode + CheckCircle2 + AlertTriangle + Loader2 used in a
+// brand-new page). Lower this when files are migrated; increasing again
+// requires an explicit owner ruling.
+const CEILING = 154;
 
 describe('Lucide migration progress (F-QA-D-004 / ISSUE-0009)', () => {
   it(`direct lucide-react imports remain ≤ ${CEILING}`, () => {
