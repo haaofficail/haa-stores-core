@@ -175,7 +175,7 @@ export default function Subscriptions() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900">{t('subscriptions.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('subscriptions.title')}</h1>
         <p className="text-neutral-400 text-sm mt-1">{t('subscriptions.subtitle')}</p>
       </div>
 
@@ -235,7 +235,7 @@ export default function Subscriptions() {
                   <Package className="h-4 w-4" />
                   {t('subscriptions.products')}
                 </div>
-                <p className="text-2xl font-bold text-neutral-900">
+                <p className="text-2xl font-bold tracking-tight text-neutral-900">
                   {limits.usage.products} <span className="text-sm font-normal text-neutral-400">/ {limitDisplay(limits.limits.products)}</span>
                 </p>
               </div>
@@ -244,7 +244,7 @@ export default function Subscriptions() {
                   <Users className="h-4 w-4" />
                   {t('subscriptions.staff')}
                 </div>
-                <p className="text-2xl font-bold text-neutral-900">
+                <p className="text-2xl font-bold tracking-tight text-neutral-900">
                   {limits.usage.staff} <span className="text-sm font-normal text-neutral-400">/ {limitDisplay(limits.limits.staff)}</span>
                 </p>
               </div>
@@ -253,7 +253,7 @@ export default function Subscriptions() {
                   <HardDrive className="h-4 w-4" />
                   {t('subscriptions.storage')}
                 </div>
-                <p className="text-2xl font-bold text-neutral-900">
+                <p className="text-2xl font-bold tracking-tight text-neutral-900">
                   {limitDisplay(limits.limits.storageMb)} <span className="text-sm font-normal text-neutral-400">{t('subscriptions.mbUnit')}</span>
                 </p>
               </div>
@@ -262,7 +262,7 @@ export default function Subscriptions() {
                   <ShoppingCart className="h-4 w-4" />
                   {t('subscriptions.orders')}
                 </div>
-                <p className="text-2xl font-bold text-neutral-900">
+                <p className="text-2xl font-bold tracking-tight text-neutral-900">
                   {limits.usage.orders} <span className="text-sm font-normal text-neutral-400">/ {limitDisplay(limits.limits.orders)}</span>
                 </p>
               </div>
@@ -289,7 +289,7 @@ export default function Subscriptions() {
                     )}
                   </div>
                   <p className="text-sm text-neutral-500 mb-3">{plan.description}</p>
-                  <div className="text-2xl font-bold text-neutral-900 mb-4">
+                  <div className="text-2xl font-bold tracking-tight text-neutral-900 mb-4">
                     {Number(plan.priceMonthly) === 0 ? t('subscriptions.free') : `${Number(plan.priceMonthly)} ${t('common.sar')}`}
                     <span className="text-sm font-normal text-neutral-400"> {t('subscriptions.monthly')}</span>
                   </div>

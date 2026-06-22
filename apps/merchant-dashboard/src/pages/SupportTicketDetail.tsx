@@ -139,7 +139,7 @@ export default function SupportTicketDetail() {
 
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-neutral-900">{ticket.subject}</h1>
+          <h1 className="text-xl font-bold tracking-tight text-neutral-900">{ticket.subject}</h1>
           <div className="flex items-center gap-3 mt-2 text-sm text-neutral-500">
             <span className="flex items-center gap-1"><User className="h-3.5 w-3.5" /> {ticket.name}</span>
             {ticket.email && <span>{ticket.email}</span>}

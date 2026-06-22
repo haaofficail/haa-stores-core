@@ -122,7 +122,7 @@ export default function SupportKb() {
             <BookOpen className="h-5 w-5 text-green-600" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-neutral-900">{t('support.kb.title', 'قاعدة المعرفة')}</h1>
+            <h1 className="text-xl font-bold tracking-tight text-neutral-900">{t('support.kb.title', 'قاعدة المعرفة')}</h1>
             <p className="text-sm text-neutral-500">{articles.length} {t('support.kb.articles', 'مقال')}</p>
           </div>
         </div>

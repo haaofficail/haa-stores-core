@@ -602,7 +602,7 @@ export default function ThemeEditor() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-neutral-900">{t('theme.title', 'محرر الثيم')}</h1>
+              <h1 className="text-xl font-bold tracking-tight text-neutral-900">{t('theme.title', 'محرر الثيم')}</h1>
               {isDirty && (
                 <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 border border-amber-100">
                   غير محفوظ

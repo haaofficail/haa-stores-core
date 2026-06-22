@@ -169,7 +169,7 @@ export default function Orders() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
-      <h1 className="text-2xl font-bold text-neutral-900">{t('orders.title')}</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('orders.title')}</h1>
 
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
         <div className="space-y-3">

@@ -217,7 +217,7 @@ export default function AuditLogs() {
     <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900 flex items-center gap-2">
             <History className="h-6 w-6 text-primary-500" />
             {t('audit.title', 'سجل التغييرات')}
           </h1>

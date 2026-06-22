@@ -210,7 +210,7 @@ function HistoryCard({ label, value, icon, color, suffix = '' }: { label: string
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">الرادار الحي</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">الرادار الحي</h1>
           <p className="text-neutral-400 text-sm mt-1">نشاط المتجر الآن</p>
         </div>
         <div className="flex items-center gap-3">

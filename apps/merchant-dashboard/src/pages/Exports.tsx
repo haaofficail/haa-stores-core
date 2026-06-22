@@ -75,7 +75,7 @@ export default function Exports() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900">{t('exports.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('exports.title')}</h1>
         <p className="text-neutral-400 text-sm mt-1">{t('exports.description')}</p>
       </div>
 

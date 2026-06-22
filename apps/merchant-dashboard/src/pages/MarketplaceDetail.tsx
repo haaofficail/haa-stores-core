@@ -143,7 +143,7 @@ export default function MarketplaceDetailPage() {
           {t('marketplaceDetail.provider.' + provider, meta.name).charAt(0)}
         </div>
         <div>
-          <h1 className="text-xl font-bold text-neutral-900">{t('marketplaceDetail.provider.' + provider, meta.name)}</h1>
+          <h1 className="text-xl font-bold tracking-tight text-neutral-900">{t('marketplaceDetail.provider.' + provider, meta.name)}</h1>
           <p className="text-xs text-neutral-500">{t('marketplaceDetail.pageSubtitle', 'تفاصيل الاتصال وإدارة القناة')}</p>
         </div>
         <Badge className={`me-auto ${connected ? 'bg-emerald-500/10 text-emerald-700 border-emerald-200' : 'bg-neutral-100 text-neutral-500'}`}>
@@ -157,7 +157,7 @@ export default function MarketplaceDetailPage() {
             <div className="mx-auto mb-4 w-20 h-20 rounded-2xl bg-gradient-to-br from-neutral-100 to-neutral-200 flex items-center justify-center text-neutral-400 text-2xl font-bold">
               {t('marketplaceDetail.provider.' + provider, meta.name).charAt(0)}
             </div>
-            <h2 className="text-xl font-bold text-neutral-900 mb-2">{t('marketplaceDetail.notConnected', 'غير متصل')}</h2>
+            <h2 className="text-xl font-bold tracking-tight text-neutral-900 mb-2">{t('marketplaceDetail.notConnected', 'غير متصل')}</h2>
             <p className="text-sm text-neutral-500 mb-6">{t('marketplaceDetail.connectPrompt', `اربط متجر ${meta.name} للبدء في مزامنة المنتجات والطلبات`)}</p>
 
             {usesManualCreds && provider === 'noon' && (
@@ -224,7 +224,7 @@ export default function MarketplaceDetailPage() {
               ].map(s => (
                 <Card key={s.label} className="overflow-hidden">
                   <CardContent className="p-5">
-                    <p className="text-2xl font-bold text-neutral-900 tabular-nums">{s.value}<span className="text-sm font-medium text-neutral-400 ms-1">{s.suffix}</span></p>
+                    <p className="text-2xl font-bold tracking-tight text-neutral-900 tabular-nums">{s.value}<span className="text-sm font-medium text-neutral-400 ms-1">{s.suffix}</span></p>
                     <p className="text-xs text-neutral-500 mt-1">{s.label}</p>
                   </CardContent>
                 </Card>

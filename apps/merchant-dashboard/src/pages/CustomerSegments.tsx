@@ -189,7 +189,7 @@ export default function CustomerSegments() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">{seg?.labelAr || selectedSegment}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{seg?.labelAr || selectedSegment}</h1>
             <p className="text-neutral-400 text-sm mt-1">{seg?.descriptionAr} — {seg?.count} عميل</p>
           </div>
         </div>
@@ -272,7 +272,7 @@ export default function CustomerSegments() {
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in p-6" dir="rtl">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">شرائح العملاء</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">شرائح العملاء</h1>
           <p className="text-neutral-400 text-sm mt-1">تصنيف العملاء حسب السلوك والقيمة</p>
         </div>
         <div className="flex items-center gap-3">

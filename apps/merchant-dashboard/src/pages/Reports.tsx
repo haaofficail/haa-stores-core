@@ -207,7 +207,7 @@ export default function Reports() {
   if (loading) {
     return (
       <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
-        <h1 className="text-2xl font-bold text-neutral-900">{t('reports.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('reports.title')}</h1>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[1,2,3,4].map(i => <Skeleton key={i} className="h-36 rounded-3xl" />)}
         </div>
@@ -218,7 +218,7 @@ export default function Reports() {
   if (fetchError) {
     return (
       <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
-        <h1 className="text-2xl font-bold text-neutral-900">{t('reports.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('reports.title')}</h1>
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-16 text-center">
           <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4">
             <AlertTriangle className="h-10 w-10 text-red-400" />
@@ -243,7 +243,7 @@ export default function Reports() {
         }
       `}</style>
       <div className="flex items-center justify-between print:hidden">
-        <h1 className="text-2xl font-bold text-neutral-900">{t('reports.title')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('reports.title')}</h1>
         <div className="flex gap-2 items-center">
           <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36 h-9 text-sm" />
           <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36 h-9 text-sm" />
@@ -265,7 +265,7 @@ export default function Reports() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-neutral-500">{t('reports.totalSales')}</p>
-              <p className="text-2xl font-bold text-neutral-900 mt-1">{formatCurrency(salesSummary?.totalSales ?? 0)} {t('common.sar')}</p>
+              <p className="text-2xl font-bold tracking-tight text-neutral-900 mt-1">{formatCurrency(salesSummary?.totalSales ?? 0)} {t('common.sar')}</p>
             </div>
             <div className="p-3.5 rounded-2xl bg-emerald-50 text-emerald-600"><DollarSign className="h-5 w-5" /></div>
           </div>
@@ -274,7 +274,7 @@ export default function Reports() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-neutral-500">{t('reports.totalOrders')}</p>
-              <p className="text-2xl font-bold text-neutral-900 mt-1">{salesSummary?.totalOrders ?? 0}</p>
+              <p className="text-2xl font-bold tracking-tight text-neutral-900 mt-1">{salesSummary?.totalOrders ?? 0}</p>
             </div>
             <div className="p-3.5 rounded-2xl bg-primary-50 text-primary-600"><ShoppingCart className="h-5 w-5" /></div>
           </div>
@@ -283,7 +283,7 @@ export default function Reports() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-neutral-500">{t('reports.averageOrderValue')}</p>
-              <p className="text-2xl font-bold text-neutral-900 mt-1">{formatCurrency(salesSummary?.averageOrderValue ?? 0)} {t('common.sar')}</p>
+              <p className="text-2xl font-bold tracking-tight text-neutral-900 mt-1">{formatCurrency(salesSummary?.averageOrderValue ?? 0)} {t('common.sar')}</p>
             </div>
             <div className="p-3.5 rounded-2xl bg-amber-50 text-amber-600"><TrendingUp className="h-5 w-5" /></div>
           </div>
@@ -292,7 +292,7 @@ export default function Reports() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-neutral-500">{t('reports.netBalance')}</p>
-              <p className="text-2xl font-bold text-neutral-900 mt-1">{formatCurrency(walletSummary?.netBalance ?? 0)} {t('common.sar')}</p>
+              <p className="text-2xl font-bold tracking-tight text-neutral-900 mt-1">{formatCurrency(walletSummary?.netBalance ?? 0)} {t('common.sar')}</p>
             </div>
             <div className="p-3.5 rounded-2xl bg-purple-50 text-purple-600"><Wallet className="h-5 w-5" /></div>
           </div>
@@ -469,7 +469,7 @@ export default function Reports() {
           <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
             <div className="flex items-center justify-between gap-3 flex-wrap mb-5">
               <div>
-                <h2 className="text-xl font-bold text-neutral-900">التقارير العميقة</h2>
+                <h2 className="text-xl font-bold tracking-tight text-neutral-900">التقارير العميقة</h2>
                 <p className="text-sm text-neutral-500 mt-1">تفصيل محاسبي وتشغيلي قابل للتصدير والتدقيق.</p>
               </div>
               <Badge className="bg-neutral-100 text-neutral-700">
