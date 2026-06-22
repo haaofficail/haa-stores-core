@@ -162,8 +162,34 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
         open ? 'translate-x-0' : isRTL ? '-translate-x-full' : 'translate-x-full',
       )}>
       <div className="h-16 px-4 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-primary-500/25">
-          {t('sidebar.logoLetter', 'ه')}
+        {/* Platform logo. Same white-on-ring container as Login.tsx so the
+            brand mark stays visible (the logo PNG is rendered in the brand
+            blue; placing it on a blue gradient hides it). Decorative alt=""
+            because the brand name is announced by the span below — RTL
+            screen readers would otherwise say "هاء متاجر هاء". */}
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-md shadow-primary-500/20 ring-1 ring-primary-100 shrink-0">
+          <img
+            src="/haa-logo-192.png"
+            srcSet="/haa-logo-64.png 64w, /haa-logo-192.png 192w, /haa-logo-512.png 512w"
+            sizes="32px"
+            alt=""
+            width={32}
+            height={32}
+            decoding="async"
+            className="h-8 w-8"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = 'none';
+              (e.currentTarget.nextElementSibling as HTMLElement | null)?.classList.remove('hidden');
+            }}
+          />
+          {/* Fallback when the asset fails (offline, CDN miss). The "ه"
+              monogram preserves brand identity without blocking layout. */}
+          <span
+            aria-hidden="true"
+            className="hidden text-sm font-bold text-primary-600"
+          >
+            {t('sidebar.logoLetter', 'ه')}
+          </span>
         </div>
         <div className="flex flex-col min-w-0">
           {/* Brand name unified to "متاجر هاء" (matches login + landing).

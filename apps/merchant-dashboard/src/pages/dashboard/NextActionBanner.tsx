@@ -72,8 +72,8 @@ export function NextActionBanner({ items, t }: Props) {
               borderColor:
                 item.bg === "bg-amber-50"
                   ? "#fde68a"
-                  : item.bg === "bg-indigo-50"
-                    ? "#c7d2fe"
+                  : item.bg === "bg-primary-100"
+                    ? "#bed7ee" // primary-200 — ship uses darker primary tint
                     : item.bg === "bg-violet-50"
                       ? "#ddd6fe"
                       : item.bg === "bg-primary-50"

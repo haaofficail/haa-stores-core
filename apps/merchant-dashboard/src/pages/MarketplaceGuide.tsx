@@ -130,7 +130,7 @@ export default function MarketplaceGuide() {
             ))}
           </div>
 
-          <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-primary-50 to-indigo-50 border border-primary-100">
+          <div className="mt-8 p-5 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100/60 border border-primary-100">
             <div className="flex items-center gap-3">
               <BookOpen className="h-5 w-5 text-primary-600" />
               <div>

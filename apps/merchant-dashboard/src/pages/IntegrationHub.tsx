@@ -106,7 +106,7 @@ export default function IntegrationHub() {
       label: t('integrationHub.totalOrders', 'إجمالي الطلبات المستوردة'),
       value: formatNumber(summary.totalOrders),
       suffix: '',
-      gradient: 'from-primary-400 via-primary-500 to-indigo-600',
+      gradient: 'from-primary-400 via-primary-500 to-primary-700',
       bgGlow: 'bg-primary-500/5',
       icon: ShoppingCart,
     },

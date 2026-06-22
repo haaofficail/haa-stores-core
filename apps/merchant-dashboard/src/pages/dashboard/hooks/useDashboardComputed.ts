@@ -80,10 +80,11 @@ export function useDashboardComputed(
       items.push({
         key: "ship",
         count: ac.readyToShipCount,
-        label: "جاهز للشحن",
-        color: "from-indigo-500 to-indigo-600",
-        bg: "bg-indigo-50",
-        textColor: "text-indigo-700",
+        // Brand fidelity: ship uses a darker primary shade to differentiate
+        // from "new orders" (also primary) without leaving the Haa palette.
+        color: "from-primary-600 to-primary-700",
+        bg: "bg-primary-100",
+        textColor: "text-primary-800",
         link: "/orders?status=ready_to_ship",
       });
     if (ac.readyForPickupCount > 0)
