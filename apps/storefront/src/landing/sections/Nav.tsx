@@ -87,7 +87,7 @@ export function Nav({ t, authMode = false }: { t: TFn; authMode?: boolean }) {
               className="aurora-btn-primary inline-flex h-11 min-h-[44px] items-center gap-2 rounded-full px-5 text-sm font-semibold text-white transition-all hover:!text-white"
             >
               الرئيسية
-              <ArrowLeft className="h-3.5 w-3.5 rotate-180" aria-hidden="true" />
+              <Icon icon={ArrowLeft} size="xs" className="rotate-180" aria-hidden="true" />
             </Link>
           ) : (
             <>
@@ -108,7 +108,7 @@ export function Nav({ t, authMode = false }: { t: TFn; authMode?: boolean }) {
                 onClick={() => setMobileOpen((v) => !v)}
                 className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/50 text-text-primary backdrop-blur-sm transition-colors hover:bg-white/80 md:hidden"
               >
-                {mobileOpen ? <XIcon className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
+                {mobileOpen ? <Icon icon={XIcon} size="md" aria-hidden="true" /> : <Icon icon={Menu} size="md" aria-hidden="true" />}
               </button>
             </>
           )}

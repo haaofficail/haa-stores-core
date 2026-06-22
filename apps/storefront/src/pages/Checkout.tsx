@@ -320,9 +320,9 @@ export default function Checkout() {
   });
 
   const paymentMethods = [
-    ...(FAKE_PAYMENTS_ENABLED ? [{ value: 'fake_card_success', label: t('checkout.payCard'), icon: <CreditCard className="h-4 w-4" />, desc: t('checkout.payCardDesc', 'تجريبي — سينجح الدفع') }] : []),
-    { value: 'bank_transfer', label: t('checkout.payBankTransfer'), icon: <Building className="h-4 w-4" />, desc: t('checkout.payBankTransferDesc', 'تحويل بنكي مباشر') },
-    { value: 'cash_on_delivery', label: t('checkout.payCash'), icon: <Banknote className="h-4 w-4" />, desc: t('checkout.payCashDesc', 'ادفع عند استلام طلبك') },
+    ...(FAKE_PAYMENTS_ENABLED ? [{ value: 'fake_card_success', label: t('checkout.payCard'), icon: <Icon icon={CreditCard} size="xs" />, desc: t('checkout.payCardDesc', 'تجريبي — سينجح الدفع') }] : []),
+    { value: 'bank_transfer', label: t('checkout.payBankTransfer'), icon: <Icon icon={Building} size="xs" />, desc: t('checkout.payBankTransferDesc', 'تحويل بنكي مباشر') },
+    { value: 'cash_on_delivery', label: t('checkout.payCash'), icon: <Icon icon={Banknote} size="xs" />, desc: t('checkout.payCashDesc', 'ادفع عند استلام طلبك') },
     ...bnplOptions,
   ];
 
@@ -627,7 +627,7 @@ export default function Checkout() {
               {currentStep < STEPS.length - 1 ? (
                 <StoreButton onClick={nextStep}>
                   {t('checkout.next', 'التالي')}
-                  <ArrowLeft className="h-4 w-4 me-1" />
+                  <Icon icon={ArrowLeft} size="xs" className="me-1" />
                 </StoreButton>
               ) : (
                 <StoreButton onClick={handleConfirm} loading={confirming} disabled={fulfillmentType === 'shipping' ? !selectedShippingId : !selectedPickupLocationId}>

@@ -341,7 +341,7 @@ export default function Cart() {
                   </>
                 ) : (
                   <p className="text-xs font-medium text-primary-700 flex items-center gap-1.5">
-                    <Check className="h-3.5 w-3.5 text-primary-600 shrink-0" />
+                    <Icon icon={Check} size="xs" className="text-primary-600 shrink-0" />
                     {t('cart.freeShippingReached')}
                   </p>
                 )}
