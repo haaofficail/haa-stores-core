@@ -19,11 +19,13 @@
 	# On-demand TLS for merchant custom domains (QA Custom Domain). Before
 	# issuing a Let's Encrypt cert for an unknown host, Caddy asks the API;
 	# it returns 200 only for an ACTIVE custom domain, which blocks
-	# cert-exhaustion abuse from arbitrary hostnames. Rate limited.
+	# cert-exhaustion abuse from arbitrary hostnames. The `ask` gate IS the
+	# rate-limit: the API rejects unknown/inactive hosts before Caddy ever
+	# touches ACME, so `interval`/`burst` (removed in Caddy v2.5+) are not
+	# needed here. If we ever need true per-IP throttling, add the
+	# caddy-rate-limit plugin and wire it on the cert-issuance path explicitly.
 	on_demand_tls {
 		ask http://api:3001/internal/tls-check
-		interval 2m
-		burst 5
 	}
 }
 
