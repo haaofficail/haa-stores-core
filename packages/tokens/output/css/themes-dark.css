@@ -11,11 +11,11 @@
   --text-tertiary: #636366;
   --text-disabled: #48484a;
   --text-inverse: #1d1d1f;
-  --text-link: #0a84ff;
-  --text-link-hover: #409cff;
+  --text-link: #78aedd;
+  --text-link-hover: #94c1e7;
   --border-default: #38383a;
   --border-hover: #48484a;
-  --border-focus: #0a84ff;
+  --border-focus: #78aedd;
   --border-disabled: #2c2c2e;
   --divider: #38383a;
   --shadow-color: rgb(0 0 0 / 0.5);

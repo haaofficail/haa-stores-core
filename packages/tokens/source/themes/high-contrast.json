@@ -9,24 +9,30 @@
       "inverse": { "value": "#000000" }
     },
     "text": {
-      "primary":   { "value": "#000000", "contrast": "21.0:1" },
+      "primary": { "value": "#000000", "contrast": "21.0:1" },
       "secondary": { "value": "#1d1d1f", "contrast": "16.0:1" },
-      "tertiary":  { "value": "#3a3a3c", "contrast": "10.0:1" },
-      "disabled":  { "value": "#86868b", "contrast": "5.0:1" },
-      "inverse":   { "value": "#ffffff", "contrast": "21.0:1" },
-      "link":      { "value": "#0040dd", "contrast": "8.5:1" },
-      "linkHover": { "value": "#0030aa" }
+      "tertiary": { "value": "#3a3a3c", "contrast": "10.0:1" },
+      "disabled": { "value": "#86868b", "contrast": "5.0:1" },
+      "inverse": { "value": "#ffffff", "contrast": "21.0:1" },
+      "link": {
+        "value": "#2a5582",
+        "contrast": "8.2:1 — primary-800 from Haa palette (AAA on white)"
+      },
+      "linkHover": { "value": "#1f3d61" }
     },
     "border": {
-      "default":  { "value": "#86868b", "usage": "default border" },
-      "hover":    { "value": "#636366", "usage": "border on hover" },
-      "focus":    { "value": "#0040dd", "usage": "focus ring" },
+      "default": { "value": "#86868b", "usage": "default border" },
+      "hover": { "value": "#636366", "usage": "border on hover" },
+      "focus": {
+        "value": "#2a5582",
+        "usage": "focus ring — Haa primary-800 for high contrast"
+      },
       "disabled": { "value": "#aeaeb2", "usage": "disabled border" }
     },
     "divider": { "value": "#86868b" },
     "shadow": {
-      "color":        { "value": "rgb(0 0 0 / 0.2)" },
-      "colorStrong":  { "value": "rgb(0 0 0 / 0.35)" }
+      "color": { "value": "rgb(0 0 0 / 0.2)" },
+      "colorStrong": { "value": "rgb(0 0 0 / 0.35)" }
     },
     "backdrop": {
       "opacity": 0.7,
@@ -35,7 +41,7 @@
     },
     "selection": {
       "background": { "value": "#0066d6" },
-      "text":       { "value": "#ffffff" }
+      "text": { "value": "#ffffff" }
     },
     "placeholder": {
       "text": { "value": "#636366" }
