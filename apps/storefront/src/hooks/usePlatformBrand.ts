@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 
+// BASE_URL is the API prefix (e.g. "/api" on staging/prod, empty in dev
+// behind Vite proxy). Endpoints below are appended WITHOUT another "/api"
+// segment — appending it would produce "/api/api/<endpoint>" → 404.
 const BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 export interface PlatformBrand {
@@ -20,7 +23,7 @@ export function usePlatformBrand(): PlatformBrand {
   });
 
   useEffect(() => {
-    fetch(`${BASE_URL}/api/brand`)
+    fetch(`${BASE_URL}/brand`)
       .then((res) => res.json())
       .then((json: any) => {
         if (json?.success && json?.data) {

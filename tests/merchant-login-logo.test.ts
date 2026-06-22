@@ -38,11 +38,13 @@ describe('Merchant login logo + layout (P2 audit)', () => {
   it('the brand image declares srcset + sizes so the browser picks a small variant', () => {
     const block = extractImgBlock();
     expect(block).toContain('srcSet="/haa-logo-64.png 64w, /haa-logo-192.png 192w, /haa-logo-512.png 512w"');
-    expect(block).toContain('sizes="40px"');
+    // Sizes/width/height were bumped from 40 → 48 when the gradient container
+    // was swapped for a white-on-ring container during the staging audit fix.
+    expect(block).toContain('sizes="48px"');
     expect(block).toContain('decoding="async"');
     // Explicit dimensions prevent CLS.
-    expect(block).toContain('width={40}');
-    expect(block).toContain('height={40}');
+    expect(block).toContain('width={48}');
+    expect(block).toContain('height={48}');
   });
 
   it('the default src points at the 192 variant, not the 6000x6000 master', () => {

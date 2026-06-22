@@ -10,10 +10,28 @@ import { toast } from 'sonner';
 import { Sparkles, ArrowLeft, Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import OperationFeed from '@/components/OperationFeed';
 
+// Resolve the storefront /signup URL. The merchant dashboard lives at
+// merchant.<apex> (e.g. merchant.staging.haastores.com); the storefront
+// lives at the apex (e.g. staging.haastores.com). Strip the leading
+// "merchant." subdomain to derive the storefront origin. Fallback chain:
+//   1. VITE_STORE_URL  (explicit build-time override)
+//   2. computed apex from window.location.host (browser runtime)
+//   3. https://haa.store  (production storefront — only useful in prod)
+function resolveSignupHref(): string {
+  const explicit = import.meta.env.VITE_STORE_URL;
+  if (explicit) return `${String(explicit).replace(/\/$/, '')}/signup`;
+  if (typeof window !== 'undefined' && window.location?.host) {
+    const host = window.location.host.replace(/^merchant\./, '');
+    return `${window.location.protocol}//${host}/signup`;
+  }
+  return 'https://haa.store/signup';
+}
+
 export default function Login() {
   const { t } = useTranslation();
   const { login, user } = useAuth();
   const navigate = useNavigate();
+  const signupHref = resolveSignupHref();
   const [email, setEmail] = useState(() => {
     try {
       return localStorage.getItem('haa-remember-email') ?? '';
@@ -107,24 +125,27 @@ export default function Login() {
                 already announced by the <h1> below, so alt="" prevents
                 screen readers from reading "هاء متاجر هاء". srcset lets
                 the browser pick the right size instead of downloading
-                the 6000x6000 master at every visit. */}
+                the 6000x6000 master at every visit.
+                Container is white-on-ring (not a brand gradient) because
+                haa-logo.png is rendered in the brand blue — placing it on
+                a blue gradient made the mark invisible on staging. */}
             <div className="text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 shadow-lg shadow-primary-500/30">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-lg shadow-primary-500/20 ring-1 ring-primary-100">
                 <img
                   src="/haa-logo-192.png"
                   srcSet="/haa-logo-64.png 64w, /haa-logo-192.png 192w, /haa-logo-512.png 512w"
-                  sizes="40px"
+                  sizes="48px"
                   alt=""
-                  width={40}
-                  height={40}
+                  width={48}
+                  height={48}
                   decoding="async"
-                  className="h-10 w-auto"
+                  className="h-12 w-12"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display = 'none';
                     (e.currentTarget.nextElementSibling as HTMLElement | null)?.classList.remove('hidden');
                   }}
                 />
-                <Sparkles className="hidden h-8 w-8 text-white" aria-hidden="true" />
+                <Sparkles className="hidden h-8 w-8 text-primary-600" aria-hidden="true" />
               </div>
               <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-neutral-900">متاجر هاء</h1>
               <p className="mt-1 text-xs text-neutral-500">منصة التجارة الإلكترونية للمتاجر السعودية</p>
@@ -233,15 +254,15 @@ export default function Login() {
 
                 <div className="mt-5 border-t border-neutral-100 pt-5 text-center">
                   <p className="text-xs text-neutral-400">ليس لديك حساب؟</p>
-                  <Link
-                    to={`${import.meta.env.VITE_STORE_URL || 'https://haa.store'}/signup`}
+                  <a
+                    href={signupHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-2.5 inline-flex h-11 items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-6 text-sm font-semibold text-primary-700 transition-all hover:bg-primary-100 hover:shadow-sm"
                   >
                     <ArrowLeft className="h-4 w-4 rotate-180" aria-hidden="true" />
                     سجّل كتاجر جديد
-                  </Link>
+                  </a>
                 </div>
 
                 <div className="mt-5 flex items-center justify-center gap-2 text-xs text-neutral-400">
