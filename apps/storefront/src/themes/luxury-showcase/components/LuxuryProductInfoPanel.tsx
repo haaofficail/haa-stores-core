@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
 import { Check, Heart, Minus, Plus, Share2, ShoppingBag, ShieldCheck, Truck, RefreshCcw } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { Icon } from '@/components/ui/icon';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { LUXURY_THEME_CLASS } from '../luxuryTokens';
 
@@ -107,7 +108,7 @@ export function LuxuryProductInfoPanel({
             style={{ borderColor: 'var(--lux-border, #E6D8C6)', color: 'var(--lux-muted, #756B61)' }}
             aria-label={t('product.share', 'مشاركة المنتج')}
           >
-            <Share2 className="h-5 w-5 stroke-[1.5]" />
+            <Icon icon={Share2} size="md" className="stroke-[1.5]" />
           </button>
         </div>
 
@@ -190,7 +191,7 @@ export function LuxuryProductInfoPanel({
                 style={{ color: 'var(--lux-muted, #756B61)' }}
                 aria-label={t('product.decreaseQuantity', 'تقليل الكمية')}
               >
-                <Minus className="h-3.5 w-3.5" />
+                <Icon icon={Minus} size="xs" />
               </button>
               <span className="min-w-10 px-3 text-center text-sm" style={{ color: 'var(--lux-text, #2B2520)' }}>
                 {quantity}
@@ -202,7 +203,7 @@ export function LuxuryProductInfoPanel({
                 style={{ color: 'var(--lux-muted, #756B61)' }}
                 aria-label={t('product.increaseQuantity', 'زيادة الكمية')}
               >
-                <Plus className="h-3.5 w-3.5" />
+                <Icon icon={Plus} size="xs" />
               </button>
             </div>
           </div>
@@ -228,14 +229,14 @@ export function LuxuryProductInfoPanel({
               t('product.outOfStock', 'غير متوفر')
             ) : added ? (
               <span className="inline-flex items-center gap-1.5">
-                <Check className="h-3.5 w-3.5" />
+                <Icon icon={Check} size="xs" />
                 {t('product.addedToCart', 'تمت الإضافة')}
               </span>
             ) : adding ? (
               t('product.adding', 'جارٍ الإضافة...')
             ) : (
               <span className="inline-flex items-center gap-1.5">
-                <ShoppingBag className="h-3.5 w-3.5" />
+                <Icon icon={ShoppingBag} size="xs" />
                 {t('product.addToCart', 'أضف إلى السلة')}
               </span>
             )}
@@ -265,7 +266,7 @@ export function LuxuryProductInfoPanel({
             style={{ borderColor: 'var(--lux-border, #E6D8C6)', color: 'var(--lux-muted, #756B61)' }}
             aria-label={t('product.addToWishlist', 'إضافة للمفضلة')}
           >
-            <Heart className="h-4 w-4 stroke-[1.5]" />
+            <Icon icon={Heart} size="xs" className="stroke-[1.5]" />
           </button>
         </div>
 
