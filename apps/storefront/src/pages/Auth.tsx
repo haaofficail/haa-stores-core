@@ -23,6 +23,7 @@ function passwordStrength(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string
 
 
 import { StoreButton, StoreContainer, StoreInput } from '@/components/ui';
+import { Icon } from '@/components/ui/icon';
 import { useSEO } from '@/hooks/useSEO';
 import { authApi } from '@/lib/auth';
 import { ApiClientError as ApiError } from '@/lib/api';
@@ -54,7 +55,7 @@ function AvatarStack() {
       <div>
         <div className="flex items-center gap-0.5">
           {[...Array(5)].map((_, i) => (
-            <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" aria-hidden="true" />
+            <Icon key={i} icon={Star} size="2xs" className="fill-amber-400 text-amber-400" aria-hidden="true" />
           ))}
         </div>
         <p className="text-xs text-text-tertiary">+١٢٠٠ تاجر نشط</p>
@@ -64,11 +65,11 @@ function AvatarStack() {
 }
 
 /* ─── Stat card ─── */
-function StatCard({ icon: Icon, value, label }: { icon: React.ElementType; value: string; label: string }) {
+function StatCard({ icon: IconCmp, value, label }: { icon: React.ElementType; value: string; label: string }) {
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-border-subtle bg-white px-4 py-3 shadow-sm">
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
-        <Icon className="h-4 w-4" aria-hidden="true" />
+        <IconCmp className="h-4 w-4" aria-hidden="true" />
       </div>
       <div>
         <p className="text-base font-extrabold leading-none text-text-primary">{value}</p>
@@ -151,7 +152,7 @@ export function SignupPage() {
         <div className="flex flex-col justify-center">
           {/* Badge */}
           <span className="aurora-pill w-fit">
-            <Shield className="h-3.5 w-3.5" aria-hidden="true" />
+            <Icon icon={Shield} size="xs" aria-hidden="true" />
             {t('auth.signup.badge', 'ابدأ مجانًا — بدون بطاقة')}
           </span>
 
@@ -168,7 +169,7 @@ export function SignupPage() {
           {/* Plan notice */}
           {plan === 'pro' && (
             <div className="mt-5 inline-flex w-fit items-center gap-2 rounded-xl border border-primary/20 bg-primary-soft px-3.5 py-2 text-xs font-semibold text-primary">
-              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+              <Icon icon={Sparkles} size="xs" aria-hidden="true" />
               <span>{t('auth.signup.planProNotice', 'باقة احترافي — تجربة ١٤ يوم مجانًا')}</span>
             </div>
           )}
@@ -194,7 +195,7 @@ export function SignupPage() {
             ].map((text) => (
               <li key={text} className="flex items-center gap-2.5 text-sm text-text-secondary">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-success/15" aria-hidden="true">
-                  <Check className="h-3 w-3 text-success" />
+                  <Icon icon={Check} size="2xs" className="text-success" />
                 </span>
                 {text}
               </li>
@@ -237,7 +238,7 @@ export function SignupPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={t('auth.signup.namePlaceholder', 'محمد العتيبي')}
-                  iconStart={<User className="h-4 w-4" />}
+                  iconStart={<Icon icon={User} size="xs" />}
                 />
                 <div className="grid gap-3 sm:grid-cols-2">
                   <StoreInput
@@ -248,7 +249,7 @@ export function SignupPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    iconStart={<Mail className="h-4 w-4" />}
+                    iconStart={<Icon icon={Mail} size="xs" />}
                   />
                   <StoreInput
                     label={t('auth.signup.phoneLabel', 'رقم الجوال')}
@@ -259,7 +260,7 @@ export function SignupPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="05XXXXXXXX"
-                    iconStart={<Phone className="h-4 w-4" />}
+                    iconStart={<Icon icon={Phone} size="xs" />}
                   />
                 </div>
               </div>
@@ -284,7 +285,7 @@ export function SignupPage() {
                   value={storeName}
                   onChange={(e) => onStoreNameChange(e.target.value)}
                   placeholder={t('auth.signup.storeNamePlaceholder', 'متجر الأناقة')}
-                  iconStart={<StoreIcon className="h-4 w-4" />}
+                  iconStart={<Icon icon={StoreIcon} size="xs" />}
                 />
                 <StoreInput
                   label={t('auth.signup.storeSlugLabel', 'رابط المتجر')}
@@ -320,7 +321,7 @@ export function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t('auth.signup.passwordPlaceholder', '٨ أحرف على الأقل')}
-                iconStart={<Lock className="h-4 w-4" />}
+                iconStart={<Icon icon={Lock} size="xs" />}
               />
 
               {/* Password strength meter */}
@@ -373,7 +374,7 @@ export function SignupPage() {
                 variant="primary"
                 size="lg"
                 className="aurora-btn-primary w-full !rounded-md !text-base !font-bold"
-                iconStart={submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowLeft className="h-4 w-4" />}
+                iconStart={submitting ? <Icon icon={Loader2} size="xs" className="animate-spin" /> : <Icon icon={ArrowLeft} size="xs" />}
                 disabled={submitting}
               >
                 {submitting ? t('auth.signup.submitting', 'جاري الإنشاء...') : t('auth.signup.submit', 'أنشئ متجري مجانًا')}
@@ -413,7 +414,7 @@ export function WaitlistPage() {
       <StoreContainer className="max-w-md">
         <div className="rounded-3xl border border-border-subtle bg-white p-8 text-center shadow-2xl shadow-primary-500/10 sm:p-10">
           <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary shadow-sm">
-            <Bell className="h-7 w-7" aria-hidden="true" />
+            <Icon icon={Bell} size="lg" aria-hidden="true" />
           </div>
           <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">
             {t('auth.waitlist.title', 'انضم لقائمة الانتظار')}
@@ -424,7 +425,7 @@ export function WaitlistPage() {
 
           {status === 'success' ? (
             <div className="mt-6 flex items-center justify-center gap-2 rounded-xl border border-success/30 bg-success-soft p-4 text-sm text-success">
-              <Check className="h-4 w-4" aria-hidden="true" />
+              <Icon icon={Check} size="xs" aria-hidden="true" />
               <span>{t('auth.waitlist.success', 'تم! راح نبلّغك أول ما نطلق.')}</span>
             </div>
           ) : (
@@ -437,14 +438,14 @@ export function WaitlistPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                iconStart={<Mail className="h-4 w-4" />}
+                iconStart={<Icon icon={Mail} size="xs" />}
               />
               <StoreButton
                 type="submit"
                 variant="primary"
                 size="lg"
                 className="aurora-btn-primary w-full !rounded-md !font-bold"
-                iconStart={<ArrowLeft className="h-4 w-4" />}
+                iconStart={<Icon icon={ArrowLeft} size="xs" />}
                 disabled={status === 'submitting'}
               >
                 {t('auth.waitlist.submit', 'انضم للقائمة')}
