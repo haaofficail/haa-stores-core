@@ -1,20 +1,6 @@
 /* HAA — 08-easing */
 
 :root {
-  /* Durations */
-  --duration-instant: 0ms;
-  --duration-fast: 150ms;
-  --duration-base: 200ms;
-  --duration-slow: 300ms;
-  --duration-slower: 500ms;
-
-  /* Standard easing */
-  --ease-linear: linear;
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
-
   /* Easing — Apple Springs */
   --ease-spring-snappy: linear(
     0,
