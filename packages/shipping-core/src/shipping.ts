@@ -178,6 +178,102 @@ export class ShippingService {
     return rate;
   }
 
+  // ─── Rate edit / delete ────────────────────────────────────────
+  // Audit (MD_PAGES_AUDIT_PART_3_COMMERCE.md P0 #2): RatesTab was
+  // create-only. A misconfigured rate (e.g. 50 SAR instead of 5 SAR)
+  // overcharged every customer until the zone was rebuilt from scratch.
+  //
+  // Both `updateRate` and `deleteRate` verify ownership by joining to
+  // `shippingMethods.storeId` — a rate has no `storeId` column itself,
+  // so a naive `where(rates.id = id)` would let one tenant mutate
+  // another tenant's rate. The select-then-update/delete pattern
+  // forces the cross-tenant check.
+  private async assertRateOwnership(storeId: number, rateId: number) {
+    const [row] = await this.db
+      .select({ rateId: s.shippingRates.id })
+      .from(s.shippingRates)
+      .innerJoin(
+        s.shippingMethods,
+        eq(s.shippingRates.shippingMethodId, s.shippingMethods.id),
+      )
+      .where(
+        and(
+          eq(s.shippingRates.id, rateId),
+          eq(s.shippingMethods.storeId, storeId),
+        ),
+      )
+      .limit(1);
+    return Boolean(row);
+  }
+
+  async updateRate(
+    storeId: number,
+    rateId: number,
+    data: Partial<{
+      shippingMethodId: number;
+      shippingZoneId: number;
+      baseRate: number;
+      perKgRate: number;
+      freeAboveAmount: number;
+      estimatedDaysMin: number;
+      estimatedDaysMax: number;
+    }>,
+  ) {
+    if (!(await this.assertRateOwnership(storeId, rateId))) return null;
+
+    // If the caller is reassigning the rate to a different method or zone,
+    // re-verify those belong to the same store — otherwise a tenant could
+    // re-target a rate at a foreign method/zone.
+    if (data.shippingMethodId !== undefined) {
+      const [m] = await this.db
+        .select()
+        .from(s.shippingMethods)
+        .where(
+          and(
+            eq(s.shippingMethods.id, data.shippingMethodId),
+            eq(s.shippingMethods.storeId, storeId),
+          ),
+        );
+      if (!m) throw new Error("SHIPPING_METHOD_NOT_FOUND");
+    }
+    if (data.shippingZoneId !== undefined) {
+      const [z] = await this.db
+        .select()
+        .from(s.shippingZones)
+        .where(
+          and(
+            eq(s.shippingZones.id, data.shippingZoneId),
+            eq(s.shippingZones.storeId, storeId),
+          ),
+        );
+      if (!z) throw new Error("SHIPPING_ZONE_NOT_FOUND");
+    }
+
+    const updateData: Record<string, unknown> = { updatedAt: new Date() };
+    if (data.shippingMethodId !== undefined) updateData.shippingMethodId = data.shippingMethodId;
+    if (data.shippingZoneId !== undefined) updateData.shippingZoneId = data.shippingZoneId;
+    if (data.baseRate !== undefined) updateData.baseRate = data.baseRate.toString();
+    if (data.perKgRate !== undefined) updateData.perKgRate = data.perKgRate.toString();
+    if (data.freeAboveAmount !== undefined) updateData.freeAboveAmount = data.freeAboveAmount.toString();
+    if (data.estimatedDaysMin !== undefined) updateData.estimatedDaysMin = data.estimatedDaysMin;
+    if (data.estimatedDaysMax !== undefined) updateData.estimatedDaysMax = data.estimatedDaysMax;
+
+    const [updated] = await this.db
+      .update(s.shippingRates)
+      .set(updateData)
+      .where(eq(s.shippingRates.id, rateId))
+      .returning();
+    return updated ?? null;
+  }
+
+  async deleteRate(storeId: number, rateId: number) {
+    if (!(await this.assertRateOwnership(storeId, rateId))) return false;
+    await this.db
+      .delete(s.shippingRates)
+      .where(eq(s.shippingRates.id, rateId));
+    return true;
+  }
+
   async listShipments(
     storeId: number,
     opts?: {

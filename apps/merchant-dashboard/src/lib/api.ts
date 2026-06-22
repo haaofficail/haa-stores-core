@@ -409,6 +409,10 @@ export const shippingApi = {
     list: (storeId: number) => request<any[]>(`/merchant/${storeId}/shipping/rates`),
     create: (storeId: number, data: any) =>
       request<any>(`/merchant/${storeId}/shipping/rates`, { method: 'POST', body: JSON.stringify(data) }),
+    update: (storeId: number, id: number, data: any) =>
+      request<any>(`/merchant/${storeId}/shipping/rates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (storeId: number, id: number) =>
+      request<any>(`/merchant/${storeId}/shipping/rates/${id}`, { method: 'DELETE' }),
   },
   shipments: {
     list: (storeId: number, params?: { status?: string; noTracking?: boolean; city?: string; dateFrom?: string; dateTo?: string }) => {

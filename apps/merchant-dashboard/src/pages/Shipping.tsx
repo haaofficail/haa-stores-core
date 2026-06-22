@@ -12,12 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Plus, Edit, Truck, Package, MapPin, DollarSign, Info,
+  Plus, Edit, Trash2, Truck, Package, MapPin, DollarSign, Info,
   RotateCcw, Search, CheckCircle2, XCircle, FileText, Undo2, AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { PermissionGate } from '@/lib/permissions';
+import { messageFromError } from '@/lib/error-mapper';
 import { ApiClientError } from '@/lib/api';
 
 const shipmentStatusColors: Record<string, 'default' | 'success' | 'warning' | 'destructive' | 'secondary'> = {
@@ -89,7 +90,7 @@ function MethodsTab({ storeId }: { storeId: number }) {
       if (editId) { await shippingApi.methods.update(storeId, editId, data); toast.success(t('shipping.updated')); }
       else { await shippingApi.methods.create(storeId, data); toast.success(t('shipping.created')); }
       setDialog(false); load();
-    } catch (err) { toast.error(err instanceof ApiClientError ? err.message : t('common.error')); } finally { setSaving(false); }
+    } catch (err) { toast.error(messageFromError(err, t)); } finally { setSaving(false); }
   };
 
   const toggleActive = async (m: any) => {
@@ -232,7 +233,7 @@ function ZonesTab({ storeId }: { storeId: number }) {
       if (editId) { await shippingApi.zones.update(storeId, editId, data); toast.success(t('shipping.updated')); }
       else { await shippingApi.zones.create(storeId, data); toast.success(t('shipping.created')); }
       setDialog(false); load();
-    } catch (err) { toast.error(err instanceof ApiClientError ? err.message : t('common.error')); } finally { setSaving(false); }
+    } catch (err) { toast.error(messageFromError(err, t)); } finally { setSaving(false); }
   };
 
   const toggleActive = async (z: any) => {
@@ -321,18 +322,51 @@ function RatesTab({ storeId }: { storeId: number }) {
   const [methods, setMethods] = useState<any[]>([]);
   const [zones, setZones] = useState<any[]>([]);
   const [dialog, setDialog] = useState(false);
+  // P0 (MD_PAGES_AUDIT_PART_3_COMMERCE.md): RatesTab was create-only — a
+  // misconfigured rate (50 SAR instead of 5) overcharged every customer.
+  // `editId` tracks which existing rate the form is currently editing
+  // (null = create mode). `deleteTarget` drives the confirm modal.
+  const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ shippingMethodId: '', shippingZoneId: '', baseRate: '', perKgRate: '', freeAboveAmount: '', estimatedDaysMin: '', estimatedDaysMax: '' });
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; methodName: string; zoneName: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
     setFetchError(false);
     Promise.all([shippingApi.rates.list(storeId), shippingApi.methods.list(storeId), shippingApi.zones.list(storeId)])
       .then(([r, m, z]) => { setItems(r); setMethods(m); setZones(z); })
-      .catch(() => { setFetchError(true); toast.error(t('common.error')); })
+      .catch((err) => { setFetchError(true); toast.error(messageFromError(err, t)); })
       .finally(() => setLoading(false));
   }, [storeId, t]);
   useEffect(() => { load(); }, [load]);
+
+  const emptyForm = { shippingMethodId: '', shippingZoneId: '', baseRate: '', perKgRate: '', freeAboveAmount: '', estimatedDaysMin: '', estimatedDaysMax: '' };
+
+  const openCreate = () => {
+    setEditId(null);
+    setForm(emptyForm);
+    setDialog(true);
+  };
+
+  const openEdit = (r: any) => {
+    // The list endpoint returns `{ rate, methodName, zoneName }` rows.
+    // Pre-fill the form from the existing rate's numeric values
+    // (kept as strings so the controlled <Input>s stay happy).
+    const rate = r.rate ?? {};
+    setEditId(rate.id ?? null);
+    setForm({
+      shippingMethodId: String(rate.shippingMethodId ?? ''),
+      shippingZoneId: String(rate.shippingZoneId ?? ''),
+      baseRate: rate.baseRate != null ? String(rate.baseRate) : '',
+      perKgRate: rate.perKgRate != null ? String(rate.perKgRate) : '',
+      freeAboveAmount: rate.freeAboveAmount != null ? String(rate.freeAboveAmount) : '',
+      estimatedDaysMin: rate.estimatedDaysMin != null ? String(rate.estimatedDaysMin) : '',
+      estimatedDaysMax: rate.estimatedDaysMax != null ? String(rate.estimatedDaysMax) : '',
+    });
+    setDialog(true);
+  };
 
   const save = async () => {
     if (!form.shippingMethodId || !form.shippingZoneId) { toast.error(t('shipping.err_rate_method_zone')); return; }
@@ -340,7 +374,7 @@ function RatesTab({ storeId }: { storeId: number }) {
     if (isNaN(baseRate) || baseRate < 0) { toast.error(t('shipping.err_rate_negative')); return; }
     setSaving(true);
     try {
-      await shippingApi.rates.create(storeId, {
+      const payload = {
         shippingMethodId: Number(form.shippingMethodId),
         shippingZoneId: Number(form.shippingZoneId),
         baseRate,
@@ -348,16 +382,39 @@ function RatesTab({ storeId }: { storeId: number }) {
         freeAboveAmount: form.freeAboveAmount ? Number(form.freeAboveAmount) : undefined,
         estimatedDaysMin: form.estimatedDaysMin ? Number(form.estimatedDaysMin) : undefined,
         estimatedDaysMax: form.estimatedDaysMax ? Number(form.estimatedDaysMax) : undefined,
-      });
-      toast.success(t('shipping.created')); setDialog(false); load();
-    } catch (err) { toast.error(err instanceof ApiClientError ? err.message : t('common.error')); } finally { setSaving(false); }
+      };
+      if (editId) {
+        await shippingApi.rates.update(storeId, editId, payload);
+        toast.success(t('shipping.updated'));
+      } else {
+        await shippingApi.rates.create(storeId, payload);
+        toast.success(t('shipping.created'));
+      }
+      setDialog(false);
+      load();
+    } catch (err) { toast.error(messageFromError(err, t)); } finally { setSaving(false); }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await shippingApi.rates.delete(storeId, deleteTarget.id);
+      toast.success(t('shipping.rateDeleted', 'تم حذف السعر بنجاح'));
+      setDeleteTarget(null);
+      load();
+    } catch (err) {
+      toast.error(messageFromError(err, t));
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-neutral-400">{t('shipping.ratesDesc')}</p>
-        <PermissionGate permission="shipping:manage"><Button onClick={() => { setForm({ shippingMethodId: '', shippingZoneId: '', baseRate: '', perKgRate: '', freeAboveAmount: '', estimatedDaysMin: '', estimatedDaysMax: '' }); setDialog(true); }} disabled={!methods.length || !zones.length} className="h-9 text-sm">
+        <PermissionGate permission="shipping:manage"><Button onClick={openCreate} disabled={!methods.length || !zones.length} className="h-9 text-sm">
           <Plus className="h-4 w-4 me-2" />{t('shipping.createRate')}
         </Button></PermissionGate>
       </div>
@@ -380,22 +437,53 @@ function RatesTab({ storeId }: { storeId: number }) {
               <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start">{t('shipping.perKgRate')}</TableHead>
               <TableHead className="h-10 text-sm text-neutral-500 font-medium text-start">{t('shipping.freeAbove')}</TableHead>
               <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('shipping.deliveryDays')}</TableHead>
+              <TableHead className="w-28 h-10"></TableHead>
             </TableRow></TableHeader>
             <TableBody>{items.map((r: any, i: number) => (
-              <TableRow key={r.rate?.id ?? i} className="border-neutral-100 hover:bg-neutral-50">
+              <TableRow key={r.rate?.id ?? i} className="border-neutral-100 hover:bg-neutral-50" data-testid="rate-row">
                 <TableCell className="text-sm font-medium text-neutral-900 p-3">{r.methodName ?? '-'}</TableCell>
                 <TableCell className="text-sm text-neutral-900 p-3">{r.zoneName ?? '-'}</TableCell>
                 <TableCell className="text-sm font-semibold text-neutral-900 text-start p-3">{formatCurrency(r.rate?.baseRate ?? 0)} {t('common.sar')}</TableCell>
                 <TableCell className="text-sm text-neutral-400 text-start p-3">{r.rate?.perKgRate ? `${formatCurrency(r.rate.perKgRate)} ${t('common.sar')}` : '-'}</TableCell>
                 <TableCell className="text-sm text-neutral-400 text-start p-3">{r.rate?.freeAboveAmount ? `${Number(r.rate.freeAboveAmount).toFixed(0)} ${t('common.sar')}` : '-'}</TableCell>
                 <TableCell className="text-sm text-neutral-400 p-3">{r.rate?.estimatedDaysMin != null && r.rate?.estimatedDaysMax != null ? `${r.rate.estimatedDaysMin}-${r.rate.estimatedDaysMax} ${t('shipping.days')}` : '-'}</TableCell>
+                <TableCell className="p-3">
+                  <div className="flex gap-1">
+                    {/* P0 money-risk fix: edit + delete on existing rates. */}
+                    {/* Touch target ≥ 44x44 (WCAG 2.5.5). */}
+                    <PermissionGate permission="shipping:manage">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-11 w-11"
+                        onClick={() => openEdit(r)}
+                        aria-label={t('shipping.editRate')}
+                        data-testid="rate-edit-btn"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </PermissionGate>
+                    <PermissionGate permission="shipping:manage">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-11 w-11 text-red-500 hover:text-red-600 hover:bg-red-50"
+                        onClick={() => setDeleteTarget({ id: r.rate?.id, methodName: r.methodName ?? '', zoneName: r.zoneName ?? '' })}
+                        aria-label={t('shipping.deleteRate', 'حذف السعر')}
+                        data-testid="rate-delete-btn"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </PermissionGate>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}</TableBody>
           </Table>}
       </div>
       <Dialog open={dialog} onOpenChange={setDialog}>
         <DialogContent className="bg-white/95 backdrop-blur-2xl border border-neutral-100 shadow-2xl rounded-3xl">
-          <DialogHeader><DialogTitle className="text-lg font-bold text-neutral-900">{t('shipping.createRate')}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-lg font-bold text-neutral-900">{editId ? t('shipping.editRate') : t('shipping.createRate')}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5"><Label className="text-sm text-neutral-500">{t('shipping.methodName')} <span className="text-red-500">*</span></Label>
@@ -422,6 +510,36 @@ function RatesTab({ storeId }: { storeId: number }) {
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100"><Button variant="outline" className="h-9 text-sm" onClick={() => setDialog(false)}>{t('common.cancel')}</Button><Button className="h-9 text-sm" onClick={save} disabled={saving}>{saving ? t('common.loading') : t('common.save')}</Button></div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete-confirm dialog — required by the P0 fix: a misclick on the
+          trash icon must NOT erase a rate silently. */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="bg-white/95 backdrop-blur-2xl border border-neutral-100 shadow-2xl rounded-3xl" data-testid="rate-delete-confirm">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-neutral-900">{t('shipping.deleteRateConfirmTitle', 'حذف هذا السعر؟')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm text-neutral-700">
+              {t('shipping.deleteRateConfirmBody', 'سيتم حذف سعر الشحن لـ "{{method}}" / "{{zone}}". لا يمكن التراجع عن هذا الإجراء.', {
+                method: deleteTarget?.methodName ?? '',
+                zone: deleteTarget?.zoneName ?? '',
+              })}
+            </p>
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
+            <Button variant="outline" className="h-9 text-sm" onClick={() => setDeleteTarget(null)} disabled={deleting}>{t('common.cancel')}</Button>
+            <Button
+              variant="destructive"
+              className="h-9 text-sm"
+              onClick={confirmDelete}
+              disabled={deleting}
+              data-testid="rate-delete-confirm-btn"
+            >
+              {deleting ? t('common.loading') : t('shipping.deleteRate', 'حذف السعر')}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
@@ -474,7 +592,7 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
       toast.success(t('shipping.trackingUpdated'));
       setTrackDialog(false);
       load();
-    } catch (err) { toast.error(err instanceof ApiClientError ? err.message : t('common.error')); } finally { setSaving(false); }
+    } catch (err) { toast.error(messageFromError(err, t)); } finally { setSaving(false); }
   };
 
   const handleCitySearch = () => { setCitySearch(cityInput); };
