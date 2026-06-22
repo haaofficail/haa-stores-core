@@ -10,6 +10,7 @@ import { LoadingSkeleton } from '@/components/ui/loading-skeleton';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const Login = lazy(() => import('@/pages/Login'));
+const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
 const DashboardHome = lazy(() => import('@/pages/DashboardHome'));
 const Products = lazy(() => import('@/pages/Products'));
 const Categories = lazy(() => import('@/pages/Categories'));
@@ -94,6 +95,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Lazy><Login /></Lazy>} />
+          <Route path="/forgot-password" element={<Lazy><ForgotPassword /></Lazy>} />
           <Route element={<AuthGuard />}>
             <Route path="/onboarding" element={<Lazy><OnboardingWizard /></Lazy>} />
             <Route path="/onboarding/success" element={<Lazy><OnboardingSuccess /></Lazy>} />

@@ -1,0 +1,20 @@
+{
+  "name": "متاجر هاء — لوحة التاجر",
+  "short_name": "ها ستورز",
+  "description": "لوحة تحكم التاجر في متاجر هاء.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#5c9cd5",
+  "icons": [
+    {
+      "src": "/haa-logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
