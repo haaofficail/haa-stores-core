@@ -39,7 +39,7 @@ _(none — autopilot has executed every safe wave in scope)_
 
 - [ ] F-QA-B-001 — admin tenant DELETE soft-delete + audit log + re-auth (when the feature is re-enabled past beta). Currently the endpoint is locked by DECISION-OS-014 (Wave 13).
 - [ ] F-QA-B-002 — 2FA on merchant `DELETE /account` (when re-enabled past beta). Currently locked.
-- [ ] F-QA-C-001 — Wallet DB idempotency migration EXECUTION (DECISION-OS-018). Plan is in `WALLET_IDEMPOTENCY_PLAN.md`; **migration not generated, not run**.
+- [~] F-QA-C-001 — Wallet DB idempotency migration FILE landed in PR #42 (`packages/db/src/migrations/0073_wallet_idempotency.sql` + schema delta + ledger code path + tests). **Migration EXECUTION still requires explicit owner approval to run `pnpm db:migrate` against staging/production.**
 - [ ] F-QA-C-002 — Geidea live refund implementation. Capability flags disabled in Wave 4; re-enable when implementation lands.
 - [ ] F-QA-E-007 — Production readiness promotion checklist against the official server `72.61.108.208` + production secrets (owner). No server-vs-server decision — the server is locked by DECISION-OS-007.
 

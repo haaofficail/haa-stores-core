@@ -4,6 +4,29 @@ import * as s from '@haa/db/schema';
 import type { WalletEntryType, WalletEntryDirection, WalletEntryStatus } from '@haa/shared';
 import Decimal from 'decimal.js';
 
+// DECISION-OS-018: every entry type below has a DB-level partial unique
+// index on (store_id, reference_id) scoped by (type, reference_type).
+// Migration 0062 introduced platform_fee. Migration 0073 introduced the
+// other six: sale, cod_fee, refund, gateway_fee, payout_debit,
+// payout_reversal, settlement_difference. The shape matches the index
+// `where` clause so `onConflictDoNothing` lands on the right index.
+type IdempotentSpec = { type: string; referenceType: string; where: string };
+
+function resolveIdempotentSpec(input: { type: string; referenceType?: string; referenceId?: number }): IdempotentSpec | null {
+  if (input.referenceId == null) return null;
+  const t = input.type;
+  const rt = input.referenceType;
+  if (t === 'platform_fee' && rt === 'order') return { type: t, referenceType: rt, where: `type = 'platform_fee' AND reference_type = 'order'` };
+  if (t === 'sale' && rt === 'order') return { type: t, referenceType: rt, where: `type = 'sale' AND reference_type = 'order'` };
+  if (t === 'cod_fee' && rt === 'order') return { type: t, referenceType: rt, where: `type = 'cod_fee' AND reference_type = 'order'` };
+  if (t === 'refund' && rt === 'refund') return { type: t, referenceType: rt, where: `type = 'refund' AND reference_type = 'refund'` };
+  if (t === 'gateway_fee' && rt === 'order') return { type: t, referenceType: rt, where: `type = 'gateway_fee' AND reference_type = 'order'` };
+  if (t === 'payout_debit' && rt === 'payout') return { type: t, referenceType: rt, where: `type = 'payout_debit' AND reference_type = 'payout'` };
+  if (t === 'payout_reversal' && rt === 'payout') return { type: t, referenceType: rt, where: `type = 'payout_reversal' AND reference_type = 'payout'` };
+  if (t === 'settlement_difference' && rt === 'adjustment') return { type: t, referenceType: rt, where: `type = 'settlement_difference' AND reference_type = 'adjustment'` };
+  return null;
+}
+
 interface LedgerEntryInput {
   storeId: number;
   type: WalletEntryType;
@@ -154,27 +177,26 @@ export class WalletLedger {
         metadata: input.metadata ?? null,
       };
 
-      // DB-level idempotency for platform fees: at most one platform_fee per
-      // (store, order). The partial unique index (migration 0062) makes a
-      // duplicate impossible even under webhook replay / concurrency. On
-      // conflict we do a no-op insert and return the EXISTING entry WITHOUT
-      // touching balances (the original entry already moved them) — so a
-      // replay can never double-charge or double-count the balance.
-      const isPlatformFeeOrder =
-        input.type === 'platform_fee' && input.referenceType === 'order' && input.referenceId != null;
+      // DB-level idempotency for wallet entries that are bound to a unique
+      // reference (DECISION-OS-018 / migrations 0062 + 0073). The partial
+      // unique indexes make a duplicate impossible even under webhook replay
+      // / concurrency. On conflict we do a no-op insert and return the
+      // EXISTING entry WITHOUT touching balances (the original entry already
+      // moved them) — so a replay can never double-charge or double-count.
+      const idempotentSpec = resolveIdempotentSpec(input);
 
-      const [entry] = isPlatformFeeOrder
+      const [entry] = idempotentSpec
         ? await tx.insert(s.walletEntries).values(values).onConflictDoNothing({
             target: [s.walletEntries.storeId, s.walletEntries.referenceId],
-            where: sql`type = 'platform_fee' AND reference_type = 'order'`,
+            where: sql.raw(idempotentSpec.where),
           }).returning()
         : await tx.insert(s.walletEntries).values(values).returning();
 
-      if (isPlatformFeeOrder && !entry) {
+      if (idempotentSpec && !entry) {
         const [existing] = await tx.select().from(s.walletEntries).where(and(
           eq(s.walletEntries.storeId, input.storeId),
-          eq(s.walletEntries.type, 'platform_fee'),
-          eq(s.walletEntries.referenceType, 'order'),
+          eq(s.walletEntries.type, idempotentSpec.type),
+          eq(s.walletEntries.referenceType, idempotentSpec.referenceType),
           eq(s.walletEntries.referenceId, input.referenceId!),
         )).limit(1);
         return existing;
