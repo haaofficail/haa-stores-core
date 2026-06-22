@@ -7,6 +7,13 @@ export default {
       fontFamily: {
         sans: ['IBM Plex Sans Arabic', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
       },
+      // Apple-grade micro-interaction easings, matching the landing page
+      // (every .lp-* component on staging.haastores.com uses
+      // `transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1)`).
+      transitionTimingFunction: {
+        timing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      },
       fontWeight: {
         regular: 'var(--font-regular)',
         medium: 'var(--font-medium)',
@@ -118,8 +125,10 @@ export default {
         'md': 'var(--shadow-md)',
         'lg': 'var(--shadow-lg)',
         'xl': 'var(--shadow-xl)',
-        'card': '0 2px 12px var(--haa-shadow-color), 0 1px 4px var(--haa-shadow-color-strong)',
-        'card-hover': '0 8px 30px var(--haa-shadow-color), 0 2px 8px var(--haa-shadow-color-strong)',
+        // Landing-card parity (staging.haastores.com `.lp-pcard` / `.lp-card`):
+        // 2-layer Apple-grade shadow — close ambient + soft elevated lift.
+        'card': '0 1px 3px 0 rgba(0,0,0,0.05), 0 10px 28px -14px rgba(0,0,0,0.12)',
+        'card-hover': '0 2px 4px 0 rgba(0,0,0,0.06), 0 16px 36px -14px rgba(0,0,0,0.15)',
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-out',

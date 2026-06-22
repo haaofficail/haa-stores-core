@@ -156,7 +156,7 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
       <aside className={cn(
         'w-64 bg-surface-1/50 backdrop-blur-xl flex flex-col shrink-0 shadow-xl',
 
-        'fixed inset-y-0 z-50 transition-transform duration-300',
+        'fixed inset-y-0 z-50 transition-transform duration-200 ease-timing',
         isRTL ? 'left-0' : 'right-0',
         'lg:relative lg:inset-auto lg:z-auto lg:translate-x-0',
         open ? 'translate-x-0' : isRTL ? '-translate-x-full' : 'translate-x-full',
