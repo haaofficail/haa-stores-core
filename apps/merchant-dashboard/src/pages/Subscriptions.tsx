@@ -5,10 +5,19 @@ import { subscriptionApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Crown, Calendar, Package, Users, HardDrive, ShoppingCart, FileText, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { Crown, Calendar, Package, Users, HardDrive, ShoppingCart, FileText, ArrowUpCircle, ArrowDownCircle, Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { PermissionGate } from '@/lib/permissions';
+import { messageFromError } from '@/lib/error-mapper';
 
 interface Plan {
   id: number;
@@ -108,6 +117,11 @@ export default function Subscriptions() {
   const [limits, setLimits] = useState<Limits | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  // Audit Part 5 P0 #1 — never fire upgrade/downgrade without a confirm.
+  // `pendingChange` holds the plan the merchant clicked; the Dialog
+  // displays the diff and only on "تأكيد التغيير" do we hit the API.
+  const [pendingChange, setPendingChange] = useState<{ plan: Plan; direction: 'upgrade' | 'downgrade' } | null>(null);
+  const [submittingChange, setSubmittingChange] = useState(false);
 
   useEffect(() => {
     if (!storeId) return;
@@ -129,32 +143,43 @@ export default function Subscriptions() {
       setPlans(plansData as Plan[]);
       setLimits(limitsData as Limits | null);
       setInvoices(invoicesData as Invoice[]);
-    } catch (err: any) {
-      toast.error(err.message || t('subscriptions.loadError'));
+    } catch (err: unknown) {
+      toast.error(messageFromError(err, t));
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleUpgrade(planId: number) {
+  // Audit Part 5 P0 #1 — single confirm path for any plan change. The
+  // previous `handleUpgrade` / `handleDowngrade` fired instantly on click,
+  // turning a misclick into a real billing change. Now the click only
+  // *stages* a change; the API call lives behind a Dialog confirm.
+  function requestPlanChange(plan: Plan, direction: 'upgrade' | 'downgrade') {
     if (!storeId) return;
-    try {
-      await subscriptionApi.upgrade(storeId, { planId, billingCycle: subscription?.billingCycle || 'monthly' });
-      toast.success(t('subscriptions.upgradeSuccess'));
-      await loadAll();
-    } catch (err: any) {
-      toast.error(err.message || t('subscriptions.upgradeError'));
-    }
+    setPendingChange({ plan, direction });
   }
 
-  async function handleDowngrade(planId: number) {
-    if (!storeId) return;
+  async function confirmPlanChange() {
+    if (!storeId || !pendingChange) return;
+    const { plan, direction } = pendingChange;
+    setSubmittingChange(true);
     try {
-      await subscriptionApi.downgrade(storeId, { planId });
-      toast.success(t('subscriptions.downgradeSuccess'));
+      if (direction === 'upgrade') {
+        await subscriptionApi.upgrade(storeId, {
+          planId: plan.id,
+          billingCycle: subscription?.billingCycle || 'monthly',
+        });
+        toast.success(t('subscriptions.upgradeSuccess'));
+      } else {
+        await subscriptionApi.downgrade(storeId, { planId: plan.id });
+        toast.success(t('subscriptions.downgradeSuccess'));
+      }
+      setPendingChange(null);
       await loadAll();
-    } catch (err: any) {
-      toast.error(err.message || t('subscriptions.downgradeError'));
+    } catch (err: unknown) {
+      toast.error(messageFromError(err, t));
+    } finally {
+      setSubmittingChange(false);
     }
   }
 
@@ -175,7 +200,7 @@ export default function Subscriptions() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('subscriptions.title')}</h1>
+        <h1 className="text-2xl font-bold text-neutral-900">{t('subscriptions.title')}</h1>
         <p className="text-neutral-400 text-sm mt-1">{t('subscriptions.subtitle')}</p>
       </div>
 
@@ -235,7 +260,7 @@ export default function Subscriptions() {
                   <Package className="h-4 w-4" />
                   {t('subscriptions.products')}
                 </div>
-                <p className="text-2xl font-bold tracking-tight text-neutral-900">
+                <p className="text-2xl font-bold text-neutral-900">
                   {limits.usage.products} <span className="text-sm font-normal text-neutral-400">/ {limitDisplay(limits.limits.products)}</span>
                 </p>
               </div>
@@ -244,7 +269,7 @@ export default function Subscriptions() {
                   <Users className="h-4 w-4" />
                   {t('subscriptions.staff')}
                 </div>
-                <p className="text-2xl font-bold tracking-tight text-neutral-900">
+                <p className="text-2xl font-bold text-neutral-900">
                   {limits.usage.staff} <span className="text-sm font-normal text-neutral-400">/ {limitDisplay(limits.limits.staff)}</span>
                 </p>
               </div>
@@ -253,7 +278,7 @@ export default function Subscriptions() {
                   <HardDrive className="h-4 w-4" />
                   {t('subscriptions.storage')}
                 </div>
-                <p className="text-2xl font-bold tracking-tight text-neutral-900">
+                <p className="text-2xl font-bold text-neutral-900">
                   {limitDisplay(limits.limits.storageMb)} <span className="text-sm font-normal text-neutral-400">{t('subscriptions.mbUnit')}</span>
                 </p>
               </div>
@@ -262,7 +287,7 @@ export default function Subscriptions() {
                   <ShoppingCart className="h-4 w-4" />
                   {t('subscriptions.orders')}
                 </div>
-                <p className="text-2xl font-bold tracking-tight text-neutral-900">
+                <p className="text-2xl font-bold text-neutral-900">
                   {limits.usage.orders} <span className="text-sm font-normal text-neutral-400">/ {limitDisplay(limits.limits.orders)}</span>
                 </p>
               </div>
@@ -289,7 +314,7 @@ export default function Subscriptions() {
                     )}
                   </div>
                   <p className="text-sm text-neutral-500 mb-3">{plan.description}</p>
-                  <div className="text-2xl font-bold tracking-tight text-neutral-900 mb-4">
+                  <div className="text-2xl font-bold text-neutral-900 mb-4">
                     {Number(plan.priceMonthly) === 0 ? t('subscriptions.free') : `${Number(plan.priceMonthly)} ${t('common.sar')}`}
                     <span className="text-sm font-normal text-neutral-400"> {t('subscriptions.monthly')}</span>
                   </div>
@@ -319,9 +344,15 @@ export default function Subscriptions() {
                   {!isCurrent && currentPlan && (
                     <PermissionGate permission="subscriptions:manage">
                       <Button
+                        data-testid={`plan-change-trigger-${plan.id}`}
                         variant={plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? 'default' : 'outline'}
                         className="w-full h-9 text-sm"
-                        onClick={() => plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? handleUpgrade(plan.id) : handleDowngrade(plan.id)}
+                        onClick={() =>
+                          requestPlanChange(
+                            plan,
+                            plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? 'upgrade' : 'downgrade',
+                          )
+                        }
                       >
                         {plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? (
                           <ArrowUpCircle className="h-4 w-4 me-2" />
@@ -338,6 +369,120 @@ export default function Subscriptions() {
           })}
         </div>
       </div>
+
+      {/*
+        Audit Part 5 P0 #1 — plan-change confirm Dialog.
+        Renders the new plan name + the monthly OR annual price the
+        merchant will be billed + the direction (ترقية / تخفيض) before
+        firing the API call. A misclick on the plan card now only stages
+        the change; the actual billing mutation only happens on
+        "تأكيد التغيير".
+      */}
+      <Dialog
+        open={pendingChange !== null}
+        onOpenChange={(open) => {
+          if (!open && !submittingChange) setPendingChange(null);
+        }}
+      >
+        <DialogContent data-testid="plan-change-confirm-dialog">
+          {pendingChange && (
+            <>
+              <DialogHeader>
+                <DialogTitle>
+                  {pendingChange.direction === 'upgrade'
+                    ? t('subscriptions.confirmUpgradeTitle', 'تأكيد ترقية الخطة')
+                    : t('subscriptions.confirmDowngradeTitle', 'تأكيد تخفيض الخطة')}
+                </DialogTitle>
+                <DialogDescription>
+                  {t(
+                    'subscriptions.confirmChangeDescription',
+                    'سيتم تغيير خطة المتجر فورًا. راجع التفاصيل قبل التأكيد.',
+                  )}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3 rounded-2xl border border-neutral-100 bg-neutral-50/60 p-4 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-neutral-500">
+                    {t('subscriptions.confirmFromPlan', 'الخطة الحالية')}
+                  </span>
+                  <span className="font-semibold text-neutral-900">
+                    {currentPlan?.planName ?? '-'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-neutral-500">
+                    {t('subscriptions.confirmToPlan', 'الخطة الجديدة')}
+                  </span>
+                  <span
+                    data-testid="plan-change-new-plan"
+                    className="font-semibold text-neutral-900"
+                  >
+                    {pendingChange.plan.name}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-neutral-500">
+                    {t('subscriptions.confirmBillingCycle', 'دورة الفوترة')}
+                  </span>
+                  <span className="font-semibold text-neutral-900">
+                    {subscription?.billingCycle === 'annual'
+                      ? t('subscriptions.confirmCycleAnnual', 'سنوي')
+                      : t('subscriptions.confirmCycleMonthly', 'شهري')}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3 border-t border-neutral-100 pt-3">
+                  <span className="text-neutral-500">
+                    {t('subscriptions.confirmNewPrice', 'السعر الجديد')}
+                  </span>
+                  <span
+                    data-testid="plan-change-new-price"
+                    className="font-bold text-neutral-900"
+                  >
+                    {subscription?.billingCycle === 'annual'
+                      ? t('subscriptions.annual', {
+                          price: formatCurrency(pendingChange.plan.priceAnnual),
+                        })
+                      : `${formatCurrency(pendingChange.plan.priceMonthly)} ${t(
+                          'common.sar',
+                        )}${t('subscriptions.monthly')}`}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-neutral-500">
+                    {t('subscriptions.confirmDirection', 'نوع التغيير')}
+                  </span>
+                  <span className="font-semibold text-neutral-900">
+                    {pendingChange.direction === 'upgrade'
+                      ? t('subscriptions.upgrade')
+                      : t('subscriptions.downgrade')}
+                  </span>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  className="h-9 text-sm"
+                  disabled={submittingChange}
+                  onClick={() => setPendingChange(null)}
+                >
+                  {t('common.cancel', 'إلغاء')}
+                </Button>
+                <Button
+                  data-testid="plan-change-confirm-button"
+                  className="h-9 text-sm gap-2"
+                  disabled={submittingChange}
+                  onClick={confirmPlanChange}
+                >
+                  {submittingChange && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {t('subscriptions.confirmChange', 'تأكيد التغيير')}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {invoices.length > 0 && (
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
