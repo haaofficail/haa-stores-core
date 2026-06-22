@@ -1,4 +1,4 @@
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, lt } from 'drizzle-orm';
 import { createDbClient, type DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import {
@@ -269,11 +269,82 @@ export class LoyaltyService {
       .limit(limit);
   }
 
+  /**
+   * صفحات الـ ledger للعميل (cursor-based). الـ cursor هو آخر `id` رأيناه؛
+   * بما أن الـ id تصاعدي والترتيب نزولي بـ createdAt+id فالـ keyset stable.
+   * يُرجع `items` + `nextCursor` (أو null عند انتهاء البيانات).
+   */
+  async listTransactionsPaginated(
+    storeId: number,
+    customerId: number,
+    opts: { cursor?: number; limit?: number } = {},
+  ): Promise<{ items: (typeof s.loyaltyTransactions.$inferSelect)[]; nextCursor: number | null }> {
+    const limit = Math.min(Math.max(1, opts.limit ?? 50), 100);
+    const account = await this.getOrCreateAccount(storeId, customerId);
+    const whereExpr = opts.cursor
+      ? and(
+        eq(s.loyaltyTransactions.accountId, account.id),
+        lt(s.loyaltyTransactions.id, opts.cursor),
+      )
+      : eq(s.loyaltyTransactions.accountId, account.id);
+    const rows = await this.db.select().from(s.loyaltyTransactions)
+      .where(whereExpr)
+      .orderBy(desc(s.loyaltyTransactions.id))
+      .limit(limit + 1);
+    const items = rows.slice(0, limit);
+    const nextCursor = rows.length > limit ? items[items.length - 1].id : null;
+    return { items, nextCursor };
+  }
+
   /** القيمة النقدية لرصيد العميل الحالي (ر.س) */
   async balanceValue(storeId: number, customerId: number): Promise<number> {
     const rules = await this.getRules(storeId);
     const balance = await this.getBalance(storeId, customerId);
     return pointsToValue(rules, balance);
+  }
+
+  /**
+   * تعديل يدوي (admin) — يضيف نقاطاً كرصيد `type='adjust'`.
+   * لا يستخدم الفهرس الجزئي للـ earn-on-order؛ كل إدخال يمكن تكراره
+   * فالمسؤولية على المستدعي لاستخدام Idempotency-Key على مستوى الـ HTTP.
+   * يُرجع النقاط المضافة + الرصيد الجديد.
+   */
+  async adjustPoints(input: {
+    storeId: number; customerId: number; points: number; reason: string; actorUserId?: number;
+  }): Promise<{ points: number; balance: number; reason?: 'rules_disabled' | 'invalid_points' }> {
+    const rules = await this.getRules(input.storeId);
+    if (!rules.enabled) return { points: 0, balance: 0, reason: 'rules_disabled' };
+    const points = Math.floor(input.points);
+    if (!Number.isFinite(points) || points <= 0) return { points: 0, balance: 0, reason: 'invalid_points' };
+
+    const account = await this.getOrCreateAccount(input.storeId, input.customerId);
+
+    let newBalance = 0;
+    await this.db.transaction(async (tx) => {
+      const [acc] = await tx.select().from(s.loyaltyAccounts)
+        .where(eq(s.loyaltyAccounts.id, account.id)).limit(1);
+      const before = acc.balance;
+      const after = before + points;
+      await tx.insert(s.loyaltyTransactions).values({
+        storeId: input.storeId,
+        accountId: account.id,
+        customerId: input.customerId,
+        type: 'adjust',
+        direction: 'credit',
+        points,
+        balanceBefore: before,
+        balanceAfter: after,
+        description: `Manual adjust (+${points}) — ${input.reason}`,
+        metadata: { actorUserId: input.actorUserId ?? null, reason: input.reason },
+      });
+      await tx.update(s.loyaltyAccounts).set({
+        balance: after,
+        lifetimeEarned: acc.lifetimeEarned + points,
+        updatedAt: new Date(),
+      }).where(eq(s.loyaltyAccounts.id, account.id));
+      newBalance = after;
+    });
+    return { points, balance: newBalance };
   }
 }
 
