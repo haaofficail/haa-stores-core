@@ -871,7 +871,7 @@ export default function ThemeEditor() {
               type="button"
               disabled={!HOMEPAGE_SECTIONS_EDITOR_ENABLED}
               onClick={() => setCollapsedGroups(prev => ({ ...prev, order: !prev.order }))}
-              className={`w-full flex items-center gap-3 px-5 py-4 text-right transition-colors ${HOMEPAGE_SECTIONS_EDITOR_ENABLED ? 'hover:bg-neutral-50' : 'cursor-not-allowed opacity-60'}`}
+              className={`w-full flex items-center gap-3 px-5 py-4 text-start transition-colors ${HOMEPAGE_SECTIONS_EDITOR_ENABLED ? 'hover:bg-neutral-50' : 'cursor-not-allowed opacity-60'}`}
             >
               <ChevronDown className={`h-4 w-4 text-neutral-400 transition-transform duration-200 ${!collapsedGroups.order ? '' : '-rotate-90'}`} />
               <span className="text-sm font-bold text-neutral-700">الأقسام</span>
@@ -925,7 +925,7 @@ export default function ThemeEditor() {
                         <Eye className={`h-4 w-4 ${section.enabled !== false ? '' : 'opacity-40'}`} />
                       </button>
                       <span className="text-xs font-bold text-neutral-400 w-5 shrink-0">{idx + 1}</span>
-                      <span className="text-sm text-neutral-700 truncate flex-1 text-right">{section.title || SECTION_TYPE_LABELS[section.type] || section.type}</span>
+                      <span className="text-sm text-neutral-700 truncate flex-1 text-start">{section.title || SECTION_TYPE_LABELS[section.type] || section.type}</span>
                       <button type="button" onClick={(e) => { e.stopPropagation();
                         const updated = [...(homepage.sections || [])];
                         const copy = structuredClone(section);

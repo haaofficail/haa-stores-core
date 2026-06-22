@@ -67,7 +67,7 @@ export function RecentCustomersList({ customers, t }: Props) {
                     <p className="text-xs font-bold text-neutral-900 truncate">
                       {c.name}
                     </p>
-                    <p className="text-xs text-neutral-400 truncate dir-ltr text-left">
+                    <p className="text-xs text-neutral-400 truncate dir-ltr text-end">
                       {c.phone || c.email || "—"}
                     </p>
                   </div>

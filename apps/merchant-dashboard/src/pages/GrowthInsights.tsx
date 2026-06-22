@@ -200,7 +200,7 @@ export default function GrowthInsights() {
         <div className="flex items-center gap-3">
           <Select value={datePreset} onValueChange={setDatePreset}>
             <SelectTrigger className="w-36 h-9 text-sm">
-              <Calendar className="h-4 w-4 ml-2" />
+              <Calendar className="h-4 w-4 ms-2" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -210,7 +210,7 @@ export default function GrowthInsights() {
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={handleAggregate} disabled={aggregating}>
-            <BarChart3 className="h-4 w-4 ml-2" />
+            <BarChart3 className="h-4 w-4 ms-2" />
             {aggregating ? 'جاري التحديث...' : 'تحديث البيانات'}
           </Button>
         </div>
@@ -297,7 +297,7 @@ export default function GrowthInsights() {
                   <div className="text-xs text-neutral-400 mt-1">
                     نسبة التحويل: <Perc value={overview!.cartToCheckoutRate} />
                     {overview!.estimatedAbandonmentRate !== null && overview!.estimatedAbandonmentRate > 0.5 && (
-                      <Badge variant="warning" className="mr-2 text-xs">نسبة ترك مرتفعة</Badge>
+                      <Badge variant="warning" className="me-2 text-xs">نسبة ترك مرتفعة</Badge>
                     )}
                   </div>
                 </div>
@@ -371,9 +371,9 @@ export default function GrowthInsights() {
                         <div key={idx} className="flex items-center justify-between py-2 border-b border-neutral-100 last:border-0">
                           <div>
                             <span className="font-medium text-sm">{src.source === 'direct' ? 'مباشر' : src.source}</span>
-                            <span className="text-xs text-neutral-400 mr-2">{src.sessions} جلسة</span>
+                            <span className="text-xs text-neutral-400 me-2">{src.sessions} جلسة</span>
                           </div>
-                          <div className="text-left">
+                          <div className="text-end">
                             <div className="text-sm font-semibold">{src.orders} طلب</div>
                             <div className="text-xs text-neutral-400">{src.revenue} ر.س</div>
                           </div>
@@ -400,9 +400,9 @@ export default function GrowthInsights() {
                         <div key={idx} className="flex items-center justify-between py-2 border-b border-neutral-100 last:border-0">
                           <div>
                             <span className="font-medium text-sm">{cmp.campaign === 'untagged' ? 'بدون حملة' : cmp.campaign}</span>
-                            <span className="text-xs text-neutral-400 mr-2">{cmp.sessions} جلسة</span>
+                            <span className="text-xs text-neutral-400 me-2">{cmp.sessions} جلسة</span>
                           </div>
-                          <div className="text-left">
+                          <div className="text-end">
                             <div className="text-sm font-semibold">{cmp.orders} طلب</div>
                             <div className="text-xs text-neutral-400">{cmp.revenue} ر.س</div>
                           </div>
@@ -429,8 +429,8 @@ export default function GrowthInsights() {
                     <div className="space-y-3">
                       {products.mostViewed.slice(0, 5).map((p, idx) => (
                         <div key={idx} className="flex items-center justify-between py-2 border-b border-neutral-100 last:border-0">
-                          <span className="text-sm font-medium truncate ml-4">{p.productName}</span>
-                          <div className="text-left shrink-0">
+                          <span className="text-sm font-medium truncate ms-4">{p.productName}</span>
+                          <div className="text-end shrink-0">
                             <div className="text-sm">{p.views.toLocaleString()} مشاهدة</div>
                             <div className="text-xs text-neutral-400">{p.purchases} شراء</div>
                           </div>
@@ -456,7 +456,7 @@ export default function GrowthInsights() {
                       {products.highViewsLowPurchases.slice(0, 5).map((p, idx) => (
                         <div key={idx} className="p-3 bg-amber-50 rounded-2xl">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium truncate ml-4">{p.productName}</span>
+                            <span className="text-sm font-medium truncate ms-4">{p.productName}</span>
                             <span className="text-xs text-amber-600 shrink-0">
                               {p.views} مشاهدة / {p.purchases} شراء
                               {p.conversionRate !== null && <span> ({pct(p.conversionRate)})</span>}

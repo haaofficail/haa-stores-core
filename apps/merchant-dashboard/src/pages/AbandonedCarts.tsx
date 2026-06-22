@@ -60,7 +60,7 @@ export default function AbandonedCarts() {
         </div>
         <Select value={String(hours)} onValueChange={(v) => setHours(Number(v))}>
           <SelectTrigger className="w-44 h-9 text-sm">
-            <Clock className="h-4 w-4 mr-2" />
+            <Clock className="h-4 w-4 me-2" />
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

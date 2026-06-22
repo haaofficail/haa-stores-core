@@ -244,9 +244,9 @@ export default function OnboardingWizard() {
                   </Button>
                   <Button className="h-9 text-sm px-4" onClick={handleSaveStore} disabled={saving || !storeName.trim()}>
                     {saving ? (
-                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{t('common.saving')}</>
+                      <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t('common.saving')}</>
                     ) : (
-                      <>{t('common.next')} <ArrowLeft className="h-4 w-4 mr-2" /></>
+                      <>{t('common.next')} <ArrowLeft className="h-4 w-4 me-2" /></>
                     )}
                   </Button>
                 </div>
@@ -343,7 +343,7 @@ export default function OnboardingWizard() {
                                 <p className="font-medium text-sm text-neutral-900">{p.name}</p>
                                 <p className="text-xs text-neutral-400 truncate">{p.description}</p>
                               </div>
-                              <div className="text-left">
+                              <div className="text-end">
                                 <p className="font-bold text-primary-600">{formatNumber(p.price)} {t('common.sar')}</p>
                                 <p className="text-xs text-neutral-400">{t('common.quantity')}: {p.stockQuantity}</p>
                               </div>
@@ -360,7 +360,7 @@ export default function OnboardingWizard() {
 
                     <div className="flex justify-between pt-4">
                       <Button variant="outline" className="h-9 text-sm" onClick={() => setStep(0)}>
-                        <ArrowRight className="h-4 w-4 mr-2" /> {t('common.back')}
+                        <ArrowRight className="h-4 w-4 me-2" /> {t('common.back')}
                       </Button>
                       <Button className="h-9 text-sm px-4" onClick={handleSaveProducts} disabled={selectedProducts.size === 0}>
                         {t('onboarding.saveAndContinue', { count: selectedProducts.size })}
@@ -471,7 +471,7 @@ export default function OnboardingWizard() {
 
                 <div className="flex justify-between mt-8">
                   <Button variant="outline" className="h-9 text-sm" onClick={() => setStep(1)}>
-                    <ArrowRight className="h-4 w-4 mr-2" /> {t('common.back')}
+                    <ArrowRight className="h-4 w-4 me-2" /> {t('common.back')}
                   </Button>
                   <Button onClick={handleComplete} className="h-9 text-sm px-4 gap-2 bg-green-600 hover:bg-green-700">
                     <Rocket className="h-4 w-4" /> {t('onboarding.completeLaunch')}

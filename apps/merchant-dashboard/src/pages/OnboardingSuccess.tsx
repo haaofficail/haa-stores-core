@@ -101,7 +101,7 @@ export default function OnboardingSuccess() {
           {t('onboarding.successBadge')}
         </div>
 
-        <Card className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden mb-8 text-right">
+        <Card className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden mb-8 text-start">
           <CardContent className="p-6 space-y-4">
             <h3 className="font-semibold text-sm text-neutral-900">{t('onboarding.nextSteps')}</h3>
             <div className="grid gap-3">
@@ -109,7 +109,7 @@ export default function OnboardingSuccess() {
                 <button
                   key={i}
                   onClick={() => navigate(s.href)}
-                  className="flex items-center gap-3 p-3 rounded-2xl bg-white/80 backdrop-blur-xl border border-white/50 shadow-card overflow-hidden hover:bg-neutral-50 transition-all text-right"
+                  className="flex items-center gap-3 p-3 rounded-2xl bg-white/80 backdrop-blur-xl border border-white/50 shadow-card overflow-hidden hover:bg-neutral-50 transition-all text-start"
                 >
                   <div className="inline-flex p-3 rounded-2xl bg-neutral-100 text-neutral-400">
                     <s.icon className="h-5 w-5" />

@@ -75,13 +75,13 @@ export default function Customers() {
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-900">{t('customers.title')}</h1>
-        <PermissionGate permission="customers:create" fallback={null}><Button onClick={openCreate} className="h-9 text-sm px-4"><Plus className="h-4 w-4 mr-2" />{t('customers.create')}</Button></PermissionGate>
+        <PermissionGate permission="customers:create" fallback={null}><Button onClick={openCreate} className="h-9 text-sm px-4"><Plus className="h-4 w-4 me-2" />{t('customers.create')}</Button></PermissionGate>
       </div>
 
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
         <div className="relative max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-          <Input placeholder={t('customers.search')} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="pr-10 h-9 text-sm" />
+          <Input placeholder={t('customers.search')} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="pe-10 h-9 text-sm" />
         </div>
       </div>
 

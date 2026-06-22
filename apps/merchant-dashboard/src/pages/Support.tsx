@@ -67,7 +67,7 @@ function ArticleCard({ article, onOpen }: { article: KbArticle; onOpen: () => vo
   return (
     <button
       onClick={onOpen}
-      className="w-full flex items-center gap-4 p-4 bg-white rounded-xl border border-neutral-200 hover:border-neutral-300 hover:shadow-sm transition-all group text-right"
+      className="w-full flex items-center gap-4 p-4 bg-white rounded-xl border border-neutral-200 hover:border-neutral-300 hover:shadow-sm transition-all group text-start"
     >
       <div className="w-10 h-10 rounded-xl bg-neutral-50 flex items-center justify-center shrink-0">
         <FileText className="h-5 w-5 text-neutral-400 group-hover:text-primary-500 transition-colors" />
@@ -310,7 +310,7 @@ function TicketFormModal({ storeId, defaultName, defaultEmail, onClose, onSucces
           <div>
             <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
               صور أو لقطات شاشة
-              <span className="font-normal text-neutral-400 mr-1">(اختياري — حد أقصى 5)</span>
+              <span className="font-normal text-neutral-400 me-1">(اختياري — حد أقصى 5)</span>
             </label>
 
             {attachments.length > 0 && (
@@ -446,7 +446,7 @@ export default function SupportPage() {
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pr-12 pl-4 py-3.5 rounded-xl bg-white text-neutral-900 text-sm placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg"
+              className="w-full pe-12 ps-4 py-3.5 rounded-xl bg-white text-neutral-900 text-sm placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-lg"
               placeholder="ابحث عن مشكلتك... (مثال: كيف أضيف منتجاً)"
             />
             {search && (
@@ -552,7 +552,7 @@ export default function SupportPage() {
           {/* Create ticket CTA */}
           <button
             onClick={() => setShowTicketForm(true)}
-            className="w-full flex items-center gap-3 p-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl shadow-lg shadow-primary-500/20 hover:from-primary-600 hover:to-primary-700 transition-all group text-right"
+            className="w-full flex items-center gap-3 p-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl shadow-lg shadow-primary-500/20 hover:from-primary-600 hover:to-primary-700 transition-all group text-start"
           >
             <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors shrink-0">
               <Plus className="h-5 w-5" />

@@ -324,9 +324,9 @@ export default function Subscriptions() {
                         onClick={() => plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? handleUpgrade(plan.id) : handleDowngrade(plan.id)}
                       >
                         {plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? (
-                          <ArrowUpCircle className="h-4 w-4 mr-2" />
+                          <ArrowUpCircle className="h-4 w-4 me-2" />
                         ) : (
-                          <ArrowDownCircle className="h-4 w-4 mr-2" />
+                          <ArrowDownCircle className="h-4 w-4 me-2" />
                         )}
                         {plan.sortOrder > (currentPlan?.sortOrder ?? 0) ? t('subscriptions.upgrade') : t('subscriptions.downgrade')}
                       </Button>
@@ -349,7 +349,7 @@ export default function Subscriptions() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-neutral-100 text-right">
+                  <tr className="border-b border-neutral-100 text-start">
                     <th className="py-2 px-3 text-sm text-neutral-500 font-medium">{t('subscriptions.invoiceNumber')}</th>
                     <th className="py-2 px-3 text-sm text-neutral-500 font-medium">{t('subscriptions.amount')}</th>
                     <th className="py-2 px-3 text-sm text-neutral-500 font-medium">{t('subscriptions.vat')}</th>

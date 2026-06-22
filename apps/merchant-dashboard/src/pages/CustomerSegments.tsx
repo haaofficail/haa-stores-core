@@ -221,14 +221,14 @@ export default function CustomerSegments() {
                             {m.phone}
                             {m.email && (
                               <>
-                                <Mail className="h-3 w-3 mr-1" />
+                                <Mail className="h-3 w-3 me-1" />
                                 {m.email}
                               </>
                             )}
                           </div>
                         </div>
                       </div>
-                      <div className="text-left">
+                      <div className="text-end">
                         <div className="text-sm font-semibold">{Number(m.totalSpent).toLocaleString()} ر.س</div>
                         <div className="text-xs text-neutral-400">{m.totalOrders} طلب</div>
                         {m.lastOrderAt && (
@@ -277,7 +277,7 @@ export default function CustomerSegments() {
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={() => { setEditingThresholds(thresholds ? { ...thresholds } : null); setShowSettings(true); }}>
-            <Settings className="h-4 w-4 ml-2" />
+            <Settings className="h-4 w-4 ms-2" />
             الإعدادات
           </Button>
         </div>

@@ -158,7 +158,7 @@ export default function Promotions() {
         <h1 className="text-2xl font-bold text-neutral-900">{t('promotions.title')}</h1>
         <PermissionGate permission="promotions:create">
           <Button onClick={openCreate} className="h-9 text-sm px-4">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t('promotions.create')}
           </Button>
         </PermissionGate>
@@ -167,7 +167,7 @@ export default function Promotions() {
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6 flex gap-4 items-center flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-          <Input placeholder={t('promotions.search')} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="pr-9 h-9 text-sm" />
+          <Input placeholder={t('promotions.search')} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="pe-9 h-9 text-sm" />
         </div>
         <Select value={statusFilter || undefined} onValueChange={v => setStatusFilter(v === 'all' ? '' : v)}>
           <SelectTrigger className="w-40 h-9 text-sm"><SelectValue placeholder={t('promotions.filterStatus')} /></SelectTrigger>
@@ -240,9 +240,9 @@ export default function Promotions() {
                       {expired ? (
                         <Badge variant="destructive" className="text-xs px-2.5 py-0.5">{t('common.expired')}</Badge>
                       ) : p.isActive ? (
-                        <Badge variant="success" className="text-xs px-2.5 py-0.5"><CheckCircle2 className="h-3 w-3 mr-1" />{t('promotions.active')}</Badge>
+                        <Badge variant="success" className="text-xs px-2.5 py-0.5"><CheckCircle2 className="h-3 w-3 me-1" />{t('promotions.active')}</Badge>
                       ) : (
-                        <Badge variant="secondary" className="text-xs px-2.5 py-0.5"><XCircle className="h-3 w-3 mr-1" />{t('promotions.inactive')}</Badge>
+                        <Badge variant="secondary" className="text-xs px-2.5 py-0.5"><XCircle className="h-3 w-3 me-1" />{t('promotions.inactive')}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-sm text-neutral-400 p-3">
@@ -352,7 +352,7 @@ export default function Promotions() {
           <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
             <Button variant="outline" className="h-9 text-sm" onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button>
             <Button className="h-9 text-sm px-4" onClick={save} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {saving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
               {saving ? t('common.saving') : t('common.save')}
             </Button>
           </div>

@@ -28,9 +28,10 @@ function walk(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
-// Captured 2026-06-22 during Wave 18. Migration to logical classes
-// (ms-/me-/ps-/pe-/text-start/text-end) lowers this ceiling.
-const HARDCODED_DIRECTIONAL_CEILING = 300;
+// Captured 2026-06-22 during Wave 18 (300); dropped 2026-06-22 after
+// the RTL codemod migrated 298 instances to logical classes
+// (ms-/me-/ps-/pe-/text-start/text-end).
+const HARDCODED_DIRECTIONAL_CEILING = 10;
 
 describe('RTL / a11y guards (F-QA-D-005 / F-QA-D-006)', () => {
   it(`hardcoded directional Tailwind classes ≤ ${HARDCODED_DIRECTIONAL_CEILING}`, () => {

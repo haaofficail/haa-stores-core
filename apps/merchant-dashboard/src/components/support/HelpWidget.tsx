@@ -220,7 +220,7 @@ export function HelpWidget() {
                   value={search}
                   onChange={e => { setSearch(e.target.value); setExpandedId(null); }}
                   placeholder="ابحث في المقالات..."
-                  className="w-full pr-8 pl-3 py-2 text-xs rounded-lg border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-1 bg-neutral-50"
+                  className="w-full pe-8 ps-3 py-2 text-xs rounded-lg border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-1 bg-neutral-50"
                 />
               </div>
             </div>
@@ -254,7 +254,7 @@ export function HelpWidget() {
                   <div key={article.id} className="rounded-xl border border-neutral-100 overflow-hidden">
                     <button
                       onClick={() => setExpandedId(expandedId === article.id ? null : article.id)}
-                      className="w-full flex items-start gap-2.5 px-3 py-2.5 text-right hover:bg-neutral-50 transition-colors"
+                      className="w-full flex items-start gap-2.5 px-3 py-2.5 text-start hover:bg-neutral-50 transition-colors"
                     >
                       <BookOpen className="h-3.5 w-3.5 text-neutral-400 mt-0.5 shrink-0" />
                       <div className="flex-1 min-w-0">
@@ -312,7 +312,7 @@ export function HelpWidget() {
                       <button
                         key={q}
                         onClick={() => { setChatInput(q); }}
-                        className="block w-full text-right px-3 py-2 text-xs rounded-lg bg-neutral-50 border border-neutral-100 text-neutral-600 hover:bg-neutral-100 hover:border-neutral-200 hover:text-neutral-800 transition-colors"
+                        className="block w-full text-start px-3 py-2 text-xs rounded-lg bg-neutral-50 border border-neutral-100 text-neutral-600 hover:bg-neutral-100 hover:border-neutral-200 hover:text-neutral-800 transition-colors"
                       >
                         {q}
                       </button>

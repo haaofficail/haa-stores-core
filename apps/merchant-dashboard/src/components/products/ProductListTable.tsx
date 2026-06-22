@@ -144,7 +144,7 @@ export function ProductListTable({
                     {p.compareAtPrice && Number(p.compareAtPrice) > Number(p.price) && (
                       <span className="text-xs text-red-500 font-medium">
                         -{Math.round((1 - Number(p.price) / Number(p.compareAtPrice)) * 100)}%
-                        <span className="line-through text-neutral-300 mr-1">{formatCurrency(p.compareAtPrice)} ر.س</span>
+                        <span className="line-through text-neutral-300 me-1">{formatCurrency(p.compareAtPrice)} ر.س</span>
                       </span>
                     )}
                   </div>

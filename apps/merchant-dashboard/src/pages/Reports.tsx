@@ -250,11 +250,11 @@ export default function Reports() {
           <Button variant="outline" className="h-9 text-sm" onClick={loadReports}>{t('reports.update')}</Button>
           <div className="w-px h-6 bg-neutral-200" />
           <Button variant="outline" className="h-9 text-sm" onClick={handleExportFull} disabled={exporting}>
-            {exporting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
+            {exporting ? <Loader2 className="h-4 w-4 me-1 animate-spin" /> : <Download className="h-4 w-4 me-1" />}
             {t('reports.exportFull')}
           </Button>
           <Button variant="outline" className="h-9 text-sm" onClick={() => window.print()}>
-            <Printer className="h-4 w-4 mr-1" />
+            <Printer className="h-4 w-4 me-1" />
             {t('reports.print')}
           </Button>
         </div>
@@ -407,7 +407,7 @@ export default function Reports() {
                 <TableBody>
                   {salesByCity.map((c: any, i: number) => (
                     <TableRow key={i} className="border-neutral-100 hover:bg-neutral-50">
-                      <TableCell className="text-sm font-medium text-neutral-900 p-3"><MapPin className="h-3.5 w-3.5 inline mr-1" />{c.city || t('reports.unknownCity')}</TableCell>
+                      <TableCell className="text-sm font-medium text-neutral-900 p-3"><MapPin className="h-3.5 w-3.5 inline me-1" />{c.city || t('reports.unknownCity')}</TableCell>
                       <TableCell className="text-sm text-neutral-900 p-3">{c.orderCount ?? 0}</TableCell>
                       <TableCell className="text-sm font-semibold text-neutral-900 p-3">{formatCurrency(c.totalSales ?? 0)} {t('common.sar')}</TableCell>
                     </TableRow>

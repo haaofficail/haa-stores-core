@@ -384,7 +384,7 @@ export default function CompliancePage() {
                 <p className="text-sm mt-2 text-neutral-500">{statusInfo.message}</p>
               </div>
             </div>
-            <div className="text-left">
+            <div className="text-end">
               <p className="text-3xl font-bold text-neutral-900">{status?.completionPercent ?? 0}%</p>
               <p className="text-xs text-neutral-400 mt-1">{t('compliance.statusCard.completionPercentage')}</p>
               {status?.updatedAt && (
@@ -483,7 +483,7 @@ export default function CompliancePage() {
                 )}
                 {checklist.passed && (
                   <Badge variant="default" className="text-xs px-2.5 py-0.5 bg-green-50 text-green-700 border-green-200">
-                    <CircleCheck className="h-3 w-3 mr-1" />
+                    <CircleCheck className="h-3 w-3 me-1" />
                     جاهز للنشر
                   </Badge>
                 )}
@@ -583,7 +583,7 @@ export default function CompliancePage() {
                   onChange={e => updateForm('nationalId', e.target.value)}
                   placeholder={t('compliance.businessProfile.nationalIdPlaceholder')}
                   dir="ltr"
-                  className={`text-left h-9 text-sm ${errors.nationalId ? 'border-red-300' : ''}`}
+                  className={`text-end h-9 text-sm ${errors.nationalId ? 'border-red-300' : ''}`}
                 />
                 <p className="text-xs text-neutral-400">{t('compliance.businessProfile.nationalIdHelper')}</p>
                   {errors.nationalId && <p className="text-xs text-red-500">{errors.nationalId}</p>}
@@ -595,7 +595,7 @@ export default function CompliancePage() {
                   onChange={e => updateForm('freelanceDocNumber', e.target.value)}
                   placeholder={t('compliance.businessProfile.freelanceDocNumberPlaceholder')}
                   dir="ltr"
-                  className="text-left h-9 text-sm"
+                  className="text-end h-9 text-sm"
                 />
                 <p className="text-xs text-neutral-400">{t('compliance.businessProfile.freelanceDocNumberHelper')}</p>
                 </div>
@@ -611,7 +611,7 @@ export default function CompliancePage() {
                   onChange={e => updateForm('crNumber', e.target.value)}
                   placeholder={t('compliance.businessProfile.crNumberPlaceholder')}
                   dir="ltr"
-                  className={`text-left h-9 text-sm ${errors.crNumber ? 'border-red-300' : ''}`}
+                  className={`text-end h-9 text-sm ${errors.crNumber ? 'border-red-300' : ''}`}
                 />
                 <p className="text-xs text-neutral-400">{t('compliance.businessProfile.crNumberHelper')}</p>
                   {errors.crNumber && <p className="text-xs text-red-500">{errors.crNumber}</p>}
@@ -650,7 +650,7 @@ export default function CompliancePage() {
                 onChange={e => updateForm('vatNumber', e.target.value)}
                 placeholder={t('compliance.businessProfile.vatNumberPlaceholder')}
                 dir="ltr"
-                className="text-left h-9 text-sm"
+                className="text-end h-9 text-sm"
               />
               <p className="text-xs text-neutral-400">{t('compliance.businessProfile.vatNumberHelper')}</p>
             </div>
@@ -723,8 +723,8 @@ export default function CompliancePage() {
               </div>
               <PermissionGate permission="compliance:documents">
                 <Button onClick={handleUpload} disabled={uploading || !uploadType || !uploadFile} className="h-9 text-sm px-4 shrink-0">
-                  {uploading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  <Upload className="h-4 w-4 mr-1" />
+                  {uploading && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
+                  <Upload className="h-4 w-4 me-1" />
                   {t('compliance.documents.upload')}
                 </Button>
               </PermissionGate>
@@ -780,7 +780,7 @@ export default function CompliancePage() {
                 onChange={e => updateBankForm('iban', e.target.value)}
                 placeholder={t('compliance.bankAccount.ibanPlaceholder')}
                 dir="ltr"
-                className={`text-left h-9 text-sm ${errors.iban ? 'border-red-300' : ''}`}
+                className={`text-end h-9 text-sm ${errors.iban ? 'border-red-300' : ''}`}
               />
               <p className="text-xs text-neutral-400">{t('compliance.bankAccount.ibanHelper')}</p>
               {errors.iban && <p className="text-xs text-red-500">{errors.iban}</p>}
@@ -819,7 +819,7 @@ export default function CompliancePage() {
           <div className="flex justify-end gap-3 mt-6">
             <PermissionGate permission="compliance:write">
               <Button variant="outline" className="h-9 text-sm" onClick={saveBankAccount} disabled={saving}>
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                {saving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
                 {saving ? t('compliance.buttons.saving') : t('compliance.buttons.saveBankAccount')}
               </Button>
             </PermissionGate>
@@ -831,7 +831,7 @@ export default function CompliancePage() {
       <div className="flex justify-end gap-3 pb-6">
         <PermissionGate permission="compliance:write">
           <Button variant="outline" className="h-9 text-sm" onClick={saveProfile} disabled={saving || submitting}>
-            {(saving || submitting) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {(saving || submitting) && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
             {saving ? t('compliance.buttons.saving') : t('compliance.buttons.saveDraft')}
           </Button>
         </PermissionGate>
@@ -841,7 +841,7 @@ export default function CompliancePage() {
             disabled={saving || submitting || !canSubmit}
             className="h-9 text-sm px-4 bg-green-600 hover:bg-green-700 text-white"
           >
-            {(saving || submitting) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {(saving || submitting) && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
             {submitting ? t('compliance.buttons.submitting') : t('compliance.buttons.submitForReview')}
           </Button>
         </PermissionGate>

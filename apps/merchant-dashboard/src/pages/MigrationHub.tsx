@@ -145,18 +145,18 @@ export default function MigrationHub() {
                 </div>
               </CardHeader>
               <CardContent>
-                <ol className="space-y-1.5 mb-4 pr-5 list-decimal text-sm text-neutral-400">
+                <ol className="space-y-1.5 mb-4 pe-5 list-decimal text-sm text-neutral-400">
                   {src.steps.map((step, i) => (
                     <li key={i}>{step}</li>
                   ))}
                 </ol>
                 <div className="flex gap-2">
                   <Button variant="outline" className="h-9 text-sm" onClick={() => handleDownloadTemplate(src.source)}>
-                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                    <Download className="h-3.5 w-3.5 me-1.5" />
                     {t('migration.downloadTemplate')}
                   </Button>
                   <Button className="h-9 text-sm px-4" onClick={() => navigate('/imports')}>
-                    <ArrowRightLeft className="h-3.5 w-3.5 mr-1.5" />
+                    <ArrowRightLeft className="h-3.5 w-3.5 me-1.5" />
                     {t('migration.startMigration')}
                   </Button>
                 </div>
@@ -189,7 +189,7 @@ export default function MigrationHub() {
             </CardHeader>
             <CardContent>
               <Button onClick={handleDownloadGoogleFeed} className="h-9 text-sm px-4 w-full">
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 me-2" />
                 {t('migration.downloadGoogleFeed')}
               </Button>
             </CardContent>
@@ -206,7 +206,7 @@ export default function MigrationHub() {
             </CardHeader>
             <CardContent>
               <Button onClick={handleDownloadMetaFeed} className="h-9 text-sm px-4 w-full">
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 me-2" />
                 {t('migration.downloadMetaFeed')}
               </Button>
             </CardContent>

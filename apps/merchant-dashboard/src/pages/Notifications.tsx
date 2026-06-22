@@ -315,11 +315,11 @@ export default function Notifications() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-neutral-100 text-neutral-500">
-                    <th className="text-right py-2 font-medium text-sm text-neutral-500">{t('notifications.logChannel')}</th>
-                    <th className="text-right py-2 font-medium text-sm text-neutral-500">{t('notifications.logSubject')}</th>
-                    <th className="text-right py-2 font-medium text-sm text-neutral-500">{t('notifications.logRecipient')}</th>
-                    <th className="text-right py-2 font-medium text-sm text-neutral-500">{t('notifications.logStatus')}</th>
-                    <th className="text-right py-2 font-medium text-sm text-neutral-500">{t('notifications.logTime')}</th>
+                    <th className="text-start py-2 font-medium text-sm text-neutral-500">{t('notifications.logChannel')}</th>
+                    <th className="text-start py-2 font-medium text-sm text-neutral-500">{t('notifications.logSubject')}</th>
+                    <th className="text-start py-2 font-medium text-sm text-neutral-500">{t('notifications.logRecipient')}</th>
+                    <th className="text-start py-2 font-medium text-sm text-neutral-500">{t('notifications.logStatus')}</th>
+                    <th className="text-start py-2 font-medium text-sm text-neutral-500">{t('notifications.logTime')}</th>
                   </tr>
                 </thead>
                 <tbody>

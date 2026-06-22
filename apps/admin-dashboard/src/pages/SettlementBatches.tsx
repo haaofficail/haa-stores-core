@@ -189,13 +189,13 @@ export default function SettlementBatches() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">رقم التسوية</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">المتجر</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">المبلغ</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">الحالة</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">تاريخ الطلب</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">آخر إجراء</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500" />
+                <th className="px-4 py-3 text-start font-medium text-gray-500">رقم التسوية</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">المتجر</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">المبلغ</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">الحالة</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">تاريخ الطلب</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">آخر إجراء</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500" />
               </tr>
             </thead>
             <tbody>
@@ -257,14 +257,14 @@ export default function SettlementBatches() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">رقم الدفعة</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">تاريخ الدورة</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">عدد المتاجر</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">عدد الطلبات</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">إجمالي المبلغ</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">صافي التسوية</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">الحالة</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500" />
+                <th className="px-4 py-3 text-start font-medium text-gray-500">رقم الدفعة</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">تاريخ الدورة</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">عدد المتاجر</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">عدد الطلبات</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">إجمالي المبلغ</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">صافي التسوية</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500">الحالة</th>
+                <th className="px-4 py-3 text-start font-medium text-gray-500" />
               </tr>
             </thead>
             <tbody>

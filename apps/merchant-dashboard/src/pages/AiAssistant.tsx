@@ -228,7 +228,7 @@ export default function AiAssistant() {
                   key={qa.label}
                   onClick={qa.action}
                   disabled={loading}
-                  className="group relative flex flex-col items-start p-4 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/50 shadow-card transition-all duration-300 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-right"
+                  className="group relative flex flex-col items-start p-4 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/50 shadow-card transition-all duration-300 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-start"
                 >
                   <div className="mb-3 p-2 rounded-xl bg-primary-50">
                     <qa.icon className="h-5 w-5 text-primary-600" />
@@ -287,14 +287,14 @@ export default function AiAssistant() {
 
               {/* Suggestions */}
               {msg.suggestions && msg.suggestions.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3 mr-2">
+                <div className="flex flex-wrap gap-2 mt-3 me-2">
                   {msg.suggestions.map((sug) => (
                     <button
                       key={sug}
                       onClick={() => handleSuggestionClick(sug)}
                       className="px-3 py-1.5 text-xs rounded-full border border-neutral-200 bg-white/80 text-neutral-600 hover:bg-neutral-100 hover:border-neutral-300 hover:text-neutral-800 transition-all shadow-sm hover:shadow-md backdrop-blur-xl"
                     >
-                      <Sparkles className="h-3 w-3 inline mr-1 text-amber-500" />
+                      <Sparkles className="h-3 w-3 inline me-1 text-amber-500" />
                       {sug}
                     </button>
                   ))}
@@ -303,7 +303,7 @@ export default function AiAssistant() {
 
               {/* Actions */}
               {msg.actions && msg.actions.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3 mr-2">
+                <div className="flex flex-wrap gap-2 mt-3 me-2">
                   {msg.actions.map((act) => (
                     <Button
                       key={act.label}
@@ -317,7 +317,7 @@ export default function AiAssistant() {
                       }}
                     >
                       {act.label}
-                      <ChevronLeft className="h-3 w-3 mr-1" />
+                      <ChevronLeft className="h-3 w-3 me-1" />
                     </Button>
                   ))}
                 </div>
@@ -361,7 +361,7 @@ export default function AiAssistant() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={t('ai.askPlaceholder') || 'اكتب سؤالك هنا...'}
-              className="w-full pr-14 pl-5 py-3.5 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/50 text-neutral-900 placeholder:text-neutral-400 text-sm shadow-card focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-300 transition-all"
+              className="w-full pe-14 ps-5 py-3.5 rounded-3xl bg-white/80 backdrop-blur-xl border border-white/50 text-neutral-900 placeholder:text-neutral-400 text-sm shadow-card focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-300 transition-all"
               disabled={loading}
               dir="rtl"
             />

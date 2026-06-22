@@ -180,7 +180,7 @@ export default function Orders() {
                   placeholder={t('orders.search')}
                   value={searchInput}
                   onChange={(e) => { setSearchInput(e.target.value); }}
-                  className="pr-10 h-9 text-sm"
+                  className="pe-10 h-9 text-sm"
               />
             </div>
             
@@ -913,8 +913,8 @@ export default function Orders() {
                                 <TableHead className="h-9 text-sm text-neutral-500 font-medium">{t('orders.product_name', 'المنتج')}</TableHead>
                                 <TableHead className="h-9 text-sm text-neutral-500 font-medium text-center">{t('orders.quantity', 'الكمية')}</TableHead>
                                 <TableHead className="h-9 text-sm text-neutral-500 font-medium">{t('orders.notes', 'ملاحظات')}</TableHead>
-                                <TableHead className="h-9 text-sm text-neutral-500 font-medium text-right">{t('orders.unit_price', 'السعر')}</TableHead>
-                                <TableHead className="h-9 text-sm text-neutral-500 font-medium text-right">{t('orders.total_header', 'الإجمالي')}</TableHead>
+                                <TableHead className="h-9 text-sm text-neutral-500 font-medium text-start">{t('orders.unit_price', 'السعر')}</TableHead>
+                                <TableHead className="h-9 text-sm text-neutral-500 font-medium text-start">{t('orders.total_header', 'الإجمالي')}</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -935,8 +935,8 @@ export default function Orders() {
                                        {item.giftMessage && <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-pink-50 text-pink-700 rounded-full text-xs font-medium">"{item.giftMessage}"</span>}
                                     </div>
                                   </TableCell>
-                                  <TableCell className="text-sm text-right text-neutral-900 p-3 tabular-nums">{formatCurrency(item.unitPrice)} {t('common.sar')}</TableCell>
-                                  <TableCell className="text-sm text-right font-semibold text-neutral-900 p-3 tabular-nums">{formatCurrency(item.totalPrice)} {t('common.sar')}</TableCell>
+                                  <TableCell className="text-sm text-start text-neutral-900 p-3 tabular-nums">{formatCurrency(item.unitPrice)} {t('common.sar')}</TableCell>
+                                  <TableCell className="text-sm text-start font-semibold text-neutral-900 p-3 tabular-nums">{formatCurrency(item.totalPrice)} {t('common.sar')}</TableCell>
                                 </TableRow>
                               )})}
                             </TableBody>
@@ -1109,7 +1109,7 @@ export default function Orders() {
                                 <div className="flex gap-2 justify-end">
                                   <Button variant="outline" size="sm" className="h-9 text-sm" onClick={() => { setShowLabelForm(false); setLabelCarrier(''); setLabelTracking(''); }}>{t('common.cancel')}</Button>
                                   <Button size="sm" className="h-9 text-sm" disabled={savingLabel || !labelCarrier.trim() || !labelTracking.trim()} onClick={handleCreateLabel}>
-                                    {savingLabel && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                                    {savingLabel && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
                                     {t('orders.save', 'حفظ')}
                                   </Button>
                                 </div>
@@ -1285,7 +1285,7 @@ export default function Orders() {
                    setConfirmAction(null);
                  }
                }}>
-               {changingStatus ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Ban className="h-4 w-4 mr-1" />}
+               {changingStatus ? <Loader2 className="h-4 w-4 animate-spin me-1" /> : <Ban className="h-4 w-4 me-1" />}
                {confirmAction?.label}
              </Button>
            </div>

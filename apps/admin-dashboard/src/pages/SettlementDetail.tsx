@@ -96,14 +96,14 @@ export default function SettlementDetail() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-right font-medium text-gray-500">رقم الطلب</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-500">تاريخ الدفع</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-500">إجمالي الطلب</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-500">رسوم البوابة</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-500">رسوم المنصة</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-500">صافي المستحق</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-500">حالة المطابقة</th>
-              <th className="px-4 py-3 text-right font-medium text-gray-500">المتجر</th>
+              <th className="px-4 py-3 text-start font-medium text-gray-500">رقم الطلب</th>
+              <th className="px-4 py-3 text-start font-medium text-gray-500">تاريخ الدفع</th>
+              <th className="px-4 py-3 text-start font-medium text-gray-500">إجمالي الطلب</th>
+              <th className="px-4 py-3 text-start font-medium text-gray-500">رسوم البوابة</th>
+              <th className="px-4 py-3 text-start font-medium text-gray-500">رسوم المنصة</th>
+              <th className="px-4 py-3 text-start font-medium text-gray-500">صافي المستحق</th>
+              <th className="px-4 py-3 text-start font-medium text-gray-500">حالة المطابقة</th>
+              <th className="px-4 py-3 text-start font-medium text-gray-500">المتجر</th>
             </tr>
           </thead>
           <tbody>

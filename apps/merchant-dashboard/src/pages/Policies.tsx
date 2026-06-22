@@ -201,7 +201,7 @@ export default function Policies() {
           className="h-9 text-sm"
           onClick={() => setShowGenerator(true)}
         >
-          <Wand2 className="h-4 w-4 mr-1" />
+          <Wand2 className="h-4 w-4 me-1" />
           توليد سياسات وفق النظام السعودي
         </Button>
       </div>
@@ -221,7 +221,7 @@ export default function Policies() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-lg font-bold text-neutral-900">{t(`policies.type_${type}`)}</h3>
                       {isPublished ? (
-                        <Badge variant="success" className="text-xs px-2.5 py-0.5"><CheckCircle2 className="h-3 w-3 mr-1" />{t('policies.status_published')}</Badge>
+                        <Badge variant="success" className="text-xs px-2.5 py-0.5"><CheckCircle2 className="h-3 w-3 me-1" />{t('policies.status_published')}</Badge>
                       ) : (
                         <Badge variant="secondary" className="text-xs px-2.5 py-0.5">{t('policies.status_draft')}</Badge>
                       )}
@@ -237,7 +237,7 @@ export default function Policies() {
                     <div className="flex gap-2 mt-4">
                       <PermissionGate permission="settings:update">
                         <Button variant="outline" className="h-9 text-sm" onClick={() => openEdit(type)}>
-                          <Edit3 className="h-4 w-4 mr-1" />
+                          <Edit3 className="h-4 w-4 me-1" />
                           {t('policies.edit', { type: t(`policies.type_${type}`) })}
                         </Button>
                       </PermissionGate>
@@ -248,7 +248,7 @@ export default function Policies() {
                           onClick={() => togglePublish(type, isPublished)}
                           disabled={toggling === type}
                         >
-                          {toggling === type && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                          {toggling === type && <Loader2 className="h-4 w-4 me-1 animate-spin" />}
                           {isPublished ? t('policies.unpublish') : t('policies.publish')}
                         </Button>
                       </PermissionGate>
@@ -282,7 +282,7 @@ export default function Policies() {
               <Button variant="outline" className="h-9 text-sm" onClick={closeEdit}>{t('common.cancel')}</Button>
               <PermissionGate permission="settings:update">
                 <Button className="h-9 text-sm px-4" onClick={save} disabled={saving}>
-                  {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  {saving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
                   {saving ? t('policies.saving') : t('policies.save')}
                 </Button>
               </PermissionGate>
@@ -435,7 +435,7 @@ export default function Policies() {
                     onClick={handleGeneratePreview}
                     disabled={!generatorInput.storeName || generating}
                   >
-                    {generating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {generating && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
                     {generating ? 'جاري التوليد...' : 'معاينة'}
                   </Button>
                 </div>
@@ -487,7 +487,7 @@ export default function Policies() {
                       onClick={handleApplyGenerated}
                       disabled={applying || previewResult.errors.length > 0}
                     >
-                      {applying && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      {applying && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
                       {applying ? 'جاري التطبيق...' : 'تطبيق'}
                     </Button>
                   </PermissionGate>
