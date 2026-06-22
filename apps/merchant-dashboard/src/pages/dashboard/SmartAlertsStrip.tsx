@@ -15,6 +15,7 @@
 // - dismissing state: opacity-0 scale-95 transition
 
 import { X } from "lucide-react";
+import type { TFunction } from "i18next";
 
 export type SmartAlert = {
   id: string;
@@ -28,6 +29,10 @@ type Props = {
   alerts: SmartAlert[];
   dismissingIds: Set<string>;
   onDismiss: (id: string) => void;
+  // Audit Part 2 (P1, a11y): the dismiss <button> is icon-only (<X />),
+  // so a screen-reader user would otherwise hear nothing. We accept the
+  // i18next TFunction to read `dashboard.smartAlerts.dismissAria`.
+  t: TFunction;
 };
 
 const BORDER_MAP: Record<SmartAlert["type"], string> = {
@@ -44,7 +49,7 @@ const ICON_MAP: Record<SmartAlert["type"], string> = {
   success: "text-emerald-500",
 };
 
-export function SmartAlertsStrip({ alerts, dismissingIds, onDismiss }: Props) {
+export function SmartAlertsStrip({ alerts, dismissingIds, onDismiss, t }: Props) {
   const critical = alerts
     .filter((a) => a.type === "danger" || a.type === "warning")
     .slice(0, 3);
@@ -75,6 +80,7 @@ export function SmartAlertsStrip({ alerts, dismissingIds, onDismiss }: Props) {
               </span>
               <button
                 onClick={() => onDismiss(alert.id)}
+                aria-label={t("dashboard.smartAlerts.dismissAria", "إخفاء التنبيه")}
                 className="shrink-0 p-0.5 rounded hover:bg-black/5 transition-colors"
               >
                 <X className="h-2.5 w-2.5 text-neutral-400" />

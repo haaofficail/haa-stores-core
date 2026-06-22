@@ -34,6 +34,7 @@ export function QuickActionsGrid({ t }: Props) {
       <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
         <button
           onClick={() => navigate("/products?create=true")}
+          aria-label={t("dashboard.quickActions.addProductAria", "إضافة منتج جديد")}
           className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
         >
           <Plus className="h-4 w-4" />
@@ -43,6 +44,7 @@ export function QuickActionsGrid({ t }: Props) {
         </button>
         <button
           onClick={() => navigate("/orders")}
+          aria-label={t("dashboard.quickActions.viewOrdersAria", "عرض كل الطلبات")}
           className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-neutral-100 text-neutral-900 hover:bg-neutral-200 transition-all hover:-translate-y-0.5"
         >
           <List className="h-4 w-4" />
@@ -52,6 +54,7 @@ export function QuickActionsGrid({ t }: Props) {
         </button>
         <button
           onClick={() => navigate("/coupons")}
+          aria-label={t("dashboard.quickActions.createCouponAria", "إنشاء كوبون جديد")}
           className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-neutral-100 text-neutral-900 hover:bg-neutral-200 transition-all hover:-translate-y-0.5"
         >
           <Percent className="h-4 w-4" />
@@ -73,6 +76,7 @@ export function QuickActionsGrid({ t }: Props) {
                 : window.location.origin);
             window.open(`${baseUrl}/s/${storeSlug}`, "_blank");
           }}
+          aria-label={t("dashboard.quickActions.openStoreAria", "فتح واجهة المتجر في تبويب جديد")}
           className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-neutral-100 text-neutral-900 hover:bg-neutral-200 transition-all hover:-translate-y-0.5"
         >
           <Globe className="h-4 w-4" />

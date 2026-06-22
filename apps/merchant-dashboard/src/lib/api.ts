@@ -367,6 +367,55 @@ export const reportsApi = {
     if (dateTo) q.set('dateTo', dateTo);
     return request<DeepReport>(`/merchant/${storeId}/reports/deep?${q}`);
   },
+  /**
+   * Streams the full sales-report CSV as a Blob. Audit Part 2 (P1)
+   * flagged that Reports.tsx was using a raw `fetch()` + manual
+   * `getToken()` here, which bypassed the central error pipeline —
+   * a failure surfaced only as `toast.error('common.error')` with
+   * no diagnostic. Routing through this wrapper:
+   *   1. Re-uses the same 401 → /login redirect behaviour as
+   *      `request()`.
+   *   2. Throws a typed `ApiClientError` on failure so the caller's
+   *      `messageFromError(e, t)` can pick the right Arabic message.
+   *   3. Returns the raw Blob (the endpoint streams CSV, not JSON,
+   *      so it can't go through the standard JSON `request()`).
+   */
+  exportCsv: async (
+    storeId: number,
+    params?: { dateFrom?: string; dateTo?: string },
+  ): Promise<Blob> => {
+    const q = new URLSearchParams();
+    if (params?.dateFrom) q.set('dateFrom', params.dateFrom);
+    if (params?.dateTo) q.set('dateTo', params.dateTo);
+    const qs = q.toString();
+    const token = getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    let res: Response;
+    try {
+      res = await fetch(
+        `${BASE_URL}/merchant/${storeId}/reports/export${qs ? `?${qs}` : ''}`,
+        { headers, credentials: 'include' },
+      );
+    } catch {
+      throw new ApiClientError('NETWORK_ERROR', 'Network error: unable to connect to server');
+    }
+    if (res.status === 401) {
+      clearToken();
+      window.location.href = '/login';
+      throw new ApiClientError('UNAUTHORIZED', 'Unauthorized');
+    }
+    if (!res.ok) {
+      // CSV endpoint typically returns text/plain on failure rather than
+      // JSON; surface the status code so messageFromError can map it.
+      const text = await res.text().catch(() => '');
+      throw new ApiClientError(
+        'SERVER_ERROR',
+        `Server returned ${res.status}: ${text.slice(0, 100)}`,
+      );
+    }
+    return await res.blob();
+  },
 };
 
 // Customers

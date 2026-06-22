@@ -54,6 +54,7 @@ export function RecentSoldProducts({ orders, t }: Props) {
         <button
           className="text-sm text-primary-600 hover:text-primary-700 font-bold"
           onClick={() => navigate("/orders")}
+          aria-label={t("dashboard.recentSoldProductsViewAllAria", "عرض كل الطلبات")}
         >
           {t("common.viewAll", "عرض الكل")}
         </button>

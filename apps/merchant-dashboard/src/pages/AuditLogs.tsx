@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { auditApi } from '@/lib/api';
+import { messageFromError } from '@/lib/error-mapper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  ChevronLeft, ChevronRight, Filter, X, History, AlertTriangle,
+  ChevronLeft, ChevronRight, Filter, X, History, AlertTriangle, RotateCw,
   Store, Package, ShoppingCart, CreditCard, Truck, FileText, Shield, User, Wallet, Tag,
 } from 'lucide-react';
 
@@ -177,10 +179,17 @@ export default function AuditLogs() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  // Audit Part 2 (P1): AuditLogs previously had a silent catch which left
+  // the spinner spinning forever on a rejected fetch. We now track a
+  // `loadError` UI state and surface the mapped Arabic message via
+  // `messageFromError(e, t)` (from the centralised error-mapper). The
+  // empty-on-error data still resets so the table renders consistently.
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadLogs = useCallback(async () => {
     if (!storeId) return;
     setLoading(true);
+    setLoadError(null);
     try {
       const result = await auditApi.getLogs(storeId, {
         page,
@@ -193,13 +202,17 @@ export default function AuditLogs() {
       setLogs(result.data);
       setTotal(result.total);
       setTotalPages(result.totalPages);
-    } catch {
+    } catch (e) {
+      const message = messageFromError(e, t);
+      setLoadError(message);
+      toast.error(message);
       setLogs([]);
       setTotal(0);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }
-  }, [storeId, page, limit, filterAction, filterEntity, dateFrom, dateTo]);
+  }, [storeId, page, limit, filterAction, filterEntity, dateFrom, dateTo, t]);
 
   useEffect(() => { loadLogs(); }, [loadLogs]);
 
@@ -301,6 +314,25 @@ export default function AuditLogs() {
                   <Skeleton className="h-4 w-20" />
                 </div>
               ))}
+            </div>
+          ) : loadError ? (
+            <div className="p-12 text-center">
+              <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4">
+                <AlertTriangle className="h-10 w-10 text-red-400" />
+              </div>
+              <p className="text-base font-medium text-neutral-700 mb-1">
+                {t('audit.loadError', 'تعذّر تحميل سجل التغييرات')}
+              </p>
+              <p className="text-sm text-neutral-500 mb-6 max-w-sm mx-auto">{loadError}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 text-sm gap-1.5"
+                onClick={loadLogs}
+                aria-label={t('common.retry', 'إعادة المحاولة')}
+              >
+                <RotateCw className="h-4 w-4" /> {t('common.retry', 'إعادة المحاولة')}
+              </Button>
             </div>
           ) : logs.length === 0 ? (
             <div className="p-12 text-center">

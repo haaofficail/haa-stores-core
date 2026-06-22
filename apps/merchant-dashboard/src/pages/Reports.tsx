@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { AlertTriangle, DollarSign, ShoppingCart, MapPin, TrendingUp, Wallet, Download, Printer, Loader2 } from 'lucide-react';
-import { reportsApi, getToken, type DeepReport } from '@/lib/api';
+import { reportsApi, type DeepReport } from '@/lib/api';
+import { messageFromError } from '@/lib/error-mapper';
 import { formatCurrency } from '@/lib/utils';
 import { SarIcon } from '@/components/ui/SarIcon';
 
@@ -20,7 +21,6 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-700',
 };
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 type ReportRow = Record<string, string | number | null>;
 
 function downloadCsv(filename: string, headers: string[], rows: string[][]) {
@@ -121,30 +121,26 @@ export default function Reports() {
   const [dateTo, setDateTo] = useState('');
   const [exporting, setExporting] = useState(false);
 
-  const exportUrl = useMemo(() => {
-    if (!storeId) return '';
-    const q = new URLSearchParams();
-    if (dateFrom) q.set('dateFrom', dateFrom);
-    if (dateTo) q.set('dateTo', dateTo);
-    const qs = q.toString();
-    return `${BASE_URL}/merchant/${storeId}/reports/export${qs ? `?${qs}` : ''}`;
-  }, [storeId, dateFrom, dateTo]);
-
   const handleExportSection = useCallback((section: string, headers: string[], rows: string[][]) => {
     downloadCsv(`${section}-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
     toast.success(t('reports.exportSuccess'));
   }, [t]);
 
+  // Audit Part 2 (P1): the full-report export previously bypassed the
+  // central `request()` pipeline with a raw `fetch()` + manual
+  // `getToken()`. Any error collapsed to a generic "common.error" toast
+  // with no diagnostic, and the call did not inherit the auto-attached
+  // headers / 401 redirect behaviour. We now route through
+  // `reportsApi.exportCsv` (typed wrapper around the binary CSV stream)
+  // and surface the mapped Arabic message via `messageFromError(e, t)`.
   const handleExportFull = useCallback(async () => {
     if (!storeId) return;
     setExporting(true);
     try {
-      const token = getToken();
-      const res = await fetch(exportUrl, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      const blob = await reportsApi.exportCsv(storeId, {
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
       });
-      if (!res.ok) throw new Error();
-      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -154,12 +150,12 @@ export default function Reports() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       toast.success(t('reports.exportSuccess'));
-    } catch {
-      toast.error(t('common.error'));
+    } catch (e) {
+      toast.error(messageFromError(e, t));
     } finally {
       setExporting(false);
     }
-  }, [storeId, exportUrl, t]);
+  }, [storeId, dateFrom, dateTo, t]);
 
   const loadReports = useCallback(() => {
     if (!storeId) { setLoading(false); return; }
@@ -167,7 +163,7 @@ export default function Reports() {
     setFetchError(false);
     Promise.all([
       reportsApi.salesSummary(storeId, dateFrom || undefined, dateTo || undefined)
-        .catch(() => { toast.error('فشل تحميل التقارير'); return null; }),
+        .catch((e) => { toast.error(messageFromError(e, t)); return null; }),
       reportsApi.topProducts(storeId, 10)
         .catch(() => []),
       reportsApi.ordersByStatus(storeId)
@@ -194,7 +190,7 @@ export default function Reports() {
       if (ws) setWalletSummary(ws);
       if (deep) setDeepReport(deep);
     }).finally(() => setLoading(false));
-  }, [storeId, dateFrom, dateTo]);
+  }, [storeId, dateFrom, dateTo, t]);
 
   useEffect(() => { loadReports(); }, [loadReports]);
 

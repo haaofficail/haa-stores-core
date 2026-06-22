@@ -68,7 +68,10 @@ export function AnalyticsSection({
   return (
     <div className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white/50 shadow-card overflow-hidden">
       <button
+        type="button"
         onClick={onToggle}
+        aria-expanded={showAnalytics}
+        aria-label={t("dashboard.analyticsToggleAria", "إظهار أو إخفاء قسم التحليلات")}
         className="w-full flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 hover:bg-neutral-50 transition-colors"
       >
         <h3 className="font-bold text-sm sm:text-base text-neutral-900">
