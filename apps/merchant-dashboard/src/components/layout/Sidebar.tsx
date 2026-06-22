@@ -165,9 +165,12 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-primary-500/25">
           {t('sidebar.logoLetter', 'ه')}
         </div>
-        <div className="flex flex-col">
-          <span className="font-bold text-base text-neutral-900 leading-tight">{t('app.title', 'ها ستورز')}</span>
-          <span className="text-xs text-neutral-500 leading-tight">{t('app.subtitle', 'لوحة التحكم')}</span>
+        <div className="flex flex-col min-w-0">
+          {/* Brand name unified to "متاجر هاء" (matches login + landing).
+              whitespace-nowrap stops the title from wrapping to two lines
+              inside the 64-rem sidebar (audit P0-#5). */}
+          <span className="font-bold text-base text-neutral-900 leading-tight whitespace-nowrap">{t('app.title', 'متاجر هاء')}</span>
+          <span className="text-xs text-neutral-500 leading-tight whitespace-nowrap">{t('app.subtitle', 'لوحة التاجر')}</span>
         </div>
       </div>
       <nav className="flex-1 overflow-y-auto py-4" aria-label={t('sidebar.navAria', 'التنقل الرئيسي')}>

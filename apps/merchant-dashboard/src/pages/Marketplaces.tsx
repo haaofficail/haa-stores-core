@@ -44,7 +44,7 @@ function formatRelativeTime(d: string | null) {
 
 function StatusDot({ status }: { status: string }) {
   if (status === 'connected') return <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block shadow-sm shadow-emerald-500/50 animate-pulse" />;
-  if (status === 'error') return <span className="h-2 w-2 rounded-full bg-red-500 inline-block shadow-sm shadow-red-500/50" />;
+  if (status === 'error') return <span className="h-2 w-2 rounded-full bg-danger inline-block shadow-sm shadow-danger/50" />;
   return <span className="h-2 w-2 rounded-full bg-neutral-300 inline-block" />;
 }
 

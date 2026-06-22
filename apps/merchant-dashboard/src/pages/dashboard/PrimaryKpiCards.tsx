@@ -47,15 +47,17 @@ export function PrimaryKpiCards({
             {salesTrendLabel && (
               <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-xl font-bold text-xs text-emerald-600 bg-emerald-50">
                 <ArrowUpRight className="h-2.5 w-2.5" />
-                <span>{salesTrendLabel}</span>
+                {/* dir="ltr" + tabular-nums isolates the percentage as an
+                    LTR run so "-23%" doesn't render as "23%-" inside an
+                    RTL parent (audit P0-#1). */}
+                <span dir="ltr" className="tabular-nums">{salesTrendLabel}</span>
               </div>
             )}
           </div>
           <p className="text-xl font-bold text-neutral-900 tabular-nums leading-none mb-1.5">
             {formatNumber(todaySales)}
             <span
-              className="text-xs font-medium text-neutral-400"
-              style={{ marginInlineEnd: "0.25rem" }}
+              className="text-xs font-medium text-neutral-400 ms-1.5"
             >
               {t("common.sar", "ر.س")}
             </span>

@@ -345,7 +345,7 @@ export function ProductFormDialog({
                       type="button"
                       onClick={() => onDeleteImage(img.id)}
                       aria-label="حذف الصورة"
-                      className="absolute end-1 top-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute end-1 top-1 bg-danger text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
@@ -358,7 +358,7 @@ export function ProductFormDialog({
                       type="button"
                       onClick={() => onRemoveQueuedImage(idx)}
                       aria-label="إزالة الصورة"
-                      className="absolute end-1 top-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute end-1 top-1 bg-danger text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>

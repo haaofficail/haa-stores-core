@@ -87,7 +87,7 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
           onClick={() => navigate('/notifications')}
         >
           <Bell className="h-5 w-5" />
-          <span className="absolute top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" style={{ insetInlineStart: '0.5rem' }} />
+          <span className="absolute top-2 h-2 w-2 rounded-full bg-danger ring-2 ring-white" style={{ insetInlineStart: '0.5rem' }} />
         </button>
 
         <div className="h-8 w-px bg-neutral-200 mx-1" />
