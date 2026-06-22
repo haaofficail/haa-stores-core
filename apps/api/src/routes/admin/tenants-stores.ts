@@ -118,7 +118,32 @@ export const tenantsRoutes = {
     const id = Number(c.req.param('id'));
     const { status } = c.req.valid('json');
     const db = createDbClient();
+    const [existing] = await db
+      .select({ id: s.tenants.id, status: s.tenants.status, name: s.tenants.name })
+      .from(s.tenants)
+      .where(eq(s.tenants.id, id))
+      .limit(1);
+    if (!existing) {
+      return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Tenant not found' } }, 404);
+    }
+    // No-op when the desired status matches the current one. Don't emit
+    // an audit entry for a non-change — keeps the log signal clean.
+    if (existing.status === status) {
+      return c.json({ success: true, data: { id, status } });
+    }
     await db.update(s.tenants).set({ status, updatedAt: new Date() }).where(eq(s.tenants.id, id));
+    const adminAuth = c.get('adminAuth') as { userId: number } | undefined;
+    await new AuditLogService().record({
+      actorUserId: adminAuth?.userId ?? null,
+      tenantId: id,
+      action: 'tenant_status_changed',
+      entityType: 'tenant',
+      entityId: id,
+      oldValue: { status: existing.status },
+      newValue: { status },
+      ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
+      userAgent: c.req.header('user-agent'),
+    });
     return c.json({ success: true, data: { id, status } });
   },
 };
