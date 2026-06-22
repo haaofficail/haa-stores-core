@@ -454,7 +454,8 @@ export default function Orders() {
                     <TableCell className="text-sm font-semibold text-neutral-900 p-3 tabular-nums">{formatCurrency(o.total)} {t('common.sar')}</TableCell>
                     <TableCell className="text-sm text-neutral-400 whitespace-nowrap p-3">{new Date(o.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : i18n.language)}</TableCell>
                     <TableCell className="p-3">
-                      <Button variant="ghost" size="icon" className="h-9 w-9" onClick={(e) => { e.stopPropagation(); openDetail(o.id); }} aria-label={t('orders.view_details', 'عرض تفاصيل الطلب')}>
+                      {/* Row action — hit area ≥ 44x44 (WCAG 2.5.5). */}
+                      <Button variant="ghost" size="icon" className="h-11 w-11" onClick={(e) => { e.stopPropagation(); openDetail(o.id); }} aria-label={t('orders.view_details', 'عرض تفاصيل الطلب')}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     </TableCell>

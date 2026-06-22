@@ -638,7 +638,8 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
                           <Undo2 className="h-3 w-3 me-1" />{t('shipping.return')}
                         </Button>
                       )}
-                      <PermissionGate permission="shipping:manage"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openTracking(s)}>
+                      {/* Touch target ≥ 44x44 (WCAG 2.5.5). */}
+                      <PermissionGate permission="shipping:manage"><Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => openTracking(s)} aria-label={t('shipping.editTracking', 'تعديل التتبع')}>
                         <Edit className="h-3.5 w-3.5" />
                       </Button></PermissionGate>
                     </div>

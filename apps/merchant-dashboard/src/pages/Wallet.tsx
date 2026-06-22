@@ -480,8 +480,9 @@ export default function WalletPage() {
                     </TableCell>
                     <TableCell className="p-3">
                       {e.referenceType === 'order' && e.referenceId && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                          <Link to={`/orders?id=${e.referenceId}`} title={t('wallet.viewOrder')}>
+                        // Touch target ≥ 44x44 (WCAG 2.5.5).
+                        <Button variant="ghost" size="icon" className="h-11 w-11" asChild>
+                          <Link to={`/orders?id=${e.referenceId}`} title={t('wallet.viewOrder')} aria-label={t('wallet.viewOrder', 'عرض الطلب')}>
                             <ExternalLink className="h-3.5 w-3.5" />
                           </Link>
                         </Button>
@@ -499,11 +500,12 @@ export default function WalletPage() {
           <div className="flex justify-between items-center text-sm text-neutral-500">
             <span>{t('orders.showingResults', { from: (page - 1) * limit + 1, to: Math.min(page * limit, total), total })}</span>
             <div className="flex gap-2 items-center">
-              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+              {/* Pagination buttons — touch target ≥ 44x44 (WCAG 2.5.5). */}
+              <Button variant="outline" size="icon" className="h-11 w-11" disabled={page <= 1} onClick={() => setPage(p => p - 1)} aria-label={t('wallet.prevPage', 'الصفحة السابقة')}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
               <span className="text-sm tabular-nums">{page} / {totalPages}</span>
-              <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+              <Button variant="outline" size="icon" className="h-11 w-11" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} aria-label={t('wallet.nextPage', 'الصفحة التالية')}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
             </div>

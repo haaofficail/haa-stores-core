@@ -243,7 +243,13 @@ function TicketFormModal({ storeId, defaultName, defaultEmail, onClose, onSucces
             <h2 className="text-base font-bold text-neutral-900">إرسال تذكرة دعم</h2>
             <p className="text-xs text-neutral-400 mt-0.5">سيرد عليك فريق هاء خلال 24 ساعة</p>
           </div>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-400 transition-colors">
+          {/* Modal close — touch target ≥ 44x44 (WCAG 2.5.5). */}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="إغلاق"
+            className="h-11 w-11 inline-flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>

@@ -170,7 +170,8 @@ export default function EmployeesPage() {
           <p className="text-sm text-neutral-500 mt-1">إدارة موظفي المتجر والصلاحيات</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={fetchEmployees} disabled={loading} title="تحديث">
+          {/* Touch target ≥ 44x44 (WCAG 2.5.5). */}
+          <Button variant="ghost" size="icon" className="h-11 w-11" onClick={fetchEmployees} disabled={loading} title="تحديث" aria-label="تحديث قائمة الموظفين">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
           <PermissionGate permission="employees:invite">
