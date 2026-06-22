@@ -9,8 +9,26 @@ export interface Variables {
 type TokenVersionVerifier = (decoded: JwtPayload) => Promise<boolean> | boolean;
 type StoreTenantResolver = (storeId: number) => Promise<number | null>;
 
+export type StoreAccessDenialReason =
+  | 'no_store'
+  | 'invalid_id'
+  | 'not_found'
+  | 'cross_tenant';
+
+export interface StoreAccessFailureTrackerResult {
+  blocked: boolean;
+  retryAfterSec?: number;
+}
+
+export type StoreAccessFailureTracker = (
+  c: Context,
+  auth: AuthContext,
+  reason: StoreAccessDenialReason,
+) => Promise<StoreAccessFailureTrackerResult> | StoreAccessFailureTrackerResult;
+
 let _tokenVersionVerifier: TokenVersionVerifier | null = null;
 let _storeTenantResolver: StoreTenantResolver | null = null;
+let _storeAccessFailureTracker: StoreAccessFailureTracker | null = null;
 
 export function setTokenVersionVerifier(fn: TokenVersionVerifier): void {
   _tokenVersionVerifier = fn;
@@ -37,6 +55,25 @@ export function setTokenVersionVerifier(fn: TokenVersionVerifier): void {
  */
 export function setStoreTenantResolver(fn: StoreTenantResolver): void {
   _storeTenantResolver = fn;
+}
+
+/**
+ * Install a tracker invoked on every `requireStoreAccess` denial. If the
+ * tracker returns `{ blocked: true }`, the middleware short-circuits with
+ * 429 (and `Retry-After` if `retryAfterSec` is provided) instead of the
+ * usual 403/404. This is the hook used to mitigate cross-tenant probing
+ * (BOLA/IDOR scans) without leaking timing information.
+ *
+ * The tracker is invoked for ALL denial reasons (no_store, invalid_id,
+ * not_found, cross_tenant) so the implementation can decide which ones
+ * count against the budget. The default implementation in the API layer
+ * focuses on `not_found` and `cross_tenant` since those reflect a probe
+ * against an existing user's surface.
+ */
+export function setStoreAccessFailureTracker(
+  fn: StoreAccessFailureTracker | null,
+): void {
+  _storeAccessFailureTracker = fn;
 }
 
 export function getAuth(c: Context): AuthContext | null {
@@ -109,14 +146,45 @@ export function requireStoreAccess() {
       return c.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
     }
 
+    const deny = async (
+      reason: StoreAccessDenialReason,
+      status: 403 | 404,
+      code: 'FORBIDDEN' | 'NOT_FOUND',
+      message: string,
+    ) => {
+      if (_storeAccessFailureTracker) {
+        try {
+          const result = await _storeAccessFailureTracker(c, auth, reason);
+          if (result.blocked) {
+            if (result.retryAfterSec && result.retryAfterSec > 0) {
+              c.header('Retry-After', String(Math.ceil(result.retryAfterSec)));
+            }
+            return c.json(
+              {
+                success: false,
+                error: {
+                  code: 'RATE_LIMITED',
+                  message: 'Too many denied store-access attempts. Try again later.',
+                },
+              },
+              429,
+            );
+          }
+        } catch {
+          // Tracker failure must not block the normal denial path.
+        }
+      }
+      return c.json({ success: false, error: { code, message } }, status);
+    };
+
     const paramStoreId = c.req.param('storeId');
     if (!paramStoreId) {
-      return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'No store specified' } }, 403);
+      return deny('no_store', 403, 'FORBIDDEN', 'No store specified');
     }
 
     const storeId = Number(paramStoreId);
     if (isNaN(storeId) || storeId < 1) {
-      return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Invalid store ID' } }, 403);
+      return deny('invalid_id', 403, 'FORBIDDEN', 'Invalid store ID');
     }
 
     // Check tenant boundary: does this store belong to the user's tenant?
@@ -126,11 +194,11 @@ export function requireStoreAccess() {
 
     const storeTenantId = await _storeTenantResolver(storeId);
     if (storeTenantId === null) {
-      return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Store not found' } }, 404);
+      return deny('not_found', 404, 'NOT_FOUND', 'Store not found');
     }
 
     if (storeTenantId !== auth.tenantId) {
-      return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Store access denied' } }, 403);
+      return deny('cross_tenant', 403, 'FORBIDDEN', 'Store access denied');
     }
 
     await next();
