@@ -203,8 +203,47 @@ jobs:
           ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
 
       - name: Add server to known hosts
+        # Replaces the previous `ssh-keyscan -H` probe. ssh-keyscan opens a
+        # TCP connection to port 22 just to read the host key; staging's
+        # fail2ban (sshd jail) treats repeated probes from GitHub runner IPs
+        # as brute-force attempts and banhammers the source IP, which then
+        # breaks every subsequent SSH step in this job.
+        #
+        # New behavior (in priority order):
+        #   1. If STAGING_KNOWN_HOSTS secret is set → write it verbatim. Zero
+        #      probing, fully authenticated, MITM-safe.
+        #   2. Otherwise → configure SSH client with `StrictHostKeyChecking
+        #      accept-new`. The first real SSH command (the ones that actually
+        #      need to run anyway, e.g. `docker login`) adds the key on its
+        #      own. No separate probe → no extra connection → no fail2ban
+        #      trigger.
+        env:
+          STAGING_KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
         run: |
-          ssh-keyscan -H ${{ secrets.STAGING_HOST }} >> ~/.ssh/known_hosts
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if [ -n "${STAGING_KNOWN_HOSTS:-}" ]; then
+            printf '%s\n' "$STAGING_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+            chmod 644 ~/.ssh/known_hosts
+            echo "✓ Used pre-baked STAGING_KNOWN_HOSTS (no probing)."
+          else
+            cat >> ~/.ssh/config <<EOF
+          Host ${STAGING_HOST}
+            StrictHostKeyChecking accept-new
+            UserKnownHostsFile ~/.ssh/known_hosts
+            ConnectTimeout 30
+            ServerAliveInterval 30
+            ServerAliveCountMax 3
+          EOF
+            chmod 600 ~/.ssh/config
+            touch ~/.ssh/known_hosts && chmod 644 ~/.ssh/known_hosts
+            echo "⚠ STAGING_KNOWN_HOSTS secret not set — falling back to accept-new on first connect."
+            echo "  This is one SSH connection (the docker login that follows) instead of two."
+            echo "  To eliminate the fallback, add STAGING_KNOWN_HOSTS as a repo secret:"
+            echo "    ssh-keyscan -H <staging-host> | base64  → paste decoded value as secret"
+          fi
 
       - name: Authenticate staging server to GHCR
         env:
@@ -402,8 +441,32 @@ jobs:
           ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
 
       - name: Add server to known hosts
+        # See staging job above for the rationale: ssh-keyscan probes trigger
+        # the server's fail2ban (sshd jail) and banhammer the runner IP.
+        env:
+          PRODUCTION_KNOWN_HOSTS: ${{ secrets.PRODUCTION_KNOWN_HOSTS }}
+          PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
         run: |
-          ssh-keyscan -H ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if [ -n "${PRODUCTION_KNOWN_HOSTS:-}" ]; then
+            printf '%s\n' "$PRODUCTION_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+            chmod 644 ~/.ssh/known_hosts
+            echo "✓ Used pre-baked PRODUCTION_KNOWN_HOSTS (no probing)."
+          else
+            cat >> ~/.ssh/config <<EOF
+          Host ${PRODUCTION_HOST}
+            StrictHostKeyChecking accept-new
+            UserKnownHostsFile ~/.ssh/known_hosts
+            ConnectTimeout 30
+            ServerAliveInterval 30
+            ServerAliveCountMax 3
+          EOF
+            chmod 600 ~/.ssh/config
+            touch ~/.ssh/known_hosts && chmod 644 ~/.ssh/known_hosts
+            echo "⚠ PRODUCTION_KNOWN_HOSTS secret not set — falling back to accept-new on first connect."
+          fi
 
       - name: Authenticate production server to GHCR
         env:
