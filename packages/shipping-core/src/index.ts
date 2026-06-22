@@ -32,4 +32,5 @@ export {
   ShippingRateCache,
   getDefaultShippingRateCache,
   type RateCacheKeyInput,
+  type ShippingRateCacheStats,
 } from "./rate-cache.js";

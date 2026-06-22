@@ -43,10 +43,23 @@ interface CacheEntry<T> {
   inFlight: Promise<T> | undefined;
 }
 
+export interface ShippingRateCacheStats {
+  size: number;
+  hits: number;
+  misses: number;
+  coalesced: number;
+  errors: number;
+  hitRate: number;
+}
+
 export class ShippingRateCache<T> {
   private readonly store = new Map<string, CacheEntry<T>>();
   private readonly ttlMs: number;
   private readonly errorTtlMs: number;
+  private hits = 0;
+  private misses = 0;
+  private coalesced = 0;
+  private errors = 0;
 
   constructor(opts: { ttlMs?: number; errorTtlMs?: number } = {}) {
     this.ttlMs = opts.ttlMs ?? DEFAULT_TTL_MS;
@@ -69,16 +82,24 @@ export class ShippingRateCache<T> {
     if (entry) {
       // Live in-flight call: piggy-back.
       if (entry.inFlight) {
+        this.coalesced += 1;
         return entry.inFlight;
       }
       if (entry.expiresAt > now) {
-        if (entry.error) throw entry.error;
-        if (entry.value !== undefined) return entry.value;
+        if (entry.error) {
+          this.errors += 1;
+          throw entry.error;
+        }
+        if (entry.value !== undefined) {
+          this.hits += 1;
+          return entry.value;
+        }
       }
       // Stale — drop and refetch.
       this.store.delete(key);
     }
 
+    this.misses += 1;
     const inFlight = (async () => {
       try {
         const value = await loader();
@@ -116,9 +137,26 @@ export class ShippingRateCache<T> {
     return this.store.size;
   }
 
+  /** Snapshot of counters + size. Hit rate denominator excludes errors. */
+  stats(): ShippingRateCacheStats {
+    const lookups = this.hits + this.misses;
+    return {
+      size: this.store.size,
+      hits: this.hits,
+      misses: this.misses,
+      coalesced: this.coalesced,
+      errors: this.errors,
+      hitRate: lookups === 0 ? 0 : this.hits / lookups,
+    };
+  }
+
   /** Visible for tests. Clears all cached entries. */
   clear(): void {
     this.store.clear();
+    this.hits = 0;
+    this.misses = 0;
+    this.coalesced = 0;
+    this.errors = 0;
   }
 
   /** Compute the stable key for the given input. Exposed for tests. */

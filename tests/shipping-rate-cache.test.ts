@@ -111,4 +111,57 @@ describe('ShippingRateCache (F-QA-C-004)', () => {
     );
     expect(a).toBe(b);
   });
+
+  describe('stats()', () => {
+    it('starts at zero', () => {
+      const s = cache.stats();
+      expect(s).toEqual({ size: 0, hits: 0, misses: 0, coalesced: 0, errors: 0, hitRate: 0 });
+    });
+
+    it('counts a miss then a hit on the same key', async () => {
+      const load = async () => 7;
+      await cache.getOrLoad(input(), load);
+      await cache.getOrLoad(input(), load);
+      const s = cache.stats();
+      expect(s.misses).toBe(1);
+      expect(s.hits).toBe(1);
+      expect(s.size).toBe(1);
+      expect(s.hitRate).toBe(0.5);
+    });
+
+    it('counts coalesced (single-flight piggy-back) separately from hits', async () => {
+      let resolveLoader: ((v: number) => void) | undefined;
+      const load = () =>
+        new Promise<number>((resolve) => {
+          resolveLoader = resolve;
+        });
+      const p1 = cache.getOrLoad(input(), load);
+      const p2 = cache.getOrLoad(input(), load);
+      const p3 = cache.getOrLoad(input(), load);
+      resolveLoader!(11);
+      await Promise.all([p1, p2, p3]);
+      const s = cache.stats();
+      expect(s.misses).toBe(1);
+      expect(s.coalesced).toBe(2);
+      expect(s.hits).toBe(0);
+    });
+
+    it('counts replayed errors against the errors counter', async () => {
+      const load = async () => {
+        throw new Error('boom');
+      };
+      await expect(cache.getOrLoad(input(), load)).rejects.toThrow('boom');
+      await expect(cache.getOrLoad(input(), load)).rejects.toThrow('boom');
+      const s = cache.stats();
+      expect(s.errors).toBe(1);
+      expect(s.misses).toBe(1);
+    });
+
+    it('clear() resets counters', async () => {
+      await cache.getOrLoad(input(), async () => 1);
+      cache.clear();
+      const s = cache.stats();
+      expect(s).toEqual({ size: 0, hits: 0, misses: 0, coalesced: 0, errors: 0, hitRate: 0 });
+    });
+  });
 });
