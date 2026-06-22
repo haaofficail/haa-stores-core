@@ -69,7 +69,7 @@ export default function MarketplaceListingsPage() {
             <Package className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">{t('marketplaces.listings', 'المنتجات المسوقة')}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('marketplaces.listings', 'المنتجات المسوقة')}</h1>
             <p className="text-sm text-neutral-500">{providerDisplayName}</p>
           </div>
         </div>

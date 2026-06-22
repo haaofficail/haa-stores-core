@@ -80,7 +80,7 @@ export default function SupportTickets() {
             <Ticket className="h-5 w-5 text-primary-600" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-neutral-900">{t('support.tickets', 'تذاكر الدعم')}</h1>
+            <h1 className="text-xl font-bold tracking-tight text-neutral-900">{t('support.tickets', 'تذاكر الدعم')}</h1>
             <p className="text-sm text-neutral-500">{count} {t('support.totalTickets', 'تذكرة')}</p>
           </div>
         </div>

@@ -162,7 +162,7 @@ export default function Login() {
 
               <div className="rounded-3xl border border-white/60 bg-white/75 p-7 shadow-2xl shadow-primary-500/10 backdrop-blur-2xl">
                 <div className="mb-6">
-                  <h2 className="text-xl font-bold text-neutral-900">مرحبًا بعودتك</h2>
+                  <h2 className="text-xl font-bold tracking-tight text-neutral-900">مرحبًا بعودتك</h2>
                   <p className="mt-1 text-sm text-neutral-500">سجّل دخولك للوحة التحكم</p>
                 </div>
 

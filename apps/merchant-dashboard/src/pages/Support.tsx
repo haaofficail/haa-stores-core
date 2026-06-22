@@ -444,7 +444,7 @@ export default function SupportPage() {
             <Headphones className="h-4 w-4" />
             مركز دعم هاء ستورز
           </div>
-          <h1 className="text-2xl font-bold mb-1">كيف يمكننا مساعدتك اليوم؟</h1>
+          <h1 className="text-2xl font-bold tracking-tight mb-1">كيف يمكننا مساعدتك اليوم؟</h1>
           <p className="text-primary-200 text-sm mb-5">ابحث في قاعدة المعرفة، أو تواصل مع فريق الدعم مباشرةً</p>
           <div className="relative max-w-lg">
             <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />

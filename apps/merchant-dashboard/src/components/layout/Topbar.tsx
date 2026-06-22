@@ -59,7 +59,7 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
           </button>
         )}
         <div className="flex flex-col">
-          <h1 className="text-xl font-bold text-neutral-900 leading-tight">{pageInfo.title}</h1>
+          <h1 className="text-xl font-bold tracking-tight text-neutral-900 leading-tight">{pageInfo.title}</h1>
           {pageInfo.subtitle && (
             <span className="text-sm text-neutral-500 leading-tight">{pageInfo.subtitle}</span>
           )}

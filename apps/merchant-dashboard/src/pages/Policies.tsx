@@ -193,7 +193,7 @@ export default function Policies() {
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">{t('policies.title')}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('policies.title')}</h1>
           <p className="text-neutral-400 text-sm mt-1">{t('policies.description')}</p>
         </div>
         <Button

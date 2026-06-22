@@ -194,7 +194,7 @@ export default function GrowthInsights() {
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in" dir="rtl">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">مؤشرات النمو</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-900">مؤشرات النمو</h1>
           <p className="text-neutral-400 text-sm mt-1">تحليلات التسويق وأداء المتجر</p>
         </div>
         <div className="flex items-center gap-3">

@@ -20,7 +20,7 @@ export default function ForgotPassword() {
             <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-lg shadow-primary-500/30">
               <LifeBuoy className="h-7 w-7" aria-hidden="true" />
             </div>
-            <h1 className="text-2xl font-bold text-neutral-900">استعادة كلمة المرور</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-neutral-900">استعادة كلمة المرور</h1>
             <p className="mt-2 text-sm leading-relaxed text-neutral-600">
               لا توجد حاليًا طريقة لاستعادة كلمة المرور ذاتيًا من لوحة التاجر. تواصل مع
               فريق الدعم وسنُساعدك خلال يوم عمل واحد.

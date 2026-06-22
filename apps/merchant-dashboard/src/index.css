@@ -11,8 +11,11 @@
   --haa-surface-3: #f0f2f5;
   --haa-surface-inverse: #0f172a;
 
-  /* ── Text ── */
-  --haa-text-primary: #0f172a;
+  /* ── Text ──
+     Body text uses #1d1d1f (Apple's near-black) for parity with the
+     landing-page baseline. Keeping the merchant dashboard aligned with
+     the same primary text color prevents the "two products" perception. */
+  --haa-text-primary: #1d1d1f;
   --haa-text-secondary: #475569;
   --haa-text-tertiary: #94a3b8;
   --haa-text-disabled: #cbd5e1;
@@ -47,8 +50,9 @@
   --color-neutral-600: #525252;
   --color-neutral-700: #404040;
   --color-neutral-800: #262626;
-  /* neutral-900 intentionally preserved (do not change per scope brief). */
-  --color-neutral-900: #0f172a;
+  /* neutral-900 aliases to Apple's near-black (#1d1d1f) so existing
+     `text-neutral-900` usages resolve to landing's primary-text token. */
+  --color-neutral-900: #1d1d1f;
   --color-neutral-950: #0a0a0a;
 
   /* ── Apple-style secondary/tertiary text (parity with landing) ── */

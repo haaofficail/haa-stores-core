@@ -39,7 +39,7 @@ export function DashboardHeader({ t, visibleAlerts, onRefresh }: Props) {
           <Menu className="h-5 w-5 text-neutral-700" />
         </button>
         <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl font-bold text-neutral-900 truncate">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 truncate">
             {t("dashboard.title", "لوحة التحكم")}
           </h1>
           <p className="text-xs text-neutral-400 truncate">
