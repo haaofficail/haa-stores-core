@@ -40,6 +40,29 @@ function getStoreId(): string | null {
 
 export { setToken, clearToken, getStoreId, getToken };
 
+// Methods that mutate server state. Every one of these MUST carry an
+// `Idempotency-Key` so that a double-click, a flaky network retry, or a
+// browser back/forward cache replay does NOT post the operation twice.
+// Audit Part 3 (commerce) flagged this as the highest-money-risk gap on
+// the dashboard: SettlementOverview's "request payout" button could
+// re-trigger a duplicate payout on a double-click without it.
+//
+// The key is generated client-side per call (UUID v4 via the platform
+// `crypto.randomUUID()`); callers can also pass an explicit key in
+// `options.headers['Idempotency-Key']` if they need a deterministic
+// retry semantic (e.g. an operation tied to a stable client-side id).
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+function newIdempotencyKey(): string {
+  // crypto.randomUUID is available in every browser this dashboard
+  // supports (Safari 15.4+, all evergreen). Fall back to a timestamp +
+  // random so we never throw if the API is somehow missing.
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -51,6 +74,14 @@ export async function request<T>(
   };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  // Auto-attach Idempotency-Key on mutating methods unless the caller
+  // already provided one (preserves caller control for deterministic
+  // retry keys).
+  const method = (options.method ?? 'GET').toUpperCase();
+  if (MUTATING_METHODS.has(method) && !headers['Idempotency-Key']) {
+    headers['Idempotency-Key'] = newIdempotencyKey();
   }
 
   let res: Response;
