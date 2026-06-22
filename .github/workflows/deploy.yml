@@ -351,6 +351,48 @@ jobs:
             printf '%s\n' "${PREV_TAG:-}" > .deploy-prev-tag
             echo "==> Previous tag: ${PREV_TAG:-<none>} | New tag: $NEW_TAG"
 
+            # ── Disk preflight + safe cleanup (BEFORE pull) ───────────
+            # Deploy #98 failed mid-`docker compose pull` with
+            # "no space left on device" while extracting a Next.js layer.
+            # Root cause: 198 images had accumulated; the old post-deploy
+            # filter `--until=24h` doesn't catch them because rapid
+            # back-to-back deploys keep "touching" images.
+            #
+            # This block cleans BEFORE the pull so headroom is guaranteed.
+            # Forbidden: `docker volume prune` and any `--volumes` flag —
+            # postgres + minio data live in named volumes and would be
+            # destroyed. Containers, images, build cache, and networks
+            # are safe to prune (the running containers protect their
+            # in-use images from `image prune -af`).
+            echo "==> Disk state BEFORE cleanup"
+            df -h / | awk 'NR==1 || $0 ~ "/$" {print}'
+            docker system df 2>&1 || true
+
+            echo "==> Safe cleanup (containers, images, build cache, networks — volumes preserved)"
+            docker container prune -f 2>&1 | tail -1
+            docker image prune -af 2>&1 | tail -1
+            docker builder prune -af 2>&1 | tail -1
+            docker network prune -f 2>&1 | tail -1
+
+            echo "==> Disk state AFTER cleanup"
+            df -h / | awk 'NR==1 || $0 ~ "/$" {print}'
+            docker system df 2>&1 || true
+
+            # Hard floor: refuse to pull if less than 8 GB free on /.
+            # The heaviest single image is the merchant-dashboard build
+            # (~1.5 GB compressed, ~3 GB extracted); pulling 4 SPA + API
+            # + Caddy + redis + postgres + minio images plus the
+            # extraction working set can need ~6 GB. The 8 GB threshold
+            # leaves runtime headroom for the new containers to start.
+            AVAIL_GB=$(df -BG --output=avail / | tail -1 | tr -d 'G ')
+            if [ "${AVAIL_GB:-0}" -lt 8 ]; then
+              echo "::error::Available disk space ${AVAIL_GB} GB is below the 8 GB safe floor."
+              echo "::error::Run on the server: docker system prune -af   (never pass --volumes)."
+              exit 1
+            fi
+            echo "==> Disk preflight OK: ${AVAIL_GB} GB free"
+            # ──────────────────────────────────────────────────────────
+
             export IMAGE_TAG="$NEW_TAG" REGISTRY IMAGE_PREFIX
             docker compose pull
             docker compose up -d --remove-orphans
@@ -610,6 +652,40 @@ jobs:
             echo "==> [PRODUCTION] Previous: ${PREV_TAG:-<none>} | New: $NEW_TAG"
 
             cp docker-compose.yml docker-compose.yml.bak 2>/dev/null || true
+
+            # ── [PRODUCTION] Disk preflight + safe cleanup (BEFORE pull) ──
+            # Same rationale as the staging step above. Production is the
+            # same class of host; rapid deploys accumulate images and the
+            # legacy `--until=72h` post-deploy prune does not catch them.
+            # Pruning containers / images / build cache / networks is safe;
+            # `docker volume prune` and `--volumes` are NEVER used — postgres
+            # data lives in a named volume.
+            echo "==> [PRODUCTION] Disk state BEFORE cleanup"
+            df -h / | awk 'NR==1 || $0 ~ "/$" {print}'
+            docker system df 2>&1 || true
+
+            echo "==> [PRODUCTION] Safe cleanup (volumes preserved)"
+            docker container prune -f 2>&1 | tail -1
+            docker image prune -af 2>&1 | tail -1
+            docker builder prune -af 2>&1 | tail -1
+            docker network prune -f 2>&1 | tail -1
+
+            echo "==> [PRODUCTION] Disk state AFTER cleanup"
+            df -h / | awk 'NR==1 || $0 ~ "/$" {print}'
+            docker system df 2>&1 || true
+
+            # Production gets a higher floor (12 GB) because a failed
+            # mid-pull on production is a customer-facing outage; we'd
+            # rather fail the deploy with a clear error than risk an OOM
+            # extract that leaves containers half-recreated.
+            AVAIL_GB=$(df -BG --output=avail / | tail -1 | tr -d 'G ')
+            if [ "${AVAIL_GB:-0}" -lt 12 ]; then
+              echo "::error::[PRODUCTION] Available disk ${AVAIL_GB} GB is below the 12 GB safe floor."
+              echo "::error::Run on the server: docker system prune -af   (never pass --volumes)."
+              exit 1
+            fi
+            echo "==> [PRODUCTION] Disk preflight OK: ${AVAIL_GB} GB free"
+            # ──────────────────────────────────────────────────────────────
 
             export IMAGE_TAG="$NEW_TAG" REGISTRY IMAGE_PREFIX
             docker compose pull
