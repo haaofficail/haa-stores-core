@@ -40,3 +40,4 @@ export * from './marketing_actions.js';
 export * from './pixels.js';
 export * from './campaigns.js';
 export * from './loyalty.js';
+export * from './whatsapp_sessions.js';
