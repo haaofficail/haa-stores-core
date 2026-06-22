@@ -16,7 +16,6 @@
   "dependencies": {
     "@haa/auth-core": "workspace:*",
     "@haa/commerce-core": "workspace:*",
-    "@haa/zatca-core": "workspace:*",
     "@haa/db": "workspace:*",
     "@haa/integration-core": "workspace:*",
     "@haa/marketplace-core": "workspace:*",
@@ -25,17 +24,22 @@
     "@haa/shipping-core": "workspace:*",
     "@haa/theme-system": "workspace:*",
     "@haa/wallet-core": "workspace:*",
+    "@haa/zatca-core": "workspace:*",
     "@hono/node-server": "^1.12.0",
     "@hono/zod-validator": "^0.3.0",
+    "@whiskeysockets/baileys": "7.0.0-rc13",
     "bullmq": "^5.65.1",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.5.0",
     "ioredis": "^5.11.1",
+    "pino": "^10.3.1",
+    "qrcode": "^1.5.4",
     "zod": "^3.23.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.12",
+    "@types/qrcode": "^1.5.6",
     "tsx": "^4.16.5",
     "typescript": "^5.5.4"
   }

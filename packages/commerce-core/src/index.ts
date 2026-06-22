@@ -1,5 +1,12 @@
 export const COMMERCE_CORE_VERSION = '0.1.0';
 
+// Encryption helpers (AES-256-GCM with PAYMENT_CREDENTIALS_ENCRYPTION_KEY).
+// Re-exported so credential-bearing services (payment, WhatsApp pairing
+// in WA-PR-3, etc.) consume a single canonical helper. `redactCredential`
+// is intentionally NOT re-exported here — it's already exported from
+// `./payment-settings.js` to avoid a duplicate-identifier error.
+export { encrypt, decrypt, isEncryptionKeySet } from './encryption.js';
+
 // VAT helpers (ZATCA 15% standard; env-overridable for future jurisdictions)
 export {
   DEFAULT_VAT_RATE, isValidVatRate, priceIncVat, priceExVat, vatAmount,
