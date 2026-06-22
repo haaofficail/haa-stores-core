@@ -42,12 +42,18 @@ describe('Apple-grade full sweep (PR #65)', () => {
   });
 
   describe('Topbar touch targets + focus rings', () => {
-    it('every icon button is min-h-11 min-w-11', () => {
-      const occurrences = (TOPBAR.match(/min-h-11 min-w-11/g) || []).length;
+    it('every icon button is h-11 w-11 (or min-h-11 min-w-11) — 44px touch target', () => {
+      // Accept both the min-h-11 min-w-11 + p-3 form (introduced in PR #65)
+      // and the consolidated h-11 w-11 inline-flex form (PR #66 rebase).
+      const occurrences =
+        (TOPBAR.match(/min-h-11 min-w-11/g) || []).length +
+        (TOPBAR.match(/\bh-11 w-11\b/g) || []).length;
       expect(occurrences).toBeGreaterThanOrEqual(3);
     });
-    it('icon buttons declare focus-visible ring', () => {
-      expect(TOPBAR).toMatch(/focus-visible:ring-2 focus-visible:ring-primary-500/);
+    it('icon buttons declare focus-visible ring on the brand color', () => {
+      // ring-primary-500 (PR #65) or ring-primary-400 (PR #66) — both
+      // are brand-blue tokens and satisfy the audit.
+      expect(TOPBAR).toMatch(/focus-visible:ring-2[^"]*focus-visible:ring-primary-[45]00/);
     });
     it('notification dot uses bg-danger, not bg-red-500', () => {
       expect(TOPBAR).toMatch(/rounded-full bg-danger ring-2 ring-white/);
