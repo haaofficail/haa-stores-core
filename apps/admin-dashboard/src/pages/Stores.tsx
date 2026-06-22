@@ -97,7 +97,7 @@ export default function Stores() {
         <h2 className="text-2xl font-bold">{t('stores.title', 'المتاجر')}</h2>
         <button
           onClick={() => handleOpenDialog()}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
         >
           <Plus className="h-4 w-4" /> {t('stores.addStore', 'إضافة متجر')}
         </button>
@@ -118,7 +118,7 @@ export default function Stores() {
         ) : error ? (
           <div className="p-12 text-center">
             <p className="text-sm text-gray-500 mb-3">{t('stores.loadError', 'فشل تحميل المتاجر')}</p>
-            <button onClick={() => load()} className="text-sm text-blue-600 hover:text-blue-800 font-medium">{t('stores.retry', 'إعادة المحاولة')}</button>
+            <button onClick={() => load()} className="text-sm text-primary-600 hover:text-primary-700 font-medium">{t('stores.retry', 'إعادة المحاولة')}</button>
           </div>
         ) : stores.length === 0 ? (
           <div className="p-12 text-center">
@@ -148,7 +148,7 @@ export default function Stores() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => toggleStatus(s.id, s.isActive)} className="text-sm text-blue-600 hover:text-blue-800 transition-colors px-2 py-1">
+                      <button onClick={() => toggleStatus(s.id, s.isActive)} className="text-sm text-primary-600 hover:text-primary-700 transition-colors px-2 py-1">
                         {s.isActive ? t('stores.deactivate', 'تعطيل') : t('stores.activate', 'تفعيل')}
                       </button>
                       <button onClick={() => handleOpenDialog(s)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors px-2 py-1">{t('stores.edit', 'تعديل')}</button>
@@ -169,26 +169,26 @@ export default function Stores() {
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('stores.storeNameLabel', 'اسم المتجر')}</label>
-                <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('stores.domainLabel', 'النطاق (Domain)')}</label>
-                <input type="text" value={form.domain} onChange={e => setForm({...form, domain: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="text" value={form.domain} onChange={e => setForm({...form, domain: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('stores.tenantIdLabel', 'معرّف التاجر (Tenant ID)')}</label>
-                <input type="number" value={form.tenantId} onChange={e => setForm({...form, tenantId: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="number" value={form.tenantId} onChange={e => setForm({...form, tenantId: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('stores.status', 'الحالة')}</label>
-                <select value={form.isActive} onChange={e => setForm({...form, isActive: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select value={form.isActive} onChange={e => setForm({...form, isActive: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
                   <option value="true">{t('stores.active', 'نشط')}</option>
                   <option value="false">{t('stores.inactive', 'موقوف')}</option>
                 </select>
               </div>
             </div>
             <div className="flex gap-3 pt-4 border-t">
-              <button onClick={saveStore} disabled={saving} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
+              <button onClick={saveStore} disabled={saving} className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors">
                 {saving ? t('stores.saving', 'جاري الحفظ...') : t('stores.save', 'حفظ')}
               </button>
               <button onClick={() => setDialogOpen(false)} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">

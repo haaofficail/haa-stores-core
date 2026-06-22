@@ -37,7 +37,7 @@ export default function Login() {
           <label className="block text-sm font-medium mb-1">{t('login.password', 'كلمة المرور')}</label>
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full border rounded-lg px-3 py-2" required />
         </div>
-        <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50">
+        <button type="submit" disabled={loading} className="w-full bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50">
           {loading ? t('login.loggingIn', 'جاري الدخول...') : t('login.loginButton', 'دخول')}
         </button>
       </form>

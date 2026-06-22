@@ -100,7 +100,7 @@ export default function Plans() {
           <p className="text-sm text-gray-500 mb-3">{t('plans.loadError', 'فشل تحميل الباقات')}</p>
           <button
             onClick={() => load()}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            className="text-sm text-primary-600 hover:text-primary-700 font-medium"
           >
             {t('common.retry', 'إعادة المحاولة')}
           </button>
@@ -112,7 +112,7 @@ export default function Plans() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {plans.map(p => (
-            <div key={p.id} className={`bg-white rounded-xl shadow-sm p-6 ${p.isActive ? 'border-2 border-blue-200' : 'opacity-50'}`}>
+            <div key={p.id} className={`bg-white rounded-xl shadow-sm p-6 ${p.isActive ? 'border-2 border-primary-100' : 'opacity-50'}`}>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-bold text-lg text-gray-900">{p.name}</h3>
                 <button
@@ -142,7 +142,7 @@ export default function Plans() {
               <div className="mt-4 pt-4 border-t flex gap-2">
                 <button
                   onClick={() => openEdit(p)}
-                  className="flex-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+                  className="flex-1 px-3 py-1.5 text-sm bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors cursor-pointer"
                 >
                   {t('plans.edit', 'تعديل')}
                 </button>
@@ -169,52 +169,52 @@ export default function Plans() {
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('plans.name', 'اسم الباقة')}</label>
-                <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('plans.description', 'الوصف')}</label>
-                <input type="text" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="text" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('plans.monthlyPrice', 'السعر الشهري')}</label>
-                  <input type="number" value={editForm.priceMonthly} onChange={e => setEditForm({ ...editForm, priceMonthly: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input type="number" value={editForm.priceMonthly} onChange={e => setEditForm({ ...editForm, priceMonthly: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('plans.annualPrice', 'السعر السنوي')}</label>
-                  <input type="number" value={editForm.priceAnnual} onChange={e => setEditForm({ ...editForm, priceAnnual: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input type="number" value={editForm.priceAnnual} onChange={e => setEditForm({ ...editForm, priceAnnual: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('plans.productLimit', 'حد المنتجات (-1 = غير محدود)')}</label>
-                  <input type="number" value={editForm.productLimit} onChange={e => setEditForm({ ...editForm, productLimit: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input type="number" value={editForm.productLimit} onChange={e => setEditForm({ ...editForm, productLimit: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('plans.staffLimit', 'حد الموظفين (-1 = غير محدود)')}</label>
-                  <input type="number" value={editForm.staffLimit} onChange={e => setEditForm({ ...editForm, staffLimit: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input type="number" value={editForm.staffLimit} onChange={e => setEditForm({ ...editForm, staffLimit: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('plans.storageLimit', 'التخزين (MB) (-1 = غير محدود)')}</label>
-                  <input type="number" value={editForm.storageLimitMb} onChange={e => setEditForm({ ...editForm, storageLimitMb: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input type="number" value={editForm.storageLimitMb} onChange={e => setEditForm({ ...editForm, storageLimitMb: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{t('plans.orderLimit', 'حد الطلبات (-1 = غير محدود)')}</label>
-                  <input type="number" value={editForm.orderLimit} onChange={e => setEditForm({ ...editForm, orderLimit: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <input type="number" value={editForm.orderLimit} onChange={e => setEditForm({ ...editForm, orderLimit: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('plans.trialDays', 'أيام التجربة المجانية')}</label>
-                <input type="number" value={editForm.trialDays} onChange={e => setEditForm({ ...editForm, trialDays: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="number" value={editForm.trialDays} onChange={e => setEditForm({ ...editForm, trialDays: e.target.value })} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
             </div>
             <div className="flex gap-3 pt-2">
               <button
                 onClick={saveEdit}
                 disabled={saving}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? t('plans.saving', 'جاري الحفظ...') : t('plans.save', 'حفظ التغييرات')}
               </button>

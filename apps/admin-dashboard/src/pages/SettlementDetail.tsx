@@ -13,7 +13,7 @@ const reconciliationColors: Record<string, string> = {
 const settlementStatusColors: Record<string, string> = {
   completed: 'bg-emerald-100 text-emerald-700',
   pending: 'bg-amber-100 text-amber-700',
-  processing: 'bg-blue-100 text-blue-700',
+  processing: 'bg-primary-100 text-primary-700',
   cancelled: 'bg-gray-100 text-gray-700',
 };
 
@@ -50,7 +50,7 @@ export default function SettlementDetail() {
         <h2 className="text-2xl font-bold mb-6">تفاصيل التسوية</h2>
         <div className="bg-white rounded-xl shadow-sm p-12 text-center">
           <p className="text-sm text-gray-500">لم يتم العثور على التسوية</p>
-          <Link to="/payments" className="text-sm text-blue-600 hover:text-blue-800 font-medium mt-2 inline-block">العودة للمدفوعات</Link>
+          <Link to="/payments" className="text-sm text-primary-600 hover:text-primary-700 font-medium mt-2 inline-block">العودة للمدفوعات</Link>
         </div>
       </div>
     );
@@ -61,7 +61,7 @@ export default function SettlementDetail() {
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <Link to="/payments" className="text-sm text-blue-600 hover:text-blue-800">← العودة للمدفوعات</Link>
+        <Link to="/payments" className="text-sm text-primary-600 hover:text-primary-700">← العودة للمدفوعات</Link>
         <h2 className="text-2xl font-bold">تفاصيل التسوية</h2>
         <span className="font-mono text-sm text-gray-500">{settlementRef}</span>
         <span className={`px-2 py-1 rounded text-xs font-medium ${settlementStatusColors[detail.status] || 'bg-gray-100 text-gray-700'}`}>
@@ -117,7 +117,7 @@ export default function SettlementDetail() {
                   <td className="px-4 py-3">
                     <a
                       href={`/admin/orders?storeId=${tx.storeId}&orderId=${tx.orderId}`}
-                      className="font-mono text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                      className="font-mono text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline"
                     >
                       {tx.orderNumber ?? `#${tx.orderId}`}
                     </a>

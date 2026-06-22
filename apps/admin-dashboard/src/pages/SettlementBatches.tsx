@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-700',
-  processing: 'bg-blue-100 text-blue-700',
+  processing: 'bg-primary-100 text-primary-700',
   completed: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-gray-100 text-gray-700',
 };
@@ -20,7 +20,7 @@ const statusLabels: Record<string, string> = {
 
 const payoutStatusColors: Record<string, string> = {
   requested: 'bg-amber-100 text-amber-700',
-  under_review: 'bg-blue-100 text-blue-700',
+  under_review: 'bg-primary-100 text-primary-700',
   approved: 'bg-sky-100 text-sky-700',
   rejected: 'bg-red-100 text-red-700',
   transfer_pending: 'bg-amber-100 text-amber-700',
@@ -160,7 +160,7 @@ export default function SettlementBatches() {
         </div>
         <button
           onClick={() => { setStatusFilter(''); setPayoutStatusFilter(''); setStoreIdFilter(''); setDateFrom(''); setDateTo(''); }}
-          className="text-sm text-blue-600 hover:text-blue-800 px-3 py-2"
+          className="text-sm text-primary-600 hover:text-primary-700 px-3 py-2"
         >
           إعادة تعيين
         </button>
@@ -214,7 +214,7 @@ export default function SettlementBatches() {
                   <td className="px-4 py-3">
                     <Link
                       to={`/payments/settlements/${p.id}?manual=1`}
-                      className="text-blue-600 hover:text-blue-800 font-medium text-xs"
+                      className="text-primary-600 hover:text-primary-700 font-medium text-xs"
                     >
                       التفاصيل
                     </Link>
@@ -244,7 +244,7 @@ export default function SettlementBatches() {
             <p className="text-sm text-gray-500 mb-3">فشل تحميل دفعات التسوية</p>
             <button
               onClick={() => load()}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
             >
               إعادة المحاولة
             </button>
@@ -292,7 +292,7 @@ export default function SettlementBatches() {
                   <td className="px-4 py-3">
                     <Link
                       to={`/payments/settlements/${b.id}`}
-                      className="text-blue-600 hover:text-blue-800 font-medium text-xs"
+                      className="text-primary-600 hover:text-primary-700 font-medium text-xs"
                     >
                       التفاصيل
                     </Link>

@@ -100,7 +100,7 @@ export default function Tenants() {
         <h2 className="text-2xl font-bold">{t('tenants.title', 'التجار')}</h2>
         <button
           onClick={() => handleOpenDialog()}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
         >
           <Plus className="h-4 w-4" /> {t('tenants.addTenant', 'إضافة تاجر')}
         </button>
@@ -120,7 +120,7 @@ export default function Tenants() {
         ) : error ? (
           <div className="p-12 text-center">
             <p className="text-sm text-gray-500 mb-3">{t('tenants.loadError', 'فشل تحميل التجار')}</p>
-            <button onClick={() => load()} className="text-sm text-blue-600 hover:text-blue-800 font-medium">{t('tenants.retry', 'إعادة المحاولة')}</button>
+            <button onClick={() => load()} className="text-sm text-primary-600 hover:text-primary-700 font-medium">{t('tenants.retry', 'إعادة المحاولة')}</button>
           </div>
         ) : tenants.length === 0 ? (
           <div className="p-12 text-center">
@@ -148,7 +148,7 @@ export default function Tenants() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => toggleStatus(t.id, t.status)} className="text-sm text-blue-600 hover:text-blue-800 transition-colors px-2 py-1">
+                      <button onClick={() => toggleStatus(t.id, t.status)} className="text-sm text-primary-600 hover:text-primary-700 transition-colors px-2 py-1">
                         {t.status === 'active' ? t('tenants.suspend', 'تعليق') : t('tenants.activate', 'تفعيل')}
                       </button>
                       <button onClick={() => handleOpenDialog(t)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors px-2 py-1">{t('tenants.edit', 'تعديل')}</button>
@@ -182,22 +182,22 @@ export default function Tenants() {
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('tenants.name', 'الاسم')}</label>
-                <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('tenants.emailLabel', 'البريد الإلكتروني')}</label>
-                <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('tenants.status', 'الحالة')}</label>
-                <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
                   <option value="active">{t('tenants.active', 'نشط')}</option>
                   <option value="suspended">{t('tenants.inactive', 'موقوف')}</option>
                 </select>
               </div>
             </div>
             <div className="flex gap-3 pt-4 border-t">
-              <button onClick={saveTenant} disabled={saving} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
+              <button onClick={saveTenant} disabled={saving} className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors">
                 {saving ? t('tenants.saving', 'جاري الحفظ...') : t('tenants.save', 'حفظ')}
               </button>
               <button onClick={() => setDialogOpen(false)} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">

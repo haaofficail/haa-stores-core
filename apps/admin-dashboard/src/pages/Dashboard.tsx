@@ -40,13 +40,13 @@ export default function Dashboard() {
     return (
       <div className="p-12 text-center">
         <p className="text-sm text-gray-500 mb-3">{t('dashboard.loadError', 'فشل تحميل البيانات')}</p>
-        <button onClick={load} className="text-sm text-blue-600 hover:text-blue-800 font-medium">{t('dashboard.retry', 'إعادة المحاولة')}</button>
+        <button onClick={load} className="text-sm text-primary-600 hover:text-primary-700 font-medium">{t('dashboard.retry', 'إعادة المحاولة')}</button>
       </div>
     );
   }
 
   const cards = [
-    { label: t('dashboard.tenants', 'التجار'), value: stats.tenants, color: 'bg-blue-500' },
+    { label: t('dashboard.tenants', 'التجار'), value: stats.tenants, color: 'bg-primary-500' },
     { label: t('dashboard.stores', 'المتاجر'), value: stats.stores, color: 'bg-green-500' },
     { label: t('dashboard.users', 'المستخدمين'), value: stats.users, color: 'bg-purple-500' },
     { label: t('dashboard.orders', 'الطلبات'), value: stats.orders, color: 'bg-orange-500' },
