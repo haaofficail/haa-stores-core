@@ -40,6 +40,73 @@ export type DedupeResult =
 
 const IDEMPOTENCY_HEADER = 'x-idempotency-key';
 
+// Per-process counters. Used by the diagnostics endpoint to answer
+// "is the dedup actually firing?" without a DB query. Counters reset
+// on process restart; they answer the operational question, not the
+// historical one (use the paymentWebhookEvents table for that).
+interface DedupeMetrics {
+  total: number;
+  duplicates: number;
+  fresh: number;
+  errors: number;
+  byProvider: Record<string, { total: number; duplicates: number }>;
+}
+
+const _metrics: DedupeMetrics = {
+  total: 0,
+  duplicates: 0,
+  fresh: 0,
+  errors: 0,
+  byProvider: {},
+};
+
+function bumpProvider(provider: string, duplicate: boolean): void {
+  let bucket = _metrics.byProvider[provider];
+  if (!bucket) {
+    bucket = { total: 0, duplicates: 0 };
+    _metrics.byProvider[provider] = bucket;
+  }
+  bucket.total += 1;
+  if (duplicate) bucket.duplicates += 1;
+}
+
+export interface WebhookDedupStats {
+  total: number;
+  duplicates: number;
+  fresh: number;
+  errors: number;
+  duplicateRate: number;
+  byProvider: Record<string, { total: number; duplicates: number; duplicateRate: number }>;
+}
+
+export function getWebhookDedupStats(): WebhookDedupStats {
+  const byProvider: WebhookDedupStats['byProvider'] = {};
+  for (const [provider, bucket] of Object.entries(_metrics.byProvider)) {
+    byProvider[provider] = {
+      total: bucket.total,
+      duplicates: bucket.duplicates,
+      duplicateRate: bucket.total === 0 ? 0 : bucket.duplicates / bucket.total,
+    };
+  }
+  return {
+    total: _metrics.total,
+    duplicates: _metrics.duplicates,
+    fresh: _metrics.fresh,
+    errors: _metrics.errors,
+    duplicateRate: _metrics.total === 0 ? 0 : _metrics.duplicates / _metrics.total,
+    byProvider,
+  };
+}
+
+/** Test-only. Resets all counters. */
+export function resetWebhookDedupMetrics(): void {
+  _metrics.total = 0;
+  _metrics.duplicates = 0;
+  _metrics.fresh = 0;
+  _metrics.errors = 0;
+  _metrics.byProvider = {};
+}
+
 /**
  * The header name exposed for callers that want to read it
  * from a Hono context themselves (kept here so the Hono
@@ -93,30 +160,40 @@ export async function deduplicateWebhook(
   signature: string,
   headerIdempotencyKey: string | undefined,
 ): Promise<DedupeResult> {
-  const key = resolveIdempotencyKey(
-    provider,
-    rawBody,
-    signature,
-    headerIdempotencyKey,
-  );
-  const db = createDbClient();
-  const [existing] = await db
-    .select({ id: s.paymentWebhookEvents.id })
-    .from(s.paymentWebhookEvents)
-    .where(eq(s.paymentWebhookEvents.idempotencyKey, key))
-    .limit(1);
-  if (existing) {
-    return { duplicate: true, existingId: existing.id };
+  _metrics.total += 1;
+  try {
+    const key = resolveIdempotencyKey(
+      provider,
+      rawBody,
+      signature,
+      headerIdempotencyKey,
+    );
+    const db = createDbClient();
+    const [existing] = await db
+      .select({ id: s.paymentWebhookEvents.id })
+      .from(s.paymentWebhookEvents)
+      .where(eq(s.paymentWebhookEvents.idempotencyKey, key))
+      .limit(1);
+    if (existing) {
+      _metrics.duplicates += 1;
+      bumpProvider(provider, true);
+      return { duplicate: true, existingId: existing.id };
+    }
+    // Sentinel: claim the key with a minimal record. The route's
+    // business logic may overwrite fields like eventType, rawBody,
+    // status later when it has more context.
+    await db.insert(s.paymentWebhookEvents).values({
+      provider,
+      eventType: 'pending',
+      rawBody: rawBody.slice(0, 65535),
+      idempotencyKey: key,
+      status: 'received',
+    });
+    _metrics.fresh += 1;
+    bumpProvider(provider, false);
+    return { duplicate: false };
+  } catch (err) {
+    _metrics.errors += 1;
+    throw err;
   }
-  // Sentinel: claim the key with a minimal record. The route's
-  // business logic may overwrite fields like eventType, rawBody,
-  // status later when it has more context.
-  await db.insert(s.paymentWebhookEvents).values({
-    provider,
-    eventType: 'pending',
-    rawBody: rawBody.slice(0, 65535),
-    idempotencyKey: key,
-    status: 'received',
-  });
-  return { duplicate: false };
 }

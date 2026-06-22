@@ -30,6 +30,7 @@ import {
 import {
   auditRoute,
   webhooksRoute,
+  webhookDedupStatsRoute,
   plansRoutes,
   uploadRoute,
   settingsRoutes,
@@ -241,6 +242,7 @@ adminRouter.get('/audit', requireAdminAuth(), auditRoute);
 
 // /webhooks
 adminRouter.get('/webhooks', requireAdminAuth(), webhooksRoute);
+adminRouter.get('/webhooks/dedup-stats', requireAdminAuth(), webhookDedupStatsRoute);
 
 // /plans
 adminRouter.get('/plans', requireAdminAuth(), plansRoutes.list);

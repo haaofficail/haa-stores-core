@@ -6,5 +6,11 @@ export { ApiKeyService } from './api-keys.js';
 export { HealthCheckService } from './health.js';
 export { BasicHealthService, basicHealthService } from './basic-health-service.js';
 export type { BasicHealthPingResult } from './basic-health-service.js';
-export { deduplicateWebhook, resolveIdempotencyKey, IDEMPOTENCY_KEY_HEADER } from './webhook-dedup.js';
-export type { DedupeResult } from './webhook-dedup.js';
+export {
+  deduplicateWebhook,
+  resolveIdempotencyKey,
+  IDEMPOTENCY_KEY_HEADER,
+  getWebhookDedupStats,
+  resetWebhookDedupMetrics,
+} from './webhook-dedup.js';
+export type { DedupeResult, WebhookDedupStats } from './webhook-dedup.js';
