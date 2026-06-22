@@ -176,8 +176,14 @@ export default function OnboardingWizard() {
           <p className="text-neutral-400">{t('onboarding.subtitle')}</p>
         </div>
 
-        {/* Steps indicator */}
-        <div className="flex items-center justify-center gap-2 mb-10">
+        {/* Steps indicator.
+            dir="rtl" is declared explicitly so the flex row visual order
+            matches Arabic reading order (step 1 "متجرك" on the RIGHT,
+            step 3 "الانطلاق" on the LEFT) regardless of any ancestor
+            that may have flipped direction. The connector line uses no
+            directional Tailwind classes (only `w-12 h-0.5`), so it
+            participates in the flex flow and grows right-to-left. */}
+        <div dir="rtl" className="flex items-center justify-center gap-2 mb-10">
           {steps.map((s, i) => (
             <div key={s.key} className="flex items-center gap-2">
               <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
