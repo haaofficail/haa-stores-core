@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { ShippingService } from '@haa/shipping-core';
+import { ShippingService, getDefaultShippingRateCache } from '@haa/shipping-core';
 import { AuditLogService } from '@haa/integration-core';
 import { createShippingMethodSchema, createShippingZoneSchema, createShippingRateSchema, updateShipmentStatusSchema } from '@haa/shared';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
@@ -14,6 +14,14 @@ shippingRouter.get('/overview', requirePermission('shipping:manage'), async (c) 
   const storeId = Number(c.req.param('storeId'));
   const overview = await new ShippingService().getOverview(storeId);
   return c.json({ success: true, data: overview });
+});
+
+// Diagnostics: process-wide rate-cache stats. Useful when an operator wants
+// to verify the cache is actually absorbing the checkout-page rate calls
+// before chasing a "shipping API quota exceeded" alert.
+shippingRouter.get('/rate-cache/stats', requirePermission('shipping:manage'), (c) => {
+  const stats = getDefaultShippingRateCache().stats();
+  return c.json({ success: true, data: stats });
 });
 
 shippingRouter.get('/methods', requirePermission('shipping:manage'), async (c) => {

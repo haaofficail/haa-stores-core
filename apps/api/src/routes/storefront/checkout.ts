@@ -26,7 +26,7 @@ import {
   CouponsService,
   CartService,
 } from '@haa/commerce-core';
-import { ManualShippingProvider } from '@haa/shipping-core';
+import { ManualShippingProvider, getDefaultShippingRateCache } from '@haa/shipping-core';
 import { ALLOWED_PAYMENT_METHODS, AppError } from '@haa/shared';
 import { toPublicOrder, toPublicShippingMethod } from '@haa/shared/dto/storefront-dto';
 import { resolveActiveStore } from './_shared.js';
@@ -95,18 +95,37 @@ checkoutRouter.post('/:slug/checkout/shipping-rates', zValidator('json', shippin
   const cart = await new CartService().getCart(store.id, body.cartId);
   if (!cart) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Cart not found' } }, 404);
   const provider = new ManualShippingProvider();
-  const rates = await provider.calculateRates({
-    storeId: store.id,
-    items: (cart.items ?? []).map((i: any) => ({
-      weightGrams: i.product?.weightGrams,
-      quantity: i.item?.quantity,
-      requiresShipping: i.product?.requiresShipping,
-    })),
-    destination: { city: body.city, country: 'Saudi Arabia' },
-    subtotal: cart.subtotal,
-  });
+
+  const cacheKeyItems = (cart.items ?? []).map((i: any) => ({
+    sku: i.product?.sku ?? null,
+    productId: i.product?.id ?? i.item?.productId,
+    quantity: i.item?.quantity ?? 0,
+  }));
+  const providerItems = (cart.items ?? []).map((i: any) => ({
+    weightGrams: i.product?.weightGrams,
+    quantity: i.item?.quantity,
+    requiresShipping: i.product?.requiresShipping,
+  }));
+
+  const cache = getDefaultShippingRateCache();
+  const rates = await cache.getOrLoad(
+    {
+      storeId: store.id,
+      destination: { city: body.city, country: 'Saudi Arabia' },
+      cart: cacheKeyItems,
+      provider: 'manual',
+    },
+    () =>
+      provider.calculateRates({
+        storeId: store.id,
+        items: providerItems,
+        destination: { city: body.city, country: 'Saudi Arabia' },
+        subtotal: cart.subtotal,
+      }),
+  );
+
   // Map provider field names to the storefront API contract
-  const mapped = rates.map((r) => ({
+  const mapped = (rates as Awaited<ReturnType<typeof provider.calculateRates>>).map((r) => ({
     shippingMethodId: r.methodId,
     methodName: r.methodName,
     baseRate: r.cost,
