@@ -22,3 +22,14 @@ export { LabelService } from "./labels.js";
 export { OtoMarketplaceService, getOtoApiBaseUrl, getOtoMode, hasOtoMarketplaceToken, verifyOtoWebhookSignature } from "./oto-marketplace.js";
 export type { OtoIntegrationModel, OtoPlatformStatus, OtoProviderStatus, RegisterVendorInput } from "./oto-marketplace.js";
 export { ReturnService } from "./returns.js";
+export {
+  getShippingReadinessStates,
+  type ShippingReadinessState,
+  type ProviderReadiness,
+  type ReadinessOptions,
+} from "./readiness.js";
+export {
+  ShippingRateCache,
+  getDefaultShippingRateCache,
+  type RateCacheKeyInput,
+} from "./rate-cache.js";
