@@ -167,16 +167,16 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
             blue; placing it on a blue gradient hides it). Decorative alt=""
             because the brand name is announced by the span below — RTL
             screen readers would otherwise say "هاء متاجر هاء". */}
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-md shadow-primary-500/20 ring-1 ring-primary-100 shrink-0">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-md shadow-primary-500/20 ring-1 ring-primary-100 shrink-0">
           <img
             src="/haa-logo-192.png"
             srcSet="/haa-logo-64.png 64w, /haa-logo-192.png 192w, /haa-logo-512.png 512w"
-            sizes="32px"
+            sizes="40px"
             alt=""
-            width={32}
-            height={32}
+            width={40}
+            height={40}
             decoding="async"
-            className="h-8 w-8"
+            className="h-10 w-10"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = 'none';
               (e.currentTarget.nextElementSibling as HTMLElement | null)?.classList.remove('hidden');

@@ -42,7 +42,7 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
     '/theme-store': { title: t('pageTitle.themeStore', 'متجر الثيمات'), subtitle: t('pageTitle.themeStoreSub', 'تصفح واختر ثيماً لمتجرك') },
   };
 
-  const pageInfo = pageTitles[location.pathname] || { title: t('pageTitle.default', 'ها ستورز'), subtitle: '' };
+  const pageInfo = pageTitles[location.pathname] || { title: t('pageTitle.default', 'متاجر هاء'), subtitle: '' };
 
   return (
     <header className="h-16 bg-surface-1/80 backdrop-blur-xl flex items-center justify-between px-6 shrink-0 shadow-sm">
