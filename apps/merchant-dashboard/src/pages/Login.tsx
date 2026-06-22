@@ -115,7 +115,12 @@ export default function Login() {
                   <p className="mt-1 text-sm text-neutral-500">سجّل دخولك للوحة التحكم</p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4" aria-label="تسجيل الدخول">
+                <form
+                  onSubmit={handleSubmit}
+                  method="post"
+                  className="space-y-4"
+                  aria-label="تسجيل الدخول"
+                >
                   <div className="space-y-1.5">
                     <Label htmlFor="email" className="text-sm font-medium text-neutral-800">
                       البريد الإلكتروني
