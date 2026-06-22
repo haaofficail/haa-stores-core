@@ -46,11 +46,11 @@ _(none — autopilot has executed every safe wave in scope)_
 ## Remaining — P2
 
 - [ ] F-QA-B-004 — Tenant status change audit log (covered by Wave 13 only for direct delete; status route still needs an audit log entry).
-- [ ] F-QA-C-004 / Wave 6 (deferred) — Server-side shipping rate cache/debounce. Not implemented in this autopilot. Tracked here.
+- [x] F-QA-C-004 / Wave 6 — Server-side shipping rate cache/debounce. **DONE in PR #40** (`packages/shipping-core/src/rate-cache.ts` + tests).
 - [ ] F-QA-D-002 — `@haa/tokens` palette full alignment to `#5c9cd5` (Wave 2 annotated tokens but did not regenerate the 50–950 scale).
 - [ ] F-QA-D-003 — Admin `blue-500/600` hardcodes (Wave 2 deferred bulk replacement; 5 admin pages with ~39 classes).
 - [ ] F-QA-D-004 — Lucide migration progress (ceiling locked at 152 in Wave 17; need to drive down).
-- [ ] Wave 5 (deferred) — Shipping aggregator readiness states + diagnostics — the abstractions exist (`packages/shipping-core/*` with 11 files including `provider.ts`, `factory.ts`, `mock.ts`, OTO, SMSA, Aramex, manual, returns). Adding explicit readiness state machine + diagnostics UI is a follow-up.
+- [x] Wave 5 — Shipping aggregator readiness states. **DONE in PR #40** (`packages/shipping-core/src/readiness.ts` exposes `getShippingReadinessStates()` returning the 7-state model: not_configured/mock_ready/sandbox_configured/sandbox_verified/live_locked/live_ready/provider_error). Diagnostics UI in dashboards remains a follow-up.
 - [ ] Wave 14 (deferred) — Outbound webhook delivery/retry/dead-letter test coverage. The infrastructure exists in `apps/api/src/routes/outbound-webhooks.ts` + `OutboundWebhookService`; explicit retry/dead-letter test coverage is missing.
 - [ ] Wave 15 (deferred) — RBAC small guards (route-ordering test, JWT iss/aud, rate-limit on failed store access).
 
