@@ -15,6 +15,7 @@ import { ShoppingCart, Eye, Search, Truck, Clock, CheckCircle2, XCircle, AlertTr
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import { SarIcon } from '@/components/ui/SarIcon';
 import { getOrderActions, OrderAction } from '@/lib/order-actions';
 import { PermissionGate } from '@/lib/permissions';
 import {
@@ -451,7 +452,7 @@ export default function Orders() {
                         {isPickup ? t('orders.pickup_short', 'استلام') : t('orders.shipping_short', 'توصيل')}
                       </span>
                     </TableCell>
-                    <TableCell className="text-sm font-semibold text-neutral-900 p-3 tabular-nums">{formatCurrency(o.total)} {t('common.sar')}</TableCell>
+                    <TableCell className="text-sm font-semibold text-neutral-900 p-3 tabular-nums">{formatCurrency(o.total)} <SarIcon size="sm" /></TableCell>
                     <TableCell className="text-sm text-neutral-400 whitespace-nowrap p-3">{new Date(o.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : i18n.language)}</TableCell>
                     <TableCell className="p-3">
                       {/* Row action — hit area ≥ 44x44 (WCAG 2.5.5). */}
@@ -538,7 +539,7 @@ export default function Orders() {
                           {t('orders.settlementStatus', 'حالة التسوية')}: {si.status}
                         </p>
                         <p className="text-xs text-primary-500">
-                          {t('orders.netPayable', 'صافي المستحق')}: {formatCurrency(si.merchantPayable)} {t('common.sar')}
+                          {t('orders.netPayable', 'صافي المستحق')}: {formatCurrency(si.merchantPayable)} <SarIcon size="sm" />
                         </p>
                       </div>
                       <span className={`px-2.5 py-1 rounded-xl text-xs font-medium ${
@@ -936,21 +937,21 @@ export default function Orders() {
                                        {item.giftMessage && <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-pink-50 text-pink-700 rounded-full text-xs font-medium">"{item.giftMessage}"</span>}
                                     </div>
                                   </TableCell>
-                                  <TableCell className="text-sm text-start text-neutral-900 p-3 tabular-nums">{formatCurrency(item.unitPrice)} {t('common.sar')}</TableCell>
-                                  <TableCell className="text-sm text-start font-semibold text-neutral-900 p-3 tabular-nums">{formatCurrency(item.totalPrice)} {t('common.sar')}</TableCell>
+                                  <TableCell className="text-sm text-start text-neutral-900 p-3 tabular-nums">{formatCurrency(item.unitPrice)} <SarIcon size="sm" /></TableCell>
+                                  <TableCell className="text-sm text-start font-semibold text-neutral-900 p-3 tabular-nums">{formatCurrency(item.totalPrice)} <SarIcon size="sm" /></TableCell>
                                 </TableRow>
                               )})}
                             </TableBody>
                           </Table>
                           <div className="space-y-1.5 pt-3 border-t border-neutral-100 text-sm">
-                            <DetailRow label={t('orders.subtotal', 'المجموع')}>{formatCurrency(detailOrder.subtotal)} {t('common.sar')}</DetailRow>
-                            {detailOrder.shippingCost && <DetailRow label={t('orders.shipping_cost', 'الشحن')}>{formatCurrency(detailOrder.shippingCost)} {t('common.sar')}</DetailRow>}
+                            <DetailRow label={t('orders.subtotal', 'المجموع')}>{formatCurrency(detailOrder.subtotal)} <SarIcon size="sm" /></DetailRow>
+                            {detailOrder.shippingCost && <DetailRow label={t('orders.shipping_cost', 'الشحن')}>{formatCurrency(detailOrder.shippingCost)} <SarIcon size="sm" /></DetailRow>}
                             {detailOrder.couponDiscount && Number(detailOrder.couponDiscount) > 0 && (
-                              <DetailRow label={t('orders.discount', 'الخصم')}>-{formatCurrency(detailOrder.couponDiscount)} {t('common.sar')}</DetailRow>
+                              <DetailRow label={t('orders.discount', 'الخصم')}>-{formatCurrency(detailOrder.couponDiscount)} <SarIcon size="sm" /></DetailRow>
                             )}
                             <div className="flex justify-between items-center font-bold pt-2 border-t border-neutral-100">
                               <span>{t('orders.grand_total', 'الإجمالي')}</span>
-                              <span>{formatCurrency(detailOrder.total)} {t('common.sar')}</span>
+                              <span>{formatCurrency(detailOrder.total)} <SarIcon size="sm" /></span>
                             </div>
                           </div>
                         </DetailSection>
@@ -976,7 +977,7 @@ export default function Orders() {
                               </div>
                               <div className="flex items-center justify-between text-xs">
                                 <span className="text-amber-600">{t('orders.amount_due', 'المبلغ المطلوب')}</span>
-                                <span className="font-medium text-amber-800 tabular-nums">{formatCurrency(detailOrder.total)} {t('common.sar')}</span>
+                                <span className="font-medium text-amber-800 tabular-nums">{formatCurrency(detailOrder.total)} <SarIcon size="sm" /></span>
                               </div>
                             </div>
                           )}

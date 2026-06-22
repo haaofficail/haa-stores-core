@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { AlertTriangle, DollarSign, ShoppingCart, MapPin, TrendingUp, Wallet, Download, Printer, Loader2 } from 'lucide-react';
 import { reportsApi, getToken, type DeepReport } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import { SarIcon } from '@/components/ui/SarIcon';
 
 const statusColors: Record<string, string> = {
   confirmed: 'bg-emerald-100 text-emerald-700',
@@ -265,7 +266,7 @@ export default function Reports() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-neutral-500">{t('reports.totalSales')}</p>
-              <p className="text-2xl font-bold text-neutral-900 mt-1">{formatCurrency(salesSummary?.totalSales ?? 0)} {t('common.sar')}</p>
+              <p className="text-2xl font-bold text-neutral-900 mt-1">{formatCurrency(salesSummary?.totalSales ?? 0)} <SarIcon size="sm" /></p>
             </div>
             <div className="p-3.5 rounded-2xl bg-emerald-50 text-emerald-600"><DollarSign className="h-5 w-5" /></div>
           </div>
@@ -283,7 +284,7 @@ export default function Reports() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-neutral-500">{t('reports.averageOrderValue')}</p>
-              <p className="text-2xl font-bold text-neutral-900 mt-1">{formatCurrency(salesSummary?.averageOrderValue ?? 0)} {t('common.sar')}</p>
+              <p className="text-2xl font-bold text-neutral-900 mt-1">{formatCurrency(salesSummary?.averageOrderValue ?? 0)} <SarIcon size="sm" /></p>
             </div>
             <div className="p-3.5 rounded-2xl bg-amber-50 text-amber-600"><TrendingUp className="h-5 w-5" /></div>
           </div>
@@ -292,7 +293,7 @@ export default function Reports() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-neutral-500">{t('reports.netBalance')}</p>
-              <p className="text-2xl font-bold text-neutral-900 mt-1">{formatCurrency(walletSummary?.netBalance ?? 0)} {t('common.sar')}</p>
+              <p className="text-2xl font-bold text-neutral-900 mt-1">{formatCurrency(walletSummary?.netBalance ?? 0)} <SarIcon size="sm" /></p>
             </div>
             <div className="p-3.5 rounded-2xl bg-purple-50 text-purple-600"><Wallet className="h-5 w-5" /></div>
           </div>
@@ -333,7 +334,7 @@ export default function Reports() {
                     <TableRow key={i} className="border-neutral-100 hover:bg-neutral-50">
                       <TableCell className="text-sm font-medium text-neutral-900 p-3">{p.name}</TableCell>
                       <TableCell className="text-sm text-neutral-900 p-3">{p.totalQuantity ?? 0}</TableCell>
-                      <TableCell className="text-sm font-semibold text-neutral-900 p-3">{formatCurrency(p.totalRevenue ?? 0)} {t('common.sar')}</TableCell>
+                      <TableCell className="text-sm font-semibold text-neutral-900 p-3">{formatCurrency(p.totalRevenue ?? 0)} <SarIcon size="sm" /></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -409,7 +410,7 @@ export default function Reports() {
                     <TableRow key={i} className="border-neutral-100 hover:bg-neutral-50">
                       <TableCell className="text-sm font-medium text-neutral-900 p-3"><MapPin className="h-3.5 w-3.5 inline me-1" />{c.city || t('reports.unknownCity')}</TableCell>
                       <TableCell className="text-sm text-neutral-900 p-3">{c.orderCount ?? 0}</TableCell>
-                      <TableCell className="text-sm font-semibold text-neutral-900 p-3">{formatCurrency(c.totalSales ?? 0)} {t('common.sar')}</TableCell>
+                      <TableCell className="text-sm font-semibold text-neutral-900 p-3">{formatCurrency(c.totalSales ?? 0)} <SarIcon size="sm" /></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
