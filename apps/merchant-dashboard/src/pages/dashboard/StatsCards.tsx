@@ -61,7 +61,7 @@ export function StatsCards({ stats, showOnMobile }: Props) {
                     s.trend === "up"
                       ? "text-emerald-600 bg-emerald-50"
                       : s.trend === "down"
-                        ? "text-red-600 bg-red-50"
+                        ? "text-danger bg-danger-subtle"
                         : "text-neutral-500 bg-neutral-100"
                   }`}
                 >
@@ -70,15 +70,16 @@ export function StatsCards({ stats, showOnMobile }: Props) {
                   ) : s.trend === "down" ? (
                     <ArrowDownRight className="h-2.5 w-2.5" />
                   ) : null}
-                  <span>{s.trendValue}</span>
+                  {/* dir="ltr" keeps signed percentages from bidi-flipping
+                      to "23%-" inside an RTL parent (audit P0-#1). */}
+                  <span dir="ltr" className="tabular-nums">{s.trendValue}</span>
                 </div>
               )}
             </div>
             <p className="text-xl font-bold text-neutral-900 tabular-nums leading-none mb-1.5">
               {s.value}
               <span
-                className="text-xs font-medium text-neutral-400"
-                style={{ marginInlineEnd: "0.25rem" }}
+                className="text-xs font-medium text-neutral-400 ms-1.5"
               >
                 {s.suffix}
               </span>

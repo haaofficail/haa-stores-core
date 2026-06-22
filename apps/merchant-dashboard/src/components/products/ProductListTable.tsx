@@ -48,8 +48,8 @@ function StockBadge({ quantity, trackInventory, t }: { quantity: number | null; 
   if (!trackInventory) return <span className="text-xs text-neutral-400">—</span>;
   if (quantity === null || quantity <= 0) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
-        <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-danger bg-danger-subtle px-2 py-0.5 rounded-full">
+        <span className="h-1.5 w-1.5 rounded-full bg-danger" />
         {t('products.outOfStock', 'نفذ')}
       </span>
     );

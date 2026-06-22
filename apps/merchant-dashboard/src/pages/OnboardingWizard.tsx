@@ -24,7 +24,24 @@ const steps = [
 ];
 
 function getStorefrontOrigin(): string {
-  return import.meta.env.VITE_STOREFRONT_URL || window.location.origin.replace(/:5173$/, ':5174');
+  // Explicit override first (dev sets VITE_STOREFRONT_URL=http://localhost:5174).
+  // Otherwise derive from the current host: the merchant dashboard lives at
+  //   merchant.<apex>      → https://merchant.staging.haastores.com
+  // and the storefront lives at
+  //   <apex>               → https://staging.haastores.com
+  // so we strip the leading "merchant." subdomain. Falls back to the
+  // dev-server :5173 → :5174 swap for local development.
+  if (import.meta.env.VITE_STOREFRONT_URL) {
+    return String(import.meta.env.VITE_STOREFRONT_URL).replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location?.host) {
+    const host = window.location.host;
+    if (host.startsWith('merchant.')) {
+      return `${window.location.protocol}//${host.slice('merchant.'.length)}`;
+    }
+    return window.location.origin.replace(/:5173$/, ':5174');
+  }
+  return 'http://localhost:5174';
 }
 
 export default function OnboardingWizard() {
@@ -239,10 +256,27 @@ export default function OnboardingWizard() {
                 </div>
 
                 <div className="flex justify-between mt-8">
-                  <Button variant="outline" className="h-9 text-sm" onClick={() => navigate('/dashboard')}>
+                  <Button
+                    variant="outline"
+                    className="h-11 text-sm"
+                    onClick={() => {
+                      // Confirm before skipping so a stray click doesn't
+                      // drop the user mid-wizard with no progress saved
+                      // (audit P1-#9). window.confirm is intentional:
+                      // adds zero deps, blocks until decision, native a11y.
+                      if (window.confirm(
+                        t(
+                          'onboarding.skipConfirm',
+                          'هل تريد تخطّي إعداد المتجر؟ ستذهب للوحة التحكم مباشرة ويمكنك إكمال الإعداد لاحقاً من الإعدادات.',
+                        ),
+                      )) {
+                        navigate('/dashboard');
+                      }
+                    }}
+                  >
                     {t('onboarding.skip')}
                   </Button>
-                  <Button className="h-9 text-sm px-4" onClick={handleSaveStore} disabled={saving || !storeName.trim()}>
+                  <Button className="h-11 text-sm px-4" onClick={handleSaveStore} disabled={saving || !storeName.trim()}>
                     {saving ? (
                       <><Loader2 className="h-4 w-4 me-2 animate-spin" />{t('common.saving')}</>
                     ) : (

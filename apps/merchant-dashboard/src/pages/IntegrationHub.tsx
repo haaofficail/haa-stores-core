@@ -33,7 +33,7 @@ function formatDate(d: string | null) {
 
 function StatusDot({ status }: { status: string }) {
   if (status === 'connected') return <span className="h-2.5 w-2.5 rounded-full bg-green-500 inline-block shadow-sm shadow-green-500/50" />;
-  if (status === 'error') return <span className="h-2.5 w-2.5 rounded-full bg-red-500 inline-block shadow-sm shadow-red-500/50" />;
+  if (status === 'error') return <span className="h-2.5 w-2.5 rounded-full bg-danger inline-block shadow-sm shadow-danger/50" />;
   return <span className="h-2.5 w-2.5 rounded-full bg-neutral-300 inline-block" />;
 }
 
