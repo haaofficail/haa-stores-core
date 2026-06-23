@@ -53,6 +53,7 @@ const CustomerSegments = lazy(() => import('@/pages/CustomerSegments'));
 const IntegrationHub = lazy(() => import('@/pages/IntegrationHub'));
 const MarketingActions = lazy(() => import('@/pages/MarketingActions'));
 const WhatsAppPage = lazy(() => import('@/pages/WhatsApp'));
+const LoyaltyPage = lazy(() => import('@/pages/Loyalty'));
 const MarketplaceGuide = lazy(() => import('@/pages/MarketplaceGuide'));
 const MarketplaceListings = lazy(() => import('@/pages/MarketplaceListings'));
 
@@ -140,6 +141,7 @@ export default function App() {
               <Route path="/channels/:provider" element={<GuardedRoute permission="settings:read"><MarketplaceDetail /></GuardedRoute>} />
               <Route path="/marketing/actions" element={<GuardedRoute permission="promotions:read"><MarketingActions /></GuardedRoute>} />
               <Route path="/whatsapp" element={<GuardedRoute permission="settings:read"><WhatsAppPage /></GuardedRoute>} />
+              <Route path="/loyalty" element={<GuardedRoute permission="promotions:read"><LoyaltyPage /></GuardedRoute>} />
               <Route path="/settings/integrations" element={<GuardedRoute permission="settings:read"><IntegrationHub /></GuardedRoute>} />
               <Route path="/ai-assistant" element={<GuardedRoute permission="settings:read"><AiAssistant /></GuardedRoute>} />
               <Route path="/audit-logs" element={<GuardedRoute permission="stores:read"><AuditLogs /></GuardedRoute>} />

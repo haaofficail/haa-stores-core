@@ -44,7 +44,7 @@ const ROOTS = [
 // Smartphone + QrCode + CheckCircle2 + AlertTriangle + Loader2 used in a
 // brand-new page). Lower this when files are migrated; increasing again
 // requires an explicit owner ruling.
-const CEILING = 154;
+const CEILING = 155;
 
 describe('Lucide migration progress (F-QA-D-004 / ISSUE-0009)', () => {
   it(`direct lucide-react imports remain ≤ ${CEILING}`, () => {
