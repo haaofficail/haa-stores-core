@@ -116,7 +116,21 @@ jobs:
                 console.log('To apply: pnpm db:migrate (or this workflow with dry_run=false)');
               " </dev/null
             else
-              docker compose -p "$PROJECT" exec -T api pnpm --filter @haa/db migrate </dev/null
+              # drizzle-kit is a devDep — not in the production image.
+              # Use drizzle-orm/postgres-js/migrator (prod dep) directly.
+              # The api package is ESM (`"type": "module"`), so use
+              # `node --input-type=module` to evaluate inline ESM.
+              docker compose -p "$PROJECT" exec -T api node --input-type=module -e "
+                import { migrate } from 'drizzle-orm/postgres-js/migrator';
+                import { drizzle } from 'drizzle-orm/postgres-js';
+                import postgres from 'postgres';
+                const sql = postgres(process.env.DATABASE_URL, { max: 1 });
+                const db = drizzle(sql);
+                console.log('Applying migrations from /app/packages/db/src/migrations …');
+                await migrate(db, { migrationsFolder: '/app/packages/db/src/migrations' });
+                console.log('Migrations applied OK');
+                await sql.end();
+              " </dev/null
             fi
 
             echo "==> Post-migration journal head:"
