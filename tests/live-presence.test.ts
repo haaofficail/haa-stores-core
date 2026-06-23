@@ -17,8 +17,14 @@ vi.mock('../apps/api/src/env', () => ({
 // `onUserConsoleLog` channel can still be flushing when the runner closes
 // the worker, producing an EnvironmentTeardownError that fails CI even
 // though every assertion passed.
+//
+// 50 ms was occasionally not enough under CI load (PRs #105/#108/#112
+// retries). 250 ms costs nothing on green runs and survives the slowest
+// runners we've seen. Explicit microtask + macrotask drains first so any
+// pending promises settle before the worker closes.
 afterAll(async () => {
-  await new Promise((r) => setTimeout(r, 50));
+  await new Promise((r) => setImmediate(r));
+  await new Promise((r) => setTimeout(r, 250));
 });
 
 // --- Device Normalization ---

@@ -40,10 +40,26 @@ jobs:
         with:
           ssh-private-key: ${{ env.SSH_KEY }}
 
-      - name: Add server to known hosts
+      - name: Add server to known hosts (pre-baked, no probing)
+        env:
+          STAGING_KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
+          PRODUCTION_KNOWN_HOSTS: ${{ secrets.PRODUCTION_KNOWN_HOSTS }}
         run: |
+          set -euo pipefail
           mkdir -p ~/.ssh
-          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          chmod 700 ~/.ssh
+          if [ "${{ inputs.target }}" = "production" ]; then
+            HOSTS="${PRODUCTION_KNOWN_HOSTS:-}"
+          else
+            HOSTS="${STAGING_KNOWN_HOSTS:-}"
+          fi
+          if [ -n "$HOSTS" ]; then
+            printf '%s\n' "$HOSTS" >> ~/.ssh/known_hosts
+            chmod 644 ~/.ssh/known_hosts
+          else
+            ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+            echo "⚠ STAGING_KNOWN_HOSTS not set — used ssh-keyscan fallback."
+          fi
 
       - name: Run probes
         run: |
