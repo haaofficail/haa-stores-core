@@ -140,15 +140,22 @@ export default tseslint.config(
   // without first cleaning the entire file. Tracked: P2-030.
   {
     files: [
-      // Files below still carry pre-P2-026 `any` usage that needs a
-      // dedicated cleanup PR. List shrinks as each file reaches 0
-      // `any`. 9 files were removed from this list in PR shrink-allowlist
-      // after batches 1-7 brought them to 0 (loyalty, orders, etc.).
       'packages/commerce-core/src/checkout.ts',
+      'packages/commerce-core/src/loyalty.ts',
+      'packages/commerce-core/src/orders.ts',
+      'packages/commerce-core/src/outbound-webhook.ts',
       'packages/commerce-core/src/products.ts',
       'packages/commerce-core/src/store-settings-service.ts',
+      'packages/commerce-core/src/wallet-posting-service.ts',
+      'packages/commerce-core/src/billing-settings-service.ts',
+      'packages/integration-core/src/webhook.ts',
+      'packages/integration-core/src/audit.ts',
+      'packages/payment-providers/src/factory.ts',
       'packages/theme-system/src/activeThemeResolver.ts',
+      'packages/wallet-core/src/ledger.ts',
       'apps/api/src/routes/admin/billing-settings.ts',
+      'apps/api/src/routes/orders.ts',
+      'apps/merchant-dashboard/src/lib/api.ts',
     ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',

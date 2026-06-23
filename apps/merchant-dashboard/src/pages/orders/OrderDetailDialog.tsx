@@ -26,6 +26,8 @@ import {
   Loader2,
   MapPin,
   Package,
+  PackageCheck,
+  PackageOpen,
   Printer,
   RefreshCw,
   Truck,
@@ -320,6 +322,7 @@ export function OrderDetailDialog(props: OrderDetailDialogProps) {
                 const paymentActions = bySection('payment');
                 const shippingActions = bySection('shipping');
                 const pickupActions = bySection('pickup');
+                const preparationActions = bySection('preparation');
                 const giftActions = bySection('gift');
                 const documentActions = bySection('documents');
                 const dangerActions = bySection('danger');
@@ -432,6 +435,17 @@ export function OrderDetailDialog(props: OrderDetailDialogProps) {
                     }
                     return;
                   }
+                  // Preparation status actions (HAA-PREP-001)
+                  if (action.section === 'preparation' && action.targetPreparationStatus) {
+                    if (!storeId) return;
+                    setChangingStatus(true);
+                    ordersApi.updatePreparationStatus(storeId, orderId, action.targetPreparationStatus)
+                      .then(() => ordersApi.getById(storeId, orderId))
+                      .then((o) => { setDetailOrder(o); load(); })
+                      .catch(err => toast.error(err instanceof ApiClientError ? err.message : t('common.error')))
+                      .finally(() => setChangingStatus(false));
+                    return;
+                  }
                   // Default: status transition via API
                   changeStatus(orderId, action.targetStatus);
                 };
@@ -482,6 +496,8 @@ export function OrderDetailDialog(props: OrderDetailDialogProps) {
                   AlertTriangle: <AlertTriangle className="h-4 w-4" />,
                   XCircle: <XCircle className="h-4 w-4" />,
                   Clock: <Clock className="h-4 w-4" />,
+                  PackageOpen: <PackageOpen className="h-4 w-4" />,
+                  PackageCheck: <PackageCheck className="h-4 w-4" />,
                 };
                 const getActionPermission = (action: OrderAction): string => {
                   if (action.section === 'danger') {
@@ -699,6 +715,28 @@ export function OrderDetailDialog(props: OrderDetailDialogProps) {
                           </div>
                         )}
                       </div>
+                    )}
+
+                    {/* 7b. Preparation workflow (HAA-PREP-001) — delivery orders at processing status */}
+                    {!orderActions.isPickup && preparationActions.length > 0 && (
+                      <DetailSection title={t('orders.preparation', 'مرحلة التجهيز')}>
+                        <div className="flex items-center gap-2 mb-3">
+                          <PackageOpen className="h-4 w-4 text-blue-500" />
+                          <span className="text-sm text-neutral-600">
+                            {t('orders.prep_status_label', 'حالة التجهيز')}:{' '}
+                            <span className="font-medium text-neutral-800">
+                              {(() => {
+                                const ps = detailOrder?.preparationStatus ?? 'not_started';
+                                const map: Record<string, string> = { not_started: 'لم يبدأ', preparing: 'قيد التجهيز', prepared: 'تم التجهيز', packed: 'تم التغليف' };
+                                return map[ps] ?? ps;
+                              })()}
+                            </span>
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {preparationActions.map(renderActionButton)}
+                        </div>
+                      </DetailSection>
                     )}
 
                     {/* 8. Shipping & Delivery — show for delivery orders */}

@@ -14,6 +14,7 @@ export const orders = pgTable('orders', {
   status: varchar('status', { length: 30 }).notNull().default('draft'),
   paymentStatus: varchar('payment_status', { length: 30 }).notNull().default('unpaid'),
   fulfillmentStatus: varchar('fulfillment_status', { length: 30 }).notNull().default('unfulfilled'),
+  preparationStatus: varchar('preparation_status', { length: 20 }).notNull().default('not_started'),
   customerName: varchar('customer_name', { length: 100 }).notNull(),
   customerPhone: varchar('customer_phone', { length: 20 }).notNull(),
   customerEmail: varchar('customer_email', { length: 255 }),

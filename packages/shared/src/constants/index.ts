@@ -16,5 +16,17 @@ export const ORDER_STATUS_TRANSITIONS: Record<string, string[]> = {
   partially_refunded: ['refunded', 'completed'],
 };
 
+/**
+ * Valid forward-only transitions for preparationStatus.
+ * Reverse transitions (e.g. packed → preparing) require admin role + reason
+ * and must go through OrdersService.changePreparationStatus with forceReverse=true.
+ */
+export const PREPARATION_STATUS_TRANSITIONS: Record<string, string[]> = {
+  not_started: ['preparing'],
+  preparing: ['prepared'],
+  prepared: ['packed'],
+  packed: [], // terminal — reverse requires admin override
+};
+
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;

@@ -81,6 +81,7 @@ const validAddress = { street: 'شارع الملك فهد', city: 'الرياض
 
 // A normal ready_to_ship order: fulfillmentStatus is 'unfulfilled' by design —
 // it only becomes 'fulfilled' post-delivery (completed/picked_up).
+// preparationStatus must be 'packed' for shipment creation (HAA-PREP-001).
 function makeOrder(overrides: Record<string, unknown> = {}) {
   return {
     id: 1,
@@ -89,6 +90,7 @@ function makeOrder(overrides: Record<string, unknown> = {}) {
     paymentStatus: 'paid',
     paymentMethod: 'credit_card',
     fulfillmentStatus: 'unfulfilled', // ← normal for ready_to_ship orders
+    preparationStatus: 'packed',      // ← required by HAA-PREP-001
     customerName: 'أحمد',
     customerPhone: '966500000000',
     shippingAddress: validAddress,
@@ -203,6 +205,7 @@ function makeUiOrder(overrides: Record<string, unknown> = {}) {
     paymentStatus: 'paid',
     paymentMethod: 'credit_card',
     fulfillmentStatus: 'unfulfilled', // ← normal for ready_to_ship
+    preparationStatus: 'packed',      // ← required since HAA-PREP-001
     fulfillmentType: 'delivery',
     shippingAddress: validAddress,
     shipment: null,
@@ -279,9 +282,11 @@ describe('Source regression — guard code still present and semantically correc
     expect(svcSrc).toContain("paymentStatus === 'pending'");
   });
 
-  it('backend: fulfillmentStatus guard is intentionally absent — documented with TODO', () => {
-    expect(svcSrc).toContain('fulfillmentStatus is intentionally NOT checked');
-    expect(svcSrc).toContain('TODO: add a preparationStatus field');
+  it('backend: fulfillmentStatus guard is intentionally absent — preparationStatus guard implemented', () => {
+    // fulfillmentStatus is NOT a shipment gate (correct — it reflects post-delivery state).
+    // preparationStatus is the packing gate (HAA-PREP-001).
+    expect(svcSrc).toContain("preparationStatus must be 'packed'");
+    expect(svcSrc).toContain('HAA-PREP-001');
     // SHIPPABLE_FULFILLMENT must NOT be present — the allowlist was removed
     expect(svcSrc).not.toContain('SHIPPABLE_FULFILLMENT');
   });
@@ -299,9 +304,11 @@ describe('Source regression — guard code still present and semantically correc
     expect(uiSrc).toContain('عنوان الشحن غير مكتمل');
   });
 
-  it('UI: fulfillmentStatus guard is intentionally absent — documented with TODO', () => {
-    expect(uiSrc).toContain('fulfillmentStatus is intentionally NOT checked');
-    expect(uiSrc).toContain('TODO: add preparationStatus');
+  it('UI: fulfillmentStatus guard absent; preparationStatus guard implemented (HAA-PREP-001)', () => {
+    // fulfillmentStatus is NOT a label gate (correct — it reflects post-delivery state).
+    // preparationStatus is now the packing gate (HAA-PREP-001).
+    expect(uiSrc).toContain('لا يمكن إنشاء بوليصة لأن الطلب لم يتم تغليفه بعد');
+    expect(uiSrc).toContain('HAA-PREP-001');
     // SHIPPABLE_FULFILLMENT must NOT be present in the UI file either
     expect(uiSrc).not.toContain('SHIPPABLE_FULFILLMENT');
   });

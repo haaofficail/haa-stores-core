@@ -147,7 +147,7 @@ export class ShipmentsService {
       };
     }
 
-    // Payment / address / duplicate guard (HAA-1004)
+    // Payment / preparation / address / duplicate guard (HAA-1004 + HAA-PREP-001)
     //
     // COD "confirmed" = paymentMethod === 'cash_on_delivery' AND paymentStatus === 'pending'.
     // checkout.ts sets paymentStatus → 'pending' when a COD order is confirmed.
@@ -156,13 +156,9 @@ export class ShipmentsService {
     // TODO: add a dedicated codStatus field (confirmed/rejected) when the merchant-COD-
     // confirmation flow is built; gate here on codStatus ∈ ['confirmed','approved'].
     //
-    // NOTE — fulfillmentStatus is intentionally NOT checked here:
-    // In this codebase fulfillmentStatus becomes 'fulfilled' only when an order reaches
-    // 'completed' or 'picked_up' (post-delivery). A ready_to_ship order always has
-    // fulfillmentStatus = 'unfulfilled'. The ORDER STATUS itself (ready_to_ship) is the
-    // preparation signal. There is no 'prepared' or 'packed' enum value yet.
-    // TODO: add a preparationStatus field (unfulfilled → prepared → packed) and gate
-    // createShipment on preparationStatus ∈ ['prepared', 'packed'] once implemented.
+    // preparationStatus must be 'packed' before a label can be created.
+    // The merchant drives this via OrdersService.changePreparationStatus:
+    //   not_started → preparing → prepared → packed
     const blockers: string[] = [];
     const isCOD = order.paymentMethod === 'cash_on_delivery';
     const paymentOk =
@@ -174,6 +170,11 @@ export class ShipmentsService {
       } else {
         blockers.push('paymentStatus is unpaid and order is not COD');
       }
+    }
+    // Preparation guard (HAA-PREP-001)
+    const prepStatus = order.preparationStatus ?? 'not_started';
+    if (prepStatus !== 'packed') {
+      blockers.push(`order is not packed yet (preparationStatus=${prepStatus}; must be 'packed')`);
     }
     const addr = order.shippingAddress as Record<string, unknown> | null;
     const missingAddrFields: string[] = [];
@@ -202,7 +203,7 @@ export class ShipmentsService {
       return {
         success: false,
         code: 'ORDER_NOT_SHIPPABLE',
-        message: `لا يمكن إنشاء بوليصة لأن الطلب غير مدفوع ولم يتم تجهيزه. ${blockers.join('; ')}`,
+        message: `لا يمكن إنشاء بوليصة: ${blockers.join('; ')}`,
       };
     }
 

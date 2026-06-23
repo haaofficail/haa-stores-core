@@ -41,7 +41,7 @@ export interface IdempotencyResult {
 }
 
 export type {
-  OrderStatus, PaymentStatus, FulfillmentStatus, ShipmentStatus,
+  OrderStatus, PaymentStatus, FulfillmentStatus, PreparationStatus, ShipmentStatus,
   ProductStatus, ProductType, StoreStatus,
   WalletEntryType, WalletEntryDirection, WalletEntryStatus,
   WebhookEventStatus, PaymentMethod, WebhookEventType,

@@ -1,8 +1,8 @@
 import { eq, and, count, sql, or, like, gte, lte, inArray, ne } from 'drizzle-orm';
 import { createDbClient, type DbOrTx } from '@haa/db';
 import * as s from '@haa/db/schema';
-import type { OrderStatus, PaymentStatus, FulfillmentStatus } from '@haa/shared';
-import { ORDER_STATUS_TRANSITIONS } from '@haa/shared';
+import type { OrderStatus, PaymentStatus, FulfillmentStatus, PreparationStatus } from '@haa/shared';
+import { ORDER_STATUS_TRANSITIONS, PREPARATION_STATUS_TRANSITIONS } from '@haa/shared';
 import { NotificationService } from '@haa/notification-core';
 import { AuditLogService } from '@haa/integration-core';
 import { WalletLedger } from '@haa/wallet-core';
@@ -293,6 +293,55 @@ export class OrdersService {
   async updateFulfillmentStatus(storeId: number, orderId: number, fulfillmentStatus: FulfillmentStatus) {
     const [updated] = await this.db.update(s.orders).set({ fulfillmentStatus, updatedAt: new Date() })
       .where(and(eq(s.orders.id, orderId), eq(s.orders.storeId, storeId))).returning();
+    return updated;
+  }
+
+  /**
+   * Change the packing/preparation state for a delivery order.
+   *
+   * Forward transitions follow PREPARATION_STATUS_TRANSITIONS (not_started → preparing → prepared → packed).
+   * Reverse transitions (packed → any, etc.) require isAdminOverride=true + a non-empty reason.
+   * Every change is recorded in orderStatusHistory with the synthetic key `prep:<from>→<to>`.
+   */
+  async changePreparationStatus(
+    storeId: number,
+    orderId: number,
+    newStatus: PreparationStatus,
+    opts?: { userId?: number; reason?: string; isAdminOverride?: boolean },
+  ) {
+    const order = await this.getById(storeId, orderId);
+    if (!order) return null;
+
+    const current = (order.preparationStatus ?? 'not_started') as PreparationStatus;
+    if (current === newStatus) return order;
+
+    const allowed = PREPARATION_STATUS_TRANSITIONS[current] ?? [];
+    const isForward = allowed.includes(newStatus);
+
+    if (!isForward) {
+      if (!opts?.isAdminOverride) {
+        throw new Error(
+          `Cannot transition preparationStatus from '${current}' to '${newStatus}' without admin override`,
+        );
+      }
+      if (!opts?.reason?.trim()) {
+        throw new Error('A reason is required for reverse preparation status changes');
+      }
+    }
+
+    const [updated] = await this.db.update(s.orders)
+      .set({ preparationStatus: newStatus, updatedAt: new Date() })
+      .where(and(eq(s.orders.id, orderId), eq(s.orders.storeId, storeId)))
+      .returning();
+
+    await this.db.insert(s.orderStatusHistory).values({
+      orderId,
+      fromStatus: `prep:${current}`,
+      toStatus: `prep:${newStatus}`,
+      changedByUserId: opts?.userId ?? null,
+      reason: opts?.reason ?? null,
+    });
+
     return updated;
   }
 
