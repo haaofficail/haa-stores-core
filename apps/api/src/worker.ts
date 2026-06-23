@@ -301,8 +301,19 @@ async function startBullMQWorker(): Promise<void> {
   if (!redisUrl) return;
 
   try {
-     
     const { Worker } = require('bullmq') as any;
+    const IORedis = require('ioredis') as any;
+    const Redis = IORedis.default ?? IORedis;
+
+    // BullMQ v5 rejects `connection: { url }` — it expects an IORedis
+    // instance (or host/port options). Same shape used by the producer
+    // in services/queue.ts (PR #109). Without this, the consumer
+    // threw on construction and scheduled jobs never ran on staging.
+    const connection = new Redis(redisUrl, {
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+      lazyConnect: true,
+    });
 
     bullWorker = new Worker(
       'haa-default',
@@ -322,7 +333,7 @@ async function startBullMQWorker(): Promise<void> {
         }
       },
       {
-        connection: { url: redisUrl },
+        connection,
         concurrency: Number(process.env.WORKER_CONCURRENCY || 5),
       },
     );

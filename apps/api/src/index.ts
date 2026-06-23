@@ -211,23 +211,10 @@ app.use('/merchant/:storeId/uploads', uploadRateLimit);
 
 
 
-app.get('/health', async (c) => {
-  let dbStatus = 'unknown';
-  try {
-    await db.execute(sql`SELECT 1 AS ok`);
-    dbStatus = 'connected';
-  } catch {
-    dbStatus = 'disconnected';
-  }
-
-  return c.json({
-    api: 'ok',
-    db: dbStatus,
-    environment: env.NODE_ENV,
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  });
-});
+// `/health` is registered above via `app.route('/health', healthRouter)`.
+// The shorter ad-hoc handler that used to live here was a duplicate
+// without queue/redis fields — removed to avoid ambiguity for smoke
+// monitors that read `queue.backend`/`queue.mode`. (P1-2 from audit.)
 
 app.route('/admin', adminRouter);
 app.route('/auth', authRouter);
