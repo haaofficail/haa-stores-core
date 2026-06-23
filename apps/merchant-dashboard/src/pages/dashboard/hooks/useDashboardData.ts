@@ -57,34 +57,34 @@ export interface DashboardData {
   refresh: () => void;
 
   // Summary data
-  summary: any;
-  wallet: any;
-  salesData: any;
-  topProducts: any[];
-  orderStatusDist: any[];
-  lowStock: any[];
-  recentOrders: any[];
-  recentItems: any[];
-  recentCustomers: any[];
-  brands: any[];
-  tags: any[];
-  cats: any[];
-  subscription: any;
-  readiness: any;
+  summary: unknown;
+  wallet: unknown;
+  salesData: unknown;
+  topProducts: unknown[];
+  orderStatusDist: unknown[];
+  lowStock: unknown[];
+  recentOrders: unknown[];
+  recentItems: unknown[];
+  recentCustomers: unknown[];
+  brands: unknown[];
+  tags: unknown[];
+  cats: unknown[];
+  subscription: unknown;
+  readiness: unknown;
   aiGreeting: string | null;
 
   // Compliance + ops
-  abandonedCartStats: any;
-  paymentConfig: any;
-  storeSettings: any;
-  returnsList: any[];
-  lateShipments: any[];
-  expiredCoupons: any[];
-  completedPromotions: any[];
-  marketplaceHub: any;
-  notificationLogs: any[];
-  bankAccount: any;
-  complianceStatus: any;
+  abandonedCartStats: unknown;
+  paymentConfig: unknown;
+  storeSettings: unknown;
+  returnsList: unknown[];
+  lateShipments: unknown[];
+  expiredCoupons: unknown[];
+  completedPromotions: unknown[];
+  marketplaceHub: unknown;
+  notificationLogs: unknown[];
+  bankAccount: unknown;
+  complianceStatus: unknown;
 
   // Stock mutation
   updatingStock: number | null;
@@ -106,33 +106,33 @@ export function useDashboardData(): DashboardData {
   const [refreshKey, setRefreshKey] = useState(0);
   const loadIdRef = useRef(0);
 
-  const [summary, setSummary] = useState<any>(null);
-  const [wallet, setWallet] = useState<any>(null);
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
-  const [recentItems, setRecentItems] = useState<any[]>([]);
-  const [salesData, setSalesData] = useState<any>(null);
-  const [topProducts, setTopProducts] = useState<any[]>([]);
-  const [orderStatusDist, setOrderStatusDist] = useState<any[]>([]);
-  const [lowStock, setLowStock] = useState<any[]>([]);
-  const [recentCustomers, setRecentCustomers] = useState<any[]>([]);
+  const [summary, setSummary] = useState<unknown>(null);
+  const [wallet, setWallet] = useState<unknown>(null);
+  const [recentOrders, setRecentOrders] = useState<unknown[]>([]);
+  const [recentItems, setRecentItems] = useState<unknown[]>([]);
+  const [salesData, setSalesData] = useState<unknown>(null);
+  const [topProducts, setTopProducts] = useState<unknown[]>([]);
+  const [orderStatusDist, setOrderStatusDist] = useState<unknown[]>([]);
+  const [lowStock, setLowStock] = useState<unknown[]>([]);
+  const [recentCustomers, setRecentCustomers] = useState<unknown[]>([]);
   const [updatingStock, setUpdatingStock] = useState<number | null>(null);
-  const [brands, setBrands] = useState<any[]>([]);
-  const [tags, setTags] = useState<any[]>([]);
-  const [subscription, setSubscription] = useState<any>(null);
-  const [cats, setCats] = useState<any[]>([]);
-  const [readiness, setReadiness] = useState<any>(null);
+  const [brands, setBrands] = useState<unknown[]>([]);
+  const [tags, setTags] = useState<unknown[]>([]);
+  const [subscription, setSubscription] = useState<unknown>(null);
+  const [cats, setCats] = useState<unknown[]>([]);
+  const [readiness, setReadiness] = useState<unknown>(null);
   const [aiGreeting, setAiGreeting] = useState<string | null>(null);
-  const [abandonedCartStats, setAbandonedCartStats] = useState<any>(null);
-  const [paymentConfig, setPaymentConfig] = useState<any>(null);
-  const [storeSettings, setStoreSettings] = useState<any>(null);
-  const [returnsList, setReturnsList] = useState<any[]>([]);
-  const [lateShipments, setLateShipments] = useState<any[]>([]);
-  const [expiredCoupons, setExpiredCoupons] = useState<any[]>([]);
-  const [completedPromotions, setCompletedPromotions] = useState<any[]>([]);
-  const [marketplaceHub, setMarketplaceHub] = useState<any>(null);
-  const [notificationLogs, setNotificationLogs] = useState<any[]>([]);
-  const [bankAccount, setBankAccount] = useState<any>(null);
-  const [complianceStatus, setComplianceStatus] = useState<any>(null);
+  const [abandonedCartStats, setAbandonedCartStats] = useState<unknown>(null);
+  const [paymentConfig, setPaymentConfig] = useState<unknown>(null);
+  const [storeSettings, setStoreSettings] = useState<unknown>(null);
+  const [returnsList, setReturnsList] = useState<unknown[]>([]);
+  const [lateShipments, setLateShipments] = useState<unknown[]>([]);
+  const [expiredCoupons, setExpiredCoupons] = useState<unknown[]>([]);
+  const [completedPromotions, setCompletedPromotions] = useState<unknown[]>([]);
+  const [marketplaceHub, setMarketplaceHub] = useState<unknown>(null);
+  const [notificationLogs, setNotificationLogs] = useState<unknown[]>([]);
+  const [bankAccount, setBankAccount] = useState<unknown>(null);
+  const [complianceStatus, setComplianceStatus] = useState<unknown>(null);
 
   // P1 audit fix — split 26 parallel calls into two batches.
   //
@@ -231,7 +231,9 @@ export function useDashboardData(): DashboardData {
       if (secondary[4].status === "fulfilled") setTags(secondary[4].value ?? []);
       if (secondary[5].status === "fulfilled") setCats(secondary[5].value ?? []);
       if (secondary[6].status === "fulfilled" && secondary[6].value) {
-        setAiGreeting((secondary[6].value as any).text);
+        setAiGreeting(
+          (secondary[6].value as { text?: string })?.text ?? null,
+        );
       }
       if (secondary[7].status === "fulfilled")
         setAbandonedCartStats(secondary[7].value);
@@ -259,10 +261,15 @@ export function useDashboardData(): DashboardData {
       setSecondaryLoading(false);
     };
 
-    const ric = (typeof window !== "undefined" &&
-      (window as any).requestIdleCallback) as
-      | ((cb: () => void, opts?: { timeout?: number }) => number)
-      | undefined;
+    const ric =
+      typeof window !== "undefined"
+        ? (window as Window & {
+            requestIdleCallback?: (
+              cb: () => void,
+              opts?: { timeout?: number },
+            ) => number;
+          }).requestIdleCallback
+        : undefined;
     if (ric) {
       ric(() => {
         void runSecondary();
@@ -295,24 +302,29 @@ export function useDashboardData(): DashboardData {
   };
 
   // Derived
-  const totalSalesFormatted = summary?.totalSales
-    ? formatCurrency(summary.totalSales)
+  const summaryShape = summary as
+    | { totalSales?: number | string; totalOrders?: number; newOrders?: number; activeProducts?: number }
+    | null;
+  const walletShape = wallet as { balance?: number | string } | null;
+  const totalSalesFormatted = summaryShape?.totalSales
+    ? formatCurrency(summaryShape.totalSales)
     : "0.00";
-  const walletBalanceFormatted = wallet?.balance
-    ? formatCurrency(wallet.balance)
+  const walletBalanceFormatted = walletShape?.balance
+    ? formatCurrency(walletShape.balance)
     : "0.00";
 
   const salesTrend = useMemo(() => {
-    if (!salesData?.salesByDay?.length) return null;
-    const days = salesData.salesByDay;
+    const sd = salesData as { salesByDay?: Array<{ sales: number | string }> } | null;
+    if (!sd?.salesByDay?.length) return null;
+    const days = sd.salesByDay;
     if (days.length < 2) return null;
     const mid = Math.floor(days.length / 2);
     const firstHalf = days
       .slice(0, mid)
-      .reduce((s: number, d: any) => s + Number(d.sales), 0);
+      .reduce((s: number, d: { sales: number | string }) => s + Number(d.sales), 0);
     const secondHalf = days
       .slice(mid)
-      .reduce((s: number, d: any) => s + Number(d.sales), 0);
+      .reduce((s: number, d: { sales: number | string }) => s + Number(d.sales), 0);
     if (firstHalf === 0)
       return {
         direction: "neutral" as const,
@@ -340,7 +352,7 @@ export function useDashboardData(): DashboardData {
       },
       {
         label: t("dashboard.totalOrders", "إجمالي الطلبات"),
-        value: String(summary?.totalOrders ?? 0),
+        value: String(summaryShape?.totalOrders ?? 0),
         suffix: "",
         icon: ShoppingCart,
         gradient: "from-primary-400 via-primary-500 to-primary-700",
@@ -351,7 +363,7 @@ export function useDashboardData(): DashboardData {
       },
       {
         label: t("dashboard.newOrders", "طلبات جديدة"),
-        value: String(summary?.newOrders ?? 0),
+        value: String(summaryShape?.newOrders ?? 0),
         suffix: "",
         icon: Clock,
         gradient: "from-amber-400 via-amber-500 to-orange-600",
@@ -362,7 +374,7 @@ export function useDashboardData(): DashboardData {
       },
       {
         label: t("dashboard.activeProducts", "منتجات نشطة"),
-        value: String(summary?.activeProducts ?? 0),
+        value: String(summaryShape?.activeProducts ?? 0),
         suffix: "",
         icon: Package,
         gradient: "from-violet-400 via-violet-500 to-purple-600",
@@ -383,21 +395,32 @@ export function useDashboardData(): DashboardData {
         trendValue: "",
       },
     ],
-    [totalSalesFormatted, summary, walletBalanceFormatted, salesTrend, t],
+    [
+      totalSalesFormatted,
+      summaryShape?.totalOrders,
+      summaryShape?.newOrders,
+      summaryShape?.activeProducts,
+      walletBalanceFormatted,
+      salesTrend,
+      t,
+    ],
   );
 
+  const subscriptionPeriodEnd =
+    (subscription as { currentPeriodEnd?: string | null } | null)
+      ?.currentPeriodEnd ?? null;
   const [liveSubDays, setLiveSubDays] = useState(
-    getRemainingDays(subscription?.currentPeriodEnd ?? null),
+    getRemainingDays(subscriptionPeriodEnd),
   );
 
   useEffect(() => {
-    setLiveSubDays(getRemainingDays(subscription?.currentPeriodEnd ?? null));
-    if (!subscription?.currentPeriodEnd) return;
+    setLiveSubDays(getRemainingDays(subscriptionPeriodEnd));
+    if (!subscriptionPeriodEnd) return;
     const interval = setInterval(() => {
-      setLiveSubDays(getRemainingDays(subscription?.currentPeriodEnd ?? null));
+      setLiveSubDays(getRemainingDays(subscriptionPeriodEnd));
     }, 60000);
     return () => clearInterval(interval);
-  }, [subscription?.currentPeriodEnd]);
+  }, [subscriptionPeriodEnd]);
 
   const dismissedAlerts = useMemo<Set<string>>(() => {
     try {

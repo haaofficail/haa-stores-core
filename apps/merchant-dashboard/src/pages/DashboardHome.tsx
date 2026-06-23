@@ -106,7 +106,14 @@ export default function DashboardHome() {
       />
 
       {/* ── Subscription badge (mobile-compact) ──────────────────── */}
-      <SubscriptionBadge subscription={data.subscription} t={t} />
+      <SubscriptionBadge
+        subscription={
+          data.subscription as
+            | { planName: string; status: string; currentPeriodEnd: string | null }
+            | null
+        }
+        t={t}
+      />
 
       {/* Smart Alerts — critical only, compact */}
       <SmartAlertsStrip
@@ -145,22 +152,29 @@ export default function DashboardHome() {
       )}
 
       {/* ── Recent Actionable Orders ────────────────────────────────── */}
-      {data.summary?.recentActionableOrders && data.summary.recentActionableOrders.length > 0 && (
-        <RecentActionableOrders
-          orders={data.summary.recentActionableOrders as ActionableOrder[]}
-          t={t}
-        />
-      )}
+      {(() => {
+        const s = data.summary as
+          | { recentActionableOrders?: ActionableOrder[]; readiness?: { score: number; issues: Array<{ title: string }> } }
+          | null;
+        const recent = s?.recentActionableOrders;
+        return recent && recent.length > 0 ? (
+          <RecentActionableOrders orders={recent} t={t} />
+        ) : null;
+      })()}
 
       {/* ── Store Readiness (one-liner summary) ───────────────────── */}
-      {data.summary?.readiness && data.summary.readiness.issues.length > 0 && (
-        <StoreReadinessBanner readiness={data.summary.readiness} t={t} />
-      )}
+      {(() => {
+        const readiness = (data.summary as { readiness?: { score: number; issues: Array<{ title: string }> } } | null)
+          ?.readiness;
+        return readiness && readiness.issues.length > 0 ? (
+          <StoreReadinessBanner readiness={readiness} t={t} />
+        ) : null;
+      })()}
 
       {/* ── Low Stock (compact, max 3) ─────────────────────────────── */}
       {data.lowStock.length > 0 && (
         <LowStockList
-          products={data.lowStock}
+          products={data.lowStock as Array<{ id: number; name: string; stockQuantity: number }>}
           updatingStockId={data.updatingStock}
           onUpdateStock={data.handleStockUpdate}
           t={t}
@@ -175,7 +189,7 @@ export default function DashboardHome() {
         showAnalytics={showAnalytics}
         onToggle={() => setShowAnalytics((v) => !v)}
         salesData={data.salesData}
-        orderStatusDist={data.orderStatusDist}
+        orderStatusDist={data.orderStatusDist as Array<{ status: string; count: number }>}
         recentItems={data.recentItems}
         topProducts={data.topProducts}
         t={t}
@@ -193,8 +207,12 @@ export default function DashboardHome() {
         brandsCount={data.brands.length}
         tagsCount={data.tags.length}
         categoriesCount={data.cats.length}
-        productsCount={data.summary?.totalProducts ?? 0}
-        ordersCount={data.summary?.totalOrders ?? 0}
+        productsCount={
+          (data.summary as { totalProducts?: number } | null)?.totalProducts ?? 0
+        }
+        ordersCount={
+          (data.summary as { totalOrders?: number } | null)?.totalOrders ?? 0
+        }
         t={t}
       />
     </div>
