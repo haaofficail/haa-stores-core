@@ -144,7 +144,6 @@ export default tseslint.config(
       'packages/commerce-core/src/loyalty.ts',
       'packages/commerce-core/src/orders.ts',
       'packages/commerce-core/src/outbound-webhook.ts',
-      'packages/commerce-core/src/products.ts',
       'packages/commerce-core/src/store-settings-service.ts',
       'packages/commerce-core/src/wallet-posting-service.ts',
       'packages/commerce-core/src/billing-settings-service.ts',
