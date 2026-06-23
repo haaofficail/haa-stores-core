@@ -55,6 +55,7 @@ export function NextActionBanner({ items, t }: Props) {
         {items.length > 3 && (
           <button
             onClick={() => navigate("/orders")}
+            aria-label={t("dashboard.actionCenter.viewAllAria", "عرض كل الإجراءات المعلّقة")}
             className="text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors"
           >
             {t("dashboard.actionCenter.viewAll", "عرض الكل")}
@@ -67,6 +68,7 @@ export function NextActionBanner({ items, t }: Props) {
           <button
             key={item.key}
             onClick={() => navigate(item.link)}
+            aria-label={t("dashboard.actionCenter.openItemAria", "فتح {{label}}", { label: item.label })}
             className="shrink-0 flex items-center gap-2 px-3 py-2.5 rounded-xl border sm:flex-col sm:items-start sm:p-4 transition-all hover:shadow-sm"
             style={{
               borderColor:

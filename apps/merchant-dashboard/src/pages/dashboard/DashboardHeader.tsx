@@ -31,6 +31,7 @@ export function DashboardHeader({ t, visibleAlerts, onRefresh }: Props) {
       <div className="flex items-center gap-2.5 min-w-0">
         <button
           type="button"
+          aria-label={t("common.openMenuAria", "فتح قائمة التنقل")}
           className="lg:hidden p-2 -ms-2 rounded-xl hover:bg-neutral-100 transition-colors shrink-0"
           onClick={() => {
             /* sidebar toggle handled by layout */

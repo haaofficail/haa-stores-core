@@ -41,6 +41,7 @@ export function RecentCustomersList({ customers, t }: Props) {
         <button
           className="text-xs text-primary-600 hover:text-primary-700 font-bold"
           onClick={() => navigate("/customers")}
+          aria-label={t("dashboard.recentCustomersViewAllAria", "عرض قائمة العملاء كاملة")}
         >
           {t("common.viewAll", "عرض الكل")}
         </button>
@@ -81,6 +82,7 @@ export function RecentCustomersList({ customers, t }: Props) {
                       href={`tel:${c.phone}`}
                       className="p-0.5 text-primary-500"
                       title={t("common.call", "اتصال")}
+                      aria-label={t("dashboard.callCustomerAria", "الاتصال بـ {{name}}", { name: c.name ?? c.phone })}
                     >
                       <svg
                         className="h-3 w-3"

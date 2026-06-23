@@ -46,6 +46,8 @@ export function MoreSection({
       <button
         type="button"
         onClick={onToggle}
+        aria-expanded={showMore}
+        aria-label={t("dashboard.moreToggleAria", "إظهار أو إخفاء قسم المزيد")}
         className="w-full flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 hover:bg-neutral-50 transition-colors"
       >
         <h3 className="font-bold text-sm sm:text-base text-neutral-900">

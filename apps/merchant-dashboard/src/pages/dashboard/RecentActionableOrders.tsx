@@ -55,6 +55,7 @@ export function RecentActionableOrders({ orders, t }: Props) {
         </h2>
         <button
           onClick={() => navigate("/orders")}
+          aria-label={t("dashboard.recentActionable.viewAllAria", "عرض كل الطلبات")}
           className="text-xs font-bold text-neutral-600 hover:text-neutral-800 transition-colors"
         >
           {t("dashboard.recentActionable.viewAll", "عرض الكل")}
@@ -139,6 +140,7 @@ export function RecentActionableOrders({ orders, t }: Props) {
                   e.stopPropagation();
                   navigate(`/orders?orderId=${order.id}`);
                 }}
+                aria-label={t("dashboard.recentActionable.openAria", "فتح تفاصيل الطلب #{{orderNumber}}", { orderNumber: order.orderNumber })}
                 className="text-xs font-bold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 border border-neutral-200 px-3 py-1.5 rounded-xl transition-all flex-shrink-0"
               >
                 {t("dashboard.recentActionable.open", "فتح الطلب")}

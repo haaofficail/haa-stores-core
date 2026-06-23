@@ -52,6 +52,7 @@ export function LowStockList({
         {products.length > 3 && (
           <button
             onClick={() => navigate("/products")}
+            aria-label={t("dashboard.lowStockViewAllAria", "عرض كل المنتجات منخفضة المخزون")}
             className="text-xs font-bold text-primary-600"
           >
             {t("common.viewAll", "عرض الكل")}
@@ -79,6 +80,7 @@ export function LowStockList({
                   onUpdateStock(p.id, (p.stockQuantity || 0) + 1)
                 }
                 disabled={updatingStockId === p.id}
+                aria-label={t("dashboard.lowStockBumpAria", "زيادة مخزون {{name}} بقطعة واحدة", { name: p.name })}
                 className="px-2 py-0.5 text-xs font-bold text-emerald-600 bg-white hover:bg-emerald-50 rounded-lg border border-emerald-200 transition-colors disabled:opacity-50"
               >
                 +1

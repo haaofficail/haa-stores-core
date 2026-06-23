@@ -113,6 +113,7 @@ export default function DashboardHome() {
         alerts={visibleAlerts as SmartAlert[]}
         dismissingIds={dismissingAlerts}
         onDismiss={dismissAlert}
+        t={t}
       />
 
       {/* Welcome Banner */}
