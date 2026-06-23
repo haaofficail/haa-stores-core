@@ -90,11 +90,16 @@ jobs:
             # drizzle-kit hits the in-container postgres.
             export DATABASE_URL="postgres://${POSTGRES_USER:-haa}:${POSTGRES_PASSWORD}@127.0.0.1:5433/${POSTGRES_DB:-haastores}"
 
+            # CRITICAL: `docker compose exec -T` inherits stdin, which means
+            # when called inside `ssh ... bash -s <<HEREDOC` it eats the
+            # rest of the heredoc and bash silently runs nothing further.
+            # Every exec call below MUST `</dev/null` to release stdin.
+
             echo "==> Pre-migration journal head:"
             docker compose -p "$PROJECT" exec -T postgres \
               psql -U "${POSTGRES_USER:-haa}" "${POSTGRES_DB:-haastores}" \
               -c "SELECT hash, created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 3" \
-              2>/dev/null || echo "  (no migrations table yet — fresh DB)"
+              </dev/null 2>/dev/null || echo "  (no migrations table yet — fresh DB)"
 
             echo "==> Migrating (dry_run=$DRY_RUN)"
             if [ "$DRY_RUN" = "true" ]; then
@@ -109,21 +114,21 @@ jobs:
                 console.log('Journal entries:', journal.entries.length);
                 journal.entries.slice(-10).forEach(e => console.log(' -', e.tag, '(', new Date(e.when).toISOString(), ')'));
                 console.log('To apply: pnpm db:migrate (or this workflow with dry_run=false)');
-              "
+              " </dev/null
             else
-              docker compose -p "$PROJECT" exec -T api pnpm --filter @haa/db migrate
+              docker compose -p "$PROJECT" exec -T api pnpm --filter @haa/db migrate </dev/null
             fi
 
             echo "==> Post-migration journal head:"
             docker compose -p "$PROJECT" exec -T postgres \
               psql -U "${POSTGRES_USER:-haa}" "${POSTGRES_DB:-haastores}" \
               -c "SELECT hash, created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 3" \
-              2>/dev/null || echo "  (still no migrations table)"
+              </dev/null 2>/dev/null || echo "  (still no migrations table)"
 
             echo "==> Confirm whatsapp tables exist:"
             docker compose -p "$PROJECT" exec -T postgres \
               psql -U "${POSTGRES_USER:-haa}" "${POSTGRES_DB:-haastores}" \
-              -c "\\dt whatsapp_*"
+              -c "\\dt whatsapp_*" </dev/null
           MIGRATE
 
       - name: Restart api so it picks up any schema-aware caches
