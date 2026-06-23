@@ -131,4 +131,30 @@ export default tseslint.config(
       }],
     },
   },
+
+  // ─── P2-030 legacy `any` debt — file allow-list ───
+  // Files with pre-existing `any` usage that pre-date the P2-026
+  // escalation (off → warn). New files MUST NOT be added here; this
+  // list shrinks as P2-030 cleanup PRs land. Lint-staged max-warnings
+  // is 0, and we'd otherwise be unable to touch any of these files
+  // without first cleaning the entire file. Tracked: P2-030.
+  {
+    files: [
+      'packages/commerce-core/src/checkout.ts',
+      'packages/commerce-core/src/loyalty.ts',
+      'packages/commerce-core/src/orders.ts',
+      'packages/commerce-core/src/outbound-webhook.ts',
+      'packages/commerce-core/src/wallet-posting-service.ts',
+      'packages/commerce-core/src/billing-settings-service.ts',
+      'packages/notification-core/src/index.ts',
+      'packages/integration-core/src/webhook.ts',
+      'packages/integration-core/src/audit.ts',
+      'packages/payment-providers/src/factory.ts',
+      'packages/wallet-core/src/ledger.ts',
+      'apps/api/src/routes/admin/billing-settings.ts',
+    ],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 );

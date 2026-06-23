@@ -1,10 +1,10 @@
 import { eq } from 'drizzle-orm';
-import { createDbClient, DbClient } from '@haa/db';
+import { createDbClient, type DbOrTx } from '@haa/db';
 import * as s from '@haa/db/schema';
 import type { WebhookEventType } from '@haa/shared';
 
 export class WebhookOutboxService {
-  constructor(private db: DbClient = createDbClient()) {}
+  constructor(private db: DbOrTx = createDbClient()) {}
 
   async recordEvent(eventType: WebhookEventType, storeId: number, tenantId: number, payload: Record<string, unknown>) {
     // Safety: check if this is a demo store and skip webhook events

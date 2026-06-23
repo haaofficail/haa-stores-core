@@ -28,7 +28,7 @@
 //     the lifetime of a single request or webhook handler. Cross-
 //     instance dedup is the job of a future DB-level constraint.
 
-import { createDbClient, DbClient } from '@haa/db';
+import { createDbClient, type DbOrTx } from '@haa/db';
 import {
   calcCodFee,
   CodFeePolicy,
@@ -70,7 +70,7 @@ export type PostResult = {
 export class WalletPostingService {
   private dedupMap = new Map<string, PostResult>();
 
-  constructor(private db: DbClient = createDbClient()) {}
+  constructor(private db: DbOrTx = createDbClient()) {}
 
   // ---------- helpers ----------
 

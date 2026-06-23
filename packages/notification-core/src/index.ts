@@ -36,7 +36,7 @@ export class ConsoleNotificationProvider implements NotificationProvider {
 }
 
 import { eq, desc, and } from 'drizzle-orm';
-import { createDbClient, DbClient } from '@haa/db';
+import { createDbClient, type DbOrTx } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { isDemoStore } from '@haa/shared';
 import { ResendEmailProvider } from './providers/resend.js';
@@ -72,7 +72,7 @@ export class NotificationService {
   private providers: NotificationProvider[];
   private isDemoProvider: boolean;
 
-  constructor(private db: DbClient = createDbClient(), private store?: { id: number; isDemo?: boolean | null }) {
+  constructor(private db: DbOrTx = createDbClient(), private store?: { id: number; isDemo?: boolean | null }) {
     this.providers = buildDefaultProviders();
     this.isDemoProvider = isDemoStore(store as any) ?? false;
   }

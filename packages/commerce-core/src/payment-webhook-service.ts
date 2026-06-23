@@ -218,21 +218,15 @@ export class PaymentWebhookService {
 
     let becamePaid = false;
     await this.db.transaction(async (tx) => {
-      // P3-001: tracked debt — services accept DbClient but the
-      // drizzle tx callback hands back a tx-bound client whose type
-      // signature differs slightly. Proper fix is to widen the
-      // services to a DbClient | TxClient union. Until then,
-      // suppress the no-explicit-any rule per-line so this debt
-      // doesn't block staged-file lint after the P2-026 escalation.
-      /* eslint-disable @typescript-eslint/no-explicit-any */
-      const _txPaymentService = new PaymentService(tx as any);
-      const txOrdersService = new OrdersService(tx as any);
-      const txWallet = new WalletLedger(tx as any);
-      const txOutbox = new WebhookOutboxService(tx as any);
-      const txNotif = new NotificationService(tx as any);
-      const txBilling = new StoreBillingSettingsService(tx as any);
-      const txPosting = new WalletPostingService(tx as any);
-      /* eslint-enable @typescript-eslint/no-explicit-any */
+      // P3-001 resolved: services now accept `DbOrTx`, so the tx
+      // value flows in without an `as any` cast.
+      const _txPaymentService = new PaymentService(tx);
+      const txOrdersService = new OrdersService(tx);
+      const txWallet = new WalletLedger(tx);
+      const txOutbox = new WebhookOutboxService(tx);
+      const txNotif = new NotificationService(tx);
+      const txBilling = new StoreBillingSettingsService(tx);
+      const txPosting = new WalletPostingService(tx);
 
       if (internalStatus === 'paid' && payment.status !== 'paid') {
         becamePaid = true;

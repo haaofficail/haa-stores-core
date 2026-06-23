@@ -6,7 +6,7 @@
 
 import { eq } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
-import type { DbClient } from '@haa/db';
+import type { DbOrTx } from '@haa/db';
 import * as s from '@haa/db/schema';
 import type { ProviderCode, PaymentMode } from '@haa/shared';
 import { type PaymentProvider } from './base.js';
@@ -128,7 +128,7 @@ export function getAvailablePaymentMethods(providerCode?: ProviderCode): string[
 // Could be moved to a dedicated service package in a future pass.
 
 export class PaymentService {
-  constructor(private db: DbClient = createDbClient()) {}
+  constructor(private db: DbOrTx = createDbClient()) {}
 
   async getPaymentsByOrder(orderId: number) {
     return this.db.select().from(s.payments).where(eq(s.payments.orderId, orderId));

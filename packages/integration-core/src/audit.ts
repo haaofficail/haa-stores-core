@@ -1,5 +1,5 @@
 import { eq, and, count, desc, gte, lte, SQL } from 'drizzle-orm';
-import { createDbClient, DbClient } from '@haa/db';
+import { createDbClient, type DbOrTx } from '@haa/db';
 import * as s from '@haa/db/schema';
 import type { AuditAction } from '@haa/shared';
 import { maskIP, maskObject } from '@haa/shared';
@@ -27,7 +27,7 @@ export interface AuditListOptions {
 }
 
 export class AuditLogService {
-  constructor(private db: DbClient = createDbClient()) {}
+  constructor(private db: DbOrTx = createDbClient()) {}
 
   async record(input: AuditInput) {
     const [log] = await this.db.insert(s.auditLogs).values({
