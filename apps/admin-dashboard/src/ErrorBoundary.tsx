@@ -59,7 +59,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     console.error(`[ErrorBoundary] ${errorCode} | ${correlationId}`, error, info.componentStack);
 
-    const BASE_URL = (import.meta as any).env?.VITE_API_URL || '';
+    const BASE_URL = import.meta.env.VITE_API_URL || '';
 
     // Extract the top frame of the stack (filename:line) for debugging
     const firstFrame = (info.componentStack || '').split('\n')[1]?.trim() ?? null;
