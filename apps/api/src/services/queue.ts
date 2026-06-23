@@ -1,5 +1,12 @@
 // (No import of the redis factory — we read process.env.QUEUE_REDIS_URL
 // directly. The BullMQ backend is created lazily inside the factory.)
+//
+// The api is ESM ("type": "module"), so plain `require()` is undefined.
+// `createRequire` gives us a CJS-style require bound to this module's URL
+// so we can lazy-load optional deps (bullmq, ioredis) without making the
+// whole factory async (call sites are synchronous).
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
 /**
  * Queue shim — provides a minimal job-queue contract for the API.
