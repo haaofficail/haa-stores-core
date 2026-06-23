@@ -150,7 +150,13 @@ function migrateHomepage(homepage: Record<string, unknown> | null | undefined): 
   return { sections, sectionOrder: sections.map((section) => section.type) };
 }
 
-type ThemeConfigInput = Partial<ThemeConfig> & {
+/**
+ * The user-supplied input shape for theme configuration. Used by
+ * resolveActiveThemeConfig + resolveThemeKey, and exported so the
+ * jsonb column in db/schema/stores.ts can carry the proper `$type<>`
+ * (avoiding `as any` casts in store-settings-service.ts).
+ */
+export type ThemeConfigInput = Partial<ThemeConfig> & {
   themeKey?: unknown;
   _history?: unknown;
 };

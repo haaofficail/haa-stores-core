@@ -33,6 +33,7 @@ export {
   resolveActiveThemeConfig,
   resolveThemeKey,
   type ResolvedThemeConfig,
+  type ThemeConfigInput,
   type ThemeKey,
 } from './activeThemeResolver.js';
 
