@@ -70,6 +70,13 @@ class NoopQueue implements QueueProducer {
 // The require is wrapped in try/catch — if bullmq isn't installed we
 // return a noop and warn once, so the rest of the app keeps working.
 
+// Captures the actual exception so /api/health can surface it without
+// requiring SSH access to the api container stderr stream.
+let _bullmqInitError: string | null = null;
+export function getBullmqInitError(): string | null {
+  return _bullmqInitError;
+}
+
 function tryCreateBullMqQueue(): QueueProducer | null {
   try {
     // Lazy require — keeps bullmq optional in dev/test.
@@ -85,6 +92,7 @@ function tryCreateBullMqQueue(): QueueProducer | null {
     const connection = new Redis(process.env.QUEUE_REDIS_URL, {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
+      lazyConnect: true,
     });
 
     const queue = new BullMQ.Queue('haa-default', {
@@ -113,9 +121,11 @@ function tryCreateBullMqQueue(): QueueProducer | null {
       },
     };
   } catch (err) {
+    const msg = (err as Error).message;
+    _bullmqInitError = msg;
     process.stderr.write(
       `[queue] QUEUE_REDIS_URL set but bullmq is not available; falling back to noop. ` +
-        `Reason: ${(err as Error).message}\n`
+        `Reason: ${msg}\n`
     );
     return null;
   }
@@ -218,12 +228,17 @@ export function resolveQueueStatus(input: {
 
 /** Resolve the live queue status from the active backend + process env. */
 export function getQueueStatus(): QueueStatus {
-  return resolveQueueStatus({
+  const status = resolveQueueStatus({
     backend: getQueue().backend,
     nodeEnv: process.env.NODE_ENV || 'development',
     redisConfigured: !!process.env.QUEUE_REDIS_URL,
     allowNoop: process.env.ALLOW_NOOP_QUEUE === 'true',
   });
+  const initErr = getBullmqInitError();
+  if (initErr && status.mode === 'degraded') {
+    return { ...status, reason: `${status.reason} initError: ${initErr}` };
+  }
+  return status;
 }
 
 /**
