@@ -4,7 +4,7 @@ import {
   isKnownThemeKey,
   normalizeThemeKey,
 } from './themeRegistry.js';
-import type { ThemeConfig, SectionConfig } from './types.js';
+import type { ThemeConfig, SectionConfig, BannerLinkType } from './types.js';
 
 export type ThemeKey = 'minimal' | 'royal' | 'night' | 'nature';
 
@@ -34,6 +34,28 @@ function hasOldHomepageData(hp: Record<string, unknown>): boolean {
     hp.showBanner !== undefined || hp.showTrustBadges !== undefined;
 }
 
+// Legacy homepage data is unstructured JSONB carried over from the
+// pre-section-config era. Migration only reads a handful of string
+// fields off each entry — we model them as bag-of-strings records so
+// the read sites stay safe without rebuilding their full schema.
+type LegacyBanner = {
+  title?: string;
+  imageUrl?: string;
+  imageMobileUrl?: string;
+  description?: string;
+  buttonText?: string;
+  // `linkType` is BannerLinkType in the canonical schema, but legacy
+  // rows may carry arbitrary strings. Treat as nominal-string here;
+  // the destination `settings.linkType` only accepts the union.
+  linkType?: BannerLinkType;
+  linkValue?: string;
+};
+type LegacyTrustBadge = { icon?: string; title?: string; description?: string };
+type LegacyInstanceData = Record<
+  string,
+  { label?: string; banners?: LegacyBanner[]; trustBadges?: LegacyTrustBadge[] } | undefined
+>;
+
 function migrateHomepage(homepage: Record<string, unknown> | null | undefined): Record<string, unknown> {
   if (!homepage || typeof homepage !== 'object') return {};
   if (Array.isArray(homepage.sections)) {
@@ -41,7 +63,9 @@ function migrateHomepage(homepage: Record<string, unknown> | null | undefined): 
       ...homepage,
       sectionOrder: Array.isArray(homepage.sectionOrder)
         ? homepage.sectionOrder
-        : homepage.sections.map((section: any) => section?.type).filter((type): type is string => typeof type === 'string'),
+        : (homepage.sections as Array<{ type?: unknown }>)
+            .map((section) => section?.type)
+            .filter((type): type is string => typeof type === 'string'),
     };
   }
 
@@ -50,11 +74,13 @@ function migrateHomepage(homepage: Record<string, unknown> | null | undefined): 
 
   const sections: SectionConfig[] = [];
   const oldOrder: string[] = Array.isArray(homepage.sectionOrder)
-    ? homepage.sectionOrder
+    ? (homepage.sectionOrder as string[])
     : ['banner', 'categories', 'bestSellers', 'newArrivals', 'todayDeals', 'featured'];
-  const banners: any[] = Array.isArray(homepage.banners) ? homepage.banners : [];
-  const trustBadges: any[] = Array.isArray(homepage.trustBadges) ? homepage.trustBadges : [];
-  const instanceData: Record<string, any> = (homepage.instanceData as Record<string, any>) || {};
+  const banners: LegacyBanner[] = Array.isArray(homepage.banners) ? (homepage.banners as LegacyBanner[]) : [];
+  const trustBadges: LegacyTrustBadge[] = Array.isArray(homepage.trustBadges)
+    ? (homepage.trustBadges as LegacyTrustBadge[])
+    : [];
+  const instanceData: LegacyInstanceData = (homepage.instanceData as LegacyInstanceData | undefined) ?? {};
 
   for (const item of oldOrder) {
     if (item === 'banner') {
@@ -78,7 +104,9 @@ function migrateHomepage(homepage: Record<string, unknown> | null | undefined): 
         });
       }
     } else if (item === 'marketing') {
-      const mBanners = Array.isArray(homepage.marketingBanners) ? homepage.marketingBanners : banners;
+      const mBanners: LegacyBanner[] = Array.isArray(homepage.marketingBanners)
+        ? (homepage.marketingBanners as LegacyBanner[])
+        : banners;
       for (const b of mBanners.slice(0, 1)) {
         sections.push({
           id: generateSectionId(),
@@ -135,11 +163,18 @@ function migrateHomepage(homepage: Record<string, unknown> | null | undefined): 
     } else {
       const sectionType = oldShowToSectionType(item);
       if (sectionType) {
+        // The legacy `show<Item>` flags are stored as untyped booleans
+        // on the homepage record. Indexing into the Record<string, unknown>
+        // returns `unknown`, so we explicitly compare it.
+        const showKey = `show${item.charAt(0).toUpperCase() + item.slice(1)}`;
         sections.push({
           id: generateSectionId(), type: sectionType,
-          enabled: (homepage as any)[`show${item.charAt(0).toUpperCase() + item.slice(1)}`] !== false,
+          enabled: homepage[showKey] !== false,
           title: ({ categories: 'التصنيفات', bestSellers: 'الأكثر مبيعاً', newest: 'وصل حديثاً', offers: 'عروض اليوم', featured: 'منتجات مميزة' } as Record<string, string>)[sectionType] || sectionType,
-          settings: { source: sectionType as any, limit: 8, layout: 'grid' as const, animated: false,
+          // The legacy `oldShowToSectionType()` map returns section types
+          // ('categories' | 'offers') that are not in `source`'s union.
+          // Preserve the legacy data verbatim via an unknown step.
+          settings: { source: sectionType as unknown as SectionConfig['settings']['source'], limit: 8, layout: 'grid' as const, animated: false,
             slider: { autoplay: false, speed: 3000, showArrows: true, showDots: true },
             showMoreButton: true, showMoreUrl: '' },
         });
@@ -210,9 +245,13 @@ export function resolveActiveThemeConfig(config?: ThemeConfigInput | null): Reso
     themeKey,
   };
 
-  result.homepage = migrateHomepage(result.homepage as unknown as Record<string, unknown>) as any;
-  if (Array.isArray((result.homepage as any)?.sections) && !Array.isArray((result.homepage as any).sectionOrder)) {
-    (result.homepage as any).sectionOrder = (result.homepage as any).sections.map((section: SectionConfig) => section.type);
+  // migrateHomepage returns a raw record; cast back to the canonical
+  // ThemeHomepage shape. Then ensure sectionOrder stays in sync with sections.
+  const migrated = migrateHomepage(result.homepage as unknown as Record<string, unknown>);
+  result.homepage = migrated as unknown as ThemeConfig['homepage'];
+  const hp = result.homepage as { sections?: SectionConfig[]; sectionOrder?: string[] } | undefined;
+  if (hp && Array.isArray(hp.sections) && !Array.isArray(hp.sectionOrder)) {
+    hp.sectionOrder = hp.sections.map((section) => section.type);
   }
 
   return result as unknown as ResolvedThemeConfig;

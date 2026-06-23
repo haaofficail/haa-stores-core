@@ -151,7 +151,6 @@ export default tseslint.config(
       'packages/integration-core/src/webhook.ts',
       'packages/integration-core/src/audit.ts',
       'packages/payment-providers/src/factory.ts',
-      'packages/theme-system/src/activeThemeResolver.ts',
       'packages/wallet-core/src/ledger.ts',
       'apps/api/src/routes/orders.ts',
       'apps/merchant-dashboard/src/lib/api.ts',
