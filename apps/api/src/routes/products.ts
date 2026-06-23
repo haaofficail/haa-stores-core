@@ -1,7 +1,11 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { ProductsService, MarketplaceSyncService } from '@haa/commerce-core';
+import {
+  ProductsService,
+  MarketplaceSyncService,
+  type MarketplaceProvider,
+} from '@haa/commerce-core';
 import { createProductSchema, updateProductSchema, paginationSchema } from '@haa/shared';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
 import { getProviderService } from './marketplaces.js';
@@ -38,7 +42,7 @@ productsRouter.get('/:productId', requirePermission('products:read'), async (c) 
   return c.json({ success: true, data: product });
 });
 
-function buildAuditCtx(c: any) {
+function buildAuditCtx(c: Context) {
   const auth = getAuth(c);
   return {
     actorUserId: auth?.userId ?? null,
@@ -57,7 +61,7 @@ productsRouter.post('/', requirePermission('products:create'), zValidator('json'
       productId: product.id,
       productData: product,
       actorUserId: auth?.userId,
-      providerResolver: (code) => getProviderService(code, storeId) as any,
+      providerResolver: (code) => getProviderService(code, storeId) as unknown as MarketplaceProvider | null,
     });
   }
   return c.json({ success: true, data: product }, 201);
@@ -89,7 +93,7 @@ productsRouter.post(
           productId: product.id,
           productData: product,
           actorUserId: auth?.userId,
-          providerResolver: (code) => getProviderService(code, storeId) as any,
+          providerResolver: (code) => getProviderService(code, storeId) as unknown as MarketplaceProvider | null,
         });
       }
     }
@@ -105,12 +109,18 @@ productsRouter.patch('/:productId', requirePermission('products:update'), zValid
   const existing = await new ProductsService().getById(storeId, productId);
   const product = await new ProductsService().update(storeId, productId, body, buildAuditCtx(c));
   if (!product) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } }, 404);
+  // Marketplace auto-publish requires `name` to be a string. After the
+  // typed cache change in P2-030 batch 11, the merged
+  // `{ ...existing, ...body }` resolves to `name: string | undefined`
+  // because `body.name` is optional and `existing` may be null. Fall
+  // back to the freshly-saved product (which always has `name`) so the
+  // call site stays sound.
   if (existing?.status === 'active' || body.status === 'active') {
     new MarketplaceSyncService().scheduleAutoPublish(storeId, {
       productId,
-      productData: { ...existing, ...body },
+      productData: { ...existing, ...body, name: body.name ?? existing?.name ?? product.name },
       actorUserId: auth?.userId,
-      providerResolver: (code) => getProviderService(code, storeId) as any,
+      providerResolver: (code) => getProviderService(code, storeId) as unknown as MarketplaceProvider | null,
     });
   }
   return c.json({ success: true, data: product });
