@@ -675,6 +675,67 @@ export interface CreatedTicket {
   createdAt: string;
 }
 
+// ────────────────────────────────────────────────────────────────────
+// Loyalty (L-PR-6 storefront client surface).
+//
+// Server is the single source of truth for the redemption value. The
+// client only *displays* what computeRedemption returns; it never
+// reproduces the math itself. The customer is identified by phone +
+// orderToken/customerId on the storefront — exact resolution lives on
+// the server. These endpoints follow the public `/s/:slug/...` shape
+// (parallel to /s/:slug/order/...). If the server endpoint is not yet
+// mounted, callers should treat absence as "feature disabled" and fall
+// back to hiding the widget — never to a stale or guessed value.
+// ────────────────────────────────────────────────────────────────────
+export interface LoyaltyRulesPublic {
+  enabled: boolean;
+  earnRatePerCurrency: number;
+  redeemValuePerPoint: number;
+  minRedeemPoints: number;
+  maxRedeemPercent: number;
+  pointsExpiryMonths: number;
+}
+export interface LoyaltyLedgerRow {
+  id: number;
+  type: string; // 'earn' | 'redeem' | 'expire' | 'adjust'
+  points: number;
+  createdAt: string;
+  description: string | null;
+}
+export interface LoyaltyBalanceResponse {
+  enabled: boolean;
+  balance: number;
+  value: number; // server-computed nominal value (SAR) of the full balance
+  lifetimeEarned: number;
+  lifetimeRedeemed: number;
+  lifetimeExpired: number;
+  rules: LoyaltyRulesPublic;
+  recent: LoyaltyLedgerRow[];
+}
+export interface LoyaltyRedeemQuote {
+  points: number;
+  value: number; // SERVER-AUTHORITATIVE money math; client only renders.
+  reason?: string;
+}
+export const loyaltyApi = {
+  // Read-only balance lookup for the storefront. `phone` is the
+  // customer identifier; the server resolves it to a customer +
+  // loyalty_account. Returns `{ enabled: false }` if the store has not
+  // enabled loyalty, allowing the widget to hide cleanly.
+  getBalance: (slug: string, phone: string) =>
+    request<LoyaltyBalanceResponse>(
+      `/s/${slug}/loyalty/balance?phone=${encodeURIComponent(phone)}`,
+    ),
+  // Preview what `requestedPoints` would discount on a given order
+  // total. SERVER-AUTHORITATIVE — the returned `value` is the only
+  // number the checkout UI may display as the discount amount.
+  quoteRedeem: (slug: string, body: { phone: string; points: number; orderTotal: number }) =>
+    request<LoyaltyRedeemQuote>(`/s/${slug}/loyalty/redeem-quote`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+};
+
 export const supportApi = {
   createTicket: (slug: string, data: { name: string; email?: string; phone?: string; subject: string; message: string }) =>
     request<CreatedTicket>(`/s/${slug}/support/tickets`, { method: 'POST', body: JSON.stringify(data) }),

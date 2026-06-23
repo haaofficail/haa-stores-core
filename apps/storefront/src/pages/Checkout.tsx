@@ -4,7 +4,7 @@ import { isSafeRedirectUrl } from '@/lib/safe-redirect';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useSharedCart } from '@/hooks/CartContext';
-import { checkoutApi, featuresApi, pickupLocationsApi, giftOptionsApi, type ShippingRate, type PickupLocation, type GiftOptions, type PaymentMethodAvailability, type Cart } from '@/lib/api';
+import { checkoutApi, featuresApi, pickupLocationsApi, giftOptionsApi, loyaltyApi, type ShippingRate, type PickupLocation, type GiftOptions, type PaymentMethodAvailability, type Cart, type LoyaltyBalanceResponse, ApiClientError } from '@/lib/api';
 import { useSEO } from '@/hooks/useSEO';
 // TASK-0035 sub-item 7: VAT-aware checkout summary
 // 15% per ZATCA. The total displayed is inc-VAT; subtotal + VAT line
@@ -16,7 +16,7 @@ import {
 } from '@/components/ui';
 import { toast } from 'sonner';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
-import { Package, ArrowLeft, ArrowRight, CreditCard, Building, Banknote, ShieldCheck, MapPin, Truck, Gift, Phone, Clock } from 'lucide-react';
+import { Package, ArrowLeft, ArrowRight, CreditCard, Building, Banknote, ShieldCheck, MapPin, Truck, Gift, Phone, Clock, Coins } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { tracker } from '@/lib/tracker';
@@ -73,6 +73,15 @@ export default function Checkout() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [bnplMethods, setBnplMethods] = useState<PaymentMethodAvailability[]>([]);
+  // L-PR-6 — loyalty balance + redeem widget state.
+  // The server is the SINGLE source of truth for the redemption value:
+  // the widget shows whatever `loyaltyApi.quoteRedeem` returns and never
+  // recomputes points → SAR on the client.
+  const [loyaltyBalance, setLoyaltyBalance] = useState<LoyaltyBalanceResponse | null>(null);
+  const [redeemPoints, setRedeemPoints] = useState<number>(0);
+  const [redeemQuote, setRedeemQuote] = useState<{ points: number; value: number } | null>(null);
+  const [redeemError, setRedeemError] = useState<string | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
 
   useSEO({ title: t('checkout.title', 'إتمام الطلب'), noIndex: true });
 
@@ -137,6 +146,20 @@ export default function Checkout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address.city]);
 
+  // L-PR-6 — fetch loyalty balance once the customer's phone is valid.
+  // The endpoint returns `{ enabled: false }` when the store has loyalty
+  // off, which we treat as "hide the widget". 404 / network errors also
+  // hide the widget rather than blocking checkout (defensive default).
+  useEffect(() => {
+    const phone = customer.phone.trim();
+    if (!slug || phone.length < 8) { setLoyaltyBalance(null); return; }
+    let cancelled = false;
+    loyaltyApi.getBalance(slug, phone)
+      .then((res) => { if (!cancelled) setLoyaltyBalance(res); })
+      .catch(() => { if (!cancelled) setLoyaltyBalance(null); });
+    return () => { cancelled = true; };
+  }, [slug, customer.phone]);
+
   // Safety clamp: when fulfillmentType changes, the dynamic step list
   // shrinks/grows; ensure currentStep never points past the last step.
   useEffect(() => {
@@ -193,6 +216,36 @@ export default function Checkout() {
   };
 
   const isBNPL = paymentMethod === 'tabby_installments' || paymentMethod === 'tamara_installments';
+
+  // L-PR-6 — server-authoritative redeem preview. Called on apply; never
+  // computed client-side. Returns the value (SAR) to deduct from the
+  // order total — the widget displays only what the server allows.
+  const requestRedeemQuote = async (orderTotal: number) => {
+    if (!slug) return;
+    const phone = customer.phone.trim();
+    if (!loyaltyBalance?.enabled) return;
+    if (!Number.isFinite(redeemPoints) || redeemPoints <= 0) {
+      setRedeemQuote(null);
+      setRedeemError(null);
+      return;
+    }
+    setQuoteLoading(true);
+    setRedeemError(null);
+    try {
+      const res = await loyaltyApi.quoteRedeem(slug, { phone, points: redeemPoints, orderTotal });
+      if (res.points <= 0 || res.value <= 0) {
+        setRedeemQuote(null);
+        setRedeemError(res.reason || t('checkout.redeemRejected', 'لا يمكن استخدام هذا العدد من النقاط الآن.'));
+      } else {
+        setRedeemQuote({ points: res.points, value: res.value });
+      }
+    } catch (err) {
+      setRedeemQuote(null);
+      setRedeemError(err instanceof ApiClientError ? err.message : t('checkout.redeemError', 'تعذّر استبدال النقاط.'));
+    } finally {
+      setQuoteLoading(false);
+    }
+  };
 
   const handleConfirm = async () => {
     if (confirming) return; // امنع الإرسال المزدوج فعلياً (QA CO4)
@@ -297,7 +350,12 @@ export default function Checkout() {
   const subtotal = toMoneyNumber(cart.subtotal);
   const selectedRate = shippingRates.find((r) => r.shippingMethodId === selectedShippingId);
   const shippingCost = toMoneyNumber(selectedRate?.baseRate);
-  const total = Math.max(0, subtotal + shippingCost);
+  // L-PR-6 — server-validated redeem discount. ONLY applied when the
+  // server quote returned points > 0 and value > 0. The displayed total
+  // mirrors what the order will be charged; the actual deduction is
+  // re-validated server-side on confirm (defense in depth).
+  const loyaltyDiscount = redeemQuote ? Math.max(0, redeemQuote.value) : 0;
+  const total = Math.max(0, subtotal + shippingCost - loyaltyDiscount);
 
 
   const bnplOptions = bnplMethods.map(m => {
@@ -615,6 +673,69 @@ export default function Checkout() {
                       {orderGift.message && <p className="text-sm text-text-primary">{orderGift.message}</p>}
                     </div>
                   )}
+
+                  {/* L-PR-6 — loyalty redeem widget. Visible only when the
+                      store has loyalty enabled AND the customer's balance
+                      meets the minRedeemPoints floor. The discount value
+                      is SERVER-AUTHORITATIVE — the UI only displays the
+                      `value` returned by quoteRedeem. */}
+                  {loyaltyBalance?.enabled && loyaltyBalance.balance >= (loyaltyBalance.rules?.minRedeemPoints ?? 0) && loyaltyBalance.balance > 0 && (
+                    <div className="pt-4 border-t border-border" data-testid="loyalty-redeem-widget">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-primary-50 text-primary-600">
+                          <Icon icon={Coins} size="xs" />
+                        </span>
+                        <h3 className="font-semibold text-sm text-text-primary">
+                          {t('checkout.useLoyaltyPoints', 'استبدال نقاط الولاء')}
+                        </h3>
+                      </div>
+                      <p className="text-xs text-text-secondary mb-2" dir="ltr" data-testid="loyalty-redeem-available">
+                        {t('checkout.loyaltyAvailable', 'لديك {{n}} نقطة', { n: loyaltyBalance.balance.toLocaleString('en-US') })}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={loyaltyBalance.rules?.minRedeemPoints ?? 1}
+                          max={loyaltyBalance.balance}
+                          step={1}
+                          value={redeemPoints || ''}
+                          onChange={(e) => {
+                            const n = Math.max(0, Math.floor(Number(e.target.value) || 0));
+                            setRedeemPoints(n);
+                            setRedeemQuote(null);
+                            setRedeemError(null);
+                          }}
+                          placeholder={String(loyaltyBalance.rules?.minRedeemPoints ?? 0)}
+                          className="flex-1 h-9 text-sm rounded-lg border border-border px-3 focus:outline-none focus:ring-1 focus:ring-primary-400"
+                          dir="ltr"
+                          data-testid="loyalty-redeem-points-input"
+                          aria-label={t('checkout.loyaltyPointsAria', 'عدد النقاط للاستبدال')}
+                        />
+                        <StoreButton
+                          type="button"
+                          variant="outline"
+                          onClick={() => requestRedeemQuote(subtotal + shippingCost)}
+                          disabled={quoteLoading || redeemPoints <= 0}
+                          data-testid="loyalty-redeem-apply"
+                        >
+                          {quoteLoading ? t('common.loading', 'جارٍ…') : t('checkout.applyPoints', 'تطبيق')}
+                        </StoreButton>
+                      </div>
+                      {redeemError && (
+                        <p className="text-xs text-danger mt-2" data-testid="loyalty-redeem-error">{redeemError}</p>
+                      )}
+                      {redeemQuote && (
+                        <StoreAlert variant="success" className="mt-3" data-testid="loyalty-redeem-success">
+                          <p className="text-xs" dir="ltr">
+                            {t('checkout.loyaltyAppliedFmt', 'سيتم خصم {{points}} نقطة = {{value}} ر.س', {
+                              points: redeemQuote.points.toLocaleString('en-US'),
+                              value: redeemQuote.value.toFixed(2),
+                            })}
+                          </p>
+                        </StoreAlert>
+                      )}
+                    </div>
+                  )}
               </StoreCard>
             )}
 
@@ -664,6 +785,12 @@ export default function Checkout() {
                   </div>
                 ))}
               </div>
+              {loyaltyDiscount > 0 && (
+                <div className="flex justify-between text-sm pt-3 text-success" data-testid="loyalty-discount-line">
+                  <span>{t('checkout.loyaltyDiscount', 'خصم نقاط الولاء')}</span>
+                  <span dir="ltr">-{loyaltyDiscount.toFixed(2)} <SarIcon size="sm" /></span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-base pt-3">
                 <span>{t('checkout.total')}</span>
                 <span className="text-primary-600">{total.toFixed(2)} <SarIcon size="md" /></span>
