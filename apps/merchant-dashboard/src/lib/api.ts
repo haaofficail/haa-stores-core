@@ -332,6 +332,8 @@ export const ordersApi = {
     request<any>(`/merchant/${storeId}/orders/${orderId}/cod/failed`, { method: 'POST', body: JSON.stringify({ reason }) }),
   markCODRefused: (storeId: number, orderId: number) =>
     request<any>(`/merchant/${storeId}/orders/${orderId}/cod/refused`, { method: 'POST' }),
+  updatePreparationStatus: (storeId: number, orderId: number, status: string, reason?: string) =>
+    request<any>(`/merchant/${storeId}/orders/${orderId}/preparation-status`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }),
 };
 
 // Reports

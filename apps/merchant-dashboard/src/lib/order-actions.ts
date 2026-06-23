@@ -3,9 +3,11 @@ export interface OrderAction {
   label: string;
   icon: string;
   targetStatus: string;
+  /** Set on preparation-workflow actions; absent on order-status actions. */
+  targetPreparationStatus?: 'not_started' | 'preparing' | 'prepared' | 'packed';
   isDestructive: boolean;
   needsConfirm: boolean;
-  section: 'primary' | 'payment' | 'shipping' | 'pickup' | 'gift' | 'documents' | 'danger';
+  section: 'primary' | 'payment' | 'shipping' | 'pickup' | 'gift' | 'documents' | 'danger' | 'preparation';
   description?: string;
   disabledReason?: string;
 }
@@ -102,7 +104,39 @@ export function getOrderActions(order: any): OrderActions {
       pushPrimary('processing', 'process', 'بدء التجهيز', 'Package');
       pushDanger('cancelled', 'cancel', 'إلغاء');
     } else if (status === 'processing') {
-      pushPrimary('ready_to_ship', 'ready_to_ship', 'جاهز للشحن', 'Package');
+      // Preparation workflow actions (HAA-PREP-001).
+      // These call PATCH /:orderId/preparation-status, not the order-status endpoint.
+      const prepStatus = (order?.preparationStatus ?? 'not_started') as string;
+      if (prepStatus === 'not_started') {
+        actions.push({
+          key: 'prep_start', label: 'بدء التجهيز', icon: 'PackageOpen',
+          targetStatus: status, targetPreparationStatus: 'preparing',
+          isDestructive: false, needsConfirm: false, section: 'preparation',
+          description: 'الانتقال إلى مرحلة تجهيز الطلب',
+        });
+      } else if (prepStatus === 'preparing') {
+        actions.push({
+          key: 'prep_done', label: 'تم التجهيز', icon: 'PackageCheck',
+          targetStatus: status, targetPreparationStatus: 'prepared',
+          isDestructive: false, needsConfirm: false, section: 'preparation',
+          description: 'تأكيد انتهاء تجهيز الطلب',
+        });
+      } else if (prepStatus === 'prepared') {
+        actions.push({
+          key: 'prep_packed', label: 'تم التغليف', icon: 'Package',
+          targetStatus: status, targetPreparationStatus: 'packed',
+          isDestructive: false, needsConfirm: false, section: 'preparation',
+          description: 'تأكيد تغليف الطلب وجاهزيته للشحن',
+        });
+      }
+      const isPacked = prepStatus === 'packed';
+      const readyAction: OrderAction = {
+        key: 'ready_to_ship', label: 'جاهز للشحن', icon: 'Package',
+        targetStatus: 'ready_to_ship', isDestructive: false, needsConfirm: false,
+        section: 'primary',
+        disabledReason: isPacked ? undefined : 'أكمل تغليف الطلب أولاً (preparationStatus يجب أن يكون packed)',
+      };
+      actions.push(readyAction);
       pushDanger('cancelled', 'cancel', 'إلغاء');
     } else if (status === 'ready_to_ship') {
       if (!hasShipment) {
@@ -113,17 +147,16 @@ export function getOrderActions(order: any): OrderActions {
         const paymentOk = paymentStatus === 'paid' || codConfirmed;
         const addr = order?.shippingAddress as Record<string, unknown> | null | undefined;
         const addressOk = !!(addr?.city && (addr?.street || addr?.addressLine1 || addr?.address) && (addr?.country || addr?.countryCode));
-        // NOTE: fulfillmentStatus is intentionally NOT checked here.
-        // In this codebase fulfillmentStatus becomes 'fulfilled' only after an order is
-        // completed/picked_up (post-delivery). A ready_to_ship order always has
-        // fulfillmentStatus = 'unfulfilled'. The ORDER STATUS is the preparation signal.
-        // TODO: add preparationStatus field (prepared/packed) and gate here when implemented.
+        const prepStatus = (order?.preparationStatus ?? 'not_started') as string;
+        const isPacked = prepStatus === 'packed';
 
         let labelDisabledReason: string | undefined;
         if (!paymentOk) {
           labelDisabledReason = isCOD
             ? 'الدفع عند الاستلام غير مؤكد'
             : 'الطلب غير مدفوع';
+        } else if (!isPacked) {
+          labelDisabledReason = 'لا يمكن إنشاء بوليصة لأن الطلب لم يتم تغليفه بعد';
         } else if (!addressOk) {
           labelDisabledReason = 'عنوان الشحن غير مكتمل';
         }

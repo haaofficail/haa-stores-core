@@ -154,6 +154,8 @@ export default tseslint.config(
       'packages/theme-system/src/activeThemeResolver.ts',
       'packages/wallet-core/src/ledger.ts',
       'apps/api/src/routes/admin/billing-settings.ts',
+      'apps/api/src/routes/orders.ts',
+      'apps/merchant-dashboard/src/lib/api.ts',
     ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',

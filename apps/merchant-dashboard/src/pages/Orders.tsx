@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ShoppingCart, Eye, Search, Truck, Clock, CheckCircle2, XCircle, AlertTriangle, Loader2, ExternalLink, ChevronLeft, ChevronRight, RotateCcw, MapPin, Check, Package, Ban, RefreshCw, Undo2, Heart, Printer, FileText, Copy, Wallet, Bell } from 'lucide-react';
+import { ShoppingCart, Eye, Search, Truck, Clock, CheckCircle2, XCircle, AlertTriangle, Loader2, ExternalLink, ChevronLeft, ChevronRight, RotateCcw, MapPin, Check, Package, Ban, RefreshCw, Undo2, Heart, Printer, FileText, Copy, Wallet, Bell, PackageOpen, PackageCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
@@ -681,6 +681,7 @@ export default function Orders() {
                   const paymentActions = bySection('payment');
                   const shippingActions = bySection('shipping');
                   const pickupActions = bySection('pickup');
+                  const preparationActions = bySection('preparation');
                   const giftActions = bySection('gift');
                   const documentActions = bySection('documents');
                   const dangerActions = bySection('danger');
@@ -793,6 +794,17 @@ export default function Orders() {
                       }
                       return;
                     }
+                    // Preparation status actions (HAA-PREP-001)
+                    if (action.section === 'preparation' && action.targetPreparationStatus) {
+                      if (!storeId) return;
+                      setChangingStatus(true);
+                      ordersApi.updatePreparationStatus(storeId, orderId, action.targetPreparationStatus)
+                        .then(() => ordersApi.getById(storeId, orderId))
+                        .then((o) => { setDetailOrder(o); load(); })
+                        .catch(err => toast.error(err instanceof ApiClientError ? err.message : t('common.error')))
+                        .finally(() => setChangingStatus(false));
+                      return;
+                    }
                     // Default: status transition via API
                     changeStatus(orderId, action.targetStatus);
                   };
@@ -843,6 +855,8 @@ export default function Orders() {
                     AlertTriangle: <AlertTriangle className="h-4 w-4" />,
                     XCircle: <XCircle className="h-4 w-4" />,
                     Clock: <Clock className="h-4 w-4" />,
+                    PackageOpen: <PackageOpen className="h-4 w-4" />,
+                    PackageCheck: <PackageCheck className="h-4 w-4" />,
                   };
                   const getActionPermission = (action: OrderAction): string => {
                     if (action.section === 'danger') {
@@ -1060,6 +1074,28 @@ export default function Orders() {
                             </div>
                           )}
                         </div>
+                      )}
+
+                      {/* 7b. Preparation workflow (HAA-PREP-001) — delivery orders at processing status */}
+                      {!orderActions.isPickup && preparationActions.length > 0 && (
+                        <DetailSection title={t('orders.preparation', 'مرحلة التجهيز')}>
+                          <div className="flex items-center gap-2 mb-3">
+                            <PackageOpen className="h-4 w-4 text-blue-500" />
+                            <span className="text-sm text-neutral-600">
+                              {t('orders.prep_status_label', 'حالة التجهيز')}:{' '}
+                              <span className="font-medium text-neutral-800">
+                                {(() => {
+                                  const ps = detailOrder?.preparationStatus ?? 'not_started';
+                                  const map: Record<string, string> = { not_started: 'لم يبدأ', preparing: 'قيد التجهيز', prepared: 'تم التجهيز', packed: 'تم التغليف' };
+                                  return map[ps] ?? ps;
+                                })()}
+                              </span>
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {preparationActions.map(renderActionButton)}
+                          </div>
+                        </DetailSection>
                       )}
 
                       {/* 8. Shipping & Delivery — show for delivery orders */}

@@ -51,6 +51,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   product_bulk_updated: 'تحديث منتجات جماعي',
   product_marketplace_sync_failed: 'فشل مزامنة منتج مع السوق',
   order_status_changed: 'تغيير حالة الطلب',
+  order_preparation_status_changed: 'تغيير حالة تجهيز الطلب',
   payment_status_changed: 'تغيير حالة الدفع',
   shipment_status_changed: 'تغيير حالة الشحن',
   wallet_entry_created: 'إضافة قيد مالي',
