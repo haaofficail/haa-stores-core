@@ -5,7 +5,8 @@ import { OrdersService, PaymentService, createPaymentProvider, WalletPostingServ
 import { WalletLedger } from '@haa/wallet-core';
 import { AuditLogService } from '@haa/integration-core';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
-import { paginationSchema, updateOrderStatusSchema, ORDER_STATUS_TRANSITIONS } from '@haa/shared';
+import { paginationSchema, updateOrderStatusSchema, ORDER_STATUS_TRANSITIONS, PREPARATION_STATUS_TRANSITIONS } from '@haa/shared';
+import type { PreparationStatus } from '@haa/shared';
 import { createDbClient } from '@haa/db';
 import { idempotencyKey } from '../middleware/idempotency-key.js';
 
@@ -187,6 +188,49 @@ ordersRouter.post('/:orderId/refund', requirePermission('orders:refund'), idempo
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Refund failed';
     return c.json({ success: false, error: { code: 'REFUND_ERROR', message } }, 400);
+  }
+});
+
+ordersRouter.patch('/:orderId/preparation-status', requirePermission('orders:update_status'), zValidator('json', z.object({
+  status: z.enum(['not_started', 'preparing', 'prepared', 'packed']),
+  reason: z.string().max(500).optional(),
+  isAdminOverride: z.boolean().optional(),
+})), async (c) => {
+  const storeId = Number(c.req.param('storeId'));
+  const orderId = Number(c.req.param('orderId'));
+  const body = c.req.valid('json');
+  const auth = getAuth(c);
+  try {
+    const existing = await new OrdersService().getById(storeId, orderId);
+    if (!existing) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } }, 404);
+    const prevPrep = existing.preparationStatus ?? 'not_started';
+    const newStatus = body.status as PreparationStatus;
+    const allowed = PREPARATION_STATUS_TRANSITIONS[prevPrep] ?? [];
+    const isForward = allowed.includes(newStatus);
+    if (!isForward && !body.isAdminOverride) {
+      return c.json({ success: false, error: { code: 'INVALID_TRANSITION', message: `لا يمكن الانتقال من '${prevPrep}' إلى '${newStatus}' بدون صلاحية مدير` } }, 400);
+    }
+    const order = await new OrdersService().changePreparationStatus(storeId, orderId, newStatus, {
+      userId: auth?.userId,
+      reason: body.reason,
+      isAdminOverride: body.isAdminOverride ?? false,
+    });
+    if (!order) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } }, 404);
+    await new AuditLogService().record({
+      actorUserId: auth?.userId,
+      storeId,
+      action: 'order_preparation_status_changed',
+      entityType: 'order',
+      entityId: orderId,
+      oldValue: { preparationStatus: prevPrep },
+      newValue: { preparationStatus: order.preparationStatus, reason: body.reason },
+      ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
+      userAgent: c.req.header('user-agent'),
+    });
+    return c.json({ success: true, data: order });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Preparation status change failed';
+    return c.json({ success: false, error: { code: 'PREP_STATUS_ERROR', message } }, 400);
   }
 });
 

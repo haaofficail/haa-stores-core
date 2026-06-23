@@ -33,6 +33,19 @@ export type FulfillmentStatus =
   | 'partially_fulfilled'
   | 'fulfilled';
 
+/**
+ * PreparationStatus tracks the merchant's packing workflow for a delivery order.
+ * Separate from fulfillmentStatus (which reflects post-delivery completion).
+ *
+ * Transitions: not_started → preparing → prepared → packed
+ * Reverse transitions require admin role + reason (audit-gated).
+ */
+export type PreparationStatus =
+  | 'not_started'
+  | 'preparing'
+  | 'prepared'
+  | 'packed';
+
 export type ShipmentStatus =
   | 'draft'
   | 'label_created'
@@ -154,6 +167,7 @@ export type AuditAction =
   | 'product_bulk_updated'
   | 'product_marketplace_sync_failed'
   | 'order_status_changed'
+  | 'order_preparation_status_changed'
   | 'payment_status_changed'
   | 'shipment_status_changed'
   | 'wallet_entry_created'
