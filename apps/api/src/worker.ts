@@ -127,7 +127,18 @@ const scheduledJobs: ScheduledJob[] = [
     intervalMs: 5 * 60 * 1000,
     handler: async () => {
       const { AbandonedCartCampaignService } = await import('@haa/commerce-core');
-      const service = new AbandonedCartCampaignService();
+      // WA-PR-7: inject a Baileys-backed sender so the recovery pass
+      // can fire WhatsApp messages when FEATURE_WHATSAPP_LIVE=1. The
+      // service is opt-in — when the env flag is off, the sender is
+      // never invoked. We import the deps lazily so cold-start of the
+      // scheduler doesn't pay for the Baileys runtime on flag-off envs.
+      const { getWhatsappManager } = await import('./services/whatsapp/registry.js');
+      const { sendWhatsappMessage } = await import('./services/whatsapp/send-service.js');
+      const manager = getWhatsappManager();
+      const whatsappSender = async (input: { storeId: number; to: string; body: string }) => {
+        await sendWhatsappMessage(manager, input.storeId, input.to, input.body);
+      };
+      const service = new AbandonedCartCampaignService(undefined, { whatsappSender });
       await service.runRecoveryPass();
     },
   },
