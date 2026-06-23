@@ -14,7 +14,12 @@ const ordersRoutes = readFileSync(new URL('../apps/api/src/routes/orders.ts', im
 const merchantApi = readFileSync(new URL('../apps/merchant-dashboard/src/lib/api.ts', import.meta.url), 'utf-8');
 const merchantApp = readFileSync(new URL('../apps/merchant-dashboard/src/App.tsx', import.meta.url), 'utf-8');
 const merchantSettlementDetail = readFileSync(new URL('../apps/merchant-dashboard/src/pages/SettlementDetail.tsx', import.meta.url), 'utf-8');
-const merchantOrders = readFileSync(new URL('../apps/merchant-dashboard/src/pages/Orders.tsx', import.meta.url), 'utf-8');
+// PR #142 split the order detail dialog out of Orders.tsx into
+// OrderDetailDialog.tsx. The settlement badge JSX moved with it.
+const merchantOrders =
+  readFileSync(new URL('../apps/merchant-dashboard/src/pages/Orders.tsx', import.meta.url), 'utf-8') +
+  '\n' +
+  readFileSync(new URL('../apps/merchant-dashboard/src/pages/orders/OrderDetailDialog.tsx', import.meta.url), 'utf-8');
 
 describe('Settlement → Order linking', () => {
   it('wallet ledger provides settlement batch list and detail methods', () => {
