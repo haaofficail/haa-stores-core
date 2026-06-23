@@ -118,19 +118,23 @@ jobs:
             else
               # drizzle-kit is a devDep — not in the production image.
               # Use drizzle-orm/postgres-js/migrator (prod dep) directly.
-              # The api package is ESM (`"type": "module"`), so use
-              # `node --input-type=module` to evaluate inline ESM.
-              docker compose -p "$PROJECT" exec -T api node --input-type=module -e "
-                import { migrate } from 'drizzle-orm/postgres-js/migrator';
-                import { drizzle } from 'drizzle-orm/postgres-js';
-                import postgres from 'postgres';
-                const sql = postgres(process.env.DATABASE_URL, { max: 1 });
-                const db = drizzle(sql);
-                console.log('Applying migrations from /app/packages/db/src/migrations …');
-                await migrate(db, { migrationsFolder: '/app/packages/db/src/migrations' });
-                console.log('Migrations applied OK');
-                await sql.end();
-              " </dev/null
+              # `cd /app/apps/api` so Node's resolver finds the api
+              # package's node_modules (where drizzle-orm/postgres are
+              # hoisted). Without the cd, `node -e` runs from /app
+              # with no package boundary and `drizzle-orm` resolves to
+              # MODULE_NOT_FOUND.
+              docker compose -p "$PROJECT" exec -T -w /app/apps/api api \
+                node --input-type=module -e "
+                  import { migrate } from 'drizzle-orm/postgres-js/migrator';
+                  import { drizzle } from 'drizzle-orm/postgres-js';
+                  import postgres from 'postgres';
+                  const sql = postgres(process.env.DATABASE_URL, { max: 1 });
+                  const db = drizzle(sql);
+                  console.log('Applying migrations from /app/packages/db/src/migrations …');
+                  await migrate(db, { migrationsFolder: '/app/packages/db/src/migrations' });
+                  console.log('Migrations applied OK');
+                  await sql.end();
+                " </dev/null
             fi
 
             echo "==> Post-migration journal head:"
