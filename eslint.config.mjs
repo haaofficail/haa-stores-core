@@ -136,4 +136,26 @@ export default tseslint.config(
   // file allow-list (`no-explicit-any: off` per file) has been emptied
   // and the override removed. `no-explicit-any: warn` now applies
   // uniformly; pre-commit `--max-warnings 0` keeps regressions out.
+
+  // Test files and internal build scripts are out of scope for the
+  // strict `no-explicit-any` rule:
+  // - Tests routinely need `any` for mocks, partial fixtures, and
+  //   asserting on shapes the SUT decides at runtime.
+  // - Build scripts (token codegen for CSS/Swift/Kotlin/Figma) emit
+  //   loosely-typed artifact descriptors; tightening them produces no
+  //   runtime benefit and would force ~57 ad-hoc shape declarations.
+  // The rule still applies everywhere else, and pre-commit
+  // `--max-warnings 0` continues to catch regressions in app/package
+  // source code.
+  {
+    files: [
+      'tests/**/*.{ts,tsx}',
+      'apps/**/*.test.{ts,tsx}',
+      'packages/**/*.test.{ts,tsx}',
+      'packages/tokens/scripts/**/*.ts',
+    ],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 );

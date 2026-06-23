@@ -26,9 +26,9 @@ const mockCreateShipment = vi.hoisted(() => vi.fn());
 
 vi.mock('../packages/commerce-core/src/orders.js', () => ({
   OrdersService: class {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     getById: any = mockGetById;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     changePreparationStatus: any = vi.fn(async (_storeId: number, _orderId: number, newStatus: string) => ({
       id: 1,
       preparationStatus: newStatus,
@@ -38,7 +38,7 @@ vi.mock('../packages/commerce-core/src/orders.js', () => ({
 
 vi.mock('@haa/shipping-core', () => ({
   ShippingService: class {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     createShipment: any = mockCreateShipment;
     listShipments = vi.fn();
     getShipment = vi.fn();
@@ -69,7 +69,7 @@ import { PREPARATION_STATUS_TRANSITIONS } from '../packages/shared/src/constants
 
 const validAddress = { street: 'شارع الملك فهد', city: 'الرياض', country: 'Saudi Arabia' };
 
-function makeDb(hasExistingShipment = false): any { // eslint-disable-line @typescript-eslint/no-explicit-any
+function makeDb(hasExistingShipment = false): any {  
   const limitResult = hasExistingShipment ? [{ id: 999 }] : [];
   return {
     select: vi.fn().mockReturnValue({
@@ -98,7 +98,7 @@ function makeOrder(overrides: Record<string, unknown> = {}) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const validBody: any = {
   shippingMethodId: 1,
   recipientName: 'أحمد',
