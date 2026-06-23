@@ -1,5 +1,5 @@
 import { eq, and, gte, sql } from 'drizzle-orm';
-import { createDbClient, DbClient } from '@haa/db';
+import { createDbClient, type DbClient, type DbTransaction } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { CartService } from './cart.js';
 import { OrdersService } from './orders.js';
@@ -14,7 +14,7 @@ import { ManualShippingProvider } from '@haa/shipping-core';
 import { NotificationService } from '@haa/notification-core';
 import { CustomersService } from './customers.js';
 import { acquireLock, releaseLock } from './redis.js';
-import { isDemoStore } from '@haa/shared';
+import { isDemoStore, type ProviderCode } from '@haa/shared';
 import { WalletPostingService } from './wallet-posting-service.js';
 
 export class CheckoutService {
@@ -33,7 +33,7 @@ export class CheckoutService {
     this.cartService = new CartService(this.db);
     this.ordersService = new OrdersService(this.db);
     this.paymentService = new PaymentService(this.db);
-    this.isDemo = isDemoStore(store as any) ?? false;
+    this.isDemo = isDemoStore(store) ?? false;
     // Demo stores always use FakePaymentProvider (no real API calls)
     this.paymentProvider = this.isDemo ? new FakePaymentProvider() : (provider ?? createPaymentProvider());
     this.walletLedger = new WalletLedger(this.db);
@@ -632,7 +632,7 @@ export class CheckoutService {
       }
 
       const providerCode = isTabby ? 'tabby' : 'tamara';
-      const provider = createPaymentProvider(providerCode as any);
+      const provider = createPaymentProvider(providerCode as ProviderCode);
       if (!provider.isAvailable) throw new Error(`${providerCode} provider is not configured`);
 
       const orderData = await this.db.transaction(async (tx) => {
@@ -747,7 +747,7 @@ export class CheckoutService {
     if (!isTabby && !isTamara) throw new Error('Not a BNPL payment');
 
     const providerCode = isTabby ? 'tabby' : 'tamara';
-    const provider = createPaymentProvider(providerCode as any);
+    const provider = createPaymentProvider(providerCode as ProviderCode);
 
     const confirmResult = await provider.confirmPayment(payment.id);
     const meta = (payment.metadata ?? {}) as Record<string, string>;
@@ -872,7 +872,7 @@ export class CheckoutService {
     return { redirectUrl: frontendFailure, status: 'failed' as const, orderNumber: failedOrder?.orderNumber ?? '' };
   }
 
-  private async decrementStock(tx: any, items: Array<{ product: { id: number; trackInventory: boolean }; variant?: { id: number } | null; item: { productId: number; variantId?: number | null; quantity: number } }>) {
+  private async decrementStock(tx: DbTransaction, items: Array<{ product: { id: number; trackInventory: boolean }; variant?: { id: number } | null; item: { productId: number; variantId?: number | null; quantity: number } }>) {
     for (const i of items) {
       if (i.product.trackInventory) {
         const variantId = i.item.variantId ?? i.variant?.id;
@@ -895,7 +895,7 @@ export class CheckoutService {
     }
   }
 
-  private async incrementStock(tx: any, items: Array<{ productId: number; variantId?: number | null; quantity: number }>) {
+  private async incrementStock(tx: DbTransaction, items: Array<{ productId: number; variantId?: number | null; quantity: number }>) {
     for (const i of items) {
       if (i.variantId) {
         await tx.update(s.productVariants).set({
