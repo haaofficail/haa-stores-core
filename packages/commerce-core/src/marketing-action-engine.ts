@@ -29,13 +29,17 @@ function _toDateString(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function mapActionRow(row: any): MarketingActionState {
+function mapActionRow(row: typeof s.marketingActionStates.$inferSelect): MarketingActionState {
+  // The DB columns are plain `varchar`, but the application contract
+  // narrows them to literal unions. The schema-level CHECK constraint
+  // (when present) or the writer-side enum coercion guarantees the
+  // string is one of the valid variants.
   return {
     id: row.id,
     storeId: row.storeId,
     actionFingerprint: row.actionFingerprint,
-    actionType: row.actionType,
-    status: row.status,
+    actionType: row.actionType as MarketingActionType,
+    status: row.status as MarketingActionState['status'],
     snoozedUntil: row.snoozedUntil ? String(row.snoozedUntil) : undefined,
     dismissedAt: row.dismissedAt ? String(row.dismissedAt) : undefined,
     doneAt: row.doneAt ? String(row.doneAt) : undefined,
