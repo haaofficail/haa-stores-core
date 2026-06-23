@@ -211,8 +211,9 @@ export class MarketplaceSyncService {
           price: priceStr,
           status: 'active',
         };
-      } catch (err: any) {
-        errors.push(`${providerCode}: ${err.message}`);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        errors.push(`${providerCode}: ${msg}`);
         if (existingChannels[providerCode]) {
           channels[providerCode] = { ...existingChannels[providerCode], status: 'error' };
         }
@@ -252,9 +253,10 @@ export class MarketplaceSyncService {
           channels: result.channels,
         });
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'Unknown marketplace sync error';
         this.recordFailure(storeId, input.productId, input.actorUserId, {
-          error: err?.message ?? 'Unknown marketplace sync error',
+          error: msg,
         });
       });
   }
