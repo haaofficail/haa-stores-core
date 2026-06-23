@@ -78,6 +78,44 @@ export class WhatsAppCampaignService {
       )).limit(500);
 
     const provider = new UnifoncWhatsAppProvider();
+    // Baileys local-pairing path: enabled when FEATURE_WHATSAPP_LIVE=1 and a
+    // store has an active session (WA-PR-3). When enabled, this path takes
+    // precedence over Unifonic so campaigns flow through the merchant's
+    // own paired number instead of the SMS-gateway. The rate-limiter
+    // (120/hr/store) is enforced by sendWhatsappMessage automatically.
+    const baileysLive = process.env.FEATURE_WHATSAPP_LIVE === '1';
+    let baileysSender: null | ((to: string, body: string) => Promise<{ success: boolean; messageId?: string; error?: string }>) = null;
+    if (baileysLive) {
+      try {
+        // commerce-core ↔ @haa/api would be a circular dependency at
+        // typecheck time, so the runtime path uses variable-name
+        // dynamic imports that TypeScript's module resolver can't
+        // statically follow. These resolve at runtime when the worker
+        // is running inside the built @haa/api process.
+        const apiSendPath = '@haa/api/dist/services/whatsapp/send-service.js';
+        const apiRegPath = '@haa/api/dist/services/whatsapp/registry.js';
+        const sendMod = (await import(/* @vite-ignore */ apiSendPath).catch(() => null)) as
+          | { sendWhatsappMessage: (m: unknown, sid: number, to: string, body: string) => Promise<void> }
+          | null;
+        const regMod = (await import(/* @vite-ignore */ apiRegPath).catch(() => null)) as
+          | { getWhatsappManager: () => unknown }
+          | null;
+        if (sendMod && regMod) {
+          const mgr = regMod.getWhatsappManager();
+          const send = sendMod.sendWhatsappMessage;
+          baileysSender = async (to, body) => {
+            try {
+              await send(mgr, storeId, to, body);
+              return { success: true, messageId: `baileys:${Date.now()}` };
+            } catch (err) {
+              return { success: false, error: err instanceof Error ? err.message : 'baileys_send_failed' };
+            }
+          };
+        }
+      } catch {
+        // Live mode requested but module load failed — fall back silently to Unifonic/deeplink.
+      }
+    }
     let sentCount = 0;
     let failedCount = 0;
 
@@ -96,7 +134,9 @@ export class WhatsAppCampaignService {
       });
 
       let result: { success: boolean; messageId?: string; error?: string };
-      if (provider.isAvailable) {
+      if (baileysSender) {
+        result = await baileysSender(phone, message);
+      } else if (provider.isAvailable) {
         result = await provider.send({ recipient: phone, body: message });
       } else {
         // Fallback: generate wa.me deep link for manual sending
