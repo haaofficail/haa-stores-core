@@ -33,7 +33,12 @@ import { z } from 'zod';
 import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';
 import type { SessionEvent } from '../services/whatsapp/types.js';
 import { getWhatsappManager } from '../services/whatsapp/registry.js';
-import { sendWhatsappMessage, WhatsappSendException } from '../services/whatsapp/send-service.js';
+import {
+  sendWhatsappMedia,
+  sendWhatsappMessage,
+  WhatsappSendException,
+} from '../services/whatsapp/send-service.js';
+import { WA_MEDIA_MAX_BYTES } from '../services/whatsapp/baileys-client.js';
 
 export const whatsappRouter = new Hono();
 whatsappRouter.use('*', requireAuth(), requireStoreAccess());
@@ -91,6 +96,75 @@ whatsappRouter.post('/send', requirePermission('promotions:update'), zValidator(
     throw err;
   }
 });
+
+// POST /merchant/:storeId/whatsapp/send-media — outbound media send (WA-PR-6).
+//
+// Pipes media through the existing MinIO/S3 upload flow:
+//   1. Merchant uploads → `POST /merchant/:storeId/uploads` (presigned
+//      via the media adapter; returns `{ url, key, sizeBytes }`).
+//   2. Merchant calls this route with `{ to, mediaUrl, type, caption?,
+//      fileName?, sizeBytes? }`. Baileys downloads + forwards
+//      server-side, so the customer never sees the upstream URL.
+//
+// Constraints — all enforced fail-closed in the send-service:
+//   - 16 MB hard cap (`WA_MEDIA_MAX_BYTES`). Raising this requires
+//     owner approval per CLAUDE.md non-negotiables.
+//   - MIME allow-list: image/jpeg, image/png, image/webp, video/mp4,
+//     application/pdf. Adding a MIME requires owner approval.
+//   - RBAC: `promotions:update` (same scope as `/send`).
+//   - Feature flag: `FEATURE_WHATSAPP_LIVE=1` (gated by the manager
+//     factory in `registry.ts` — when off, the stub session is
+//     never `connected` so the route returns 409 SESSION_NOT_CONNECTED).
+//   - Idempotency: the client `request()` helper auto-injects an
+//     `Idempotency-Key` for non-GET; this route inherits that.
+const sendMediaSchema = z.object({
+  to: z.string().min(8).max(30),
+  mediaUrl: z.string().min(1).max(2048),
+  type: z.enum(['image', 'video', 'document']),
+  mimeType: z.enum([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'video/mp4',
+    'application/pdf',
+  ]),
+  caption: z.string().max(1024).optional(),
+  fileName: z.string().max(255).optional(),
+  // Optional pre-known size — when present, enforces the 16 MB cap
+  // before Baileys ever fetches the URL.
+  sizeBytes: z.number().int().nonnegative().max(WA_MEDIA_MAX_BYTES).optional(),
+});
+whatsappRouter.post(
+  '/send-media',
+  requirePermission('promotions:update'),
+  zValidator('json', sendMediaSchema),
+  async (c) => {
+    const storeId = Number(c.req.param('storeId'));
+    const input = c.req.valid('json');
+    const mgr = getWhatsappManager();
+    try {
+      await sendWhatsappMedia(mgr, storeId, input);
+      return c.json({ success: true, data: { sent: true } });
+    } catch (err) {
+      if (err instanceof WhatsappSendException) {
+        const info = err.info;
+        const code = info.code;
+        // 429 for rate, 409 for not-connected, 413 for too-large,
+        // 400 for everything else validation-ish.
+        const status =
+          code === 'RATE_LIMITED'
+            ? 429
+            : code === 'SESSION_NOT_CONNECTED'
+              ? 409
+              : code === 'MEDIA_TOO_LARGE'
+                ? 413
+                : 400;
+        return c.json({ success: false, error: { code, message: code, details: info } }, status);
+      }
+      throw err;
+    }
+  },
+);
 
 // GET /merchant/:storeId/whatsapp/qr-stream — Server-Sent Events
 //
