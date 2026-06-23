@@ -123,7 +123,7 @@ jobs:
               # hoisted). Without the cd, `node -e` runs from /app
               # with no package boundary and `drizzle-orm` resolves to
               # MODULE_NOT_FOUND.
-              docker compose -p "$PROJECT" exec -T -w /app/apps/api api \
+              docker compose -p "$PROJECT" exec -T -w /app/packages/db api \
                 node --input-type=module -e "
                   import { migrate } from 'drizzle-orm/postgres-js/migrator';
                   import { drizzle } from 'drizzle-orm/postgres-js';
