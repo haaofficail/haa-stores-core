@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 
 // Mock the API env module so that importing worker.ts in tests doesn't throw
 // "Environment validation failed" (JWT_SECRET etc. not set in CI).
@@ -11,6 +11,15 @@ vi.mock('../apps/api/src/env', () => ({
     ENCRYPTION_KEY: 'test-encryption-key-32-chars!!!!!',
   },
 }));
+
+// Drain any pending console-log RPC events before vitest tears the worker
+// down. PROBLEM-012 (vitest worker pool teardown race): without this, the
+// `onUserConsoleLog` channel can still be flushing when the runner closes
+// the worker, producing an EnvironmentTeardownError that fails CI even
+// though every assertion passed.
+afterAll(async () => {
+  await new Promise((r) => setTimeout(r, 50));
+});
 
 // --- Device Normalization ---
 

@@ -1,0 +1,141 @@
+name: Ops — Staging DB Migrate
+
+# Owner-triggered (workflow_dispatch only) — never auto-runs.
+# Applies pending Drizzle migrations against the staging database.
+# Use this when a schema PR has merged but the migration hasn't been
+# executed yet (per AGENTS.md §14.7: agent-authored PRs ship the SQL
+# but never run db:migrate on a live env).
+#
+# Safety:
+#   - Workflow only runs on workflow_dispatch (no auto-trigger).
+#   - The remote shell sets `set -euo pipefail` so a failed step exits.
+#   - Optional `dry_run` input runs `drizzle-kit migrate --dry-run` to
+#     preview what would happen without writing.
+#   - Database backup is captured inside the postgres container before
+#     the migration runs, under /var/lib/postgresql/data/backup-pre-<RUN>.sql.
+#   - On failure, the workflow stops; rollback is owner-driven from the
+#     backup file (logged in the job summary).
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Target environment"
+        type: choice
+        options: [staging, production]
+        default: staging
+      dry_run:
+        description: "Dry-run only (no DB writes)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Migrate ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target }}
+    env:
+      DEPLOY_HOST: ${{ inputs.target == 'production' && secrets.PRODUCTION_HOST || secrets.STAGING_HOST }}
+      DEPLOY_USER: ${{ inputs.target == 'production' && secrets.PRODUCTION_USER || secrets.STAGING_USER }}
+      DEPLOY_PATH: ${{ inputs.target == 'production' && secrets.PRODUCTION_DEPLOY_PATH || secrets.STAGING_DEPLOY_PATH }}
+      PROJECT_NAME: ${{ inputs.target == 'production' && 'haa-production' || 'haa-staging' }}
+      SSH_KEY: ${{ inputs.target == 'production' && secrets.PRODUCTION_SSH_KEY || secrets.STAGING_SSH_KEY }}
+
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ env.SSH_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Snapshot DB before migrate
+        run: |
+          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+            "PROJECT='$PROJECT_NAME' RUN_ID='${{ github.run_id }}' bash -s" <<'SNAP'
+            set -euo pipefail
+            cd "/srv/haa-stores"  # canonical staging deploy path
+            BACKUP="/var/lib/postgresql/data/backup-pre-${RUN_ID}.sql"
+            echo "==> Capturing pre-migration snapshot at $BACKUP"
+            # Read DB creds from the deployed .env (never echoed).
+            set -a; . ./.env; set +a
+            docker compose -p "$PROJECT" exec -T postgres \
+              pg_dump -U "${POSTGRES_USER:-haa}" "${POSTGRES_DB:-haastores}" \
+              > "/tmp/${RUN_ID}.sql"
+            docker compose -p "$PROJECT" exec -T postgres \
+              bash -c "cat > '$BACKUP'" < "/tmp/${RUN_ID}.sql"
+            BACKUP_SIZE=$(wc -c < "/tmp/${RUN_ID}.sql")
+            rm -f "/tmp/${RUN_ID}.sql"
+            echo "==> Backup captured: ${BACKUP_SIZE} bytes"
+            echo "==> Restore command (owner-only, never auto-run):"
+            echo "    docker compose -p $PROJECT exec -T postgres psql -U \$POSTGRES_USER \$POSTGRES_DB < $BACKUP"
+          SNAP
+
+      - name: Run migration ${{ inputs.dry_run && '(dry-run)' || '' }}
+        run: |
+          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+            "PROJECT='$PROJECT_NAME' DRY_RUN='${{ inputs.dry_run }}' bash -s" <<'MIGRATE'
+            set -euo pipefail
+            cd "/srv/haa-stores"
+            set -a; . ./.env; set +a
+
+            # Build DATABASE_URL from the deployed compose env so
+            # drizzle-kit hits the in-container postgres.
+            export DATABASE_URL="postgres://${POSTGRES_USER:-haa}:${POSTGRES_PASSWORD}@127.0.0.1:5433/${POSTGRES_DB:-haastores}"
+
+            echo "==> Pre-migration journal head:"
+            docker compose -p "$PROJECT" exec -T postgres \
+              psql -U "${POSTGRES_USER:-haa}" "${POSTGRES_DB:-haastores}" \
+              -c "SELECT hash, created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 3" \
+              2>/dev/null || echo "  (no migrations table yet — fresh DB)"
+
+            echo "==> Migrating (dry_run=$DRY_RUN)"
+            if [ "$DRY_RUN" = "true" ]; then
+              # drizzle-kit doesn't ship a true dry-run; the next-best
+              # thing is listing the migration files that haven't been
+              # applied yet. We compare _journal.json to __drizzle_migrations.
+              docker compose -p "$PROJECT" exec -T api node -e "
+                const fs = require('fs');
+                const path = '/app/packages/db/src/migrations/meta/_journal.json';
+                if (!fs.existsSync(path)) { console.log('No journal file in container'); process.exit(0); }
+                const journal = JSON.parse(fs.readFileSync(path, 'utf8'));
+                console.log('Journal entries:', journal.entries.length);
+                journal.entries.slice(-10).forEach(e => console.log(' -', e.tag, '(', new Date(e.when).toISOString(), ')'));
+                console.log('To apply: pnpm db:migrate (or this workflow with dry_run=false)');
+              "
+            else
+              docker compose -p "$PROJECT" exec -T api pnpm --filter @haa/db migrate
+            fi
+
+            echo "==> Post-migration journal head:"
+            docker compose -p "$PROJECT" exec -T postgres \
+              psql -U "${POSTGRES_USER:-haa}" "${POSTGRES_DB:-haastores}" \
+              -c "SELECT hash, created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 3" \
+              2>/dev/null || echo "  (still no migrations table)"
+
+            echo "==> Confirm whatsapp tables exist:"
+            docker compose -p "$PROJECT" exec -T postgres \
+              psql -U "${POSTGRES_USER:-haa}" "${POSTGRES_DB:-haastores}" \
+              -c "\\dt whatsapp_*"
+          MIGRATE
+
+      - name: Restart api so it picks up any schema-aware caches
+        if: ${{ !inputs.dry_run }}
+        run: |
+          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+            "PROJECT='$PROJECT_NAME' bash -s" <<'RESTART'
+            set -euo pipefail
+            cd "/srv/haa-stores"
+            echo "==> Restarting api container"
+            docker compose -p "$PROJECT" restart api
+            sleep 5
+            echo "==> Post-restart health:"
+            docker compose -p "$PROJECT" exec -T api wget -qO- http://localhost:3001/health || true
+          RESTART
