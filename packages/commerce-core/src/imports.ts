@@ -101,7 +101,7 @@ export class ImportsService {
 
       try {
         const slug = r.slug?.trim() || slugify(name);
-        const status = (r.status?.trim() as any) || 'draft';
+        const status = r.status?.trim() || 'draft';
 
         await this.db.insert(s.products).values({
           storeId,
@@ -109,7 +109,7 @@ export class ImportsService {
           slug,
           description: r.description?.trim() ?? null,
           status,
-          type: (r.type?.trim() as any) ?? 'physical',
+          type: r.type?.trim() ?? 'physical',
           price: Number(price).toString(),
           compareAtPrice: r.compareAtPrice ? Number(r.compareAtPrice).toString() : null,
           cost: r.cost ? Number(r.cost).toString() : null,
@@ -134,7 +134,7 @@ export class ImportsService {
     await this.audit.record({
       actorUserId: userId,
       storeId,
-      action: 'import_products' as any,
+      action: 'import_products',
       entityType: 'import',
       newValue: { imported, errors: errors.length },
     });

@@ -391,7 +391,7 @@ export class OrdersService {
     if (order.paymentMethod !== 'cash_on_delivery') throw new Error('Not a COD order');
     if (order.paymentStatus === 'paid') throw new Error('COD already collected');
 
-    const txAudit = new AuditLogService(this.db as any);
+    const txAudit = new AuditLogService(this.db);
     await txAudit.record({
       actorUserId: userId ?? null, storeId, action: 'payment_status_changed',
       entityType: 'order', entityId: order.id,
