@@ -36,12 +36,82 @@ import type { IBaileysClient, SessionEvent, SessionEventListener, SessionStatus,
 
 // Lazy-load Baileys + pino so the test environment (and the stub
 // codepath) can run without these heavyweights loaded into memory.
+type BaileysMediaContent =
+  | { image: { url: string }; caption?: string }
+  | { video: { url: string }; caption?: string }
+  | { document: { url: string }; mimetype: string; fileName?: string; caption?: string };
+
 type BaileysSocket = {
   ev: { on: (event: string, cb: (data: unknown) => void) => void };
-  sendMessage: (jid: string, content: { text: string }) => Promise<unknown>;
+  sendMessage: (
+    jid: string,
+    content: { text: string } | BaileysMediaContent,
+  ) => Promise<unknown>;
   logout: () => Promise<void>;
   end: (err?: Error) => void;
 };
+
+/**
+ * Media kinds accepted by `sendMediaMessage`. These map onto Baileys'
+ * three content shapes (`image` / `video` / `document`). The MIME
+ * allow-list is enforced ABOVE this layer in the route + send-service
+ * (see `WA_MEDIA_MIME_ALLOWLIST`) — this client only translates the
+ * type tag into the right Baileys content shape.
+ */
+export type WhatsappMediaType = 'image' | 'video' | 'document';
+
+export interface SendMediaOptions {
+  /** Public URL of the media object. Baileys fetches it server-side. */
+  mediaUrl: string;
+  /** image | video | document. */
+  type: WhatsappMediaType;
+  /** MIME type — required for documents, ignored for image/video. */
+  mimeType?: string;
+  /** Optional caption (text under image/video, body of document msg). */
+  caption?: string;
+  /** Optional file name — shown in WhatsApp UI for documents. */
+  fileName?: string;
+}
+
+/**
+ * Hard upper bound on media payload size, enforced before Baileys ever
+ * touches the URL. WhatsApp's own limit is 16 MB for image/video and
+ * 100 MB for documents, but we cap everything at 16 MB to keep memory
+ * and outbound bandwidth predictable. Raising this requires owner
+ * approval and a paired infra review (see CLAUDE.md non-negotiables).
+ */
+export const WA_MEDIA_MAX_BYTES = 16 * 1024 * 1024;
+
+/**
+ * Allow-list of MIME types Baileys is permitted to forward. Anything
+ * outside this list is rejected at the route AND the client layer so a
+ * misconfigured caller can never smuggle an unexpected payload to a
+ * customer.
+ */
+export const WA_MEDIA_MIME_ALLOWLIST = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'video/mp4',
+  'application/pdf',
+] as const;
+export type WhatsappAllowedMime = (typeof WA_MEDIA_MIME_ALLOWLIST)[number];
+
+export function isAllowedWhatsappMime(mime: string | undefined): mime is WhatsappAllowedMime {
+  if (!mime) return false;
+  return (WA_MEDIA_MIME_ALLOWLIST as readonly string[]).includes(mime);
+}
+
+/**
+ * Map a MIME type to the Baileys content shape it belongs to. Returns
+ * `null` for anything not in the allow-list.
+ */
+export function inferMediaTypeFromMime(mime: string): WhatsappMediaType | null {
+  if (!isAllowedWhatsappMime(mime)) return null;
+  if (mime.startsWith('image/')) return 'image';
+  if (mime.startsWith('video/')) return 'video';
+  return 'document';
+}
 
 interface BaileysModule {
   default: (opts: Record<string, unknown>) => BaileysSocket;
@@ -187,6 +257,64 @@ export class BaileysClient implements IBaileysClient {
     if (!this.sock) throw new Error('WhatsApp session is not connected');
     const jid = normalizeJid(to);
     await this.sock.sendMessage(jid, { text: body });
+  }
+
+  /**
+   * Send a media message — image, video, or document — by handing
+   * Baileys a URL it fetches and re-uploads to WhatsApp's media servers
+   * server-side. The caller is responsible for:
+   *   - producing a URL Baileys can fetch (the merchant upload pipeline
+   *     in `routes/uploads.ts` returns a signed URL into local /storage
+   *     or a public S3/MinIO URL — both are accepted),
+   *   - enforcing RBAC + feature-flag + rate-limit ABOVE this layer,
+   *   - validating MIME against `WA_MEDIA_MIME_ALLOWLIST` and size
+   *     against `WA_MEDIA_MAX_BYTES`. This method re-validates the MIME
+   *     defensively so a buggy caller can never slip an unsupported
+   *     content type through to Baileys.
+   *
+   * Errors:
+   *   - throws `WhatsApp session is not connected` when the socket is
+   *     down (mirrors `sendMessage` so the send-service maps it to
+   *     `SESSION_NOT_CONNECTED`),
+   *   - throws `Unsupported media MIME: <mime>` when the MIME is not
+   *     on the allow-list (caller MUST treat as a 400, never a 5xx).
+   */
+  async sendMediaMessage(to: string, opts: SendMediaOptions): Promise<void> {
+    if (!this.sock) throw new Error('WhatsApp session is not connected');
+    const jid = normalizeJid(to);
+
+    // Defensive MIME check — the route + send-service should have
+    // already rejected anything outside the allow-list, but if a
+    // future caller wires this directly we still fail closed.
+    if (opts.type === 'document') {
+      if (!isAllowedWhatsappMime(opts.mimeType)) {
+        throw new Error(`Unsupported media MIME: ${opts.mimeType ?? '<missing>'}`);
+      }
+    } else if (opts.mimeType && !isAllowedWhatsappMime(opts.mimeType)) {
+      throw new Error(`Unsupported media MIME: ${opts.mimeType}`);
+    }
+
+    if (opts.type === 'image') {
+      await this.sock.sendMessage(jid, {
+        image: { url: opts.mediaUrl },
+        caption: opts.caption,
+      });
+      return;
+    }
+    if (opts.type === 'video') {
+      await this.sock.sendMessage(jid, {
+        video: { url: opts.mediaUrl },
+        caption: opts.caption,
+      });
+      return;
+    }
+    // document
+    await this.sock.sendMessage(jid, {
+      document: { url: opts.mediaUrl },
+      mimetype: opts.mimeType!,
+      fileName: opts.fileName,
+      caption: opts.caption,
+    });
   }
 
   private async loadAuthState(
