@@ -1,5 +1,5 @@
 import { eq, and, like, count, inArray, sql, or } from 'drizzle-orm';
-import { createDbClient, DbClient } from '@haa/db';
+import { createDbClient, type DbClient, type DbTransaction } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { createProductSchema, updateProductSchema, ValidationError } from '@haa/shared';
 import { createMediaAdapter, type MediaAdapter, type UploadResult } from '@haa/shared/media';
@@ -166,7 +166,7 @@ export class ProductsService {
     return result;
   }
 
-  private async enrichProduct(product: any) {
+  private async enrichProduct(product: typeof s.products.$inferSelect | null | undefined) {
     if (!product) return null;
     const [images, cats, brand, tagList, options, variants] = await Promise.all([
       this.db.select().from(s.productImages).where(eq(s.productImages.productId, product.id)),
@@ -247,7 +247,7 @@ export class ProductsService {
   }
 
   private async saveOptionsAndVariants(
-    tx: any, productId: number,
+    tx: DbTransaction, productId: number,
     options?: { name: string; values: string[] }[],
     variants?: { name: string; sku?: string; price?: number; stockQuantity?: number; isActive?: boolean; options: Record<string, string> }[],
   ) {
@@ -255,7 +255,7 @@ export class ProductsService {
       const existingOptions = await tx.select({ id: s.productOptions.id })
         .from(s.productOptions)
         .where(eq(s.productOptions.productId, productId));
-      const optionIds = existingOptions.map((o: any) => o.id);
+      const optionIds = existingOptions.map((o) => o.id);
       if (optionIds.length) {
         await tx.delete(s.productOptionValues)
           .where(inArray(s.productOptionValues.productOptionId, optionIds));
@@ -297,7 +297,7 @@ export class ProductsService {
     }
   }
 
-  private async validateProductRelations(tx: any, storeId: number, input: {
+  private async validateProductRelations(tx: DbTransaction, storeId: number, input: {
     brandId?: number | null;
     categoryIds?: number[];
     tagIds?: number[];
@@ -453,7 +453,7 @@ export class ProductsService {
     }
 
     const created = await this.db.transaction(async (tx) => {
-      const results: any[] = [];
+      const results: Array<typeof s.products.$inferSelect> = [];
       for (const input of inputs) {
         // Re-validate relations inside the transaction so a stale
         // brand/category id from the wizard rolls back the whole batch.
@@ -757,7 +757,7 @@ export class ProductsService {
         eq(s.products.storeId, storeId),
       ))
       .limit(1);
-    const image = imageRow ? ((imageRow as any).image ?? imageRow) : null;
+    const image = imageRow?.image ?? null;
     if (!image) return null;
 
     if (image.key) {

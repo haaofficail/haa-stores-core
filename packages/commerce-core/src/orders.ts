@@ -182,8 +182,8 @@ export class OrdersService {
         platformCommission: data.platformCommission?.toString() ?? null,
         fulfillmentType: data.fulfillmentType ?? 'shipping',
         pickupLocationId: data.pickupLocationId ?? null,
-        giftOptions: (data.giftOptions ?? null) as any,
-        metadata: (data.metadata ?? null) as any,
+        giftOptions: data.giftOptions ?? null,
+        metadata: data.metadata ?? null,
       }).returning();
 
       for (const item of data.items) {
@@ -254,7 +254,11 @@ export class OrdersService {
     return updated;
   }
 
-  private async fireReadyForPickupNotification(storeId: number, order: any, updated: any) {
+  private async fireReadyForPickupNotification(
+    storeId: number,
+    _order: typeof s.orders.$inferSelect,
+    updated: typeof s.orders.$inferSelect,
+  ) {
     try {
       let branchName = '';
       if (updated.pickupLocationId) {

@@ -1,4 +1,5 @@
-import { and, eq, gte, lte, sql, count, isNotNull } from 'drizzle-orm';
+import { and, eq, gte, lte, sql, count, isNotNull, type SQL } from 'drizzle-orm';
+import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import type {
@@ -94,7 +95,7 @@ export class LivePresenceService {
       .where(and(online, eq(s.livePresence.isInCheckout, true)));
 
     const [cartValueResult] = await this.db
-      .select({ total: sql`COALESCE(SUM(${s.livePresence.currentCartValue}::numeric), 0)` as any })
+      .select({ total: sql<string>`COALESCE(SUM(${s.livePresence.currentCartValue}::numeric), 0)` })
       .from(s.livePresence)
       .where(and(online, isNotNull(s.livePresence.currentCartValue)));
 
@@ -108,7 +109,7 @@ export class LivePresenceService {
       .from(s.orders)
       .where(and(eq(s.orders.storeId, storeId), eq(s.orders.paymentStatus, 'paid'), gte(s.orders.createdAt, thirtyAgo)));
     const [revenueResult] = await this.db
-      .select({ total: sql`COALESCE(SUM(${s.orders.total}::numeric), 0)` as any })
+      .select({ total: sql<string>`COALESCE(SUM(${s.orders.total}::numeric), 0)` })
       .from(s.orders)
       .where(and(eq(s.orders.storeId, storeId), eq(s.orders.paymentStatus, 'paid'), gte(s.orders.createdAt, thirtyAgo)));
 
@@ -183,14 +184,17 @@ export class LivePresenceService {
     return { activePages, activeProductPages, topViewedProductsNow };
   }
 
-  private async groupByColumn(column: any, online: any, fallback: string): Promise<{ label: string; count: number }[]> {
+  private async groupByColumn(column: AnyPgColumn, online: SQL | undefined, fallback: string): Promise<{ label: string; count: number }[]> {
     const rows = await this.db
       .select({ label: column, count: count() })
       .from(s.livePresence)
       .where(and(online, isNotNull(column)))
-      .groupBy(column as any)
+      .groupBy(column)
       .orderBy(sql`count DESC`);
-    const result = rows.map((r) => ({ label: r.label ?? fallback, count: Number(r.count) }));
+    const result: { label: string; count: number }[] = rows.map((r) => ({
+      label: (r.label as string | null | undefined) ?? fallback,
+      count: Number(r.count),
+    }));
     if (result.length === 0) result.push({ label: fallback, count: 0 });
     return result;
   }
