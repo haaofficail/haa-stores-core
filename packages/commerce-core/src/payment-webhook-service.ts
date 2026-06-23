@@ -195,16 +195,36 @@ export class PaymentWebhookService {
     const internalStatus = mapProviderStatus(providerCode, cleanEventType);
     const storeId = payment.storeId;
 
-    // Look up tenant for the outbox event payload
+    // Look up tenant for the outbox event payload.
+    //
+    // P2-001 audit fix: previously fell back to `?? 0` if the store
+    // lookup returned nothing. That landed `tenantId = 0` in the
+    // outbox payload — a fake tenant id that downstream consumers
+    // would route as if it were a real one. A missing store at this
+    // point is genuinely a bug (storeId came from a confirmed
+    // payment row, so the store MUST exist) — fail loudly instead of
+    // poisoning the outbox.
     const [store] = await this.db
       .select({ tenantId: s.stores.tenantId })
       .from(s.stores)
       .where(eq(s.stores.id, storeId))
       .limit(1);
-    const tenantId = store?.tenantId ?? 0;
+    if (!store) {
+      throw new Error(
+        `payment-webhook-service: store ${storeId} not found for payment ${payment.id} — refusing to emit outbox event with placeholder tenantId`,
+      );
+    }
+    const tenantId = store.tenantId;
 
     let becamePaid = false;
     await this.db.transaction(async (tx) => {
+      // P3-001: tracked debt — services accept DbClient but the
+      // drizzle tx callback hands back a tx-bound client whose type
+      // signature differs slightly. Proper fix is to widen the
+      // services to a DbClient | TxClient union. Until then,
+      // suppress the no-explicit-any rule per-line so this debt
+      // doesn't block staged-file lint after the P2-026 escalation.
+      /* eslint-disable @typescript-eslint/no-explicit-any */
       const _txPaymentService = new PaymentService(tx as any);
       const txOrdersService = new OrdersService(tx as any);
       const txWallet = new WalletLedger(tx as any);
@@ -212,6 +232,7 @@ export class PaymentWebhookService {
       const txNotif = new NotificationService(tx as any);
       const txBilling = new StoreBillingSettingsService(tx as any);
       const txPosting = new WalletPostingService(tx as any);
+      /* eslint-enable @typescript-eslint/no-explicit-any */
 
       if (internalStatus === 'paid' && payment.status !== 'paid') {
         becamePaid = true;
