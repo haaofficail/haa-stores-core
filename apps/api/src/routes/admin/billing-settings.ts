@@ -19,6 +19,7 @@
 // Merchants cannot call these endpoints — only admins. The merchant wallet
 // uses a separate read-only surface (see wallet.ts).
 
+import type { Context } from 'hono';
 import { z } from 'zod';
 import { createDbClient } from '@haa/db';
 import {
@@ -42,7 +43,7 @@ const updateSchema = z.object({
   changeReason: z.string().max(500).optional().nullable(),
 });
 
-export async function getBillingSettings(c: any) {
+export async function getBillingSettings(c: Context) {
   const storeId = Number(c.req.param('storeId'));
   if (!Number.isFinite(storeId) || storeId <= 0) {
     return c.json({ success: false, error: { code: 'INVALID_STORE_ID', message: 'Invalid store id' } }, 400);
@@ -67,7 +68,15 @@ export async function getBillingSettings(c: any) {
   });
 }
 
-export async function patchBillingSettings(c: any) {
+// Context shape for routes mounted behind zValidator('json', updateSchema).
+// Keeps `c.req.valid('json')` properly typed without falling back to `any`.
+type PatchContext = Context<
+  Record<string, unknown>,
+  string,
+  { in: { json: z.infer<typeof updateSchema> }; out: { json: z.infer<typeof updateSchema> } }
+>;
+
+export async function patchBillingSettings(c: PatchContext) {
   const storeId = Number(c.req.param('storeId'));
   if (!Number.isFinite(storeId) || storeId <= 0) {
     return c.json({ success: false, error: { code: 'INVALID_STORE_ID', message: 'Invalid store id' } }, 400);
@@ -79,12 +88,12 @@ export async function patchBillingSettings(c: any) {
   // the "merge" of partial PATCH fields happens against the latest
   // committed row.
   const db = createDbClient();
-  const adminAuth = c.get('adminAuth') as { userId: number } | undefined;
+  const adminAuth = (c as Context).get('adminAuth') as { userId: number } | undefined;
 
   // Wrap policy write + audit write in a single transaction so
   // either both succeed or both roll back. This is the financial
   // safety guarantee for TASK-0030.
-  let updated: any;
+  let updated: Awaited<ReturnType<StoreBillingSettingsService['updateSettings']>>;
   try {
     updated = await db.transaction(async (tx) => {
       const service = new StoreBillingSettingsService(tx);
