@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { marketplaceApi } from '@/lib/api';
@@ -8,10 +8,31 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
-  ArrowRight, Package, Trash2, ExternalLink, Loader2,
+  ArrowRight, Package, Trash2, ExternalLink, Loader2, ChevronDown,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+
+/**
+ * Pagination strategy — DECISION (perf P0):
+ * The previous implementation rendered every listing returned by the API in a
+ * single `<TableBody>` with no upper bound, which is unsafe for merchants that
+ * sync thousands of products. We add **client-side pagination with a "load
+ * more" button** sized to PAGE_SIZE rows.
+ *
+ * Why not server-side cursors? The existing `GET /merchant/:id/marketplaces/
+ * :provider/listings` endpoint returns the whole array (no `?cursor` / `?limit`
+ * support). Adding cursor parameters here would silently misbehave until the
+ * API and storage layer are extended (a separate ticket). Client-side slicing
+ * is correct against the current contract, drops DOM work to a bounded set,
+ * and avoids touching the DB.
+ *
+ * Why not @tanstack/react-virtual? It is not yet a dashboard dependency;
+ * adding it for one table would expand the dep surface for a smaller perf win
+ * than capping the rendered row count. We can revisit when virtualization is
+ * adopted dashboard-wide.
+ */
+const PAGE_SIZE = 50;
 
 export default function MarketplaceListingsPage() {
   const { t } = useTranslation();
@@ -22,6 +43,7 @@ export default function MarketplaceListingsPage() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const PROVIDER_NAMES: Record<string, string> = { salla: 'سلة', zid: 'زد', noon: 'نون', amazon: 'أمازون' };
   const providerDisplayName = PROVIDER_NAMES[provider || ''] || provider || '';
@@ -33,7 +55,10 @@ export default function MarketplaceListingsPage() {
     }
     setLoading(true);
     marketplaceApi.listListings(storeId, provider)
-      .then(setListings)
+      .then((data) => {
+        setListings(data);
+        setVisibleCount(PAGE_SIZE);
+      })
       .catch(() => toast.error(t('common.error', 'حدث خطأ')))
       .finally(() => setLoading(false));
   }, [storeId, provider, t]);
@@ -56,6 +81,18 @@ export default function MarketplaceListingsPage() {
       setDeletingId(null);
     }
   }
+
+  // Bounded slice prevents an unbounded <TableBody> from blowing up the DOM
+  // when a merchant has thousands of synced listings.
+  const visibleListings = useMemo(
+    () => listings.slice(0, visibleCount),
+    [listings, visibleCount],
+  );
+  const hasMore = visibleCount < listings.length;
+  const loadMore = useCallback(
+    () => setVisibleCount((c) => Math.min(c + PAGE_SIZE, listings.length)),
+    [listings.length],
+  );
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
@@ -90,48 +127,62 @@ export default function MarketplaceListingsPage() {
               <p className="text-sm text-neutral-500">{t('marketplaces.noListings', 'لا توجد منتجات مسوقة بعد')}</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('marketplaces.sku', 'SKU')}</TableHead>
-                  <TableHead>{t('marketplaces.price', 'السعر')}</TableHead>
-                  <TableHead>{t('marketplaces.salePrice', 'سعر التخفيض')}</TableHead>
-                  <TableHead>{t('marketplaces.quantity', 'الكمية')}</TableHead>
-                  <TableHead>{t('marketplaces.status', 'الحالة')}</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {listings.map((listing: any) => (
-                  <TableRow key={listing.id}>
-                    <TableCell className="font-medium">{listing.marketplaceSku || '—'}</TableCell>
-                    <TableCell>{listing.price} {t('marketplaces.currency', 'ر.س')}</TableCell>
-                    <TableCell>{listing.salePrice ? `${listing.salePrice} ${t('marketplaces.currency', 'ر.س')}` : '—'}</TableCell>
-                    <TableCell>{listing.quantity ?? '—'}</TableCell>
-                    <TableCell>
-                      <Badge className={listing.status === 'active' ? 'bg-emerald-500/10 text-emerald-700 border-emerald-200' : 'bg-neutral-100 text-neutral-500'}>
-                        {listing.status === 'active' ? t('marketplaces.active', 'نشط') : t('marketplaces.inactive', 'غير نشط')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {/* Row action icons — hit area ≥ 44x44 (WCAG 2.5.5). */}
-                        {listing.marketplaceUrl && (
-                          <a href={listing.marketplaceUrl} target="_blank" rel="noopener noreferrer" aria-label={t('marketplaces.openListing', 'فتح المنتج في المنصة')}>
-                            <Button variant="ghost" size="icon" className="h-11 w-11" aria-hidden="true" tabIndex={-1}>
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                          </a>
-                        )}
-                        <Button variant="ghost" size="icon" className="h-11 w-11 text-red-500 hover:bg-red-50" onClick={() => setDeleteConfirm(String(listing.id))} disabled={deletingId === listing.id} aria-label={t('common.delete', 'حذف')}>
-                          {deletingId === listing.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('marketplaces.sku', 'SKU')}</TableHead>
+                    <TableHead>{t('marketplaces.price', 'السعر')}</TableHead>
+                    <TableHead>{t('marketplaces.salePrice', 'سعر التخفيض')}</TableHead>
+                    <TableHead>{t('marketplaces.quantity', 'الكمية')}</TableHead>
+                    <TableHead>{t('marketplaces.status', 'الحالة')}</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {visibleListings.map((listing: any) => (
+                    <TableRow key={listing.id}>
+                      <TableCell className="font-medium">{listing.marketplaceSku || '—'}</TableCell>
+                      <TableCell>{listing.price} {t('marketplaces.currency', 'ر.س')}</TableCell>
+                      <TableCell>{listing.salePrice ? `${listing.salePrice} ${t('marketplaces.currency', 'ر.س')}` : '—'}</TableCell>
+                      <TableCell>{listing.quantity ?? '—'}</TableCell>
+                      <TableCell>
+                        <Badge className={listing.status === 'active' ? 'bg-emerald-500/10 text-emerald-700 border-emerald-200' : 'bg-neutral-100 text-neutral-500'}>
+                          {listing.status === 'active' ? t('marketplaces.active', 'نشط') : t('marketplaces.inactive', 'غير نشط')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {/* Row action icons — hit area ≥ 44x44 (WCAG 2.5.5). */}
+                          {listing.marketplaceUrl && (
+                            <a href={listing.marketplaceUrl} target="_blank" rel="noopener noreferrer" aria-label={t('marketplaces.openListing', 'فتح المنتج في المنصة')}>
+                              <Button variant="ghost" size="icon" className="h-11 w-11" aria-hidden="true" tabIndex={-1}>
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                            </a>
+                          )}
+                          <Button variant="ghost" size="icon" className="h-11 w-11 text-red-500 hover:bg-red-50" onClick={() => setDeleteConfirm(String(listing.id))} disabled={deletingId === listing.id} aria-label={t('common.delete', 'حذف')}>
+                            {deletingId === listing.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-neutral-100 text-xs text-neutral-500">
+                <span>
+                  {t('marketplaces.paginationShowing', `يعرض ${visibleListings.length} من ${listings.length}`)}
+                </span>
+                {hasMore && (
+                  <Button variant="outline" size="sm" onClick={loadMore} className="h-9">
+                    <ChevronDown className="h-4 w-4 ms-1.5" />
+                    {t('marketplaces.loadMore', 'تحميل المزيد')}
+                  </Button>
+                )}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
