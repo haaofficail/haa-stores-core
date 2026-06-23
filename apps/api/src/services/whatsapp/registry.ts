@@ -15,16 +15,18 @@
  * in WA-PR-3 lights up the actual messaging.
  */
 
-import { createRequire } from 'module';
 import { SessionManager } from './session-manager.js';
 import type { IBaileysClient, SessionEventListener } from './types.js';
 import { DrizzleSessionStore } from './session-store.js';
 import { BaileysClient } from './baileys-client.js';
+import { createDbClient } from '@haa/db';
+import * as dbSchema from '@haa/db/schema';
 
-// apps/api is ESM — bare `require()` is undefined. Use createRequire so
-// the lazy `require('@haa/db')` below works at runtime (same root cause
-// fixed for queue.ts in PR #111).
-const require = createRequire(import.meta.url);
+// @haa/db's package.json `exports` map declares only the `import`
+// condition (no `require`), so `createRequire(...)('@haa/db')` fails
+// with "No exports main defined". Use static ESM imports instead —
+// the singleton guard in getWhatsappManager() already ensures we
+// don't pay the cost at boot.
 
 let singleton: SessionManager | null = null;
 
@@ -62,42 +64,19 @@ function createStubClient(): IBaileysClient {
 
 export function getWhatsappManager(): SessionManager {
   if (singleton) return singleton;
-  // Lazy import to keep the cold-start path light.
-  // The store delegate is wired to the DB the first time it's used;
-  // until WA-PR-3 lands, no real session events fire, so the DB
-  // touches remain minimal.
-  let storeDeps:
-    | { db: unknown; schema: { whatsappSessions: unknown } }
-    | null = null;
-  const lazyStore = new DrizzleSessionStore(
-    new Proxy(
-      {},
-      {
-        get(_t, prop) {
-          if (!storeDeps) {
-            // Pull db + schema modules on first read. We import
-            // synchronously via require-equivalent dynamic import; if
-            // these imports fail (e.g. test sandbox without the DB),
-            // the store methods will reject — which the session
-            // manager already swallows.
-            //
-            // @haa/db exports `createDbClient` (a singleton factory),
-            // NOT a top-level `db`. Using `dbModule.db` resolved to
-            // undefined and made every /api/.../whatsapp/status call
-            // throw with "Cannot read properties of undefined" — the
-            // root cause of the toast that survived PR #116.
-            const dbModule = require('@haa/db');
-            const schemaModule = require('@haa/db/schema');
-            storeDeps = {
-              db: dbModule.createDbClient(),
-              schema: schemaModule,
-            };
-          }
-          return (storeDeps as any)[prop as string];
-        },
-      },
-    ) as never,
-  );
+  // Direct DB wiring (no lazy proxy). The singleton guard above is
+  // the cold-start optimisation — the proxy/require pattern that used
+  // to live here was the cause of the staging 500s on /whatsapp/status:
+  //   - `require()` is undefined in ESM
+  //   - even with createRequire, @haa/db has no `require` exports field
+  //   - the `db` field on the require'd module was always undefined
+  //     because @haa/db exports `createDbClient`, not `db`
+  // All three issues were chasing the same problem. Static ESM imports
+  // resolve all of them.
+  const store = new DrizzleSessionStore({
+    db: createDbClient() as unknown as never,
+    schema: dbSchema as unknown as never,
+  });
 
   // Feature gate — flip to the real Baileys runtime only when the
   // owner has set FEATURE_WHATSAPP_LIVE=1 on the environment. Keeps
@@ -110,7 +89,7 @@ export function getWhatsappManager(): SessionManager {
     clientFactory: live
       ? ({ storeId, store }) => new BaileysClient({ storeId, store })
       : createStubClient,
-    store: lazyStore,
+    store,
   });
   return singleton;
 }
