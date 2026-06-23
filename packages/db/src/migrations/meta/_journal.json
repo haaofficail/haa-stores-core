@@ -498,6 +498,13 @@
 			"when": 1782000070000,
 			"tag": "0074_whatsapp_sessions",
 			"breakpoints": true
+		},
+		{
+			"idx": 71,
+			"version": "7",
+			"when": 1782000071000,
+			"tag": "0075_whatsapp_templates",
+			"breakpoints": true
 		}
 	]
 }
