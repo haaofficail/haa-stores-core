@@ -146,6 +146,66 @@ export class ShipmentsService {
         message: 'Cannot ship cancelled/returned order',
       };
     }
+
+    // Payment / address / duplicate guard (HAA-1004)
+    //
+    // COD "confirmed" = paymentMethod === 'cash_on_delivery' AND paymentStatus === 'pending'.
+    // checkout.ts sets paymentStatus → 'pending' when a COD order is confirmed.
+    // paymentStatus === 'unpaid' on a COD order means the merchant has not yet acknowledged
+    // collection intent.
+    // TODO: add a dedicated codStatus field (confirmed/rejected) when the merchant-COD-
+    // confirmation flow is built; gate here on codStatus ∈ ['confirmed','approved'].
+    //
+    // NOTE — fulfillmentStatus is intentionally NOT checked here:
+    // In this codebase fulfillmentStatus becomes 'fulfilled' only when an order reaches
+    // 'completed' or 'picked_up' (post-delivery). A ready_to_ship order always has
+    // fulfillmentStatus = 'unfulfilled'. The ORDER STATUS itself (ready_to_ship) is the
+    // preparation signal. There is no 'prepared' or 'packed' enum value yet.
+    // TODO: add a preparationStatus field (unfulfilled → prepared → packed) and gate
+    // createShipment on preparationStatus ∈ ['prepared', 'packed'] once implemented.
+    const blockers: string[] = [];
+    const isCOD = order.paymentMethod === 'cash_on_delivery';
+    const paymentOk =
+      order.paymentStatus === 'paid' ||
+      (isCOD && order.paymentStatus === 'pending');
+    if (!paymentOk) {
+      if (isCOD) {
+        blockers.push('COD order is not confirmed (paymentStatus must be pending)');
+      } else {
+        blockers.push('paymentStatus is unpaid and order is not COD');
+      }
+    }
+    const addr = order.shippingAddress as Record<string, unknown> | null;
+    const missingAddrFields: string[] = [];
+    if (!addr?.city) missingAddrFields.push('city');
+    if (!addr?.street && !addr?.addressLine1 && !addr?.address) missingAddrFields.push('street');
+    if (!addr?.country && !addr?.countryCode) missingAddrFields.push('country');
+    if (!order.customerName) missingAddrFields.push('customerName');
+    if (!order.customerPhone && !body.recipientPhone) missingAddrFields.push('phone');
+    if (missingAddrFields.length > 0) {
+      blockers.push(`shipping address is incomplete (missing: ${missingAddrFields.join(', ')})`);
+    }
+    const [existingShipment] = await this.db
+      .select({ id: s.shipments.id })
+      .from(s.shipments)
+      .where(
+        and(
+          eq(s.shipments.orderId, orderId),
+          eq(s.shipments.storeId, storeId),
+        ),
+      )
+      .limit(1);
+    if (existingShipment) {
+      blockers.push('an active shipment already exists for this order');
+    }
+    if (blockers.length > 0) {
+      return {
+        success: false,
+        code: 'ORDER_NOT_SHIPPABLE',
+        message: `لا يمكن إنشاء بوليصة لأن الطلب غير مدفوع ولم يتم تجهيزه. ${blockers.join('; ')}`,
+      };
+    }
+
     const recipientPhone = body.recipientPhone || order.customerPhone || '';
     if (!recipientPhone) {
       return {

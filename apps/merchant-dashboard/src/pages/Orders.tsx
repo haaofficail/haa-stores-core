@@ -35,6 +35,7 @@ export default function Orders() {
   const { storeId } = useAuth();
   const { orderId: routeOrderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response has no shared Order type yet
   const [orders, setOrders] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -50,12 +51,14 @@ export default function Orders() {
   const [searchInput, setSearchInput] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response has no shared Order type yet
   const [detailOrder, setDetailOrder] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [changingStatus, setChangingStatus] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ orderId: number; status: string; label: string } | null>(null);
   const [tableLoading, setTableLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pickup locations response has no shared type yet
   const [pickupLocations, setPickupLocations] = useState<any[]>([]);
   const [showLabelForm, setShowLabelForm] = useState(false);
   const [labelCarrier, setLabelCarrier] = useState('');
@@ -851,22 +854,31 @@ export default function Orders() {
                   };
                   const renderActionButton = (action: OrderAction) => {
                     const isDanger = action.section === 'danger';
+                    const isDisabledByGuard = !!action.disabledReason;
                     const baseClass = isDanger
                       ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white border border-red-600'
+                      : isDisabledByGuard
+                      ? 'bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed'
                       : 'bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-200 shadow-sm';
                     return (
                       <PermissionGate permission={getActionPermission(action)} fallback={null}>
-                        <Button
-                          key={action.key}
-                          size="sm"
-                          className={`h-9 px-4 text-sm font-medium rounded-xl ${baseClass} flex items-center gap-1.5`}
-                          disabled={changingStatus}
-                          onClick={() => handleAction(action)}
-                          variant={isDanger ? 'default' : 'outline'}
-                        >
-                          {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : iconMap[action.icon]}
-                          {action.label}
-                        </Button>
+                        <div key={action.key} className="flex flex-col gap-1">
+                          <Button
+                            size="sm"
+                            className={`h-9 px-4 text-sm font-medium rounded-xl ${baseClass} flex items-center gap-1.5`}
+                            disabled={changingStatus || isDisabledByGuard}
+                            onClick={() => !isDisabledByGuard && handleAction(action)}
+                            variant={isDanger ? 'default' : 'outline'}
+                          >
+                            {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : iconMap[action.icon]}
+                            {action.label}
+                          </Button>
+                          {isDisabledByGuard && (
+                            <p className="text-xs text-amber-600 px-1">
+                              {action.disabledReason}
+                            </p>
+                          )}
+                        </div>
                       </PermissionGate>
                     );
                   };
@@ -920,6 +932,7 @@ export default function Orders() {
                               </TableRow>
                             </TableHeader>
                             <TableBody>
+                              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- order item has no shared type yet */}
                               {detailOrder.items.map((item: any) => {
                                 const itemBadges = [];
                                 if (item.giftWrapSelected) itemBadges.push('🎁');
@@ -1123,6 +1136,7 @@ export default function Orders() {
 
                       {/* 9. Pickup — show for pickup orders */}
                       {orderActions.isPickup && (() => {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- pickup location has no shared type yet
                         const loc = pickupLocations.find((l: any) => l.id === detailOrder.pickupLocationId);
                         const isReady = detailOrder.status === 'ready_for_pickup';
                         const isPicked = detailOrder.status === 'picked_up';
@@ -1199,13 +1213,17 @@ export default function Orders() {
                             </PermissionGate>
                           </DetailRow>
                         )}
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- shippingAddress is an untyped API payload; values must render as ReactNode */}
                         {detailOrder.shippingAddress && (detailOrder.shippingAddress as any).city && (
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- same: shippingAddress untyped API payload
                           <DetailRow label={t('orders.city', 'المدينة')}>{(detailOrder.shippingAddress as any).city}</DetailRow>
                         )}
                         {detailOrder.shippingAddress && (
                           <DetailRow label={t('orders.customer_address', 'العنوان')}>
                             <div className="text-sm space-y-0.5">
+                              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- shippingAddress untyped API payload */}
                               {(detailOrder.shippingAddress as any).street && <div>{(detailOrder.shippingAddress as any).street}</div>}
+                              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- shippingAddress untyped API payload */}
                               {(detailOrder.shippingAddress as any).district && <div>{(detailOrder.shippingAddress as any).district}</div>}
                             </div>
                           </DetailRow>
@@ -1232,6 +1250,7 @@ export default function Orders() {
                       {detailOrder.statusHistory && detailOrder.statusHistory.length > 0 && (
                         <DetailSection title={t('orders.status_history', 'سجل الحالة')}>
                           <div className="space-y-1.5">
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- status history entry has no shared type yet */}
                             {[...detailOrder.statusHistory].reverse().slice(0, 5).map((h: any) => {
                               const isDestructive = ['cancelled', 'refunded', 'returned'].includes(h.toStatus);
                               const dotColor = isDestructive ? 'bg-red-500' : 'bg-emerald-500';

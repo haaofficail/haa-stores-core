@@ -7,6 +7,7 @@ export interface OrderAction {
   needsConfirm: boolean;
   section: 'primary' | 'payment' | 'shipping' | 'pickup' | 'gift' | 'documents' | 'danger';
   description?: string;
+  disabledReason?: string;
 }
 
 export interface OrderActions {
@@ -38,6 +39,7 @@ const TERMINAL = new Set([
   'partially_refunded', 'returned_to_sender',
 ]);
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getOrderActions(order: any): OrderActions {
   const status = order?.status;
   const isPickup = order?.fulfillmentType === 'local_pickup';
@@ -104,10 +106,33 @@ export function getOrderActions(order: any): OrderActions {
       pushDanger('cancelled', 'cancel', 'إلغاء');
     } else if (status === 'ready_to_ship') {
       if (!hasShipment) {
+        const paymentStatus = order?.paymentStatus;
+        // Mirror backend guard: COD is only ok when paymentStatus=pending (confirmed for collection).
+        // paymentStatus=unpaid on a COD order means the merchant has not confirmed COD intent yet.
+        const codConfirmed = isCOD && paymentStatus === 'pending';
+        const paymentOk = paymentStatus === 'paid' || codConfirmed;
+        const addr = order?.shippingAddress as Record<string, unknown> | null | undefined;
+        const addressOk = !!(addr?.city && (addr?.street || addr?.addressLine1 || addr?.address) && (addr?.country || addr?.countryCode));
+        // NOTE: fulfillmentStatus is intentionally NOT checked here.
+        // In this codebase fulfillmentStatus becomes 'fulfilled' only after an order is
+        // completed/picked_up (post-delivery). A ready_to_ship order always has
+        // fulfillmentStatus = 'unfulfilled'. The ORDER STATUS is the preparation signal.
+        // TODO: add preparationStatus field (prepared/packed) and gate here when implemented.
+
+        let labelDisabledReason: string | undefined;
+        if (!paymentOk) {
+          labelDisabledReason = isCOD
+            ? 'الدفع عند الاستلام غير مؤكد'
+            : 'الطلب غير مدفوع';
+        } else if (!addressOk) {
+          labelDisabledReason = 'عنوان الشحن غير مكتمل';
+        }
+
         actions.push({
           key: 'create_label', label: 'إنشاء بوليصة', icon: 'FileText',
           targetStatus: 'ready_to_ship', isDestructive: false, needsConfirm: false,
           section: 'shipping',
+          disabledReason: labelDisabledReason,
         });
       } else {
         if (hasLabel) {
