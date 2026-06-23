@@ -140,7 +140,6 @@ export default tseslint.config(
   // without first cleaning the entire file. Tracked: P2-030.
   {
     files: [
-      'packages/commerce-core/src/checkout.ts',
       'packages/commerce-core/src/loyalty.ts',
       'packages/commerce-core/src/orders.ts',
       'packages/commerce-core/src/outbound-webhook.ts',
