@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
@@ -851,22 +852,31 @@ export default function Orders() {
                   };
                   const renderActionButton = (action: OrderAction) => {
                     const isDanger = action.section === 'danger';
+                    const isDisabledByGuard = !!action.disabledReason;
                     const baseClass = isDanger
                       ? 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white border border-red-600'
+                      : isDisabledByGuard
+                      ? 'bg-neutral-100 text-neutral-400 border border-neutral-200 cursor-not-allowed'
                       : 'bg-white hover:bg-neutral-50 text-neutral-700 border border-neutral-200 shadow-sm';
                     return (
                       <PermissionGate permission={getActionPermission(action)} fallback={null}>
-                        <Button
-                          key={action.key}
-                          size="sm"
-                          className={`h-9 px-4 text-sm font-medium rounded-xl ${baseClass} flex items-center gap-1.5`}
-                          disabled={changingStatus}
-                          onClick={() => handleAction(action)}
-                          variant={isDanger ? 'default' : 'outline'}
-                        >
-                          {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : iconMap[action.icon]}
-                          {action.label}
-                        </Button>
+                        <div key={action.key} className="flex flex-col gap-1">
+                          <Button
+                            size="sm"
+                            className={`h-9 px-4 text-sm font-medium rounded-xl ${baseClass} flex items-center gap-1.5`}
+                            disabled={changingStatus || isDisabledByGuard}
+                            onClick={() => !isDisabledByGuard && handleAction(action)}
+                            variant={isDanger ? 'default' : 'outline'}
+                          >
+                            {changingStatus ? <Loader2 className="h-4 w-4 animate-spin" /> : iconMap[action.icon]}
+                            {action.label}
+                          </Button>
+                          {isDisabledByGuard && (
+                            <p className="text-xs text-amber-600 px-1">
+                              {action.disabledReason}
+                            </p>
+                          )}
+                        </div>
                       </PermissionGate>
                     );
                   };
