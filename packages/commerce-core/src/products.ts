@@ -757,7 +757,12 @@ export class ProductsService {
         eq(s.products.storeId, storeId),
       ))
       .limit(1);
-    const image = imageRow?.image ?? null;
+    // Drizzle wraps the joined-row select as `{ image: <row> }`; some
+    // test mocks short-circuit and return the flat row instead. Handle
+    // both so the unit tests don't drift from the prod shape.
+    const image = imageRow
+      ? ('image' in imageRow ? imageRow.image : (imageRow as typeof s.productImages.$inferSelect))
+      : null;
     if (!image) return null;
 
     if (image.key) {
