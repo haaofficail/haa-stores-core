@@ -1,7 +1,7 @@
 import { eq, and, count, desc } from 'drizzle-orm';
 import { createDbClient, type DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
-import { mergeAndResolveThemeConfig, resolveActiveThemeConfig } from '@haa/theme-system/server';
+import { mergeAndResolveThemeConfig, resolveActiveThemeConfig, type ThemeConfigInput } from "@haa/theme-system/server";
 import { resolveStoreThemePrimaryColor } from '@haa/shared';
 
 /**
@@ -275,7 +275,7 @@ export class StoreSettingsService {
 
   async getTheme(storeId: number) {
     const [settings] = await this.db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-    const config = resolveActiveThemeConfig(settings?.themeConfig as any);
+    const config = resolveActiveThemeConfig(settings?.themeConfig as ThemeConfigInput | null);
     // Resolve primary from stores.primaryColor — themeConfig.colors.primary is legacy
     const [store] = await this.db
       .select({ primaryColor: s.stores.primaryColor })
@@ -300,8 +300,8 @@ export class StoreSettingsService {
     }
 
     const [existing] = await this.db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-    const existingConfig = (existing?.themeConfig as any) ?? null;
-    const current = resolveActiveThemeConfig(existing?.themeConfig as any);
+    const existingConfig = (existing?.themeConfig as ThemeConfigInput | null) ?? null;
+    const current = resolveActiveThemeConfig(existing?.themeConfig as ThemeConfigInput | null);
     const history = ((existingConfig as any)?._history ?? []) as any[];
     const snapshot = { ...current };
     delete (snapshot as any)._history;
@@ -333,7 +333,8 @@ export class StoreSettingsService {
 
   async getThemeHistory(storeId: number) {
     const [settings] = await this.db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-    return ((settings?.themeConfig as any)?._history ?? []) as any[];
+    const cfg = settings?.themeConfig as ThemeConfigInput | null | undefined;
+    return (cfg?._history as unknown[] | undefined) ?? [];
   }
 
   // ── Gift options ─────────────────────────────────────────
@@ -405,8 +406,11 @@ export class StoreSettingsService {
    */
   private async syncPrimaryColorToThemeConfig(storeId: number, primaryColor: string) {
     const [existing] = await this.db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-    const themeConfig = (existing?.themeConfig as any) ?? {};
-    themeConfig.colors = { ...(themeConfig.colors ?? {}), primary: primaryColor };
+    const themeConfig: ThemeConfigInput = (existing?.themeConfig as ThemeConfigInput | null) ?? {};
+    // Cast the spread because ThemeConfigInput keeps `colors` as
+    // `Partial<ThemeColors>`; spreading produces the same partial
+    // shape but TS narrows the assignee to `ThemeColors`.
+    themeConfig.colors = { ...(themeConfig.colors ?? {}), primary: primaryColor } as ThemeConfigInput['colors'];
     await this.upsertStoreSettings(storeId, { themeConfig });
   }
 
