@@ -1,0 +1,56 @@
+# CODEOWNERS — Haa Stores
+#
+# P2-006 audit fix: the repo had no CODEOWNERS file, which means any
+# reviewer could rubber-stamp changes to financial / auth / compliance
+# code paths. This file pins each high-impact surface to its expected
+# reviewer so PRs touching those paths are blocked until the right
+# eyes land on them.
+#
+# Format reference: https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Order matters — the LAST matching pattern wins. Default at the top,
+# specific overrides further down.
+
+# Default: the owner sees everything not otherwise scoped.
+*                                                @haaofficail
+
+# ─── Financial paths (wallet, payouts, payments) ──────────────────────
+# Any change here moves real money. Require explicit review.
+/packages/wallet-core/                           @haaofficail
+/packages/payment-providers/                     @haaofficail
+/apps/api/src/routes/payment-settings.ts         @haaofficail
+/apps/api/src/routes/webhooks.ts                 @haaofficail
+/apps/api/src/routes/storefront/checkout.ts      @haaofficail
+/packages/commerce-core/src/payment-webhook-service.ts  @haaofficail
+/packages/commerce-core/src/checkout.ts          @haaofficail
+/packages/db/src/schema/wallet.ts                @haaofficail
+/packages/db/src/schema/payments.ts              @haaofficail
+/packages/db/src/schema/billing.ts               @haaofficail
+/packages/db/src/schema/subscriptions.ts         @haaofficail
+
+# ─── Authentication / RBAC ────────────────────────────────────────────
+/packages/auth-core/                             @haaofficail
+/apps/api/src/middleware/                        @haaofficail
+/apps/api/src/routes/admin/                      @haaofficail
+/packages/shared/src/permissions/                @haaofficail
+
+# ─── Compliance / ZATCA / KYC ─────────────────────────────────────────
+/packages/zatca-core/                            @haaofficail
+/apps/api/src/routes/zatca.ts                    @haaofficail
+/packages/db/src/schema/compliance.ts            @haaofficail
+/apps/api/src/services/zatca-config.ts           @haaofficail
+
+# ─── Database migrations ──────────────────────────────────────────────
+# Schema + migration changes are append-only and irreversible on prod.
+/packages/db/src/migrations/                     @haaofficail
+/packages/db/src/schema/                         @haaofficail
+
+# ─── CI / Deploy / Ops infrastructure ─────────────────────────────────
+/.github/workflows/                              @haaofficail
+/deploy/                                         @haaofficail
+/.github/CODEOWNERS                              @haaofficail
+
+# ─── Encryption / secrets handling ────────────────────────────────────
+/packages/commerce-core/src/encryption.ts        @haaofficail
+/packages/integration-core/src/api-keys.ts       @haaofficail
+/packages/marketplace-core/src/credential-cipher.ts  @haaofficail

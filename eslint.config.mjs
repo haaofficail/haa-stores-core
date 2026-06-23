@@ -20,7 +20,12 @@ export default tseslint.config(
       },
     },
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
+      // P2-026 audit fix: was 'off', escalated to 'warn' so new `any`
+      // doesn't silently land. Cannot go to 'error' yet — commerce-core
+      // alone has 132 existing `any` usages (P2-030) that need a
+      // file-by-file cleanup PR train. Pre-commit max-warnings is 0
+      // for newly-changed code, so this catches regressions on touch.
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': ['warn', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
