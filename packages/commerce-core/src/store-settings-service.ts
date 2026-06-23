@@ -43,6 +43,18 @@ const DEFAULT_PRODUCT_FEATURES = {
 
 const THEME_HISTORY_LIMIT = 5;
 
+/**
+ * Single entry in the theme history list. Stored serialised in the
+ * `_history` slot of `storeSettings.themeConfig` so a merchant can
+ * inspect or roll back previous themes.
+ */
+type ThemeHistoryEntry = {
+  config: Partial<ThemeConfigInput>;
+  appliedAt: string;
+  preset?: ThemeConfigInput['preset'];
+  themeKey?: ThemeConfigInput['themeKey'];
+};
+
 const _STORE_SETTINGS_COLUMNS = [
   'welcomeMessage', 'welcomeMessageEnabled', 'preparationTime', 'preparationTimeEnabled',
   'minOrderAmount', 'minOrderEnabled', 'productFeatures', 'themeConfig',
@@ -51,7 +63,7 @@ const _STORE_SETTINGS_COLUMNS = [
 
 export type StoreSettingsColumns = (typeof _STORE_SETTINGS_COLUMNS)[number];
 
-function pickStoreSettingsColumns(settings: any) {
+function pickStoreSettingsColumns(settings: typeof s.storeSettings.$inferSelect | undefined) {
   return {
     welcomeMessage: settings?.welcomeMessage ?? null,
     welcomeMessageEnabled: settings?.welcomeMessageEnabled ?? false,
@@ -150,7 +162,7 @@ export class StoreSettingsService {
   async createSizeGuide(storeId: number, body: Record<string, unknown>) {
     const [guide] = await this.db
       .insert(s.sizeGuides)
-      .values({ storeId, ...body } as any)
+      .values({ storeId, ...body } as typeof s.sizeGuides.$inferInsert)
       .returning();
     return guide;
   }
@@ -158,7 +170,7 @@ export class StoreSettingsService {
   async updateSizeGuide(storeId: number, guideId: number, body: Record<string, unknown>) {
     const [guide] = await this.db
       .update(s.sizeGuides)
-      .set({ ...body, updatedAt: new Date() } as any)
+      .set({ ...body, updatedAt: new Date() } as Partial<typeof s.sizeGuides.$inferInsert>)
       .where(and(eq(s.sizeGuides.id, guideId), eq(s.sizeGuides.storeId, storeId)))
       .returning();
     return guide ?? null;
@@ -248,7 +260,7 @@ export class StoreSettingsService {
   async updateProductFeatures(
     storeId: number,
     body: Record<string, unknown>,
-  ): Promise<{ kind: 'pickup_no_location'; message: string } | { kind: 'ok'; features: any }> {
+  ): Promise<{ kind: 'pickup_no_location'; message: string } | { kind: 'ok'; features: Record<string, boolean> }> {
     if (body.pickup === true) {
       const [activeLocation] = await this.db
         .select({ id: s.pickupLocations.id })
@@ -265,7 +277,7 @@ export class StoreSettingsService {
 
     const [existing] = await this.db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
     const current = (existing?.productFeatures) ?? DEFAULT_PRODUCT_FEATURES;
-    const updated = { ...current, ...body };
+    const updated: Record<string, boolean> = { ...current, ...body } as Record<string, boolean>;
 
     await this.upsertStoreSettings(storeId, { productFeatures: updated });
     return { kind: 'ok', features: updated };
@@ -289,9 +301,13 @@ export class StoreSettingsService {
     return config;
   }
 
-  async updateTheme(storeId: number, body: Record<string, unknown>): Promise<{ config: any; history: any[] }> {
+  async updateTheme(
+    storeId: number,
+    body: Record<string, unknown>,
+  ): Promise<{ config: ThemeConfigInput; history: ThemeHistoryEntry[] }> {
     // Normalise any incoming theme primaryColor to stores.primaryColor
-    const themePrimary = (body as any)?.colors?.primary as string | undefined;
+    const incomingColors = body.colors as { primary?: string } | undefined;
+    const themePrimary = incomingColors?.primary;
     if (themePrimary !== undefined) {
       await this.db
         .update(s.stores)
@@ -302,9 +318,8 @@ export class StoreSettingsService {
     const [existing] = await this.db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
     const existingConfig = (existing?.themeConfig as ThemeConfigInput | null) ?? null;
     const current = resolveActiveThemeConfig(existing?.themeConfig as ThemeConfigInput | null);
-    const history = ((existingConfig as any)?._history ?? []) as any[];
-    const snapshot = { ...current };
-    delete (snapshot as any)._history;
+    const history: ThemeHistoryEntry[] = ((existingConfig?._history as ThemeHistoryEntry[] | undefined) ?? []).slice();
+    const { _history: _drop, ...snapshot } = current as typeof current & { _history?: unknown };
     history.unshift({
       config: snapshot,
       appliedAt: new Date().toISOString(),
@@ -312,7 +327,7 @@ export class StoreSettingsService {
       themeKey: current.themeKey,
     });
     const trimmed = history.slice(0, THEME_HISTORY_LIMIT);
-    const updated = { ...mergeAndResolveThemeConfig(current, body as any), _history: trimmed };
+    const updated = { ...mergeAndResolveThemeConfig(current, body as ThemeConfigInput), _history: trimmed };
 
     await this.upsertStoreSettings(storeId, { themeConfig: updated });
     const { _history, ...clean } = updated;
@@ -372,7 +387,7 @@ export class StoreSettingsService {
   async createPickupLocation(storeId: number, body: Record<string, unknown>) {
     const [location] = await this.db
       .insert(s.pickupLocations)
-      .values({ storeId, ...body } as any)
+      .values({ storeId, ...body } as typeof s.pickupLocations.$inferInsert)
       .returning();
     return location;
   }
@@ -384,7 +399,7 @@ export class StoreSettingsService {
     }
     const [updated] = await this.db
       .update(s.pickupLocations)
-      .set(updateData as any)
+      .set(updateData as Partial<typeof s.pickupLocations.$inferInsert>)
       .where(and(eq(s.pickupLocations.id, id), eq(s.pickupLocations.storeId, storeId)))
       .returning();
     return updated ?? null;
@@ -425,12 +440,12 @@ export class StoreSettingsService {
     if (existing) {
       await this.db
         .update(s.storeSettings)
-        .set(data as any)
+        .set(data as Partial<typeof s.storeSettings.$inferInsert>)
         .where(eq(s.storeSettings.storeId, storeId));
     } else {
       await this.db
         .insert(s.storeSettings)
-        .values({ storeId, ...data } as any);
+        .values({ storeId, ...data } as typeof s.storeSettings.$inferInsert);
     }
   }
 }
