@@ -62,7 +62,7 @@ describe('Quality Pass 5 — Route Migration 8/24: products.ts', () => {
     const readMatches = content.match(/requirePermission\(['"]products:read['"]\)/g) || [];
     expect(readMatches.length).toBe(2);
     const createMatches = content.match(/requirePermission\(['"]products:create['"]\)/g) || [];
-    expect(createMatches.length).toBe(1);
+    expect(createMatches.length).toBe(2);  // create + batch-create (PR #105)
     const updateMatches = content.match(/requirePermission\(['"]products:update['"]\)/g) || [];
     expect(updateMatches.length).toBe(4);
     const deleteMatches = content.match(/requirePermission\(['"]products:delete['"]\)/g) || [];

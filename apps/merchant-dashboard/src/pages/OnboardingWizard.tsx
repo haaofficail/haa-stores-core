@@ -134,9 +134,16 @@ export default function OnboardingWizard() {
     setProductsStep('saving');
     try {
       const toSave = aiProducts.filter((_, i) => selectedProducts.has(i));
-      for (const p of toSave) {
-        await productsApi.create(storeId, p);
+      if (toSave.length === 0) {
+        setChecklist((c) => ({ ...c, productsReady: true }));
+        setStep(2);
+        return;
       }
+      // P1 audit fix — single atomic batch (was a serial for-await loop
+      // that left the store half-onboarded if any item failed). Server
+      // wraps inserts in a Drizzle transaction so the whole set
+      // succeeds or rolls back together.
+      await productsApi.createBatch(storeId, toSave);
       setChecklist((c) => ({ ...c, productsReady: true }));
       toast.success(t('onboarding.productsSaved', { count: toSave.length }));
       setStep(2);

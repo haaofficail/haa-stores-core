@@ -162,6 +162,14 @@ export const productsApi = {
     request<any>(`/merchant/${storeId}/products/${id}`),
   create: (storeId: number, data: any) =>
     request<any>(`/merchant/${storeId}/products`, { method: 'POST', body: JSON.stringify(data) }),
+  // Batch create — POSTs all items in ONE round-trip; server runs
+  // them in a Drizzle transaction so the whole batch is atomic.
+  // Used by OnboardingWizard to replace the old serial loop.
+  createBatch: (storeId: number, items: any[]) =>
+    request<{ count: number; items: any[] }>(
+      `/merchant/${storeId}/products/batch`,
+      { method: 'POST', body: JSON.stringify({ items }) },
+    ),
   update: (storeId: number, id: number, data: any) =>
     request<any>(`/merchant/${storeId}/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   archive: (storeId: number, id: number) =>

@@ -47,6 +47,11 @@ import type { StatCardData } from "../StatsCards";
 export interface DashboardData {
   // Core state
   loading: boolean;
+  // secondaryLoading is true while the deferred (below-the-fold)
+  // batch is still in-flight after the critical batch resolved. UI
+  // can show skeletons for secondary cards while letting the
+  // primary KPI strip render immediately.
+  secondaryLoading: boolean;
   fetchError: boolean;
   refreshKey: number;
   refresh: () => void;
@@ -96,6 +101,7 @@ export function useDashboardData(): DashboardData {
   const { t } = useTranslation();
   const { storeId } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [secondaryLoading, setSecondaryLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const loadIdRef = useRef(0);
@@ -128,96 +134,56 @@ export function useDashboardData(): DashboardData {
   const [bankAccount, setBankAccount] = useState<any>(null);
   const [complianceStatus, setComplianceStatus] = useState<any>(null);
 
+  // P1 audit fix — split 26 parallel calls into two batches.
+  //
+  // Critical batch (top 6 KPI cards + recent orders + sales chart =
+  // above-the-fold): fires immediately on mount and toggles `loading`
+  // off as soon as it resolves.
+  //
+  // Secondary batch (compliance, integrations, marketing, ops): fires
+  // ONLY after the critical batch resolved, scheduled via
+  // requestIdleCallback so it never blocks the paint of the primary
+  // KPIs. UI cards bound to secondary data can show skeletons via the
+  // `secondaryLoading` flag while it's in-flight.
   const load = useCallback(async () => {
     if (!storeId) {
       setLoading(false);
+      setSecondaryLoading(false);
       return;
     }
     const id = ++loadIdRef.current;
     setLoading(true);
+    setSecondaryLoading(true);
     setFetchError(false);
     const onboardingDone = localStorage.getItem("onboarding_done");
 
-    const results = await Promise.allSettled([
+    // ---- Critical: above-the-fold KPIs + chart (8 calls) ----
+    const critical = await Promise.allSettled([
       dashboardApi.summary(storeId),
       walletApi.summary(storeId),
       ordersApi.list(storeId, { limit: 5 }),
       ordersApi.recentItems(storeId, 5),
       reportsApi.salesSummary(storeId),
-      reportsApi.topProducts(storeId, 5),
-      reportsApi.ordersByStatus(storeId),
-      reportsApi.lowStock(storeId, 5),
-      customersApi.list(storeId, { limit: 5 }),
-      brandsApi.list(storeId),
-      tagsApi.list(storeId),
-      categoriesApi.list(storeId),
       settingsApi.readiness(storeId),
-      onboardingDone
-        ? aiApi.dailySummary(storeId).catch(() => null)
-        : Promise.resolve(null),
+      reportsApi.lowStock(storeId, 5),
       subscriptionApi.getCurrent(storeId).catch(() => null),
-      abandonedCartsApi.stats(storeId).catch(() => null),
-      paymentApi.status(storeId).catch(() => null),
-      settingsApi.get(storeId).catch(() => null),
-      shippingApi.listReturns(storeId).catch(() => []),
-      shippingApi.shipments
-        .list(storeId, { status: "shipped" })
-        .catch(() => []),
-      couponsApi.list(storeId, { status: "expired" }).catch(() => []),
-      promotionsApi.list(storeId, { status: "completed" }).catch(() => []),
-      marketplaceApi.hub(storeId).catch(() => null),
-      notificationApi.getLogs(storeId).catch(() => []),
-      complianceApi.getBankAccount(storeId).catch(() => null),
-      complianceApi.getStatus(storeId).catch(() => null),
     ]);
 
     if (id !== loadIdRef.current) return;
-    if (results[0].status === "fulfilled") setSummary(results[0].value);
+    if (critical[0].status === "fulfilled") setSummary(critical[0].value);
     else setFetchError(true);
-    if (results[1].status === "fulfilled") setWallet(results[1].value);
-    if (results[2].status === "fulfilled")
-      setRecentOrders(results[2].value?.data ?? []);
-    if (results[3].status === "fulfilled")
-      setRecentItems(results[3].value ?? []);
-    if (results[4].status === "fulfilled") setSalesData(results[4].value);
-    if (results[5].status === "fulfilled")
-      setTopProducts(results[5].value ?? []);
-    if (results[6].status === "fulfilled")
-      setOrderStatusDist(results[6].value ?? []);
-    if (results[7].status === "fulfilled") setLowStock(results[7].value ?? []);
-    if (results[8].status === "fulfilled")
-      setRecentCustomers(results[8].value?.data ?? []);
-    if (results[9].status === "fulfilled") setBrands(results[9].value ?? []);
-    if (results[10].status === "fulfilled") setTags(results[10].value ?? []);
-    if (results[11].status === "fulfilled") setCats(results[11].value ?? []);
-    if (results[12].status === "fulfilled") setReadiness(results[12].value);
-    if (results[13].status === "fulfilled" && results[13].value) {
-      setAiGreeting((results[13].value as any).text);
-    }
-    if (results[14].status === "fulfilled") setSubscription(results[14].value);
-    if (results[15]?.status === "fulfilled")
-      setAbandonedCartStats(results[15].value);
-    if (results[16]?.status === "fulfilled")
-      setPaymentConfig(results[16].value);
-    if (results[17]?.status === "fulfilled")
-      setStoreSettings(results[17].value);
-    if (results[18]?.status === "fulfilled") setReturnsList(results[18].value);
-    if (results[19]?.status === "fulfilled")
-      setLateShipments(results[19].value);
-    if (results[20]?.status === "fulfilled")
-      setExpiredCoupons(results[20].value);
-    if (results[21]?.status === "fulfilled")
-      setCompletedPromotions(results[21].value);
-    if (results[22]?.status === "fulfilled")
-      setMarketplaceHub(results[22].value);
-    if (results[23]?.status === "fulfilled")
-      setNotificationLogs(results[23].value);
-    if (results[24]?.status === "fulfilled") setBankAccount(results[24].value);
-    if (results[25]?.status === "fulfilled")
-      setComplianceStatus(results[25].value);
+    if (critical[1].status === "fulfilled") setWallet(critical[1].value);
+    if (critical[2].status === "fulfilled")
+      setRecentOrders(critical[2].value?.data ?? []);
+    if (critical[3].status === "fulfilled")
+      setRecentItems(critical[3].value ?? []);
+    if (critical[4].status === "fulfilled") setSalesData(critical[4].value);
+    if (critical[5].status === "fulfilled") setReadiness(critical[5].value);
+    if (critical[6].status === "fulfilled") setLowStock(critical[6].value ?? []);
+    if (critical[7].status === "fulfilled") setSubscription(critical[7].value);
 
     let hasError = false;
-    results.forEach((r) => {
+    critical.forEach((r) => {
       if (r.status === "rejected" && !hasError) {
         hasError = true;
         toast.error(t("dashboard.loadError", "فشل تحميل بعض البيانات"));
@@ -225,6 +191,88 @@ export function useDashboardData(): DashboardData {
     });
 
     setLoading(false);
+
+    // ---- Secondary: below-the-fold (deferred to idle) ----
+    const runSecondary = async () => {
+      if (id !== loadIdRef.current) return;
+      const secondary = await Promise.allSettled([
+        reportsApi.topProducts(storeId, 5),
+        reportsApi.ordersByStatus(storeId),
+        customersApi.list(storeId, { limit: 5 }),
+        brandsApi.list(storeId),
+        tagsApi.list(storeId),
+        categoriesApi.list(storeId),
+        onboardingDone
+          ? aiApi.dailySummary(storeId).catch(() => null)
+          : Promise.resolve(null),
+        abandonedCartsApi.stats(storeId).catch(() => null),
+        paymentApi.status(storeId).catch(() => null),
+        settingsApi.get(storeId).catch(() => null),
+        shippingApi.listReturns(storeId).catch(() => []),
+        shippingApi.shipments
+          .list(storeId, { status: "shipped" })
+          .catch(() => []),
+        couponsApi.list(storeId, { status: "expired" }).catch(() => []),
+        promotionsApi.list(storeId, { status: "completed" }).catch(() => []),
+        marketplaceApi.hub(storeId).catch(() => null),
+        notificationApi.getLogs(storeId).catch(() => []),
+        complianceApi.getBankAccount(storeId).catch(() => null),
+        complianceApi.getStatus(storeId).catch(() => null),
+      ]);
+
+      if (id !== loadIdRef.current) return;
+      if (secondary[0].status === "fulfilled")
+        setTopProducts(secondary[0].value ?? []);
+      if (secondary[1].status === "fulfilled")
+        setOrderStatusDist(secondary[1].value ?? []);
+      if (secondary[2].status === "fulfilled")
+        setRecentCustomers(secondary[2].value?.data ?? []);
+      if (secondary[3].status === "fulfilled") setBrands(secondary[3].value ?? []);
+      if (secondary[4].status === "fulfilled") setTags(secondary[4].value ?? []);
+      if (secondary[5].status === "fulfilled") setCats(secondary[5].value ?? []);
+      if (secondary[6].status === "fulfilled" && secondary[6].value) {
+        setAiGreeting((secondary[6].value as any).text);
+      }
+      if (secondary[7].status === "fulfilled")
+        setAbandonedCartStats(secondary[7].value);
+      if (secondary[8].status === "fulfilled")
+        setPaymentConfig(secondary[8].value);
+      if (secondary[9].status === "fulfilled")
+        setStoreSettings(secondary[9].value);
+      if (secondary[10].status === "fulfilled")
+        setReturnsList(secondary[10].value);
+      if (secondary[11].status === "fulfilled")
+        setLateShipments(secondary[11].value);
+      if (secondary[12].status === "fulfilled")
+        setExpiredCoupons(secondary[12].value);
+      if (secondary[13].status === "fulfilled")
+        setCompletedPromotions(secondary[13].value);
+      if (secondary[14].status === "fulfilled")
+        setMarketplaceHub(secondary[14].value);
+      if (secondary[15].status === "fulfilled")
+        setNotificationLogs(secondary[15].value);
+      if (secondary[16].status === "fulfilled")
+        setBankAccount(secondary[16].value);
+      if (secondary[17].status === "fulfilled")
+        setComplianceStatus(secondary[17].value);
+
+      setSecondaryLoading(false);
+    };
+
+    const ric = (typeof window !== "undefined" &&
+      (window as any).requestIdleCallback) as
+      | ((cb: () => void, opts?: { timeout?: number }) => number)
+      | undefined;
+    if (ric) {
+      ric(() => {
+        void runSecondary();
+      }, { timeout: 1500 });
+    } else {
+      // Safari fallback — setTimeout 0 still yields to paint.
+      setTimeout(() => {
+        void runSecondary();
+      }, 0);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshKey intentionally forces recomputation on manual refresh though unused in body
   }, [storeId, refreshKey, t]);
 
@@ -366,6 +414,7 @@ export function useDashboardData(): DashboardData {
 
   return {
     loading,
+    secondaryLoading,
     fetchError,
     refreshKey,
     refresh,
