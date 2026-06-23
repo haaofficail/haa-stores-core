@@ -235,7 +235,7 @@ export class StoreSettingsService {
 
   async getProductFeatures(storeId: number) {
     const [settings] = await this.db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-    return (settings?.productFeatures as any) ?? DEFAULT_PRODUCT_FEATURES;
+    return (settings?.productFeatures) ?? DEFAULT_PRODUCT_FEATURES;
   }
 
   /**
@@ -264,7 +264,7 @@ export class StoreSettingsService {
     }
 
     const [existing] = await this.db.select().from(s.storeSettings).where(eq(s.storeSettings.storeId, storeId)).limit(1);
-    const current = (existing?.productFeatures as any) ?? DEFAULT_PRODUCT_FEATURES;
+    const current = (existing?.productFeatures) ?? DEFAULT_PRODUCT_FEATURES;
     const updated = { ...current, ...body };
 
     await this.upsertStoreSettings(storeId, { productFeatures: updated });

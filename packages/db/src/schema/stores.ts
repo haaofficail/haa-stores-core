@@ -131,7 +131,7 @@ export const storeSettings = pgTable('store_settings', {
       facebookPixelId: '',
     },
   }),
-  productFeatures: jsonb('product_features').default({
+  productFeatures: jsonb('product_features').$type<Record<string, boolean>>().default({
     imageLightbox: true,
     stickyCart: true,
     trustBadges: true,
