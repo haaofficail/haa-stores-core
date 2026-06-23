@@ -52,8 +52,13 @@ jobs:
             set -euo pipefail
             cd "/srv/haa-stores"
 
+            # CRITICAL: `docker compose exec -T` inherits stdin from the
+            # surrounding `ssh ... bash -s <<HEREDOC`, so it consumes the
+            # rest of the script and bash silently runs nothing further.
+            # Every exec call MUST close stdin with `</dev/null`.
+
             echo "==> [1] /api/health (current queue status):"
-            docker compose -p "$PROJECT" exec -T api wget -qO- http://localhost:3001/health \
+            docker compose -p "$PROJECT" exec -T api wget -qO- http://localhost:3001/health </dev/null \
               | python3 -c "import json, sys; d = json.load(sys.stdin); print(json.dumps(d.get('queue', {}), indent=2))" \
               || echo "  (health endpoint unreachable)"
 
@@ -66,7 +71,7 @@ jobs:
               } catch (e) {
                 console.log('  ✗ bullmq NOT installed:', e.message);
               }
-            "
+            " </dev/null
 
             echo
             echo "==> [3] Redis reachability from the api container:"
@@ -88,11 +93,11 @@ jobs:
               } catch (e) {
                 console.log('  ✗ ioredis throw:', e.message);
               }
-            "
+            " </dev/null
 
             echo
             echo "==> [4] Redis container itself reachable from postgres-net:"
-            docker compose -p "$PROJECT" exec -T api wget -qO- --tries=1 --timeout=3 http://redis:6379 2>&1 \
+            docker compose -p "$PROJECT" exec -T api wget -qO- --tries=1 --timeout=3 http://redis:6379 </dev/null 2>&1 \
               | head -1 || echo "  (wget against redis:6379 — expected to fail with binary protocol, just probes routing)"
 
             echo
