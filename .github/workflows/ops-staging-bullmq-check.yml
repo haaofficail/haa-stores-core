@@ -1,0 +1,100 @@
+name: Ops — Staging BullMQ Sanity
+
+# Owner-triggered diagnostic for the queue subsystem.
+# /api/health reports `queue: degraded` with reason
+# "bullmq missing or failed to connect". This workflow runs three
+# probes on the live api container to localise the cause:
+#   1. Can the container resolve `require('bullmq')`?
+#   2. Can the container reach the configured REDIS / QUEUE_REDIS_URL?
+#   3. What is the actual queue backend the api process is using?
+#
+# Output is logged. No state is changed (read-only).
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Target environment"
+        type: choice
+        options: [staging, production]
+        default: staging
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: BullMQ probe ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target }}
+    env:
+      DEPLOY_HOST: ${{ inputs.target == 'production' && secrets.PRODUCTION_HOST || secrets.STAGING_HOST }}
+      DEPLOY_USER: ${{ inputs.target == 'production' && secrets.PRODUCTION_USER || secrets.STAGING_USER }}
+      SSH_KEY: ${{ inputs.target == 'production' && secrets.PRODUCTION_SSH_KEY || secrets.STAGING_SSH_KEY }}
+      PROJECT_NAME: ${{ inputs.target == 'production' && 'haa-production' || 'haa-staging' }}
+
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ env.SSH_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Run probes
+        run: |
+          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+            "PROJECT='$PROJECT_NAME' bash -s" <<'EOSSH'
+            set -euo pipefail
+            cd "/srv/haa-stores"
+
+            echo "==> [1] /api/health (current queue status):"
+            docker compose -p "$PROJECT" exec -T api wget -qO- http://localhost:3001/health \
+              | python3 -c "import json, sys; d = json.load(sys.stdin); print(json.dumps(d.get('queue', {}), indent=2))" \
+              || echo "  (health endpoint unreachable)"
+
+            echo
+            echo "==> [2] require('bullmq') from the api container:"
+            docker compose -p "$PROJECT" exec -T api node -e "
+              try {
+                const v = require('bullmq/package.json').version;
+                console.log('  ✓ bullmq installed, version', v);
+              } catch (e) {
+                console.log('  ✗ bullmq NOT installed:', e.message);
+              }
+            "
+
+            echo
+            echo "==> [3] Redis reachability from the api container:"
+            docker compose -p "$PROJECT" exec -T api node -e "
+              const url = process.env.QUEUE_REDIS_URL || process.env.REDIS_URL;
+              console.log('  QUEUE_REDIS_URL set:', !!process.env.QUEUE_REDIS_URL);
+              console.log('  REDIS_URL set:', !!process.env.REDIS_URL);
+              if (!url) { console.log('  (no redis url at all)'); return; }
+              try {
+                const { default: IORedis } = require('ioredis');
+                const r = new IORedis(url, { maxRetriesPerRequest: 1, connectTimeout: 3000, lazyConnect: true });
+                r.connect().then(() => r.ping()).then(p => {
+                  console.log('  ✓ Redis PING →', p);
+                  process.exit(0);
+                }).catch(e => {
+                  console.log('  ✗ Redis connect failed:', e.message);
+                  process.exit(0);
+                });
+              } catch (e) {
+                console.log('  ✗ ioredis throw:', e.message);
+              }
+            "
+
+            echo
+            echo "==> [4] Redis container itself reachable from postgres-net:"
+            docker compose -p "$PROJECT" exec -T api wget -qO- --tries=1 --timeout=3 http://redis:6379 2>&1 \
+              | head -1 || echo "  (wget against redis:6379 — expected to fail with binary protocol, just probes routing)"
+
+            echo
+            echo "==> Done. Read above to localise the queue degradation."
+          EOSSH

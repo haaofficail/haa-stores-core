@@ -1,0 +1,129 @@
+name: Ops — Staging ENV Var (set / unset)
+
+# Owner-triggered (workflow_dispatch only) — never auto-runs.
+# Sets or removes a single environment variable in the deployed
+# `/srv/haa-stores/.env` file and restarts the chosen container so
+# the change takes effect. Allow-list-gated: only specific keys
+# can be touched from this workflow.
+#
+# Safety:
+#   - Workflow runs on workflow_dispatch only.
+#   - Allow-list of editable keys is hard-coded; arbitrary key names
+#     are rejected to prevent secret-grabbing or wholesale .env
+#     rewrites.
+#   - The value is masked in the workflow logs (::add-mask::).
+#   - A backup of the .env file is captured before any write.
+#   - The new value is written via `sed -i` against the matching key
+#     line (or appended if missing); we never `cat <<EOF > .env` so
+#     other lines are untouched.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Target environment"
+        type: choice
+        options: [staging, production]
+        default: staging
+      key:
+        description: "ENV key to set / unset (allow-list enforced)"
+        type: choice
+        options:
+          - FEATURE_WHATSAPP_LIVE
+          - FEATURE_LOYALTY_LIVE
+          - SENTRY_DSN
+        required: true
+      value:
+        description: "New value (leave blank to unset)"
+        type: string
+        required: false
+      restart_container:
+        description: "Container to restart after the write"
+        type: choice
+        options: [api, none]
+        default: api
+
+permissions:
+  contents: read
+
+jobs:
+  set_env:
+    name: Set ${{ inputs.key }} on ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target }}
+    env:
+      DEPLOY_HOST: ${{ inputs.target == 'production' && secrets.PRODUCTION_HOST || secrets.STAGING_HOST }}
+      DEPLOY_USER: ${{ inputs.target == 'production' && secrets.PRODUCTION_USER || secrets.STAGING_USER }}
+      SSH_KEY: ${{ inputs.target == 'production' && secrets.PRODUCTION_SSH_KEY || secrets.STAGING_SSH_KEY }}
+      PROJECT_NAME: ${{ inputs.target == 'production' && 'haa-production' || 'haa-staging' }}
+      ENV_KEY: ${{ inputs.key }}
+      ENV_VALUE: ${{ inputs.value }}
+      RESTART: ${{ inputs.restart_container }}
+
+    steps:
+      - name: Mask the value in logs
+        if: ${{ inputs.value != '' }}
+        run: echo "::add-mask::${{ inputs.value }}"
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ env.SSH_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Apply ENV change + restart
+        run: |
+          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+            "PROJECT='$PROJECT_NAME' ENV_KEY='$ENV_KEY' ENV_VALUE='$ENV_VALUE' RESTART='$RESTART' RUN_ID='${{ github.run_id }}' bash -s" <<'EOSSH'
+            set -euo pipefail
+            cd "/srv/haa-stores"
+
+            # Allow-list — refuse arbitrary keys.
+            case "$ENV_KEY" in
+              FEATURE_WHATSAPP_LIVE|FEATURE_LOYALTY_LIVE|SENTRY_DSN) ;;
+              *)
+                echo "::error::Key '$ENV_KEY' is not on the allow-list. Refusing to edit .env."
+                exit 1 ;;
+            esac
+
+            # Pre-write backup.
+            cp .env ".env.bak-${RUN_ID}"
+            echo "==> Backup: .env.bak-${RUN_ID}"
+
+            if [ -z "$ENV_VALUE" ]; then
+              # Unset: remove the line.
+              sed -i "/^${ENV_KEY}=/d" .env
+              echo "==> Removed ${ENV_KEY} from .env"
+            elif grep -qE "^${ENV_KEY}=" .env; then
+              # Update existing line (escape `&` and `/` in value).
+              ESC=$(printf '%s\n' "$ENV_VALUE" | sed -e 's/[\\/&]/\\&/g')
+              sed -i "s/^${ENV_KEY}=.*/${ENV_KEY}=${ESC}/" .env
+              echo "==> Updated ${ENV_KEY} in .env"
+            else
+              # Append.
+              echo "${ENV_KEY}=${ENV_VALUE}" >> .env
+              echo "==> Appended ${ENV_KEY} to .env"
+            fi
+
+            # Verify the line is present (but never print the value).
+            if [ -n "$ENV_VALUE" ]; then
+              if ! grep -qE "^${ENV_KEY}=" .env; then
+                echo "::error::Write verification failed — key not in .env after edit"
+                exit 1
+              fi
+              echo "==> Verified: ${ENV_KEY} present"
+            fi
+
+            if [ "$RESTART" = "api" ]; then
+              echo "==> Restarting api container"
+              docker compose -p "$PROJECT" restart api
+              sleep 5
+              echo "==> Post-restart health:"
+              docker compose -p "$PROJECT" exec -T api wget -qO- http://localhost:3001/health || true
+            fi
+          EOSSH
