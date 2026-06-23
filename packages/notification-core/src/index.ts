@@ -145,7 +145,7 @@ export class NotificationService {
       return updated;
     }
     const [created] = await this.db.insert(s.notificationPreferences)
-      .values({ storeId, ...data } as any).returning();
+      .values({ storeId, ...data }).returning();
     return created;
   }
 
@@ -167,7 +167,7 @@ export class NotificationService {
     return template.replace(/\{\{(\w+)\}\}/g, (_, key) => data[key] || `{{${key}}}`);
   }
 
-  private shouldSend(prefs: any, templateCode: string, channel: string): boolean {
+  private shouldSend(prefs: typeof s.notificationPreferences.$inferSelect | undefined | null, templateCode: string, channel: string): boolean {
     if (!prefs) return channel === 'email';
     if (channel === 'email' && !prefs.emailEnabled) return false;
     if (channel === 'sms' && !prefs.smsEnabled) return false;
@@ -183,11 +183,11 @@ export class NotificationService {
       'order_picked_up': 'orderPickedUp',
     };
     const prefKey = eventMap[templateCode];
-    if (prefKey && prefs[prefKey] === false) return false;
+    if (prefKey && (prefs as unknown as Record<string, unknown>)[prefKey] === false) return false;
     return true;
   }
 
-  private getRecipient(prefs: any, channel: string): string {
+  private getRecipient(prefs: typeof s.notificationPreferences.$inferSelect | undefined | null, channel: string): string {
     if (!prefs) return '';
     if (channel === 'email') return prefs.emailAddress || '';
     if (channel === 'sms') return prefs.smsPhone || '';

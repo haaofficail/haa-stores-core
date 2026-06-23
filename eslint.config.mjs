@@ -147,7 +147,6 @@ export default tseslint.config(
       'packages/commerce-core/src/products.ts',
       'packages/commerce-core/src/wallet-posting-service.ts',
       'packages/commerce-core/src/billing-settings-service.ts',
-      'packages/notification-core/src/index.ts',
       'packages/integration-core/src/webhook.ts',
       'packages/integration-core/src/audit.ts',
       'packages/payment-providers/src/factory.ts',
