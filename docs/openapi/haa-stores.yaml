@@ -1,0 +1,350 @@
+openapi: 3.1.0
+info:
+  title: Haa Stores API
+  version: 0.1.0
+  description: |
+    Haa Stores (متاجر هاء) public + merchant API surface.
+
+    **Status:** seed spec — covers the launch-critical endpoints. Tracked
+    in P2-004 of the 2026-06-23 audit. Full coverage of all 74 route files
+    in `apps/api/src/routes/` is a follow-up — expand this file in PRs
+    that ship new endpoints (every new route SHOULD update this spec).
+
+    **Source of truth.** Where the spec disagrees with the runtime
+    routes, the routes win — file a PR to fix the spec. Auto-derivation
+    from the Hono routes (e.g. via `hono-openapi`) is a separate task.
+
+  contact:
+    name: Haa Stores Engineering
+    email: haa.officail@gmail.com
+  license:
+    name: Proprietary
+servers:
+  - url: https://api.staging.haastores.com
+    description: Staging
+  - url: https://api.haastores.com
+    description: Production (not yet provisioned)
+
+tags:
+  - name: Health
+    description: Service health + queue + db status
+  - name: Auth
+    description: Merchant + admin authentication
+  - name: Storefront
+    description: Public storefront — products, cart, checkout, orders
+  - name: Merchant
+    description: Authenticated merchant operations
+  - name: Admin
+    description: Platform admin operations
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Liveness + dependency status
+      description: |
+        Returns api, db, redis, queue (backend + mode + reason) status.
+        Used by Docker HEALTHCHECK and external monitors.
+      responses:
+        "200":
+          description: Health snapshot
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Merchant login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: Login OK — returns JWT in body + HttpOnly cookie
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /s/{slug}/products:
+    get:
+      tags: [Storefront]
+      summary: List products for a public storefront
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100 },
+          }
+      responses:
+        "200":
+          description: Paginated product list
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductList" }
+        "404":
+          description: Store not found / inactive
+
+  /s/{slug}/checkout:
+    post:
+      tags: [Storefront]
+      summary: Create a checkout session
+      description: |
+        Idempotent via `Idempotency-Key` header. Replay returns the same
+        session and never creates a duplicate order.
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+        - {
+            name: Idempotency-Key,
+            in: header,
+            required: true,
+            schema: { type: string },
+          }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CheckoutRequest" }
+      responses:
+        "200":
+          description: Checkout created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CheckoutResponse" }
+
+  /merchant/{storeId}/whatsapp/pair:
+    post:
+      tags: [Merchant]
+      summary: Initiate WhatsApp pairing
+      description: |
+        Returns a QR code stream the merchant scans from their phone's
+        WhatsApp → Linked Devices flow. Requires `FEATURE_WHATSAPP_LIVE=1`
+        on the api process. Permission: `settings:update`.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: storeId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Pairing started — subscribe to /qr-stream for events
+        "401": { description: Auth required }
+        "403": { description: Insufficient permission }
+
+  /merchant/{storeId}/whatsapp/status:
+    get:
+      tags: [Merchant]
+      summary: Current WhatsApp session status
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: storeId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Status snapshot
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WhatsappStatusResponse" }
+        "401": { description: Auth required }
+
+  /merchant/{storeId}/orders/{orderId}/zatca-invoice:
+    get:
+      tags: [Merchant]
+      summary: Generate ZATCA Phase 1 invoice + QR
+      description: |
+        Builds the simplified-tax-invoice UBL XML and embedded TLV QR.
+        `invoiceUuid` is a real UUIDv4 (Phase 2 compliant).
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: storeId, in: path, required: true, schema: { type: integer } }
+        - { name: orderId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Invoice generated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ZatcaInvoiceResponse" }
+        "404": { description: Order not found }
+
+  /webhooks/{provider}:
+    post:
+      tags: [Storefront]
+      summary: Inbound payment provider webhook
+      description: |
+        Signature is verified per provider. Idempotent via
+        `x-idempotency-key` header or sha256(provider+body+signature)
+        fallback. Concurrent dupes recover via DB unique violation
+        (P1-002 fix) — returns 200 `duplicate_ignored`, never 400.
+      parameters:
+        - {
+            name: provider,
+            in: path,
+            required: true,
+            schema:
+              {
+                type: string,
+                enum: [moyasar, hyperpay, geidea, tabby, tamara],
+              },
+          }
+        - {
+            name: x-idempotency-key,
+            in: header,
+            required: false,
+            schema: { type: string },
+          }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        "200": { description: Processed (or duplicate ignored) }
+        "401": { description: Invalid signature }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthResponse:
+      type: object
+      required: [api, db, redis, queue, environment]
+      properties:
+        api: { type: string, enum: [ok, error] }
+        db: { type: string, enum: [connected, disconnected] }
+        redis: { type: string, enum: [connected, disconnected] }
+        queue:
+          type: object
+          properties:
+            status: { type: string, enum: [ok, error] }
+            mode: { type: string, enum: [persistent, noop, degraded] }
+            backend: { type: string, enum: [bullmq, noop] }
+            redisConfigured: { type: boolean }
+            reason: { type: string }
+        environment: { type: string, enum: [production, staging, development] }
+        uptime: { type: number }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 6 }
+
+    LoginResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            token: { type: string }
+            user: { $ref: "#/components/schemas/User" }
+
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        email: { type: string }
+        tenantId: { type: integer }
+        activeStoreId: { type: integer }
+        roles: { type: array, items: { type: string } }
+        permissions: { type: array, items: { type: string } }
+
+    ProductList:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: "#/components/schemas/Product" } }
+        pagination: { $ref: "#/components/schemas/Pagination" }
+
+    Product:
+      type: object
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        name: { type: string }
+        price: { type: string, description: "decimal string" }
+        compareAtPrice: { type: string, nullable: true }
+        currency: { type: string, default: SAR }
+        thumbnail: { type: string, nullable: true }
+        inStock: { type: boolean }
+
+    Pagination:
+      type: object
+      properties:
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+        totalPages: { type: integer }
+
+    CheckoutRequest:
+      type: object
+      required: [cartId]
+      properties:
+        cartId: { type: integer }
+        customerEmail: { type: string, format: email }
+        customerPhone: { type: string }
+        shippingAddressId: { type: integer }
+        paymentMethod: { type: string }
+
+    CheckoutResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            sessionId: { type: integer }
+            orderId: { type: integer }
+            paymentUrl: { type: string, nullable: true }
+
+    WhatsappStatusResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            status:
+              { type: string, enum: [disconnected, pairing, connected, failed] }
+
+    ZatcaInvoiceResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            orderId: { type: integer }
+            orderNumber: { type: string }
+            invoiceNumber: { type: string, example: "INV-42" }
+            invoiceUuid: { type: string, format: uuid }
+            qrCode: { type: string, description: "base64 TLV QR" }
+            xmlContent: { type: string }
+            totals:
+              type: object
+              properties:
+                subtotal: { type: number }
+                discountTotal: { type: number }
+                vatTotal: { type: number }
+                grandTotal: { type: number }
+            configured: { type: boolean }
+
+    ErrorResponse:
+      type: object
+      properties:
+        success: { type: boolean, enum: [false] }
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
