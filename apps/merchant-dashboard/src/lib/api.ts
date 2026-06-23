@@ -1098,3 +1098,32 @@ export const whatsappApi = {
     return new EventSource(url, { withCredentials: true });
   },
 };
+
+// Loyalty (L-PR-4 client surface).
+// Server routes added in PR #94 (Loyalty Phase 1). The mutating PUT/POST
+// inherit the auto-attached Idempotency-Key from request() — no per-call
+// header plumbing needed.
+export interface LoyaltyRules {
+  enabled: boolean;
+  earnRatePerCurrency: number;
+  redeemValuePerPoint: number;
+  minRedeemPoints: number;
+  maxRedeemPercent: number;
+  pointsExpiryMonths: number;
+  earnOnTax: boolean;
+  earnOnShipping: boolean;
+  minOrderForEarn: number;
+}
+export const loyaltyApi = {
+  getSettings: (storeId: number) =>
+    request<LoyaltyRules>(`/merchant/${storeId}/loyalty/settings`),
+  updateSettings: (storeId: number, patch: Partial<LoyaltyRules>) =>
+    request<LoyaltyRules>(`/merchant/${storeId}/loyalty/settings`, {
+      method: 'PUT',
+      body: JSON.stringify(patch),
+    }),
+  getCustomer: (storeId: number, customerId: number) =>
+    request<{ balance: number; value: number; transactions: Array<{ id: number; type: string; points: number; createdAt: string; description: string | null }> }>(
+      `/merchant/${storeId}/loyalty/customers/${customerId}`,
+    ),
+};
