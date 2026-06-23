@@ -15,10 +15,16 @@
  * in WA-PR-3 lights up the actual messaging.
  */
 
+import { createRequire } from 'module';
 import { SessionManager } from './session-manager.js';
 import type { IBaileysClient, SessionEventListener } from './types.js';
 import { DrizzleSessionStore } from './session-store.js';
 import { BaileysClient } from './baileys-client.js';
+
+// apps/api is ESM — bare `require()` is undefined. Use createRequire so
+// the lazy `require('@haa/db')` below works at runtime (same root cause
+// fixed for queue.ts in PR #111).
+const require = createRequire(import.meta.url);
 
 let singleton: SessionManager | null = null;
 

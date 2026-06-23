@@ -1,4 +1,10 @@
+import { createRequire } from 'module';
 import { setErrorMonitor, type ErrorMonitor } from '../middleware/error-handler.js';
+
+// apps/api is ESM — `require()` is undefined here. createRequire makes
+// the lazy `require('@sentry/node')` below work (same root cause fixed
+// for queue.ts in PR #111).
+const require = createRequire(import.meta.url);
 
 /**
  * Observability shim — wires an ErrorMonitor to the API's error handler.

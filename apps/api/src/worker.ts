@@ -1,6 +1,12 @@
 import 'dotenv/config';
+import { createRequire } from 'module';
 import { closeDbClient } from '@haa/db';
 import { env } from './env.js';
+
+// apps/api is ESM — `require()` is undefined here. createRequire makes
+// the lazy `require('bullmq')` later in the file work (same root cause
+// fixed for queue.ts in PR #111).
+const require = createRequire(import.meta.url);
 
 // Distributed lock — prevents multiple API instances from running the
 // same scheduled job simultaneously. Uses Redis SET NX EX (atomic):
