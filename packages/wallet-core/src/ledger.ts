@@ -107,6 +107,40 @@ export class WalletLedger {
   }
 
   /**
+   * Transaction-scoped account fetch with a row-level lock.
+   *
+   * P0-2 from the deep audit: `recordEntry` was reading the account row
+   * via `this.db` (NOT the active `tx`), then computing the new balance
+   * in JS, then writing it back inside the transaction. Two concurrent
+   * recordEntry calls could read the same starting balance and both
+   * write `balance + amount`, losing one of the updates. This is a
+   * silent money-loss bug under any real concurrency.
+   *
+   * Fix: read inside the transaction with `FOR UPDATE`, which holds a
+   * row lock for the lifetime of the transaction. The second concurrent
+   * `recordEntry` blocks on this read until the first commits, then
+   * sees the post-commit balance and applies its delta on top.
+   *
+   * If the row doesn't exist yet, we insert (also inside the tx) and
+   * the insert itself holds the lock for that row going forward.
+   */
+  private async ensureAccountForUpdate(
+    tx: Parameters<Parameters<DbClient['transaction']>[0]>[0],
+    storeId: number,
+  ) {
+    const rows = await tx.execute(
+      sql`SELECT * FROM ${s.walletAccounts} WHERE ${s.walletAccounts.storeId} = ${storeId} LIMIT 1 FOR UPDATE`,
+    );
+    const row = (rows as unknown as { rows?: unknown[] }).rows?.[0]
+      ?? (Array.isArray(rows) ? rows[0] : undefined);
+    if (row) return row as typeof s.walletAccounts.$inferSelect;
+    const [created] = await tx.insert(s.walletAccounts).values({
+      storeId, balance: '0', pendingBalance: '0', availableBalance: '0',
+    }).returning();
+    return created;
+  }
+
+  /**
    * Idempotency check: returns true if a `platform_fee` wallet entry
    * already exists for this store + order reference. Used to prevent
    * double-charge when a payment webhook is replayed or when the
@@ -132,7 +166,10 @@ export class WalletLedger {
 
   async recordEntry(input: LedgerEntryInput) {
     return this.db.transaction(async (tx) => {
-      const account = await this.ensureAccount(input.storeId);
+      // P0-2 audit fix: read+lock the account row inside this tx so two
+      // concurrent recordEntry calls can't both compute newBalance from
+      // the same stale starting value.
+      const account = await this.ensureAccountForUpdate(tx, input.storeId);
 
       const balanceBefore = new Decimal(account.balance);
       let balanceAfter = balanceBefore;
