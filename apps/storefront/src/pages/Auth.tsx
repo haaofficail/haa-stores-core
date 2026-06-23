@@ -3,8 +3,6 @@ import { normalizeStoreSlug, isSaudiPhone } from '@/lib/validation';
 import { merchantDashboardUrl } from '@/lib/merchant';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
-import { Mail, Lock, User, Phone, Store as StoreIcon, Sparkles, ArrowLeft, Loader2, Check, Shield, Bell, Star, TrendingUp, Clock } from 'lucide-react';
 import { Nav } from '@/landing/sections/Nav';
 
 function passwordStrength(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string; color: string } {
@@ -23,7 +21,7 @@ function passwordStrength(pw: string): { score: 0 | 1 | 2 | 3 | 4; label: string
 
 
 import { StoreButton, StoreContainer, StoreInput } from '@/components/ui';
-import { Icon } from '@/components/ui/icon';
+import { Icon, type IconName } from '@/components/ui/icon';
 import { useSEO } from '@/hooks/useSEO';
 import { authApi } from '@/lib/auth';
 import { ApiClientError as ApiError } from '@/lib/api';
@@ -55,7 +53,7 @@ function AvatarStack() {
       <div>
         <div className="flex items-center gap-0.5">
           {[...Array(5)].map((_, i) => (
-            <Icon key={i} icon={Star} size="2xs" className="fill-amber-400 text-amber-400" aria-hidden="true" />
+            <Icon key={i} name="Star" size="2xs" className="fill-amber-400 text-amber-400" aria-hidden="true" />
           ))}
         </div>
         <p className="text-xs text-text-tertiary">+١٢٠٠ تاجر نشط</p>
@@ -65,11 +63,11 @@ function AvatarStack() {
 }
 
 /* ─── Stat card ─── */
-function StatCard({ icon: IconCmp, value, label }: { icon: React.ElementType; value: string; label: string }) {
+function StatCard({ name, value, label }: { name: IconName; value: string; label: string }) {
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-border-subtle bg-white px-4 py-3 shadow-sm">
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
-        <IconCmp className="h-4 w-4" aria-hidden="true" />
+        <Icon name={name} size="xs" />
       </div>
       <div>
         <p className="text-base font-extrabold leading-none text-text-primary">{value}</p>
@@ -152,7 +150,7 @@ export function SignupPage() {
         <div className="flex flex-col justify-center">
           {/* Badge */}
           <span className="aurora-pill w-fit">
-            <Icon icon={Shield} size="xs" aria-hidden="true" />
+            <Icon name="Shield" size="xs" aria-hidden="true" />
             {t('auth.signup.badge', 'ابدأ مجانًا — بدون بطاقة')}
           </span>
 
@@ -169,16 +167,16 @@ export function SignupPage() {
           {/* Plan notice */}
           {plan === 'pro' && (
             <div className="mt-5 inline-flex w-fit items-center gap-2 rounded-xl border border-primary/20 bg-primary-soft px-3.5 py-2 text-xs font-semibold text-primary">
-              <Icon icon={Sparkles} size="xs" aria-hidden="true" />
+              <Icon name="Sparkles" size="xs" aria-hidden="true" />
               <span>{t('auth.signup.planProNotice', 'باقة احترافي — تجربة ١٤ يوم مجانًا')}</span>
             </div>
           )}
 
           {/* Stat cards */}
           <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-            <StatCard icon={TrendingUp} value="+١٢٠٠" label="تاجر نشط" />
-            <StatCard icon={Clock} value="< ١ دقيقة" label="للإطلاق" />
-            <StatCard icon={Star} value="٤.٩ / ٥" label="رضا التجار" />
+            <StatCard name="TrendingUp" value="+١٢٠٠" label="تاجر نشط" />
+            <StatCard name="Clock" value="< ١ دقيقة" label="للإطلاق" />
+            <StatCard name="Star" value="٤.٩ / ٥" label="رضا التجار" />
           </div>
 
           {/* Avatar stack */}
@@ -195,7 +193,7 @@ export function SignupPage() {
             ].map((text) => (
               <li key={text} className="flex items-center gap-2.5 text-sm text-text-secondary">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-success/15" aria-hidden="true">
-                  <Icon icon={Check} size="2xs" className="text-success" />
+                  <Icon name="Check" size="2xs" className="text-success" />
                 </span>
                 {text}
               </li>
@@ -238,7 +236,7 @@ export function SignupPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={t('auth.signup.namePlaceholder', 'محمد العتيبي')}
-                  iconStart={<Icon icon={User} size="xs" />}
+                  iconStart={<Icon name="User" size="xs" />}
                 />
                 <div className="grid gap-3 sm:grid-cols-2">
                   <StoreInput
@@ -249,7 +247,7 @@ export function SignupPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    iconStart={<Icon icon={Mail} size="xs" />}
+                    iconStart={<Icon name="Mail" size="xs" />}
                   />
                   <StoreInput
                     label={t('auth.signup.phoneLabel', 'رقم الجوال')}
@@ -260,7 +258,7 @@ export function SignupPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="05XXXXXXXX"
-                    iconStart={<Icon icon={Phone} size="xs" />}
+                    iconStart={<Icon name="Phone" size="xs" />}
                   />
                 </div>
               </div>
@@ -285,7 +283,7 @@ export function SignupPage() {
                   value={storeName}
                   onChange={(e) => onStoreNameChange(e.target.value)}
                   placeholder={t('auth.signup.storeNamePlaceholder', 'متجر الأناقة')}
-                  iconStart={<Icon icon={StoreIcon} size="xs" />}
+                  iconStart={<Icon name="Store" size="xs" />}
                 />
                 <StoreInput
                   label={t('auth.signup.storeSlugLabel', 'رابط المتجر')}
@@ -321,7 +319,7 @@ export function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t('auth.signup.passwordPlaceholder', '٨ أحرف على الأقل')}
-                iconStart={<Icon icon={Lock} size="xs" />}
+                iconStart={<Icon name="Lock" size="xs" />}
               />
 
               {/* Password strength meter */}
@@ -374,7 +372,7 @@ export function SignupPage() {
                 variant="primary"
                 size="lg"
                 className="aurora-btn-primary w-full !rounded-md !text-base !font-bold"
-                iconStart={submitting ? <Icon icon={Loader2} size="xs" className="animate-spin" /> : <Icon icon={ArrowLeft} size="xs" />}
+                iconStart={submitting ? <Icon name="Loader2" size="xs" className="animate-spin" /> : <Icon name="ArrowLeft" size="xs" />}
                 disabled={submitting}
               >
                 {submitting ? t('auth.signup.submitting', 'جاري الإنشاء...') : t('auth.signup.submit', 'أنشئ متجري مجانًا')}
@@ -414,7 +412,7 @@ export function WaitlistPage() {
       <StoreContainer className="max-w-md">
         <div className="rounded-3xl border border-border-subtle bg-white p-8 text-center shadow-2xl shadow-primary-500/10 sm:p-10">
           <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary shadow-sm">
-            <Icon icon={Bell} size="lg" aria-hidden="true" />
+            <Icon name="Bell" size="lg" aria-hidden="true" />
           </div>
           <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">
             {t('auth.waitlist.title', 'انضم لقائمة الانتظار')}
@@ -425,7 +423,7 @@ export function WaitlistPage() {
 
           {status === 'success' ? (
             <div className="mt-6 flex items-center justify-center gap-2 rounded-xl border border-success/30 bg-success-soft p-4 text-sm text-success">
-              <Icon icon={Check} size="xs" aria-hidden="true" />
+              <Icon name="Check" size="xs" aria-hidden="true" />
               <span>{t('auth.waitlist.success', 'تم! راح نبلّغك أول ما نطلق.')}</span>
             </div>
           ) : (
@@ -438,14 +436,14 @@ export function WaitlistPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                iconStart={<Icon icon={Mail} size="xs" />}
+                iconStart={<Icon name="Mail" size="xs" />}
               />
               <StoreButton
                 type="submit"
                 variant="primary"
                 size="lg"
                 className="aurora-btn-primary w-full !rounded-md !font-bold"
-                iconStart={<Icon icon={ArrowLeft} size="xs" />}
+                iconStart={<Icon name="ArrowLeft" size="xs" />}
                 disabled={status === 'submitting'}
               >
                 {t('auth.waitlist.submit', 'انضم للقائمة')}

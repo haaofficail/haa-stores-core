@@ -1,33 +1,64 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
-import { Check, Heart, Minus, Plus, Share2, ShoppingBag, ShieldCheck, Truck, RefreshCcw } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { Icon } from '@/components/ui/icon';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { LUXURY_THEME_CLASS } from '../luxuryTokens';
 
-type AnyRecord = Record<string, any>;
+type AnyRecord = Record<string, unknown>;
+type LuxuryProductLike = {
+  salePrice?: string | number;
+  price?: string | number;
+  finalPrice?: string | number;
+  compareAtPrice?: string | number | null;
+  originalPrice?: string | number | null;
+  oldPrice?: string | number | null;
+  options?: unknown[];
+  productOptions?: unknown[];
+  isOutOfStock?: boolean;
+  inStock?: boolean;
+  stock?: number;
+  quantity?: number;
+};
+type LuxuryPropsBag = {
+  displayPrice?: string | number;
+  price?: string | number;
+  compareAtPrice?: string | number | null;
+  isOutOfStock?: boolean;
+  quantity?: number;
+  onQuantityChange?: (v: number) => void;
+  setQuantity?: (v: number) => void;
+  options?: unknown[];
+  productOptions?: unknown[];
+  selectedOptions?: Record<string, unknown>;
+  onOptionChange?: (key: string, val: unknown) => void;
+  setSelectedOption?: (key: string, val: unknown) => void;
+  cartReady?: boolean;
+  onAddToCart?: (product: unknown) => Promise<void> | void;
+  onBuyNow?: (product: unknown) => Promise<void> | void;
+  onShare?: (product: unknown) => void;
+  onWishlist?: (product: unknown) => void;
+};
 
 function toNumber(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 }
 
-function getPrice(product: AnyRecord, propsBag: AnyRecord) {
+function getPrice(product: LuxuryProductLike, propsBag: LuxuryPropsBag) {
   return propsBag.displayPrice ?? propsBag.price ?? product.salePrice ?? product.price ?? product.finalPrice ?? 0;
 }
 
-function getComparePrice(product: AnyRecord, propsBag: AnyRecord) {
+function getComparePrice(product: LuxuryProductLike, propsBag: LuxuryPropsBag) {
   return propsBag.compareAtPrice ?? product.compareAtPrice ?? product.originalPrice ?? product.oldPrice ?? null;
 }
 
-function getOptions(product: AnyRecord, propsBag: AnyRecord): AnyRecord[] {
+function getOptions(product: LuxuryProductLike, propsBag: LuxuryPropsBag): AnyRecord[] {
   const options = propsBag.options || propsBag.productOptions || product.options || product.productOptions || [];
-  return Array.isArray(options) ? options : [];
+  return Array.isArray(options) ? (options as AnyRecord[]) : [];
 }
 
-function isOutOfStock(product: AnyRecord, propsBag: AnyRecord) {
+function isOutOfStock(product: LuxuryProductLike, propsBag: LuxuryPropsBag) {
   if (typeof propsBag.isOutOfStock === 'boolean') return propsBag.isOutOfStock;
   if (typeof product.isOutOfStock === 'boolean') return product.isOutOfStock;
   if (typeof product.inStock === 'boolean') return !product.inStock;
@@ -39,8 +70,8 @@ function isOutOfStock(product: AnyRecord, propsBag: AnyRecord) {
 export function LuxuryProductInfoPanel({
   product, propsBag, name, category, description,
 }: {
-  product: AnyRecord;
-  propsBag: AnyRecord;
+  product: LuxuryProductLike;
+  propsBag: LuxuryPropsBag;
   name: string;
   category: string;
   description: string;
@@ -108,7 +139,7 @@ export function LuxuryProductInfoPanel({
             style={{ borderColor: 'var(--lux-border, #E6D8C6)', color: 'var(--lux-muted, #756B61)' }}
             aria-label={t('product.share', 'مشاركة المنتج')}
           >
-            <Icon icon={Share2} size="md" className="stroke-[1.5]" />
+            <Icon name="Share2" size="md" className="stroke-[1.5]" />
           </button>
         </div>
 
@@ -142,9 +173,10 @@ export function LuxuryProductInfoPanel({
 
         <div className="space-y-6 py-6">
           {options.map((option) => {
-            const optionName = option.nameAr || option.name || option.label;
-            const optionKey = option.name || option.key || option.id || optionName;
-            const values = Array.isArray(option.values) ? option.values : [];
+            const o = option as { nameAr?: string; name?: string; label?: string; key?: string; id?: string | number; values?: unknown[] };
+            const optionName = o.nameAr || o.name || o.label;
+            const optionKey = String(o.name || o.key || o.id || optionName || '');
+            const values = Array.isArray(o.values) ? o.values : [];
             if (!optionName || values.length === 0) return null;
             return (
               <div key={optionKey}>
@@ -152,9 +184,10 @@ export function LuxuryProductInfoPanel({
                   {optionName}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {values.map((value: any) => {
-                    const valueLabel = typeof value === 'string' ? value : value.nameAr || value.name || value.label || value.value;
-                    const valueKey = typeof value === 'string' ? value : value.id || value.key || value.value || valueLabel;
+                  {values.map((value: unknown) => {
+                    const v = value as { nameAr?: string; name?: string; label?: string; value?: string; id?: string | number; key?: string };
+                    const valueLabel = typeof value === 'string' ? value : v.nameAr || v.name || v.label || v.value;
+                    const valueKey = typeof value === 'string' ? value : v.id || v.key || v.value || valueLabel;
                     const active = selectedOptions?.[optionKey] === valueKey;
                     return (
                       <button
@@ -191,7 +224,7 @@ export function LuxuryProductInfoPanel({
                 style={{ color: 'var(--lux-muted, #756B61)' }}
                 aria-label={t('product.decreaseQuantity', 'تقليل الكمية')}
               >
-                <Icon icon={Minus} size="xs" />
+                <Icon name="Minus" size="xs" />
               </button>
               <span className="min-w-10 px-3 text-center text-sm" style={{ color: 'var(--lux-text, #2B2520)' }}>
                 {quantity}
@@ -203,7 +236,7 @@ export function LuxuryProductInfoPanel({
                 style={{ color: 'var(--lux-muted, #756B61)' }}
                 aria-label={t('product.increaseQuantity', 'زيادة الكمية')}
               >
-                <Icon icon={Plus} size="xs" />
+                <Icon name="Plus" size="xs" />
               </button>
             </div>
           </div>
@@ -229,14 +262,14 @@ export function LuxuryProductInfoPanel({
               t('product.outOfStock', 'غير متوفر')
             ) : added ? (
               <span className="inline-flex items-center gap-1.5">
-                <Icon icon={Check} size="xs" />
+                <Icon name="Check" size="xs" />
                 {t('product.addedToCart', 'تمت الإضافة')}
               </span>
             ) : adding ? (
               t('product.adding', 'جارٍ الإضافة...')
             ) : (
               <span className="inline-flex items-center gap-1.5">
-                <Icon icon={ShoppingBag} size="xs" />
+                <Icon name="ShoppingBag" size="xs" />
                 {t('product.addToCart', 'أضف إلى السلة')}
               </span>
             )}
@@ -266,7 +299,7 @@ export function LuxuryProductInfoPanel({
             style={{ borderColor: 'var(--lux-border, #E6D8C6)', color: 'var(--lux-muted, #756B61)' }}
             aria-label={t('product.addToWishlist', 'إضافة للمفضلة')}
           >
-            <Icon icon={Heart} size="xs" className="stroke-[1.5]" />
+            <Icon name="Heart" size="xs" className="stroke-[1.5]" />
           </button>
         </div>
 
@@ -278,11 +311,11 @@ export function LuxuryProductInfoPanel({
           aria-label={t('product.trustAriaLabel', 'ضمانات المنتج')}
         >
           <li className="flex flex-col items-center gap-1.5 text-center">
-            <Truck
-              className="h-4 w-4"
+            <Icon
+              name="Truck"
+              size="xs"
               style={{ color: 'var(--lux-primary, #B88A3D)' }}
-              strokeWidth={1.5}
-              aria-hidden="true"
+              className="stroke-[1.5]"
             />
             <span className="text-xs font-light leading-tight" style={{ color: 'var(--lux-muted, #756B61)' }}>
               <span className="block" style={{ color: 'var(--lux-text, #2B2520)' }}>
@@ -292,11 +325,11 @@ export function LuxuryProductInfoPanel({
             </span>
           </li>
           <li className="flex flex-col items-center gap-1.5 text-center">
-            <ShieldCheck
-              className="h-4 w-4"
+            <Icon
+              name="ShieldCheck"
+              size="xs"
               style={{ color: 'var(--lux-primary, #B88A3D)' }}
-              strokeWidth={1.5}
-              aria-hidden="true"
+              className="stroke-[1.5]"
             />
             <span className="text-xs font-light leading-tight" style={{ color: 'var(--lux-muted, #756B61)' }}>
               <span className="block" style={{ color: 'var(--lux-text, #2B2520)' }}>
@@ -306,11 +339,11 @@ export function LuxuryProductInfoPanel({
             </span>
           </li>
           <li className="flex flex-col items-center gap-1.5 text-center">
-            <RefreshCcw
-              className="h-4 w-4"
+            <Icon
+              name="RefreshCcw"
+              size="xs"
               style={{ color: 'var(--lux-primary, #B88A3D)' }}
-              strokeWidth={1.5}
-              aria-hidden="true"
+              className="stroke-[1.5]"
             />
             <span className="text-xs font-light leading-tight" style={{ color: 'var(--lux-muted, #756B61)' }}>
               <span className="block" style={{ color: 'var(--lux-text, #2B2520)' }}>

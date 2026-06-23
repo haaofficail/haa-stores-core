@@ -131,7 +131,7 @@ export function StoreButton({ variant = 'primary', size = 'md', loading, icon, i
 
   if (href) {
     return (
-      <Link to={href} className={classes} {...(props as any)}>
+      <Link to={href} className={classes} {...(props as unknown as Record<string, unknown>)}>
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : startIcon}
         {children}
         {iconEnd}
@@ -315,14 +315,16 @@ export function StoreSkeleton({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse bg-surface-2 rounded-xl ${className}`} />;
 }
 
-export function StoreEmptyState({ icon: IconComponent, title, description, action }: {
-  icon?: LucideIcon; title: string; description?: string; action?: ReactNode;
+export function StoreEmptyState({ icon: IconComponent, iconName, title, description, action }: {
+  icon?: LucideIcon; iconName?: import('./icon').IconName; title: string; description?: string; action?: ReactNode;
 }) {
   return (
     <div className="text-center py-12 sm:py-16">
-      {IconComponent && (
+      {iconName ? (
+        <Icon name={iconName} size="xl" className="text-text-disabled mx-auto mb-4" />
+      ) : IconComponent ? (
         <Icon icon={IconComponent} size="xl" className="text-text-disabled mx-auto mb-4" />
-      )}
+      ) : null}
       <h3 className="text-lg font-bold text-text-primary mb-2">{title}</h3>
       {description && <p className="text-sm text-text-secondary max-w-sm mx-auto mb-6">{description}</p>}
       {action}
@@ -364,10 +366,10 @@ export function StorePrice({ price, compareAtPrice, size = 'md', showDiscountBad
 
   return (
     <div className="flex items-baseline gap-2 flex-wrap">
-      <CurrencyAmount amount={price} size={priceSize as any} weight="bold" color="text-text-primary" />
+      <CurrencyAmount amount={price} size={priceSize as 'sm' | 'md' | 'lg'} weight="bold" color="text-text-primary" />
       {hasDiscount && (
         <>
-          <CurrencyStrike amount={compareAtPrice!} size={size === 'sm' ? 'sm' : 'md' as any} />
+          <CurrencyStrike amount={compareAtPrice!} size={size === 'sm' ? 'sm' : 'md'} />
           {showDiscountBadge && (
             <StoreBadge variant="discount" size={size === 'sm' ? 'sm' : 'md'} className="shrink-0">
               {discountPercent}% {t('ui.discount', 'خصم')}

@@ -8,8 +8,6 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useState as useReactState } from 'react';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; required to pass icon as prop to <Icon>
-import { ArrowLeft, Menu, X as XIcon } from 'lucide-react';
 import { usePlatformBrand } from '@/hooks/usePlatformBrand';
 import { StoreContainer, Icon } from '@/components/ui';
 import type { TFn } from './types';
@@ -87,7 +85,7 @@ export function Nav({ t, authMode = false }: { t: TFn; authMode?: boolean }) {
               className="aurora-btn-primary inline-flex h-11 min-h-[44px] items-center gap-2 rounded-full px-5 text-sm font-semibold text-white transition-all hover:!text-white"
             >
               الرئيسية
-              <Icon icon={ArrowLeft} size="xs" className="rotate-180" aria-hidden="true" />
+              <Icon name="ArrowLeft" size="xs" className="rotate-180" aria-hidden="true" />
             </Link>
           ) : (
             <>
@@ -96,7 +94,7 @@ export function Nav({ t, authMode = false }: { t: TFn; authMode?: boolean }) {
                 className="aurora-btn inline-flex h-11 min-h-[44px] items-center gap-2 rounded-full bg-text-primary px-5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/30 hover:!text-white"
               >
                 {t('landing.nav.signup', 'سجّل كتاجر')}
-                <Icon icon={ArrowLeft} size="xs" aria-hidden="true" />
+                <Icon name="ArrowLeft" size="xs" aria-hidden="true" />
               </Link>
 
               {/* Mobile hamburger */}
@@ -108,7 +106,7 @@ export function Nav({ t, authMode = false }: { t: TFn; authMode?: boolean }) {
                 onClick={() => setMobileOpen((v) => !v)}
                 className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 bg-white/50 text-text-primary backdrop-blur-sm transition-colors hover:bg-white/80 md:hidden"
               >
-                {mobileOpen ? <Icon icon={XIcon} size="md" aria-hidden="true" /> : <Icon icon={Menu} size="md" aria-hidden="true" />}
+                {mobileOpen ? <Icon name="X" size="md" aria-hidden="true" /> : <Icon name="Menu" size="md" aria-hidden="true" />}
               </button>
             </>
           )}

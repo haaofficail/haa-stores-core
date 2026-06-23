@@ -1,4 +1,8 @@
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- ISSUE-0009: this wrapper is the one file that's allowed to touch lucide directly.
 import { type LucideIcon } from 'lucide-react';
+import { ICON_REGISTRY, type IconName } from './icon-registry';
+
+export type { IconName };
 
 /**
  * Icon size map matching the spec (AGENTS.md §9.2):
@@ -25,15 +29,32 @@ const sizeMap: Record<IconSize, string> = {
   '2xl': 'h-16 w-16',
 };
 
-interface IconProps {
-  icon: LucideIcon;
+type CommonProps = {
   size?: IconSize;
   className?: string;
   style?: React.CSSProperties;
-}
+};
+type IconByName = CommonProps & { name: IconName; icon?: never };
+type IconByRef = CommonProps & { icon: LucideIcon; name?: never };
+type IconProps = IconByName | IconByRef;
 
-export function Icon({ icon: LucideIcon, size = 'default', className = '', style }: IconProps) {
-  return <LucideIcon className={`${sizeMap[size]} shrink-0 ${className}`} style={style} />;
+/**
+ * Renders a lucide icon at one of the governed sizes (see `IconSize`).
+ *
+ * Two call shapes:
+ * - `<Icon name="ArrowLeft" />` — the registry resolves the icon. This is
+ *   the preferred form; feature code never imports lucide directly
+ *   (ISSUE-0009). The set of valid names lives in `icon-registry.ts`.
+ * - `<Icon icon={LucideRef} />` — kept for the small handful of legacy
+ *   callers that still hold a `LucideIcon` reference. New code should
+ *   use `name`.
+ */
+export function Icon(props: IconProps) {
+  const { size = 'default', className = '', style } = props;
+  const Resolved: LucideIcon = 'name' in props && props.name
+    ? ICON_REGISTRY[props.name]
+    : (props as IconByRef).icon;
+  return <Resolved className={`${sizeMap[size]} shrink-0 ${className}`} style={style} />;
 }
 
 /**
