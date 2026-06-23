@@ -58,7 +58,19 @@ export interface ZatcaLineItem {
 export interface ZatcaInvoiceInput {
   type: InvoiceType;
   transactionType: InvoiceTransactionType;
+  /**
+   * Human-friendly business identifier (e.g. `INV-12345`).
+   * Used for `<cbc:ID>` in the UBL XML. NOT a UUID.
+   */
   invoiceNumber: string;
+  /**
+   * PROBLEM-013: ZATCA Phase 2 requires `<cbc:UUID>` to be a valid
+   * UUIDv4. If the caller doesn't supply one, buildZatcaInvoice()
+   * generates a fresh `crypto.randomUUID()`. Callers SHOULD pass an
+   * explicit value and persist it so the invoice's compliance UUID
+   * is stable across regenerations of the XML (e.g. on reprint).
+   */
+  invoiceUuid?: string;
   issueDate: string;
   issueTime: string;
   seller: ZatcaSellerInfo;
@@ -70,6 +82,8 @@ export interface ZatcaInvoiceInput {
 
 export interface ZatcaInvoiceResult {
   invoiceNumber: string;
+  /** PROBLEM-013: the UUIDv4 that landed in `<cbc:UUID>`. */
+  invoiceUuid: string;
   qrCode: string;
   xmlContent: string;
   totals: {
