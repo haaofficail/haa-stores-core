@@ -431,6 +431,111 @@ export class ProductsService {
     });
   }
 
+  /**
+   * Batch create — onboarding wizard P1 fix.
+   *
+   * Inserts N products in ONE Drizzle transaction (atomic). If any
+   * single insert throws, the whole batch rolls back, leaving the
+   * store consistent (no half-created onboarding). Used by the
+   * batch route `POST /merchant/:storeId/products/batch`.
+   *
+   * Each item is validated against createProductSchema *before* the
+   * transaction opens, so a malformed item never holds an open
+   * transaction (Postgres locks). Audit record is a single
+   * batch entry, not N entries.
+   */
+  async createBatch(storeId: number, inputs: CreateProductInput[], auditCtx?: AuditContext) {
+    if (!Array.isArray(inputs) || inputs.length === 0) {
+      throw new ValidationError('Batch must contain at least one product');
+    }
+    if (inputs.length > 100) {
+      throw new ValidationError('Batch size cannot exceed 100 products');
+    }
+
+    const created = await this.db.transaction(async (tx) => {
+      const results: any[] = [];
+      for (const input of inputs) {
+        // Re-validate relations inside the transaction so a stale
+        // brand/category id from the wizard rolls back the whole batch.
+        await this.validateProductRelations(tx, storeId, input);
+
+        const [product] = await tx.insert(s.products).values({
+          storeId,
+          name: input.name,
+          slug: input.slug,
+          description: input.description ?? null,
+          status: input.status,
+          type: input.type,
+          price: input.price.toString(),
+          compareAtPrice: input.compareAtPrice?.toString() ?? null,
+          cost: input.cost?.toString() ?? null,
+          sku: input.sku ?? null,
+          barcode: input.barcode ?? null,
+          stockQuantity: input.stockQuantity,
+          trackInventory: input.trackInventory,
+          weightGrams: input.weightGrams ?? null,
+          lengthCm: input.lengthCm?.toString() ?? null,
+          widthCm: input.widthCm?.toString() ?? null,
+          heightCm: input.heightCm?.toString() ?? null,
+          requiresShipping: input.requiresShipping,
+          isFragile: input.isFragile,
+          giftWrapAvailable: input.giftWrapAvailable ?? false,
+          giftWrapPriceOverride: input.giftWrapPriceOverride?.toString() ?? null,
+          haaMarketplaceEnabled: input.haaMarketplaceEnabled ?? false,
+          haaMarketplaceCommissionRate: input.haaMarketplaceCommissionRate?.toString() ?? '0.05',
+          brandId: input.brandId ?? null,
+          sfdaNumber: input.sfdaNumber && input.sfdaNumber !== '' ? input.sfdaNumber : null,
+          sfdaLicenseType: input.sfdaLicenseType ?? null,
+          sfdaExpiryDate: input.sfdaExpiryDate ?? null,
+          seoTitle: input.seoTitle ?? null,
+          seoDescription: input.seoDescription ?? null,
+          salesCount: input.salesCount ?? 0,
+        }).returning();
+
+        if (input.categoryIds?.length) {
+          const categoryIds = [...new Set(input.categoryIds)];
+          await tx.insert(s.productCategories).values(
+            categoryIds.map(cid => ({ productId: product.id, categoryId: cid }))
+          );
+        }
+
+        if (input.tagIds?.length) {
+          const tagIds = [...new Set(input.tagIds)];
+          await tx.insert(s.productTags).values(
+            tagIds.map(tid => ({ productId: product.id, tagId: tid }))
+          );
+        }
+
+        if (input.options || input.variants) {
+          await this.saveOptionsAndVariants(tx, product.id, input.options, input.variants);
+        }
+
+        results.push(product);
+      }
+      return results;
+    });
+
+    await cacheBumpNamespace(this.cacheNamespace(storeId));
+
+    if (auditCtx) {
+      await this.audit.record({
+        actorUserId: auditCtx.actorUserId ?? null,
+        storeId,
+        action: 'product_batch_created',
+        entityType: 'product',
+        entityId: null,
+        newValue: {
+          count: created.length,
+          ids: created.map(p => p.id),
+        },
+        ipAddress: auditCtx.ipAddress,
+        userAgent: auditCtx.userAgent,
+      });
+    }
+
+    return created;
+  }
+
   async update(storeId: number, productId: number, input: UpdateProductInput, auditCtx?: AuditContext) {
     const existing = await this.getById(storeId, productId);
     if (!existing) return null;

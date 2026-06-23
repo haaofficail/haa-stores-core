@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
 import { ProductsService, MarketplaceSyncService } from '@haa/commerce-core';
 import { createProductSchema, updateProductSchema, paginationSchema } from '@haa/shared';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
@@ -61,6 +62,40 @@ productsRouter.post('/', requirePermission('products:create'), zValidator('json'
   }
   return c.json({ success: true, data: product }, 201);
 });
+
+// Batch create — onboarding wizard P1 fix.
+// Body shape: { items: CreateProductInput[] }. The whole batch runs
+// inside a single Drizzle transaction (ProductsService.createBatch) so
+// the onboarding either fully succeeds or fully rolls back — no
+// half-created store. Max 100 items per call (service-enforced).
+const batchSchema = z.object({
+  items: z.array(createProductSchema).min(1).max(100),
+});
+productsRouter.post(
+  '/batch',
+  requirePermission('products:create'),
+  zValidator('json', batchSchema),
+  async (c) => {
+    const storeId = Number(c.req.param('storeId'));
+    const auth = getAuth(c);
+    const { items } = c.req.valid('json');
+    const products = await new ProductsService().createBatch(storeId, items, buildAuditCtx(c));
+    // Schedule auto-publish for any active items, mirroring the
+    // single-create behaviour but issued once per active product.
+    const sync = new MarketplaceSyncService();
+    for (const product of products) {
+      if (product?.id && product.status === 'active') {
+        sync.scheduleAutoPublish(storeId, {
+          productId: product.id,
+          productData: product,
+          actorUserId: auth?.userId,
+          providerResolver: (code) => getProviderService(code, storeId) as any,
+        });
+      }
+    }
+    return c.json({ success: true, data: { count: products.length, items: products } }, 201);
+  },
+);
 
 productsRouter.patch('/:productId', requirePermission('products:update'), zValidator('json', updateProductSchema), async (c) => {
   const storeId = Number(c.req.param('storeId'));
