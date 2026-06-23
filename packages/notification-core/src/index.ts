@@ -74,7 +74,7 @@ export class NotificationService {
 
   constructor(private db: DbOrTx = createDbClient(), private store?: { id: number; isDemo?: boolean | null }) {
     this.providers = buildDefaultProviders();
-    this.isDemoProvider = isDemoStore(store as any) ?? false;
+    this.isDemoProvider = isDemoStore(store) ?? false;
   }
 
   addProvider(provider: NotificationProvider) {

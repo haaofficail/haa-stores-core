@@ -22,7 +22,15 @@ export interface DemoCapabilities {
   excludeFromMarketplaceAnalytics: boolean;
 }
 
-export function isDemoStore(store: DemoStoreInfo | null | undefined): boolean {
+/**
+ * Returns true iff the store is flagged as a demo tenant.
+ *
+ * The input type is intentionally minimal — anything carrying an
+ * `isDemo` flag (including `DemoStoreInfo` and the partial store
+ * shape used by SubscriptionService / NotificationService) is
+ * accepted, so callers don't need an `as any` cast. P2-030.
+ */
+export function isDemoStore(store: { isDemo?: boolean | null } | null | undefined): boolean {
   return store?.isDemo === true;
 }
 

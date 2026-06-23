@@ -102,7 +102,7 @@ export class OllamaAiAgentProvider implements AiAgentProvider {
     const url = `${process.env.OLLAMA_URL}/api/chat`;
     const model = process.env.OLLAMA_MODEL || 'llama3';
 
-    const messages: any[] = [
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
       { 
         role: 'system', 
         content: 'أنت مساعد ذكي خبير في التجارة الإلكترونية السعودية. ردودك يجب أن تكون باللغة العربية، مهنية، مباشرة، ومفيدة للتاجر.' 
@@ -188,7 +188,7 @@ export class AiCommerceAgent {
     return null; // No match found in library
   }
 
-  private async generateResponseWithData(prompt: string, action: string, data: any, context: Record<string, unknown>): Promise<AiAgentResponse> {
+  private async generateResponseWithData(prompt: string, action: string, data: unknown, context: Record<string, unknown>): Promise<AiAgentResponse> {
     const enrichedPrompt = `
 أنت "Haa AI"، محلل متجر إلكتروني سعودي متخصص. مهمتك تحليل البيانات التالية وإعطاء رد مختصر بلغة عربية فصحى سليمة.
 
@@ -345,7 +345,9 @@ ${JSON.stringify(data, null, 2)}
       if (lowStock.length === 0) {
         return { text: 'جميع منتجاتك متوفرة حاليًا ولا يوجد نقص في المخزون. أحسنت!', confidence: 1 };
       }
-      const items = lowStock.map((item: any) => `- ${item.name} (${item.stockQuantity} متبقي)`).join('\n');
+      const items = lowStock
+        .map((item) => `- ${item.name} (${item.stockQuantity} متبقي)`)
+        .join('\n');
       return {
         text: `هذه المنتجات منخفضة المخزون:\n${items}`,
         confidence: 1,
@@ -462,8 +464,9 @@ ${knowledge}
         default:
           return { text: `عذرًا، هذه العملية (${action}) غير مدعومة حاليًا.`, confidence: 0 };
       }
-    } catch (error: any) {
-      return { text: `حدث خطأ أثناء تنفيذ العملية: ${error.message}`, confidence: 0 };
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return { text: `حدث خطأ أثناء تنفيذ العملية: ${msg}`, confidence: 0 };
     }
   }
 }
