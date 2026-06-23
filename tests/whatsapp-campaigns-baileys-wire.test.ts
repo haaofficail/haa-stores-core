@@ -29,8 +29,12 @@ describe('WhatsApp campaigns → Baileys wiring (WA-PR-4)', () => {
   });
 
   it('lazy-imports the Baileys send service (not a top-level import)', () => {
-    expect(SRC).toMatch(/await import\(\s*['"]@haa\/api\/dist\/services\/whatsapp\/send-service\.js['"]/);
-    expect(SRC).toMatch(/await import\(\s*['"]@haa\/api\/dist\/services\/whatsapp\/registry\.js['"]/);
+    // Path is held in a variable to escape the circular dep + dynamic
+    // import is resolved at runtime. The path-string constants and an
+    // `await import(...)` must both be present.
+    expect(SRC).toMatch(/['"]@haa\/api\/dist\/services\/whatsapp\/send-service\.js['"]/);
+    expect(SRC).toMatch(/['"]@haa\/api\/dist\/services\/whatsapp\/registry\.js['"]/);
+    expect(SRC).toMatch(/await import\(/);
     // Confirm there's no top-level static import of these modules.
     const topImports = SRC.split('\nclass ')[0] ?? SRC;
     expect(topImports).not.toMatch(/from\s+['"]@haa\/api\/dist\/services\/whatsapp/);
