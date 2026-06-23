@@ -48,7 +48,10 @@ describe('OnboardingWizard atomic batch save (P1 audit)', () => {
   });
 
   it('productsApi client exposes createBatch hitting /products/batch', () => {
-    expect(apiClient).toMatch(/createBatch:\s*\(storeId:\s*number,\s*items:\s*any\[\]\)/);
+    // P2-030 cleanup replaced `items: any[]` with `items: unknown[]`.
+    // Accept either — the signature contract (storeId + items array) is
+    // what matters here, not the element type.
+    expect(apiClient).toMatch(/createBatch:\s*\(storeId:\s*number,\s*items:\s*(?:any|unknown)\[\]\)/);
     expect(apiClient).toMatch(/\/merchant\/\$\{storeId\}\/products\/batch/);
     expect(apiClient).toMatch(/method:\s*'POST'/);
   });

@@ -29,7 +29,7 @@ const emptyForm = {
 export default function Coupons() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
-  const [coupons, setCoupons] = useState<any[]>([]);
+  const [coupons, setCoupons] = useState<Array<{ id: number; code: string; name: string; type: string; value: string; usedCount?: number; maxUses?: number; isActive: boolean; expiresAt?: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [searchInput, setSearchInput] = useState('');
@@ -47,7 +47,7 @@ export default function Coupons() {
     setLoading(true);
     setFetchError(false);
     couponsApi.list(storeId, { search: search || undefined, status: statusFilter || undefined })
-      .then(setCoupons)
+      .then((data) => setCoupons(data as Array<{ id: number; code: string; name: string; type: string; value: string; usedCount?: number; maxUses?: number; isActive: boolean; expiresAt?: string }>))
       .catch(() => { setFetchError(true); toast.error(t('common.error')); })
       .finally(() => setLoading(false));
   }, [storeId, search, statusFilter, t]);
@@ -60,7 +60,7 @@ export default function Coupons() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const updateField = (field: string, value: any) => {
+  const updateField = (field: string, value: unknown) => {
     setForm(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: '' }));
   };
@@ -76,7 +76,19 @@ export default function Coupons() {
     setEditId(id);
     setErrors({});
     try {
-      const c = await couponsApi.getById(storeId!, id);
+      const c = await couponsApi.getById(storeId!, id) as {
+        code?: string;
+        name?: string;
+        description?: string;
+        type?: string;
+        value?: string;
+        maxDiscountAmount?: string;
+        minOrderAmount?: string;
+        maxUses?: string;
+        startsAt?: string;
+        expiresAt?: string;
+        isActive?: boolean;
+      };
       setForm({
         code: c.code ?? '',
         name: c.name ?? '',

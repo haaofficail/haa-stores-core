@@ -121,9 +121,9 @@ export default function MarketplaceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [storeInfo, setStoreInfo] = useState<any>(null);
-  const [salesData, setSalesData] = useState<any>(null);
-  const [listings, setListings] = useState<any[]>([]);
+  const [storeInfo, setStoreInfo] = useState<{ name?: string; email?: string; storeId?: string } | null>(null);
+  const [salesData, setSalesData] = useState<{ totalSales?: number; totalOrders?: number } | null>(null);
+  const [listings, setListings] = useState<Array<{ id: number; marketplaceSku?: string; price?: number; quantity?: number; status?: string; marketplaceUrl?: string }>>([]);
   const [activeTab, setActiveTab] = useState<'info' | 'listings'>('info');
   const [deletingListing, setDeletingListing] = useState<number | null>(null);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
@@ -147,12 +147,12 @@ export default function MarketplaceDetailPage() {
       marketplaceApi.list(storeId),
       marketplaceApi.getSales(storeId, provider).catch(() => null),
     ]).then(([list, sales]) => {
-      const prov = list.find((p: any) => p.code === provider);
+      const prov = (list as Array<{ code: string; connected?: boolean }>).find((p) => p.code === provider);
       if (prov?.connected) {
         setConnected(true);
-        if (sales) setSalesData(sales);
-        marketplaceApi.getInfo(storeId, provider).then(setStoreInfo).catch(() => toast.error('فشل تحميل البيانات'));
-        marketplaceApi.listListings(storeId, provider).then(setListings).catch(() => toast.error('فشل تحميل البيانات'));
+        if (sales) setSalesData(sales as { totalSales?: number; totalOrders?: number });
+        marketplaceApi.getInfo(storeId, provider).then((info) => setStoreInfo(info as { name?: string; email?: string; storeId?: string })).catch(() => toast.error('فشل تحميل البيانات'));
+        marketplaceApi.listListings(storeId, provider).then((items) => setListings(items as Array<{ id: number; marketplaceSku?: string; price?: number; quantity?: number; status?: string; marketplaceUrl?: string }>)).catch(() => toast.error('فشل تحميل البيانات'));
       }
     }).catch(() => toast.error(t('marketplaceDetail.loadError', 'فشل تحميل البيانات')))
     .finally(() => setLoading(false));
@@ -165,7 +165,7 @@ export default function MarketplaceDetailPage() {
     if (usesOAuth) {
       setConnecting(true);
       try {
-        const res: any = await marketplaceApi.connect(storeId, provider, {});
+        const res = await marketplaceApi.connect(storeId, provider, {}) as { url?: string };
         if (res.url) window.location.href = res.url;
       } catch (err) { toast.error(messageFromError(err, t)); }
       finally { setConnecting(false); }
@@ -204,7 +204,7 @@ export default function MarketplaceDetailPage() {
   async function handleSync() {
     if (!storeId || !provider) return;
     setSyncing(true);
-    try { const orders = await marketplaceApi.syncOrders(storeId, provider); toast.success(t('marketplaceDetail.importedOrders', `تم استيراد ${orders.length || 0} طلب`)); loadInfo(); }
+    try { const orders = await marketplaceApi.syncOrders(storeId, provider) as unknown[]; toast.success(t('marketplaceDetail.importedOrders', `تم استيراد ${orders.length || 0} طلب`)); loadInfo(); }
     catch { toast.error(t('marketplaceDetail.syncFailed', 'فشل المزامنة')); }
     finally { setSyncing(false); }
   }
@@ -369,7 +369,7 @@ export default function MarketplaceDetailPage() {
               { key: 'info', label: t('marketplaceDetail.tab.info', 'معلومات الاتصال') },
               { key: 'listings', label: t('marketplaceDetail.tab.listings', `المنتجات المسوقة (${listings.length})`) },
             ].map(tab => (
-              <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
+              <button key={tab.key} onClick={() => setActiveTab(tab.key as 'info' | 'listings')}
                 className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === tab.key ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>
                 {tab.label}
               </button>
@@ -435,7 +435,7 @@ export default function MarketplaceDetailPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-neutral-100">
-                  {listings.map((listing: any) => (
+                  {listings.map((listing) => (
                     <div key={listing.id} className="flex items-center justify-between px-6 py-4 hover:bg-neutral-50 transition-colors">
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-neutral-900">{listing.marketplaceSku || `#${listing.id}`}</p>

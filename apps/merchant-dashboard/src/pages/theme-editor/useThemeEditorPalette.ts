@@ -20,7 +20,7 @@ export function useThemeEditorPalette(storeId: number | null | undefined) {
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<ThemeConfig>({});
   const [isDirty, setIsDirty] = useState(false);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<Array<{ config: ThemeConfig } & Record<string, unknown>>>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [products, setProducts] = useState<ProductItem[]>([]);
 
@@ -34,12 +34,12 @@ export function useThemeEditorPalette(storeId: number | null | undefined) {
 
   useEffect(() => {
     if (!storeId) return;
-    categoriesApi.list(storeId).then(setCategories).catch(() => toast.error('فشل تحميل التصنيفات'));
+    categoriesApi.list(storeId).then((rows) => setCategories(rows as CategoryItem[])).catch(() => toast.error('فشل تحميل التصنيفات'));
   }, [storeId]);
 
   useEffect(() => {
     if (!storeId) return;
-    productsApi.list(storeId, { limit: 100 }).then(res => setProducts(res.data)).catch(() => toast.error('فشل تحميل المنتجات'));
+    productsApi.list(storeId, { limit: 100 }).then(raw => { const res = raw as { data: ProductItem[] }; setProducts(res.data); }).catch(() => toast.error('فشل تحميل المنتجات'));
   }, [storeId]);
 
   useEffect(() => {
@@ -49,12 +49,12 @@ export function useThemeEditorPalette(storeId: number | null | undefined) {
       settingsApi.getTheme(storeId),
       settingsApi.getThemeHistory(storeId),
     ])
-      .then(([cfg, hist]) => { setConfig(resolveActiveThemeConfig(cfg)); setIsDirty(false); setHistory(hist); })
+      .then(([cfg, hist]) => { setConfig(resolveActiveThemeConfig(cfg as Parameters<typeof resolveActiveThemeConfig>[0])); setIsDirty(false); setHistory(hist as Array<{ config: ThemeConfig } & Record<string, unknown>>); })
       .catch(() => toast.error(t('common.error')))
       .finally(() => setLoading(false));
   }, [storeId, t]);
 
-  const updateConfig = useCallback((path: string, value: any) => {
+  const updateConfig = useCallback((path: string, value: unknown) => {
     setIsDirty(true);
     setConfig((prev) => {
       if (!isUndoing.current) {
@@ -68,14 +68,14 @@ export function useThemeEditorPalette(storeId: number | null | undefined) {
         lastUndoTime.current = now;
       }
       const keys = path.split('.');
-      const newConfig = structuredClone(prev);
-      let obj = newConfig;
+      const newConfig = structuredClone(prev) as Record<string, unknown>;
+      let obj: Record<string, unknown> = newConfig;
       for (let i = 0; i < keys.length - 1; i++) {
         if (!obj[keys[i]]) obj[keys[i]] = {};
-        obj = obj[keys[i]];
+        obj = obj[keys[i]] as Record<string, unknown>;
       }
       obj[keys[keys.length - 1]] = value;
-      return newConfig;
+      return newConfig as ThemeConfig;
     });
   }, []);
 

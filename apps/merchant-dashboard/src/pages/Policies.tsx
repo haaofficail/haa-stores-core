@@ -24,7 +24,8 @@ const typeIcons: Record<string, React.ReactNode> = {
 export default function Policies() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
-  const [policies, setPolicies] = useState<Record<string, any>>({});
+  type Policy = { type: string; title?: string; content?: string; isPublished?: boolean; updatedAt?: string };
+  const [policies, setPolicies] = useState<Record<string, Policy>>({});
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [editType, setEditType] = useState<string | null>(null);
@@ -56,7 +57,12 @@ export default function Policies() {
     delayCancellationNotice: null as string | null,
   });
   const [generating, setGenerating] = useState(false);
-  const [previewResult, setPreviewResult] = useState<any>(null);
+  type PreviewResult = {
+    policies: Array<{ type?: string; title?: string; content?: string; warnings: string[] }>;
+    globalWarnings?: string[];
+    errors: string[];
+  };
+  const [previewResult, setPreviewResult] = useState<PreviewResult | null>(null);
   const [applying, setApplying] = useState(false);
 
   const loadPolicies = useCallback(() => {
@@ -65,8 +71,8 @@ export default function Policies() {
     setFetchError(false);
     policiesApi.list(storeId)
       .then((data) => {
-        const map: Record<string, any> = {};
-        data.forEach((p: any) => { map[p.type] = p; });
+        const map: Record<string, Policy> = {};
+        (data as Policy[]).forEach((p) => { map[p.type] = p; });
         setPolicies(map);
       })
       .catch(() => { setFetchError(true); toast.error(t('common.error')); })
@@ -77,7 +83,7 @@ export default function Policies() {
 
   const openEdit = async (type: string) => {
     try {
-      const policy = await policiesApi.getByType(storeId!, type);
+      const policy = await policiesApi.getByType(storeId!, type) as { title?: string; content?: string };
       setEditType(type);
       setEditTitle(policy.title ?? '');
       setEditContent(policy.content ?? '');
@@ -134,7 +140,7 @@ export default function Policies() {
     setGenerating(true);
     try {
       const result = await policiesApi.generatePreview(storeId, generatorInput);
-      setPreviewResult(result);
+      setPreviewResult(result as PreviewResult);
     } catch (err) {
       if (err instanceof ApiClientError) {
         toast.error(err.message);
@@ -150,7 +156,9 @@ export default function Policies() {
     try {
       await policiesApi.applyGenerated(storeId, {
         confirmation: true,
-        generatedPolicies: previewResult.policies.filter((p: any) => p.content),
+        generatedPolicies: previewResult.policies
+          .filter((p): p is { type: string; title: string; content: string; warnings: string[] } => Boolean(p.content && p.type && p.title))
+          .map((p) => ({ type: p.type, title: p.title, content: p.content })),
       });
       toast.success('تم تطبيق السياسات بنجاح');
       setShowGenerator(false);
@@ -446,9 +454,9 @@ export default function Policies() {
                   ⚠️ هذه قوالب تنظيمية عامة ويجب مراجعتها حسب نشاطك التجاري. لا تُعتبر استشارة قانونية.
                 </div>
 
-                {previewResult.globalWarnings.length > 0 && (
+                {(previewResult.globalWarnings?.length ?? 0) > 0 && (
                   <div className="bg-primary-50 border border-primary-200 rounded-xl p-3 text-sm text-primary-700">
-                    {previewResult.globalWarnings.map((w: string, i: number) => <div key={i}>• {w}</div>)}
+                    {previewResult.globalWarnings?.map((w: string, i: number) => <div key={i}>• {w}</div>)}
                   </div>
                 )}
 
@@ -459,7 +467,7 @@ export default function Policies() {
                 )}
 
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {previewResult.policies.map((policy: any, idx: number) => (
+                  {previewResult.policies.map((policy, idx: number) => (
                     <div key={idx} className="border border-neutral-200 rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <h3 className="font-bold text-neutral-900">{policy.title}</h3>

@@ -13,10 +13,10 @@ export default function Imports() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
   const [csvContent, setCsvContent] = useState('');
-  const [preview, setPreview] = useState<any>(null);
+  const [preview, setPreview] = useState<{ rows: Array<Record<string, unknown>>; errors: string[]; totalRows?: number } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<any>(null);
+  const [importResult, setImportResult] = useState<{ imported?: number; errors: string[] } | null>(null);
 
   const handleDownloadTemplate = async () => {
     if (!storeId) return;
@@ -44,7 +44,7 @@ export default function Imports() {
     setImportResult(null);
     try {
       const result = await importsApi.preview(storeId, csvContent);
-      setPreview(result);
+      setPreview(result as { rows: Array<Record<string, unknown>>; errors: string[]; totalRows?: number });
     } catch (err) {
       toast.error(err instanceof ApiClientError ? err.message : t('common.error'));
     } finally {
@@ -56,7 +56,7 @@ export default function Imports() {
     if (!storeId || !csvContent.trim()) return;
     setImporting(true);
     try {
-      const result = await importsApi.confirm(storeId, csvContent);
+      const result = await importsApi.confirm(storeId, csvContent) as { imported?: number; errors: string[] };
       setImportResult(result);
       setPreview(null);
       toast.success(t('imports.importSuccess', { count: result.imported ?? 0 }));
@@ -156,10 +156,10 @@ export default function Imports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {preview.rows.map((row: any, i: number) => (
+                  {preview.rows.map((row: Record<string, unknown>, i: number) => (
                     <TableRow key={i} className="border-neutral-100 hover:bg-neutral-50">
-                      {Object.values(row).map((val: any, j: number) => (
-                        <TableCell key={j} className="text-sm text-neutral-900 p-3">{val ?? '-'}</TableCell>
+                      {Object.values(row).map((val: unknown, j: number) => (
+                        <TableCell key={j} className="text-sm text-neutral-900 p-3">{(val as string | number | null) ?? '-'}</TableCell>
                       ))}
                     </TableRow>
                   ))}

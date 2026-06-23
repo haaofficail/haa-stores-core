@@ -14,7 +14,7 @@ import { ApiClientError } from '@/lib/api';
 import { generateSlug } from '@/lib/slug';
 import { validateProduct, getWarnings, type ProductFormData, type ProductOption, type ProductVariant, type ValidationError } from '@/lib/product-validation';
 import { ProductBulkActionsBar } from '@/components/products/ProductBulkActionsBar';
-import { ProductListTable } from '@/components/products/ProductListTable';
+import { ProductListTable, type ProductRowData } from '@/components/products/ProductListTable';
 import { ProductGrid } from '@/components/products/ProductGrid';
 import { ProductFormDialog } from '@/components/products/ProductFormDialog';
 import { buildProductsCsv, downloadBlob } from '@/lib/products/csv';
@@ -42,7 +42,7 @@ const emptyForm: ProductFormData = {
 export default function Products() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<ProductRowData[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [search, setSearch] = useState('');
@@ -51,9 +51,9 @@ export default function Products() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [brands, setBrands] = useState<any[]>([]);
-  const [tags, setTags] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Array<{ id: number; name: string }>>([]);
+  const [brands, setBrands] = useState<Array<{ id: number; name: string }>>([]);
+  const [tags, setTags] = useState<Array<{ id: number; name: string }>>([]);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
   const [tagFilter, setTagFilter] = useState('');
@@ -61,7 +61,7 @@ export default function Products() {
   const [editId, setEditId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<ProductFormData>(emptyForm);
-  const [productImages, setProductImages] = useState<any[]>([]);
+  const [productImages, setProductImages] = useState<Array<{ id: number; url: string }>>([]);
   const [queuedImages, setQueuedImages] = useState<{ file: File; preview: string }[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
@@ -72,7 +72,7 @@ export default function Products() {
   const [publishDialog, setPublishDialog] = useState<{ productId: number; open: boolean }>({ productId: 0, open: false });
   const [publishing, setPublishing] = useState(false);
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
-  const [publishProductData, setPublishProductData] = useState<any>(null);
+  const [publishProductData, setPublishProductData] = useState<{ id: number; name: string; status?: string; marketplaceChannels?: Record<string, { status: string; productId?: string }> } | null>(null);
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkProcessing, setBulkProcessing] = useState(false);
@@ -87,7 +87,7 @@ export default function Products() {
 
   useEffect(() => {
     if (!storeId) return;
-    settingsApi.get(storeId).then(s => setStoreSlug(s.slug)).catch(() => {});
+    settingsApi.get(storeId).then(s => setStoreSlug((s as { slug: string }).slug)).catch(() => {});
   }, [storeId]);
 
   const limit = 20;
@@ -101,9 +101,9 @@ export default function Products() {
       brandsApi.list(storeId),
       tagsApi.list(storeId),
     ]).then(([cats, brs, tgs]) => {
-      setCategories(cats);
-      setBrands(brs);
-      setTags(tgs);
+      setCategories(cats as Array<{ id: number; name: string }>);
+      setBrands(brs as Array<{ id: number; name: string }>);
+      setTags(tgs as Array<{ id: number; name: string }>);
     }).catch(() => toast.error(t('common.error', 'فشل تحميل البيانات')));
     productsApi.list(storeId, {
       page, limit,
@@ -115,7 +115,7 @@ export default function Products() {
       stockFilter: stockFilter || undefined,
       typeFilter: typeFilter || undefined,
     })
-      .then((res) => { setProducts(res.data); setTotal(res.total ?? 0); setTotalPages(res.totalPages ?? 1); })
+      .then((raw) => { const res = raw as { data: ProductRowData[]; total?: number; totalPages?: number }; setProducts(res.data); setTotal(res.total ?? 0); setTotalPages(res.totalPages ?? 1); })
       .catch(() => { setFetchError(true); toast.error(t('common.error')); })
       .finally(() => setLoading(false));
   }, [storeId, page, statusFilter, categoryFilter, brandFilter, tagFilter, search, stockFilter, typeFilter, t]);
@@ -139,7 +139,7 @@ export default function Products() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const updateField = (field: string, value: any) => {
+  const updateField = (field: string, value: unknown) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
@@ -174,16 +174,31 @@ export default function Products() {
     setTouched(false);
     setImageError(null);
     try {
-      const p = await productsApi.getById(storeId!, id);
+      const p = await productsApi.getById(storeId!, id) as {
+        images?: Array<{ id: number; url: string }>;
+        categories?: Array<{ categoryId: number }>;
+        tags?: Array<{ tagId: number }>;
+        options?: Array<{ name: string; values: Array<{ value: string }> }>;
+        variants?: Array<{ name: string; sku?: string; price?: string; stockQuantity?: number; isActive?: boolean; options?: Record<string, string> }>;
+        name?: string; slug?: string; description?: string; status?: string; type?: string;
+        price?: string; compareAtPrice?: string; cost?: string;
+        sku?: string; barcode?: string; stockQuantity?: number; trackInventory?: boolean;
+        weightGrams?: string; lengthCm?: string; widthCm?: string; heightCm?: string;
+        requiresShipping?: boolean; isFragile?: boolean;
+        giftWrapAvailable?: boolean; giftWrapPriceOverride?: string;
+        haaMarketplaceEnabled?: boolean; haaMarketplaceCommissionRate?: string;
+        salesCount?: number; seoTitle?: string; seoDescription?: string;
+        brand?: { id: number };
+      };
       setProductImages(p.images ?? []);
-      const catIds = (p.categories ?? []).map((c: any) => c.categoryId);
-      const tagIds = (p.tags ?? []).map((t: any) => t.tagId);
+      const catIds = (p.categories ?? []).map((c) => c.categoryId);
+      const tagIds = (p.tags ?? []).map((t) => t.tagId);
       const hasVar = !!(p.options?.length);
       const opts: ProductOption[] = hasVar
-        ? (p.options ?? []).map((o: any) => ({ name: o.name, values: (o.values ?? []).map((v: any) => v.value) }))
+        ? (p.options ?? []).map((o) => ({ name: o.name, values: (o.values ?? []).map((v) => v.value) }))
         : [];
       const vars: ProductVariant[] = hasVar
-        ? (p.variants ?? []).map((v: any) => ({
+        ? (p.variants ?? []).map((v) => ({
             name: v.name,
             sku: v.sku ?? '',
             price: v.price ?? '',
@@ -221,7 +236,7 @@ export default function Products() {
 
     setSaving(true);
     try {
-      const data: any = {
+      const data: Record<string, unknown> = {
         ...form,
         price: Number(form.price),
         compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : undefined,
@@ -263,7 +278,7 @@ export default function Products() {
         await productsApi.update(storeId, editId, data);
         toast.success(t('products.updated'));
       } else {
-        const created = await productsApi.create(storeId, data);
+        const created = await productsApi.create(storeId, data) as { id: number };
 
         if (queuedImages.length > 0 && created?.id) {
           let successCount = 0;
@@ -378,8 +393,8 @@ export default function Products() {
     downloadBlob(blob, `products-${Date.now()}.csv`);
   };
 
-  const handlePublish = (product: any) => {
-    setPublishProductData(product);
+  const handlePublish = (product: ProductRowData) => {
+    setPublishProductData(product as { id: number; name: string; status?: string; marketplaceChannels?: Record<string, { status: string; productId?: string }> });
     const existing = Object.keys(product.marketplaceChannels || {}).filter(
       (ch: string) => product.marketplaceChannels?.[ch]?.status === 'active'
     );
@@ -408,7 +423,7 @@ export default function Products() {
       if (editId) {
         setUploadingImage(true);
         try {
-          const uploaded = await productsApi.uploadImage(storeId, editId, file);
+          const uploaded = await productsApi.uploadImage(storeId, editId, file) as { id: number; url: string };
           setProductImages((prev) => [...prev, uploaded]);
         } catch (err) {
           setImageError(err instanceof ApiClientError ? err.message : t('common.error'));

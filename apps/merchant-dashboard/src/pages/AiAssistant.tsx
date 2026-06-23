@@ -92,15 +92,15 @@ export default function AiAssistant() {
     ]);
   }
 
-  async function executeAction(action: string, fn: () => Promise<any>) {
+  async function executeAction(action: string, fn: () => Promise<unknown>) {
     if (!storeId) return;
     addUserMessage(action);
     setLoading(true);
     try {
-      const result = await fn();
+      const result = await fn() as { text: string; suggestions?: string[]; actions?: Array<{ label: string; action: string; params?: Record<string, unknown> }>; confidence?: number };
       addAssistantMessage(result);
-    } catch (err: any) {
-      toast.error(err.message || t('ai.error'));
+    } catch (err: unknown) {
+      toast.error((err as { message?: string })?.message || t('ai.error'));
     } finally {
       setLoading(false);
     }
@@ -127,10 +127,10 @@ export default function AiAssistant() {
           content: m.text,
         }));
 
-      const result = await aiApi.chat(storeId, prompt, history);
+      const result = await aiApi.chat(storeId, prompt, history) as { text: string; suggestions?: string[]; actions?: Array<{ label: string; action: string; params?: Record<string, unknown> }>; confidence?: number };
       addAssistantMessage(result);
-    } catch (err: any) {
-      toast.error(err.message || t('ai.error'));
+    } catch (err: unknown) {
+      toast.error((err as { message?: string })?.message || t('ai.error'));
     } finally {
       setLoading(false);
     }

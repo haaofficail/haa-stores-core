@@ -49,7 +49,7 @@ function StatusDot({ status }: { status: string }) {
   return <span className="h-2 w-2 rounded-full bg-neutral-300 inline-block" />;
 }
 
-function SyncProgress({ provider }: { provider: any }) {
+function SyncProgress({ provider }: { provider: { isSyncing?: boolean; syncProgress?: number } | null | undefined }) {
   if (!provider?.isSyncing) return null;
   return (
     <div className="mt-3">
@@ -74,7 +74,34 @@ export default function MarketplacesPage() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
   const navigate = useNavigate();
-  const [data, setData] = useState<any>(null);
+  type HubProvider = {
+    code: string;
+    isConnected?: boolean;
+    isSyncing?: boolean;
+    syncProgress?: number;
+    storeName?: string;
+    externalStoreId?: string;
+    totalSales?: number | string;
+    totalOrders?: number;
+    totalListings?: number;
+    lastSyncAt?: string | null;
+  };
+  type HubLog = {
+    id: number | string;
+    providerCode: string;
+    providerName: string;
+    syncType: string;
+    startedAt: string;
+    itemsSynced?: number;
+    status: string;
+    errorMessage?: string;
+  };
+  type HubData = {
+    summary?: { totalSales: string; totalOrders: number; connectedCount: number; activeCount: number };
+    providers?: HubProvider[];
+    syncLogs?: HubLog[];
+  };
+  const [data, setData] = useState<HubData | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -88,7 +115,7 @@ export default function MarketplacesPage() {
     setLoading(true);
     setFetchError(false);
     marketplaceApi.hub(storeId)
-      .then(setData)
+      .then((d) => setData(d as unknown as HubData))
       .catch(() => { setFetchError(true); toast.error(t('marketplaces.loadError', 'حدث خطأ في تحميل القنوات')); })
       .finally(() => setLoading(false));
   }, [storeId, t]);
@@ -161,7 +188,7 @@ export default function MarketplacesPage() {
     if (!storeId || syncingProvider) return;
     setSyncingProvider(code);
     try {
-      const res = await marketplaceApi.syncOrders(storeId, code);
+      const res = await marketplaceApi.syncOrders(storeId, code) as unknown[];
       toast.success('تمت المزامنة', { description: `${res?.length ?? 0} عنصر` });
       load();
     } catch { toast.error('فشلت المزامنة'); }
@@ -206,9 +233,9 @@ export default function MarketplacesPage() {
   }
 
   const summary = data?.summary || { totalSales: '0', totalOrders: 0, connectedCount: 0, activeCount: 4 };
-  const connectedProviders = data?.providers?.filter((p: any) => p.isConnected) || [];
-  const disconnectedProviders = data?.providers?.filter((p: any) => !p.isConnected) || [];
-  const totalListings = data?.providers?.reduce((sum: number, p: any) => sum + (p.totalListings || 0), 0) || 0;
+  const connectedProviders = data?.providers?.filter((p) => p.isConnected) || [];
+  const disconnectedProviders = data?.providers?.filter((p) => !p.isConnected) || [];
+  const totalListings = data?.providers?.reduce((sum: number, p) => sum + (p.totalListings || 0), 0) || 0;
 
   const statCards = [
     { label: 'إجمالي المبيعات', value: formatCurrency(summary.totalSales), suffix: 'ر.س', icon: TrendingUp, gradient: 'from-emerald-500 to-teal-600' },
@@ -291,7 +318,7 @@ export default function MarketplacesPage() {
             <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs">{connectedProviders.length}</Badge>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {connectedProviders.map((p: any) => {
+            {connectedProviders.map((p) => {
               const provider = PROVIDERS.find(x => x.code === p.code);
               if (!provider) return null;
               const isConfirming = confirmDisconnect === p.code;
@@ -394,7 +421,7 @@ export default function MarketplacesPage() {
             <Badge variant="secondary" className="text-xs">{disconnectedProviders.length}</Badge>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {disconnectedProviders.map((p: any) => {
+            {disconnectedProviders.map((p) => {
               const provider = PROVIDERS.find(x => x.code === p.code);
               if (!provider) return null;
               return (
@@ -430,9 +457,9 @@ export default function MarketplacesPage() {
           </Button>
         </CardHeader>
         <CardContent className="p-0">
-          {data?.syncLogs?.length > 0 ? (
+          {(data?.syncLogs?.length ?? 0) > 0 ? (
             <div className="divide-y divide-neutral-50">
-              {data.syncLogs.slice(0, 6).map((log: any) => {
+              {data!.syncLogs!.slice(0, 6).map((log) => {
                 const provider = PROVIDERS.find(p => p.code === log.providerCode);
                 return (
                   <div key={log.id} className="flex items-center gap-3 px-6 py-3 hover:bg-neutral-50 transition-colors">
@@ -449,7 +476,7 @@ export default function MarketplacesPage() {
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs text-neutral-400">{formatRelativeTime(log.startedAt)}</span>
-                        {log.itemsSynced > 0 && (
+                        {(log.itemsSynced ?? 0) > 0 && (
                           <span className="text-xs text-neutral-500">{log.itemsSynced} عنصر</span>
                         )}
                       </div>

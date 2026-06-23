@@ -74,7 +74,7 @@ export default function OnboardingSuccess() {
   useEffect(() => {
     if (!storeId) return;
     settingsApi.get(storeId).then((s) => {
-      setStoreName(s.name || '');
+      setStoreName((s as { name?: string }).name || '');
     }).catch(() => toast.error(t('common.error', 'فشل تحميل بيانات المتجر'))).finally(() => setLoading(false));
 
     const timer = setTimeout(() => setShowConfetti(false), 5000);

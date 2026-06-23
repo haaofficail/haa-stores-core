@@ -132,19 +132,8 @@ export default tseslint.config(
     },
   },
 
-  // ─── P2-030 legacy `any` debt — file allow-list ───
-  // Files with pre-existing `any` usage that pre-date the P2-026
-  // escalation (off → warn). New files MUST NOT be added here; this
-  // list shrinks as P2-030 cleanup PRs land. Lint-staged max-warnings
-  // is 0, and we'd otherwise be unable to touch any of these files
-  // without first cleaning the entire file. Tracked: P2-030.
-  {
-    files: [
-      'apps/api/src/routes/orders.ts',
-      'apps/merchant-dashboard/src/lib/api.ts',
-    ],
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-    },
-  },
+  // P2-030 legacy `any` debt — fully cleaned 2026-06-23. The previous
+  // file allow-list (`no-explicit-any: off` per file) has been emptied
+  // and the override removed. `no-explicit-any: warn` now applies
+  // uniformly; pre-commit `--max-warnings 0` keeps regressions out.
 );

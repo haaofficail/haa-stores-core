@@ -35,16 +35,19 @@ const shipmentStatusIcons: Record<string, React.ReactNode> = {
   cancelled: <XCircle className="h-3.5 w-3.5" />,
 };
 
+type ShippingMethod = { id: number; name: string; type: string; estimatedDeliveryDays?: string | number; isActive: boolean; config?: { pickupLocationId?: number } };
+type PickupLocationLite = { id: number; nameAr: string; isActive: boolean };
+
 function MethodsTab({ storeId }: { storeId: number }) {
   const { t } = useTranslation();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<ShippingMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [dialog, setDialog] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', type: 'manual', estimatedDeliveryDays: '', isActive: true, pickupLocationId: '' });
   const [saving, setSaving] = useState(false);
-  const [pickupLocations, setPickupLocations] = useState<any[]>([]);
+  const [pickupLocations, setPickupLocations] = useState<PickupLocationLite[]>([]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -53,20 +56,20 @@ function MethodsTab({ storeId }: { storeId: number }) {
       shippingApi.methods.list(storeId),
       settingsApi.listPickupLocations(storeId).catch(() => []),
     ]).then(([methods, pickups]) => {
-      setItems(methods);
-      setPickupLocations(pickups);
+      setItems(methods as ShippingMethod[]);
+      setPickupLocations(pickups as PickupLocationLite[]);
     }).catch(() => { setFetchError(true); toast.error(t('common.error')); }).finally(() => setLoading(false));
   }, [storeId, t]);
 
   useEffect(() => { load(); }, [load]);
 
   const openCreate = () => { setEditId(null); setForm({ name: '', type: 'manual', estimatedDeliveryDays: '', isActive: true, pickupLocationId: '' }); setDialog(true); };
-  const openEdit = (m: any) => {
+  const openEdit = (m: ShippingMethod) => {
     const config = m.config ?? {};
     setEditId(m.id);
     setForm({
       name: m.name ?? '', type: m.type ?? 'manual',
-      estimatedDeliveryDays: m.estimatedDeliveryDays ?? '',
+      estimatedDeliveryDays: String(m.estimatedDeliveryDays ?? ''),
       isActive: m.isActive ?? true,
       pickupLocationId: config.pickupLocationId ? String(config.pickupLocationId) : '',
     });
@@ -78,7 +81,7 @@ function MethodsTab({ storeId }: { storeId: number }) {
     if (form.type === 'local_pickup' && !form.pickupLocationId) { toast.error(t('shipping.errPickupLocationRequired', 'يرجى اختيار الفرع المرتبط')); return; }
     setSaving(true);
     try {
-      const data: any = {
+      const data: Record<string, unknown> = {
         name: form.name,
         type: form.type,
         estimatedDeliveryDays: form.estimatedDeliveryDays || undefined,
@@ -93,7 +96,7 @@ function MethodsTab({ storeId }: { storeId: number }) {
     } catch (err) { toast.error(messageFromError(err, t)); } finally { setSaving(false); }
   };
 
-  const toggleActive = async (m: any) => {
+  const toggleActive = async (m: ShippingMethod) => {
     try {
       await shippingApi.methods.update(storeId, m.id, { isActive: !m.isActive });
       toast.success(m.isActive ? t('shipping.methodDisabled') : t('shipping.methodEnabled'));
@@ -145,7 +148,7 @@ function MethodsTab({ storeId }: { storeId: number }) {
                     <span className="text-xs text-neutral-400 block">📍 {linkedPickup.nameAr}</span>
                   )}
                 </TableCell>
-                <TableCell className="p-3"><Badge variant="outline" className="text-xs">{t(`shipping.type_${m.type}` as any)}</Badge></TableCell>
+                <TableCell className="p-3"><Badge variant="outline" className="text-xs">{t(`shipping.type_${m.type}` as Parameters<typeof t>[0])}</Badge></TableCell>
                 <TableCell className="text-sm text-neutral-400 p-3">{m.estimatedDeliveryDays ?? '-'}</TableCell>
                 <TableCell className="p-3"><Badge variant={m.isActive ? 'success' : 'secondary'} className="text-xs">{m.isActive ? t('common.active') : t('common.inactive')}</Badge></TableCell>
                 <TableCell className="p-3">
@@ -204,9 +207,11 @@ function MethodsTab({ storeId }: { storeId: number }) {
   );
 }
 
+type ShippingZone = { id: number; name: string; cities?: string[]; isActive: boolean };
+
 function ZonesTab({ storeId }: { storeId: number }) {
   const { t } = useTranslation();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<ShippingZone[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [dialog, setDialog] = useState(false);
@@ -217,12 +222,12 @@ function ZonesTab({ storeId }: { storeId: number }) {
   const load = useCallback(() => {
     setLoading(true);
     setFetchError(false);
-    shippingApi.zones.list(storeId).then(setItems).catch(() => { setFetchError(true); toast.error(t('common.error')); }).finally(() => setLoading(false));
+    shippingApi.zones.list(storeId).then((data) => setItems(data as ShippingZone[])).catch(() => { setFetchError(true); toast.error(t('common.error')); }).finally(() => setLoading(false));
   }, [storeId, t]);
   useEffect(() => { load(); }, [load]);
 
   const openCreate = () => { setEditId(null); setForm({ name: '', cities: '', isActive: true }); setDialog(true); };
-  const openEdit = (z: any) => { setEditId(z.id); setForm({ name: z.name ?? '', cities: (z.cities ?? []).join(', '), isActive: z.isActive ?? true }); setDialog(true); };
+  const openEdit = (z: ShippingZone) => { setEditId(z.id); setForm({ name: z.name ?? '', cities: (z.cities ?? []).join(', '), isActive: z.isActive ?? true }); setDialog(true); };
 
   const save = async () => {
     if (!form.name.trim()) { toast.error(t('shipping.err_zone_name_required')); return; }
@@ -236,7 +241,7 @@ function ZonesTab({ storeId }: { storeId: number }) {
     } catch (err) { toast.error(messageFromError(err, t)); } finally { setSaving(false); }
   };
 
-  const toggleActive = async (z: any) => {
+  const toggleActive = async (z: ShippingZone) => {
     try {
       await shippingApi.zones.update(storeId, z.id, { isActive: !z.isActive });
       toast.success(z.isActive ? t('shipping.zoneDisabled') : t('shipping.zoneEnabled'));
@@ -314,13 +319,16 @@ function ZonesTab({ storeId }: { storeId: number }) {
   );
 }
 
+type ShippingRate = { id: number; baseRate?: number | string; perKgRate?: number | string; freeAboveAmount?: number | string; estimatedDaysMin?: number; estimatedDaysMax?: number; shippingMethodId?: number; shippingZoneId?: number };
+type ShippingRateRow = { rate?: ShippingRate; methodName?: string; zoneName?: string };
+
 function RatesTab({ storeId }: { storeId: number }) {
   const { t } = useTranslation();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<ShippingRateRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
-  const [methods, setMethods] = useState<any[]>([]);
-  const [zones, setZones] = useState<any[]>([]);
+  const [methods, setMethods] = useState<ShippingMethod[]>([]);
+  const [zones, setZones] = useState<ShippingZone[]>([]);
   const [dialog, setDialog] = useState(false);
   // P0 (MD_PAGES_AUDIT_PART_3_COMMERCE.md): RatesTab was create-only — a
   // misconfigured rate (50 SAR instead of 5) overcharged every customer.
@@ -336,7 +344,7 @@ function RatesTab({ storeId }: { storeId: number }) {
     setLoading(true);
     setFetchError(false);
     Promise.all([shippingApi.rates.list(storeId), shippingApi.methods.list(storeId), shippingApi.zones.list(storeId)])
-      .then(([r, m, z]) => { setItems(r); setMethods(m); setZones(z); })
+      .then(([r, m, z]) => { setItems(r as ShippingRateRow[]); setMethods(m as ShippingMethod[]); setZones(z as ShippingZone[]); })
       .catch((err) => { setFetchError(true); toast.error(messageFromError(err, t)); })
       .finally(() => setLoading(false));
   }, [storeId, t]);
@@ -350,11 +358,11 @@ function RatesTab({ storeId }: { storeId: number }) {
     setDialog(true);
   };
 
-  const openEdit = (r: any) => {
+  const openEdit = (r: ShippingRateRow) => {
     // The list endpoint returns `{ rate, methodName, zoneName }` rows.
     // Pre-fill the form from the existing rate's numeric values
     // (kept as strings so the controlled <Input>s stay happy).
-    const rate = r.rate ?? {};
+    const rate: Partial<ShippingRate> = r.rate ?? {};
     setEditId(rate.id ?? null);
     setForm({
       shippingMethodId: String(rate.shippingMethodId ?? ''),
@@ -439,7 +447,7 @@ function RatesTab({ storeId }: { storeId: number }) {
               <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('shipping.deliveryDays')}</TableHead>
               <TableHead className="w-28 h-10"></TableHead>
             </TableRow></TableHeader>
-            <TableBody>{items.map((r: any, i: number) => (
+            <TableBody>{items.map((r, i: number) => (
               <TableRow key={r.rate?.id ?? i} className="border-neutral-100 hover:bg-neutral-50" data-testid="rate-row">
                 <TableCell className="text-sm font-medium text-neutral-900 p-3">{r.methodName ?? '-'}</TableCell>
                 <TableCell className="text-sm text-neutral-900 p-3">{r.zoneName ?? '-'}</TableCell>
@@ -468,7 +476,7 @@ function RatesTab({ storeId }: { storeId: number }) {
                         variant="ghost"
                         size="icon"
                         className="h-11 w-11 text-red-500 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => setDeleteTarget({ id: r.rate?.id, methodName: r.methodName ?? '', zoneName: r.zoneName ?? '' })}
+                        onClick={() => r.rate?.id && setDeleteTarget({ id: r.rate.id, methodName: r.methodName ?? '', zoneName: r.zoneName ?? '' })}
                         aria-label={t('shipping.deleteRate', 'حذف السعر')}
                         data-testid="rate-delete-btn"
                       >
@@ -546,9 +554,21 @@ function RatesTab({ storeId }: { storeId: number }) {
   );
 }
 
+type Shipment = {
+  id: number;
+  orderId: number;
+  status: string;
+  carrierName?: string;
+  trackingNumber?: string;
+  trackingUrl?: string;
+  labelUrl?: string;
+  createdAt: string;
+  address?: { city?: string } | null;
+};
+
 function ShipmentsTab({ storeId }: { storeId: number }) {
   const { t } = useTranslation();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [trackDialog, setTrackDialog] = useState(false);
@@ -571,12 +591,12 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
       city: citySearch || undefined,
       dateFrom: dateFrom || undefined,
       dateTo: dateTo || undefined,
-    }).then(setItems).catch(() => { setFetchError(true); toast.error(t('common.error')); }).finally(() => setLoading(false));
+    }).then((data) => setItems(data as Shipment[])).catch(() => { setFetchError(true); toast.error(t('common.error')); }).finally(() => setLoading(false));
   }, [storeId, statusFilter, noTrackingOnly, citySearch, dateFrom, dateTo, t]);
 
   useEffect(() => { load(); }, [load]);
 
-  const openTracking = (s: any) => {
+  const openTracking = (s: Shipment) => {
     setTrackShipmentId(s.id);
     setTrackForm({ trackingNumber: s.trackingNumber ?? '', trackingUrl: s.trackingUrl ?? '', carrierName: s.carrierName ?? '' });
     setTrackDialog(true);
@@ -602,7 +622,7 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
     setStatusFilter(''); setNoTrackingOnly(false); setCitySearch(''); setCityInput(''); setDateFrom(''); setDateTo('');
   };
 
-  const handleCreateLabel = async (s: any) => {
+  const handleCreateLabel = async (s: Shipment) => {
     try {
       await shippingApi.createLabel(storeId, s.id);
       toast.success(t('shipping.labelCreated'));
@@ -612,7 +632,7 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
     }
   };
 
-  const handleCancel = async (s: any) => {
+  const handleCancel = async (s: Shipment) => {
     if (!window.confirm(t('shipping.cancelConfirm'))) return;
     try {
       await shippingApi.cancel(storeId, s.id);
@@ -623,7 +643,7 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
     }
   };
 
-  const handleCreateReturn = async (s: any) => {
+  const handleCreateReturn = async (s: Shipment) => {
     const reason = window.prompt(t('shipping.returnReason'));
     if (!reason) return;
     try {
@@ -635,9 +655,9 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
     }
   };
 
-  const handleViewLabel = async (s: any) => {
+  const handleViewLabel = async (s: Shipment) => {
     try {
-      const label = await shippingApi.getLabel(storeId, s.id);
+      const label = await shippingApi.getLabel(storeId, s.id) as { url?: string; labelUrl?: string };
       if (label?.url) {
         window.open(label.url, '_blank');
       } else if (label?.labelUrl) {
@@ -713,8 +733,8 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
               <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('orders.date')}</TableHead>
               <TableHead className="w-72 h-10"></TableHead>
             </TableRow></TableHeader>
-            <TableBody>{items.map((s: any) => {
-              const addr = s.address as any;
+            <TableBody>{items.map((s) => {
+              const addr = s.address;
               return (
                 <TableRow key={s.id} className="border-neutral-100 hover:bg-neutral-50">
                   <TableCell className="font-mono text-sm font-semibold text-neutral-900 p-3">ORD-{s.orderId}</TableCell>
@@ -722,7 +742,7 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
                   <TableCell className="p-3">
                     <Badge variant={shipmentStatusColors[s.status] ?? 'default'} className="gap-1 text-xs px-2.5 py-0.5">
                       {shipmentStatusIcons[s.status]}
-                      {t(`shipping.status_${s.status}` as any)}
+                      {t(`shipping.status_${s.status}` as Parameters<typeof t>[0])}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm text-neutral-400 p-3">{s.carrierName ?? '-'}</TableCell>
@@ -789,13 +809,14 @@ function ShipmentsTab({ storeId }: { storeId: number }) {
 
 function ShippingStatusSection({ storeId, onTabChange }: { storeId: number; onTabChange: (tab: string) => void }) {
   const { t } = useTranslation();
-  const [status, setStatus] = useState<any>(null);
+  type ShippingStatus = { activeProvider?: string; activeMode?: string; methodsCount?: number; ratesCount?: number; zonesCount?: number; hasManualMethod?: boolean };
+  const [status, setStatus] = useState<ShippingStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!storeId) { setLoading(false); return; }
     shippingApi.status(storeId)
-      .then(setStatus)
+      .then((data) => setStatus(data as ShippingStatus))
       .catch(() => toast.error(t('common.error', 'فشل تحميل حالة الشحن')))
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- t is stable from useTranslation; effect intentionally runs on [storeId] only

@@ -31,7 +31,7 @@ const emptyForm = {
 export default function Promotions() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
-  const [promotions, setPromotions] = useState<any[]>([]);
+  const [promotions, setPromotions] = useState<Array<{ id: number; name: string; type: string; value: string; appliesTo: string; isActive: boolean; endsAt: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [searchInput, setSearchInput] = useState('');
@@ -49,7 +49,7 @@ export default function Promotions() {
     setLoading(true);
     setFetchError(false);
     promotionsApi.list(storeId, { search: search || undefined, status: statusFilter || undefined })
-      .then(setPromotions)
+      .then((data) => setPromotions(data as Array<{ id: number; name: string; type: string; value: string; appliesTo: string; isActive: boolean; endsAt: string }>))
       .catch(() => { setFetchError(true); toast.error(t('common.error')); })
       .finally(() => setLoading(false));
   }, [storeId, search, statusFilter, t]);
@@ -62,7 +62,7 @@ export default function Promotions() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const updateField = (field: string, value: any) => {
+  const updateField = (field: string, value: unknown) => {
     setForm(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: '' }));
   };
@@ -78,7 +78,18 @@ export default function Promotions() {
     setEditId(id);
     setErrors({});
     try {
-      const p = await promotionsApi.getById(storeId!, id);
+      const p = await promotionsApi.getById(storeId!, id) as {
+        name?: string;
+        description?: string;
+        type?: string;
+        value?: string;
+        minOrderAmount?: string;
+        maxDiscountAmount?: string;
+        appliesTo?: string;
+        appliesToId?: string;
+        startsAt?: string;
+        endsAt?: string;
+      };
       setForm({
         name: p.name ?? '',
         description: p.description ?? '',
