@@ -87,11 +87,22 @@ export class WhatsAppCampaignService {
     let baileysSender: null | ((to: string, body: string) => Promise<{ success: boolean; messageId?: string; error?: string }>) = null;
     if (baileysLive) {
       try {
-        const sendMod = await import('@haa/api/dist/services/whatsapp/send-service.js').catch(() => null);
-        const regMod = await import('@haa/api/dist/services/whatsapp/registry.js').catch(() => null);
+        // commerce-core ↔ @haa/api would be a circular dependency at
+        // typecheck time, so the runtime path uses variable-name
+        // dynamic imports that TypeScript's module resolver can't
+        // statically follow. These resolve at runtime when the worker
+        // is running inside the built @haa/api process.
+        const apiSendPath = '@haa/api/dist/services/whatsapp/send-service.js';
+        const apiRegPath = '@haa/api/dist/services/whatsapp/registry.js';
+        const sendMod = (await import(/* @vite-ignore */ apiSendPath).catch(() => null)) as
+          | { sendWhatsappMessage: (m: unknown, sid: number, to: string, body: string) => Promise<void> }
+          | null;
+        const regMod = (await import(/* @vite-ignore */ apiRegPath).catch(() => null)) as
+          | { getWhatsappManager: () => unknown }
+          | null;
         if (sendMod && regMod) {
-          const mgr = (regMod as { getWhatsappManager: () => unknown }).getWhatsappManager();
-          const send = (sendMod as { sendWhatsappMessage: (m: unknown, sid: number, to: string, body: string) => Promise<void> }).sendWhatsappMessage;
+          const mgr = regMod.getWhatsappManager();
+          const send = sendMod.sendWhatsappMessage;
           baileysSender = async (to, body) => {
             try {
               await send(mgr, storeId, to, body);
