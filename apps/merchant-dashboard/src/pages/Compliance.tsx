@@ -73,9 +73,9 @@ export default function CompliancePage() {
     productive_family: t('compliance.businessProfile.businessType_productive_family'),
   };
 
-  const [status, setStatus] = useState<any>(null);
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [bankAccount, setBankAccount] = useState<any>(null);
+  const [status, setStatus] = useState<{ status: string; updatedAt: string; rejectionReason?: string; needsMoreInfoReason?: string; completionPercent?: number } | null>(null);
+  const [documents, setDocuments] = useState<Array<{ id: number; filename: string; type: string; status: string }>>([]);
+  const [bankAccount, setBankAccount] = useState<{ accountHolderName?: string; bankName?: string; iban?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -120,9 +120,19 @@ export default function CompliancePage() {
       ]);
 
       if (id !== loadIdRef.current) return;
-      if (statusData.status === 'fulfilled') setStatus(statusData.value);
+      if (statusData.status === 'fulfilled') setStatus(statusData.value as { status: string; updatedAt: string; rejectionReason?: string; needsMoreInfoReason?: string; completionPercent?: number });
       if (profileData.status === 'fulfilled') {
-        const p = profileData.value;
+        const p = profileData.value as {
+          businessType?: string;
+          legalName?: string;
+          commercialName?: string;
+          nationalId?: string;
+          freelanceDocNumber?: string;
+          crNumber?: string;
+          city?: string;
+          address?: string;
+          vatNumber?: string;
+        };
         setForm({
           businessType: p.businessType ?? '',
           legalName: p.legalName ?? '',
@@ -136,9 +146,13 @@ export default function CompliancePage() {
         });
       }
       if (id !== loadIdRef.current) return;
-      if (docsData.status === 'fulfilled') setDocuments(docsData.value ?? []);
+      if (docsData.status === 'fulfilled') setDocuments((docsData.value as Array<{ id: number; filename: string; type: string; status: string }>) ?? []);
       if (bankData.status === 'fulfilled') {
-        const b = bankData.value;
+        const b = bankData.value as {
+          accountHolderName?: string;
+          bankName?: string;
+          iban?: string;
+        };
         setBankAccount(b);
         setBankForm({
           accountHolderName: b.accountHolderName ?? '',
@@ -146,7 +160,7 @@ export default function CompliancePage() {
           iban: b.iban ?? '',
         });
       }
-      if (checklistData.status === 'fulfilled') setChecklist(checklistData.value);
+      if (checklistData.status === 'fulfilled') setChecklist(checklistData.value as { passed: boolean; items: Array<{ key: string; label: string; passed: boolean; required: boolean; source: string; severity: string; message: string }>; blockingErrorsCount: number; warningsCount: number });
     } finally {
       if (id === loadIdRef.current) setLoading(false);
     }
@@ -225,7 +239,7 @@ export default function CompliancePage() {
     }
     setSaving(true);
     try {
-      const data: any = {
+      const data: Record<string, string> = {
         businessType: form.businessType,
         legalName: form.legalName,
         city: form.city,
@@ -668,7 +682,7 @@ export default function CompliancePage() {
 
           {documents.length > 0 && (
             <div className="space-y-3 mb-6">
-              {documents.map((doc: any) => (
+              {documents.map((doc) => (
                 <div key={doc.id} className="flex items-center justify-between p-4 border border-neutral-100 rounded-2xl bg-white/50">
                   <div className="flex items-center gap-3">
                     <FileText className="h-6 w-6 text-neutral-400 shrink-0" />

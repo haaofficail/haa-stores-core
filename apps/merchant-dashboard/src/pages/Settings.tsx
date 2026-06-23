@@ -42,7 +42,7 @@ function FieldError({ message }: { message?: string }) {
 export default function SettingsPage() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
-  const [store, setStore] = useState<any>(null);
+  const [store, setStore] = useState<{ name?: string; slug?: string; description?: string; status?: string; logoUrl?: string; primaryColor?: string; email?: string; phone?: string; seoTitle?: string; seoDescription?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -67,7 +67,8 @@ export default function SettingsPage() {
   const [giftOptionsLoading, setGiftOptionsLoading] = useState(true);
   const [giftOptionsSaving, setGiftOptionsSaving] = useState(false);
 
-  const [pickupLocations, setPickupLocations] = useState<any[]>([]);
+  type PickupLocation = { id: number; nameAr: string; nameEn?: string; address?: string; mapsUrl?: string; phone?: string; hours?: unknown; instructions?: string; isActive: boolean };
+  const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
   const [pickupLocationsLoading, setPickupLocationsLoading] = useState(true);
   const [pickupDialog, setPickupDialog] = useState(false);
   const [pickupEditId, setPickupEditId] = useState<number | null>(null);
@@ -75,11 +76,12 @@ export default function SettingsPage() {
     nameAr: '', nameEn: '', address: '', mapsUrl: '', phone: '', hours: '{}', instructions: '', isActive: true,
   });
   const [pickupSaving, setPickupSaving] = useState(false);
-  const [sizeGuides, setSizeGuides] = useState<any[]>([]);
+  type SizeGuide = { id: number; name: string; type: string; unit: string; rows?: Array<Record<string, string>>; categoryIds?: number[]; productIds?: number[]; isActive: boolean };
+  const [sizeGuides, setSizeGuides] = useState<SizeGuide[]>([]);
   const [sizeGuidesLoading, setSizeGuidesLoading] = useState(true);
   const [sizeGuideSaving, setSizeGuideSaving] = useState(false);
   const [sizeGuideEditId, setSizeGuideEditId] = useState<number | null>(null);
-  const [categoriesList, setCategoriesList] = useState<any[]>([]);
+  const [categoriesList, setCategoriesList] = useState<Array<{ id: number; name: string }>>([]);
   const [sizeGuideForm, setSizeGuideForm] = useState({
     name: '',
     type: 'clothing',
@@ -100,7 +102,8 @@ export default function SettingsPage() {
     if (!storeId) { setLoading(false); return; }
     setLoading(true);
     settingsApi.get(storeId)
-      .then((s) => {
+      .then((raw) => {
+        const s = raw as { name?: string; slug?: string; description?: string; status?: string; logoUrl?: string; primaryColor?: string; email?: string; phone?: string; seoTitle?: string; seoDescription?: string };
         setStore(s);
         setForm({
           name: s.name ?? '', slug: s.slug ?? '', description: s.description ?? '',
@@ -125,18 +128,18 @@ export default function SettingsPage() {
       .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
       .finally(() => setGiftOptionsLoading(false));
     settingsApi.listPickupLocations(storeId)
-      .then(setPickupLocations)
+      .then((data) => setPickupLocations(data as PickupLocation[]))
       .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
       .finally(() => setPickupLocationsLoading(false));
     settingsApi.listSizeGuides(storeId)
-      .then(setSizeGuides)
+      .then((data) => setSizeGuides(data as SizeGuide[]))
       .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
       .finally(() => setSizeGuidesLoading(false));
     categoriesApi.list(storeId)
-      .then(setCategoriesList)
+      .then((data) => setCategoriesList(data as Array<{ id: number; name: string }>))
       .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err));
     settingsApi.getStoreConfig(storeId)
-      .then(setStoreConfig)
+      .then((data) => setStoreConfig(data as StoreConfig))
       .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
       .finally(() => setStoreConfigLoading(false));
   }, [storeId, t]);
@@ -191,9 +194,9 @@ export default function SettingsPage() {
         productIds: sizeGuideForm.productIdsText.split(/[,\s]+/).map(Number).filter(Boolean),
         isActive: sizeGuideForm.isActive,
       };
-      const saved = sizeGuideEditId
+      const saved = (sizeGuideEditId
         ? await settingsApi.updateSizeGuide(storeId, sizeGuideEditId, payload)
-        : await settingsApi.createSizeGuide(storeId, payload);
+        : await settingsApi.createSizeGuide(storeId, payload)) as SizeGuide;
       setSizeGuides(prev => sizeGuideEditId ? prev.map(g => g.id === saved.id ? saved : g) : [saved, ...prev]);
       resetSizeGuideForm();
       toast.success(t('settings.saved'));
@@ -204,7 +207,7 @@ export default function SettingsPage() {
     }
   };
 
-  const updateField = (field: string, value: any) => {
+  const updateField = (field: string, value: unknown) => {
     setForm(prev => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors(prev => { const next = { ...prev }; delete next[field]; return next; });
   };
@@ -235,7 +238,7 @@ export default function SettingsPage() {
         email: form.email || undefined, phone: form.phone || undefined,
         seoTitle: form.seoTitle || undefined, seoDescription: form.seoDescription || undefined,
       };
-      const updated = await settingsApi.update(storeId, data);
+      const updated = await settingsApi.update(storeId, data) as { name?: string; slug?: string; description?: string; status?: string; logoUrl?: string; primaryColor?: string; email?: string; phone?: string; seoTitle?: string; seoDescription?: string };
       setStore(updated);
       toast.success(t('settings.saved'));
     } catch (err) {
@@ -446,7 +449,7 @@ export default function SettingsPage() {
                           placeholder={t('settings.postalCodePlaceholder', 'الرمز البريدي')} />
                       </div>
                       <div className="flex justify-end gap-2 mt-2">
-                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => settingsApi.getStoreConfig(storeId!).then(setStoreConfig)}>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => settingsApi.getStoreConfig(storeId!).then((data) => setStoreConfig(data as StoreConfig))}>
                           {t('common.cancel')}
                         </Button>
                         <PermissionGate permission="settings:update"><Button size="sm" className="h-7 text-xs" onClick={async () => {
@@ -455,7 +458,7 @@ export default function SettingsPage() {
                             const updated = await settingsApi.updateStoreConfig(storeId, {
                               city: storeConfig.city, district: storeConfig.district,
                               street: storeConfig.street, postalCode: storeConfig.postalCode,
-                            });
+                            }) as Partial<StoreConfig>;
                             setStoreConfig(prev => ({ ...prev, ...updated }));
                             toast.success(t('settings.saved'));
                           } catch { toast.error(t('common.error')); }
@@ -549,14 +552,14 @@ export default function SettingsPage() {
               </div>
             )}
             <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-neutral-100">
-              <Button variant="outline" className="h-9 text-sm" onClick={() => settingsApi.getStoreConfig(storeId!).then(setStoreConfig)}>
+              <Button variant="outline" className="h-9 text-sm" onClick={() => settingsApi.getStoreConfig(storeId!).then((data) => setStoreConfig(data as StoreConfig))}>
                 {t('common.cancel')}
               </Button>
               <PermissionGate permission="settings:update"><Button className="h-9 text-sm" disabled={storeConfigSaving || storeConfigLoading} onClick={async () => {
                 if (!storeId) return;
                 setStoreConfigSaving(true);
                 try {
-                  const updated = await settingsApi.updateStoreConfig(storeId, storeConfig);
+                  const updated = await settingsApi.updateStoreConfig(storeId, storeConfig) as StoreConfig;
                   setStoreConfig(updated);
                   toast.success(t('settings.saved'));
                 } catch { toast.error(t('common.error')); }
@@ -1066,11 +1069,11 @@ export default function SettingsPage() {
                     isActive: pickupForm.isActive,
                   };
                   if (pickupEditId) {
-                    const updated = await settingsApi.updatePickupLocation(storeId!, pickupEditId, data);
+                    const updated = await settingsApi.updatePickupLocation(storeId!, pickupEditId, data) as PickupLocation;
                     setPickupLocations(p => p.map(l => l.id === pickupEditId ? updated : l));
                     toast.success(t('shipping.updated'));
                   } else {
-                    const created = await settingsApi.createPickupLocation(storeId!, data);
+                    const created = await settingsApi.createPickupLocation(storeId!, data) as PickupLocation;
                     setPickupLocations(p => [...p, created]);
                     toast.success(t('shipping.created'));
                   }

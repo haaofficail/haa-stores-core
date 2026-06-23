@@ -60,7 +60,7 @@ export default function OnboardingWizard() {
   const [storeColor, setStoreColor] = useState('#5c9cd5');
 
   // Step 2: Products
-  const [aiProducts, setAiProducts] = useState<any[]>([]);
+  const [aiProducts, setAiProducts] = useState<Array<{ name: string; description?: string; price: number; stockQuantity?: number }>>([]);
   const [generating, setGenerating] = useState(false);
   const [productsStep, setProductsStep] = useState<'idle' | 'generated' | 'saving'>('idle');
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
@@ -76,7 +76,8 @@ export default function OnboardingWizard() {
   useEffect(() => {
     if (!storeId) return;
     setLoading(true);
-    settingsApi.get(storeId).then((s) => {
+    settingsApi.get(storeId).then((raw) => {
+      const s = raw as { name?: string; description?: string; phone?: string; primaryColor?: string; slug?: string };
       setStoreName(s.name || '');
       setStoreDesc(s.description || '');
       setStorePhone(s.phone || '');
@@ -111,8 +112,8 @@ export default function OnboardingWizard() {
     if (!storeId) return;
     setGenerating(true);
     try {
-      const result = await onboardingApi.generateProducts(storeId, {});
-      let products: any[];
+      const result = await onboardingApi.generateProducts(storeId, {}) as { text: string };
+      let products: Array<{ name: string; description?: string; price: number; stockQuantity?: number }>;
       try {
         products = JSON.parse(result.text);
       } catch {
@@ -120,7 +121,7 @@ export default function OnboardingWizard() {
         return;
       }
       setAiProducts(products);
-      setSelectedProducts(new Set(products.map((_: any, i: number) => i)));
+      setSelectedProducts(new Set(products.map((_, i: number) => i)));
       setProductsStep('generated');
     } catch {
       toast.error(t('common.error'));

@@ -260,7 +260,7 @@ export default function IntegrationHub() {
                           if (!storeId) return;
                           const syncToast = toast.loading(t('integrationHub.syncing', 'جاري المزامنة...'));
                           try {
-                            const res = await marketplaceApi.syncOrders(storeId, provider.code);
+                            const res = await marketplaceApi.syncOrders(storeId, provider.code) as unknown[];
                             toast.dismiss(syncToast);
                             const count = res?.length ?? 0;
                             toast.success(t('integrationHub.syncDone', 'تمت المزامنة'), {

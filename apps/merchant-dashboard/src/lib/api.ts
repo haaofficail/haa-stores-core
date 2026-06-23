@@ -111,7 +111,7 @@ export async function request<T>(
 
   if (!json.success) {
     const code = json.error.code || 'VALIDATION_ERROR';
-    const message = json.error.message || json.error.issues?.slice(0, 3).map((i: any) => i.message).join('; ') || 'Request failed';
+    const message = json.error.message || json.error.issues?.slice(0, 3).map((i: { message?: string }) => i.message).join('; ') || 'Request failed';
     throw new ApiClientError(code, message);
   }
 
@@ -154,26 +154,26 @@ export const productsApi = {
     if (params?.stockFilter) q.set('stockFilter', params.stockFilter);
     if (params?.typeFilter) q.set('typeFilter', params.typeFilter);
     const qs = q.toString();
-    return request<{ data: any[]; total: number; page: number; limit: number; totalPages: number }>(
+    return request<{ data: unknown[]; total: number; page: number; limit: number; totalPages: number }>(
       `/merchant/${storeId}/products${qs ? `?${qs}` : ''}`,
     );
   },
   getById: (storeId: number, id: number) =>
-    request<any>(`/merchant/${storeId}/products/${id}`),
-  create: (storeId: number, data: any) =>
-    request<any>(`/merchant/${storeId}/products`, { method: 'POST', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/products/${id}`),
+  create: (storeId: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/products`, { method: 'POST', body: JSON.stringify(data) }),
   // Batch create — POSTs all items in ONE round-trip; server runs
   // them in a Drizzle transaction so the whole batch is atomic.
   // Used by OnboardingWizard to replace the old serial loop.
-  createBatch: (storeId: number, items: any[]) =>
-    request<{ count: number; items: any[] }>(
+  createBatch: (storeId: number, items: unknown[]) =>
+    request<{ count: number; items: unknown[] }>(
       `/merchant/${storeId}/products/batch`,
       { method: 'POST', body: JSON.stringify({ items }) },
     ),
-  update: (storeId: number, id: number, data: any) =>
-    request<any>(`/merchant/${storeId}/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  update: (storeId: number, id: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/products/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   archive: (storeId: number, id: number) =>
-    request<any>(`/merchant/${storeId}/products/${id}`, { method: 'DELETE' }),
+    request<unknown>(`/merchant/${storeId}/products/${id}`, { method: 'DELETE' }),
   uploadImage: async (storeId: number, productId: number, file: File) => {
     const formData = new FormData();
     formData.append('image', file);
@@ -197,17 +197,17 @@ export const productsApi = {
       window.location.href = '/login';
       throw new Error('Unauthorized');
     }
-    let json: any;
+    let json: { success: boolean; data?: unknown; error?: { code: string; message: string } };
     try {
       json = await res.json();
     } catch {
       throw new ApiClientError('SERVER_ERROR', 'Server returned an invalid response');
     }
-    if (!json.success) throw new ApiClientError(json.error.code, json.error.message);
-    return json.data as any;
+    if (!json.success) throw new ApiClientError(json.error?.code ?? 'UPLOAD_FAILED', json.error?.message ?? 'Upload failed');
+    return json.data;
   },
   deleteImage: (storeId: number, productId: number, imageId: number) =>
-    request<any>(`/merchant/${storeId}/products/${productId}/images/${imageId}`, { method: 'DELETE' }),
+    request<unknown>(`/merchant/${storeId}/products/${productId}/images/${imageId}`, { method: 'DELETE' }),
   bulk: (storeId: number, data: { productIds: number[]; action: 'activate' | 'deactivate' }) =>
     request<{ total: number; succeeded: number; failed: number; failedIds: number[] }>(
       `/merchant/${storeId}/products/bulk`,
@@ -233,7 +233,7 @@ export async function uploadFile(storeId: number, file: File) {
     window.location.href = '/login';
     throw new Error('Unauthorized');
   }
-  let json: any;
+  let json: { success: boolean; data?: unknown; error?: { code?: string; message?: string } };
   try {
     json = await res.json();
   } catch {
@@ -246,15 +246,15 @@ export async function uploadFile(storeId: number, file: File) {
 // Brands
 export const brandsApi = {
   list: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/brands`),
+    request<unknown[]>(`/merchant/${storeId}/brands`),
   getById: (storeId: number, id: number) =>
-    request<any>(`/merchant/${storeId}/brands/${id}`),
-  create: (storeId: number, data: any) =>
-    request<any>(`/merchant/${storeId}/brands`, { method: 'POST', body: JSON.stringify(data) }),
-  update: (storeId: number, id: number, data: any) =>
-    request<any>(`/merchant/${storeId}/brands/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/brands/${id}`),
+  create: (storeId: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/brands`, { method: 'POST', body: JSON.stringify(data) }),
+  update: (storeId: number, id: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/brands/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (storeId: number, id: number) =>
-    request<any>(`/merchant/${storeId}/brands/${id}`, { method: 'DELETE' }),
+    request<unknown>(`/merchant/${storeId}/brands/${id}`, { method: 'DELETE' }),
   reorder: (storeId: number, items: { id: number; sortOrder: number }[]) =>
     request<void>(`/merchant/${storeId}/brands/reorder`, { method: 'PUT', body: JSON.stringify({ items }) }),
 };
@@ -262,15 +262,15 @@ export const brandsApi = {
 // Tags
 export const tagsApi = {
   list: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/tags`),
+    request<unknown[]>(`/merchant/${storeId}/tags`),
   getById: (storeId: number, id: number) =>
-    request<any>(`/merchant/${storeId}/tags/${id}`),
-  create: (storeId: number, data: any) =>
-    request<any>(`/merchant/${storeId}/tags`, { method: 'POST', body: JSON.stringify(data) }),
-  update: (storeId: number, id: number, data: any) =>
-    request<any>(`/merchant/${storeId}/tags/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/tags/${id}`),
+  create: (storeId: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/tags`, { method: 'POST', body: JSON.stringify(data) }),
+  update: (storeId: number, id: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/tags/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (storeId: number, id: number) =>
-    request<any>(`/merchant/${storeId}/tags/${id}`, { method: 'DELETE' }),
+    request<unknown>(`/merchant/${storeId}/tags/${id}`, { method: 'DELETE' }),
   reorder: (storeId: number, items: { id: number; sortOrder: number }[]) =>
     request<void>(`/merchant/${storeId}/tags/reorder`, { method: 'PUT', body: JSON.stringify({ items }) }),
 };
@@ -278,15 +278,15 @@ export const tagsApi = {
 // Categories
 export const categoriesApi = {
   list: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/categories`),
+    request<unknown[]>(`/merchant/${storeId}/categories`),
   getTree: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/categories/tree`),
-  create: (storeId: number, data: any) =>
-    request<any>(`/merchant/${storeId}/categories`, { method: 'POST', body: JSON.stringify(data) }),
-  update: (storeId: number, id: number, data: any) =>
-    request<any>(`/merchant/${storeId}/categories/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    request<unknown[]>(`/merchant/${storeId}/categories/tree`),
+  create: (storeId: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/categories`, { method: 'POST', body: JSON.stringify(data) }),
+  update: (storeId: number, id: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/categories/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (storeId: number, id: number) =>
-    request<any>(`/merchant/${storeId}/categories/${id}`, { method: 'DELETE' }),
+    request<unknown>(`/merchant/${storeId}/categories/${id}`, { method: 'DELETE' }),
   reorder: (storeId: number, items: { id: number; parentId: number | null; sortOrder: number }[]) =>
     request<void>(`/merchant/${storeId}/categories/reorder`, { method: 'PUT', body: JSON.stringify({ items }) }),
 };
@@ -312,28 +312,28 @@ export const ordersApi = {
     if (params?.dateFrom) q.set('dateFrom', params.dateFrom);
     if (params?.dateTo) q.set('dateTo', params.dateTo);
     const qs = q.toString();
-    return request<{ data: any[]; total: number; page: number; limit: number; totalPages: number }>(
+    return request<{ data: unknown[]; total: number; page: number; limit: number; totalPages: number }>(
       `/merchant/${storeId}/orders${qs ? `?${qs}` : ''}`,
     );
   },
   getById: (storeId: number, id: number) =>
-    request<any>(`/merchant/${storeId}/orders/${id}`),
+    request<unknown>(`/merchant/${storeId}/orders/${id}`),
   transitions: (storeId: number, id: number) =>
     request<{ currentStatus: string; allowedTransitions: string[] }>(`/merchant/${storeId}/orders/${id}/transitions`),
   changeStatus: (storeId: number, id: number, status: string, reason?: string) =>
-    request<any>(`/merchant/${storeId}/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }),
+    request<unknown>(`/merchant/${storeId}/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }),
   recentItems: (storeId: number, limit?: number) => {
     const qs = limit ? `?limit=${limit}` : '';
-    return request<any[]>(`/merchant/${storeId}/orders/recent-items${qs}`);
+    return request<unknown[]>(`/merchant/${storeId}/orders/recent-items${qs}`);
   },
   collectCOD: (storeId: number, orderId: number) =>
-    request<any>(`/merchant/${storeId}/orders/${orderId}/cod/collect`, { method: 'POST' }),
+    request<unknown>(`/merchant/${storeId}/orders/${orderId}/cod/collect`, { method: 'POST' }),
   markCODFailed: (storeId: number, orderId: number, reason?: string) =>
-    request<any>(`/merchant/${storeId}/orders/${orderId}/cod/failed`, { method: 'POST', body: JSON.stringify({ reason }) }),
+    request<unknown>(`/merchant/${storeId}/orders/${orderId}/cod/failed`, { method: 'POST', body: JSON.stringify({ reason }) }),
   markCODRefused: (storeId: number, orderId: number) =>
-    request<any>(`/merchant/${storeId}/orders/${orderId}/cod/refused`, { method: 'POST' }),
+    request<unknown>(`/merchant/${storeId}/orders/${orderId}/cod/refused`, { method: 'POST' }),
   updatePreparationStatus: (storeId: number, orderId: number, status: string, reason?: string) =>
-    request<any>(`/merchant/${storeId}/orders/${orderId}/preparation-status`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }),
+    request<unknown>(`/merchant/${storeId}/orders/${orderId}/preparation-status`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }),
 };
 
 // Reports
@@ -355,22 +355,22 @@ export const reportsApi = {
     const q = new URLSearchParams();
     if (dateFrom) q.set('dateFrom', dateFrom);
     if (dateTo) q.set('dateTo', dateTo);
-    return request<any>(`/merchant/${storeId}/reports/sales-summary?${q}`);
+    return request<unknown>(`/merchant/${storeId}/reports/sales-summary?${q}`);
   },
   topProducts: (storeId: number, limit?: number) => {
     const q = limit ? `?limit=${limit}` : '';
-    return request<any[]>(`/merchant/${storeId}/reports/top-products${q}`);
+    return request<unknown[]>(`/merchant/${storeId}/reports/top-products${q}`);
   },
   ordersByStatus: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/reports/orders-by-status`),
+    request<unknown[]>(`/merchant/${storeId}/reports/orders-by-status`),
   salesByCity: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/reports/sales-by-city`),
+    request<unknown[]>(`/merchant/${storeId}/reports/sales-by-city`),
   lowStock: (storeId: number, threshold?: number) => {
     const q = threshold ? `?threshold=${threshold}` : '';
-    return request<any[]>(`/merchant/${storeId}/reports/low-stock${q}`);
+    return request<unknown[]>(`/merchant/${storeId}/reports/low-stock${q}`);
   },
   walletSummary: (storeId: number) =>
-    request<any>(`/merchant/${storeId}/reports/wallet-summary`),
+    request<unknown>(`/merchant/${storeId}/reports/wallet-summary`),
   deep: (storeId: number, dateFrom?: string, dateTo?: string) => {
     const q = new URLSearchParams();
     if (dateFrom) q.set('dateFrom', dateFrom);
@@ -436,42 +436,42 @@ export const customersApi = {
     if (params?.limit) q.set('limit', String(params.limit));
     if (params?.search) q.set('search', params.search);
     const qs = q.toString();
-    return request<{ data: any[]; total: number; page: number; limit: number; totalPages: number }>(
+    return request<{ data: unknown[]; total: number; page: number; limit: number; totalPages: number }>(
       `/merchant/${storeId}/customers${qs ? `?${qs}` : ''}`,
     );
   },
-  create: (storeId: number, data: any) =>
-    request<any>(`/merchant/${storeId}/customers`, { method: 'POST', body: JSON.stringify(data) }),
-  update: (storeId: number, id: number, data: any) =>
-    request<any>(`/merchant/${storeId}/customers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  create: (storeId: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/customers`, { method: 'POST', body: JSON.stringify(data) }),
+  update: (storeId: number, id: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/customers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
 // Shipping
 export const shippingApi = {
   overview: (storeId: number) =>
-    request<any>(`/merchant/${storeId}/shipping/overview`),
+    request<unknown>(`/merchant/${storeId}/shipping/overview`),
   methods: {
-    list: (storeId: number) => request<any[]>(`/merchant/${storeId}/shipping/methods`),
-    create: (storeId: number, data: any) =>
-      request<any>(`/merchant/${storeId}/shipping/methods`, { method: 'POST', body: JSON.stringify(data) }),
-    update: (storeId: number, id: number, data: any) =>
-      request<any>(`/merchant/${storeId}/shipping/methods/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    list: (storeId: number) => request<unknown[]>(`/merchant/${storeId}/shipping/methods`),
+    create: (storeId: number, data: unknown) =>
+      request<unknown>(`/merchant/${storeId}/shipping/methods`, { method: 'POST', body: JSON.stringify(data) }),
+    update: (storeId: number, id: number, data: unknown) =>
+      request<unknown>(`/merchant/${storeId}/shipping/methods/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   },
   zones: {
-    list: (storeId: number) => request<any[]>(`/merchant/${storeId}/shipping/zones`),
-    create: (storeId: number, data: any) =>
-      request<any>(`/merchant/${storeId}/shipping/zones`, { method: 'POST', body: JSON.stringify(data) }),
-    update: (storeId: number, id: number, data: any) =>
-      request<any>(`/merchant/${storeId}/shipping/zones/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    list: (storeId: number) => request<unknown[]>(`/merchant/${storeId}/shipping/zones`),
+    create: (storeId: number, data: unknown) =>
+      request<unknown>(`/merchant/${storeId}/shipping/zones`, { method: 'POST', body: JSON.stringify(data) }),
+    update: (storeId: number, id: number, data: unknown) =>
+      request<unknown>(`/merchant/${storeId}/shipping/zones/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   },
   rates: {
-    list: (storeId: number) => request<any[]>(`/merchant/${storeId}/shipping/rates`),
-    create: (storeId: number, data: any) =>
-      request<any>(`/merchant/${storeId}/shipping/rates`, { method: 'POST', body: JSON.stringify(data) }),
-    update: (storeId: number, id: number, data: any) =>
-      request<any>(`/merchant/${storeId}/shipping/rates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    list: (storeId: number) => request<unknown[]>(`/merchant/${storeId}/shipping/rates`),
+    create: (storeId: number, data: unknown) =>
+      request<unknown>(`/merchant/${storeId}/shipping/rates`, { method: 'POST', body: JSON.stringify(data) }),
+    update: (storeId: number, id: number, data: unknown) =>
+      request<unknown>(`/merchant/${storeId}/shipping/rates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (storeId: number, id: number) =>
-      request<any>(`/merchant/${storeId}/shipping/rates/${id}`, { method: 'DELETE' }),
+      request<unknown>(`/merchant/${storeId}/shipping/rates/${id}`, { method: 'DELETE' }),
   },
   shipments: {
     list: (storeId: number, params?: { status?: string; noTracking?: boolean; city?: string; dateFrom?: string; dateTo?: string }) => {
@@ -482,14 +482,14 @@ export const shippingApi = {
       if (params?.dateFrom) q.set('dateFrom', params.dateFrom);
       if (params?.dateTo) q.set('dateTo', params.dateTo);
       const qs = q.toString();
-      return request<any[]>(`/merchant/${storeId}/shipping/shipments${qs ? `?${qs}` : ''}`);
+      return request<unknown[]>(`/merchant/${storeId}/shipping/shipments${qs ? `?${qs}` : ''}`);
     },
     getById: (storeId: number, id: number) =>
-      request<any>(`/merchant/${storeId}/shipping/shipments/${id}`),
-    updateStatus: (storeId: number, id: number, data: any) =>
-      request<any>(`/merchant/${storeId}/shipping/shipments/${id}/status`, { method: 'PATCH', body: JSON.stringify(data) }),
+      request<unknown>(`/merchant/${storeId}/shipping/shipments/${id}`),
+    updateStatus: (storeId: number, id: number, data: unknown) =>
+      request<unknown>(`/merchant/${storeId}/shipping/shipments/${id}/status`, { method: 'PATCH', body: JSON.stringify(data) }),
     updateTracking: (storeId: number, id: number, data: { trackingNumber: string; trackingUrl?: string; carrierName?: string }) =>
-      request<any>(`/merchant/${storeId}/shipping/shipments/${id}/tracking`, { method: 'PATCH', body: JSON.stringify(data) }),
+      request<unknown>(`/merchant/${storeId}/shipping/shipments/${id}/tracking`, { method: 'PATCH', body: JSON.stringify(data) }),
   },
   status: (storeId: number) =>
     request<{ activeProvider: string; activeMode: string; otoConfigured: boolean; liveBlocked: boolean }>(
@@ -500,25 +500,25 @@ export const shippingApi = {
     address: { city: string; country: string; street?: string; district?: string; state?: string; postalCode?: string };
     notes?: string;
   }) =>
-    request<any>(`/merchant/${storeId}/orders/${orderId}/shipments`, { method: 'POST', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/orders/${orderId}/shipments`, { method: 'POST', body: JSON.stringify(data) }),
   createLabel: (storeId: number, shipmentId: number) =>
-    request<any>(`/merchant/${storeId}/shipments/${shipmentId}/label`, { method: 'POST' }),
+    request<unknown>(`/merchant/${storeId}/shipments/${shipmentId}/label`, { method: 'POST' }),
   getLabel: (storeId: number, shipmentId: number) =>
-    request<any>(`/merchant/${storeId}/shipments/${shipmentId}/label`),
+    request<unknown>(`/merchant/${storeId}/shipments/${shipmentId}/label`),
   addEvent: (storeId: number, shipmentId: number, data: { status: string; description?: string; location?: string }) =>
-    request<any>(`/merchant/${storeId}/shipments/${shipmentId}/events`, { method: 'POST', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/shipments/${shipmentId}/events`, { method: 'POST', body: JSON.stringify(data) }),
   createReturn: (storeId: number, shipmentId: number, data: { reason: string }) =>
-    request<any>(`/merchant/${storeId}/shipments/${shipmentId}/return`, { method: 'POST', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/shipments/${shipmentId}/return`, { method: 'POST', body: JSON.stringify(data) }),
   listReturns: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/shipments/returns/list`),
+    request<unknown[]>(`/merchant/${storeId}/shipments/returns/list`),
   cancel: (storeId: number, shipmentId: number) =>
-    request<any>(`/merchant/${storeId}/shipments/${shipmentId}/cancel`, { method: 'POST' }),
+    request<unknown>(`/merchant/${storeId}/shipments/${shipmentId}/cancel`, { method: 'POST' }),
 };
 
 // Wallet
 export const walletApi = {
   summary: (storeId: number) =>
-    request<any>(`/merchant/${storeId}/wallet/summary`),
+    request<unknown>(`/merchant/${storeId}/wallet/summary`),
   settlementReadiness: (storeId: number) =>
     request<{
       settlementReadiness: 'not_ready' | 'partial' | 'ready';
@@ -531,9 +531,9 @@ export const walletApi = {
       disputeRiskClear: boolean;
     }>(`/merchant/${storeId}/wallet/settlement-readiness`),
   settlementBatches: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/wallet/settlements`),
+    request<unknown[]>(`/merchant/${storeId}/wallet/settlements`),
   settlementBatchDetail: (storeId: number, batchId: number) =>
-    request<{ id: number; transactions: any[] }>(`/merchant/${storeId}/wallet/settlements/${batchId}`),
+    request<{ id: number; transactions: unknown[] }>(`/merchant/${storeId}/wallet/settlements/${batchId}`),
   payouts: (storeId: number) =>
     request<Array<{ id: number; amount: string; status: string; reference: string; requestedAt: string }>>(
       `/merchant/${storeId}/wallet/payouts`,
@@ -558,7 +558,7 @@ export const walletApi = {
     if (params?.dateTo) q.set('dateTo', params.dateTo);
     if (params?.search) q.set('search', params.search);
     const qs = q.toString();
-    return request<{ data: any[]; total: number; page: number; limit: number; totalPages: number }>(
+    return request<{ data: unknown[]; total: number; page: number; limit: number; totalPages: number }>(
       `/merchant/${storeId}/wallet/entries${qs ? `?${qs}` : ''}`,
     );
   },
@@ -567,7 +567,7 @@ export const walletApi = {
 // Dashboard summary
 export const dashboardApi = {
   summary: (storeId: number) =>
-    request<any>(`/merchant/${storeId}/dashboard/summary`),
+    request<unknown>(`/merchant/${storeId}/dashboard/summary`),
 };
 
 // Payment
@@ -581,23 +581,23 @@ export const paymentApi = {
 // Compliance
 export const complianceApi = {
   getProfile: (storeId: number) =>
-    request<any>(`/merchant/${storeId}/compliance/profile`),
-  updateProfile: (storeId: number, data: any) =>
-    request<any>(`/merchant/${storeId}/compliance/profile`, { method: 'PUT', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/compliance/profile`),
+  updateProfile: (storeId: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/compliance/profile`, { method: 'PUT', body: JSON.stringify(data) }),
   submit: (storeId: number) =>
-    request<any>(`/merchant/${storeId}/compliance/submit`, { method: 'POST' }),
+    request<unknown>(`/merchant/${storeId}/compliance/submit`, { method: 'POST' }),
   getStatus: (storeId: number) =>
-    request<any>(`/merchant/${storeId}/compliance/status`),
+    request<unknown>(`/merchant/${storeId}/compliance/status`),
   getDocuments: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/compliance/documents`),
+    request<unknown[]>(`/merchant/${storeId}/compliance/documents`),
   uploadDocument: (storeId: number, data: { type: string; fileUrl: string; filename: string; mimeType: string; sizeBytes: number }) =>
-    request<any>(`/merchant/${storeId}/compliance/documents`, { method: 'POST', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/compliance/documents`, { method: 'POST', body: JSON.stringify(data) }),
   deleteDocument: (storeId: number, documentId: number) =>
-    request<any>(`/merchant/${storeId}/compliance/documents/${documentId}`, { method: 'DELETE' }),
+    request<unknown>(`/merchant/${storeId}/compliance/documents/${documentId}`, { method: 'DELETE' }),
   getBankAccount: (storeId: number) =>
-    request<any>(`/merchant/${storeId}/compliance/bank-account`),
+    request<unknown>(`/merchant/${storeId}/compliance/bank-account`),
   updateBankAccount: (storeId: number, data: { accountHolderName: string; bankName: string; iban: string }) =>
-    request<any>(`/merchant/${storeId}/compliance/bank-account`, { method: 'PUT', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/compliance/bank-account`, { method: 'PUT', body: JSON.stringify(data) }),
   getChecklist: (storeId: number) =>
     request<{ passed: boolean; items: Array<{ key: string; label: string; passed: boolean; required: boolean; source: string; severity: string; message: string }>; blockingErrorsCount: number; warningsCount: number; checkedAt: string }>(
       `/merchant/${storeId}/compliance/checklist`,
@@ -625,7 +625,7 @@ export const auditApi = {
     if (params?.dateFrom) query.set('dateFrom', params.dateFrom);
     if (params?.dateTo) query.set('dateTo', params.dateTo);
     const qs = query.toString();
-    return request<{ data: any[]; total: number; page: number; limit: number; totalPages: number }>(
+    return request<{ data: unknown[]; total: number; page: number; limit: number; totalPages: number }>(
       `/merchant/${storeId}/audit${qs ? `?${qs}` : ''}`,
     );
   },
@@ -642,26 +642,26 @@ export const acknowledgementApi = {
       `/merchant/${storeId}/settings/acknowledgement/required-items`,
     ),
   acknowledge: (storeId: number, acknowledgedItems: Record<string, boolean>) =>
-    request<any>(`/merchant/${storeId}/settings/acknowledge`, { method: 'POST', body: JSON.stringify({ acknowledgedItems }) }),
+    request<unknown>(`/merchant/${storeId}/settings/acknowledge`, { method: 'POST', body: JSON.stringify({ acknowledgedItems }) }),
 };
 
 // Subscriptions
 export const subscriptionApi = {
-  getCurrent: (storeId: number) => request<any>(`/merchant/${storeId}/subscriptions`),
-  getPlans: (storeId: number) => request<any[]>(`/merchant/${storeId}/subscriptions/plans`),
-  subscribe: (storeId: number, data: { planId: number; billingCycle: string }) => request<any>(`/merchant/${storeId}/subscriptions/subscribe`, { method: 'POST', body: JSON.stringify(data) }),
-  upgrade: (storeId: number, data: { planId: number; billingCycle: string }) => request<any>(`/merchant/${storeId}/subscriptions/upgrade`, { method: 'POST', body: JSON.stringify(data) }),
-  downgrade: (storeId: number, data: { planId: number }) => request<any>(`/merchant/${storeId}/subscriptions/downgrade`, { method: 'POST', body: JSON.stringify(data) }),
-  getInvoices: (storeId: number) => request<any[]>(`/merchant/${storeId}/subscriptions/invoices`),
-  getLimits: (storeId: number) => request<any>(`/merchant/${storeId}/subscriptions/limits`),
+  getCurrent: (storeId: number) => request<unknown>(`/merchant/${storeId}/subscriptions`),
+  getPlans: (storeId: number) => request<unknown[]>(`/merchant/${storeId}/subscriptions/plans`),
+  subscribe: (storeId: number, data: { planId: number; billingCycle: string }) => request<unknown>(`/merchant/${storeId}/subscriptions/subscribe`, { method: 'POST', body: JSON.stringify(data) }),
+  upgrade: (storeId: number, data: { planId: number; billingCycle: string }) => request<unknown>(`/merchant/${storeId}/subscriptions/upgrade`, { method: 'POST', body: JSON.stringify(data) }),
+  downgrade: (storeId: number, data: { planId: number }) => request<unknown>(`/merchant/${storeId}/subscriptions/downgrade`, { method: 'POST', body: JSON.stringify(data) }),
+  getInvoices: (storeId: number) => request<unknown[]>(`/merchant/${storeId}/subscriptions/invoices`),
+  getLimits: (storeId: number) => request<unknown>(`/merchant/${storeId}/subscriptions/limits`),
 };
 
 // Settings
 export const settingsApi = {
   get: (storeId: number) =>
-    request<any>(`/merchant/${storeId}/settings`),
-  update: (storeId: number, data: any) =>
-    request<any>(`/merchant/${storeId}/settings`, { method: 'PUT', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/settings`),
+  update: (storeId: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/settings`, { method: 'PUT', body: JSON.stringify(data) }),
   readiness: (storeId: number) =>
     request<{ percentage: number; completedCount: number; totalCount: number; items: Array<{ key: string; label: string; completed: boolean; actionLabel: string; actionHref: string }> }>(
       `/merchant/${storeId}/settings/readiness`,
@@ -675,39 +675,39 @@ export const settingsApi = {
   updateStoreConfig: (storeId: number, data: Partial<StoreConfig>) =>
     request<StoreConfig>(`/merchant/${storeId}/settings/store-config`, { method: 'PUT', body: JSON.stringify(data) }),
   listSizeGuides: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/settings/size-guides`),
-  createSizeGuide: (storeId: number, data: any) =>
-    request<any>(`/merchant/${storeId}/settings/size-guides`, { method: 'POST', body: JSON.stringify(data) }),
-  updateSizeGuide: (storeId: number, guideId: number, data: any) =>
-    request<any>(`/merchant/${storeId}/settings/size-guides/${guideId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    request<unknown[]>(`/merchant/${storeId}/settings/size-guides`),
+  createSizeGuide: (storeId: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/settings/size-guides`, { method: 'POST', body: JSON.stringify(data) }),
+  updateSizeGuide: (storeId: number, guideId: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/settings/size-guides/${guideId}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteSizeGuide: (storeId: number, guideId: number) =>
-    request<any>(`/merchant/${storeId}/settings/size-guides/${guideId}`, { method: 'DELETE' }),
+    request<unknown>(`/merchant/${storeId}/settings/size-guides/${guideId}`, { method: 'DELETE' }),
   getTheme: (storeId: number) =>
-    request<any>(`/merchant/${storeId}/settings/theme`),
-  updateTheme: (storeId: number, config: any) =>
-    request<{ data: any; history: any[] }>(`/merchant/${storeId}/settings/theme`, { method: 'PUT', body: JSON.stringify(config) }),
+    request<unknown>(`/merchant/${storeId}/settings/theme`),
+  updateTheme: (storeId: number, config: unknown) =>
+    request<{ data: unknown; history: unknown[] }>(`/merchant/${storeId}/settings/theme`, { method: 'PUT', body: JSON.stringify(config) }),
   getThemeHistory: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/settings/theme/history`),
+    request<unknown[]>(`/merchant/${storeId}/settings/theme/history`),
   getGiftOptions: (storeId: number) =>
     request<{ giftWrapDefaultPrice: string; giftMessageMaxLength: number; giftWrapInstructions: string | null; pickupInstructions: string | null }>(
       `/merchant/${storeId}/settings/gift-options`),
-  updateGiftOptions: (storeId: number, data: any) =>
-    request<any>(`/merchant/${storeId}/settings/gift-options`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateGiftOptions: (storeId: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/settings/gift-options`, { method: 'PUT', body: JSON.stringify(data) }),
   listPickupLocations: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/settings/pickup-locations`),
-  createPickupLocation: (storeId: number, data: any) =>
-    request<any>(`/merchant/${storeId}/settings/pickup-locations`, { method: 'POST', body: JSON.stringify(data) }),
-  updatePickupLocation: (storeId: number, id: number, data: any) =>
-    request<any>(`/merchant/${storeId}/settings/pickup-locations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    request<unknown[]>(`/merchant/${storeId}/settings/pickup-locations`),
+  createPickupLocation: (storeId: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/settings/pickup-locations`, { method: 'POST', body: JSON.stringify(data) }),
+  updatePickupLocation: (storeId: number, id: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/settings/pickup-locations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deletePickupLocation: (storeId: number, id: number) =>
-    request<any>(`/merchant/${storeId}/settings/pickup-locations/${id}`, { method: 'DELETE' }),
+    request<unknown>(`/merchant/${storeId}/settings/pickup-locations/${id}`, { method: 'DELETE' }),
 };
 
 export const notificationApi = {
-  getPreferences: (storeId: number) => request<any>(`/merchant/${storeId}/notifications/preferences`),
-  updatePreferences: (storeId: number, data: any) => request<any>(`/merchant/${storeId}/notifications/preferences`, { method: 'PUT', body: JSON.stringify(data) }),
-  getLogs: (storeId: number, channel?: string) => request<any[]>(`/merchant/${storeId}/notifications/logs${channel ? `?channel=${channel}` : ''}`),
-  getTemplates: (storeId: number) => request<any[]>(`/merchant/${storeId}/notifications/templates`),
+  getPreferences: (storeId: number) => request<unknown>(`/merchant/${storeId}/notifications/preferences`),
+  updatePreferences: (storeId: number, data: unknown) => request<unknown>(`/merchant/${storeId}/notifications/preferences`, { method: 'PUT', body: JSON.stringify(data) }),
+  getLogs: (storeId: number, channel?: string) => request<unknown[]>(`/merchant/${storeId}/notifications/logs${channel ? `?channel=${channel}` : ''}`),
+  getTemplates: (storeId: number) => request<unknown[]>(`/merchant/${storeId}/notifications/templates`),
 };
 
 export interface ProviderStatus {
@@ -757,24 +757,24 @@ export const providerStatusApi = {
 export const feedsApi = {
   getGoogleFeed: (storeId: number) => `/merchant/${storeId}/feeds/google-merchant`,
   getMetaFeed: (storeId: number) => `/merchant/${storeId}/feeds/meta-catalog`,
-  getTemplates: (storeId: number) => request<any[]>(`/merchant/${storeId}/feeds/templates`),
+  getTemplates: (storeId: number) => request<unknown[]>(`/merchant/${storeId}/feeds/templates`),
   getTemplateCsv: (storeId: number, source: string) => `/merchant/${storeId}/feeds/template/${source}/csv`,
 };
 
 export const aiApi = {
-  dailySummary: (storeId: number) => request<any>(`/merchant/${storeId}/ai/daily-summary`),
-  weeklySummary: (storeId: number) => request<any>(`/merchant/${storeId}/ai/weekly-summary`),
-  salesDecline: (storeId: number) => request<any>(`/merchant/${storeId}/ai/sales-decline`),
-  productSuggestions: (storeId: number) => request<any>(`/merchant/${storeId}/ai/product-suggestions`),
-  generateTitle: (storeId: number, data: { productName?: string; category?: string }) => request<any>(`/merchant/${storeId}/ai/product-title`, { method: 'POST', body: JSON.stringify(data) }),
-  generateDescription: (storeId: number, data: { productName?: string; category?: string; features?: string }) => request<any>(`/merchant/${storeId}/ai/product-description`, { method: 'POST', body: JSON.stringify(data) }),
-  suggestions: (storeId: number) => request<any>(`/merchant/${storeId}/ai/promotions`),
-  abandonedCarts: (storeId: number) => request<any>(`/merchant/${storeId}/ai/abandoned-carts`),
-  wallet: (storeId: number) => request<any>(`/merchant/${storeId}/ai/wallet`),
+  dailySummary: (storeId: number) => request<unknown>(`/merchant/${storeId}/ai/daily-summary`),
+  weeklySummary: (storeId: number) => request<unknown>(`/merchant/${storeId}/ai/weekly-summary`),
+  salesDecline: (storeId: number) => request<unknown>(`/merchant/${storeId}/ai/sales-decline`),
+  productSuggestions: (storeId: number) => request<unknown>(`/merchant/${storeId}/ai/product-suggestions`),
+  generateTitle: (storeId: number, data: { productName?: string; category?: string }) => request<unknown>(`/merchant/${storeId}/ai/product-title`, { method: 'POST', body: JSON.stringify(data) }),
+  generateDescription: (storeId: number, data: { productName?: string; category?: string; features?: string }) => request<unknown>(`/merchant/${storeId}/ai/product-description`, { method: 'POST', body: JSON.stringify(data) }),
+  suggestions: (storeId: number) => request<unknown>(`/merchant/${storeId}/ai/promotions`),
+  abandonedCarts: (storeId: number) => request<unknown>(`/merchant/${storeId}/ai/abandoned-carts`),
+  wallet: (storeId: number) => request<unknown>(`/merchant/${storeId}/ai/wallet`),
   generateProducts: (storeId: number, data: { category?: string; count?: number }) =>
-    request<any>(`/merchant/${storeId}/ai/generate-products`, { method: 'POST', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/ai/generate-products`, { method: 'POST', body: JSON.stringify(data) }),
   chat: (storeId: number, prompt: string, history?: Array<{ role: 'user' | 'assistant'; content: string }>) =>
-    request<any>(`/merchant/${storeId}/ai/chat`, { method: 'POST', body: JSON.stringify({ prompt, history }) }),
+    request<unknown>(`/merchant/${storeId}/ai/chat`, { method: 'POST', body: JSON.stringify({ prompt, history }) }),
 };
 
 export interface Employee {
@@ -864,28 +864,28 @@ export const marketingApi = {
     if (dateFrom) q.set('dateFrom', dateFrom);
     if (dateTo) q.set('dateTo', dateTo);
     const qs = q.toString();
-    return request<any>(`/merchant/${storeId}/marketing/overview${qs ? `?${qs}` : ''}`);
+    return request<unknown>(`/merchant/${storeId}/marketing/overview${qs ? `?${qs}` : ''}`);
   },
   products: (storeId: number, dateFrom?: string, dateTo?: string) => {
     const q = new URLSearchParams();
     if (dateFrom) q.set('dateFrom', dateFrom);
     if (dateTo) q.set('dateTo', dateTo);
     const qs = q.toString();
-    return request<any>(`/merchant/${storeId}/marketing/products${qs ? `?${qs}` : ''}`);
+    return request<unknown>(`/merchant/${storeId}/marketing/products${qs ? `?${qs}` : ''}`);
   },
   sources: (storeId: number, dateFrom?: string, dateTo?: string) => {
     const q = new URLSearchParams();
     if (dateFrom) q.set('dateFrom', dateFrom);
     if (dateTo) q.set('dateTo', dateTo);
     const qs = q.toString();
-    return request<any>(`/merchant/${storeId}/marketing/sources${qs ? `?${qs}` : ''}`);
+    return request<unknown>(`/merchant/${storeId}/marketing/sources${qs ? `?${qs}` : ''}`);
   },
   insights: (storeId: number, dateFrom?: string, dateTo?: string) => {
     const q = new URLSearchParams();
     if (dateFrom) q.set('dateFrom', dateFrom);
     if (dateTo) q.set('dateTo', dateTo);
     const qs = q.toString();
-    return request<any[]>(`/merchant/${storeId}/marketing/insights${qs ? `?${qs}` : ''}`);
+    return request<unknown[]>(`/merchant/${storeId}/marketing/insights${qs ? `?${qs}` : ''}`);
   },
   aggregate: (storeId: number, dateFrom?: string, dateTo?: string) => {
     const q = new URLSearchParams();
@@ -902,38 +902,38 @@ export const promotionsApi = {
     if (params?.search) q.set('search', params.search);
     if (params?.status) q.set('status', params.status);
     const qs = q.toString();
-    return request<any[]>(`/merchant/${storeId}/promotions${qs ? `?${qs}` : ''}`);
+    return request<unknown[]>(`/merchant/${storeId}/promotions${qs ? `?${qs}` : ''}`);
   },
   getById: (storeId: number, id: number) =>
-    request<any>(`/merchant/${storeId}/promotions/${id}`),
-  create: (storeId: number, data: any) =>
-    request<any>(`/merchant/${storeId}/promotions`, { method: 'POST', body: JSON.stringify(data) }),
-  update: (storeId: number, id: number, data: any) =>
-    request<any>(`/merchant/${storeId}/promotions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/promotions/${id}`),
+  create: (storeId: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/promotions`, { method: 'POST', body: JSON.stringify(data) }),
+  update: (storeId: number, id: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/promotions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (storeId: number, id: number) =>
     request<void>(`/merchant/${storeId}/promotions/${id}`, { method: 'DELETE' }),
 };
 
 export const policiesApi = {
   list: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/policies`),
+    request<unknown[]>(`/merchant/${storeId}/policies`),
   getByType: (storeId: number, type: string) =>
-    request<any>(`/merchant/${storeId}/policies/${type}`),
+    request<unknown>(`/merchant/${storeId}/policies/${type}`),
   upsert: (storeId: number, type: string, data: { title: string; content: string }) =>
-    request<any>(`/merchant/${storeId}/policies/${type}`, { method: 'PUT', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/policies/${type}`, { method: 'PUT', body: JSON.stringify(data) }),
   publish: (storeId: number, type: string) =>
-    request<any>(`/merchant/${storeId}/policies/${type}/publish`, { method: 'POST', body: JSON.stringify({ publish: true }) }),
+    request<unknown>(`/merchant/${storeId}/policies/${type}/publish`, { method: 'POST', body: JSON.stringify({ publish: true }) }),
   unpublish: (storeId: number, type: string) =>
-    request<any>(`/merchant/${storeId}/policies/${type}/publish`, { method: 'POST', body: JSON.stringify({ publish: false }) }),
-  generatePreview: (storeId: number, data: any) =>
-    request<any>(`/merchant/${storeId}/policies/generate-preview`, { method: 'POST', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/policies/${type}/publish`, { method: 'POST', body: JSON.stringify({ publish: false }) }),
+  generatePreview: (storeId: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/policies/generate-preview`, { method: 'POST', body: JSON.stringify(data) }),
   applyGenerated: (storeId: number, data: { confirmation: true; generatedPolicies: { type: string; title: string; content: string }[] }) =>
-    request<any>(`/merchant/${storeId}/policies/apply-generated`, { method: 'POST', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/policies/apply-generated`, { method: 'POST', body: JSON.stringify(data) }),
 };
 
 export const abandonedCartsApi = {
   list: (storeId: number, hours: number = 24) =>
-    request<any[]>(`/merchant/${storeId}/abandoned-carts?hours=${hours}`),
+    request<unknown[]>(`/merchant/${storeId}/abandoned-carts?hours=${hours}`),
   stats: (storeId: number, hours: number = 24) =>
     request<{ count: number; recoverableTotal: string }>(`/merchant/${storeId}/abandoned-carts/stats?hours=${hours}`),
 };
@@ -947,7 +947,7 @@ export const exportsApi = {
 
 export const apiKeysApi = {
   list: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/api-keys`),
+    request<unknown[]>(`/merchant/${storeId}/api-keys`),
   create: (storeId: number, name: string, scopes: string[]) =>
     request<{ id: number; name: string; key: string; prefix: string; scopes: string[] }>(
       `/merchant/${storeId}/api-keys`,
@@ -958,7 +958,7 @@ export const apiKeysApi = {
   getScopes: (storeId: number) =>
     request<string[]>(`/merchant/${storeId}/api-keys/scopes`),
   logs: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/api-keys/logs`),
+    request<unknown[]>(`/merchant/${storeId}/api-keys/logs`),
 };
 
 export const couponsApi = {
@@ -967,23 +967,23 @@ export const couponsApi = {
     if (params?.search) q.set('search', params.search);
     if (params?.status) q.set('status', params.status);
     const qs = q.toString();
-    return request<any[]>(`/merchant/${storeId}/coupons${qs ? `?${qs}` : ''}`);
+    return request<unknown[]>(`/merchant/${storeId}/coupons${qs ? `?${qs}` : ''}`);
   },
   getById: (storeId: number, id: number) =>
-    request<any>(`/merchant/${storeId}/coupons/${id}`),
-  create: (storeId: number, data: any) =>
-    request<any>(`/merchant/${storeId}/coupons`, { method: 'POST', body: JSON.stringify(data) }),
-  update: (storeId: number, id: number, data: any) =>
-    request<any>(`/merchant/${storeId}/coupons/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/coupons/${id}`),
+  create: (storeId: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/coupons`, { method: 'POST', body: JSON.stringify(data) }),
+  update: (storeId: number, id: number, data: unknown) =>
+    request<unknown>(`/merchant/${storeId}/coupons/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (storeId: number, id: number) =>
     request<void>(`/merchant/${storeId}/coupons/${id}`, { method: 'DELETE' }),
 };
 
 export const importsApi = {
   preview: (storeId: number, csvContent: string) =>
-    request<any>(`/merchant/${storeId}/imports/products/preview`, { method: 'POST', body: JSON.stringify({ csvContent }) }),
+    request<unknown>(`/merchant/${storeId}/imports/products/preview`, { method: 'POST', body: JSON.stringify({ csvContent }) }),
   confirm: (storeId: number, csvContent: string) =>
-    request<any>(`/merchant/${storeId}/imports/products/confirm`, { method: 'POST', body: JSON.stringify({ csvContent }) }),
+    request<unknown>(`/merchant/${storeId}/imports/products/confirm`, { method: 'POST', body: JSON.stringify({ csvContent }) }),
   templateUrl: (storeId: number) =>
     `/merchant/${storeId}/imports/products/template`,
 };
@@ -1004,7 +1004,7 @@ export const marketplaceApi = {
     );
   },
   publishProduct: (storeId: number, provider: string, data: { productId: number; price?: string; quantity?: number }) =>
-    request<any>(`/merchant/${storeId}/marketplaces/${provider}/publish`, { method: 'POST', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/marketplaces/${provider}/publish`, { method: 'POST', body: JSON.stringify(data) }),
   hub: (storeId: number) =>
     request<{
       summary: { totalSales: string; totalOrders: number; connectedCount: number; activeCount: number };
@@ -1022,31 +1022,31 @@ export const marketplaceApi = {
       }>;
     }>(`/merchant/${storeId}/marketplaces/hub`),
   list: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/marketplaces`),
+    request<unknown[]>(`/merchant/${storeId}/marketplaces`),
   summary: (storeId: number) =>
-    request<any[]>(`/merchant/${storeId}/marketplaces/summary`),
+    request<unknown[]>(`/merchant/${storeId}/marketplaces/summary`),
   connect: (storeId: number, provider: string, credentials: Record<string, unknown>) =>
-    request<any>(`/merchant/${storeId}/marketplaces/${provider}/connect`, { method: 'POST', body: JSON.stringify({ credentials }) }),
+    request<unknown>(`/merchant/${storeId}/marketplaces/${provider}/connect`, { method: 'POST', body: JSON.stringify({ credentials }) }),
   disconnect: (storeId: number, provider: string) =>
-    request<any>(`/merchant/${storeId}/marketplaces/${provider}/disconnect`, { method: 'POST' }),
+    request<unknown>(`/merchant/${storeId}/marketplaces/${provider}/disconnect`, { method: 'POST' }),
   getInfo: (storeId: number, provider: string) =>
-    request<any>(`/merchant/${storeId}/marketplaces/${provider}/info`),
+    request<unknown>(`/merchant/${storeId}/marketplaces/${provider}/info`),
   listListings: (storeId: number, provider: string) =>
-    request<any[]>(`/merchant/${storeId}/marketplaces/${provider}/listings`),
+    request<unknown[]>(`/merchant/${storeId}/marketplaces/${provider}/listings`),
   createListing: (storeId: number, provider: string, data: Record<string, unknown>) =>
-    request<any>(`/merchant/${storeId}/marketplaces/${provider}/listings`, { method: 'POST', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/marketplaces/${provider}/listings`, { method: 'POST', body: JSON.stringify(data) }),
   updateListing: (storeId: number, provider: string, listingId: number, data: Record<string, unknown>) =>
-    request<any>(`/merchant/${storeId}/marketplaces/${provider}/listings/${listingId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    request<unknown>(`/merchant/${storeId}/marketplaces/${provider}/listings/${listingId}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteListing: (storeId: number, provider: string, listingId: number) =>
-    request<any>(`/merchant/${storeId}/marketplaces/${provider}/listings/${listingId}`, { method: 'DELETE' }),
+    request<unknown>(`/merchant/${storeId}/marketplaces/${provider}/listings/${listingId}`, { method: 'DELETE' }),
   syncOrders: (storeId: number, provider: string) =>
-    request<any>(`/merchant/${storeId}/marketplaces/${provider}/sync/orders`, { method: 'POST' }),
+    request<unknown>(`/merchant/${storeId}/marketplaces/${provider}/sync/orders`, { method: 'POST' }),
   syncInventory: (storeId: number, provider: string, items: Array<{ sku: string; quantity: number }>) =>
-    request<any>(`/merchant/${storeId}/marketplaces/${provider}/sync/inventory`, { method: 'POST', body: JSON.stringify({ items }) }),
+    request<unknown>(`/merchant/${storeId}/marketplaces/${provider}/sync/inventory`, { method: 'POST', body: JSON.stringify({ items }) }),
   syncProducts: (storeId: number, provider: string) =>
-    request<any>(`/merchant/${storeId}/marketplaces/${provider}/sync/products`, { method: 'POST' }),
+    request<unknown>(`/merchant/${storeId}/marketplaces/${provider}/sync/products`, { method: 'POST' }),
   getSales: (storeId: number, provider: string, from?: string, to?: string) =>
-    request<any>(`/merchant/${storeId}/marketplaces/${provider}/sales${from ? `?from=${from}&to=${to}` : ''}`),
+    request<unknown>(`/merchant/${storeId}/marketplaces/${provider}/sales${from ? `?from=${from}&to=${to}` : ''}`),
 };
 
 // Support
@@ -1098,7 +1098,7 @@ export const supportApi = {
   updatePriority: (storeId: number, ticketId: number, priority: string) =>
     request<SupportTicketItem>(`/merchant/${storeId}/support/tickets/${ticketId}/priority`, { method: 'PUT', body: JSON.stringify({ priority }) }),
   reply: (storeId: number, ticketId: number, message: string, authorType: string = 'merchant', isStaffReply: boolean = true) =>
-    request<any>(`/merchant/${storeId}/support/tickets/${ticketId}/reply`, { method: 'POST', body: JSON.stringify({ message, authorType, isStaffReply }) }),
+    request<unknown>(`/merchant/${storeId}/support/tickets/${ticketId}/reply`, { method: 'POST', body: JSON.stringify({ message, authorType, isStaffReply }) }),
   deleteTicket: (storeId: number, ticketId: number) =>
     request<{ id: number }>(`/merchant/${storeId}/support/tickets/${ticketId}`, { method: 'DELETE' }),
   listArticles: (storeId: number) =>

@@ -111,7 +111,7 @@ export function HelpWidget() {
     setChatLoading(true);
     try {
       const pageCtx = pageTip ? ` (المستخدم حالياً في صفحة: ${pageTip.title})` : '';
-      const res = await aiApi.chat(storeId, prompt + pageCtx, chatHistory);
+      const res = await aiApi.chat(storeId, prompt + pageCtx, chatHistory) as { data?: { reply?: string }; reply?: string };
       const reply = res?.data?.reply ?? res?.reply ?? 'عذراً، لا يمكنني الإجابة الآن.';
       setChatHistory([...nextHistory, { role: 'assistant', content: reply }]);
     } catch {

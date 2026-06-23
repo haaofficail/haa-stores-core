@@ -81,15 +81,16 @@ export default function Notifications() {
         providerStatusApi.get(storeId),
       ]);
       if (prefsData) {
+        const typedPrefs = prefsData as Partial<NotificationPreferences> & { emailAddress?: string; smsPhone?: string; whatsappPhone?: string };
         setPrefs(prev => ({
           ...prev,
-          ...prefsData,
-          emailAddress: prefsData.emailAddress || '',
-          smsPhone: prefsData.smsPhone || '',
-          whatsappPhone: prefsData.whatsappPhone || '',
+          ...typedPrefs,
+          emailAddress: typedPrefs.emailAddress || '',
+          smsPhone: typedPrefs.smsPhone || '',
+          whatsappPhone: typedPrefs.whatsappPhone || '',
         }));
       }
-      if (logsData) setLogs(logsData);
+      if (logsData) setLogs(logsData as NotificationLog[]);
       setProviderStatus(providerData);
     } catch (e) {
       toast.error(messageFromError(e, t));

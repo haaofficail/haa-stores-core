@@ -78,7 +78,7 @@ export default function ApiKeysPage() {
     if (!storeId) return;
     setLoading(true);
     apiKeysApi.list(storeId)
-      .then(setKeys)
+      .then((rows) => setKeys(rows as ApiKeyRecord[]))
       .catch(() => toast.error(t('common.error')))
       .finally(() => setLoading(false));
   }, [storeId, t]);
@@ -87,7 +87,7 @@ export default function ApiKeysPage() {
     if (!storeId) return;
     setLogsLoading(true);
     apiKeysApi.logs(storeId)
-      .then(setLogs)
+      .then((rows) => setLogs(rows as IntegrationLog[]))
       .catch(() => toast.error(t('common.error', 'فشل تحميل سجل الاستخدام')))
       .finally(() => setLogsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- t is stable from useTranslation; effect intentionally runs on [storeId] only

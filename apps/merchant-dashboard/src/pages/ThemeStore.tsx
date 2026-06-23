@@ -88,7 +88,7 @@ export default function ThemeStore() {
     if (!storeId) return;
     setLoading(true);
     settingsApi.getTheme(storeId)
-      .then((config) => setActiveThemeId(config.themeKey || config.preset || 'minimal'))
+      .then((raw) => { const config = raw as { themeKey?: string; preset?: string }; setActiveThemeId(config.themeKey || config.preset || 'minimal'); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [storeId]);
