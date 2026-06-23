@@ -54,9 +54,28 @@ whatsappRouter.post('/pair', requirePermission('settings:update'), async (c) => 
 // GET /merchant/:storeId/whatsapp/status
 whatsappRouter.get('/status', requirePermission('settings:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const mgr = getWhatsappManager();
-  const status = await mgr.status(storeId);
-  return c.json({ success: true, data: { status } });
+  try {
+    const mgr = getWhatsappManager();
+    const status = await mgr.status(storeId);
+    return c.json({ success: true, data: { status } });
+  } catch (err) {
+    // Diagnostic surfacing — staging /status was 500-ing for an
+    // authenticated session and the actual cause wasn't visible
+    // without SSH. Returning the message+name lets remote browser
+    // dev-tools (and curl) see the underlying error directly.
+    const e = err as Error;
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'WHATSAPP_STATUS_FAILED',
+          message: e.message,
+          name: e.name,
+        },
+      },
+      500,
+    );
+  }
 });
 
 // POST /merchant/:storeId/whatsapp/disconnect
