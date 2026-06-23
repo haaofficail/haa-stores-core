@@ -73,18 +73,22 @@ class NoopQueue implements QueueProducer {
 function tryCreateBullMqQueue(): QueueProducer | null {
   try {
     // Lazy require — keeps bullmq optional in dev/test.
-    // The `as unknown` cast is the same pattern as observability.ts:
-    // the package is optional and TS shouldn't reject this file when
-    // it's absent.
     const BullMQ = require('bullmq') as any;
 
     if (!process.env.QUEUE_REDIS_URL) return null;
 
-    // We use the simple Queue constructor; Connection is via the URL.
-    // BullMQ signature: new Queue(name, { connection, defaultJobOptions })
-    // We accept any name; the caller passes `opts.name` per job.
+    // BullMQ v5 requires an IORedis instance (or host/port options), not
+    // a `{ url }` object — and requires `maxRetriesPerRequest: null` on
+    // the connection so the worker poll doesn't time out mid-blocking-read.
+    const IORedis = require('ioredis') as any;
+    const Redis = IORedis.default ?? IORedis;
+    const connection = new Redis(process.env.QUEUE_REDIS_URL, {
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+    });
+
     const queue = new BullMQ.Queue('haa-default', {
-      connection: { url: process.env.QUEUE_REDIS_URL },
+      connection,
       defaultJobOptions: {
         attempts: 3,
         backoff: { type: 'exponential', delay: 1000 },
