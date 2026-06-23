@@ -155,8 +155,12 @@ export class CustomerSegmentationService {
 
     const [spendResult] = await this.db
       .select({
-        total: sql`COALESCE(SUM(${s.customers.totalSpent}::numeric), 0)` as any,
-        avg: sql`COALESCE(AVG(${s.customers.totalSpent}::numeric), 0)` as any,
+        // Drizzle infers `sql\`...\`` as SQL<unknown>; we know the
+        // expression returns a numeric (COALESCE forces 0 when null),
+        // so annotate it explicitly with sql<string> — postgres returns
+        // numerics as strings to preserve precision.
+        total: sql<string>`COALESCE(SUM(${s.customers.totalSpent}::numeric), 0)`,
+        avg: sql<string>`COALESCE(AVG(${s.customers.totalSpent}::numeric), 0)`,
       })
       .from(s.customers)
       .where(where);
