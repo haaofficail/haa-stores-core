@@ -236,6 +236,56 @@ jobs:
       - name: Build @haa/${{ matrix.app }}
         run: pnpm --filter @haa/${{ matrix.app }} build
 
+      # P2-027 audit fix: measure gzipped bundle size so we have a
+      # concrete number to compare against perf budgets (P2-028).
+      # The merchant-dashboard target is 350KB gzipped; storefront
+      # target is 250KB gzipped. We currently warn-only — flipping
+      # to a hard fail comes after the size has been reduced under
+      # those budgets (P2-028 follow-up).
+      - name: Bundle size — gzipped report
+        if: ${{ matrix.app != 'api' }}
+        run: |
+          set -euo pipefail
+          # Vite emits `dist/` at the app root. For api the build is
+          # a tsc compile, not a bundled artefact — skip.
+          DIST="apps/${{ matrix.app }}/dist"
+          if [ ! -d "$DIST" ]; then
+            echo "::warning::no dist/ at $DIST — skipping bundle size report"
+            exit 0
+          fi
+          echo "## Bundle size — ${{ matrix.app }} (gzipped)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| File | uncompressed | gzipped |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|---:|---:|" >> "$GITHUB_STEP_SUMMARY"
+          total_raw=0
+          total_gz=0
+          # Only main JS + CSS chunks; ignore images / fonts / sourcemaps.
+          while IFS= read -r f; do
+            raw=$(wc -c < "$f")
+            gz=$(gzip -9 -c "$f" | wc -c)
+            total_raw=$(( total_raw + raw ))
+            total_gz=$(( total_gz + gz ))
+            base="${f#$DIST/}"
+            printf "| %s | %s | %s |\n" "$base" "$(numfmt --to=iec --suffix=B $raw)" "$(numfmt --to=iec --suffix=B $gz)" >> "$GITHUB_STEP_SUMMARY"
+          done < <(find "$DIST" -type f \( -name "*.js" -o -name "*.css" \) -not -name "*.map" | sort)
+          printf "| **TOTAL** | **%s** | **%s** |\n" \
+            "$(numfmt --to=iec --suffix=B $total_raw)" \
+            "$(numfmt --to=iec --suffix=B $total_gz)" >> "$GITHUB_STEP_SUMMARY"
+
+          # Print a one-line summary to the job log too.
+          echo "::notice::Bundle ${{ matrix.app }}: raw=$(numfmt --to=iec --suffix=B $total_raw) gzipped=$(numfmt --to=iec --suffix=B $total_gz)"
+
+          # P2-028 placeholder budget — warn-only for now.
+          case "${{ matrix.app }}" in
+            merchant-dashboard) BUDGET=$(( 350 * 1024 )) ;;
+            admin-dashboard)    BUDGET=$(( 350 * 1024 )) ;;
+            storefront)         BUDGET=$(( 250 * 1024 )) ;;
+            *)                  BUDGET=0 ;;
+          esac
+          if [ "$BUDGET" -gt 0 ] && [ "$total_gz" -gt "$BUDGET" ]; then
+            echo "::warning::Bundle ${{ matrix.app }} is $(numfmt --to=iec --suffix=B $total_gz) gzipped, over the $(numfmt --to=iec --suffix=B $BUDGET) budget. P2-028 tracks tightening this to a hard fail."
+          fi
+
   # ── 6. E2E Tests ─────────────────────────────────────────────────────────
   e2e:
     name: E2E Tests
