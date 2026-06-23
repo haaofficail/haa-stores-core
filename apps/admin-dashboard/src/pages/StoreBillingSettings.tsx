@@ -105,11 +105,12 @@ export default function StoreBillingSettings() {
         isPlatformFeeEnabled: enabled,
         changeReason: changeReason.trim(),
       });
-      setRaw(res.data.settings);
-      setEffectiveLabel(res.data.effectivePolicyLabel);
+      setRaw(res.settings);
+      setEffectiveLabel(res.effectivePolicyLabel);
       toast.success('تم تحديث إعدادات الرسوم');
-    } catch (e: any) {
-      toast.error(e?.message ?? 'فشل التحديث');
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'فشل التحديث';
+      toast.error(message);
     } finally {
       setSaving(false);
     }
