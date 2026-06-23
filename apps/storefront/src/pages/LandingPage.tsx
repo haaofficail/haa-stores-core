@@ -812,7 +812,7 @@ export default function LandingPage() {
             <div className="lp-foot__col">
               <h4>الشركة</h4>
               <Link to="/about">من نحن</Link>
-              <a href="mailto:info@haastores.com">تواصل معنا</a>
+              <a href="mailto:hello@haastores.com">تواصل معنا</a>
             </div>
             <div className="lp-foot__col">
               <h4>الدعم</h4>

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- icon passed through <Icon> wrapper
 import { Mail } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { usePlatformBrand } from '@/hooks/usePlatformBrand';
@@ -88,7 +89,7 @@ export function MarketplaceFooter() {
             <ul className="space-y-2">
               <li className="flex items-center gap-2 text-sm text-gray-500">
                 <Icon icon={Mail} size="xs" className="text-gray-400" />
-                info@haastores.com
+                hello@haastores.com
               </li>
             </ul>
           </div>

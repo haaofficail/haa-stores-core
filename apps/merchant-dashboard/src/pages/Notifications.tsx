@@ -176,7 +176,7 @@ export default function Notifications() {
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
         <p className="font-medium mb-1">تنبيه: قنوات الاتصال تحتاج إعداد مزودات حقيقية</p>
         <p className="text-amber-700">
-          البريد يعمل كقناة تواصل رسمية عبر info@haastores.com حتى إعداد SMTP. واتساب هنا رابط/QR تواصل فقط، وليس WhatsApp Business API.
+          البريد يعمل كقناة تواصل رسمية عبر hello@haastores.com حتى إعداد SMTP. واتساب هنا رابط/QR تواصل فقط، وليس WhatsApp Business API.
         </p>
       </div>
 
