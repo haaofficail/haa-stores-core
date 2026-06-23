@@ -11,7 +11,7 @@
 // there for direct use in routes that don't need DB access.
 
 import { eq } from 'drizzle-orm';
-import { createDbClient, DbClient } from '@haa/db';
+import { createDbClient, type DbOrTx } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { AuditLogService } from '@haa/integration-core';
 import {
@@ -24,7 +24,7 @@ import {
 } from '@haa/wallet-core';
 
 export class StoreBillingSettingsService {
-  constructor(private db: DbClient = createDbClient()) {}
+  constructor(private db: DbOrTx = createDbClient()) {}
 
   /**
    * Read the platform-fee policy for a store. Returns the default

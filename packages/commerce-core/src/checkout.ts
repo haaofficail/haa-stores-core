@@ -200,7 +200,7 @@ export class CheckoutService {
           email: session.customerEmail ?? undefined,
         });
 
-        const orderNumber = await new OrdersService(tx as any).generateOrderNumber(storeId);
+        const orderNumber = await new OrdersService(tx).generateOrderNumber(storeId);
 
         const sessionMeta = (session.metadata ?? {}) as Record<string, unknown>;
         const giftOpts = sessionMeta.giftOptions as { sendAsGift?: boolean; message?: string } | undefined;
@@ -211,7 +211,7 @@ export class CheckoutService {
           return sum + Math.round(Number(i.item.totalPrice) * rate * 100) / 100;
         }, 0);
 
-        const order = await new OrdersService(tx as any).create({
+        const order = await new OrdersService(tx).create({
           storeId,
           customerId: customer.id,
           orderNumber,
@@ -265,11 +265,11 @@ export class CheckoutService {
         await tx.update(s.checkoutSessions).set({ status: 'completed', completedAt: new Date() })
           .where(eq(s.checkoutSessions.id, sessionId));
 
-        const txOrdersService = new OrdersService(tx as any);
+        const txOrdersService = new OrdersService(tx);
         await txOrdersService.changeStatus(storeId, order.id, 'pending_payment', actorUserId);
 
         // CRITICAL: Lock stock FIRST before payment
-        await this.decrementStock(tx as any, cart.items);
+        await this.decrementStock(tx, cart.items);
 
         return { order, idempotent: false };
       });
@@ -309,7 +309,7 @@ export class CheckoutService {
 
       // Phase 3: Finalize (Local Transaction)
       await this.db.transaction(async (tx) => {
-        const txOrdersService = new OrdersService(tx as any);
+        const txOrdersService = new OrdersService(tx);
 
         await tx.insert(s.marketingEvents).values({
           storeId, sessionId: `order-${order.orderNumber}`, orderId: order.id,
@@ -334,8 +334,8 @@ export class CheckoutService {
           // to WalletLedger. The order.orderNumber is available here
           // (already looked up above) so it's used for the service's
           // metadata field.
-          const txPosting = new WalletPostingService(tx as any);
-          const txWallet = new WalletLedger(tx as any);
+          const txPosting = new WalletPostingService(tx);
+          const txWallet = new WalletLedger(tx);
           const saleResult = await txPosting.postSale({
             storeId,
             orderId: order.id,
@@ -359,7 +359,7 @@ export class CheckoutService {
           // (feeRatePct / feeFixed / feeSource / metadata) so the
           // existing wallet summary UI and admin reporting continue
           // to work.
-          const txBilling = new StoreBillingSettingsService(tx as any);
+          const txBilling = new StoreBillingSettingsService(tx);
           const platformPolicy = await txBilling.getPlatformFeePolicy(storeId);
           const platformResult = await txPosting.postPlatformFee({
             storeId,
@@ -405,7 +405,7 @@ export class CheckoutService {
           });
 
           if (!this.isDemo) {
-            const txOutbox = new WebhookOutboxService(tx as any);
+            const txOutbox = new WebhookOutboxService(tx);
             await txOutbox.recordEvent('order.created', storeId, 0, { orderId: order.id, orderNumber: order.orderNumber, total: Number(order.total) });
             await txOutbox.recordEvent('order.paid', storeId, 0, { orderId: order.id, orderNumber: order.orderNumber, paidAmount: Number(order.total) });
           }
@@ -428,7 +428,7 @@ export class CheckoutService {
           });
 
           if (!this.isDemo) {
-            const txOutbox = new WebhookOutboxService(tx as any);
+            const txOutbox = new WebhookOutboxService(tx);
             await txOutbox.recordEvent('order.created', storeId, 0, { orderId: order.id, orderNumber: order.orderNumber, total: Number(order.total) });
           }
         } else if (paymentStatus === 'requires_3ds') {
@@ -449,7 +449,7 @@ export class CheckoutService {
           });
 
           if (!this.isDemo) {
-            const txOutbox = new WebhookOutboxService(tx as any);
+            const txOutbox = new WebhookOutboxService(tx);
             await txOutbox.recordEvent('order.created', storeId, 0, { orderId: order.id, orderNumber: order.orderNumber, total: Number(order.total) });
           }
         } else {
@@ -464,10 +464,10 @@ export class CheckoutService {
           });
 
           // Here we should ideally release the stock back
-          await this.incrementStock(tx as any, cartItems.map(i => ({ productId: i.product.id, variantId: i.variant?.id ?? null, quantity: i.item.quantity }))); 
+          await this.incrementStock(tx, cartItems.map(i => ({ productId: i.product.id, variantId: i.variant?.id ?? null, quantity: i.item.quantity }))); 
         }
 
-        const txAudit = new AuditLogService(tx as any);
+        const txAudit = new AuditLogService(tx);
         await txAudit.record({
           actorUserId: actorUserId ?? null,
           storeId, action: 'order_status_changed',
@@ -564,11 +564,11 @@ export class CheckoutService {
             email: session.customerEmail ?? undefined,
           });
 
-          const orderNumber = await new OrdersService(tx as any).generateOrderNumber(storeId);
+          const orderNumber = await new OrdersService(tx).generateOrderNumber(storeId);
           const sessionMeta = (session.metadata ?? {}) as Record<string, unknown>;
           const giftOpts = sessionMeta.giftOptions as { sendAsGift?: boolean; message?: string } | undefined;
 
-          const order = await new OrdersService(tx as any).create({
+          const order = await new OrdersService(tx).create({
             storeId,
             customerId: customer.id,
             orderNumber,
@@ -616,9 +616,9 @@ export class CheckoutService {
           await tx.update(s.checkoutSessions).set({ status: 'completed', completedAt: new Date() })
             .where(eq(s.checkoutSessions.id, sessionId));
 
-          const txOrders = new OrdersService(tx as any);
+          const txOrders = new OrdersService(tx);
           await txOrders.changeStatus(storeId, order.id, 'confirmed', actorUserId);
-          await this.decrementStock(tx as any, cart.items);
+          await this.decrementStock(tx, cart.items);
 
           return { order, idempotent: false };
         });
@@ -648,11 +648,11 @@ export class CheckoutService {
           email: session.customerEmail ?? undefined,
         });
 
-        const orderNumber = await new OrdersService(tx as any).generateOrderNumber(storeId);
+        const orderNumber = await new OrdersService(tx).generateOrderNumber(storeId);
         const sessionMeta = (session.metadata ?? {}) as Record<string, unknown>;
         const giftOpts = sessionMeta.giftOptions as { sendAsGift?: boolean; message?: string } | undefined;
 
-        const order = await new OrdersService(tx as any).create({
+        const order = await new OrdersService(tx).create({
           storeId,
           customerId: customer.id,
           orderNumber,
@@ -699,9 +699,9 @@ export class CheckoutService {
         await tx.update(s.checkoutSessions).set({ status: 'completed', completedAt: new Date() })
           .where(eq(s.checkoutSessions.id, sessionId));
 
-        const txOrders = new OrdersService(tx as any);
+        const txOrders = new OrdersService(tx);
         await txOrders.changeStatus(storeId, order.id, 'pending_payment', actorUserId);
-        await this.decrementStock(tx as any, cart.items);
+        await this.decrementStock(tx, cart.items);
 
         return { order, idempotent: false };
       });
@@ -757,7 +757,7 @@ export class CheckoutService {
 
     if (confirmResult.success && (confirmResult.status === 'paid' || confirmResult.status === 'authorized')) {
       await this.db.transaction(async (tx) => {
-        const txOrders = new OrdersService(tx as any);
+        const txOrders = new OrdersService(tx);
         await txOrders.updatePaymentStatus(storeId, payment.orderId, 'paid', Number(payment.amount));
         await txOrders.changeStatus(storeId, payment.orderId, 'confirmed', actorUserId);
 
@@ -774,8 +774,8 @@ export class CheckoutService {
         // The BNPL flow doesn't have the order looked up at the
         // call site, so orderNumber is a placeholder (String(orderId))
         // — the dedup key is unaffected since orderNumber is metadata.
-        const txPosting = new WalletPostingService(tx as any);
-        const txWallet = new WalletLedger(tx as any);
+        const txPosting = new WalletPostingService(tx);
+        const txWallet = new WalletLedger(tx);
         const saleResult = await txPosting.postSale({
           storeId,
           orderId: payment.orderId,
@@ -791,7 +791,7 @@ export class CheckoutService {
           status: 'available',
         });
         // Phase 4: same configurable policy path as the regular checkout.
-        const txBilling = new StoreBillingSettingsService(tx as any);
+        const txBilling = new StoreBillingSettingsService(tx);
         const platformPolicy = await txBilling.getPlatformFeePolicy(storeId);
         const platformResult = await txPosting.postPlatformFee({
           storeId,
@@ -827,7 +827,7 @@ export class CheckoutService {
         }
 
         if (!this.isDemo) {
-          const txOutbox = new WebhookOutboxService(tx as any);
+          const txOutbox = new WebhookOutboxService(tx);
           await txOutbox.recordEvent('order.paid', storeId, 0, {
             orderId: payment.orderId, paidAmount: Number(payment.amount),
           });
@@ -851,7 +851,7 @@ export class CheckoutService {
 
     if (confirmResult.status === 'cancelled') {
       await this.db.transaction(async (tx) => {
-        const txOrders = new OrdersService(tx as any);
+        const txOrders = new OrdersService(tx);
         await txOrders.changeStatus(storeId, payment.orderId, 'cancelled', actorUserId);
       });
       const [cancelledOrder] = await this.db.select().from(s.orders).where(eq(s.orders.id, payment.orderId)).limit(1);
@@ -859,12 +859,12 @@ export class CheckoutService {
     }
 
     await this.db.transaction(async (tx) => {
-      const txOrders = new OrdersService(tx as any);
+      const txOrders = new OrdersService(tx);
       await txOrders.changeStatus(storeId, payment.orderId, 'payment_failed', actorUserId);
       const orderItems = await tx.select({ productId: s.orderItems.productId, variantId: s.orderItems.variantId, quantity: s.orderItems.quantity })
         .from(s.orderItems).where(eq(s.orderItems.orderId, payment.orderId));
       if (orderItems.length > 0) {
-        await this.incrementStock(tx as any, orderItems);
+        await this.incrementStock(tx, orderItems);
       }
     });
 

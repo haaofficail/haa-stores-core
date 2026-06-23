@@ -7,6 +7,21 @@ export { setRlsContext, clearRlsContext } from './rls.js';
 
 export type DbClient = ReturnType<typeof drizzle>;
 
+/**
+ * The tx-bound client handed back by `db.transaction(async (tx) => ...)`.
+ *
+ * P3-001 audit fix: many services were declared as `constructor(db:
+ * DbClient)` but were being constructed with `new Service(tx as any)`
+ * inside transaction callbacks. The cast worked at runtime (the tx
+ * value has the same query methods) but disabled TypeScript checks
+ * on the transactional path. `DbTransaction` makes the actual type
+ * available; `DbOrTx` is the union services should accept when they
+ * may run in either mode.
+ */
+export type DbTransaction = Parameters<Parameters<DbClient['transaction']>[0]>[0];
+
+export type DbOrTx = DbClient | DbTransaction;
+
 let _client: postgres.Sql | null = null;
 let _db: DbClient | null = null;
 

@@ -87,7 +87,7 @@ export async function patchBillingSettings(c: any) {
   let updated: any;
   try {
     updated = await db.transaction(async (tx) => {
-      const service = new StoreBillingSettingsService(tx as any);
+      const service = new StoreBillingSettingsService(tx);
       const store = await service.getStoreSummary(storeId);
       if (!store) {
         // Throwing inside the transaction rolls it back. We catch

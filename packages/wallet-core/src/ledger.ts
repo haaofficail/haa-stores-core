@@ -1,5 +1,5 @@
 import { eq, and, count, gte, lte, or, like, sql, desc } from 'drizzle-orm';
-import { createDbClient, DbClient } from '@haa/db';
+import { createDbClient, type DbOrTx, type DbTransaction } from '@haa/db';
 import * as s from '@haa/db/schema';
 import type { WalletEntryType, WalletEntryDirection, WalletEntryStatus } from '@haa/shared';
 import Decimal from 'decimal.js';
@@ -93,7 +93,7 @@ interface TransferProofInput {
 }
 
 export class WalletLedger {
-  constructor(private db: DbClient = createDbClient()) {}
+  constructor(private db: DbOrTx = createDbClient()) {}
 
   async ensureAccount(storeId: number) {
     let [account] = await this.db.select().from(s.walletAccounts)
@@ -125,7 +125,7 @@ export class WalletLedger {
    * the insert itself holds the lock for that row going forward.
    */
   private async ensureAccountForUpdate(
-    tx: Parameters<Parameters<DbClient['transaction']>[0]>[0],
+    tx: DbTransaction,
     storeId: number,
   ) {
     const rows = await tx.execute(

@@ -10,7 +10,7 @@
  */
 
 import { eq, and, lt, inArray } from 'drizzle-orm';
-import { createDbClient, type DbClient } from '@haa/db';
+import { createDbClient, type DbOrTx } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { createHmac, randomBytes } from 'crypto';
 
@@ -36,7 +36,7 @@ export const LOYALTY_EVENT_TYPES = [
 export type LoyaltyEventType = (typeof LOYALTY_EVENT_TYPES)[number];
 
 export class OutboundWebhookService {
-  constructor(private db: DbClient = createDbClient()) {}
+  constructor(private db: DbOrTx = createDbClient()) {}
 
   /**
    * Enqueue a new outbound webhook event for all active endpoints of a store.

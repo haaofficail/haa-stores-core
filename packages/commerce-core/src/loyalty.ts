@@ -1,5 +1,5 @@
 import { eq, and, desc, lt, gt, sql } from 'drizzle-orm';
-import { createDbClient, type DbClient } from '@haa/db';
+import { createDbClient, type DbOrTx } from '@haa/db';
 import * as s from '@haa/db/schema';
 import {
   DEFAULT_LOYALTY_RULES,
@@ -25,7 +25,7 @@ import {
  * and lets tests stub the emission by spying on this helper.
  */
 async function emitLoyaltyEvent(
-  db: DbClient,
+  db: DbOrTx,
   storeId: number,
   eventType: string,
   payload: Record<string, unknown>,
@@ -45,7 +45,7 @@ async function emitLoyaltyEvent(
  * الحساب النقي للنقاط/القيمة يتم في @haa/loyalty-core؛ هنا التخزين والذرّية.
  */
 export class LoyaltyService {
-  constructor(private db: DbClient = createDbClient()) {}
+  constructor(private db: DbOrTx = createDbClient()) {}
 
   /** اقرأ قواعد المتجر (أو الافتراضية لو لا إعدادات) */
   async getRules(storeId: number): Promise<LoyaltyRules> {

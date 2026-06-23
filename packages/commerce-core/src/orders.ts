@@ -1,5 +1,5 @@
 import { eq, and, count, sql, or, like, gte, lte, inArray, ne } from 'drizzle-orm';
-import { createDbClient, DbClient } from '@haa/db';
+import { createDbClient, type DbOrTx } from '@haa/db';
 import * as s from '@haa/db/schema';
 import type { OrderStatus, PaymentStatus, FulfillmentStatus } from '@haa/shared';
 import { ORDER_STATUS_TRANSITIONS } from '@haa/shared';
@@ -11,7 +11,7 @@ import { WalletPostingService } from './wallet-posting-service.js';
 import { LoyaltyService } from './loyalty.js';
 
 export class OrdersService {
-  constructor(private db: DbClient = createDbClient()) {}
+  constructor(private db: DbOrTx = createDbClient()) {}
 
   async list(storeId: number, opts?: {
     page?: number; limit?: number;
@@ -309,20 +309,20 @@ export class OrdersService {
     if (order.status === 'cancelled' || order.status === 'refunded') throw new Error('Order is cancelled or refunded');
 
     const updated = await this.db.transaction(async (tx) => {
-      const txOrders = new OrdersService(tx as any);
+      const txOrders = new OrdersService(tx);
       const collected = await txOrders.updatePaymentStatus(storeId, orderId, 'paid', Number(order.total));
 
       // Read the per-store COD-fee policy at collection time. The policy
       // is then snapshotted onto the `cod_fee` wallet entry for
       // historical immutability — see TASK-0032 + TASK-0033.
-      const txBilling = new StoreBillingSettingsService(tx as any);
+      const txBilling = new StoreBillingSettingsService(tx);
       const codPolicy = await txBilling.getCodFeePolicy(storeId);
 
       // Centralize wallet entry creation via WalletPostingService
       // (TASK-0033). This replaces the previous inline `recordEntry`
       // call sites with a single, idempotent, auditable surface.
-      const txPosting = new WalletPostingService(tx as any);
-      const txWallet = new WalletLedger(tx as any);
+      const txPosting = new WalletPostingService(tx);
+      const txWallet = new WalletLedger(tx);
 
       const saleResult = await txPosting.postSale({
         storeId,
@@ -354,7 +354,7 @@ export class OrdersService {
         status: 'available',
       });
 
-      const txAudit = new AuditLogService(tx as any);
+      const txAudit = new AuditLogService(tx);
       await txAudit.record({
         actorUserId: userId ?? null, storeId, action: 'payment_status_changed',
         entityType: 'order', entityId: order.id,
@@ -411,10 +411,10 @@ export class OrdersService {
     if (!allowed.includes('returned')) throw new Error(`Cannot return order from '${order.status}'`);
 
     return this.db.transaction(async (tx) => {
-      const txOrders = new OrdersService(tx as any);
+      const txOrders = new OrdersService(tx);
       const updated = await txOrders.changeStatus(storeId, orderId, 'returned', userId, 'customer refused to pay');
 
-      const txAudit = new AuditLogService(tx as any);
+      const txAudit = new AuditLogService(tx);
       await txAudit.record({
         actorUserId: userId ?? null, storeId, action: 'order_status_changed',
         entityType: 'order', entityId: order.id,
