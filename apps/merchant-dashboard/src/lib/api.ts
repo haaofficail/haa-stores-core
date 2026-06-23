@@ -1184,6 +1184,27 @@ export interface LoyaltyAnalytics {
   topEarners: Array<{ customerId: number; lifetimeEarned: number; balance: number }>;
 }
 
+export interface LoyaltyTxRow {
+  id: number;
+  type: string;
+  points: number;
+  balanceBefore?: number;
+  balanceAfter?: number;
+  referenceType?: string | null;
+  referenceId?: number | null;
+  orderNumber?: string | null;
+  createdAt: string;
+  description: string | null;
+}
+export interface LoyaltyCustomerSummary {
+  balance: number;
+  value: number;
+  transactions: LoyaltyTxRow[];
+}
+export interface LoyaltyTransactionsPage {
+  items: LoyaltyTxRow[];
+  nextCursor: number | null;
+}
 export const loyaltyApi = {
   getSettings: (storeId: number) =>
     request<LoyaltyRules>(`/merchant/${storeId}/loyalty/settings`),
@@ -1193,10 +1214,22 @@ export const loyaltyApi = {
       body: JSON.stringify(patch),
     }),
   getCustomer: (storeId: number, customerId: number) =>
-    request<{ balance: number; value: number; transactions: Array<{ id: number; type: string; points: number; createdAt: string; description: string | null }> }>(
+    request<LoyaltyCustomerSummary>(
       `/merchant/${storeId}/loyalty/customers/${customerId}`,
     ),
   // L-PR-9
   analytics: (storeId: number) =>
     request<LoyaltyAnalytics>(`/merchant/${storeId}/loyalty/analytics`),
+  // L-PR-5 — paginated ledger drilldown. Server route added in PR #94
+  // (L-PR-2) at GET /merchant/:storeId/loyalty/customers/:id/transactions.
+  // cursor is the last id we saw (keyset pagination, stable under inserts).
+  getTransactions: (storeId: number, customerId: number, opts: { cursor?: number; limit?: number } = {}) => {
+    const q = new URLSearchParams();
+    if (opts.cursor) q.set('cursor', String(opts.cursor));
+    if (opts.limit) q.set('limit', String(opts.limit));
+    const qs = q.toString();
+    return request<LoyaltyTransactionsPage>(
+      `/merchant/${storeId}/loyalty/customers/${customerId}/transactions${qs ? `?${qs}` : ''}`,
+    );
+  },
 };

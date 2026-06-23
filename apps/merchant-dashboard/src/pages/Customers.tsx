@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
-import { customersApi, ApiClientError } from '@/lib/api';
+import { customersApi, loyaltyApi, ApiClientError, type LoyaltyCustomerSummary, type LoyaltyTxRow } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Edit, Search, Users, AlertTriangle, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Edit, Search, Users, AlertTriangle, RotateCcw, ChevronLeft, ChevronRight, Coins, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { PermissionGate } from '@/lib/permissions';
 
@@ -27,6 +27,71 @@ export default function Customers() {
   const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' });
   const [saving, setSaving] = useState(false);
   const limit = 20;
+
+  // L-PR-5 — Loyalty drilldown drawer state.
+  // Opens for a specific customer; pulls balance + first 50 ledger rows
+  // from loyaltyApi.getCustomer, then paginates further pages via
+  // loyaltyApi.getTransactions (cursor = last seen id). Lifetime stats
+  // are derived client-side from the cumulative `items` array since the
+  // server returns immutable rows in descending id order.
+  const [loyaltyOpen, setLoyaltyOpen] = useState(false);
+  const [loyaltyCustomer, setLoyaltyCustomer] = useState<{ id: number; name: string } | null>(null);
+  const [loyaltySummary, setLoyaltySummary] = useState<LoyaltyCustomerSummary | null>(null);
+  const [loyaltyItems, setLoyaltyItems] = useState<LoyaltyTxRow[]>([]);
+  const [loyaltyCursor, setLoyaltyCursor] = useState<number | null>(null);
+  const [loyaltyLoading, setLoyaltyLoading] = useState(false);
+  const [loyaltyError, setLoyaltyError] = useState<string | null>(null);
+
+  const openLoyalty = async (c: { id: number; name: string }) => {
+    if (!storeId) return;
+    setLoyaltyOpen(true);
+    setLoyaltyCustomer(c);
+    setLoyaltySummary(null);
+    setLoyaltyItems([]);
+    setLoyaltyCursor(null);
+    setLoyaltyError(null);
+    setLoyaltyLoading(true);
+    try {
+      const summary = await loyaltyApi.getCustomer(storeId, c.id);
+      setLoyaltySummary(summary);
+      // Use the first transactions response from getCustomer (up to 50).
+      const rows: LoyaltyTxRow[] = (summary.transactions || []) as LoyaltyTxRow[];
+      setLoyaltyItems(rows);
+      // Seed cursor from the last item so "load more" continues from there.
+      setLoyaltyCursor(rows.length > 0 ? rows[rows.length - 1].id : null);
+    } catch (err) {
+      setLoyaltyError(err instanceof ApiClientError ? err.message : 'فشل تحميل نقاط الولاء');
+    } finally {
+      setLoyaltyLoading(false);
+    }
+  };
+
+  const loadMoreLoyalty = async () => {
+    if (!storeId || !loyaltyCustomer || loyaltyCursor === null) return;
+    setLoyaltyLoading(true);
+    try {
+      const page = await loyaltyApi.getTransactions(storeId, loyaltyCustomer.id, { cursor: loyaltyCursor, limit: 50 });
+      setLoyaltyItems((prev) => [...prev, ...page.items]);
+      setLoyaltyCursor(page.nextCursor);
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : t('common.error'));
+    } finally {
+      setLoyaltyLoading(false);
+    }
+  };
+
+  // Client-side lifetime aggregation from the rows we've fetched so far.
+  // The merchant only sees stats for what is loaded; full history requires
+  // paging through "Load more". This avoids a new aggregation endpoint.
+  const loyaltyLifetime = loyaltyItems.reduce(
+    (acc, r) => {
+      if (r.type === 'earn') acc.earned += r.points;
+      else if (r.type === 'redeem') acc.redeemed += Math.abs(r.points);
+      else if (r.type === 'expire') acc.expired += Math.abs(r.points);
+      return acc;
+    },
+    { earned: 0, redeemed: 0, expired: 0 },
+  );
 
   const load = useCallback(() => {
     if (!storeId) { setLoading(false); return; }
@@ -139,11 +204,25 @@ export default function Customers() {
                   <TableCell className="text-sm text-neutral-900 p-3" dir="ltr"><PermissionGate permission="customers:view_sensitive" fallback={null}>{c.phone}</PermissionGate></TableCell>
                   <TableCell className="text-sm text-neutral-400 p-3">{c.email || '-'}</TableCell>
                   <TableCell className="p-3">
-                    <PermissionGate permission="customers:update" fallback={null}>
-                      <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => openEdit(c)} aria-label="تعديل بيانات العميل">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </PermissionGate>
+                    <div className="flex items-center gap-1 justify-end">
+                      <PermissionGate permission="promotions:read" fallback={null}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-11 w-11"
+                          onClick={() => openLoyalty({ id: c.id, name: c.name })}
+                          aria-label="عرض نقاط الولاء"
+                          data-testid="customer-loyalty-btn"
+                        >
+                          <Coins className="h-4 w-4" />
+                        </Button>
+                      </PermissionGate>
+                      <PermissionGate permission="customers:update" fallback={null}>
+                        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => openEdit(c)} aria-label="تعديل بيانات العميل">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </PermissionGate>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -187,6 +266,136 @@ export default function Customers() {
           <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
             <Button variant="outline" className="h-9 text-sm" onClick={() => setDialogOpen(false)}>{t('common.cancel')}</Button>
             <Button className="h-9 text-sm" onClick={save} disabled={saving}>{saving ? t('common.loading') : t('common.save')}</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* L-PR-5 — Loyalty drilldown: balance, lifetime stats, paginated ledger */}
+      <Dialog open={loyaltyOpen} onOpenChange={setLoyaltyOpen}>
+        <DialogContent
+          className="bg-white/95 backdrop-blur-2xl border border-neutral-100 shadow-2xl rounded-3xl max-w-2xl"
+          data-testid="customer-loyalty-drawer"
+        >
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-neutral-900 flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-primary-50 text-primary-600">
+                <Coins className="h-4 w-4" />
+              </span>
+              نقاط الولاء — {loyaltyCustomer?.name ?? ''}
+            </DialogTitle>
+          </DialogHeader>
+
+          {loyaltyError ? (
+            <div className="p-6 text-center">
+              <div className="inline-flex p-3 rounded-2xl bg-red-50 mb-3">
+                <AlertTriangle className="h-6 w-6 text-red-400" />
+              </div>
+              <p className="text-sm text-neutral-700">{loyaltyError}</p>
+            </div>
+          ) : loyaltyLoading && !loyaltySummary ? (
+            <div className="p-4 space-y-3">
+              <Skeleton className="h-16 w-full rounded-2xl" />
+              <Skeleton className="h-12 w-full rounded-2xl" />
+              <Skeleton className="h-12 w-full rounded-2xl" />
+            </div>
+          ) : loyaltySummary ? (
+            <div className="space-y-4">
+              {/* Current balance + value */}
+              <div className="rounded-2xl bg-primary-50/60 border border-primary-100 p-4" data-testid="loyalty-summary-balance">
+                <p className="text-xs text-neutral-500 mb-1">الرصيد الحالي</p>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-3xl font-bold text-primary-600 tabular-nums" dir="ltr">
+                    {loyaltySummary.balance.toLocaleString('en-US')}
+                  </span>
+                  <span className="text-sm text-neutral-500">نقطة</span>
+                </div>
+                <p className="text-xs text-neutral-500 mt-1" dir="ltr">
+                  ≈ {loyaltySummary.value.toFixed(2)} ر.س
+                </p>
+              </div>
+
+              {/* Lifetime stats (derived from loaded rows) */}
+              <div className="grid grid-cols-3 gap-3" data-testid="loyalty-lifetime-stats">
+                <div className="rounded-xl border border-neutral-100 p-3">
+                  <p className="text-xs text-neutral-500 flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3 text-emerald-600" /> مكتسبة
+                  </p>
+                  <p className="text-sm font-semibold tabular-nums mt-1" dir="ltr" data-testid="loyalty-lifetime-earned">
+                    {loyaltyLifetime.earned.toLocaleString('en-US')}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-neutral-100 p-3">
+                  <p className="text-xs text-neutral-500 flex items-center gap-1">
+                    <TrendingDown className="h-3 w-3 text-red-500" /> مستبدلة
+                  </p>
+                  <p className="text-sm font-semibold tabular-nums mt-1" dir="ltr" data-testid="loyalty-lifetime-redeemed">
+                    {loyaltyLifetime.redeemed.toLocaleString('en-US')}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-neutral-100 p-3">
+                  <p className="text-xs text-neutral-500 flex items-center gap-1">
+                    <Calendar className="h-3 w-3 text-neutral-400" /> منتهية
+                  </p>
+                  <p className="text-sm font-semibold tabular-nums mt-1" dir="ltr" data-testid="loyalty-lifetime-expired">
+                    {loyaltyLifetime.expired.toLocaleString('en-US')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Ledger */}
+              <div>
+                <p className="text-xs text-neutral-500 mb-2">سجل الحركات</p>
+                {loyaltyItems.length === 0 ? (
+                  <p className="text-sm text-neutral-400 text-center py-6">لا توجد حركات</p>
+                ) : (
+                  <ul className="space-y-1.5 max-h-80 overflow-y-auto" data-testid="loyalty-ledger-list">
+                    {loyaltyItems.map((row) => {
+                      const isPositive = row.points > 0;
+                      return (
+                        <li
+                          key={row.id}
+                          className="flex items-center justify-between text-sm px-3 py-2 rounded-lg hover:bg-neutral-50"
+                          data-testid="loyalty-ledger-row"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-neutral-700 truncate">
+                              {row.description || row.type}
+                            </p>
+                            <p className="text-xs text-neutral-400" dir="ltr">
+                              {new Date(row.createdAt).toLocaleDateString('en-GB')}
+                            </p>
+                          </div>
+                          <span
+                            className={`tabular-nums font-medium ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}
+                            dir="ltr"
+                          >
+                            {isPositive ? '+' : ''}{row.points.toLocaleString('en-US')}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {loyaltyCursor !== null && (
+                  <div className="flex justify-center pt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 text-sm"
+                      onClick={loadMoreLoyalty}
+                      disabled={loyaltyLoading}
+                      data-testid="loyalty-load-more-btn"
+                    >
+                      {loyaltyLoading ? t('common.loading') : 'تحميل المزيد'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
+            <Button variant="outline" className="h-9 text-sm" onClick={() => setLoyaltyOpen(false)}>{t('common.close', 'إغلاق')}</Button>
           </div>
         </DialogContent>
       </Dialog>
