@@ -17,6 +17,15 @@ import { acquireLock, releaseLock } from './redis.js';
 import { isDemoStore, type ProviderCode } from '@haa/shared';
 import { WalletPostingService } from './wallet-posting-service.js';
 
+// Shape of a single cart row as returned by CartService.getCart()
+// (one `item` row joined with its `product` + optional `variant`).
+// Kept local so the file no longer falls back to `any[]`.
+type CartItemWithProduct = {
+  item: typeof s.cartItems.$inferSelect;
+  product: typeof s.products.$inferSelect & { images: Array<typeof s.productImages.$inferSelect> };
+  variant: typeof s.productVariants.$inferSelect | null;
+};
+
 export class CheckoutService {
   private cartService: CartService;
   private ordersService: OrdersService;
@@ -128,12 +137,12 @@ export class CheckoutService {
 
     // Verify per-item gift options against features and product settings
     for (const item of cart.items) {
-      const itemGiftWrap = (item.item as any).giftWrapSelected;
-      const itemSendAsGift = (item.item as any).sendAsGift;
+      const itemGiftWrap = item.item.giftWrapSelected;
+      const itemSendAsGift = item.item.sendAsGift;
       if (itemGiftWrap && !features.giftWrap) throw new Error('Gift wrap feature is not enabled for this store');
-      if (itemGiftWrap && !(item.product as any).giftWrapAvailable) throw new Error(`Product "${item.product.name}" does not support gift wrap`);
+      if (itemGiftWrap && !item.product.giftWrapAvailable) throw new Error(`Product "${item.product.name}" does not support gift wrap`);
       if (itemSendAsGift && !features.sendAsGift) throw new Error('Send-as-gift feature is not enabled for this store');
-      const giftMsg = (item.item as any).giftMessage;
+      const giftMsg = item.item.giftMessage;
       if (giftMsg && giftMsg.length > (storeSettings?.giftMessageMaxLength ?? 250)) {
         throw new Error(`Gift message for "${item.product.name}" exceeds maximum length`);
       }
@@ -154,7 +163,9 @@ export class CheckoutService {
       status: 'pending',
       customerName: input.customerName, customerPhone: input.customerPhone,
       customerEmail: input.customerEmail ?? null,
-      shippingAddress: (input.shippingAddress ?? null) as any,
+      // Cast through unknown: the route may pass a partial address (street is optional)
+      // while the column's $type<>() requires `street: string`. Trust the caller.
+      shippingAddress: (input.shippingAddress ?? null) as typeof s.checkoutSessions.$inferInsert['shippingAddress'],
       shippingMethodId: input.shippingMethodId ?? null,
       shippingCost: shippingCost.toString(),
       subtotal: subtotal.toString(),
@@ -165,7 +176,7 @@ export class CheckoutService {
       notes: input.notes ?? null,
       couponCode,
       couponDiscount: couponDiscount > 0 ? couponDiscount.toString() : null,
-      metadata: Object.keys(metadata).length > 0 ? metadata as any : null,
+      metadata: Object.keys(metadata).length > 0 ? metadata : null,
     }).returning();
 
     return { idempotent: false, session, customer };
@@ -184,7 +195,7 @@ export class CheckoutService {
 
     try {
       // Phase 1: Order Creation & Stock Locking (Local Transaction)
-      let cartItems: any[] = [];
+      let cartItems: CartItemWithProduct[] = [];
 
       const orderData = await this.db.transaction(async (tx) => {
         const [existingOrder] = await tx.select().from(s.orders)
@@ -204,8 +215,8 @@ export class CheckoutService {
 
         const sessionMeta = (session.metadata ?? {}) as Record<string, unknown>;
         const giftOpts = sessionMeta.giftOptions as { sendAsGift?: boolean; message?: string } | undefined;
-        const orderSource = cart.items.some((i: any) => i.item.source === 'haa_marketplace') ? 'haa_marketplace' : 'storefront';
-        const platformCommission = cart.items.reduce((sum: number, i: any) => {
+        const orderSource = cart.items.some((i) => i.item.source === 'haa_marketplace') ? 'haa_marketplace' : 'storefront';
+        const platformCommission = cart.items.reduce((sum, i) => {
           if (i.item.source !== 'haa_marketplace') return sum;
           const rate = Number(i.product.haaMarketplaceCommissionRate ?? 0.05);
           return sum + Math.round(Number(i.item.totalPrice) * rate * 100) / 100;
@@ -243,10 +254,10 @@ export class CheckoutService {
             unitPrice: Number(i.item.unitPrice),
             totalPrice: Number(i.item.totalPrice),
             notes: i.item.notes ?? undefined,
-            giftWrapSelected: (i.item as any).giftWrapSelected ?? false,
-            giftWrapPrice: (i.item as any).giftWrapPrice ? Number((i.item as any).giftWrapPrice) : undefined,
-            sendAsGift: (i.item as any).sendAsGift ?? false,
-            giftMessage: (i.item as any).giftMessage ?? undefined,
+            giftWrapSelected: i.item.giftWrapSelected ?? false,
+            giftWrapPrice: i.item.giftWrapPrice ? Number(i.item.giftWrapPrice) : undefined,
+            sendAsGift: i.item.sendAsGift ?? false,
+            giftMessage: i.item.giftMessage ?? undefined,
             source: i.item.source ?? 'storefront',
             platformCommissionRate: i.item.source === 'haa_marketplace' ? Number(i.product.haaMarketplaceCommissionRate ?? 0.05) : undefined,
             platformCommission: i.item.source === 'haa_marketplace'
@@ -486,13 +497,13 @@ export class CheckoutService {
           const fType = (sessionMeta.fulfillmentType as string) ?? 'shipping';
           const giftOpt = sessionMeta.giftOptions as { sendAsGift?: boolean; message?: string } | undefined;
 
-          const itemsList = (cartItems as any[]).map((i: any) =>
-            `• ${i.product.name} × ${i.quantity} = ${Number(i.item.totalPrice).toFixed(2)} ر.س${i.item.giftWrapSelected ? ' (🎁 تغليف هدية)' : ''}${i.item.sendAsGift ? ' (💌 إرسال كهدية)' : ''}`
+          const itemsList = cartItems.map((i) =>
+            `• ${i.product.name} × ${i.item.quantity} = ${Number(i.item.totalPrice).toFixed(2)} ر.س${i.item.giftWrapSelected ? ' (🎁 تغليف هدية)' : ''}${i.item.sendAsGift ? ' (💌 إرسال كهدية)' : ''}`
           ).join('\n');
 
           const fulfillmentSummary = fType === 'local_pickup'
             ? '📍 استلام من الفرع'
-            : `🚚 شحن إلى: ${session.shippingAddress ? (session.shippingAddress as any).city : ''}`;
+            : `🚚 شحن إلى: ${session.shippingAddress?.city ?? ''}`;
 
           const giftString = giftOpt ? `💌 إرسال كهدية${giftOpt.message ? `: ${giftOpt.message}` : ''}` : '';
 
@@ -589,7 +600,7 @@ export class CheckoutService {
             fulfillmentType: (sessionMeta.fulfillmentType as string) ?? 'shipping',
             pickupLocationId: sessionMeta.pickupLocationId ? Number(sessionMeta.pickupLocationId) : undefined,
             giftOptions: giftOpts,
-            items: cart.items.map((i: any) => ({
+            items: cart.items.map((i) => ({
               productId: i.product.id,
               variantId: i.variant?.id ?? null,
               name: i.variant ? `${i.product.name} - ${i.variant.name}` : i.product.name,
@@ -598,10 +609,10 @@ export class CheckoutService {
               unitPrice: Number(i.item.unitPrice),
               totalPrice: Number(i.item.totalPrice),
               notes: i.item.notes ?? undefined,
-              giftWrapSelected: (i.item as any).giftWrapSelected ?? false,
-              giftWrapPrice: (i.item as any).giftWrapPrice ? Number((i.item as any).giftWrapPrice) : undefined,
-              sendAsGift: (i.item as any).sendAsGift ?? false,
-              giftMessage: (i.item as any).giftMessage ?? undefined,
+              giftWrapSelected: i.item.giftWrapSelected ?? false,
+              giftWrapPrice: i.item.giftWrapPrice ? Number(i.item.giftWrapPrice) : undefined,
+              sendAsGift: i.item.sendAsGift ?? false,
+              giftMessage: i.item.giftMessage ?? undefined,
             })),
             notes: session.notes ?? undefined,
             metadata: { isDemoPayment: true },
@@ -673,7 +684,7 @@ export class CheckoutService {
           fulfillmentType: (sessionMeta.fulfillmentType as string) ?? 'shipping',
           pickupLocationId: sessionMeta.pickupLocationId ? Number(sessionMeta.pickupLocationId) : undefined,
           giftOptions: giftOpts,
-          items: cart.items.map((i: any) => ({
+          items: cart.items.map((i) => ({
             productId: i.product.id,
             variantId: i.variant?.id ?? null,
             name: i.variant ? `${i.product.name} - ${i.variant.name}` : i.product.name,
@@ -682,10 +693,10 @@ export class CheckoutService {
             unitPrice: Number(i.item.unitPrice),
             totalPrice: Number(i.item.totalPrice),
             notes: i.item.notes ?? undefined,
-            giftWrapSelected: (i.item as any).giftWrapSelected ?? false,
-            giftWrapPrice: (i.item as any).giftWrapPrice ? Number((i.item as any).giftWrapPrice) : undefined,
-            sendAsGift: (i.item as any).sendAsGift ?? false,
-            giftMessage: (i.item as any).giftMessage ?? undefined,
+            giftWrapSelected: i.item.giftWrapSelected ?? false,
+            giftWrapPrice: i.item.giftWrapPrice ? Number(i.item.giftWrapPrice) : undefined,
+            sendAsGift: i.item.sendAsGift ?? false,
+            giftMessage: i.item.giftMessage ?? undefined,
           })),
           notes: session.notes ?? undefined,
         });
