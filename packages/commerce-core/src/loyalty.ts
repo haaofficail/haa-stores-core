@@ -1,4 +1,4 @@
-import { eq, and, desc, lt } from 'drizzle-orm';
+import { eq, and, desc, lt, gt, sql } from 'drizzle-orm';
 import { createDbClient, type DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import {
@@ -12,6 +12,33 @@ import {
   type RedeemResult,
   type PointsLot,
 } from '@haa/loyalty-core';
+import {
+  LOYALTY_EARNED_EVENT,
+  LOYALTY_REDEEMED_EVENT,
+  LOYALTY_EXPIRED_EVENT,
+} from './outbound-webhook.js';
+
+/**
+ * Resolve an OutboundWebhookService lazily to avoid a circular import at
+ * module-load time. The webhook service imports nothing from loyalty, but
+ * keeping the constructor call deferred keeps the dependency graph simple
+ * and lets tests stub the emission by spying on this helper.
+ */
+async function emitLoyaltyEvent(
+  db: DbClient,
+  storeId: number,
+  eventType: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  try {
+    const { OutboundWebhookService } = await import('./outbound-webhook.js');
+    await new OutboundWebhookService(db).emit(storeId, eventType, payload);
+  } catch (err) {
+    // Webhooks are best-effort: never block the loyalty mutation if the
+    // delivery layer is mis-configured or unreachable.
+    console.error('[loyalty] webhook emit failed:', (err as Error).message);
+  }
+}
 
 /**
  * LoyaltyService (QA Loyalty) — يدير الإعدادات، الحسابات، والـ ledger.
@@ -139,6 +166,17 @@ export class LoyaltyService {
           updatedAt: new Date(),
         }).where(eq(s.loyaltyAccounts.id, account.id));
       });
+      // L-PR-8: fire outbound webhook (best-effort, post-commit). Re-fires
+      // on every successful earn but the partial unique index guarantees
+      // we do not double-credit, so duplicate earns short-circuit before
+      // reaching this point and never trigger a duplicate webhook.
+      await emitLoyaltyEvent(this.db, input.storeId, LOYALTY_EARNED_EVENT, {
+        customerId: input.customerId,
+        orderId: input.orderId,
+        orderNumber: input.orderNumber ?? null,
+        points,
+        expiresAt: expiresAt?.toISOString() ?? null,
+      });
       return { earned: points, duplicate: false };
     } catch (err) {
       // سباق: انتهك الفهرس الجزئي → كُسب بالفعل لهذا الطلب
@@ -204,6 +242,18 @@ export class LoyaltyService {
         updatedAt: new Date(),
       }).where(eq(s.loyaltyAccounts.id, account.id));
     });
+    // L-PR-8: fire outbound webhook (best-effort, post-commit). We emit
+    // only when a real redemption happened (points > 0); failed previews
+    // (below_min, insufficient_balance) don't generate an event.
+    if (result.points > 0) {
+      await emitLoyaltyEvent(this.db, input.storeId, LOYALTY_REDEEMED_EVENT, {
+        customerId: input.customerId,
+        orderId: input.referenceId ?? null,
+        orderNumber: input.orderNumber ?? null,
+        points: result.points,
+        value: result.value,
+      });
+    }
     return result;
   }
 
@@ -257,7 +307,53 @@ export class LoyaltyService {
       }).where(eq(s.loyaltyAccounts.id, account.id));
       expired = toExpire;
     });
+    // L-PR-8: fire outbound webhook (best-effort, post-commit). Only
+    // when an actual expiry happened — keeps cron sweeps idle quiet.
+    if (expired > 0) {
+      await emitLoyaltyEvent(this.db, storeId, LOYALTY_EXPIRED_EVENT, {
+        customerId,
+        points: expired,
+        expiredAt: asOf.toISOString(),
+      });
+    }
     return expired;
+  }
+
+  /**
+   * L-PR-7 — Sweep all accounts in a store whose oldest earn-lots have
+   * passed their expiry date. Used by the daily `loyalty.expiry` cron in
+   * apps/api/src/worker.ts. Safe to retry: each per-account call is
+   * idempotent (FIFO consumption + `Math.min(expiredPoints, before)`).
+   *
+   * Walks accounts with `balance > 0` to skip already-empty rows. Returns
+   * a summary { accounts, totalExpired } so the scheduler can log effort.
+   */
+  async expireAllAccounts(storeId: number, asOf: Date = new Date()): Promise<{
+    accounts: number; totalExpired: number;
+  }> {
+    const rules = await this.getRules(storeId);
+    if (rules.pointsExpiryMonths <= 0) return { accounts: 0, totalExpired: 0 };
+
+    const accounts = await this.db.select({
+      customerId: s.loyaltyAccounts.customerId,
+    }).from(s.loyaltyAccounts)
+      .where(and(
+        eq(s.loyaltyAccounts.storeId, storeId),
+        gt(s.loyaltyAccounts.balance, 0),
+      ));
+
+    let totalExpired = 0;
+    for (const acc of accounts) {
+      try {
+        const expired = await this.expireAccount(storeId, acc.customerId, asOf);
+        totalExpired += expired;
+      } catch (err) {
+        // Per-account failures must not abort the sweep — log and continue
+        // so a single bad row doesn't block the rest of the merchant base.
+        console.error(`[loyalty.expiry] account ${acc.customerId} failed:`, (err as Error).message);
+      }
+    }
+    return { accounts: accounts.length, totalExpired };
   }
 
   /** آخر حركات العميل (للوحة العميل) */
@@ -345,6 +441,57 @@ export class LoyaltyService {
       newBalance = after;
     });
     return { points, balance: newBalance };
+  }
+
+  /**
+   * L-PR-9 — Read-only analytics for the merchant dashboard Loyalty tab.
+   * Pure SQL aggregates; no new tables. Returns:
+   *  - activeAccounts: customers with balance > 0
+   *  - pointsOutstanding: sum of all account balances
+   *  - redemptionRate: lifetime_redeemed / lifetime_earned (0–1)
+   *  - breakageRate: lifetime_expired / lifetime_earned (0–1)
+   *  - topEarners: top 10 customers by lifetime_earned
+   */
+  async getAnalytics(storeId: number): Promise<{
+    activeAccounts: number;
+    pointsOutstanding: number;
+    totals: { earned: number; redeemed: number; expired: number };
+    redemptionRate: number;
+    breakageRate: number;
+    topEarners: { customerId: number; lifetimeEarned: number; balance: number }[];
+  }> {
+    const [agg] = await this.db.select({
+      activeAccounts: sql<string | number>`COUNT(*) FILTER (WHERE ${s.loyaltyAccounts.balance} > 0)`,
+      pointsOutstanding: sql<string | number>`COALESCE(SUM(${s.loyaltyAccounts.balance}), 0)`,
+      totalEarned: sql<string | number>`COALESCE(SUM(${s.loyaltyAccounts.lifetimeEarned}), 0)`,
+      totalRedeemed: sql<string | number>`COALESCE(SUM(${s.loyaltyAccounts.lifetimeRedeemed}), 0)`,
+      totalExpired: sql<string | number>`COALESCE(SUM(${s.loyaltyAccounts.lifetimeExpired}), 0)`,
+    }).from(s.loyaltyAccounts)
+      .where(eq(s.loyaltyAccounts.storeId, storeId));
+
+    const earned = Number(agg?.totalEarned ?? 0);
+    const redeemed = Number(agg?.totalRedeemed ?? 0);
+    const expired = Number(agg?.totalExpired ?? 0);
+    const redemptionRate = earned > 0 ? redeemed / earned : 0;
+    const breakageRate = earned > 0 ? expired / earned : 0;
+
+    const topEarners = await this.db.select({
+      customerId: s.loyaltyAccounts.customerId,
+      lifetimeEarned: s.loyaltyAccounts.lifetimeEarned,
+      balance: s.loyaltyAccounts.balance,
+    }).from(s.loyaltyAccounts)
+      .where(eq(s.loyaltyAccounts.storeId, storeId))
+      .orderBy(desc(s.loyaltyAccounts.lifetimeEarned))
+      .limit(10);
+
+    return {
+      activeAccounts: Number(agg?.activeAccounts ?? 0),
+      pointsOutstanding: Number(agg?.pointsOutstanding ?? 0),
+      totals: { earned, redeemed, expired },
+      redemptionRate,
+      breakageRate,
+      topEarners,
+    };
   }
 }
 

@@ -98,7 +98,14 @@ export { LoyaltyService, consumeFifo } from './loyalty.js';
 export { CustomDomainService, checkDnsRecords } from './custom-domain.js';
 export type { SetDomainResult, VerifyResult, DnsLookup } from './custom-domain.js';
 export type { CreateCampaignInput } from './whatsapp-campaigns.js';
-export { OutboundWebhookService } from './outbound-webhook.js';
+export {
+  OutboundWebhookService,
+  LOYALTY_EARNED_EVENT,
+  LOYALTY_REDEEMED_EVENT,
+  LOYALTY_EXPIRED_EVENT,
+  LOYALTY_EVENT_TYPES,
+} from './outbound-webhook.js';
+export type { LoyaltyEventType } from './outbound-webhook.js';
 export { ShipmentsService } from './shipments-service.js';
 export type { ShipmentsResult } from './shipments-service.js';
 export { PaymentWebhookService } from './payment-webhook-service.js';

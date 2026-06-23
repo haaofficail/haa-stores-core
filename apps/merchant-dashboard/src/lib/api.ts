@@ -1148,10 +1148,10 @@ export const whatsappApi = {
   },
 };
 
-// Loyalty (L-PR-4 client surface).
-// Server routes added in PR #94 (Loyalty Phase 1). The mutating PUT/POST
-// inherit the auto-attached Idempotency-Key from request() — no per-call
-// header plumbing needed.
+// Loyalty (L-PR-4 client surface + L-PR-9 analytics extension).
+// Server routes added in PR #94 (Loyalty Phase 1) + PR for L-PR-9.
+// The mutating PUT/POST inherit the auto-attached Idempotency-Key from
+// request() — no per-call header plumbing needed.
 export interface LoyaltyRules {
   enabled: boolean;
   earnRatePerCurrency: number;
@@ -1163,6 +1163,19 @@ export interface LoyaltyRules {
   earnOnShipping: boolean;
   minOrderForEarn: number;
 }
+
+// L-PR-9 — Loyalty analytics aggregates. Read-only; powered by
+// /merchant/:storeId/loyalty/analytics. Pure GET; uses `reports:read`
+// on the API side (same scope as the rest of the Reports page).
+export interface LoyaltyAnalytics {
+  activeAccounts: number;
+  pointsOutstanding: number;
+  totals: { earned: number; redeemed: number; expired: number };
+  redemptionRate: number;
+  breakageRate: number;
+  topEarners: Array<{ customerId: number; lifetimeEarned: number; balance: number }>;
+}
+
 export const loyaltyApi = {
   getSettings: (storeId: number) =>
     request<LoyaltyRules>(`/merchant/${storeId}/loyalty/settings`),
@@ -1175,4 +1188,7 @@ export const loyaltyApi = {
     request<{ balance: number; value: number; transactions: Array<{ id: number; type: string; points: number; createdAt: string; description: string | null }> }>(
       `/merchant/${storeId}/loyalty/customers/${customerId}`,
     ),
+  // L-PR-9
+  analytics: (storeId: number) =>
+    request<LoyaltyAnalytics>(`/merchant/${storeId}/loyalty/analytics`),
 };

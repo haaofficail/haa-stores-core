@@ -155,3 +155,13 @@ loyaltyRouter.get(
     return c.json({ success: true, data: page });
   },
 );
+
+// L-PR-9 — GET /merchant/:storeId/loyalty/analytics
+// Read-only aggregates for the dashboard Loyalty tab. Pure SUM/COUNT
+// over loyalty_accounts; no joins, no per-row scan; safe for the hot
+// path. `reports:read` so it appears for the same role as Reports.tsx.
+loyaltyRouter.get('/analytics', requirePermission('reports:read'), async (c) => {
+  const storeId = Number(c.req.param('storeId'));
+  const data = await new LoyaltyService().getAnalytics(storeId);
+  return c.json({ success: true, data });
+});
