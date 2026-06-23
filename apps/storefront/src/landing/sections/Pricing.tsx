@@ -8,9 +8,8 @@
  */
 import { useState as useReactState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
 import { getClaim } from '@/lib/landing-claims';
-import { StoreContainer } from '@/components/ui';
+import { StoreContainer, Icon } from '@/components/ui';
 import type { TFn } from './types';
 
 export function Pricing({ t }: { t: TFn }) {
@@ -85,7 +84,7 @@ export function Pricing({ t }: { t: TFn }) {
               >
                 {highlight && (
                   <span className="absolute top-6 end-6 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-white shadow-lg">
-                    <Sparkles className="h-3 w-3" />
+                    <Icon name="Sparkles" size="2xs" />
                     {t('landing.pricing.popular', 'الأكثر شيوعًا')}
                   </span>
                 )}
@@ -115,7 +114,7 @@ export function Pricing({ t }: { t: TFn }) {
                 </ul>
                 {/* CTA: 48px height, 17px font-semibold, 28px horizontal padding, 100% width on mobile, full */}
                 <Link
-                  to={key === 'enterprise' ? '/contact' : '/signup' + (key === 'pro' ? '?plan=pro' : '')}
+                  to={key === 'enterprise' ? '/#contact' : '/signup' + (key === 'pro' ? '?plan=pro' : '')}
                   className={`mt-8 inline-flex h-12 min-h-[48px] w-full items-center justify-center rounded-full text-base font-semibold transition-all ${
                     highlight
                       ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30 hover:scale-[1.02] hover:shadow-xl hover:!text-white'

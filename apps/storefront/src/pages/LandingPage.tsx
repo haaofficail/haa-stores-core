@@ -6,6 +6,7 @@ import {
   LayoutDashboard, CircleDollarSign, ShoppingCart, Users,
   PenLine, Wand2, Flame, MessageCircle, Store,
   Search, LayoutGrid, BadgeCheck, Plus, Star,
+  Mail, MapPin, Clock, Send,
   LucideIcon,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
@@ -334,6 +335,22 @@ export default function LandingPage() {
   };
 
   const [faqOpen, setFaqOpen] = useState(0);
+
+  // Contact form state. Submit composes a mailto: with the form body —
+  // no backend endpoint exists yet. The mailto fallback keeps the page
+  // useful before a real /api/contact route lands.
+  const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const [contactSent, setContactSent] = useState(false);
+  const onContactSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const { name, email, phone, message } = contactForm;
+    const subject = encodeURIComponent(`استفسار من ${name || 'الموقع'}`);
+    const body = encodeURIComponent(
+      `الاسم: ${name}\nالبريد: ${email}\nالجوال: ${phone}\n\n${message}`
+    );
+    window.location.href = `mailto:hello@haastores.com?subject=${subject}&body=${body}`;
+    setContactSent(true);
+  };
 
   return (
     <div id="storefront-scope" className="lp-page">
@@ -780,6 +797,311 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Contact ──────────────────────────────────────── */}
+      {/*
+        Contact section — fixes the previously-broken /contact anchor
+        referenced from Pricing.tsx and FinalCTA.tsx. Submit composes a
+        mailto: to hello@haastores.com. Replace with /api/contact when
+        the endpoint exists.
+
+        Design choices (per redesign-existing-projects audit):
+        - Asymmetric 2-col grid (form 7/12, info 5/12) — not the lazy
+          centered hero.
+        - No purple/blue "AI gradient" — uses primary brand only.
+        - text-wrap: balance on the headline.
+        - Inputs have explicit hover + focus rings (200ms transitions).
+        - Real Saudi-format placeholders, not "John Doe / 555-0100".
+      */}
+      <section id="contact" className="lp-sec">
+        <div className="lp-container">
+          <div className="lp-sec__head reveal">
+            <div className="lp-sec__eyebrow">تواصل معنا</div>
+            <h2 style={{ textWrap: 'balance' }}>عندك سؤال؟ خلّنا نسمعه</h2>
+            <p>فريق المبيعات والدعم يرد خلال يوم عمل واحد. للمؤسسات والباقات المخصّصة، نوصلك بمدير حساب مباشر.</p>
+          </div>
+
+          <div
+            className="reveal"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(0, 1fr)',
+              gap: '2rem',
+              marginTop: '3rem',
+            }}
+          >
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
+                gap: '2rem',
+              }}
+            >
+              {/* Form (asymmetric weight — sits first on LTR, last on RTL) */}
+              <form
+                onSubmit={onContactSubmit}
+                style={{
+                  gridColumn: 'span 1',
+                  background: 'var(--color-surface-1, #fff)',
+                  borderRadius: '1.5rem',
+                  padding: 'clamp(1.5rem, 4vw, 2.5rem)',
+                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -8px rgba(15, 23, 42, 0.08)',
+                  border: '1px solid rgba(15, 23, 42, 0.06)',
+                }}
+              >
+                {contactSent ? (
+                  <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+                    <CheckCircle size={48} style={{ margin: '0 auto 1rem', color: 'var(--color-primary)' }} />
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                      فتحنا لك بريدك الافتراضي
+                    </h3>
+                    <p style={{ color: 'var(--color-text-2, #64748b)', fontSize: '0.95rem' }}>
+                      راجع الرسالة وأرسلها — سنرد خلال يوم عمل.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '1rem' }}>
+                      <label style={{ display: 'block' }}>
+                        <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--color-text-1, #0f172a)' }}>
+                          الاسم
+                        </span>
+                        <input
+                          type="text"
+                          required
+                          value={contactForm.name}
+                          onChange={(e) => setContactForm((s) => ({ ...s, name: e.target.value }))}
+                          placeholder="نورة العبدالله"
+                          autoComplete="name"
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem 1rem',
+                            borderRadius: '0.75rem',
+                            border: '1px solid rgba(15, 23, 42, 0.12)',
+                            fontSize: '0.95rem',
+                            transition: 'border-color 200ms, box-shadow 200ms',
+                            outline: 'none',
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--color-primary)';
+                            e.currentTarget.style.boxShadow = '0 0 0 4px rgba(var(--color-primary-rgb, 79, 70, 229), 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.12)';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                        />
+                      </label>
+                      <label style={{ display: 'block' }}>
+                        <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--color-text-1, #0f172a)' }}>
+                          البريد الإلكتروني
+                        </span>
+                        <input
+                          type="email"
+                          required
+                          value={contactForm.email}
+                          onChange={(e) => setContactForm((s) => ({ ...s, email: e.target.value }))}
+                          placeholder="noura@example.sa"
+                          autoComplete="email"
+                          dir="ltr"
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem 1rem',
+                            borderRadius: '0.75rem',
+                            border: '1px solid rgba(15, 23, 42, 0.12)',
+                            fontSize: '0.95rem',
+                            transition: 'border-color 200ms, box-shadow 200ms',
+                            outline: 'none',
+                          }}
+                          onFocus={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--color-primary)';
+                            e.currentTarget.style.boxShadow = '0 0 0 4px rgba(var(--color-primary-rgb, 79, 70, 229), 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.12)';
+                            e.currentTarget.style.boxShadow = 'none';
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <label style={{ display: 'block', marginTop: '1rem' }}>
+                      <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--color-text-1, #0f172a)' }}>
+                        رقم الجوال <span style={{ color: 'var(--color-text-2, #64748b)', fontWeight: 400 }}>(اختياري)</span>
+                      </span>
+                      <input
+                        type="tel"
+                        value={contactForm.phone}
+                        onChange={(e) => setContactForm((s) => ({ ...s, phone: e.target.value }))}
+                        placeholder="05XXXXXXXX"
+                        autoComplete="tel"
+                        dir="ltr"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '0.75rem',
+                          border: '1px solid rgba(15, 23, 42, 0.12)',
+                          fontSize: '0.95rem',
+                          transition: 'border-color 200ms, box-shadow 200ms',
+                          outline: 'none',
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = 'var(--color-primary)';
+                          e.currentTarget.style.boxShadow = '0 0 0 4px rgba(var(--color-primary-rgb, 79, 70, 229), 0.1)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.12)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      />
+                    </label>
+                    <label style={{ display: 'block', marginTop: '1rem' }}>
+                      <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--color-text-1, #0f172a)' }}>
+                        رسالتك
+                      </span>
+                      <textarea
+                        required
+                        rows={5}
+                        value={contactForm.message}
+                        onChange={(e) => setContactForm((s) => ({ ...s, message: e.target.value }))}
+                        placeholder="اكتب استفسارك أو احتياجك — ما حجم متجرك المتوقع، ووش تحتاج منا؟"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '0.75rem',
+                          border: '1px solid rgba(15, 23, 42, 0.12)',
+                          fontSize: '0.95rem',
+                          fontFamily: 'inherit',
+                          resize: 'vertical',
+                          transition: 'border-color 200ms, box-shadow 200ms',
+                          outline: 'none',
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = 'var(--color-primary)';
+                          e.currentTarget.style.boxShadow = '0 0 0 4px rgba(var(--color-primary-rgb, 79, 70, 229), 0.1)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.12)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                      />
+                    </label>
+                    <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                      <StoreButton type="submit" size="lg" iconEnd={<Send size={18} />}>
+                        أرسل الرسالة
+                      </StoreButton>
+                    </div>
+                  </>
+                )}
+              </form>
+
+              {/* Info column */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <a
+                  href="mailto:hello@haastores.com"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '1rem',
+                    padding: '1.25rem',
+                    borderRadius: '1rem',
+                    background: 'var(--color-surface-1, #fff)',
+                    border: '1px solid rgba(15, 23, 42, 0.06)',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    transition: 'transform 200ms, box-shadow 200ms, border-color 200ms',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.borderColor = 'rgba(var(--color-primary-rgb, 79, 70, 229), 0.3)';
+                    e.currentTarget.style.boxShadow = '0 12px 24px -8px rgba(15, 23, 42, 0.12)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.06)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  <Mail size={22} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-2, #64748b)', marginBottom: '0.25rem' }}>البريد</div>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 500 }} dir="ltr">hello@haastores.com</div>
+                  </div>
+                </a>
+
+                <a
+                  href="https://wa.me/966500000000"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '1rem',
+                    padding: '1.25rem',
+                    borderRadius: '1rem',
+                    background: 'var(--color-surface-1, #fff)',
+                    border: '1px solid rgba(15, 23, 42, 0.06)',
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    transition: 'transform 200ms, box-shadow 200ms, border-color 200ms',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.borderColor = 'rgba(var(--color-primary-rgb, 79, 70, 229), 0.3)';
+                    e.currentTarget.style.boxShadow = '0 12px 24px -8px rgba(15, 23, 42, 0.12)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.06)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  <MessageCircle size={22} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-2, #64748b)', marginBottom: '0.25rem' }}>واتساب</div>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 500 }}>محادثة فورية مع المبيعات</div>
+                  </div>
+                </a>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '1rem',
+                    padding: '1.25rem',
+                    borderRadius: '1rem',
+                    background: 'var(--color-surface-1, #fff)',
+                    border: '1px solid rgba(15, 23, 42, 0.06)',
+                  }}
+                >
+                  <Clock size={22} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-2, #64748b)', marginBottom: '0.25rem' }}>ساعات العمل</div>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 500 }}>الأحد – الخميس · 9 ص – 6 م</div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '1rem',
+                    padding: '1.25rem',
+                    borderRadius: '1rem',
+                    background: 'var(--color-surface-1, #fff)',
+                    border: '1px solid rgba(15, 23, 42, 0.06)',
+                  }}
+                >
+                  <MapPin size={22} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-2, #64748b)', marginBottom: '0.25rem' }}>الموقع</div>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 500 }}>الرياض، المملكة العربية السعودية</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA ──────────────────────────────────────────── */}
       <section className="lp-cta">
         <div className="lp-container">
@@ -789,7 +1111,7 @@ export default function LandingPage() {
             <p>انضم لأكثر من ١٢٠٠ تاجر يبيعون بثقة عبر هاء متاجر.</p>
             <div className="lp-cta__btn">
               <StoreButton size="lg" iconEnd={<ArrowLeft size={18} />} href="/signup">أنشئ متجري الآن</StoreButton>
-              <StoreButton size="lg" variant="secondary" href="/signup">تحدّث مع المبيعات</StoreButton>
+              <StoreButton size="lg" variant="secondary" href="#contact" onClick={go('contact')}>تحدّث مع المبيعات</StoreButton>
             </div>
           </div>
         </div>
