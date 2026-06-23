@@ -29,14 +29,14 @@ const mockCreateShipment = vi.hoisted(() => vi.fn());
 
 vi.mock('../packages/commerce-core/src/orders.js', () => ({
   OrdersService: class {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     getById: any = mockGetById;
   },
 }));
 
 vi.mock('@haa/shipping-core', () => ({
   ShippingService: class {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     createShipment: any = mockCreateShipment;
     listShipments = vi.fn();
     getShipment = vi.fn();
@@ -61,7 +61,7 @@ import { getOrderActions } from '../apps/merchant-dashboard/src/lib/order-action
 
 // ─── DB stub ──────────────────────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 function makeDb(hasExistingShipment = false): any {
   const limitResult = hasExistingShipment ? [{ id: 999 }] : [];
   return {
@@ -98,7 +98,7 @@ function makeOrder(overrides: Record<string, unknown> = {}) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const validBody: any = {
   shippingMethodId: 1,
   recipientName: 'أحمد',
