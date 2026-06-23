@@ -140,9 +140,6 @@ export default tseslint.config(
   // without first cleaning the entire file. Tracked: P2-030.
   {
     files: [
-      'packages/commerce-core/src/orders.ts',
-      'packages/commerce-core/src/billing-settings-service.ts',
-      'packages/wallet-core/src/ledger.ts',
       'apps/api/src/routes/orders.ts',
       'apps/merchant-dashboard/src/lib/api.ts',
     ],
