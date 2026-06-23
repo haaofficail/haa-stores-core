@@ -10,6 +10,39 @@ import { cacheBumpNamespace, cacheGetVersioned, cacheSetVersioned } from './redi
 type CreateProductInput = z.infer<typeof createProductSchema>;
 type UpdateProductInput = z.infer<typeof updateProductSchema>;
 
+// Cached payload shapes — kept in sync with the in-line construction
+// of `result` and `enrichProduct()`. Used as the generic to
+// cacheGetVersioned<T>() so we no longer fall back to `any`.
+type EnrichedProduct = typeof s.products.$inferSelect & {
+  images: Array<typeof s.productImages.$inferSelect>;
+  categories: Array<{ categoryId: number; name: string; slug: string }>;
+  brand: typeof s.brands.$inferSelect | null;
+  tags: Array<{ tagId: number; name: string; slug: string; color: string | null }>;
+  options: Array<{
+    id: number;
+    name: string;
+    sortOrder: number;
+    values: Array<{ id: number; value: string; sortOrder: number }>;
+  }>;
+  variants: Array<typeof s.productVariants.$inferSelect>;
+};
+
+type ListedProduct = typeof s.products.$inferSelect & {
+  images: Array<typeof s.productImages.$inferSelect>;
+  categories: Array<{ productId: number; categoryId: number; name: string; slug: string }>;
+  brand: { id: number; name: string; slug: string; logo: string | null } | null;
+  tags: Array<{ productId: number; tagId: number; name: string; slug: string; color: string | null }>;
+  optionCount: number;
+};
+
+type ListResult = {
+  data: ListedProduct[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
 /**
  * Audit context passed to mutating methods. The route populates
  * this from the request (getAuth(c), c.req.header('x-forwarded-for'),
@@ -44,7 +77,7 @@ export class ProductsService {
     typeFilter?: 'simple' | 'variants';
   }) {
     const cacheKey = `list:${JSON.stringify(opts || {})}`;
-    const cached = await cacheGetVersioned<any>(this.cacheNamespace(storeId), cacheKey);
+    const cached = await cacheGetVersioned<ListResult>(this.cacheNamespace(storeId), cacheKey);
     if (cached) return cached;
 
     const page = opts?.page ?? 1;
@@ -216,7 +249,7 @@ export class ProductsService {
 
   async getById(storeId: number, productId: number) {
     const cacheKey = `id:${productId}`;
-    const cached = await cacheGetVersioned<any>(this.cacheNamespace(storeId), cacheKey);
+    const cached = await cacheGetVersioned<EnrichedProduct>(this.cacheNamespace(storeId), cacheKey);
     if (cached) return cached;
 
     const [product] = await this.db.select()
@@ -232,7 +265,7 @@ export class ProductsService {
 
   async getBySlug(storeId: number, slug: string) {
     const cacheKey = `slug:${slug}`;
-    const cached = await cacheGetVersioned<any>(this.cacheNamespace(storeId), cacheKey);
+    const cached = await cacheGetVersioned<EnrichedProduct>(this.cacheNamespace(storeId), cacheKey);
     if (cached) return cached;
 
     const [product] = await this.db.select()
