@@ -5,7 +5,7 @@ import { OrdersService, PaymentService, createPaymentProvider, WalletPostingServ
 import { WalletLedger } from '@haa/wallet-core';
 import { AuditLogService } from '@haa/integration-core';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
-import { paginationSchema, updateOrderStatusSchema, ORDER_STATUS_TRANSITIONS, PREPARATION_STATUS_TRANSITIONS } from '@haa/shared';
+import { paginationSchema, updateOrderStatusSchema, ORDER_STATUS_TRANSITIONS, PREPARATION_STATUS_TRANSITIONS, type OrderStatus, type ProviderCode } from '@haa/shared';
 import type { PreparationStatus } from '@haa/shared';
 import { createDbClient } from '@haa/db';
 import { idempotencyKey } from '../middleware/idempotency-key.js';
@@ -29,7 +29,7 @@ ordersRouter.get('/', requirePermission('orders:read'), async (c) => {
   const result = await new OrdersService().list(storeId, {
     ...query, status, paymentStatus, fulfillmentStatus, search, dateFrom, dateTo, source,
     fulfillmentType, paymentMethod,
-  } as any);
+  });
   return c.json({ success: true, data: result });
 });
 
@@ -71,7 +71,7 @@ ordersRouter.patch('/:orderId/status', requirePermission('orders:update_status')
     const existing = await new OrdersService().getById(storeId, orderId);
     if (!existing) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } }, 404);
     prevStatus = existing.status;
-    const order = await new OrdersService().changeStatus(storeId, orderId, body.status as any, auth?.userId, body.reason);
+    const order = await new OrdersService().changeStatus(storeId, orderId, body.status as OrderStatus, auth?.userId, body.reason);
     if (!order) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } }, 404);
     await new AuditLogService().record({
       actorUserId: auth?.userId,
@@ -127,7 +127,7 @@ ordersRouter.post('/:orderId/refund', requirePermission('orders:refund'), idempo
       return c.json({ success: false, error: { code: 'REFUND_EXCEEDS', message: 'Refund amount exceeds paid amount' } }, 400);
     }
 
-    const provider = createPaymentProvider(paidPayment.provider as any);
+    const provider = createPaymentProvider(paidPayment.provider as ProviderCode);
     const result = await provider.refundPayment(paidPayment.id, refundAmount, db);
 
     if (result.success) {
@@ -142,7 +142,7 @@ ordersRouter.post('/:orderId/refund', requirePermission('orders:refund'), idempo
       // write is delegated to WalletLedger (preserves the
       // status='available' + description semantics the rest of the
       // codebase uses).
-      const postingService = new WalletPostingService(db as any);
+      const postingService = new WalletPostingService(db);
       const walletLedger = new WalletLedger(db);
       const refundResult = await postingService.postRefund({
         storeId,
