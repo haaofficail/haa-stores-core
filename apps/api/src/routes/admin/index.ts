@@ -190,19 +190,23 @@ adminRouter.post('/login', zValidator('json', loginSchema), loginRoute);
 // /dashboard
 adminRouter.get('/dashboard', requireAdminAuth(), dashboardRoute);
 
-// /tenants/*
-adminRouter.get('/tenants', requireAdminAuth(), tenantsRoutes.list);
-adminRouter.post('/tenants', requireAdminAuth(), zValidator('json', tenantCreateSchema), tenantsRoutes.create);
-adminRouter.patch('/tenants/:id', requireAdminAuth(), zValidator('json', tenantUpdateSchema), tenantsRoutes.update);
-adminRouter.delete('/tenants/:id', requireAdminAuth(), tenantsRoutes.remove);
-adminRouter.patch('/tenants/:id/status', requireAdminAuth(), zValidator('json', tenantStatusSchema), tenantsRoutes.status);
+// /tenants/* — platform-level operations; audit P1-1: each route gates
+// on a distinct fine-grained admin permission so an authenticated
+// admin with a limited role cannot accidentally mutate tenants.
+adminRouter.get('/tenants', requireAdminAuth(), requireAdminPermission('tenants.read'), tenantsRoutes.list);
+adminRouter.post('/tenants', requireAdminAuth(), requireAdminPermission('tenants.create'), zValidator('json', tenantCreateSchema), tenantsRoutes.create);
+adminRouter.patch('/tenants/:id', requireAdminAuth(), requireAdminPermission('tenants.update'), zValidator('json', tenantUpdateSchema), tenantsRoutes.update);
+adminRouter.delete('/tenants/:id', requireAdminAuth(), requireAdminPermission('tenants.delete'), tenantsRoutes.remove);
+adminRouter.patch('/tenants/:id/status', requireAdminAuth(), requireAdminPermission('tenants.status.update'), zValidator('json', tenantStatusSchema), tenantsRoutes.status);
 
-// /stores/*
-adminRouter.get('/stores', requireAdminAuth(), storesRoutes.list);
-adminRouter.post('/stores', requireAdminAuth(), zValidator('json', storeCreateSchema), storesRoutes.create);
-adminRouter.patch('/stores/:id', requireAdminAuth(), zValidator('json', storeUpdateSchema), storesRoutes.update);
-adminRouter.delete('/stores/:id', requireAdminAuth(), storesRoutes.remove);
-adminRouter.patch('/stores/:id/status', requireAdminAuth(), zValidator('json', storeStatusSchema), storesRoutes.status);
+// /stores/* — same hardening as tenants. Destructive ops (delete,
+// status changes) are particularly dangerous because they affect a
+// merchant's live business.
+adminRouter.get('/stores', requireAdminAuth(), requireAdminPermission('stores.read'), storesRoutes.list);
+adminRouter.post('/stores', requireAdminAuth(), requireAdminPermission('stores.create'), zValidator('json', storeCreateSchema), storesRoutes.create);
+adminRouter.patch('/stores/:id', requireAdminAuth(), requireAdminPermission('stores.update'), zValidator('json', storeUpdateSchema), storesRoutes.update);
+adminRouter.delete('/stores/:id', requireAdminAuth(), requireAdminPermission('stores.delete'), storesRoutes.remove);
+adminRouter.patch('/stores/:id/status', requireAdminAuth(), requireAdminPermission('stores.status.update'), zValidator('json', storeStatusSchema), storesRoutes.status);
 
 // /kyc/*
 adminRouter.get('/kyc', requireAdminAuth(), kycRoutes.list);
@@ -258,7 +262,9 @@ adminRouter.get('/settings', requireAdminAuth(), settingsRoutes.get);
 adminRouter.put('/settings', requireAdminAuth(), zValidator('json', settingsUpdateSchema), settingsRoutes.update);
 
 // /users
-adminRouter.get('/users', requireAdminAuth(), usersRoute);
+// /users — listing platform users. Audit P1-8: needs explicit
+// permission since the route exposes a window into the user table.
+adminRouter.get('/users', requireAdminAuth(), requireAdminPermission('users.read'), usersRoute);
 
 // /stores/:storeId/billing-settings
 adminRouter.get(
