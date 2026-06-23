@@ -80,11 +80,18 @@ export function getWhatsappManager(): SessionManager {
             // these imports fail (e.g. test sandbox without the DB),
             // the store methods will reject — which the session
             // manager already swallows.
-             
+            //
+            // @haa/db exports `createDbClient` (a singleton factory),
+            // NOT a top-level `db`. Using `dbModule.db` resolved to
+            // undefined and made every /api/.../whatsapp/status call
+            // throw with "Cannot read properties of undefined" — the
+            // root cause of the toast that survived PR #116.
             const dbModule = require('@haa/db');
-             
             const schemaModule = require('@haa/db/schema');
-            storeDeps = { db: dbModule.db, schema: schemaModule };
+            storeDeps = {
+              db: dbModule.createDbClient(),
+              schema: schemaModule,
+            };
           }
           return (storeDeps as any)[prop as string];
         },
