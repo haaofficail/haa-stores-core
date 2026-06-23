@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { employeesApi } from '@/lib/api';
 import type { Employee } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 
 const roleLabels: Record<string, string> = {
   owner: 'مالك',
@@ -78,9 +79,17 @@ export default function EmployeesPage() {
   const [editTarget, setEditTarget] = useState<Employee | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
 
-  const storeId = Number(localStorage.getItem('active_store_id'));
+  // Source-of-truth: useAuth().storeId is the canonical accessor.
+  // Reading the localStorage key directly used `Number(...)` on a value
+  // that may be `null`, which coerces to `0` — that then issued a
+  // request to `/merchant/0/employees` → silent 404. The auth hook
+  // already falls back to `user.activeStoreId` when localStorage is
+  // empty and returns `null` (not zero) when neither is available.
+  // See: audit PART_5 row 2 (P1, source-of-truth).
+  const { storeId } = useAuth();
 
   const fetchEmployees = useCallback(async () => {
+    if (!storeId) return;
     setLoading(true);
     setError(null);
     try {
@@ -116,6 +125,7 @@ export default function EmployeesPage() {
   }
 
   async function handleSave(data: { name: string; email: string; role: string; permissions: string[]; isActive: boolean; password?: string }) {
+    if (!storeId) return;
     if (dialogMode === 'create') {
       await employeesApi.invite(storeId, {
         name: data.name,
@@ -141,6 +151,7 @@ export default function EmployeesPage() {
   }
 
   async function handleDelete(emp: Employee) {
+    if (!storeId) return;
     if (!window.confirm(`هل أنت متأكد من حذف ${emp.name}؟`)) return;
     setDeleting(emp.id);
     try {
