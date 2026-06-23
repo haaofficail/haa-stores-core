@@ -35,6 +35,10 @@ import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 
 export type DedupeResult =
+  // existingId is the row id of the prior delivery when we found it
+  // via SELECT. When we lost a concurrent race against another worker
+  // (PROBLEM-014), existingId is -1 — the duplicate signal is what
+  // callers actually act on; the id is informational only.
   | { duplicate: true; existingId: number }
   | { duplicate: false };
 
@@ -49,6 +53,13 @@ interface DedupeMetrics {
   duplicates: number;
   fresh: number;
   errors: number;
+  // PROBLEM-014: count of times we recovered from a concurrent
+  // duplicate insert by catching the Postgres unique_violation
+  // (errcode 23505) — i.e. the SELECT/INSERT race triggered, and
+  // the loser of the race correctly treated it as a duplicate
+  // instead of bubbling the error to the caller and returning HTTP
+  // 400 (which providers misread as a real failure → retry storm).
+  raceRecovered: number;
   byProvider: Record<string, { total: number; duplicates: number }>;
 }
 
@@ -57,6 +68,7 @@ const _metrics: DedupeMetrics = {
   duplicates: 0,
   fresh: 0,
   errors: 0,
+  raceRecovered: 0,
   byProvider: {},
 };
 
@@ -75,6 +87,8 @@ export interface WebhookDedupStats {
   duplicates: number;
   fresh: number;
   errors: number;
+  /** PROBLEM-014: races recovered via unique_violation catch. */
+  raceRecovered: number;
   duplicateRate: number;
   byProvider: Record<string, { total: number; duplicates: number; duplicateRate: number }>;
 }
@@ -93,6 +107,7 @@ export function getWebhookDedupStats(): WebhookDedupStats {
     duplicates: _metrics.duplicates,
     fresh: _metrics.fresh,
     errors: _metrics.errors,
+    raceRecovered: _metrics.raceRecovered,
     duplicateRate: _metrics.total === 0 ? 0 : _metrics.duplicates / _metrics.total,
     byProvider,
   };
@@ -104,7 +119,20 @@ export function resetWebhookDedupMetrics(): void {
   _metrics.duplicates = 0;
   _metrics.fresh = 0;
   _metrics.errors = 0;
+  _metrics.raceRecovered = 0;
   _metrics.byProvider = {};
+}
+
+// PROBLEM-014 — Postgres unique_violation error code. The drizzle
+// + postgres-js stack surfaces the underlying SQLSTATE on the error
+// object as `.code`. Pinning to the SQLSTATE (not the message text)
+// keeps this resilient to Postgres / driver version changes.
+const PG_UNIQUE_VIOLATION = '23505';
+
+function isPgUniqueViolation(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const code = (err as { code?: unknown }).code;
+  return typeof code === 'string' && code === PG_UNIQUE_VIOLATION;
 }
 
 /**
@@ -147,12 +175,17 @@ export function resolveIdempotencyKey(
  * processed. If not, claim the key by inserting a sentinel record
  * (status='received') and return `{ duplicate: false }`.
  *
- * Race condition note: two concurrent deliveries of the same
- * webhook could both pass the SELECT, but the UNIQUE constraint
- * on idempotencyKey ensures only one INSERT succeeds. Callers
- * should catch the unique-violation error as a backstop — the
- * helper does NOT swallow it (so the second caller gets a clear
- * error and can decide how to react).
+ * Concurrency contract (PROBLEM-014):
+ *   Two concurrent deliveries of the same webhook can both pass the
+ *   SELECT. Exactly one will win the INSERT; the loser hits the
+ *   UNIQUE constraint on `idempotencyKey` (Postgres errcode 23505).
+ *   The previous behaviour rethrew that error, the route turned it
+ *   into HTTP 400, and the provider read 400 as a real failure and
+ *   retried — causing a retry storm.
+ *
+ *   We now catch 23505 specifically and treat it as a normal
+ *   duplicate-found result. Any OTHER DB error still propagates so
+ *   genuine failures aren't masked.
  */
 export async function deduplicateWebhook(
   provider: string,
@@ -161,13 +194,19 @@ export async function deduplicateWebhook(
   headerIdempotencyKey: string | undefined,
 ): Promise<DedupeResult> {
   _metrics.total += 1;
+  let key: string;
   try {
-    const key = resolveIdempotencyKey(
+    key = resolveIdempotencyKey(
       provider,
       rawBody,
       signature,
       headerIdempotencyKey,
     );
+  } catch (err) {
+    _metrics.errors += 1;
+    throw err;
+  }
+  try {
     const db = createDbClient();
     const [existing] = await db
       .select({ id: s.paymentWebhookEvents.id })
@@ -182,13 +221,32 @@ export async function deduplicateWebhook(
     // Sentinel: claim the key with a minimal record. The route's
     // business logic may overwrite fields like eventType, rawBody,
     // status later when it has more context.
-    await db.insert(s.paymentWebhookEvents).values({
-      provider,
-      eventType: 'pending',
-      rawBody: rawBody.slice(0, 65535),
-      idempotencyKey: key,
-      status: 'received',
-    });
+    try {
+      await db.insert(s.paymentWebhookEvents).values({
+        provider,
+        eventType: 'pending',
+        rawBody: rawBody.slice(0, 65535),
+        idempotencyKey: key,
+        status: 'received',
+      });
+    } catch (insertErr) {
+      // PROBLEM-014: another concurrent delivery won the race and
+      // already claimed this idempotencyKey. That's the dedup
+      // working as intended — convert the unique_violation into a
+      // duplicate-found result instead of letting it bubble up as
+      // a 400.
+      if (isPgUniqueViolation(insertErr)) {
+        _metrics.duplicates += 1;
+        _metrics.raceRecovered += 1;
+        bumpProvider(provider, true);
+        // existingId is unknown here (we lost the race) — a follow-up
+        // SELECT would resolve it, but callers don't need the id to
+        // short-circuit on duplicate. Use -1 as the sentinel and
+        // document the contract in the type.
+        return { duplicate: true, existingId: -1 };
+      }
+      throw insertErr;
+    }
     _metrics.fresh += 1;
     bumpProvider(provider, false);
     return { duplicate: false };

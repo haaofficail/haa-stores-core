@@ -31,6 +31,7 @@ describe('Webhook dedup metrics (F-QA-B-NEXT)', () => {
       duplicates: 0,
       fresh: 0,
       errors: 0,
+      raceRecovered: 0,
       duplicateRate: 0,
       byProvider: {},
     });
@@ -39,9 +40,18 @@ describe('Webhook dedup metrics (F-QA-B-NEXT)', () => {
   it('stats() snapshot has the documented shape', () => {
     const s = getWebhookDedupStats();
     expect(Object.keys(s).sort()).toEqual(
-      ['byProvider', 'duplicateRate', 'duplicates', 'errors', 'fresh', 'total'].sort(),
+      [
+        'byProvider',
+        'duplicateRate',
+        'duplicates',
+        'errors',
+        'fresh',
+        'raceRecovered',
+        'total',
+      ].sort(),
     );
     expect(typeof s.duplicateRate).toBe('number');
+    expect(typeof s.raceRecovered).toBe('number');
     expect(typeof s.byProvider).toBe('object');
   });
 

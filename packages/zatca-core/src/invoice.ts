@@ -1,5 +1,15 @@
+import { randomUUID } from 'node:crypto';
 import { generateZatcaQr } from './qr.js';
 import type { ZatcaInvoiceInput, ZatcaInvoiceResult } from './types.js';
+
+// PROBLEM-013: validates a UUIDv4 string. ZATCA Phase 2 requires
+// `<cbc:UUID>` be a valid UUIDv4 — the previous code shoved
+// `INV-${orderId}` here which is rejected on portal validation.
+const UUIDV4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isValidInvoiceUuid(value: unknown): value is string {
+  return typeof value === 'string' && UUIDV4_RE.test(value);
+}
 
 /**
  * Build a ZATCA Phase 1 simplified invoice (B2C).
@@ -9,6 +19,15 @@ import type { ZatcaInvoiceInput, ZatcaInvoiceResult } from './types.js';
  */
 export function buildZatcaInvoice(input: ZatcaInvoiceInput): ZatcaInvoiceResult {
   const currency = input.currencyCode || 'SAR';
+
+  // PROBLEM-013: `<cbc:UUID>` MUST be a UUIDv4. If the caller passes
+  // a valid one, use it (so the value is stable across regenerations
+  // of the XML). Otherwise mint a fresh UUIDv4. We never fall back
+  // to `invoiceNumber` here — that path landed `INV-${orderId}` in
+  // production and would fail ZATCA Phase 2 portal validation.
+  const invoiceUuid = isValidInvoiceUuid(input.invoiceUuid)
+    ? input.invoiceUuid
+    : randomUUID();
 
   let subtotal = 0;
   let discountTotal = 0;
@@ -69,7 +88,7 @@ export function buildZatcaInvoice(input: ZatcaInvoiceInput): ZatcaInvoiceResult 
   xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
   <cbc:ProfileID>reporting:1.0</cbc:ProfileID>
   <cbc:ID>${escapeXml(input.invoiceNumber)}</cbc:ID>
-  <cbc:UUID>${input.invoiceNumber}</cbc:UUID>
+  <cbc:UUID>${invoiceUuid}</cbc:UUID>
   <cbc:IssueDate>${input.issueDate}</cbc:IssueDate>
   <cbc:IssueTime>${input.issueTime}</cbc:IssueTime>
   <cbc:InvoiceTypeCode name="0200000">${invoiceTypeCode}</cbc:InvoiceTypeCode>
@@ -120,6 +139,7 @@ ${lineItems.join('\n')}
 
   return {
     invoiceNumber: input.invoiceNumber,
+    invoiceUuid,
     qrCode,
     xmlContent: xml,
     totals: {

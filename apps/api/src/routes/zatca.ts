@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';
 import { OrdersService } from '@haa/commerce-core';
@@ -51,10 +52,16 @@ zatcaRouter.get('/orders/:orderId/zatca-invoice', requirePermission('orders:read
     vatRate: 0.15,
   }));
 
+  // PROBLEM-013: `invoiceNumber` is the human business identifier
+  // (lands in <cbc:ID>). `invoiceUuid` is a real UUIDv4 (lands in
+  // <cbc:UUID>) — Phase 2 portal validation rejects anything else.
+  // The UUID is minted per-request here; persisting it (so reprints
+  // see the same value) is tracked under PROBLEM-015 (hash chain).
   const result = buildZatcaInvoice({
     type: 'simplified',
     transactionType: 'invoice',
     invoiceNumber: `INV-${orderId}`,
+    invoiceUuid: randomUUID(),
     issueDate: issueDateStr,
     issueTime: issueTimeStr,
     seller: {
@@ -80,6 +87,8 @@ zatcaRouter.get('/orders/:orderId/zatca-invoice', requirePermission('orders:read
     data: {
       orderId,
       orderNumber: order.orderNumber,
+      invoiceNumber: result.invoiceNumber,
+      invoiceUuid: result.invoiceUuid,
       qrCode,
       xmlContent: result.xmlContent,
       totals: result.totals,
