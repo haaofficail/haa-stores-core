@@ -17,7 +17,7 @@
 import {
   AlertTriangle, ArrowLeft, ArrowRight, BadgeCheck, Banknote, Bell, Box,
   Building, Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Clock,
-  Coins, CreditCard, Eye, Gift, Heart, Loader2, Lock, Mail, MapPin, Menu,
+  Coins, CreditCard, Eye, FileText, Gift, Heart, Loader2, Lock, Mail, MapPin, Menu,
   Minus, Package, Phone, Plus, RefreshCcw, RefreshCw, Ruler, Search, Share2,
   Shield, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Star, Store, Tag,
   Trash2, TrendingDown, TrendingUp, Truck, User, Weight, X,
@@ -27,7 +27,7 @@ import {
 export const ICON_REGISTRY = {
   AlertTriangle, ArrowLeft, ArrowRight, BadgeCheck, Banknote, Bell, Box,
   Building, Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Clock,
-  Coins, CreditCard, Eye, Gift, Heart, Loader2, Lock, Mail, MapPin, Menu,
+  Coins, CreditCard, Eye, FileText, Gift, Heart, Loader2, Lock, Mail, MapPin, Menu,
   Minus, Package, Phone, Plus, RefreshCcw, RefreshCw, Ruler, Search, Share2,
   Shield, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Star, Store, Tag,
   Trash2, TrendingDown, TrendingUp, Truck, User, Weight, X,

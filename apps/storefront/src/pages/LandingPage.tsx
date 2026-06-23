@@ -6,13 +6,14 @@ import {
   LayoutDashboard, CircleDollarSign, ShoppingCart, Users,
   PenLine, Wand2, Flame, MessageCircle, Store,
   Search, LayoutGrid, BadgeCheck, Plus, Star,
+  Mail, Phone, MapPin, Clock, Send,
   LucideIcon,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSEO } from '@/hooks/useSEO';
 import { merchantDashboardUrl } from '@/lib/merchant';
-import { StoreButton } from '@/components/ui';
+import { StoreButton, StoreCard, StoreInput, StoreTextarea } from '@/components/ui';
 import { SarIcon } from '@/components/ui/SarIcon';
 import '@/landing/landing.css';
 
@@ -334,6 +335,22 @@ export default function LandingPage() {
   };
 
   const [faqOpen, setFaqOpen] = useState(0);
+
+  // Contact form state. Submit composes a mailto: with the form body —
+  // no backend endpoint exists yet. The mailto fallback keeps the page
+  // useful before a real /api/contact route lands.
+  const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const [contactSent, setContactSent] = useState(false);
+  const onContactSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const { name, email, phone, message } = contactForm;
+    const subject = encodeURIComponent(`استفسار من ${name || 'الموقع'}`);
+    const body = encodeURIComponent(
+      `الاسم: ${name}\nالبريد: ${email}\nالجوال: ${phone}\n\n${message}`
+    );
+    window.location.href = `mailto:hello@haastores.com?subject=${subject}&body=${body}`;
+    setContactSent(true);
+  };
 
   return (
     <div id="storefront-scope" className="lp-page">
@@ -716,7 +733,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Pricing ──────────────────────────────────────── */}
+      {/* ── Pricing ──────────────────────────────────────────
+        4-tier ladder mirrors packages/db/src/seed/index.ts so the
+        landing matches what the user actually sees inside the
+        dashboard. priceMonthly is the source of truth; do NOT diverge
+        here. Growth is highlighted as "الأكثر شيوعًا". */}
       <section id="pricing" className="lp-sec" style={{ background: 'linear-gradient(180deg, color-mix(in srgb, var(--color-primary-500) 4%, var(--surface-1)), var(--surface-1))' }}>
         <div className="lp-container">
           <div className="lp-sec__head reveal">
@@ -724,32 +745,62 @@ export default function LandingPage() {
             <h2>باقات تناسب نموّك</h2>
             <p>ابدأ مجانًا، وارتقِ متى ما كبر متجرك. بدون رسوم خفية.</p>
           </div>
-          <div className="lp-plans reveal-stagger">
+          <div className="lp-plans lp-plans--four reveal-stagger">
             <div className="lp-plan">
-              <h3>المجانية</h3>
+              <h3>Starter · مجاني</h3>
               <div className="lp-plan__price"><SarIcon /><b>0</b><span>/شهريًا</span></div>
-              <p className="lp-plan__desc">للبدء وتجربة المنصة</p>
+              <p className="lp-plan__desc">للبدء وتجربة المنصة بدون أي رسوم</p>
               <ul>
-                <li><span className="lp-plan__check"><Ck /></span> حتى ٢٠ منتج</li>
-                <li><span className="lp-plan__check"><Ck /></span> ثيم واحد</li>
+                <li><span className="lp-plan__check"><Ck /></span> حتى ١٠ منتجات</li>
+                <li><span className="lp-plan__check"><Ck /></span> موظف واحد</li>
+                <li><span className="lp-plan__check"><Ck /></span> مساحة ١٠٠ ميجابايت</li>
                 <li><span className="lp-plan__check"><Ck /></span> دفع مدى و Apple Pay</li>
                 <li><span className="lp-plan__check"><Ck /></span> دعم بالبريد</li>
               </ul>
-              <StoreButton variant="secondary" size="lg" className="w-full" href="/signup">ابدأ مجانًا</StoreButton>
+              <StoreButton variant="secondary" size="lg" className="w-full" href="/signup?plan=starter">ابدأ مجانًا</StoreButton>
             </div>
             <div className="lp-plan lp-plan--pro">
               <span className="lp-plan__tag">الأكثر شيوعًا</span>
-              <h3>الاحترافية</h3>
-              <div className="lp-plan__price"><SarIcon /><b>٢٩٩</b><span>/شهريًا</span></div>
-              <p className="lp-plan__desc">لمتجر ينمو بسرعة</p>
+              <h3>Growth · نمو</h3>
+              <div className="lp-plan__price"><SarIcon /><b>٩٩</b><span>/شهريًا</span></div>
+              <p className="lp-plan__desc">لمتجر صغير ينمو بثقة</p>
               <ul>
-                <li><span className="lp-plan__check"><Ck /></span> منتجات غير محدودة</li>
-                <li><span className="lp-plan__check"><Ck /></span> كل الثيمات + تخصيص كامل</li>
+                <li><span className="lp-plan__check"><Ck /></span> حتى ١٠٠ منتج</li>
+                <li><span className="lp-plan__check"><Ck /></span> ٣ موظفين</li>
+                <li><span className="lp-plan__check"><Ck /></span> مساحة ١ جيجابايت</li>
+                <li><span className="lp-plan__check"><Ck /></span> كل وسائل الدفع المحلية</li>
+                <li><span className="lp-plan__check"><Ck /></span> تحليلات وكوبونات</li>
+                <li><span className="lp-plan__check"><Ck /></span> دعم أولوية</li>
+              </ul>
+              <StoreButton size="lg" className="w-full" iconEnd={<ArrowLeft size={18} />} href="/signup?plan=growth">جرّب ١٤ يوم مجانًا</StoreButton>
+            </div>
+            <div className="lp-plan">
+              <h3>Professional · احتراف</h3>
+              <div className="lp-plan__price"><SarIcon /><b>٢٤٩</b><span>/شهريًا</span></div>
+              <p className="lp-plan__desc">للشركات المتوسطة وفِرَق المبيعات</p>
+              <ul>
+                <li><span className="lp-plan__check"><Ck /></span> حتى ٥٠٠ منتج</li>
+                <li><span className="lp-plan__check"><Ck /></span> ١٠ موظفين</li>
+                <li><span className="lp-plan__check"><Ck /></span> مساحة ٥ جيجابايت</li>
                 <li><span className="lp-plan__check"><Ck /></span> تقسيط تابي وتمارا</li>
-                <li><span className="lp-plan__check"><Ck /></span> تحليلات متقدمة وأدوات تسويق</li>
+                <li><span className="lp-plan__check"><Ck /></span> مزامنة سلّة ونون وزد</li>
                 <li><span className="lp-plan__check"><Ck /></span> دعم أولوية ٢٤/٧</li>
               </ul>
-              <StoreButton size="lg" className="w-full" iconEnd={<ArrowLeft size={18} />} href="/signup?plan=pro">جرّب ١٤ يوم مجانًا</StoreButton>
+              <StoreButton variant="secondary" size="lg" className="w-full" href="/signup?plan=professional">جرّب ١٤ يوم مجانًا</StoreButton>
+            </div>
+            <div className="lp-plan">
+              <h3>Business · أعمال</h3>
+              <div className="lp-plan__price"><SarIcon /><b>٤٩٩</b><span>/شهريًا</span></div>
+              <p className="lp-plan__desc">للعلامات الكبيرة والاحتياجات المخصّصة</p>
+              <ul>
+                <li><span className="lp-plan__check"><Ck /></span> منتجات غير محدودة</li>
+                <li><span className="lp-plan__check"><Ck /></span> موظفون غير محدودين</li>
+                <li><span className="lp-plan__check"><Ck /></span> مساحة ٢٠ جيجابايت</li>
+                <li><span className="lp-plan__check"><Ck /></span> مدير حساب مخصّص</li>
+                <li><span className="lp-plan__check"><Ck /></span> SLA مكتوب</li>
+                <li><span className="lp-plan__check"><Ck /></span> API و Webhooks</li>
+              </ul>
+              <StoreButton variant="secondary" size="lg" className="w-full" href="#contact" onClick={go('contact')}>تواصل مع المبيعات</StoreButton>
             </div>
           </div>
         </div>
@@ -780,6 +831,136 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Contact ──────────────────────────────────────── */}
+      {/*
+        Refactored to use Haa design-system primitives — StoreCard +
+        StoreInput + StoreTextarea + StoreButton — so the section
+        matches the rest of the storefront (radius tokens, surface
+        tokens, focus rings, transitions). The contact info cards
+        compose `lp-fcard` from landing.css so they inherit the same
+        hover-lift the Features cards use.
+      */}
+      <section id="contact" className="lp-sec lp-sec--contact">
+        <div className="lp-container">
+          <div className="lp-sec__head reveal">
+            <div className="lp-sec__eyebrow">تواصل معنا</div>
+            <h2 style={{ textWrap: 'balance' }}>عندك سؤال؟ خلّنا نسمعه</h2>
+            <p>فريق المبيعات والدعم يرد خلال يوم عمل واحد. للمؤسسات والباقات المخصّصة، نوصلك بمدير حساب مباشر.</p>
+          </div>
+
+          <div className="lp-contact reveal">
+            {/* Form card — composes StoreCard + StoreInput + StoreTextarea */}
+            <StoreCard variant="default" className="lp-contact__form-card">
+              <form onSubmit={onContactSubmit} className="p-6 sm:p-8 space-y-5">
+                {contactSent ? (
+                  <div className="py-8 text-center space-y-3">
+                    <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-pill bg-primary-50 text-primary-600">
+                      <CheckCircle size={32} />
+                    </div>
+                    <h3 className="text-2xl font-semibold text-text-primary">فتحنا لك بريدك الافتراضي</h3>
+                    <p className="text-text-secondary text-sm">راجع الرسالة وأرسلها — سنرد خلال يوم عمل.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <StoreInput
+                        label="الاسم"
+                        type="text"
+                        required
+                        autoComplete="name"
+                        value={contactForm.name}
+                        onChange={(e) => setContactForm((s) => ({ ...s, name: e.target.value }))}
+                        placeholder="نورة العبدالله"
+                      />
+                      <StoreInput
+                        label="البريد الإلكتروني"
+                        type="email"
+                        required
+                        autoComplete="email"
+                        dir="ltr"
+                        value={contactForm.email}
+                        onChange={(e) => setContactForm((s) => ({ ...s, email: e.target.value }))}
+                        placeholder="noura@example.sa"
+                      />
+                    </div>
+                    <StoreInput
+                      label="رقم الجوال (اختياري)"
+                      type="tel"
+                      autoComplete="tel"
+                      dir="ltr"
+                      value={contactForm.phone}
+                      onChange={(e) => setContactForm((s) => ({ ...s, phone: e.target.value }))}
+                      placeholder="05XXXXXXXX"
+                    />
+                    <StoreTextarea
+                      label="رسالتك"
+                      required
+                      rows={5}
+                      value={contactForm.message}
+                      onChange={(e) => setContactForm((s) => ({ ...s, message: e.target.value }))}
+                      placeholder="اكتب استفسارك أو احتياجك — ما حجم متجرك المتوقع، ووش تحتاج منا؟"
+                    />
+                    <div className="flex justify-end pt-2">
+                      <StoreButton type="submit" size="lg" iconEnd={<Send size={18} />}>
+                        أرسل الرسالة
+                      </StoreButton>
+                    </div>
+                  </>
+                )}
+              </form>
+            </StoreCard>
+
+            {/* Info column — composes lp-fcard so it inherits the Features hover-lift */}
+            <div className="lp-contact__info">
+              <a href="mailto:hello@haastores.com" className="lp-contact__card lp-contact__card--link">
+                <div className="lp-contact__card-ic"><Mail size={22} /></div>
+                <div>
+                  <div className="lp-contact__card-label">البريد</div>
+                  <div className="lp-contact__card-value" dir="ltr">hello@haastores.com</div>
+                </div>
+              </a>
+
+              <a href="tel:+966570432100" className="lp-contact__card lp-contact__card--link">
+                <div className="lp-contact__card-ic"><Phone size={22} /></div>
+                <div>
+                  <div className="lp-contact__card-label">هاتف</div>
+                  <div className="lp-contact__card-value" dir="ltr">+966 57 043 2100</div>
+                </div>
+              </a>
+
+              <a
+                href="https://wa.me/966570432100"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="lp-contact__card lp-contact__card--link"
+              >
+                <div className="lp-contact__card-ic"><MessageCircle size={22} /></div>
+                <div>
+                  <div className="lp-contact__card-label">واتساب</div>
+                  <div className="lp-contact__card-value" dir="ltr">+966 57 043 2100</div>
+                </div>
+              </a>
+
+              <div className="lp-contact__card">
+                <div className="lp-contact__card-ic"><Clock size={22} /></div>
+                <div>
+                  <div className="lp-contact__card-label">ساعات العمل</div>
+                  <div className="lp-contact__card-value">الأحد – الخميس · 9 ص – 6 م</div>
+                </div>
+              </div>
+
+              <div className="lp-contact__card">
+                <div className="lp-contact__card-ic"><MapPin size={22} /></div>
+                <div>
+                  <div className="lp-contact__card-label">الموقع</div>
+                  <div className="lp-contact__card-value">الرياض، المملكة العربية السعودية</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA ──────────────────────────────────────────── */}
       <section className="lp-cta">
         <div className="lp-container">
@@ -789,7 +970,7 @@ export default function LandingPage() {
             <p>انضم لأكثر من ١٢٠٠ تاجر يبيعون بثقة عبر هاء متاجر.</p>
             <div className="lp-cta__btn">
               <StoreButton size="lg" iconEnd={<ArrowLeft size={18} />} href="/signup">أنشئ متجري الآن</StoreButton>
-              <StoreButton size="lg" variant="secondary" href="/signup">تحدّث مع المبيعات</StoreButton>
+              <StoreButton size="lg" variant="secondary" href="#contact" onClick={go('contact')}>تحدّث مع المبيعات</StoreButton>
             </div>
           </div>
         </div>
@@ -827,15 +1008,6 @@ export default function LandingPage() {
               <div className="lp-saudi-made__txt"><b>صنع في السعودية</b><span>منصة سعودية بالكامل</span></div>
             </div>
             <div className="lp-foot__copy">© 2026 هاء متاجر · جميع الحقوق محفوظة</div>
-            <div className="lp-foot__pays">
-              <img src="/assets/payment-logos/trim/mada.png"   alt="مدى"       />
-              <img src="/assets/payment-logos/apple-pay.svg"   alt="Apple Pay" />
-              <img src="/assets/payment-logos/stc-pay.svg"     alt="STC Pay"   />
-              <img src="/assets/payment-logos/visa.svg"        alt="Visa"      />
-              <img src="/assets/payment-logos/mastercard.svg"  alt="Mastercard"/>
-              <img src="/assets/payment-logos/trim/tabby.png"  alt="tabby"     />
-              <img src="/assets/payment-logos/trim/tamara.png" alt="تمارا"     />
-            </div>
           </div>
         </div>
       </footer>

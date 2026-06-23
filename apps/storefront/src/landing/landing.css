@@ -752,6 +752,81 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* 4-plan layout (Starter / Growth / Professional / Business).
+   The base .lp-plans grid maxes at 820px and 2 columns. This modifier
+   widens it to ~1280px and goes 4-up on xl screens, with precise
+   typography + padding scaling so narrow columns stay balanced and
+   CTAs align across cards regardless of feature-list length. */
+.lp-plans--four {
+  max-width: 1280px;
+}
+
+/* Every card in the 4-up grid is a flex column so the button auto-pins
+   to the bottom — keeps a clean horizontal CTA line across the row
+   even when feature counts differ. */
+.lp-plans--four .lp-plan {
+  display: flex;
+  flex-direction: column;
+  /* ul (features list) gets flex: 1 to absorb extra height. */
+}
+.lp-plans--four .lp-plan ul {
+  flex: 1;
+}
+
+/* Two-up tablet view inherits the base .lp-plan padding (32px) and
+   typography — they're already balanced for 2 wide cards. No override
+   needed at this breakpoint. */
+
+/* Four-up desktop: tighten padding + scale type for narrow columns. */
+@media (min-width: 1180px) {
+  .lp-plans--four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .lp-plans--four .lp-plan {
+    padding: 24px 22px;
+  }
+  .lp-plans--four .lp-plan h3 {
+    font-size: var(--text-lg);
+    line-height: 1.3;
+    min-height: calc(
+      var(--text-lg) * 1.3 * 2
+    ); /* reserve 2 lines so price baselines align */
+  }
+  .lp-plans--four .lp-plan__price b {
+    font-size: var(--text-3xl);
+  }
+  .lp-plans--four .lp-plan__desc {
+    font-size: var(--text-xs);
+    min-height: 2.6em;
+    margin-bottom: 16px;
+  }
+  .lp-plans--four .lp-plan ul {
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .lp-plans--four .lp-plan li {
+    font-size: var(--text-sm);
+    line-height: 1.4;
+  }
+  .lp-plans--four .lp-plan__tag {
+    inset-inline-start: 22px;
+    font-size: 10px;
+    padding: 4px 10px;
+  }
+}
+
+/* Mid-desktop (760–1180): 2 columns. Cards a bit wider — keep base
+   padding but reserve consistent description height across rows. */
+@media (min-width: 760px) and (max-width: 1179.98px) {
+  .lp-plans--four .lp-plan__desc {
+    min-height: 2.6em;
+  }
+  .lp-plans--four .lp-plan h3 {
+    min-height: calc(var(--text-xl) * 1.3 * 2);
+  }
+}
 .lp-plan {
   padding: 32px;
   border-radius: 24px;
@@ -2351,4 +2426,191 @@
     var(--color-primary-400),
     var(--color-primary-600)
   );
+}
+
+/* ── Contact section ──
+   Distinct Haa look — borrows the FinalCTA / lp-cta visual language:
+   - Same primary-tinted radial dot pattern in the background
+   - Aurora orbs blurred at the edges for atmospheric brand depth
+   - Form card has the same gradient envelope as lp-cta__in, then sits
+     on a solid surface card for input clarity
+   - Info cards get a brand-tinted border accent that warms on hover
+   - Eyebrow + headline keep the existing lp-sec__head rhythm */
+
+.lp-sec--contact {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/* Subtle radial-dot brand pattern — same recipe as .lp-cta__pattern */
+.lp-sec--contact::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.4;
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    color-mix(in srgb, var(--color-primary-500) 18%, transparent) 1px,
+    transparent 0
+  );
+  background-size: 28px 28px;
+  -webkit-mask-image: radial-gradient(
+    ellipse at center,
+    #000 30%,
+    transparent 75%
+  );
+  mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+  pointer-events: none;
+}
+
+/* Aurora orbs (decorative, aria-hidden via pseudo-elements) */
+.lp-sec--contact::after {
+  content: "";
+  position: absolute;
+  inset-block-start: -120px;
+  inset-inline-end: -160px;
+  width: 420px;
+  height: 420px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-primary-400) 28%, transparent) 0%,
+    transparent 70%
+  );
+  filter: blur(64px);
+  pointer-events: none;
+}
+
+.lp-contact {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  margin-top: 48px;
+  position: relative;
+}
+@media (min-width: 880px) {
+  .lp-contact {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 36px;
+    align-items: start;
+  }
+}
+
+/* Form card wraps StoreCard with a brand-gradient frame.
+   Outer wrapper supplies the gradient + soft brand glow; the
+   StoreCard inside keeps its solid surface for input contrast. */
+.lp-contact__form-card {
+  grid-column: 1 / -1;
+  position: relative;
+  border-radius: 32px;
+  padding: 2px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-300) 40%, transparent) 0%,
+    color-mix(in srgb, var(--color-primary-500) 14%, transparent) 45%,
+    color-mix(in srgb, var(--color-primary-200) 20%, transparent) 100%
+  );
+  /* Neutral StoreCard-style shadow — no brand tint. */
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 10px 28px -14px rgba(0, 0, 0, 0.12);
+}
+.lp-contact__form-card > * {
+  border-radius: 30px;
+  background: var(--surface-1);
+}
+@media (min-width: 880px) {
+  .lp-contact__form-card {
+    grid-column: 1 / 2;
+  }
+}
+
+.lp-contact__info {
+  display: grid;
+  gap: 14px;
+  position: relative;
+}
+
+/* Single info row — flex with a brand-tinted icon chip on one side */
+.lp-contact__card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 20px;
+  background: color-mix(
+    in srgb,
+    var(--surface-1) 92%,
+    var(--color-primary-50) 8%
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--color-primary-200) 30%, var(--border-subtle));
+  border-radius: 18px;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease,
+    background 220ms ease;
+  backdrop-filter: blur(6px);
+}
+
+.lp-contact__card-ic {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-primary);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-primary-100) 80%, var(--surface-1)) 0%,
+    color-mix(in srgb, var(--color-primary-200) 60%, var(--surface-1)) 100%
+  );
+  border-radius: 14px;
+  margin-top: 2px;
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--color-primary-300) 30%, transparent);
+}
+
+.lp-contact__card-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin-bottom: 4px;
+}
+
+.lp-contact__card-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.lp-contact__card--link:hover {
+  transform: translateY(-3px);
+  background: color-mix(
+    in srgb,
+    var(--surface-1) 80%,
+    var(--color-primary-50) 20%
+  );
+  border-color: color-mix(in srgb, var(--color-primary-400) 50%, transparent);
+  /* Neutral shadow, slightly deeper on hover — matches StoreCard interactive. */
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.06),
+    0 22px 50px -18px rgba(0, 0, 0, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-contact__card,
+  .lp-contact__card--link:hover {
+    transition: none;
+    transform: none;
+  }
 }
