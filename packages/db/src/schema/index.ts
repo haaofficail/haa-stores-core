@@ -41,3 +41,4 @@ export * from './pixels.js';
 export * from './campaigns.js';
 export * from './loyalty.js';
 export * from './whatsapp_sessions.js';
+export * from './whatsapp_templates.js';
