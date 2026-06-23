@@ -15,8 +15,6 @@ import {
   StoreStepIndicator, StoreAlert, StoreBadge,
 } from '@/components/ui';
 import { toast } from 'sonner';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
-import { Package, ArrowLeft, ArrowRight, CreditCard, Building, Banknote, ShieldCheck, MapPin, Truck, Gift, Phone, Clock, Coins } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { tracker } from '@/lib/tracker';
@@ -324,8 +322,8 @@ export default function Checkout() {
       }
       toast.success(t('checkout.success'));
       navigate(`/s/${slug}/order/${result.order.orderNumber}`);
-    } catch (err: any) {
-      const msg = err?.message || t('checkout.error');
+    } catch (err: unknown) {
+      const msg = (err as { message?: string } | null)?.message || t('checkout.error');
       if (msg.includes('فشلت') || msg.toLowerCase().includes('fail')) {
         toast.error(t('checkout.paymentError'));
       } else {
@@ -378,9 +376,9 @@ export default function Checkout() {
   });
 
   const paymentMethods = [
-    ...(FAKE_PAYMENTS_ENABLED ? [{ value: 'fake_card_success', label: t('checkout.payCard'), icon: <Icon icon={CreditCard} size="xs" />, desc: t('checkout.payCardDesc', 'تجريبي — سينجح الدفع') }] : []),
-    { value: 'bank_transfer', label: t('checkout.payBankTransfer'), icon: <Icon icon={Building} size="xs" />, desc: t('checkout.payBankTransferDesc', 'تحويل بنكي مباشر') },
-    { value: 'cash_on_delivery', label: t('checkout.payCash'), icon: <Icon icon={Banknote} size="xs" />, desc: t('checkout.payCashDesc', 'ادفع عند استلام طلبك') },
+    ...(FAKE_PAYMENTS_ENABLED ? [{ value: 'fake_card_success', label: t('checkout.payCard'), icon: <Icon name="CreditCard" size="xs" />, desc: t('checkout.payCardDesc', 'تجريبي — سينجح الدفع') }] : []),
+    { value: 'bank_transfer', label: t('checkout.payBankTransfer'), icon: <Icon name="Building" size="xs" />, desc: t('checkout.payBankTransferDesc', 'تحويل بنكي مباشر') },
+    { value: 'cash_on_delivery', label: t('checkout.payCash'), icon: <Icon name="Banknote" size="xs" />, desc: t('checkout.payCashDesc', 'ادفع عند استلام طلبك') },
     ...bnplOptions,
   ];
 
@@ -389,7 +387,7 @@ export default function Checkout() {
       <StoreContainer className="py-3 sm:py-4">
         <div className="flex items-center gap-3 mb-6">
           <Link to={`/s/${slug}/cart`} className="p-2 rounded-lg hover:bg-surface-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400" aria-label={t('common.back')}>
-            <Icon icon={ArrowLeft} size="xs" className="text-text-secondary" />
+            <Icon name="ArrowLeft" size="xs" className="text-text-secondary" />
           </Link>
           <h1 className="text-xl sm:text-2xl font-bold text-text-primary">{t('checkout.title')}</h1>
         </div>
@@ -418,13 +416,13 @@ export default function Checkout() {
                       className={`flex-1 py-3 px-4 rounded-xl border-2 text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                         fulfillmentType === 'shipping' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-border hover:border-border-hover'
                       }`}>
-                      <Icon icon={Truck} size="xs" />{t('checkout.shipping', 'شحن')}
+                      <Icon name="Truck" size="xs" />{t('checkout.shipping', 'شحن')}
                     </button>
                     <button type="button" onClick={() => { setFulfillmentType('pickup'); setSelectedShippingId(null); }}
                       className={`flex-1 py-3 px-4 rounded-xl border-2 text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                         fulfillmentType === 'pickup' ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-border hover:border-border-hover'
                       }`}>
-                      <Icon icon={MapPin} size="xs" />{t('checkout.pickup', 'استلام')}
+                      <Icon name="MapPin" size="xs" />{t('checkout.pickup', 'استلام')}
                     </button>
                   </div>
                 )}
@@ -449,10 +447,10 @@ export default function Checkout() {
                         <div className="flex-1">
                           <p className="font-semibold text-sm">{loc.nameAr || loc.nameEn}</p>
                           <p className="text-xs text-text-secondary mt-0.5">{loc.address}</p>
-                          {loc.phone && <p className="text-xs text-text-tertiary mt-0.5" dir="ltr"><Icon icon={Phone} size="2xs" className="inline align-middle ms-0.5" />{loc.phone}</p>}
+                          {loc.phone && <p className="text-xs text-text-tertiary mt-0.5" dir="ltr"><Icon name="Phone" size="2xs" className="inline align-middle ms-0.5" />{loc.phone}</p>}
                           {loc.hours && typeof loc.hours === 'object' && (
                             <p className="text-xs text-text-tertiary mt-0.5">
-                              <Icon icon={Clock} size="2xs" className="inline align-middle ms-0.5" />{Object.entries(loc.hours as Record<string, string>).map(([d, h]) => `${d}: ${h}`).join(' | ')}
+                              <Icon name="Clock" size="2xs" className="inline align-middle ms-0.5" />{Object.entries(loc.hours as Record<string, string>).map(([d, h]) => `${d}: ${h}`).join(' | ')}
                             </p>
                           )}
                           {loc.instructions && <p className="text-xs text-text-tertiary mt-1">{loc.instructions}</p>}
@@ -629,7 +627,10 @@ export default function Checkout() {
                     <div className="border-t border-border pt-4">
                       <p className="text-text-secondary mb-2 text-sm">{t('checkout.reviewItems', 'المنتجات')}</p>
                       <div className="space-y-2">
-                        {cart.items.map((item: any, idx: number) => (
+                        {cart.items.map((item: Cart['items'][number] & {
+                          name?: string;
+                          item?: { quantity?: number; giftWrapSelected?: boolean; sendAsGift?: boolean; giftMessage?: string; totalPrice?: number | string };
+                        }, idx: number) => (
                           <div key={idx} className="flex justify-between items-start text-sm py-1">
                             <div>
                               <span className="text-text-primary">{item.product?.name ?? item.name} × {item.item?.quantity ?? item.quantity}</span>
@@ -640,11 +641,11 @@ export default function Checkout() {
                               )}
                               {(item.item?.giftWrapSelected || item.item?.sendAsGift) && (
                           <div className="flex gap-1 mt-0.5">
-                            {item.item?.giftWrapSelected && <StoreBadge variant="info" size="sm"><Icon icon={Gift} size="2xs" className="inline align-middle ms-0.5" />{t('cart.giftWrap', 'تغليف')}</StoreBadge>}
-                            {item.item?.sendAsGift && <StoreBadge variant="info" size="sm"><Icon icon={Gift} size="2xs" className="inline align-middle ms-0.5" />{t('cart.sendAsGift', 'هدية')}</StoreBadge>}
+                            {item.item?.giftWrapSelected && <StoreBadge variant="info" size="sm"><Icon name="Gift" size="2xs" className="inline align-middle ms-0.5" />{t('cart.giftWrap', 'تغليف')}</StoreBadge>}
+                            {item.item?.sendAsGift && <StoreBadge variant="info" size="sm"><Icon name="Gift" size="2xs" className="inline align-middle ms-0.5" />{t('cart.sendAsGift', 'هدية')}</StoreBadge>}
                           </div>
                               )}
-                              {item.item?.giftMessage &&                       <p className="text-[var(--badge-font-size)] text-text-tertiary mt-0.5"><Icon icon={Gift} size="2xs" className="inline align-middle ms-0.5" />{item.item.giftMessage}</p>}
+                              {item.item?.giftMessage &&                       <p className="text-[var(--badge-font-size)] text-text-tertiary mt-0.5"><Icon name="Gift" size="2xs" className="inline align-middle ms-0.5" />{item.item.giftMessage}</p>}
                             </div>
                             <span className="font-medium tabular-nums">{toMoneyNumber(item.item?.totalPrice ?? item.totalPrice).toFixed(2)} <SarIcon size="sm" /></span>
                           </div>
@@ -669,7 +670,7 @@ export default function Checkout() {
                   )}
                   {orderGift.sendAsGift && (
                     <div className="pt-4">
-                      <p className="text-text-secondary mb-1 text-sm"><Icon icon={Gift} size="xs" className="inline align-middle ms-1" />{t('product.sendAsGift', 'إرسال كهدية')}</p>
+                      <p className="text-text-secondary mb-1 text-sm"><Icon name="Gift" size="xs" className="inline align-middle ms-1" />{t('product.sendAsGift', 'إرسال كهدية')}</p>
                       {orderGift.message && <p className="text-sm text-text-primary">{orderGift.message}</p>}
                     </div>
                   )}
@@ -683,7 +684,7 @@ export default function Checkout() {
                     <div className="pt-4 border-t border-border" data-testid="loyalty-redeem-widget">
                       <div className="flex items-center gap-2 mb-3">
                         <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-primary-50 text-primary-600">
-                          <Icon icon={Coins} size="xs" />
+                          <Icon name="Coins" size="xs" />
                         </span>
                         <h3 className="font-semibold text-sm text-text-primary">
                           {t('checkout.useLoyaltyPoints', 'استبدال نقاط الولاء')}
@@ -741,14 +742,14 @@ export default function Checkout() {
 
             <div className="flex justify-between mt-6">
               {currentStep > 0 ? (
-              <StoreButton variant="outline" onClick={prevStep} icon={<Icon icon={ArrowRight} size="xs" />}>
+              <StoreButton variant="outline" onClick={prevStep} icon={<Icon name="ArrowRight" size="xs" />}>
                 {t('checkout.prev', 'السابق')}
               </StoreButton>
               ) : <div />}
               {currentStep < STEPS.length - 1 ? (
                 <StoreButton onClick={nextStep}>
                   {t('checkout.next', 'التالي')}
-                  <Icon icon={ArrowLeft} size="xs" className="me-1" />
+                  <Icon name="ArrowLeft" size="xs" className="me-1" />
                 </StoreButton>
               ) : (
                 <StoreButton onClick={handleConfirm} loading={confirming} disabled={fulfillmentType === 'shipping' ? !selectedShippingId : !selectedPickupLocationId}>
@@ -768,7 +769,7 @@ export default function Checkout() {
                   {item.product.images?.[0] ? (
                     <img width={400} height={400} src={item.product.images[0]} alt={item.product.name} className="w-full h-full object-cover" loading="lazy" />
                   ) : (
-                    <Icon icon={Package} size="xs" className="text-text-disabled" />
+                    <Icon name="Package" size="xs" className="text-text-disabled" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -821,7 +822,7 @@ export default function Checkout() {
                 );
               })()}
                 <div className="mt-4 flex items-center gap-2 text-xs text-text-tertiary">
-                  <Icon icon={ShieldCheck} size="xs" />
+                  <Icon name="ShieldCheck" size="xs" />
                   <span>{t('checkout.securePayment', 'دفع آمن ومحمي')}</span>
                 </div>
             </StoreCard>

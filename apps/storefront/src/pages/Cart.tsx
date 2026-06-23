@@ -7,8 +7,6 @@ import {
   StoreContainer, StoreButton, StoreCard, StoreSkeleton, StoreEmptyState, StoreQuantitySelector, StoreBadge, StoreInput, StoreIconButton,
 } from '@/components/ui';
 import { Icon } from '@/components/ui/icon';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
-import { ShoppingCart, Trash2, Package, ArrowLeft, ShoppingBag, Check, Tag, X, Gift } from 'lucide-react';
 import { toast } from 'sonner';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { useSEO } from '@/hooks/useSEO';
@@ -155,11 +153,11 @@ export default function Cart() {
     return (
       <StoreContainer className="py-8" id="main-content">
         <StoreEmptyState
-          icon={ShoppingCart}
+          iconName="ShoppingCart"
           title={t('cart.empty')}
           description={t('cart.emptyDescription')}
           action={
-            <StoreButton href={`/s/${slug}`} icon={<Icon icon={ArrowLeft} size="xs" />}>
+            <StoreButton href={`/s/${slug}`} icon={<Icon name="ArrowLeft" size="xs" />}>
               {t('cart.continueShopping')}
             </StoreButton>
           }
@@ -193,7 +191,7 @@ export default function Cart() {
                       {item.product.images?.[0] ? (
                         <img width={400} height={400} src={item.product.images[0]} alt={item.product.name} className="w-full h-full object-cover" loading="lazy" />
                       ) : (
-                        <Icon icon={Package} size="md" className="text-text-disabled" />
+                        <Icon name="Package" size="md" className="text-text-disabled" />
                       )}
                     </Link>
 
@@ -219,8 +217,8 @@ export default function Cart() {
                       )}
                       {(item.giftWrapSelected || item.sendAsGift) && (
                         <div className="flex flex-wrap gap-1 mt-0.5">
-                           {item.giftWrapSelected && <StoreBadge variant="info" size="sm"><Icon icon={Gift} size="2xs" className="inline align-middle ms-0.5" />{t('cart.giftWrap', 'تغليف')}</StoreBadge>}
-                           {item.sendAsGift && <StoreBadge variant="info" size="sm"><Icon icon={Gift} size="2xs" className="inline align-middle ms-0.5" />{t('cart.sendAsGift', 'هدية')}</StoreBadge>}
+                           {item.giftWrapSelected && <StoreBadge variant="info" size="sm"><Icon name="Gift" size="2xs" className="inline align-middle ms-0.5" />{t('cart.giftWrap', 'تغليف')}</StoreBadge>}
+                           {item.sendAsGift && <StoreBadge variant="info" size="sm"><Icon name="Gift" size="2xs" className="inline align-middle ms-0.5" />{t('cart.sendAsGift', 'هدية')}</StoreBadge>}
                         </div>
                       )}
                     </div>
@@ -250,7 +248,7 @@ export default function Cart() {
                           className="p-1.5 rounded-lg text-text-tertiary hover:text-danger hover:bg-danger-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger-400 disabled:opacity-40"
                           aria-label={t('cart.removeProduct', 'حذف المنتج')}
                         >
-                          <Icon icon={Trash2} size="2xs" />
+                          <Icon name="Trash2" size="2xs" />
                         </button>
                     </div>
                   </div>
@@ -271,7 +269,7 @@ export default function Cart() {
                           {item.product.images?.[0] ? (
                             <img width={400} height={400} src={item.product.images[0]} alt={item.product.name} className="w-full h-full object-cover" loading="lazy" />
                           ) : (
-                        <Icon icon={Package} size="md" className="text-text-disabled" />
+                        <Icon name="Package" size="md" className="text-text-disabled" />
                           )}
                         </Link>
                         <div className="flex-1 min-w-0">
@@ -307,7 +305,7 @@ export default function Cart() {
                     onClick={() => handleRemoveSaved(item.id)}
                     aria-label={t('cart.removeSaved', 'حذف')}
                   >
-                    <Icon icon={Trash2} size="2xs" />
+                    <Icon name="Trash2" size="2xs" />
                   </StoreIconButton>
                         </div>
                       </div>
@@ -318,7 +316,7 @@ export default function Cart() {
             )}
 
             <StoreButton variant="ghost" size="sm" href={`/s/${slug}`} className="mt-2"
-              iconStart={<Icon icon={ArrowLeft} size="2xs" />}>
+              iconStart={<Icon name="ArrowLeft" size="2xs" />}>
               {t('cart.continueShopping')}
             </StoreButton>
           </div>
@@ -341,7 +339,7 @@ export default function Cart() {
                   </>
                 ) : (
                   <p className="text-xs font-medium text-primary-700 flex items-center gap-1.5">
-                    <Icon icon={Check} size="xs" className="text-primary-600 shrink-0" />
+                    <Icon name="Check" size="xs" className="text-primary-600 shrink-0" />
                     {t('cart.freeShippingReached')}
                   </p>
                 )}
@@ -351,7 +349,7 @@ export default function Cart() {
 
             <StoreCard className="p-3">
                 <h3 className="text-xs font-bold text-text-primary mb-2 flex items-center gap-1.5">
-                  <Icon icon={Tag} size="2xs" className="text-primary-600" />
+                  <Icon name="Tag" size="2xs" className="text-primary-600" />
                   {t('cart.couponTitle', 'كود خصم')}
                 </h3>
               {couponData?.valid ? (
@@ -367,7 +365,7 @@ export default function Cart() {
                     className="p-1 rounded-lg hover:bg-primary-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
                     aria-label={t('cart.removeCoupon', 'إزالة الكود')}
                   >
-                    <Icon icon={X} size="2xs" className="text-primary-600" />
+                    <Icon name="X" size="2xs" className="text-primary-600" />
                   </button>
                 </div>
               ) : (
@@ -405,7 +403,7 @@ export default function Cart() {
                        {item.product.images?.[0] ? (
                          <img width={400} height={400} src={item.product.images[0]} alt={item.product.name} className="w-full h-full object-cover" loading="lazy" />
                        ) : (
-                          <Icon icon={ShoppingBag} size="2xs" className="text-text-disabled" />
+                          <Icon name="ShoppingBag" size="2xs" className="text-text-disabled" />
                        )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -418,8 +416,8 @@ export default function Cart() {
                       <p className="text-[var(--badge-font-size)] text-text-tertiary">{item.quantity} × {formatAmount(item.unitPrice)} <SarIcon size="sm" /></p>
                       {(item.giftWrapSelected || item.sendAsGift) && (
                          <div className="flex flex-wrap gap-1 mt-0.5">
-                            {item.giftWrapSelected && <StoreBadge variant="info" size="sm"><Icon icon={Gift} size="2xs" className="inline align-middle ms-0.5" />{t('cart.giftWrap', 'تغليف')}</StoreBadge>}
-                           {item.sendAsGift && <StoreBadge variant="info" size="sm"><Icon icon={Gift} size="2xs" className="inline align-middle ms-0.5" />{t('cart.sendAsGift', 'هدية')}</StoreBadge>}
+                            {item.giftWrapSelected && <StoreBadge variant="info" size="sm"><Icon name="Gift" size="2xs" className="inline align-middle ms-0.5" />{t('cart.giftWrap', 'تغليف')}</StoreBadge>}
+                           {item.sendAsGift && <StoreBadge variant="info" size="sm"><Icon name="Gift" size="2xs" className="inline align-middle ms-0.5" />{t('cart.sendAsGift', 'هدية')}</StoreBadge>}
                          </div>
                       )}
                     </div>

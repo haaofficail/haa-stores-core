@@ -6,22 +6,15 @@ import { Icon } from '@/components/ui/icon';
 import CountdownTimer from '@/components/CountdownTimer';
 import ThemedProductCard from '@/components/ThemedProductCard';
 import {
-  paymentLogos, PaymentLogoImg, TrustBadgesSection,
+  paymentLogos, PaymentLogoImg, TrustBadgesSection, type PaymentLogo,
 } from '@/components/ui/trust-badges';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
-import {
-  ShoppingBag, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown,
-  Minus, Plus, Check, AlertTriangle,
-  Truck, Box, Weight, Ruler, ShieldCheck, RefreshCw,
-  Share2, BadgeCheck, X, Star, TrendingUp, Ruler as RulerIcon,
-  Gift, Eye, Search,
-} from 'lucide-react';
+import type { IconName } from '@/components/ui/icon';
 import { formatCurrency } from '@/lib/utils';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { productJSONLD } from '@/lib/jsonld';
 import type { ProductPageProps } from '@haa/storefront-themes';
 
-function formatWeight(grams: number, t: (k: string, options?: any) => string): string {
+function formatWeight(grams: number, t: (k: string, options?: Record<string, unknown>) => string): string {
   if (grams >= 1000) return `${(grams / 1000).toFixed(1)} ${t('product.kg')}`;
   return `${grams} ${t('product.gram')}`;
 }
@@ -55,11 +48,11 @@ function ProductGallery({ images, name, features }: { images: string[]; name: st
         {selectedImage && !imgError ? (
           <img width={400} height={400} src={selectedImage} alt={name} fetchPriority="high" className="w-full h-full object-contain scale-105 transition-transform duration-300 group-hover:scale-110" onError={() => setImgError(true)} />
         ) : (
-          <div className="w-full h-full flex items-center justify-center"><Icon icon={ShoppingBag} size="lg" className="text-text-disabled" /></div>
+          <div className="w-full h-full flex items-center justify-center"><Icon name="ShoppingBag" size="lg" className="text-text-disabled" /></div>
         )}
         {hasImages && enableLightbox && (
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full shadow-lg" style={{ padding: 'var(--space-2)' }}><Icon icon={Search} size="xs" className="text-text-secondary" /></div>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full shadow-lg" style={{ padding: 'var(--space-2)' }}><Icon name="Search" size="xs" className="text-text-secondary" /></div>
           </div>
         )}
       </button>
@@ -79,7 +72,7 @@ function ProductGallery({ images, name, features }: { images: string[]; name: st
 
     {lightboxOpen && selectedImage && (
       <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center animate-fade-in" style={{ padding: 'var(--space-4)' }} onClick={() => setLightboxOpen(false)} role="dialog" aria-modal="true" aria-label={t('product.imageGallery', 'معرض الصور')}>
-        <StoreIconButton type="button" onClick={() => setLightboxOpen(false)} className="absolute bg-white/10 text-white hover:bg-white/20" style={{ insetBlockStart: 'var(--space-4)', insetInlineStart: 'var(--space-4)' }} aria-label={t('common.close', 'إغلاق')}><Icon icon={X} size="sm" /></StoreIconButton>
+        <StoreIconButton type="button" onClick={() => setLightboxOpen(false)} className="absolute bg-white/10 text-white hover:bg-white/20" style={{ insetBlockStart: 'var(--space-4)', insetInlineStart: 'var(--space-4)' }} aria-label={t('common.close', 'إغلاق')}><Icon name="X" size="sm" /></StoreIconButton>
         <div className="flex absolute start-1/2 -translate-x-1/2" style={{ gap: 'var(--space-2)', insetBlockEnd: 'var(--space-4)' }}>
           {images.map((_, idx) => (
             <button key={idx} onClick={(e) => { e.stopPropagation(); setSelectedIdx(idx); }}
@@ -89,11 +82,11 @@ function ProductGallery({ images, name, features }: { images: string[]; name: st
         </div>
         <StoreIconButton type="button" onClick={(e) => { e.stopPropagation(); setSelectedIdx((selectedIdx - 1 + images.length) % images.length); }}
           className="absolute top-1/2 -translate-y-1/2 bg-white/10 text-white hover:bg-white/20" style={{ insetInlineStart: 'var(--space-4)' }} aria-label={t('product.prevImage', 'السابقة')}>
-          <Icon icon={ChevronLeft} size="sm" />
+          <Icon name="ChevronLeft" size="sm" />
         </StoreIconButton>
         <StoreIconButton type="button" onClick={(e) => { e.stopPropagation(); setSelectedIdx((selectedIdx + 1) % images.length); }}
           className="absolute top-1/2 -translate-y-1/2 bg-white/10 text-white hover:bg-white/20" style={{ insetInlineEnd: 'var(--space-4)' }} aria-label={t('product.nextImage', 'التالية')}>
-          <Icon icon={ChevronRight} size="sm" />
+          <Icon name="ChevronRight" size="sm" />
         </StoreIconButton>
         <img width={400} height={400} src={selectedImage} alt={name} className="max-h-[85vh] max-w-full object-contain select-none" style={{ borderRadius: 'var(--radius-2xl, 16px)' }} onClick={(e) => e.stopPropagation()} />
       </div>
@@ -109,7 +102,7 @@ function QuantitySelector({ value, onChange, min, max, disabled }: {
     <div className="flex items-center" style={{ gap: 'var(--space-1)' }}>
       <StoreIconButton type="button" onClick={() => onChange(Math.max(min, value - 1))} disabled={disabled || value <= min}
         variant="soft"
-        aria-label={t('product.decreaseQuantity', 'إنقاص الكمية')}><Icon icon={Minus} size="xs" /></StoreIconButton>
+        aria-label={t('product.decreaseQuantity', 'إنقاص الكمية')}><Icon name="Minus" size="xs" /></StoreIconButton>
       <input type="number" value={value}
         onChange={(e) => { const v = parseInt(e.target.value) || min; onChange(Math.min(max, Math.max(min, v))); }}
         min={min} max={max} disabled={disabled}
@@ -118,7 +111,7 @@ function QuantitySelector({ value, onChange, min, max, disabled }: {
         aria-label={t('product.quantity', 'الكمية')} />
       <StoreIconButton type="button" onClick={() => onChange(Math.min(max, value + 1))} disabled={disabled || value >= max}
         variant="soft"
-        aria-label={t('product.increaseQuantity', 'زيادة الكمية')}><Icon icon={Plus} size="xs" /></StoreIconButton>
+        aria-label={t('product.increaseQuantity', 'زيادة الكمية')}><Icon name="Plus" size="xs" /></StoreIconButton>
     </div>
   );
 }
@@ -158,15 +151,17 @@ const paymentLogoByProvider: Record<string, string> = {
   tabby_installments: 'tabby',
 };
 
-function getPaymentLogosForMethods(methods: any[], categories?: Set<string>, availableOnly = true) {
+type PaymentMethodLike = { provider: string; available?: boolean };
+
+function getPaymentLogosForMethods(methods: PaymentMethodLike[], categories?: Set<string>, availableOnly = true) {
   const logoIds = new Set(
     (Array.isArray(methods) ? methods : [])
-      .filter((method: any) => !availableOnly || method.available)
-      .map((method: any) => paymentLogoByProvider[method.provider])
+      .filter((method: PaymentMethodLike) => !availableOnly || method.available)
+      .map((method: PaymentMethodLike) => paymentLogoByProvider[method.provider])
       .filter(Boolean)
   );
 
-  return paymentLogos.filter((logo: any) =>
+  return paymentLogos.filter((logo: PaymentLogo) =>
     logo.enabled &&
     logo.assetPath &&
     logoIds.has(logo.id) &&
@@ -174,12 +169,12 @@ function getPaymentLogosForMethods(methods: any[], categories?: Set<string>, ava
   );
 }
 
-function InstallmentPromo({ price, paymentMethods }: { price: string | number; paymentMethods: any[] }) {
+function InstallmentPromo({ price, paymentMethods }: { price: string | number; paymentMethods: PaymentMethodLike[] }) {
   const { t } = useTranslation();
   const bnplLogosFromApi = getPaymentLogosForMethods(paymentMethods, new Set(['BNPL_PROVIDER']), false);
   const bnplLogos = bnplLogosFromApi.length > 0
     ? bnplLogosFromApi
-    : paymentLogos.filter((logo: any) => logo.enabled && logo.category === 'BNPL_PROVIDER');
+    : paymentLogos.filter((logo: PaymentLogo) => logo.enabled && logo.category === 'BNPL_PROVIDER');
   if (bnplLogos.length === 0) return null;
 
   const perPayment = Number(price) / 4;
@@ -201,7 +196,7 @@ function InstallmentPromo({ price, paymentMethods }: { price: string | number; p
           </p>
         </div>
         <div className="flex shrink-0 items-center" style={{ gap: 'var(--space-1)' }}>
-          {bnplLogos.map((logo: any) => (
+          {bnplLogos.map((logo: PaymentLogo) => (
             <span key={logo.id} className="inline-flex h-7 items-center justify-center" style={{ paddingInline: 'var(--space-1)' }}>
               <PaymentLogoImg logo={logo} size="h-4" />
             </span>
@@ -212,10 +207,10 @@ function InstallmentPromo({ price, paymentMethods }: { price: string | number; p
   );
 }
 
-function PaymentMarketingStrip({ methods }: { methods: any[] }) {
+function PaymentMarketingStrip({ methods }: { methods: PaymentMethodLike[] }) {
   const { t } = useTranslation();
   const storefrontPaymentLogos = paymentLogos.filter(
-    (logo: any) =>
+    (logo: PaymentLogo) =>
       logo.enabled &&
       logo.assetPath &&
       ['LOCAL_PAYMENT_METHOD', 'CARD_NETWORK', 'DIGITAL_WALLET'].includes(logo.category),
@@ -223,7 +218,7 @@ function PaymentMarketingStrip({ methods }: { methods: any[] }) {
   const apiLogos = getPaymentLogosForMethods(methods, new Set(['CARD_NETWORK', 'LOCAL_PAYMENT_METHOD', 'DIGITAL_WALLET']), false);
   const logos = apiLogos.length > 0 ? [
     ...apiLogos,
-    ...storefrontPaymentLogos.filter((logo: any) => !apiLogos.some((apiLogo: any) => apiLogo.id === logo.id)),
+    ...storefrontPaymentLogos.filter((logo: PaymentLogo) => !apiLogos.some((apiLogo: PaymentLogo) => apiLogo.id === logo.id)),
   ] : storefrontPaymentLogos;
   if (logos.length === 0) return null;
 
@@ -241,7 +236,7 @@ function PaymentMarketingStrip({ methods }: { methods: any[] }) {
           </p>
         </div>
         <div className="flex min-w-0 flex-1 flex-nowrap items-center justify-end overflow-x-auto" style={{ gap: 'var(--space-1)' }}>
-          {logos.map((logo: any) => (
+          {logos.map((logo: PaymentLogo) => (
             <span
               key={logo.id}
               className="inline-flex h-6 shrink-0 items-center justify-center"
@@ -259,11 +254,11 @@ function PaymentMarketingStrip({ methods }: { methods: any[] }) {
 
 function TrustBadges() {
   const { t } = useTranslation();
-  const badges = [
-    { icon: ShieldCheck, color: 'text-primary-500', label: t('product.trustSecure', 'الدفع آمن') },
-    { icon: BadgeCheck, color: 'text-success', label: t('product.trustOriginal', 'منتج أصلي 100%') },
-    { icon: RefreshCw, color: 'text-info', label: t('product.trustReturns', 'إرجاع مجاني') },
-    { icon: Truck, color: 'text-success', label: t('product.trustWarranty', 'ضمان المصنع') },
+  const badges: Array<{ iconName: IconName; color: string; label: string }> = [
+    { iconName: 'ShieldCheck', color: 'text-primary-500', label: t('product.trustSecure', 'الدفع آمن') },
+    { iconName: 'BadgeCheck', color: 'text-success', label: t('product.trustOriginal', 'منتج أصلي 100%') },
+    { iconName: 'RefreshCw', color: 'text-info', label: t('product.trustReturns', 'إرجاع مجاني') },
+    { iconName: 'Truck', color: 'text-success', label: t('product.trustWarranty', 'ضمان المصنع') },
   ];
 
   return (
@@ -274,7 +269,7 @@ function TrustBadges() {
           className="min-w-0 flex items-center bg-white text-text-secondary text-xs"
           style={{ gap: 'var(--space-3)', minHeight: '48px', borderRadius: '8px', paddingInline: 'var(--space-4)', paddingBlock: 'var(--space-4)' }}
         >
-          <Icon icon={badge.icon} size="2xs" className={`${badge.color} shrink-0`} />
+          <Icon name={badge.iconName} size="2xs" className={`${badge.color} shrink-0`} />
           <span className="truncate">{badge.label}</span>
         </div>
       ))}
@@ -284,26 +279,26 @@ function TrustBadges() {
 
 function CommerceComplianceBadges({ hasElectronicPayment }: { hasElectronicPayment: boolean }) {
   const { t } = useTranslation();
-  const badges = [
+  const badges: Array<{ iconName: IconName; variant: 'info' | 'stock' | 'neutral'; label: string }> = [
     {
-      icon: RefreshCw,
+      iconName: 'RefreshCw',
       variant: 'info' as const,
       label: t('product.exchangeReturnPolicy', 'سياسة الاستبدال والاسترجاع'),
     },
     {
-      icon: ShieldCheck,
+      iconName: 'ShieldCheck',
       variant: 'stock' as const,
       label: hasElectronicPayment
         ? t('product.trustedElectronicPayment', 'دفع إلكتروني موثوق')
         : t('product.paymentPolicyAvailable', 'سياسة الدفع موضحة'),
     },
     {
-      icon: BadgeCheck,
+      iconName: 'BadgeCheck',
       variant: 'neutral' as const,
       label: t('product.warrantyByPolicy', 'الضمان حسب سياسة المنتج'),
     },
     {
-      icon: Truck,
+      iconName: 'Truck',
       variant: 'neutral' as const,
       label: t('product.shippingDeliveryPolicy', 'سياسة الشحن والتوصيل'),
     },
@@ -317,7 +312,7 @@ function CommerceComplianceBadges({ hasElectronicPayment }: { hasElectronicPayme
           className="min-w-0 flex items-center bg-white text-text-secondary text-xs"
           style={{ gap: 'var(--space-3)', minHeight: '48px', borderRadius: '8px', paddingInline: 'var(--space-4)', paddingBlock: 'var(--space-4)' }}
         >
-          <Icon icon={badge.icon} size="2xs" className="text-text-tertiary shrink-0" />
+          <Icon name={badge.iconName} size="2xs" className="text-text-tertiary shrink-0" />
           <span className="truncate">{badge.label}</span>
         </div>
       ))}
@@ -332,10 +327,10 @@ function TrustAndPolicyBlock({ hasElectronicPayment }: { hasElectronicPayment: b
       <details className="group">
         <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between text-sm font-medium text-text-primary">
           <span className="inline-flex min-w-0 items-center" style={{ gap: 'var(--space-2)' }}>
-            <Icon icon={ShieldCheck} size="xs" className="text-primary-500" />
+            <Icon name="ShieldCheck" size="xs" className="text-primary-500" />
             <span>{t('product.trustAndPolicies', 'الثقة والسياسات')}</span>
           </span>
-          <Icon icon={ChevronDown} size="2xs" className="transition-transform group-open:rotate-180" />
+          <Icon name="ChevronDown" size="2xs" className="transition-transform group-open:rotate-180" />
         </summary>
         <div style={{ marginBlockStart: 'var(--space-4)' }}>
           <CommerceComplianceBadges hasElectronicPayment={hasElectronicPayment} />
@@ -395,7 +390,7 @@ function CheckboxPill({ checked, onChange, children }: { checked: boolean; onCha
         className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${checked ? 'bg-primary-500 text-white' : 'bg-surface-2 text-text-disabled'}`}
         aria-hidden="true"
       >
-        {checked && <Icon icon={Check} size="2xs" />}
+        {checked && <Icon name="Check" size="2xs" />}
       </span>
       {children}
     </label>
@@ -409,7 +404,7 @@ function RatingStars({ rating, count }: { rating: number; count: number }) {
     <div className="flex items-center" style={{ gap: 'var(--space-2)' }}>
       <div className="flex items-center" aria-label={`${rating} من 5 نجوم`} role="img">
         {[1, 2, 3, 4, 5].map((i) => (
-          <Icon key={i} icon={Star} className={`${i <= full ? 'text-amber-400 fill-amber-400' : i === full + 1 && half ? 'text-amber-400 fill-amber-400/50' : 'text-text-disabled fill-text-disabled'}`} size="2xs" />
+          <Icon key={i} name="Star" className={`${i <= full ? 'text-amber-400 fill-amber-400' : i === full + 1 && half ? 'text-amber-400 fill-amber-400/50' : 'text-text-disabled fill-text-disabled'}`} size="2xs" />
         ))}
       </div>
       <span className="text-xs text-text-secondary">({count.toLocaleString()})</span>
@@ -421,7 +416,7 @@ function BoughtBadge({ count }: { count: number }) {
   const { t } = useTranslation();
   return (
     <div className="flex items-center text-xs text-success font-medium" style={{ gap: 'var(--space-2)' }}>
-      <Icon icon={TrendingUp} size="2xs" />
+      <Icon name="TrendingUp" size="2xs" />
       <span>{t('product.boughtCount', 'اشتراه أكثر من')} {count.toLocaleString()} {t('product.person', 'شخص')}</span>
     </div>
   );
@@ -435,22 +430,24 @@ function DeliveryEstimate() {
   const fmt = (d: Date) => d.toLocaleDateString('ar-SA', { day: 'numeric', month: 'long' });
   return (
     <div className="flex items-center text-xs text-text-secondary bg-surface-2" style={{ gap: 'var(--space-2)', borderRadius: 'var(--radius-lg, 12px)', padding: 'var(--space-3)' }}>
-      <Icon icon={Truck} size="xs" className="text-text-tertiary shrink-0" />
+      <Icon name="Truck" size="xs" className="text-text-tertiary shrink-0" />
       <span>{t('product.deliveryEstimate', 'التوصيل المتوقع')}: <strong className="text-text-primary">{fmt(minDate)}</strong> – <strong className="text-text-primary">{fmt(maxDate)}</strong></span>
     </div>
   );
 }
 
-function SizeGuideModal({ guide, onClose }: { guide: any; onClose: () => void }) {
+type SizeGuideLike = { name?: string; unit?: string; rows: Array<Record<string, string>> };
+
+function SizeGuideModal({ guide, onClose }: { guide: SizeGuideLike; onClose: () => void }) {
   const { t } = useTranslation();
   useEscapeKey(onClose);
-  const columns = Array.from(new Set(guide.rows.flatMap((row: any) => Object.keys(row))));
+  const columns = Array.from(new Set(guide.rows.flatMap((row: Record<string, string>) => Object.keys(row))));
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center" style={{ padding: 'var(--space-4)' }} onClick={onClose}>
       <div className="bg-surface-1 shadow-xl w-full max-w-md max-h-[80vh] overflow-y-auto" style={{ borderRadius: 'var(--radius-2xl, 16px)', padding: 'var(--space-6)' }} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t('product.sizeGuide', 'دليل المقاسات')}>
         <div className="flex items-center justify-between" style={{ marginBlockEnd: 'var(--space-4)' }}>
           <h3 className="font-bold text-lg">{guide.name || t('product.sizeGuide', 'دليل المقاسات')}</h3>
-          <StoreIconButton type="button" onClick={onClose} aria-label={t('common.close')} autoFocus><Icon icon={X} size="xs" /></StoreIconButton>
+          <StoreIconButton type="button" onClick={onClose} aria-label={t('common.close')} autoFocus><Icon name="X" size="xs" /></StoreIconButton>
         </div>
         <p className="text-xs text-text-secondary" style={{ marginBlockEnd: 'var(--space-4)' }}>
           {t('product.sizeGuideDesc', 'القياسات')} {guide.unit}
@@ -458,13 +455,13 @@ function SizeGuideModal({ guide, onClose }: { guide: any; onClose: () => void })
         <table className="w-full text-sm border-separate border-spacing-0">
           <thead>
             <tr className="border-b text-text-secondary text-xs">
-              {columns.map((column: any) => <th key={String(column)} className="text-end" style={{ paddingBlock: 'var(--space-2)' }}>{String(column)}</th>)}
+              {columns.map((column: string) => <th key={String(column)} className="text-end" style={{ paddingBlock: 'var(--space-2)' }}>{String(column)}</th>)}
             </tr>
           </thead>
           <tbody>
-            {guide.rows.map((row: any, idx: number) => (
+            {guide.rows.map((row: Record<string, string>, idx: number) => (
               <tr key={idx} className="border-b border-border">
-                {columns.map((column: any, cidx: number) => (
+                {columns.map((column: string, cidx: number) => (
                   <td key={String(column)} className={cidx === 0 ? 'font-medium' : 'text-text-secondary'} style={{ paddingBlock: 'var(--space-2)' }}>
                     {row[column] ?? '–'}
                   </td>
@@ -478,33 +475,35 @@ function SizeGuideModal({ guide, onClose }: { guide: any; onClose: () => void })
   );
 }
 
-function Breadcrumb({ slug, product }: { slug: string; product: any }) {
+function Breadcrumb({ slug, product }: { slug: string; product: { name: string; categoryName?: string | null; categorySlug?: string | null } }) {
   const { t } = useTranslation();
   return (
     <nav className="flex items-center text-sm text-text-secondary overflow-x-auto whitespace-nowrap" style={{ gap: 'var(--space-2)', marginBlockEnd: 'var(--space-4)' }} aria-label={t('product.breadcrumb', 'مسار التنقل')}>
       <Link to={`/s/${slug}`} className="hover:text-primary-600 transition-colors shrink-0">{t('store.home')}</Link>
-      <Icon icon={ChevronLeft} size="2xs" className="text-text-disabled shrink-0" />
+      <Icon name="ChevronLeft" size="2xs" className="text-text-disabled shrink-0" />
       {product.categoryName && product.categorySlug && (
-        <><Link to={`/s/${slug}/c/${product.categorySlug}`} className="hover:text-primary-600 transition-colors shrink-0">{product.categoryName}</Link><Icon icon={ChevronLeft} size="2xs" className="text-text-disabled shrink-0" /></>
+        <><Link to={`/s/${slug}/c/${product.categorySlug}`} className="hover:text-primary-600 transition-colors shrink-0">{product.categoryName}</Link><Icon name="ChevronLeft" size="2xs" className="text-text-disabled shrink-0" /></>
       )}
       <span className="text-text-primary font-medium truncate">{product.name}</span>
     </nav>
   );
 }
 
+type ProductOptionLike = { id: number | string; name: string; values: Array<{ id: number | string; value: string }> };
+
 function ProductOptions({ options, selected, onChange }: {
-  options: any[];
+  options: ProductOptionLike[];
   selected: Record<string, string>;
   onChange: (name: string, value: string) => void;
 }) {
   return (
     <Surface>
       <div className="[&>*+*]:mt-[var(--space-4)]">
-      {options.map((opt: any) => (
+      {options.map((opt: ProductOptionLike) => (
         <div key={opt.id}>
           <p className="text-sm font-medium text-text-primary" style={{ marginBlockEnd: 'var(--space-2)' }}>{opt.name}</p>
           <div className="flex flex-wrap" style={{ gap: 'var(--space-2)' }}>
-            {opt.values.map((v: any) => {
+            {opt.values.map((v: { id: number | string; value: string }) => {
               const isSelected = selected[opt.name] === v.value;
               return (
                 <button
@@ -544,7 +543,7 @@ function RecentlyViewed({ slug, currentProductId }: { slug: string; currentProdu
           {filtered.map((r) => (
             <Link key={r.id} to={`/s/${slug}/p/${r.slug}`} className="group text-center">
               <div className="aspect-square bg-surface-2 overflow-hidden" style={{ borderRadius: 'var(--radius-lg, 12px)', marginBlockEnd: 'var(--space-2)' }}>
-                {r.image ? <img width={400} height={400} src={r.image} alt={r.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center"><Icon icon={ShoppingBag} size="xs" className="text-text-disabled" /></div>}
+                {r.image ? <img width={400} height={400} src={r.image} alt={r.name} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center"><Icon name="ShoppingBag" size="xs" className="text-text-disabled" /></div>}
               </div>
               <p className="text-[var(--badge-font-size)] text-text-secondary line-clamp-2 leading-tight">{r.name}</p>
             </Link>
@@ -584,7 +583,7 @@ export default function BaseElegantProductPage(props: ProductPageProps) {
                 </div>
                 {(props.features?.shareButton !== false) && (
                   <StoreIconButton type="button" onClick={props.onShare} className="shrink-0" aria-label={t('product.share', 'مشاركة')}>
-                    <Icon icon={Share2} size="xs" className="text-text-tertiary" />
+                    <Icon name="Share2" size="xs" className="text-text-tertiary" />
                   </StoreIconButton>
                 )}
               </div>
@@ -601,7 +600,7 @@ export default function BaseElegantProductPage(props: ProductPageProps) {
                    {props.hasDiscount && (
                      <div className="flex items-center flex-wrap text-sm" style={{ gap: 'var(--space-2)' }}>
                         <StoreBadge variant="stock">{t('product.save')} {formatCurrency(Number(props.effectiveCompareAtPrice) - Number(props.effectivePrice))} <SarIcon size="md" /></StoreBadge>
-                        {props.isFreeShipping && <StoreBadge variant="stock"><Icon icon={Truck} size="2xs" />{t('product.freeShipping', 'الشحن مجاني')}</StoreBadge>}
+                        {props.isFreeShipping && <StoreBadge variant="stock"><Icon name="Truck" size="2xs" />{t('product.freeShipping', 'الشحن مجاني')}</StoreBadge>}
                      </div>
                    )}
               {props.hasDiscount && props.countdownEnd > 0 && (
@@ -612,7 +611,7 @@ export default function BaseElegantProductPage(props: ProductPageProps) {
               )}
                {!props.hasDiscount && props.isFreeShipping && (
                  <div className="flex items-center flex-wrap text-sm" style={{ gap: 'var(--space-2)' }}>
-                   <StoreBadge variant="stock"><Icon icon={Truck} size="2xs" />{t('product.freeShipping', 'الشحن مجاني')}</StoreBadge>
+                   <StoreBadge variant="stock"><Icon name="Truck" size="2xs" />{t('product.freeShipping', 'الشحن مجاني')}</StoreBadge>
                  </div>
               )}
 
@@ -639,13 +638,13 @@ export default function BaseElegantProductPage(props: ProductPageProps) {
               <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto]" style={{ gap: 'var(--space-4)' }}>
                 <StoreButton onClick={props.onAddToCart} disabled={props.isOutOfStock || props.adding || props.cartReady === false} loading={props.adding}
                   data-testid="pdp-add-to-cart"
-                  iconStart={props.added ? <Icon icon={Check} size="sm" /> : <Icon icon={ShoppingCart} size="sm" />}
+                  iconStart={props.added ? <Icon name="Check" size="sm" /> : <Icon name="ShoppingCart" size="sm" />}
                   className={`w-full ${props.added ? 'bg-success text-success-text hover:bg-success' : props.isOutOfStock ? 'bg-surface-2 text-text-tertiary cursor-not-allowed' : ''}`}>
                   {props.added ? t('product.addedSuccessfully') : props.isOutOfStock ? t('product.outOfStock') : t('product.addToCart')}
                 </StoreButton>
                 {!props.isOutOfStock && (
                   <StoreButton onClick={props.onBuyNow} disabled={props.buying} loading={props.buying}
-                    iconStart={<Icon icon={ShoppingBag} size="sm" />}
+                    iconStart={<Icon name="ShoppingBag" size="sm" />}
                     className="w-full sm:w-auto sm:min-w-[136px] bg-success text-white hover:bg-success/90">
                     {t('product.buyNow', 'اشتري الآن')}
                   </StoreButton>
@@ -657,13 +656,13 @@ export default function BaseElegantProductPage(props: ProductPageProps) {
               <div className="flex flex-wrap items-center text-xs" style={{ columnGap: 'var(--space-4)', rowGap: 'var(--space-3)' }}>
                 {(props.features?.giftWrap !== false) && props.product?.giftWrapAvailable && (
                   <CheckboxPill checked={props.giftWrap} onChange={props.onGiftWrapChange}>
-                    <Icon icon={Gift} size="2xs" />{t('product.giftWrap', 'تغليف هدية')}
+                    <Icon name="Gift" size="2xs" />{t('product.giftWrap', 'تغليف هدية')}
                     {props.giftWrapPriceDisplay !== null && <span className="text-text-tertiary">(+{formatCurrency(props.giftWrapPriceDisplay!)} <SarIcon size="sm" />)</span>}
                   </CheckboxPill>
                 )}
                 {(props.features?.sendAsGift !== false) && (
                   <CheckboxPill checked={props.sendAsGift} onChange={props.onSendAsGiftChange}>
-                    <Icon icon={Gift} size="2xs" />{t('product.sendAsGift', 'إرسال كهدية')}
+                    <Icon name="Gift" size="2xs" />{t('product.sendAsGift', 'إرسال كهدية')}
                   </CheckboxPill>
                 )}
                 {props.sendAsGift && (
@@ -680,7 +679,7 @@ export default function BaseElegantProductPage(props: ProductPageProps) {
                     className="inline-flex min-h-[40px] items-center bg-white text-primary-600 hover:bg-primary-50 hover:text-primary-700 transition-colors"
                     style={{ gap: 'var(--space-2)', paddingInline: 'var(--space-3)', borderRadius: 'var(--radius-lg, 12px)' }}
                   >
-                    <Icon icon={RulerIcon} size="2xs" />{t('product.sizeGuide', 'دليل المقاسات')}
+                    <Icon name="Ruler" size="2xs" />{t('product.sizeGuide', 'دليل المقاسات')}
                   </button>
                 )}
               </div>
@@ -689,20 +688,20 @@ export default function BaseElegantProductPage(props: ProductPageProps) {
             <Surface tone="muted" className="shadow-none [&>*+*]:mt-[var(--space-5)]">
               <div className="flex items-center flex-wrap" style={{ columnGap: 'var(--space-4)', rowGap: 'var(--space-3)' }} role="status" aria-live="polite">
                  {props.isOutOfStock ? (
-                    <StoreBadge variant="danger"><Icon icon={AlertTriangle} size="2xs" />{t('product.outOfStock')}</StoreBadge>
+                    <StoreBadge variant="danger"><Icon name="AlertTriangle" size="2xs" />{t('product.outOfStock')}</StoreBadge>
                   ) : props.isLowStock ? (
-                    <StoreBadge variant="warning"><Icon icon={AlertTriangle} size="2xs" />{t('product.lowStock')} — {props.effectiveStockQuantity} {t('product.stockAvailable')}</StoreBadge>
+                    <StoreBadge variant="warning"><Icon name="AlertTriangle" size="2xs" />{t('product.lowStock')} — {props.effectiveStockQuantity} {t('product.stockAvailable')}</StoreBadge>
                   ) : (
-                    <StoreBadge variant="stock"><Icon icon={Check} size="2xs" />{t('product.inStock')}</StoreBadge>
+                    <StoreBadge variant="stock"><Icon name="Check" size="2xs" />{t('product.inStock')}</StoreBadge>
                   )}
                 {props.product.sku && <span className="text-xs text-text-tertiary font-mono">SKU: {props.product.sku}</span>}
                  {(props.features?.liveViewers !== false) && props.watcherCount != null && !props.isOutOfStock && (
-                    <span className="inline-flex items-center text-xs text-primary-600" style={{ gap: 'var(--space-1)' }}><Icon icon={Eye} size="2xs" />{props.watcherCount} {t('product.watching', 'شخص يشاهده الآن')}</span>
+                    <span className="inline-flex items-center text-xs text-primary-600" style={{ gap: 'var(--space-1)' }}><Icon name="Eye" size="2xs" />{props.watcherCount} {t('product.watching', 'شخص يشاهده الآن')}</span>
                   )}
               </div>
 
               <div className="flex items-center text-xs text-text-secondary" style={{ gap: 'var(--space-3)' }}>
-                <Icon icon={BadgeCheck} size="2xs" className="text-primary-500" />
+                <Icon name="BadgeCheck" size="2xs" className="text-primary-500" />
                 <span>{props.product.type === 'digital' ? t('product.typeDigital', 'منتج رقمي — تسليم فوري') : props.product.type === 'service' ? t('product.typeService', 'خدمة — بعد الشراء') : t('product.typePhysical', 'منتج مادي — يتطلب شحن')}</span>
               </div>
             </Surface>
@@ -747,7 +746,7 @@ export default function BaseElegantProductPage(props: ProductPageProps) {
                       className="inline-flex min-h-[36px] items-center text-xs text-primary-600 font-medium hover:text-primary-700 transition-colors"
                       style={{ gap: 'var(--space-2)', marginBlockStart: 'var(--space-3)' }}
                     >
-                      <Icon icon={ChevronDown} className={`transition-transform ${props.showFullDesc ? 'rotate-180' : ''}`} size="2xs" />
+                      <Icon name="ChevronDown" className={`transition-transform ${props.showFullDesc ? 'rotate-180' : ''}`} size="2xs" />
                       {props.showFullDesc ? t('product.showLess') : t('product.readMore')}
                     </button>
                   )}
@@ -763,18 +762,18 @@ export default function BaseElegantProductPage(props: ProductPageProps) {
                   className="flex min-h-[44px] w-full items-center justify-between text-sm font-medium text-text-primary hover:text-primary-600 transition-colors"
                 >
                   <span className="inline-flex items-center" style={{ gap: 'var(--space-2)' }}>
-                    <Icon icon={Truck} size="xs" className="text-text-tertiary" />
+                    <Icon name="Truck" size="xs" className="text-text-tertiary" />
                     {t('product.shippingAndSpecs', 'الشحن والمواصفات')}
                   </span>
-                  <Icon icon={ChevronDown} className={`transition-transform ${props.detailsOpen ? 'rotate-180' : ''}`} size="2xs" />
+                  <Icon name="ChevronDown" className={`transition-transform ${props.detailsOpen ? 'rotate-180' : ''}`} size="2xs" />
                 </button>
 
                 {props.detailsOpen && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 animate-fade-in" style={{ gap: 'var(--space-3)', marginBlockStart: 'var(--space-3)' }}>
-                    {props.hasWeight && <div className="flex items-center text-sm text-text-secondary" style={{ gap: 'var(--space-2)' }}><Icon icon={Weight} size="xs" className="text-text-tertiary" /><span>{t('product.weight')}: {formatWeight(props.product.weightGrams!, t)}</span></div>}
-                    {props.hasDimensions && <div className="flex items-center text-sm text-text-secondary" style={{ gap: 'var(--space-2)' }}><Icon icon={Ruler} size="xs" className="text-text-tertiary" /><span>{t('product.dimensions')}: {props.product.lengthCm || '–'} × {props.product.widthCm || '–'} × {props.product.heightCm || '–'} {t('product.cm')}</span></div>}
-                    {props.product.isFragile && <div className="flex items-center text-sm text-warning" style={{ gap: 'var(--space-2)' }}><Icon icon={Box} size="xs" /><span>{t('product.fragile')}</span></div>}
-                    {props.product.requiresShipping && <div className="flex items-center text-sm text-text-secondary" style={{ gap: 'var(--space-2)' }}><Icon icon={Truck} size="xs" className="text-text-tertiary" /><span>{t('product.requiresShipping')}</span></div>}
+                    {props.hasWeight && <div className="flex items-center text-sm text-text-secondary" style={{ gap: 'var(--space-2)' }}><Icon name="Weight" size="xs" className="text-text-tertiary" /><span>{t('product.weight')}: {formatWeight(props.product.weightGrams!, t)}</span></div>}
+                    {props.hasDimensions && <div className="flex items-center text-sm text-text-secondary" style={{ gap: 'var(--space-2)' }}><Icon name="Ruler" size="xs" className="text-text-tertiary" /><span>{t('product.dimensions')}: {props.product.lengthCm || '–'} × {props.product.widthCm || '–'} × {props.product.heightCm || '–'} {t('product.cm')}</span></div>}
+                    {props.product.isFragile && <div className="flex items-center text-sm text-warning" style={{ gap: 'var(--space-2)' }}><Icon name="Box" size="xs" /><span>{t('product.fragile')}</span></div>}
+                    {props.product.requiresShipping && <div className="flex items-center text-sm text-text-secondary" style={{ gap: 'var(--space-2)' }}><Icon name="Truck" size="xs" className="text-text-tertiary" /><span>{t('product.requiresShipping')}</span></div>}
                   </div>
                 )}
               </Surface>
@@ -784,13 +783,13 @@ export default function BaseElegantProductPage(props: ProductPageProps) {
 
         <div style={{ paddingBlockStart: 'var(--space-12)' }}>
           <ProductSection title={t('product.relatedProducts')}>
-            {props.product.categoryId && props.relatedProducts.map((p: any) => <ThemedProductCard key={p.id} product={p} slug={props.slug} />)}
+            {props.product.categoryId && props.relatedProducts.map((p: { id: number; name: string; slug: string; price: number | string }) => <ThemedProductCard key={p.id} product={p} slug={props.slug} />)}
           </ProductSection>
         </div>
 
         {(props.features?.alsoBought !== false) && props.alsoBought.length > 0 && (
           <ProductSection title={t('product.alsoBought', 'اشترى العملاء أيضاً')}>
-            {props.alsoBought.map((p: any) => <ThemedProductCard key={p.id} product={p} slug={props.slug} />)}
+            {props.alsoBought.map((p: { id: number; name: string; slug: string; price: number | string }) => <ThemedProductCard key={p.id} product={p} slug={props.slug} />)}
           </ProductSection>
         )}
 
@@ -800,7 +799,7 @@ export default function BaseElegantProductPage(props: ProductPageProps) {
           <section style={{ paddingBlockStart: 'var(--space-12)' }}>
             <h2 className="text-lg sm:text-xl font-bold text-text-primary" style={{ marginBlockEnd: 'var(--space-6)' }}>{t('product.youMayAlsoLike')}</h2>
             <ProductGrid>
-              {props.crossSellProducts.map((p: any) => <ThemedProductCard key={p.id} product={p} slug={props.slug} />)}
+              {props.crossSellProducts.map((p: { id: number; name: string; slug: string; price: number | string }) => <ThemedProductCard key={p.id} product={p} slug={props.slug} />)}
             </ProductGrid>
           </section>
         )}

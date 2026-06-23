@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { productsApi, featuresApi, giftOptionsApi, checkoutApi, sizeGuidesApi } from '@/lib/api';
+import { productsApi, featuresApi, giftOptionsApi, checkoutApi, sizeGuidesApi, type GiftOptions, type SizeGuide, type PublicProduct } from '@/lib/api';
 import { useSharedCart } from '@/hooks/CartContext';
 import { tracker } from '@/lib/tracker';
 import { StoreButton } from '@/components/ui';
@@ -9,13 +9,11 @@ import { Icon } from '@/components/ui/icon';
 import { useSEO } from '@/hooks/useSEO';
 import { useStore } from '@/hooks/useStore';
 import { useStorefrontTheme } from '@/hooks/useTheme';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO: P1-#5 migration; lucide icons as plain JSX
-import { AlertTriangle, ArrowLeft, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { getStorefrontThemeComponents, resolveStorefrontThemeKey } from '@haa/storefront-themes';
 import BaseElegantProductPage from '@/themes/base-elegant/ProductPage';
 
-function useRecentlyViewed(slug: string | undefined, product: any | null) {
+function useRecentlyViewed(slug: string | undefined, product: PublicProduct | null) {
   const [recentItems, setRecentItems] = useState<Array<{ id: number; name: string; slug: string; image: string }>>([]);
 
   useEffect(() => {
@@ -24,7 +22,7 @@ function useRecentlyViewed(slug: string | undefined, product: any | null) {
       const key = `recent_${slug}`;
       const current = JSON.parse(localStorage.getItem(key) || '[]');
       if (product) {
-        const updated = [{ id: product.id, name: product.name, slug: product.slug, image: product.images?.[0] || '' }, ...current.filter((r: any) => r.id !== product.id)].slice(0, 6);
+        const updated = [{ id: product.id, name: product.name, slug: product.slug, image: product.images?.[0] || '' }, ...current.filter((r: { id: number }) => r.id !== product.id)].slice(0, 6);
         localStorage.setItem(key, JSON.stringify(updated));
         setRecentItems(updated);
       } else {
@@ -43,7 +41,7 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { slug, productSlug } = useParams<{ slug: string; productSlug: string }>();
-  const [product, setProduct] = useState<any | null>(null);
+  const [product, setProduct] = useState<PublicProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -51,13 +49,13 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
-  const [alsoBought, setAlsoBought] = useState<any[]>([]);
-  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
-  const [crossSellProducts, setCrossSellProducts] = useState<any[]>([]);
+  const [alsoBought, setAlsoBought] = useState<PublicProduct[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<PublicProduct[]>([]);
+  const [crossSellProducts, setCrossSellProducts] = useState<PublicProduct[]>([]);
   const [features, setFeatures] = useState<Record<string, boolean> | null>(null);
-  const [storeGiftOptions, setStoreGiftOptions] = useState<any | null>(null);
-  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
-  const [sizeGuide, setSizeGuide] = useState<any | null>(null);
+  const [storeGiftOptions, setStoreGiftOptions] = useState<GiftOptions | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<Array<{ provider: string; available: boolean }>>([]);
+  const [sizeGuide, setSizeGuide] = useState<SizeGuide | null>(null);
   const [giftWrap, setGiftWrap] = useState(false);
   const [sendAsGift, setSendAsGift] = useState(false);
   const [giftMessage, setGiftMessage] = useState('');
@@ -85,13 +83,13 @@ export default function ProductDetail() {
     if (!product?.variants?.length) return null;
     const keys = Object.keys(selectedOptions);
     if (keys.length === 0) return null;
-    return product.variants.find((v: any) =>
+    return product.variants.find((v) =>
       keys.every(k => v.options[k] === selectedOptions[k])
     ) ?? null;
   }, [product?.variants, selectedOptions]);
 
-  const effectivePrice = selectedVariant?.price ?? product?.price ?? '0';
-  const effectiveCompareAtPrice = selectedVariant ? product?.compareAtPrice : product?.compareAtPrice;
+  const effectivePrice: string = selectedVariant?.price ?? product?.price ?? '0';
+  const effectiveCompareAtPrice: string | undefined = (selectedVariant ? product?.compareAtPrice : product?.compareAtPrice) ?? undefined;
   const effectiveStockQuantity = selectedVariant?.stockQuantity ?? product?.stockQuantity ?? 0;
   const hasOptions = product?.options != null && product.options.length > 0;
 
@@ -108,7 +106,7 @@ export default function ProductDetail() {
     if (!slug || !productSlug) return;
     setLoading(true); setError(false); setAdded(false); setQuantity(1);
     productsApi.getBySlug(slug, productSlug)
-      .then((p: any) => setProduct(p.status !== 'active' ? null : p))
+      .then((p: PublicProduct) => setProduct(p.status !== 'active' ? null : p))
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [slug, productSlug]);
@@ -125,7 +123,7 @@ export default function ProductDetail() {
     if (!slug) return;
     featuresApi.get(slug).then(setFeatures).catch(() => {});
     giftOptionsApi.get(slug).then(setStoreGiftOptions).catch(() => {});
-    checkoutApi.getPaymentMethods(slug).then((res: any) => setPaymentMethods(Array.isArray(res?.methods) ? res.methods : [])).catch(() => setPaymentMethods([]));
+    checkoutApi.getPaymentMethods(slug).then((res: { methods?: Array<{ provider: string; available: boolean }> }) => setPaymentMethods(Array.isArray(res?.methods) ? res.methods : [])).catch(() => setPaymentMethods([]));
   }, [slug]);
 
   useEffect(() => {
@@ -139,21 +137,30 @@ export default function ProductDetail() {
   useEffect(() => {
     if (!slug || !product?.categoryId) return;
     productsApi.list(slug, { limit: 5, category: String(product.categoryId) })
-      .then((res: any) => setAlsoBought(res.data.filter((p: any) => p.id !== product.id && p.status === 'active').slice(0, 4)))
+      .then((res) => {
+        const data = (res as unknown as { data: PublicProduct[] }).data;
+        setAlsoBought(data.filter((p: PublicProduct) => p.id !== product.id && p.status === 'active').slice(0, 4));
+      })
       .catch(() => {});
   }, [slug, product?.categoryId, product?.id]);
 
   useEffect(() => {
     if (!slug || !product?.categoryId) return;
     productsApi.list(slug, { limit: 5, category: String(product.categoryId) })
-      .then((res: any) => setRelatedProducts(res.data.filter((p: any) => p.id !== product.id && p.status === 'active').slice(0, 4)))
+      .then((res) => {
+        const data = (res as unknown as { data: PublicProduct[] }).data;
+        setRelatedProducts(data.filter((p: PublicProduct) => p.id !== product.id && p.status === 'active').slice(0, 4));
+      })
       .catch(() => {});
   }, [slug, product?.categoryId, product?.id]);
 
   useEffect(() => {
     if (!slug) return;
     productsApi.list(slug, { limit: 4 })
-      .then((res: any) => setCrossSellProducts(res.data.filter((p: any) => p.status === 'active').sort((a: any, b: any) => Number(a.price) - Number(b.price)).slice(0, 4)))
+      .then((res) => {
+        const data = (res as unknown as { data: PublicProduct[] }).data;
+        setCrossSellProducts(data.filter((p: PublicProduct) => p.status === 'active').sort((a: PublicProduct, b: PublicProduct) => Number(a.price) - Number(b.price)).slice(0, 4));
+      })
       .catch(() => {});
   }, [slug]);
 
@@ -163,15 +170,15 @@ export default function ProductDetail() {
 
   const isOutOfStock = Boolean(product?.trackInventory && effectiveStockQuantity <= 0);
   const maxQuantity = product?.trackInventory ? Math.max(1, effectiveStockQuantity) : 99;
-  const hasDiscount = product ? effectiveCompareAtPrice && Number(effectiveCompareAtPrice) > Number(effectivePrice) : false;
+  const hasDiscount = Boolean(product && effectiveCompareAtPrice && Number(effectiveCompareAtPrice) > Number(effectivePrice));
   const countdownEnd = useMemo(() => hasDiscount && product?.offerEndDate ? new Date(product.offerEndDate).getTime() : 0, [hasDiscount, product?.offerEndDate]);
   const discountPercent = useMemo(() => hasDiscount && product ? Math.round((1 - Number(effectivePrice) / Number(effectiveCompareAtPrice!)) * 100) : 0, [hasDiscount, product, effectivePrice, effectiveCompareAtPrice]);
   const isLowStock = Boolean(product?.trackInventory && effectiveStockQuantity > 0 && effectiveStockQuantity <= 5);
-  const hasDimensions = product ? product.lengthCm || product.widthCm || product.heightCm : false;
+  const hasDimensions: boolean = Boolean(product && (product.lengthCm || product.widthCm || product.heightCm));
   const hasWeight = product ? product.weightGrams != null && product.weightGrams > 0 : false;
   const isFreeShipping = true;
   const showSizeGuide = Boolean(product && features?.sizeGuide !== false && sizeGuide && Array.isArray(sizeGuide.rows) && sizeGuide.rows.length > 0);
-  const hasElectronicPayment = (paymentMethods ?? []).some((method: any) =>
+  const hasElectronicPayment = (paymentMethods ?? []).some((method: { provider: string; available: boolean }) =>
     method.available && method.provider !== 'cash_on_delivery' && method.provider !== 'cod'
   );
 
@@ -260,7 +267,7 @@ export default function ProductDetail() {
   if (error) {
     return (
       <div className="container-store text-center" style={{ paddingBlock: 'var(--space-8)' }}>
-        <Icon icon={AlertTriangle} size="lg" className="mx-auto text-warning" style={{ marginBlockEnd: 'var(--space-3)' }} />
+        <Icon name="AlertTriangle" size="lg" className="mx-auto text-warning" style={{ marginBlockEnd: 'var(--space-3)' }} />
         <h2 className="text-xl font-bold" style={{ marginBlockEnd: 'var(--space-2)' }}>{t('product.loadError')}</h2>
         <div className="flex items-center justify-center" style={{ gap: 'var(--space-3)', marginBlockStart: 'var(--space-6)' }}>
           <StoreButton onClick={fetchProduct}>{t('common.retry')}</StoreButton>
@@ -273,10 +280,10 @@ export default function ProductDetail() {
   if (!product) {
     return (
       <div className="container-store text-center" style={{ paddingBlock: 'var(--space-8)' }}>
-        <Icon icon={Package} size="xl" className="text-text-disabled mx-auto" style={{ marginBlockEnd: 'var(--space-4)' }} />
+        <Icon name="Package" size="xl" className="text-text-disabled mx-auto" style={{ marginBlockEnd: 'var(--space-4)' }} />
         <h2 className="text-xl font-bold" style={{ marginBlockEnd: 'var(--space-2)' }}>{t('product.notFound')}</h2>
         <p className="text-sm text-text-secondary" style={{ marginBlockEnd: 'var(--space-6)' }}>{t('product.notFoundDesc')}</p>
-        <StoreButton href={`/s/${slug}`} iconStart={<Icon icon={ArrowLeft} size="xs" />}>{t('cart.continueShopping')}</StoreButton>
+        <StoreButton href={`/s/${slug}`} iconStart={<Icon name="ArrowLeft" size="xs" />}>{t('cart.continueShopping')}</StoreButton>
       </div>
     );
   }

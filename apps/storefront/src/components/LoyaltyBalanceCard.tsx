@@ -26,8 +26,6 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { loyaltyApi, type LoyaltyBalanceResponse, ApiClientError } from '@/lib/api';
 import { StoreCard, StoreSkeleton, StoreAlert, Icon, SarIcon } from '@/components/ui';
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- TODO P1-#5; lucide icons as plain JSX
-import { Coins, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 
 interface LoyaltyBalanceCardProps {
   slug: string;
@@ -103,7 +101,7 @@ export default function LoyaltyBalanceCard({
         <header className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-primary-50 text-primary-600">
-              <Icon icon={Coins} size="sm" />
+              <Icon name="Coins" size="sm" />
             </span>
             <h3 id="loyalty-card-heading" className="font-bold text-base text-text-primary">
               {t('loyalty.title', 'نقاط الولاء')}
@@ -131,7 +129,7 @@ export default function LoyaltyBalanceCard({
         <div className="grid grid-cols-3 gap-3 mb-4 pt-4 border-t border-border">
           <div>
             <p className="text-xs text-text-secondary flex items-center gap-1">
-              <Icon icon={TrendingUp} size="2xs" className="text-success" />
+              <Icon name="TrendingUp" size="2xs" className="text-success" />
               {t('loyalty.lifetimeEarned', 'مكتسبة')}
             </p>
             <p className="text-sm font-semibold tabular-nums" dir="ltr" data-testid="loyalty-lifetime-earned">
@@ -140,7 +138,7 @@ export default function LoyaltyBalanceCard({
           </div>
           <div>
             <p className="text-xs text-text-secondary flex items-center gap-1">
-              <Icon icon={TrendingDown} size="2xs" className="text-danger" />
+              <Icon name="TrendingDown" size="2xs" className="text-danger" />
               {t('loyalty.lifetimeRedeemed', 'مستبدلة')}
             </p>
             <p className="text-sm font-semibold tabular-nums" dir="ltr" data-testid="loyalty-lifetime-redeemed">
@@ -149,7 +147,7 @@ export default function LoyaltyBalanceCard({
           </div>
           <div>
             <p className="text-xs text-text-secondary flex items-center gap-1">
-              <Icon icon={Calendar} size="2xs" className="text-text-tertiary" />
+              <Icon name="Calendar" size="2xs" className="text-text-tertiary" />
               {t('loyalty.lifetimeExpired', 'منتهية')}
             </p>
             <p className="text-sm font-semibold tabular-nums" dir="ltr" data-testid="loyalty-lifetime-expired">
