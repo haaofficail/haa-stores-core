@@ -53,7 +53,7 @@ export default function Footer() {
     { key: 'snapchat', label: 'Snapchat', href: socialLinks.snapchat },
     { key: 'whatsapp', label: 'WhatsApp', href: whatsappContact?.enabled ? whatsappContact.waMeLink : socialLinks.whatsapp },
   ].filter((link): link is { key: string; label: string; href: string } => typeof link.href === 'string' && link.href.trim().length > 0);
-  const contactEmail = store.contactChannels?.email || store.email || 'info@haastores.com';
+  const contactEmail = store.contactChannels?.email || store.email || 'hello@haastores.com';
 
   return (
     <>

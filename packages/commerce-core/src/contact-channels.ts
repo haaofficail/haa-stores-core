@@ -1,4 +1,4 @@
-const OFFICIAL_CONTACT_EMAIL = 'info@haastores.com';
+const OFFICIAL_CONTACT_EMAIL = 'hello@haastores.com';
 const E164_PHONE_RE = /^\+[1-9]\d{7,14}$/;
 
 export interface WhatsappContactChannel {
