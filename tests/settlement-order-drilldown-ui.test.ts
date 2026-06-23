@@ -1,7 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const merchantOrders = readFileSync(new URL('../apps/merchant-dashboard/src/pages/Orders.tsx', import.meta.url), 'utf-8');
+// PR #142 split the order detail dialog out of Orders.tsx into
+// OrderDetailDialog.tsx. The settlement badge JSX moved with it.
+// Concatenate both so the source-grep assertions still pass.
+const merchantOrders =
+  readFileSync(new URL('../apps/merchant-dashboard/src/pages/Orders.tsx', import.meta.url), 'utf-8') +
+  '\n' +
+  readFileSync(new URL('../apps/merchant-dashboard/src/pages/orders/OrderDetailDialog.tsx', import.meta.url), 'utf-8');
 const settlementDetail = readFileSync(new URL('../apps/merchant-dashboard/src/pages/SettlementDetail.tsx', import.meta.url), 'utf-8');
 const settlementBatchDetail = readFileSync(new URL('../apps/admin-dashboard/src/pages/SettlementBatchDetail.tsx', import.meta.url), 'utf-8');
 const merchantApp = readFileSync(new URL('../apps/merchant-dashboard/src/App.tsx', import.meta.url), 'utf-8');
