@@ -179,9 +179,9 @@ export class LiveSnapshotService {
       paidOrdersLast30Min: r.paidOrdersLast30Min,
       revenueLast30Min: String(r.revenueLast30Min),
       paymentFailuresLast30Min: r.paymentFailuresLast30Min,
-      topPages: (r.topPages as any) ?? [],
-      topProducts: (r.topProducts as any) ?? [],
-      topSources: (r.topSources as any) ?? [],
+      topPages: r.topPages ?? [],
+      topProducts: r.topProducts ?? [],
+      topSources: r.topSources ?? [],
       createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
     }));
   }

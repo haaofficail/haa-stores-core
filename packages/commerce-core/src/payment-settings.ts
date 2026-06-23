@@ -168,7 +168,7 @@ export class PaymentProviderSettingsService {
     const provider = BNPL_PROVIDERS.find(p => p.code === providerCode);
     if (!provider) throw new Error(`Unknown provider: ${providerCode}`);
 
-    const updateData: Record<string, unknown> = { updatedAt: new Date() };
+    const updateData: Partial<typeof s.merchantPaymentProviderSettings.$inferInsert> = { updatedAt: new Date() };
     if (input.enabled !== undefined) updateData.enabled = input.enabled;
     if (input.mode !== undefined) updateData.mode = input.mode;
     if (input.country !== undefined) updateData.country = input.country;
@@ -192,7 +192,7 @@ export class PaymentProviderSettingsService {
       providerCode,
       supportedPaymentMethod: provider.method,
       ...updateData,
-    } as any).returning();
+    }).returning();
 
     return created as unknown as PaymentProviderSetting;
   }
