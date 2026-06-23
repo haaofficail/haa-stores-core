@@ -6,9 +6,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { AlertTriangle, DollarSign, ShoppingCart, MapPin, TrendingUp, Wallet, Download, Printer, Loader2 } from 'lucide-react';
-import { reportsApi, type DeepReport } from '@/lib/api';
+import { AlertTriangle, DollarSign, ShoppingCart, MapPin, TrendingUp, Wallet, Download, Printer, Loader2, Gift, Users, Award } from 'lucide-react';
+import { reportsApi, loyaltyApi, type DeepReport, type LoyaltyAnalytics } from '@/lib/api';
 import { messageFromError } from '@/lib/error-mapper';
 import { formatCurrency } from '@/lib/utils';
 import { SarIcon } from '@/components/ui/SarIcon';
@@ -100,6 +101,132 @@ function DeepTable({
             </TableBody>
           </Table>
         )}
+      </div>
+    </div>
+  );
+}
+
+// L-PR-9 — Loyalty analytics tab. Read-only aggregates from
+// /merchant/:storeId/loyalty/analytics. No new tables; pure SUM/COUNT
+// against loyalty_accounts. Renders inside the Reports page Tabs.
+function LoyaltyTab({ storeId }: { storeId: number }) {
+  const { t } = useTranslation();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<LoyaltyAnalytics | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    loyaltyApi.analytics(storeId)
+      .then((res) => setData(res as LoyaltyAnalytics))
+      .catch((e) => setError(messageFromError(e, t)))
+      .finally(() => setLoading(false));
+  }, [storeId, t]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 rounded-3xl" />)}
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-12 text-center">
+        <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4">
+          <AlertTriangle className="h-8 w-8 text-red-400" />
+        </div>
+        <p className="text-base font-medium text-neutral-700 mb-1" data-testid="loyalty-error">
+          {error || t('common.error', 'حدث خطأ')}
+        </p>
+        <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5 mt-4" onClick={load}>
+          <Loader2 className="h-4 w-4" /> {t('common.retry', 'إعادة المحاولة')}
+        </Button>
+      </div>
+    );
+  }
+
+  const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
+
+  return (
+    <div className="space-y-6" data-testid="loyalty-tab">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutral-500">{t('reports.loyalty.activeAccounts', 'حسابات نشطة')}</p>
+              <p className="text-2xl font-bold tracking-tight text-neutral-900 mt-1" data-testid="loyalty-active-accounts">{data.activeAccounts}</p>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-emerald-50 text-emerald-600"><Users className="h-5 w-5" /></div>
+          </div>
+        </div>
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutral-500">{t('reports.loyalty.pointsOutstanding', 'نقاط معلّقة')}</p>
+              <p className="text-2xl font-bold tracking-tight text-neutral-900 mt-1" data-testid="loyalty-points-outstanding">{data.pointsOutstanding}</p>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-primary-50 text-primary-600"><Gift className="h-5 w-5" /></div>
+          </div>
+        </div>
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutral-500">{t('reports.loyalty.redemptionRate', 'نسبة الاستبدال')}</p>
+              <p className="text-2xl font-bold tracking-tight text-neutral-900 mt-1" data-testid="loyalty-redemption-rate">{pct(data.redemptionRate)}</p>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-amber-50 text-amber-600"><TrendingUp className="h-5 w-5" /></div>
+          </div>
+        </div>
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutral-500">{t('reports.loyalty.breakageRate', 'نسبة الانتهاء')}</p>
+              <p className="text-2xl font-bold tracking-tight text-neutral-900 mt-1" data-testid="loyalty-breakage-rate">{pct(data.breakageRate)}</p>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-purple-50 text-purple-600"><Award className="h-5 w-5" /></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100">
+          <h3 className="font-bold text-lg text-neutral-900">{t('reports.loyalty.topEarners', 'أعلى 10 عملاء كسباً')}</h3>
+        </div>
+        <div className="p-4">
+          {data.topEarners.length === 0 ? (
+            <p className="text-sm text-neutral-400 text-center py-8" data-testid="loyalty-top-earners-empty">{t('reports.noData', 'لا توجد بيانات')}</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="border-neutral-100 hover:bg-transparent">
+                  <TableHead className="h-9 text-sm text-neutral-500 font-medium">{t('reports.loyalty.customerId', 'العميل')}</TableHead>
+                  <TableHead className="h-9 text-sm text-neutral-500 font-medium">{t('reports.loyalty.lifetimeEarned', 'إجمالي الكسب')}</TableHead>
+                  <TableHead className="h-9 text-sm text-neutral-500 font-medium">{t('reports.loyalty.currentBalance', 'الرصيد الحالي')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.topEarners.map((e) => (
+                  <TableRow key={e.customerId} className="border-neutral-100 hover:bg-neutral-50">
+                    <TableCell className="text-sm font-mono text-neutral-900 p-3">#{e.customerId}</TableCell>
+                    <TableCell className="text-sm font-semibold text-neutral-900 p-3">{e.lifetimeEarned}</TableCell>
+                    <TableCell className="text-sm text-neutral-900 p-3">{e.balance}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3 text-xs text-neutral-500">
+        <div className="bg-neutral-50 rounded-2xl p-3">{t('reports.loyalty.totalEarned', 'إجمالي مكسوب')}: <span className="font-bold text-neutral-900">{data.totals.earned}</span></div>
+        <div className="bg-neutral-50 rounded-2xl p-3">{t('reports.loyalty.totalRedeemed', 'إجمالي مُستبدل')}: <span className="font-bold text-neutral-900">{data.totals.redeemed}</span></div>
+        <div className="bg-neutral-50 rounded-2xl p-3">{t('reports.loyalty.totalExpired', 'إجمالي منتهٍ')}: <span className="font-bold text-neutral-900">{data.totals.expired}</span></div>
       </div>
     </div>
   );
@@ -257,6 +384,19 @@ export default function Reports() {
         </div>
       </div>
 
+      {/* L-PR-9 — Tabs wrap the original Reports content (Overview) and
+          add a new Loyalty tab fed by /merchant/:storeId/loyalty/analytics. */}
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="print:hidden">
+          <TabsTrigger value="overview" data-testid="tab-trigger-overview">{t('reports.tabs.overview', 'نظرة عامة')}</TabsTrigger>
+          <TabsTrigger value="loyalty" data-testid="tab-trigger-loyalty">{t('reports.tabs.loyalty', 'الولاء')}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="loyalty" className="space-y-6">
+          {storeId ? <LoyaltyTab storeId={storeId} /> : null}
+        </TabsContent>
+
+        <TabsContent value="overview" className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
           <div className="flex items-center justify-between">
@@ -568,6 +708,8 @@ export default function Reports() {
           </div>
         </div>
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

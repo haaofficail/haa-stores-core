@@ -19,6 +19,22 @@ const CIRCUIT_BREAKER_PAUSE_MINUTES = 60;
 const MAX_RESPONSE_BODY_BYTES = 2048;
 const DELIVERY_TIMEOUT_MS = 10_000;
 
+// L-PR-8 — Outbound event types for the loyalty subsystem. Exported as
+// named constants so callers (LoyaltyService, tests, dashboard webhook
+// settings UI) refer to a single string. Endpoint subscriptions opt in
+// per type, and the wildcard '*' continues to receive every event.
+export const LOYALTY_EARNED_EVENT = 'loyalty.earned' as const;
+export const LOYALTY_REDEEMED_EVENT = 'loyalty.redeemed' as const;
+export const LOYALTY_EXPIRED_EVENT = 'loyalty.expired' as const;
+
+export const LOYALTY_EVENT_TYPES = [
+  LOYALTY_EARNED_EVENT,
+  LOYALTY_REDEEMED_EVENT,
+  LOYALTY_EXPIRED_EVENT,
+] as const;
+
+export type LoyaltyEventType = (typeof LOYALTY_EVENT_TYPES)[number];
+
 export class OutboundWebhookService {
   constructor(private db: DbClient = createDbClient()) {}
 

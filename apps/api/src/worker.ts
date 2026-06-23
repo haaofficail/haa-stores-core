@@ -62,6 +62,7 @@ export const JOB_NAMES = {
   liveSnapshot: 'live-snapshot.create',
   marketingActionGenerate: 'marketing-action.generate',
   whatsappCampaign: 'whatsapp.campaign',
+  loyaltyExpiry: 'loyalty.expiry',
 } as const;
 
 type JobName = typeof JOB_NAMES[keyof typeof JOB_NAMES];
@@ -149,6 +150,60 @@ const scheduledJobs: ScheduledJob[] = [
       const { OutboundWebhookService } = await import('@haa/commerce-core');
       const service = new OutboundWebhookService();
       await service.retryPending();
+    },
+  },
+  {
+    // L-PR-7 — loyalty points expiry sweep.
+    //
+    // Runs once per hour and only executes the sweep when the current
+    // Riyadh-local hour is 02:00, so the effective cadence is "daily at
+    // 02:00 Asia/Riyadh". The hour-grained guard plus the per-instance
+    // Redis lock (acquireLock) means the sweep fires at most once per
+    // calendar day even if multiple API instances are running.
+    //
+    // KNOWN GAP (PROBLEM-003): without `QUEUE_REDIS_URL` the lock layer
+    // degrades to single-instance mode and the scheduler still runs the
+    // hourly interval, but the cron is also harmless if no stores have
+    // expiry configured (LoyaltyService.expireAllAccounts short-circuits
+    // when pointsExpiryMonths <= 0). Document this in the PR body.
+    name: JOB_NAMES.loyaltyExpiry,
+    intervalMs: 60 * 60 * 1000,
+    handler: async () => {
+      const hourRiyadh = Number(
+        new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Asia/Riyadh',
+          hour: 'numeric',
+          hour12: false,
+        }).format(new Date()),
+      );
+      if (hourRiyadh !== 2) return; // wrong hour-of-day — skip cycle
+
+      const { LoyaltyService } = await import('@haa/commerce-core');
+      const { createDbClient } = await import('@haa/db');
+      const schema = await import('@haa/db/schema');
+      const { gt } = await import('drizzle-orm');
+      const db = createDbClient();
+      const svc = new LoyaltyService(db);
+
+      // Only sweep stores that have expiry enabled (pointsExpiryMonths > 0).
+      // The default in the schema is 12, but disabled stores set it to 0.
+      const eligible = await db.select({
+        storeId: schema.loyaltySettings.storeId,
+      }).from(schema.loyaltySettings)
+        .where(gt(schema.loyaltySettings.pointsExpiryMonths, 0));
+
+      let totalAccounts = 0;
+      let totalExpired = 0;
+      for (const row of eligible) {
+        try {
+          const r = await svc.expireAllAccounts(row.storeId);
+          totalAccounts += r.accounts;
+          totalExpired += r.totalExpired;
+        } catch (err) {
+          console.error(`[scheduler] loyalty.expiry failed for store ${row.storeId}:`, err);
+        }
+      }
+      console.log(`[scheduler] loyalty.expiry swept ${totalAccounts} accounts across ${eligible.length} stores; expired ${totalExpired} points`);
     },
   },
   {
