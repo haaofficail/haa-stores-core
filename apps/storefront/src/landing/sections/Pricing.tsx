@@ -1,10 +1,13 @@
 /**
- * Pricing — 3-tier pricing with monthly/yearly toggle
+ * Pricing — 4 tiers, mirrors the canonical DB seed exactly
+ * (packages/db/src/seed/index.ts → plans).
  *
- * Extracted from LandingPage.tsx (P2-#1 refactor, sprint 10/13).
- * Apple-style "3 cards with middle highlighted" pattern. Pro plan gets
- * the visual lift + "الأكثر شيوعًا" badge + gradient pricing.
- * Yearly toggle saves 15%. Each plan's CTA links to /signup or /contact.
+ * Codes + monthly prices come from the seed; do NOT diverge from
+ * the DB here or merchants will see one number on the landing and a
+ * different one inside the dashboard. Annual price = monthly × 12 ×
+ * 0.80 (20% discount) per the seed (e.g. growth 99×12×0.80 = 950.40).
+ *
+ * Growth is highlighted as "الأكثر شيوعًا".
  */
 import { useState as useReactState } from 'react';
 import { Link } from 'react-router-dom';
@@ -14,21 +17,54 @@ import type { TFn } from './types';
 
 export function Pricing({ t }: { t: TFn }) {
   const [yearly, setYearly] = useReactState(false);
-  // Plan data follows the Apple "3 tier with middle highlighted" pattern.
-  // Pro plan has graduated monthly/yearly to encourage annual commitment.
+  // 4-tier ladder mirrors packages/db/src/seed/index.ts. priceMonthly is
+  // the source of truth; yearly column = round(monthly × 0.8) so it
+  // matches the seed's priceAnnual / 12 rounding.
   const plans = [
-    { key: 'free', name: t('landing.pricing.free.name', 'مجاني'), price: '0', period: '', desc: t('landing.pricing.free.desc', 'للتجار الذين يبدأون رحلتهم بميزانية محدودة.'), highlight: false, cta: t('landing.pricing.free.cta', 'ابدأ مجانًا') },
     {
-      key: 'pro',
-      name: t('landing.pricing.pro.name', 'احترافي'),
-      monthly: '199',
-      yearly: '169',
-      period: t('landing.pricing.perMonth', '/شهريًا'),
-      desc: t('landing.pricing.pro.desc', 'للتجار الذين يريدون التوسّع بثقة.'),
-      highlight: true,
-      cta: t('landing.pricing.pro.cta', 'ابدأ تجربة 14 يوم'),
+      key: 'starter',
+      name: t('landing.pricing.starter.name', 'Starter · مجاني'),
+      monthly: '0',
+      yearly: '0',
+      period: '',
+      desc: t('landing.pricing.starter.desc', 'للبدء وتجربة المنصة بدون أي رسوم.'),
+      highlight: false,
+      cta: t('landing.pricing.starter.cta', 'ابدأ مجانًا'),
+      features: ['حتى 10 منتجات', 'موظف واحد', 'مساحة 100 ميجابايت', 'دفع مدى و Apple Pay', 'دعم بالبريد'],
     },
-    { key: 'enterprise', name: t('landing.pricing.ent.name', 'مؤسسي'), price: t('landing.pricing.ent.price', 'تواصل'), period: '', desc: t('landing.pricing.ent.desc', 'للفِرَق والعلامات الكبيرة باحتياجات مخصصة.'), highlight: false, cta: t('landing.pricing.ent.cta', 'تواصل مع المبيعات') },
+    {
+      key: 'growth',
+      name: t('landing.pricing.growth.name', 'Growth · نمو'),
+      monthly: '99',
+      yearly: '79',
+      period: t('landing.pricing.perMonth', '/شهريًا'),
+      desc: t('landing.pricing.growth.desc', 'لمتجر صغير ينمو بثقة.'),
+      highlight: true,
+      cta: t('landing.pricing.growth.cta', 'جرّب 14 يوم مجانًا'),
+      features: ['حتى 100 منتج', '3 موظفين', 'مساحة 1 جيجابايت', 'كل وسائل الدفع المحلية', 'تحليلات وكوبونات', 'دعم أولوية'],
+    },
+    {
+      key: 'professional',
+      name: t('landing.pricing.professional.name', 'Professional · احتراف'),
+      monthly: '249',
+      yearly: '199',
+      period: t('landing.pricing.perMonth', '/شهريًا'),
+      desc: t('landing.pricing.professional.desc', 'للشركات المتوسطة وفِرَق المبيعات.'),
+      highlight: false,
+      cta: t('landing.pricing.professional.cta', 'جرّب 14 يوم مجانًا'),
+      features: ['حتى 500 منتج', '10 موظفين', 'مساحة 5 جيجابايت', 'تقسيط تابي وتمارا', 'مزامنة سلّة ونون وزد', 'دعم أولوية 24/7'],
+    },
+    {
+      key: 'business',
+      name: t('landing.pricing.business.name', 'Business · أعمال'),
+      monthly: '499',
+      yearly: '399',
+      period: t('landing.pricing.perMonth', '/شهريًا'),
+      desc: t('landing.pricing.business.desc', 'للعلامات الكبيرة والاحتياجات المخصّصة.'),
+      highlight: false,
+      cta: t('landing.pricing.business.cta', 'تواصل مع المبيعات'),
+      features: ['منتجات غير محدودة', 'موظفون غير محدودين', 'مساحة 20 جيجابايت', 'مدير حساب مخصّص', 'SLA مكتوب', 'تخصيص API + Webhooks'],
+    },
   ];
   return (
     <section id="pricing" className="relative py-16 sm:py-24 scroll-mt-20">
@@ -66,11 +102,11 @@ export function Pricing({ t }: { t: TFn }) {
             </button>
           </div>
         </div>
-        {/* Grid: 1 col mobile, 3 col desktop. gap 24px. */}
-        <ul className="mt-12 grid gap-6 lg:grid-cols-3">
+        {/* Grid: 1 col mobile, 2 col tablet, 4 col desktop. gap 24px. */}
+        <ul className="mt-12 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {plans.map((p) => {
-            const { key, name, desc, highlight, cta } = p;
-            const price = 'price' in p ? p.price : (yearly ? p.yearly : p.monthly);
+            const { key, name, desc, highlight, cta, features } = p;
+            const price = yearly ? p.yearly : p.monthly;
             const period = p.period;
             return (
               // Card: 32px padding, 24px radius, layered shadow. Pro card has 2px border (visual lift).
@@ -98,23 +134,18 @@ export function Pricing({ t }: { t: TFn }) {
                 </div>
                 {/* Description: 15px line-height 1.6 */}
                 <p className="mt-4 text-base leading-[1.6] text-text-secondary">{desc}</p>
-                {/* Feature highlights */}
+                {/* Feature highlights — per-plan, mirrors DB seed limits. */}
                 <ul className="mt-5 space-y-2 text-sm text-text-secondary">
-                  {(key === 'free'
-                    ? ['متجر كامل', 'منتجات غير محدودة', 'دعم بالبريد']
-                    : key === 'pro'
-                    ? ['متجر كامل', 'ثيمات جاهزة', 'دفع وشحن', 'دعم عربي']
-                    : ['كل المميزات', 'دعم مخصص', 'استضافة خاصة']
-                  ).map((f) => (
+                  {features.map((f) => (
                     <li key={f} className="flex items-center gap-2">
                       <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-600">✓</span>
                       {f}
                     </li>
                   ))}
                 </ul>
-                {/* CTA: 48px height, 17px font-semibold, 28px horizontal padding, 100% width on mobile, full */}
+                {/* CTA. Business → /#contact (sales-assisted); others → /signup with plan code so the sign-up flow lands on the correct tier. */}
                 <Link
-                  to={key === 'enterprise' ? '/#contact' : '/signup' + (key === 'pro' ? '?plan=pro' : '')}
+                  to={key === 'business' ? '/#contact' : `/signup?plan=${key}`}
                   className={`mt-8 inline-flex h-12 min-h-[48px] w-full items-center justify-center rounded-full text-base font-semibold transition-all ${
                     highlight
                       ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/30 hover:scale-[1.02] hover:shadow-xl hover:!text-white'
@@ -125,7 +156,11 @@ export function Pricing({ t }: { t: TFn }) {
                 </Link>
                 {/* Trust microcopy under CTA */}
                 <p className="mt-3 text-center text-[12px] text-text-tertiary">
-                  {highlight ? 'بدون بطاقة بنكية · إلغاء في أي وقت' : `${getClaim('freeForever').text} · لا حاجة لبطاقة`}
+                  {key === 'starter'
+                    ? `${getClaim('freeForever').text} · لا حاجة لبطاقة`
+                    : key === 'business'
+                    ? 'سعر مخصّص · SLA مكتوب'
+                    : 'تجربة 14 يوم · إلغاء في أي وقت'}
                 </p>
               </li>
             );

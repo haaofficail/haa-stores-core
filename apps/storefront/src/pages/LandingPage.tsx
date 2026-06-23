@@ -6,14 +6,14 @@ import {
   LayoutDashboard, CircleDollarSign, ShoppingCart, Users,
   PenLine, Wand2, Flame, MessageCircle, Store,
   Search, LayoutGrid, BadgeCheck, Plus, Star,
-  Mail, MapPin, Clock, Send,
+  Mail, Phone, MapPin, Clock, Send,
   LucideIcon,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSEO } from '@/hooks/useSEO';
 import { merchantDashboardUrl } from '@/lib/merchant';
-import { StoreButton } from '@/components/ui';
+import { StoreButton, StoreCard, StoreInput, StoreTextarea } from '@/components/ui';
 import { SarIcon } from '@/components/ui/SarIcon';
 import '@/landing/landing.css';
 
@@ -733,7 +733,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Pricing ──────────────────────────────────────── */}
+      {/* ── Pricing ──────────────────────────────────────────
+        4-tier ladder mirrors packages/db/src/seed/index.ts so the
+        landing matches what the user actually sees inside the
+        dashboard. priceMonthly is the source of truth; do NOT diverge
+        here. Growth is highlighted as "الأكثر شيوعًا". */}
       <section id="pricing" className="lp-sec" style={{ background: 'linear-gradient(180deg, color-mix(in srgb, var(--color-primary-500) 4%, var(--surface-1)), var(--surface-1))' }}>
         <div className="lp-container">
           <div className="lp-sec__head reveal">
@@ -741,32 +745,62 @@ export default function LandingPage() {
             <h2>باقات تناسب نموّك</h2>
             <p>ابدأ مجانًا، وارتقِ متى ما كبر متجرك. بدون رسوم خفية.</p>
           </div>
-          <div className="lp-plans reveal-stagger">
+          <div className="lp-plans lp-plans--four reveal-stagger">
             <div className="lp-plan">
-              <h3>المجانية</h3>
+              <h3>Starter · مجاني</h3>
               <div className="lp-plan__price"><SarIcon /><b>0</b><span>/شهريًا</span></div>
-              <p className="lp-plan__desc">للبدء وتجربة المنصة</p>
+              <p className="lp-plan__desc">للبدء وتجربة المنصة بدون أي رسوم</p>
               <ul>
-                <li><span className="lp-plan__check"><Ck /></span> حتى ٢٠ منتج</li>
-                <li><span className="lp-plan__check"><Ck /></span> ثيم واحد</li>
+                <li><span className="lp-plan__check"><Ck /></span> حتى ١٠ منتجات</li>
+                <li><span className="lp-plan__check"><Ck /></span> موظف واحد</li>
+                <li><span className="lp-plan__check"><Ck /></span> مساحة ١٠٠ ميجابايت</li>
                 <li><span className="lp-plan__check"><Ck /></span> دفع مدى و Apple Pay</li>
                 <li><span className="lp-plan__check"><Ck /></span> دعم بالبريد</li>
               </ul>
-              <StoreButton variant="secondary" size="lg" className="w-full" href="/signup">ابدأ مجانًا</StoreButton>
+              <StoreButton variant="secondary" size="lg" className="w-full" href="/signup?plan=starter">ابدأ مجانًا</StoreButton>
             </div>
             <div className="lp-plan lp-plan--pro">
               <span className="lp-plan__tag">الأكثر شيوعًا</span>
-              <h3>الاحترافية</h3>
-              <div className="lp-plan__price"><SarIcon /><b>٢٩٩</b><span>/شهريًا</span></div>
-              <p className="lp-plan__desc">لمتجر ينمو بسرعة</p>
+              <h3>Growth · نمو</h3>
+              <div className="lp-plan__price"><SarIcon /><b>٩٩</b><span>/شهريًا</span></div>
+              <p className="lp-plan__desc">لمتجر صغير ينمو بثقة</p>
               <ul>
-                <li><span className="lp-plan__check"><Ck /></span> منتجات غير محدودة</li>
-                <li><span className="lp-plan__check"><Ck /></span> كل الثيمات + تخصيص كامل</li>
+                <li><span className="lp-plan__check"><Ck /></span> حتى ١٠٠ منتج</li>
+                <li><span className="lp-plan__check"><Ck /></span> ٣ موظفين</li>
+                <li><span className="lp-plan__check"><Ck /></span> مساحة ١ جيجابايت</li>
+                <li><span className="lp-plan__check"><Ck /></span> كل وسائل الدفع المحلية</li>
+                <li><span className="lp-plan__check"><Ck /></span> تحليلات وكوبونات</li>
+                <li><span className="lp-plan__check"><Ck /></span> دعم أولوية</li>
+              </ul>
+              <StoreButton size="lg" className="w-full" iconEnd={<ArrowLeft size={18} />} href="/signup?plan=growth">جرّب ١٤ يوم مجانًا</StoreButton>
+            </div>
+            <div className="lp-plan">
+              <h3>Professional · احتراف</h3>
+              <div className="lp-plan__price"><SarIcon /><b>٢٤٩</b><span>/شهريًا</span></div>
+              <p className="lp-plan__desc">للشركات المتوسطة وفِرَق المبيعات</p>
+              <ul>
+                <li><span className="lp-plan__check"><Ck /></span> حتى ٥٠٠ منتج</li>
+                <li><span className="lp-plan__check"><Ck /></span> ١٠ موظفين</li>
+                <li><span className="lp-plan__check"><Ck /></span> مساحة ٥ جيجابايت</li>
                 <li><span className="lp-plan__check"><Ck /></span> تقسيط تابي وتمارا</li>
-                <li><span className="lp-plan__check"><Ck /></span> تحليلات متقدمة وأدوات تسويق</li>
+                <li><span className="lp-plan__check"><Ck /></span> مزامنة سلّة ونون وزد</li>
                 <li><span className="lp-plan__check"><Ck /></span> دعم أولوية ٢٤/٧</li>
               </ul>
-              <StoreButton size="lg" className="w-full" iconEnd={<ArrowLeft size={18} />} href="/signup?plan=pro">جرّب ١٤ يوم مجانًا</StoreButton>
+              <StoreButton variant="secondary" size="lg" className="w-full" href="/signup?plan=professional">جرّب ١٤ يوم مجانًا</StoreButton>
+            </div>
+            <div className="lp-plan">
+              <h3>Business · أعمال</h3>
+              <div className="lp-plan__price"><SarIcon /><b>٤٩٩</b><span>/شهريًا</span></div>
+              <p className="lp-plan__desc">للعلامات الكبيرة والاحتياجات المخصّصة</p>
+              <ul>
+                <li><span className="lp-plan__check"><Ck /></span> منتجات غير محدودة</li>
+                <li><span className="lp-plan__check"><Ck /></span> موظفون غير محدودين</li>
+                <li><span className="lp-plan__check"><Ck /></span> مساحة ٢٠ جيجابايت</li>
+                <li><span className="lp-plan__check"><Ck /></span> مدير حساب مخصّص</li>
+                <li><span className="lp-plan__check"><Ck /></span> SLA مكتوب</li>
+                <li><span className="lp-plan__check"><Ck /></span> API و Webhooks</li>
+              </ul>
+              <StoreButton variant="secondary" size="lg" className="w-full" href="#contact" onClick={go('contact')}>تواصل مع المبيعات</StoreButton>
             </div>
           </div>
         </div>
@@ -799,20 +833,14 @@ export default function LandingPage() {
 
       {/* ── Contact ──────────────────────────────────────── */}
       {/*
-        Contact section — fixes the previously-broken /contact anchor
-        referenced from Pricing.tsx and FinalCTA.tsx. Submit composes a
-        mailto: to hello@haastores.com. Replace with /api/contact when
-        the endpoint exists.
-
-        Design choices (per redesign-existing-projects audit):
-        - Asymmetric 2-col grid (form 7/12, info 5/12) — not the lazy
-          centered hero.
-        - No purple/blue "AI gradient" — uses primary brand only.
-        - text-wrap: balance on the headline.
-        - Inputs have explicit hover + focus rings (200ms transitions).
-        - Real Saudi-format placeholders, not "John Doe / 555-0100".
+        Refactored to use Haa design-system primitives — StoreCard +
+        StoreInput + StoreTextarea + StoreButton — so the section
+        matches the rest of the storefront (radius tokens, surface
+        tokens, focus rings, transitions). The contact info cards
+        compose `lp-fcard` from landing.css so they inherit the same
+        hover-lift the Features cards use.
       */}
-      <section id="contact" className="lp-sec">
+      <section id="contact" className="lp-sec lp-sec--contact">
         <div className="lp-container">
           <div className="lp-sec__head reveal">
             <div className="lp-sec__eyebrow">تواصل معنا</div>
@@ -820,171 +848,59 @@ export default function LandingPage() {
             <p>فريق المبيعات والدعم يرد خلال يوم عمل واحد. للمؤسسات والباقات المخصّصة، نوصلك بمدير حساب مباشر.</p>
           </div>
 
-          <div
-            className="reveal"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1fr)',
-              gap: '2rem',
-              marginTop: '3rem',
-            }}
-          >
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
-                gap: '2rem',
-              }}
-            >
-              {/* Form (asymmetric weight — sits first on LTR, last on RTL) */}
-              <form
-                onSubmit={onContactSubmit}
-                style={{
-                  gridColumn: 'span 1',
-                  background: 'var(--color-surface-1, #fff)',
-                  borderRadius: '1.5rem',
-                  padding: 'clamp(1.5rem, 4vw, 2.5rem)',
-                  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -8px rgba(15, 23, 42, 0.08)',
-                  border: '1px solid rgba(15, 23, 42, 0.06)',
-                }}
-              >
+          <div className="lp-contact reveal">
+            {/* Form card — composes StoreCard + StoreInput + StoreTextarea */}
+            <StoreCard variant="default" className="lp-contact__form-card">
+              <form onSubmit={onContactSubmit} className="p-6 sm:p-8 space-y-5">
                 {contactSent ? (
-                  <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-                    <CheckCircle size={48} style={{ margin: '0 auto 1rem', color: 'var(--color-primary)' }} />
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-                      فتحنا لك بريدك الافتراضي
-                    </h3>
-                    <p style={{ color: 'var(--color-text-2, #64748b)', fontSize: '0.95rem' }}>
-                      راجع الرسالة وأرسلها — سنرد خلال يوم عمل.
-                    </p>
+                  <div className="py-8 text-center space-y-3">
+                    <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-pill bg-primary-50 text-primary-600">
+                      <CheckCircle size={32} />
+                    </div>
+                    <h3 className="text-2xl font-semibold text-text-primary">فتحنا لك بريدك الافتراضي</h3>
+                    <p className="text-text-secondary text-sm">راجع الرسالة وأرسلها — سنرد خلال يوم عمل.</p>
                   </div>
                 ) : (
                   <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '1rem' }}>
-                      <label style={{ display: 'block' }}>
-                        <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--color-text-1, #0f172a)' }}>
-                          الاسم
-                        </span>
-                        <input
-                          type="text"
-                          required
-                          value={contactForm.name}
-                          onChange={(e) => setContactForm((s) => ({ ...s, name: e.target.value }))}
-                          placeholder="نورة العبدالله"
-                          autoComplete="name"
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem 1rem',
-                            borderRadius: '0.75rem',
-                            border: '1px solid rgba(15, 23, 42, 0.12)',
-                            fontSize: '0.95rem',
-                            transition: 'border-color 200ms, box-shadow 200ms',
-                            outline: 'none',
-                          }}
-                          onFocus={(e) => {
-                            e.currentTarget.style.borderColor = 'var(--color-primary)';
-                            e.currentTarget.style.boxShadow = '0 0 0 4px rgba(var(--color-primary-rgb, 79, 70, 229), 0.1)';
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.12)';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }}
-                        />
-                      </label>
-                      <label style={{ display: 'block' }}>
-                        <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--color-text-1, #0f172a)' }}>
-                          البريد الإلكتروني
-                        </span>
-                        <input
-                          type="email"
-                          required
-                          value={contactForm.email}
-                          onChange={(e) => setContactForm((s) => ({ ...s, email: e.target.value }))}
-                          placeholder="noura@example.sa"
-                          autoComplete="email"
-                          dir="ltr"
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem 1rem',
-                            borderRadius: '0.75rem',
-                            border: '1px solid rgba(15, 23, 42, 0.12)',
-                            fontSize: '0.95rem',
-                            transition: 'border-color 200ms, box-shadow 200ms',
-                            outline: 'none',
-                          }}
-                          onFocus={(e) => {
-                            e.currentTarget.style.borderColor = 'var(--color-primary)';
-                            e.currentTarget.style.boxShadow = '0 0 0 4px rgba(var(--color-primary-rgb, 79, 70, 229), 0.1)';
-                          }}
-                          onBlur={(e) => {
-                            e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.12)';
-                            e.currentTarget.style.boxShadow = 'none';
-                          }}
-                        />
-                      </label>
-                    </div>
-                    <label style={{ display: 'block', marginTop: '1rem' }}>
-                      <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--color-text-1, #0f172a)' }}>
-                        رقم الجوال <span style={{ color: 'var(--color-text-2, #64748b)', fontWeight: 400 }}>(اختياري)</span>
-                      </span>
-                      <input
-                        type="tel"
-                        value={contactForm.phone}
-                        onChange={(e) => setContactForm((s) => ({ ...s, phone: e.target.value }))}
-                        placeholder="05XXXXXXXX"
-                        autoComplete="tel"
-                        dir="ltr"
-                        style={{
-                          width: '100%',
-                          padding: '0.75rem 1rem',
-                          borderRadius: '0.75rem',
-                          border: '1px solid rgba(15, 23, 42, 0.12)',
-                          fontSize: '0.95rem',
-                          transition: 'border-color 200ms, box-shadow 200ms',
-                          outline: 'none',
-                        }}
-                        onFocus={(e) => {
-                          e.currentTarget.style.borderColor = 'var(--color-primary)';
-                          e.currentTarget.style.boxShadow = '0 0 0 4px rgba(var(--color-primary-rgb, 79, 70, 229), 0.1)';
-                        }}
-                        onBlur={(e) => {
-                          e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.12)';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }}
-                      />
-                    </label>
-                    <label style={{ display: 'block', marginTop: '1rem' }}>
-                      <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--color-text-1, #0f172a)' }}>
-                        رسالتك
-                      </span>
-                      <textarea
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <StoreInput
+                        label="الاسم"
+                        type="text"
                         required
-                        rows={5}
-                        value={contactForm.message}
-                        onChange={(e) => setContactForm((s) => ({ ...s, message: e.target.value }))}
-                        placeholder="اكتب استفسارك أو احتياجك — ما حجم متجرك المتوقع، ووش تحتاج منا؟"
-                        style={{
-                          width: '100%',
-                          padding: '0.75rem 1rem',
-                          borderRadius: '0.75rem',
-                          border: '1px solid rgba(15, 23, 42, 0.12)',
-                          fontSize: '0.95rem',
-                          fontFamily: 'inherit',
-                          resize: 'vertical',
-                          transition: 'border-color 200ms, box-shadow 200ms',
-                          outline: 'none',
-                        }}
-                        onFocus={(e) => {
-                          e.currentTarget.style.borderColor = 'var(--color-primary)';
-                          e.currentTarget.style.boxShadow = '0 0 0 4px rgba(var(--color-primary-rgb, 79, 70, 229), 0.1)';
-                        }}
-                        onBlur={(e) => {
-                          e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.12)';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }}
+                        autoComplete="name"
+                        value={contactForm.name}
+                        onChange={(e) => setContactForm((s) => ({ ...s, name: e.target.value }))}
+                        placeholder="نورة العبدالله"
                       />
-                    </label>
-                    <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                      <StoreInput
+                        label="البريد الإلكتروني"
+                        type="email"
+                        required
+                        autoComplete="email"
+                        dir="ltr"
+                        value={contactForm.email}
+                        onChange={(e) => setContactForm((s) => ({ ...s, email: e.target.value }))}
+                        placeholder="noura@example.sa"
+                      />
+                    </div>
+                    <StoreInput
+                      label="رقم الجوال (اختياري)"
+                      type="tel"
+                      autoComplete="tel"
+                      dir="ltr"
+                      value={contactForm.phone}
+                      onChange={(e) => setContactForm((s) => ({ ...s, phone: e.target.value }))}
+                      placeholder="05XXXXXXXX"
+                    />
+                    <StoreTextarea
+                      label="رسالتك"
+                      required
+                      rows={5}
+                      value={contactForm.message}
+                      onChange={(e) => setContactForm((s) => ({ ...s, message: e.target.value }))}
+                      placeholder="اكتب استفسارك أو احتياجك — ما حجم متجرك المتوقع، ووش تحتاج منا؟"
+                    />
+                    <div className="flex justify-end pt-2">
                       <StoreButton type="submit" size="lg" iconEnd={<Send size={18} />}>
                         أرسل الرسالة
                       </StoreButton>
@@ -992,109 +908,52 @@ export default function LandingPage() {
                   </>
                 )}
               </form>
+            </StoreCard>
 
-              {/* Info column */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <a
-                  href="mailto:hello@haastores.com"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '1rem',
-                    padding: '1.25rem',
-                    borderRadius: '1rem',
-                    background: 'var(--color-surface-1, #fff)',
-                    border: '1px solid rgba(15, 23, 42, 0.06)',
-                    textDecoration: 'none',
-                    color: 'inherit',
-                    transition: 'transform 200ms, box-shadow 200ms, border-color 200ms',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.borderColor = 'rgba(var(--color-primary-rgb, 79, 70, 229), 0.3)';
-                    e.currentTarget.style.boxShadow = '0 12px 24px -8px rgba(15, 23, 42, 0.12)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.06)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <Mail size={22} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 2 }} />
-                  <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-2, #64748b)', marginBottom: '0.25rem' }}>البريد</div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 500 }} dir="ltr">hello@haastores.com</div>
-                  </div>
-                </a>
-
-                <a
-                  href="https://wa.me/966500000000"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '1rem',
-                    padding: '1.25rem',
-                    borderRadius: '1rem',
-                    background: 'var(--color-surface-1, #fff)',
-                    border: '1px solid rgba(15, 23, 42, 0.06)',
-                    textDecoration: 'none',
-                    color: 'inherit',
-                    transition: 'transform 200ms, box-shadow 200ms, border-color 200ms',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.borderColor = 'rgba(var(--color-primary-rgb, 79, 70, 229), 0.3)';
-                    e.currentTarget.style.boxShadow = '0 12px 24px -8px rgba(15, 23, 42, 0.12)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.borderColor = 'rgba(15, 23, 42, 0.06)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <MessageCircle size={22} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 2 }} />
-                  <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-2, #64748b)', marginBottom: '0.25rem' }}>واتساب</div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 500 }}>محادثة فورية مع المبيعات</div>
-                  </div>
-                </a>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '1rem',
-                    padding: '1.25rem',
-                    borderRadius: '1rem',
-                    background: 'var(--color-surface-1, #fff)',
-                    border: '1px solid rgba(15, 23, 42, 0.06)',
-                  }}
-                >
-                  <Clock size={22} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 2 }} />
-                  <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-2, #64748b)', marginBottom: '0.25rem' }}>ساعات العمل</div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 500 }}>الأحد – الخميس · 9 ص – 6 م</div>
-                  </div>
+            {/* Info column — composes lp-fcard so it inherits the Features hover-lift */}
+            <div className="lp-contact__info">
+              <a href="mailto:hello@haastores.com" className="lp-contact__card lp-contact__card--link">
+                <div className="lp-contact__card-ic"><Mail size={22} /></div>
+                <div>
+                  <div className="lp-contact__card-label">البريد</div>
+                  <div className="lp-contact__card-value" dir="ltr">hello@haastores.com</div>
                 </div>
+              </a>
 
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '1rem',
-                    padding: '1.25rem',
-                    borderRadius: '1rem',
-                    background: 'var(--color-surface-1, #fff)',
-                    border: '1px solid rgba(15, 23, 42, 0.06)',
-                  }}
-                >
-                  <MapPin size={22} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 2 }} />
-                  <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-2, #64748b)', marginBottom: '0.25rem' }}>الموقع</div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 500 }}>الرياض، المملكة العربية السعودية</div>
-                  </div>
+              <a href="tel:+966570432100" className="lp-contact__card lp-contact__card--link">
+                <div className="lp-contact__card-ic"><Phone size={22} /></div>
+                <div>
+                  <div className="lp-contact__card-label">هاتف</div>
+                  <div className="lp-contact__card-value" dir="ltr">+966 57 043 2100</div>
+                </div>
+              </a>
+
+              <a
+                href="https://wa.me/966570432100"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="lp-contact__card lp-contact__card--link"
+              >
+                <div className="lp-contact__card-ic"><MessageCircle size={22} /></div>
+                <div>
+                  <div className="lp-contact__card-label">واتساب</div>
+                  <div className="lp-contact__card-value" dir="ltr">+966 57 043 2100</div>
+                </div>
+              </a>
+
+              <div className="lp-contact__card">
+                <div className="lp-contact__card-ic"><Clock size={22} /></div>
+                <div>
+                  <div className="lp-contact__card-label">ساعات العمل</div>
+                  <div className="lp-contact__card-value">الأحد – الخميس · 9 ص – 6 م</div>
+                </div>
+              </div>
+
+              <div className="lp-contact__card">
+                <div className="lp-contact__card-ic"><MapPin size={22} /></div>
+                <div>
+                  <div className="lp-contact__card-label">الموقع</div>
+                  <div className="lp-contact__card-value">الرياض، المملكة العربية السعودية</div>
                 </div>
               </div>
             </div>
@@ -1149,15 +1008,6 @@ export default function LandingPage() {
               <div className="lp-saudi-made__txt"><b>صنع في السعودية</b><span>منصة سعودية بالكامل</span></div>
             </div>
             <div className="lp-foot__copy">© 2026 هاء متاجر · جميع الحقوق محفوظة</div>
-            <div className="lp-foot__pays">
-              <img src="/assets/payment-logos/trim/mada.png"   alt="مدى"       />
-              <img src="/assets/payment-logos/apple-pay.svg"   alt="Apple Pay" />
-              <img src="/assets/payment-logos/stc-pay.svg"     alt="STC Pay"   />
-              <img src="/assets/payment-logos/visa.svg"        alt="Visa"      />
-              <img src="/assets/payment-logos/mastercard.svg"  alt="Mastercard"/>
-              <img src="/assets/payment-logos/trim/tabby.png"  alt="tabby"     />
-              <img src="/assets/payment-logos/trim/tamara.png" alt="تمارا"     />
-            </div>
           </div>
         </div>
       </footer>
