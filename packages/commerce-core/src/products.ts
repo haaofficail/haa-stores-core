@@ -518,13 +518,19 @@ export class ProductsService {
     await cacheBumpNamespace(this.cacheNamespace(storeId));
 
     if (auditCtx) {
+      // Reuses the existing product_bulk_updated action (the
+      // taxonomy's bulk-mutation entry — same shape with entityId: null
+      // + count). A dedicated product_batch_created enum value would
+      // be cleaner but adding it touches @haa/shared and the audit
+      // dashboard label map; defer to a follow-up.
       await this.audit.record({
         actorUserId: auditCtx.actorUserId ?? null,
         storeId,
-        action: 'product_batch_created',
+        action: 'product_bulk_updated',
         entityType: 'product',
         entityId: null,
         newValue: {
+          op: 'batch_create',
           count: created.length,
           ids: created.map(p => p.id),
         },
