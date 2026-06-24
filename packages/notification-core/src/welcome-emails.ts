@@ -186,3 +186,135 @@ export function renderStorePublishedEmail(
 
   return { subject, html };
 }
+
+export type LowStockContext = {
+  /** Merchant's display name (greeted by name in the lead paragraph). */
+  merchantName: string;
+  /** Store display name, surfaced in the subject + body lead. */
+  storeName: string;
+  /** Merchant dashboard base URL (e.g. `https://merchant.haastores.com`). */
+  dashboardUrl: string;
+  /**
+   * Products that crossed the low-stock threshold and are eligible to
+   * be alerted (filtered by the notifier's 24h dedupe window). The
+   * caller already trimmed this list — the renderer surfaces at most
+   * the first 10 inline + a "+N more" footer when the array is longer.
+   */
+  items: Array<{
+    name: string;
+    sku: string | null;
+    currentStock: number;
+    threshold: number;
+    /** Direct deep link to the product in merchant dashboard. */
+    productUrl: string;
+  }>;
+};
+
+/**
+ * "⚠️ تنبيه: ${N} منتج بمخزون منخفض في ${storeName}"
+ *
+ * Sent at most once per 24h per product. Fired from the
+ * `LowStockNotifier.fireForUpdatedProducts` path after stock decrements
+ * in checkout (and never inside the payment transaction — see the
+ * service for the fire-and-forget contract).
+ *
+ * Pure function: no DB access, no provider invocation, no side
+ * effects. The caller (`LowStockNotifier`) handles provider selection
+ * + fire-and-forget dispatch + the dedupe-window UPDATE — failure here
+ * must never fail checkout. The DB row (`products`) is the source of
+ * truth.
+ *
+ * Arabic-first, RTL. Every user-supplied string flows through
+ * `escapeHtml` before being interpolated into the body — the shared
+ * `renderHaaEmail` template does NOT auto-escape its `bodyHtml` field.
+ * The numeric `currentStock` / `threshold` fields are bracketed with
+ * String() + escapeHtml to defend against any future caller passing a
+ * non-validated value (defense in depth).
+ */
+export function renderLowStockEmail(
+  ctx: LowStockContext,
+): { subject: string; html: string } {
+  const count = ctx.items.length;
+  const subject =
+    count === 1
+      ? `⚠️ تنبيه: منتج بمخزون منخفض في ${ctx.storeName}`
+      : `⚠️ تنبيه: ${count} منتج بمخزون منخفض في ${ctx.storeName}`;
+  const preheader = 'المخزون اقترب من النفاد — راجع المنتجات وأعد التزويد.';
+
+  const dashboardBase = trimSlash(ctx.dashboardUrl);
+  const productsHref = `${dashboardBase}/products?stock=low`;
+
+  // Inline link style — matches the brand-primary colour used by the
+  // CTA button in `renderHaaEmail`. Email clients strip <style> blocks,
+  // so colours must live on each <a>.
+  const LINK_STYLE = 'color: #5c9cd5; text-decoration: none; font-weight: 600;';
+  const ROW_STYLE =
+    'padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px;';
+  const STOCK_CELL_STYLE =
+    'padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: 600; color: #b91c1c; white-space: nowrap; text-align: left;';
+
+  const visibleItems = ctx.items.slice(0, 10);
+  const overflowCount = count - visibleItems.length;
+
+  const itemRows = visibleItems
+    .map((item) => {
+      const skuLine = item.sku
+        ? `<div style="margin-top: 4px; font-size: 12px; color: #475569;">SKU: ${escapeHtml(item.sku)}</div>`
+        : '';
+      return `
+        <tr>
+          <td style="${ROW_STYLE} text-align: right;">
+            <a href="${escapeHtml(item.productUrl)}" target="_blank" rel="noopener" style="${LINK_STYLE}">${escapeHtml(item.name)}</a>
+            ${skuLine}
+          </td>
+          <td style="${STOCK_CELL_STYLE}">
+            ${escapeHtml(String(item.currentStock))}/${escapeHtml(String(item.threshold))}
+          </td>
+        </tr>`;
+    })
+    .join('');
+
+  const overflowRow =
+    overflowCount > 0
+      ? `
+        <tr>
+          <td colspan="2" style="padding: 12px; font-size: 13px; color: #475569; text-align: center; font-style: italic;">
+            و +${escapeHtml(String(overflowCount))} منتج آخر
+          </td>
+        </tr>`
+      : '';
+
+  const bodyHtml = `
+    <p style="margin: 0 0 12px;">
+      مرحباً ${escapeHtml(ctx.merchantName)}،
+    </p>
+    <p style="margin: 0 0 12px;">
+      المخزون في متجرك <strong>${escapeHtml(ctx.storeName)}</strong> اقترب من النفاد.
+      المنتجات التالية وصلت إلى عتبة التنبيه — راجعها وأعد التزويد قبل نفاد الكمية.
+    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin: 16px 0 8px; border-collapse: collapse; border-top: 1px solid #e2e8f0;">
+      <thead>
+        <tr>
+          <th style="padding: 10px 12px; text-align: right; font-size: 12px; color: #475569; background: #f5f7fa; border-bottom: 1px solid #e2e8f0;">المنتج</th>
+          <th style="padding: 10px 12px; text-align: left; font-size: 12px; color: #475569; background: #f5f7fa; border-bottom: 1px solid #e2e8f0; white-space: nowrap;">المتبقي / العتبة</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemRows}
+        ${overflowRow}
+      </tbody>
+    </table>
+    <p style="margin: 20px 0 0; font-size: 14px; color: #475569;">
+      التنبيه يتكرر مرة واحدة كل 24 ساعة لكل منتج — لتجنّب إغراق صندوق بريدك.
+    </p>
+  `;
+
+  const html = renderHaaEmail({
+    title: 'تنبيه: مخزون منخفض',
+    preheader,
+    bodyHtml,
+    cta: { label: 'افتح إدارة المنتجات', href: productsHref },
+  });
+
+  return { subject, html };
+}

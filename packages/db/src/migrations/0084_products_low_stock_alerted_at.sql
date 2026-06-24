@@ -1,0 +1,21 @@
+-- HAA-LOW-STOCK-EMAIL — dedupe anchor for the per-product low-stock
+-- merchant alert email.
+--
+-- Adds a single nullable timestamp column `last_low_stock_alerted_at`
+-- to `products`. The notifier (`LowStockNotifier.fireForUpdatedProducts`
+-- in commerce-core) fires at most once per 24h per product:
+--
+--   1. After a successful send → SET last_low_stock_alerted_at = NOW()
+--      so the next sub-threshold dip within 24h does NOT re-send.
+--   2. On stock restocked above threshold (refund / manual restock) →
+--      SET last_low_stock_alerted_at = NULL so the next dip re-arms.
+--
+-- Failures do NOT consume the dedupe window — the column is only set
+-- AFTER `provider.send()` resolves successfully. This guarantees a
+-- transient provider outage cannot silently swallow the next dip.
+--
+-- Forward-only. Additive. `IF NOT EXISTS` makes re-running safe.
+-- No DROP / RENAME / data destruction.
+--
+-- NOT auto-applied. Run via ops-staging-migrate workflow.
+ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "last_low_stock_alerted_at" timestamp;

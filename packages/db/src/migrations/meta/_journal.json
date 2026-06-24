@@ -561,6 +561,13 @@
       "when": 1782000079000,
       "tag": "0083_backfill_legacy_email_verified_at",
       "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1782000080000,
+      "tag": "0084_products_low_stock_alerted_at",
+      "breakpoints": true
     }
   ]
 }
