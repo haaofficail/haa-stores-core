@@ -102,3 +102,87 @@ export function renderMerchantWelcomeEmail(
 
   return { subject, html };
 }
+
+export type StorePublishedContext = {
+  /** Merchant's display name (greeted by name in the lead paragraph). */
+  merchantName: string;
+  /** Store display name, surfaced in the subject + body lead. */
+  storeName: string;
+  /** Public storefront URL (e.g. `https://acme.haastores.com`). */
+  storeUrl: string;
+  /** Merchant dashboard base URL (e.g. `https://merchant.haastores.com`). */
+  dashboardUrl: string;
+};
+
+/**
+ * "🎉 متجرك ${storeName} مُتاح الآن للعملاء"
+ *
+ * Sent ONCE the moment `PublishGateService.publish` flips publishStatus
+ * to 'published'. Different from the welcome email (which fires on
+ * signup verify): this is the "your store is live" celebration with a
+ * direct link to share with customers.
+ *
+ * Pure function: no DB access, no provider invocation, no side
+ * effects. The caller (`PublishGateService.publish`) handles provider
+ * selection + fire-and-forget dispatch — failure here must never fail
+ * the publish response. The DB row (`stores.publish_status`) is the
+ * source of truth.
+ *
+ * Arabic-first, RTL. Every user-supplied string flows through
+ * `escapeHtml` before being interpolated into the body — the shared
+ * `renderHaaEmail` template does NOT auto-escape its `bodyHtml` field.
+ */
+export function renderStorePublishedEmail(
+  ctx: StorePublishedContext,
+): { subject: string; html: string } {
+  const subject = `🎉 متجرك ${ctx.storeName} مُتاح الآن للعملاء`;
+  const preheader = 'شارك رابط متجرك مع عملائك الآن.';
+
+  const dashboardBase = trimSlash(ctx.dashboardUrl);
+  const promotionsHref = `${dashboardBase}/promotions`;
+  const ordersHref = `${dashboardBase}/orders`;
+
+  // Inline link style — matches the brand-primary colour used by the
+  // CTA button in `renderHaaEmail`. Email clients strip <style> blocks,
+  // so colours must live on each <a>.
+  const LINK_STYLE = 'color: #5c9cd5; text-decoration: none; font-weight: 600;';
+
+  const bodyHtml = `
+    <p style="margin: 0 0 12px;">
+      مبروك ${escapeHtml(ctx.merchantName)}،
+    </p>
+    <p style="margin: 0 0 12px;">
+      متجرك <strong>${escapeHtml(ctx.storeName)}</strong> أصبح متاحاً للعملاء.
+      هذه لحظة الانطلاق — شارك الرابط مع جمهورك واستقبل أول الطلبات.
+    </p>
+    <div style="margin: 16px 0; padding: 14px 16px; background: #f5f7fa; border-radius: 12px; font-size: 14px;">
+      <strong>رابط متجرك:</strong>
+      <a href="${escapeHtml(ctx.storeUrl)}" target="_blank" rel="noopener" style="${LINK_STYLE}">${escapeHtml(ctx.storeUrl)}</a>
+    </div>
+    <p style="margin: 16px 0 8px;"><strong>خطواتك التالية:</strong></p>
+    <ol style="margin: 0; padding: 0 18px 0 0; color: #0f172a; line-height: 1.9;">
+      <li style="margin: 0 0 6px;">
+        شارك رابط متجرك على وسائل التواصل
+      </li>
+      <li style="margin: 0 0 6px;">
+        <a href="${escapeHtml(promotionsHref)}" target="_blank" rel="noopener" style="${LINK_STYLE}">أضف منتجاتك بالعروض الترويجية</a>
+      </li>
+      <li style="margin: 0;">
+        <a href="${escapeHtml(ordersHref)}" target="_blank" rel="noopener" style="${LINK_STYLE}">راقب أول الطلبات من لوحة التحكم</a>
+      </li>
+    </ol>
+    <p style="margin: 20px 0 0; font-size: 14px; color: #475569;">
+      نتمنى لك بداية موفقة — راسلنا في أي وقت على
+      <a href="mailto:hello@haastores.com" style="${LINK_STYLE}">hello@haastores.com</a>
+    </p>
+  `;
+
+  const html = renderHaaEmail({
+    title: 'متجرك مُتاح الآن',
+    preheader,
+    bodyHtml,
+    cta: { label: 'افتح متجري', href: ctx.storeUrl },
+  });
+
+  return { subject, html };
+}

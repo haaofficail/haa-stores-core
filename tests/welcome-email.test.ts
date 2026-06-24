@@ -144,13 +144,17 @@ describe('AuthFlowService.verifySignup — source guards', () => {
   });
 
   it('reuses the existing SMTP → Resend provider precedence', () => {
-    // The helper is at the top of the file.
-    const block = SRC.split('function pickWelcomeEmailProvider')[1] ?? '';
+    // The helper is now extracted to a shared file so the publish-success
+    // email path can reuse it without duplicating provider precedence.
+    const HELPER_SRC = read('packages/commerce-core/src/email-provider.ts');
+    const block = HELPER_SRC.split('function pickWelcomeEmailProvider')[1] ?? '';
     const smtpIdx = block.indexOf('SmtpEmailProvider');
     const resendIdx = block.indexOf('ResendEmailProvider');
     expect(smtpIdx).toBeGreaterThan(-1);
     expect(resendIdx).toBeGreaterThan(-1);
     expect(smtpIdx).toBeLessThan(resendIdx);
+    // auth-flow.ts must still IMPORT the extracted helper (not redefine it).
+    expect(SRC).toMatch(/import\s*\{[^}]*pickWelcomeEmailProvider[^}]*\}\s*from\s*['"]\.\/email-provider(?:\.js)?['"]/s);
   });
 
   it('declares a private buildWelcomeContext helper', () => {

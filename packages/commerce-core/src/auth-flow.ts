@@ -5,26 +5,10 @@ import { hashPassword, verifyPassword, EmailOtpService } from '@haa/auth-core';
 import { AuditLogService } from '@haa/integration-core';
 import { normalizeSaudiPhone } from '@haa/shared';
 import {
-  SmtpEmailProvider,
-  ResendEmailProvider,
   renderMerchantWelcomeEmail,
-  type NotificationProvider,
   type MerchantWelcomeContext,
 } from '@haa/notification-core';
-
-/**
- * Provider precedence mirrors `OrdersService.pickOrderEmailProvider`
- * + the landing-contact path: SMTP first (merchant-owned deliverability
- * via Hostinger/Workspace/Outlook), Resend as the managed-API fallback.
- * Returns null when neither is configured so callers can no-op silently.
- */
-function pickWelcomeEmailProvider(): NotificationProvider | null {
-  const smtp = new SmtpEmailProvider();
-  if (smtp.isAvailable) return smtp;
-  const resend = new ResendEmailProvider();
-  if (resend.isAvailable) return resend;
-  return null;
-}
+import { pickWelcomeEmailProvider } from './email-provider.js';
 
 /**
  * Resolve the storefront base URL for a merchant's store. Mirrors the
