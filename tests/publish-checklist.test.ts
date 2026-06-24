@@ -137,26 +137,19 @@ describe('Publish Checklist — check() unit behaviour', () => {
   });
 });
 
-describe('Publish Checklist — API endpoint (Bug 2 fix)', () => {
+describe('Publish Checklist — API endpoint deduped against /compliance/checklist', () => {
+  // PR follow-up: the duplicate `/settings/publish-checklist` route was removed
+  // in favour of the canonical `/api/compliance/checklist` route. Both called the
+  // same ComplianceChecklistService.run with identical output. Merchant dashboard
+  // consumes `/compliance/checklist` via complianceApi.getChecklist. This test
+  // locks the dedupe — settings.ts must not re-introduce the duplicate.
   const source = readFileSync(SETTINGS_ROUTE_FILE, 'utf8');
 
-  it('settings.ts registers /publish-checklist route', () => {
-    expect(source).toContain("'/publish-checklist'");
+  it('settings.ts does not re-introduce /publish-checklist route (deduped)', () => {
+    expect(source).not.toContain("'/publish-checklist'");
   });
 
-  it('settings.ts wires ComplianceChecklistService into /publish-checklist', () => {
-    expect(source).toContain('ComplianceChecklistService');
-  });
-
-  it('the /publish-checklist endpoint uses read scope (stores:read), NOT settings:update', () => {
-    // Pull the line containing the route definition and assert on the surrounding context.
-    const idx = source.indexOf("'/publish-checklist'");
-    expect(idx).toBeGreaterThan(-1);
-    // Look at the immediate surrounding fragment (route registration line).
-    const start = source.lastIndexOf('settingsRouter', idx);
-    const end = source.indexOf('\n', idx) + 1;
-    const routeLine = source.slice(start, end);
-    expect(routeLine).toContain("requirePermission('stores:read')");
-    expect(routeLine).not.toContain("requirePermission('settings:update')");
+  it('settings.ts does not import ComplianceChecklistService (deduped)', () => {
+    expect(source).not.toContain('ComplianceChecklistService');
   });
 });

@@ -88,10 +88,12 @@ describe('Quality Pass 5 — Route Migration 9/24: settings.ts', () => {
     expect(content).toMatch(/settingsRouter\.post\(['"]\/acknowledge['"]/);
   });
 
-  it('settings.ts must preserve all permission requirements (14× stores:read, 14× settings:update)', () => {
+  it('settings.ts must preserve all permission requirements (13× stores:read, 14× settings:update)', () => {
+    // Note: stores:read count dropped from 14 to 13 after the duplicate
+    // /publish-checklist route was removed (canonical lives at /compliance/checklist).
     const content = read(settingsRouteFile);
     const readMatches = content.match(/requirePermission\(['"]stores:read['"]\)/g) || [];
-    expect(readMatches.length).toBe(14);
+    expect(readMatches.length).toBe(13);
     const updateMatches = content.match(/requirePermission\(['"]settings:update['"]\)/g) || [];
     expect(updateMatches.length).toBe(14);
   });
