@@ -432,6 +432,9 @@ importers:
       "@haa/integration-core":
         specifier: workspace:*
         version: link:../integration-core
+      "@haa/notification-core":
+        specifier: workspace:*
+        version: link:../notification-core
       "@haa/shared":
         specifier: workspace:*
         version: link:../shared

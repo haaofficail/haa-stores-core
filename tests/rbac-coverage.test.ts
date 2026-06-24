@@ -44,6 +44,8 @@ const DENY_LIST = new Set<string>([
   'shipping-webhooks.ts',     // /webhooks/shipping, /webhooks/oto — verifyOtoWebhookSignature + auth header + dedup
   'landing-ai-agent.ts',      // pre-signup public trial
   'landing.ts',               // POST /landing/contact — public marketing form, rate-limited + honeypot, no auth by design
+  'auth/otp.ts',              // POST /auth/otp/send + /auth/otp/verify — public, rate-limited, no auth by design (basename match below)
+  'otp.ts',                   // basename of auth/otp.ts — DENY_LIST is checked against `filePath.split('/').pop()`
   'public-api.ts',            // API key auth (own middleware)
   'webhooks/shipping.ts',     // if exists
   'webhooks/oto.ts',          // if exists

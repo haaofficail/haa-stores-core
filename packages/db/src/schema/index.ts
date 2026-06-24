@@ -43,3 +43,4 @@ export * from './loyalty.js';
 export * from './whatsapp_sessions.js';
 export * from './whatsapp_templates.js';
 export * from './landing-contacts.js';
+export * from './email-otp-codes.js';

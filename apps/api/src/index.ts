@@ -24,6 +24,7 @@ import { storageGuard } from './middleware/storage-guard.js';
 import { getCachedTenantId, setCachedTenantId } from './middleware/store-tenant-cache.js';
 import { adminRouter } from './routes/admin/index.js';
 import { authRouter } from './routes/auth.js';
+import { otpRouter } from './routes/auth/otp.js';
 import { productsRouter } from './routes/products.js';
 import { categoriesRouter } from './routes/categories.js';
 import { brandsRouter } from './routes/brands.js';
@@ -218,6 +219,7 @@ app.use('/merchant/:storeId/uploads', uploadRateLimit);
 // monitors that read `queue.backend`/`queue.mode`. (P1-2 from audit.)
 
 app.route('/admin', adminRouter);
+app.route('/auth/otp', otpRouter);
 app.route('/auth', authRouter);
 app.route('/merchant/:storeId/products', productsRouter);
 app.route('/merchant/:storeId/categories', categoriesRouter);

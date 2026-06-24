@@ -526,6 +526,13 @@
       "when": 1782000074000,
       "tag": "0078_landing_contacts",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1782000075000,
+      "tag": "0079_email_otp_codes",
+      "breakpoints": true
     }
   ]
 }
