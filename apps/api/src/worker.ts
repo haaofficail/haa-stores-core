@@ -13,19 +13,28 @@ const require = createRequire(import.meta.url);
 // only the instance that acquires the lock runs the job; others skip
 // this cycle. The TTL is 90% of the job interval so the lock auto-
 // expires before the next cycle if the instance dies mid-job.
-const INSTANCE_ID = `${process.pid}-${Math.random().toString(36).slice(2)}`;
-let redisLockClient: {
+// The structural shape we actually use from `ioredis`. We only need
+// `set` (lock acquire), `get` (release ownership check), `del` (lock
+// release), `connect`/`quit`. Avoids pulling the full `ioredis`
+// .d.ts surface for a 4-method use case.
+type LockClient = {
   set: (...args: unknown[]) => Promise<unknown>;
+  get: (key: string) => Promise<string | null>;
   del: (...args: unknown[]) => Promise<unknown>;
   quit: () => Promise<unknown>;
-} | null = null;
+  connect: () => Promise<unknown>;
+};
+type RedisCtor = new (url: string, opts?: Record<string, unknown>) => LockClient;
 
-async function getLockClient() {
+const INSTANCE_ID = `${process.pid}-${Math.random().toString(36).slice(2)}`;
+let redisLockClient: LockClient | null = null;
+
+async function getLockClient(): Promise<LockClient | null> {
   if (redisLockClient) return redisLockClient;
   const url = process.env.REDIS_URL || process.env.QUEUE_REDIS_URL;
   if (!url) return null;
   try {
-    const { default: Redis } = await import('ioredis') as any;
+    const { default: Redis } = (await import('ioredis')) as { default: RedisCtor };
     const client = new Redis(url, { lazyConnect: true, enableOfflineQueue: false, connectTimeout: 2000 });
     await client.connect();
     redisLockClient = client;
@@ -53,7 +62,7 @@ async function releaseLock(jobName: string): Promise<void> {
   try {
     const key = `haa:scheduler:lock:${jobName}`;
     // Only release the lock if we own it
-    const owner = await (redis as any).get(key);
+    const owner = await redis.get(key);
     if (owner === INSTANCE_ID) await redis.del(key);
   } catch { /* best-effort */ }
 }
@@ -69,6 +78,7 @@ export const JOB_NAMES = {
   marketingActionGenerate: 'marketing-action.generate',
   whatsappCampaign: 'whatsapp.campaign',
   loyaltyExpiry: 'loyalty.expiry',
+  subscriptionRenewalReminder: 'subscription.renewal-reminder',
 } as const;
 
 type JobName = typeof JOB_NAMES[keyof typeof JOB_NAMES];
@@ -213,6 +223,40 @@ const scheduledJobs: ScheduledJob[] = [
     },
   },
   {
+    // HAA-SUB-RENEWAL — subscription renewal reminder sweep.
+    //
+    // Runs once per hour and only executes the sweep when the current
+    // Riyadh-local hour is 09:00, so the effective cadence is "daily at
+    // 09:00 Asia/Riyadh" — the early-morning merchant inbox slot. The
+    // hour-grained guard plus the per-instance Redis lock (acquireLock)
+    // means the sweep fires at most once per calendar day even if
+    // multiple API instances are running.
+    //
+    // The notifier itself is idempotent — per-step dedupe via
+    // (last_renewal_reminder_step, last_renewal_reminder_at) anchored
+    // on currentPeriodStart, so a duplicate tick within the same day
+    // is a no-op. Email failure is logged + counted, NEVER thrown.
+    name: JOB_NAMES.subscriptionRenewalReminder,
+    intervalMs: 60 * 60 * 1000,
+    handler: async () => {
+      const hourRiyadh = Number(
+        new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Asia/Riyadh',
+          hour: 'numeric',
+          hour12: false,
+        }).format(new Date()),
+      );
+      if (hourRiyadh !== 9) return; // wrong hour-of-day — skip cycle
+
+      const { SubscriptionRenewalNotifier } = await import('@haa/commerce-core');
+      const notifier = new SubscriptionRenewalNotifier();
+      const r = await notifier.runDailySweep();
+      console.log(
+        `[scheduler] subscription.renewal-reminder scanned=${r.scanned} sent=${r.sent} skipped=${r.skipped} failed=${r.failed}`,
+      );
+    },
+  },
+  {
     name: JOB_NAMES.marketingActionGenerate,
     intervalMs: 60 * 60 * 1000,
     handler: async () => {
@@ -301,9 +345,18 @@ async function startBullMQWorker(): Promise<void> {
   if (!redisUrl) return;
 
   try {
-    const { Worker } = require('bullmq') as any;
-    const IORedis = require('ioredis') as any;
-    const Redis = IORedis.default ?? IORedis;
+    // Structural types — keep this file dep-free of bullmq's full
+    // type surface. We only need the constructor + the `close` lifecycle.
+    type BullJob = { name: string; data: Record<string, unknown> };
+    type BullWorkerCtor = new (
+      queue: string,
+      handler: (job: BullJob) => Promise<unknown>,
+      opts: Record<string, unknown>,
+    ) => { close: () => Promise<void>; on: (event: string, cb: (...args: unknown[]) => void) => void };
+    type IORedisModule = { default?: RedisCtor } & RedisCtor;
+    const { Worker } = require('bullmq') as { Worker: BullWorkerCtor };
+    const IORedis = require('ioredis') as IORedisModule;
+    const Redis: RedisCtor = (IORedis as { default?: RedisCtor }).default ?? (IORedis as unknown as RedisCtor);
 
     // BullMQ v5 rejects `connection: { url }` — it expects an IORedis
     // instance (or host/port options). Same shape used by the producer

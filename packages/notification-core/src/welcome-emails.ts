@@ -431,3 +431,115 @@ export function renderAbandonedCartEmail(
 
   return { subject, html };
 }
+
+export type SubscriptionRenewalContext = {
+  /**
+   * Merchant's display name. May be empty — the renderer falls back
+   * to "عزيزي التاجر" so we never produce a "مرحباً ،" line.
+   */
+  merchantName: string;
+  /**
+   * Plan display name from `subscription_plans.name`. Admin-editable
+   * field → MUST be escapeHtml'd before interpolation.
+   */
+  planName: string;
+  /**
+   * Amount already formatted to two decimal places — e.g. "199.00".
+   */
+  amountSar: string;
+  /** Drives the pricing-suffix wording ("شهرياً" vs "سنوياً"). */
+  billingCycle: 'monthly' | 'annual';
+  /** Renewal date in `YYYY-MM-DD` (system-locale-safe Arabic display). */
+  renewalDate: string;
+  /**
+   * Ladder step — 7 (one-week heads-up) or 1 (day-before urgency).
+   * Drives subject tone + the extra "وسيلة الدفع" warning line.
+   */
+  daysUntilRenewal: 7 | 1;
+  /** Merchant dashboard base URL — CTA links here. */
+  dashboardUrl: string;
+  /** Support contact email shown in the email footer. */
+  supportEmail: string;
+};
+
+/**
+ * "تجديد اشتراك ${planName} خلال 7 أيام" / "⏰ تجديد اشتراك ${planName} غداً"
+ *
+ * Sent on the morning (09:00 Asia/Riyadh) that the subscription is
+ * exactly 7 or 1 days from its `current_period_end`. The 1-day variant
+ * adds an urgency cue (⏰ + "غداً") and a warning line reminding the
+ * merchant to validate their stored payment method.
+ *
+ * Pure function: no DB access, no provider invocation, no side
+ * effects. The caller (`SubscriptionRenewalNotifier`) handles
+ * provider selection + fire-and-forget dispatch + the dedupe-window
+ * UPDATE — failure here must never throw from the scheduler tick.
+ *
+ * Arabic-first, RTL. Every user-supplied string flows through
+ * `escapeHtml` before being interpolated into the body — the shared
+ * `renderHaaEmail` template does NOT auto-escape its `bodyHtml` field.
+ */
+export function renderSubscriptionRenewalEmail(
+  ctx: SubscriptionRenewalContext,
+): { subject: string; html: string } {
+  const displayName = ctx.merchantName.trim() || 'عزيزي التاجر';
+  const cycleSuffix = ctx.billingCycle === 'monthly' ? 'شهرياً' : 'سنوياً';
+
+  // Subject tone differs by ladder step. Day-7 = neutral heads-up;
+  // day-1 = urgency cue + explicit "tomorrow" + payment-method nudge
+  // in the body.
+  const subject =
+    ctx.daysUntilRenewal === 7
+      ? `تجديد اشتراك ${ctx.planName} خلال 7 أيام`
+      : `⏰ تجديد اشتراك ${ctx.planName} غداً — تأكد من وسيلة الدفع`;
+
+  const preheader =
+    ctx.daysUntilRenewal === 1
+      ? `سيتم تجديد اشتراكك غداً (${ctx.renewalDate}) بقيمة ${ctx.amountSar} ر.س.`
+      : `سيتم تجديد اشتراكك بتاريخ ${ctx.renewalDate} بقيمة ${ctx.amountSar} ر.س.`;
+
+  // Inline link style — matches the brand-primary colour used by the
+  // CTA button in `renderHaaEmail`. Email clients strip <style> blocks,
+  // so colours must live on each <a>.
+  const LINK_STYLE = 'color: #5c9cd5; text-decoration: none; font-weight: 600;';
+
+  const warningLine =
+    ctx.daysUntilRenewal === 1
+      ? `
+    <p style="margin: 16px 0 0; padding: 14px 16px; background: #fef3c7; border-right: 4px solid #d97706; border-radius: 8px; font-size: 14px; color: #78350f;">
+      <strong>تنبيه:</strong> تأكد من أن وسيلة الدفع المسجلة لا تزال صالحة، وإلا سيتم إيقاف المتجر تلقائياً.
+    </p>`
+      : '';
+
+  const bodyHtml = `
+    <p style="margin: 0 0 12px;">
+      مرحباً ${escapeHtml(displayName)}،
+    </p>
+    <p style="margin: 0 0 12px;">
+      ${
+        ctx.daysUntilRenewal === 1
+          ? `يتم تجديد اشتراكك في باقة <strong>${escapeHtml(ctx.planName)}</strong> غداً.`
+          : `يتم تجديد اشتراكك في باقة <strong>${escapeHtml(ctx.planName)}</strong> بعد 7 أيام.`
+      }
+    </p>
+    <div style="margin: 16px 0; padding: 14px 16px; background: #f5f7fa; border-radius: 12px; font-size: 14px; line-height: 1.9;">
+      <div><strong>المبلغ:</strong> ${escapeHtml(ctx.amountSar)} ر.س / ${escapeHtml(cycleSuffix)}</div>
+      <div><strong>تاريخ التجديد:</strong> ${escapeHtml(ctx.renewalDate)}</div>
+    </div>
+    ${warningLine}
+    <p style="margin: 20px 0 0; font-size: 14px; color: #475569;">
+      يمكنك مراجعة اشتراكك أو تحديث وسيلة الدفع من لوحة التحكم. للاستفسار راسلنا على
+      <a href="mailto:${escapeHtml(ctx.supportEmail)}" style="${LINK_STYLE}">${escapeHtml(ctx.supportEmail)}</a>
+    </p>
+  `;
+
+  const html = renderHaaEmail({
+    title: ctx.daysUntilRenewal === 1 ? 'تجديد الاشتراك غداً' : 'تجديد الاشتراك قريباً',
+    preheader,
+    bodyHtml,
+    cta: { label: 'إدارة الاشتراك', href: ctx.dashboardUrl },
+    supportEmail: ctx.supportEmail,
+  });
+
+  return { subject, html };
+}

@@ -63,6 +63,8 @@ export { SeoService } from './seo.js';
 export { AbandonedCartsService } from './abandoned-carts.js';
 export { KycService } from './kyc.js';
 export { SubscriptionService } from './subscriptions.js';
+export { SubscriptionRenewalNotifier } from './subscription-renewal-notifier.js';
+export type { SubscriptionRenewalSweepResult } from './subscription-renewal-notifier.js';
 export { ProductFeedService } from './feeds.js';
 export { AiCommerceAgent, MockAiAgentProvider } from './ai-agent.js';
 export type { AiAgentRequest, AiAgentResponse, AiAgentProvider } from './ai-agent.js';

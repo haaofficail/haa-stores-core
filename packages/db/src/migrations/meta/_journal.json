@@ -568,6 +568,13 @@
       "when": 1782000080000,
       "tag": "0084_products_low_stock_alerted_at",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1782000081000,
+      "tag": "0085_subscription_renewal_reminder_state",
+      "breakpoints": true
     }
   ]
 }
