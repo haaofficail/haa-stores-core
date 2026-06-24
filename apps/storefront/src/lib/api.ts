@@ -33,7 +33,7 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   // paginated envelope. Detect that shape and unwrap one level so the
   // caller can decide what to do with the metadata.
   const raw = json?.data;
-  if (raw && typeof raw === 'object' && !Array.isArray(raw) && 'data' in (raw as any) && Array.isArray((raw as any).data)) {
+  if (raw && typeof raw === 'object' && !Array.isArray(raw) && 'data' in (raw as Record<string, unknown>) && Array.isArray((raw as { data: unknown }).data)) {
     return raw as unknown as T;
   }
 
@@ -254,7 +254,7 @@ export interface CheckoutConfirm {
     customerName: string;
     customerPhone: string;
   };
-  walletEntry: any;
+  walletEntry: Record<string, unknown> | null;
   paymentStatus: string;
   paymentMessage?: string;
   redirectUrl?: string; // 3DS challenge URL (SAMA mandatory for Saudi card payments)
@@ -717,7 +717,26 @@ export interface LoyaltyRedeemQuote {
   value: number; // SERVER-AUTHORITATIVE money math; client only renders.
   reason?: string;
 }
+export type LoyaltyStoreSettings =
+  | { enabled: false }
+  | {
+      enabled: true;
+      earnRatePerCurrency: number;
+      redeemValuePerPoint: number;
+      minRedeemPoints: number;
+      maxRedeemPercent: number;
+      minOrderForEarn: number;
+    };
+
 export const loyaltyApi = {
+  // Public store-level loyalty settings. Used to drive the
+  // "earn N points" hint on every ProductCard without requiring
+  // a customer login. Returns `{ enabled: false }` when the store
+  // has not enabled loyalty — UI hides every loyalty surface
+  // cleanly on that response.
+  getSettings: (slug: string) =>
+    request<LoyaltyStoreSettings>(`/s/${slug}/loyalty/settings`),
+
   // Read-only balance lookup for the storefront. `phone` is the
   // customer identifier; the server resolves it to a customer +
   // loyalty_account. Returns `{ enabled: false }` if the store has not
@@ -735,6 +754,22 @@ export const loyaltyApi = {
       body: JSON.stringify(body),
     }),
 };
+
+/**
+ * Compute the number of loyalty points a customer earns by buying a
+ * single product at the given price. Mirrors the server-side rule:
+ *   points = floor(priceSar * earnRatePerCurrency)
+ * Returns 0 when loyalty is disabled or the price is non-positive.
+ *
+ * Used by the storefront ProductCard / ProductDetail hint UI.
+ * The server is authoritative at checkout time — this helper is
+ * presentation-only.
+ */
+export function computeEarnPoints(priceSar: number, settings: LoyaltyStoreSettings): number {
+  if (!settings.enabled) return 0;
+  if (!Number.isFinite(priceSar) || priceSar <= 0) return 0;
+  return Math.floor(priceSar * settings.earnRatePerCurrency);
+}
 
 export const supportApi = {
   createTicket: (slug: string, data: { name: string; email?: string; phone?: string; subject: string; message: string }) =>
