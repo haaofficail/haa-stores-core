@@ -554,6 +554,13 @@
       "when": 1782000078000,
       "tag": "0082_store_settings_compliance",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1782000079000,
+      "tag": "0083_backfill_legacy_email_verified_at",
+      "breakpoints": true
     }
   ]
 }

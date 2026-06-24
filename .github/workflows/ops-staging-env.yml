@@ -32,6 +32,7 @@ on:
           - FEATURE_WHATSAPP_LIVE
           - FEATURE_LOYALTY_LIVE
           - SENTRY_DSN
+          - AUTH_LEGACY_VERIFIED
         required: true
       value:
         description: "New value (leave blank to unset)"
@@ -101,7 +102,7 @@ jobs:
 
             # Allow-list — refuse arbitrary keys.
             case "$ENV_KEY" in
-              FEATURE_WHATSAPP_LIVE|FEATURE_LOYALTY_LIVE|SENTRY_DSN) ;;
+              FEATURE_WHATSAPP_LIVE|FEATURE_LOYALTY_LIVE|SENTRY_DSN|AUTH_LEGACY_VERIFIED) ;;
               *)
                 echo "::error::Key '$ENV_KEY' is not on the allow-list. Refusing to edit .env."
                 exit 1 ;;
