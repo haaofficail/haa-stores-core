@@ -17,14 +17,14 @@
 
 ## 1. Executive Status
 
-- **Overall completion:** **68%**
-- **Engineering completion:** **84%**
-- **Commercial launch readiness:** **44%**
-- **Current phase:** Phase 2 — transactional emails + billing reminders + legal + CI/Ops hardening
+- **Overall completion:** **71%**
+- **Engineering completion:** **87%**
+- **Commercial launch readiness:** **46%**
+- **Current phase:** Phase 3 — Autopilot waves (Truth-Sync, theme gateway, brand tokens, payment env, …)
 - **Last updated:** 2026-06-24
-- **Last completed task:** PR #183 — root-cause deploy failures: fail2ban 24-min warmup + watchdog + scheduler test gate (merged main)
-- **Current blocker:** (1) Migrations 0083 + 0084 + 0085 not yet applied on staging — needs `ops-staging-migrate`; (2) Geidea + shipping aggregator owner gates G1–G10
-- **Next recommended action:** Batch `ops-staging-migrate` for 0083+0084+0085 → flip `AUTH_LEGACY_VERIFIED=0` → start 22-wave Autopilot from W0.
+- **Last completed task:** Migrations 0083 + 0084 + 0085 applied on staging + `AUTH_LEGACY_VERIFIED=0` flipped — Phase-1 legacy auth bypass retired
+- **Current blocker:** Geidea credentials + shipping-aggregator selection (owner gates G1–G10 only — engineering side is unblocked)
+- **Next recommended action:** Begin 22-wave SAFE FULL AUTOPILOT — Wave 0 (Truth Sync of `docs/agent-os/*` + `docs/ops/*`).
 
 ## 2. Progress Scale
 
@@ -41,20 +41,20 @@
 
 ### A. Auth / Identity
 
-| ID  | Task                                       | Status       | Progress | Evidence                                                                      | Blocker                                                      | Next Action                                                          |
-| --- | ------------------------------------------ | ------------ | -------: | ----------------------------------------------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------- |
-| A1  | Phone-first registration                   | Done         |     100% | PR #163 (`6a26097f`) + migration 0080 (partial UNIQUE)                        | —                                                            | —                                                                    |
-| A2  | Unique phone number                        | Done         |     100% | Migration `0080_users_phone_unique.sql` applied on staging                    | —                                                            | —                                                                    |
-| A3  | Login by phone/email                       | Done         |     100% | PR #163 — `AuthFlowService.login` accepts `identifier`                        | —                                                            | —                                                                    |
-| A4  | Email OTP infrastructure                   | Done         |     100% | PR #162 (`3a7f6690`) + migration 0079 + `EmailOtpService`                     | —                                                            | —                                                                    |
-| A5  | Signup verify via OTP                      | Done         |     100% | PR #164 (`37195928`) + migration 0081 (`email_verified_at`)                   | —                                                            | —                                                                    |
-| A6  | Password reset OTP                         | Done         |     100% | PR #165 (`b5e8962c`) — `/auth/password-reset/{request,confirm}`               | —                                                            | —                                                                    |
-| A7  | Magic login OTP                            | Done         |     100% | PR #173 (`59812bc6`) — `/auth/magic-login/{request,confirm}`                  | —                                                            | —                                                                    |
-| A8  | Auth rate limits                           | Done         |     100% | PR #166 (`bf77fbe9`) — per-route `rateLimiter` on register/login              | —                                                            | —                                                                    |
-| A9  | Legacy user backfill (`email_verified_at`) | Needs Review |      90% | PR #174 (`ffe1026c`) — migration 0083 ready, not yet applied                  | Owner-gated `ops-staging-migrate` run                        | Apply 0083 on staging, verify NULL count, then flip A10              |
-| A10 | Disable `AUTH_LEGACY_VERIFIED` flag        | Blocked      |      75% | Allow-list extended in `ops-staging-env` (PR #174)                            | A9 must apply first                                          | After A9: run `ops-staging-env` key=`AUTH_LEGACY_VERIFIED` value=`0` |
-| A11 | SMS OTP decision                           | Not Started  |       0% | —                                                                             | Owner decision: SMS vs WhatsApp-only as fallback OTP channel | Owner picks: Unifonic/Taqnyat or skip SMS for v1                     |
-| A12 | SMS provider integration                   | Not Started  |      25% | `packages/notification-core/providers/{unifonic,taqnyat}.ts` exist (skeleton) | Owner credentials                                            | After A11 decision: wire selected provider                           |
+| ID  | Task                                       | Status      | Progress | Evidence                                                                                                                                   | Blocker                                                      | Next Action                                      |
+| --- | ------------------------------------------ | ----------- | -------: | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------ |
+| A1  | Phone-first registration                   | Done        |     100% | PR #163 (`6a26097f`) + migration 0080 (partial UNIQUE)                                                                                     | —                                                            | —                                                |
+| A2  | Unique phone number                        | Done        |     100% | Migration `0080_users_phone_unique.sql` applied on staging                                                                                 | —                                                            | —                                                |
+| A3  | Login by phone/email                       | Done        |     100% | PR #163 — `AuthFlowService.login` accepts `identifier`                                                                                     | —                                                            | —                                                |
+| A4  | Email OTP infrastructure                   | Done        |     100% | PR #162 (`3a7f6690`) + migration 0079 + `EmailOtpService`                                                                                  | —                                                            | —                                                |
+| A5  | Signup verify via OTP                      | Done        |     100% | PR #164 (`37195928`) + migration 0081 (`email_verified_at`)                                                                                | —                                                            | —                                                |
+| A6  | Password reset OTP                         | Done        |     100% | PR #165 (`b5e8962c`) — `/auth/password-reset/{request,confirm}`                                                                            | —                                                            | —                                                |
+| A7  | Magic login OTP                            | Done        |     100% | PR #173 (`59812bc6`) — `/auth/magic-login/{request,confirm}`                                                                               | —                                                            | —                                                |
+| A8  | Auth rate limits                           | Done        |     100% | PR #166 (`bf77fbe9`) — per-route `rateLimiter` on register/login                                                                           | —                                                            | —                                                |
+| A9  | Legacy user backfill (`email_verified_at`) | Done        |     100% | Migration 0083 applied on staging (run `28116088846`) — `email_verified_at = created_at` for legacy rows                                   | —                                                            | —                                                |
+| A10 | Disable `AUTH_LEGACY_VERIFIED` flag        | Done        |     100% | `ops-staging-env` flipped key=`AUTH_LEGACY_VERIFIED` value=`0` on staging (run `28116152919`) + api restarted — transitional bypass closed | —                                                            | —                                                |
+| A11 | SMS OTP decision                           | Not Started |       0% | —                                                                                                                                          | Owner decision: SMS vs WhatsApp-only as fallback OTP channel | Owner picks: Unifonic/Taqnyat or skip SMS for v1 |
+| A12 | SMS provider integration                   | Not Started |      25% | `packages/notification-core/providers/{unifonic,taqnyat}.ts` exist (skeleton)                                                              | Owner credentials                                            | After A11 decision: wire selected provider       |
 
 ### B. Email / SMTP / Notifications
 
@@ -66,9 +66,9 @@
 | B4  | Welcome email                 | Done        |     100% | PR #168 (`1aa63438`) — fire-and-forget in `verifySignup`                            | —                                                              | —                                                            |
 | B5  | Store published email         | Done        |     100% | PR #172 (`9777c904`) — fires in `PublishGateService.publish`                        | —                                                              | —                                                            |
 | B6  | Order transactional emails    | Done        |     100% | PR #167 (`4bfcfd95`) — created/status/refund/new_order                              | —                                                              | —                                                            |
-| B7  | Low-stock email               | Done        |     100% | PR #176 (`7639b1a0`) + migration 0084 + 24h dedupe                                  | Migration 0084 not yet applied on staging                      | Apply 0084 via `ops-staging-migrate`                         |
+| B7  | Low-stock email               | Done        |     100% | PR #176 (`7639b1a0`) + migration 0084 applied on staging (run `28116088846`)        | —                                                              | —                                                            |
 | B8  | Abandoned-cart recovery email | Done        |     100% | PR #177 (`11ff2b7c`) — system-default ladder gated by `FEATURE_EMAIL_RECOVERY_LIVE` | —                                                              | —                                                            |
-| B9  | Subscription renewal reminder | Done        |     100% | PR #179 (merged) — migration 0085 + scheduler at 09:00 Asia/Riyadh + dedup columns  | Migration 0085 not yet applied on staging                      | Apply 0085 via `ops-staging-migrate`                         |
+| B9  | Subscription renewal reminder | Done        |     100% | PR #179 + migration 0085 applied on staging (run `28116088846`) — scheduler live    | —                                                              | —                                                            |
 | B10 | SPF / DKIM / DMARC            | Blocked     |      50% | Hostinger MX records are set (memory); DKIM/DMARC unverified                        | Owner: verify DKIM signature + DMARC policy on `haastores.com` | Run `dig TXT hello._domainkey.haastores.com` and DMARC check |
 | B11 | Email failure monitoring      | Not Started |      25% | Errors logged to stderr only; no Sentry/alert routing                               | Sentry DSN env (owner)                                         | After Sentry: wire SMTP failure events                       |
 | B12 | Unsubscribe / opt-out         | Not Started |      25% | Abandoned-cart footer has unsubscribe link (text-only)                              | No DB column for `customers.emailOptOut`                       | Add column + link handler endpoint                           |
@@ -149,7 +149,7 @@
 | H1  | Plans                       | Done        |     100% | `subscriptionPlans` table + 4 seeded plans (Starter/Growth/Pro/Business)   | —                                          | —                                    |
 | H2  | Trial / free plan           | Done        |      90% | `merchantSubscriptions.status = 'trialing'` + `trialEnd`                   | Trial→active transition cron not yet built | Add cron job                         |
 | H3  | Subscription lifecycle      | Done        |      75% | `packages/commerce-core/src/subscriptions.ts`                              | Renewal cron from PR #178                  | After H4 + H5                        | After PR #178 lands |
-| H4  | Renewal reminders (7d + 1d) | Done        |     100% | PR #179 (merged) — same as B9                                              | Migration 0085 not yet applied on staging  | Apply 0085 via `ops-staging-migrate` |
+| H4  | Renewal reminders (7d + 1d) | Done        |     100% | PR #179 + migration 0085 applied (run `28116088846`) — same as B9          | —                                          | —                                    |
 | H5  | Subscription invoices       | Done        |      75% | `subscriptionInvoices` table + ZATCA hooks pending                         | I4 (ZATCA)                                 | After I4                             |
 | H6  | Grace period                | Not Started |      25% | No explicit grace logic                                                    | Owner decision: # of days                  | Owner picks: 3 / 7 / 14 days         |
 | H7  | Suspension policy           | Not Started |      25% | `stores.publishStatus = 'suspended'` exists                                | H6 + owner decision                        | After H6: build auto-suspend cron    |
@@ -266,6 +266,24 @@ Status: `Not Started` · `In Progress` · `Blocked` · `Needs Review` · `Done` 
   1. Land PR #179 (Subscription renewal reminder) — stashed work, finish commit
   2. Land PR #180 (CR 7038798612 wiring into legal-facing surfaces)
   3. Begin 22-wave Autopilot from W0 (Truth Sync)
+
+### 2026-06-24 — Staging migrations applied + AUTH_LEGACY_VERIFIED retired
+
+- Completed:
+  - `ops-staging-migrate` run **`28116088846`** applied **3 migrations** in one batch on staging:
+    - **0083** — `UPDATE users SET email_verified_at = created_at WHERE email_verified_at IS NULL` (legacy backfill)
+    - **0084** — `ALTER TABLE products ADD COLUMN last_low_stock_alerted_at` (low-stock dedupe)
+    - **0085** — `ALTER TABLE merchant_subscriptions ADD COLUMN last_renewal_reminder_at, last_renewal_reminder_step` (renewal dedupe)
+  - `ops-staging-env` run **`28116152919`** flipped `AUTH_LEGACY_VERIFIED=0` + restarted `api` container. The Phase-1 transitional bypass is now closed — every login MUST pass through `email_verified_at !== null`.
+- Tests run: post-migration health-check passed via ops workflow's built-in `__drizzle_migrations` journal verification + container restart smoke.
+- Rows updated:
+  - A9 → Done 100% (was 90%) — backfill applied
+  - A10 → Done 100% (was 75%) — flag flipped
+  - B7 → blocker cleared (low-stock dedupe live)
+  - B9 + H4 → blocker cleared (renewal reminders live)
+- New blockers: only owner gates remain (G1–G10).
+- Updated completion: overall **71%** (+3) / engineering **87%** (+3) / commercial **46%** (+2 — first staging-live commercial-side migration cluster)
+- Recommendation: **Begin 22-wave SAFE FULL AUTOPILOT.** Start at Wave 0 (Truth-Sync of `docs/agent-os/*` + `docs/ops/*` against the new state of the repo).
 
 ### 2026-06-24 — PR #183 merged: deploy hardening + scheduler test gate
 
