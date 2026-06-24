@@ -108,6 +108,41 @@ describe('Deploy hardening — fail2ban + watchdog + scheduler test gate', () =>
     });
   });
 
+  describe('Workflow paths-ignore — docs-only changes skip Deploy + CI', () => {
+    const deployYml = read(resolve(projectRoot, '.github/workflows/deploy.yml'));
+    const ciYml = read(resolve(projectRoot, '.github/workflows/ci.yml'));
+
+    it('deploy.yml skips on docs-only pushes', () => {
+      // Without this, every ledger / agent-os / README PR fires a 5-min
+      // Deploy. The operator saw 9 unnecessary Deploys in one hour
+      // after rapid-fire docs PRs. Paths-ignore eliminates that.
+      expect(deployYml).toMatch(/paths-ignore:/);
+      expect(deployYml).toMatch(/'\*\*\/\*\.md'/);
+      expect(deployYml).toMatch(/'docs\/\*\*'/);
+    });
+
+    it('deploy.yml skips when the watchdog YAML itself changes (no recursion)', () => {
+      // The watchdog file is part of the deploy lifecycle but does not
+      // itself need to be deployed. Without this guard, editing the
+      // watchdog could trigger a deploy that the watchdog then has to
+      // recover from — pure noise.
+      expect(deployYml).toMatch(/'\.github\/workflows\/deploy-watchdog\.yml'/);
+    });
+
+    it('ci.yml skips push + pull_request when only docs change', () => {
+      expect(ciYml).toMatch(/paths-ignore:/);
+      // Must appear under BOTH push and pull_request triggers (two blocks).
+      const matches = ciYml.match(/paths-ignore:/g) || [];
+      expect(matches.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('ci.yml docs skip-list includes AGENTS.md + CLAUDE.md (project rules files)', () => {
+      // These two files document agent rules; they never affect runtime.
+      expect(ciYml).toMatch(/AGENTS\.md/);
+      expect(ciYml).toMatch(/CLAUDE\.md/);
+    });
+  });
+
   describe('Deploy failure playbook', () => {
     const playbook = read(resolve(projectRoot, 'docs/ops/DEPLOY_FAILURE_PLAYBOOK.md'));
 

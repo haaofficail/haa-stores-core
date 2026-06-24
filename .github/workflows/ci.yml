@@ -1,10 +1,31 @@
 name: CI
 
+# Paths-ignore: docs-only changes skip the CI pipeline. The reasoning
+# matches deploy.yml — ledger updates + agent-os planning docs do NOT
+# change any code path, so running the full ~4-min suite on them just
+# burns runner minutes and creates the cascade-cancellation noise the
+# operator was seeing. Code paths still get full CI coverage on PRs.
 on:
   push:
     branches: [main, quality-pass-*]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "**/README.md"
+      - "**/CHANGELOG.md"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - "LICENSE*"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "**/README.md"
+      - "**/CHANGELOG.md"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - "LICENSE*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
