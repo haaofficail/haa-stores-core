@@ -1028,6 +1028,241 @@ export class AuthFlowService {
   }
 
   /**
+   * HAA-AUTH-MAGIC-LOGIN — request a passwordless login OTP.
+   *
+   * Mirrors `requestPasswordReset` exactly: identifier resolution is
+   * phone-first (else email), the response is a UNIFORM `{ ok: true }`
+   * regardless of whether the identifier maps to a real user, and the
+   * only failure mode that can propagate is RATE_LIMITED (the route
+   * maps that to HTTP 429). This keeps the endpoint a non-oracle —
+   * attackers can't probe for account existence.
+   *
+   * The email subject / body for the `magic_login` purpose is already
+   * rendered by `EmailOtpService` — we just call generateAndSend with
+   * the right purpose and the service does the rest.
+   */
+  async requestMagicLogin(
+    input: {
+      identifier: string;
+      sourceIp?: string | null;
+      userAgent?: string | null;
+    },
+    otpService: EmailOtpService = new EmailOtpService(this.db),
+  ): Promise<{ ok: true } | { ok: false; reason: 'RATE_LIMITED' }> {
+    const rawIdentifier = input.identifier.trim();
+    if (rawIdentifier.length === 0) {
+      // Empty identifier — uniform success (same as the unknown-user
+      // path) so this endpoint can never be probed for existence.
+      return { ok: true };
+    }
+
+    // Phone-first resolution (mirrors login() / requestPasswordReset()).
+    const normalizedPhone = normalizeSaudiPhone(rawIdentifier);
+    let user: typeof s.users.$inferSelect | undefined;
+    if (normalizedPhone !== null) {
+      [user] = await this.db
+        .select()
+        .from(s.users)
+        .where(eq(s.users.phone, normalizedPhone))
+        .limit(1);
+    } else {
+      const emailLookup = rawIdentifier.toLowerCase();
+      [user] = await this.db
+        .select()
+        .from(s.users)
+        .where(eq(s.users.email, emailLookup))
+        .limit(1);
+      // Legacy mixed-case email fallback (same as login()).
+      if (!user) {
+        [user] = await this.db
+          .select()
+          .from(s.users)
+          .where(eq(s.users.email, rawIdentifier))
+          .limit(1);
+      }
+    }
+
+    if (!user) {
+      // No-enumeration: uniform `ok: true`. The only failure surface
+      // is RATE_LIMITED below; NOT_FOUND must never appear here.
+      return { ok: true };
+    }
+
+    const sendResult = await otpService.generateAndSend({
+      email: user.email,
+      purpose: 'magic_login',
+      userId: user.id,
+      sourceIp: input.sourceIp ?? null,
+      userAgent: input.userAgent ?? null,
+    });
+
+    if (!sendResult.ok) {
+      if (sendResult.reason === 'RATE_LIMITED') {
+        return { ok: false, reason: 'RATE_LIMITED' };
+      }
+      // Other failure modes (EMAIL_SEND_FAILED / INVALID_PURPOSE) are
+      // logged with kind=magic_login + user.id only (no PII) for ops
+      // forensics, then surfaced to the caller as uniform success —
+      // exposing infra state would let an attacker infer existence.
+      console.warn(
+        `[auth-flow] kind=magic_login send failed userId=${user.id} reason=${sendResult.reason}`,
+      );
+      return { ok: true };
+    }
+
+    return { ok: true };
+  }
+
+  /**
+   * HAA-AUTH-MAGIC-LOGIN — confirm a magic-login OTP and mint a session.
+   *
+   * Mirrors `confirmPasswordReset` but WITHOUT the password rotation
+   * block — this is a pure session-mint after OTP verification. The
+   * email-verification guard is intentionally retained (same shape as
+   * the `login()` `email_not_verified` branch) so an unverified user
+   * cannot use magic-login as a verification side-door. The
+   * `AUTH_LEGACY_VERIFIED=1` transitional env flag short-circuits the
+   * guard for the staging backfill window — once flipped off this
+   * branch starts enforcing.
+   *
+   * NOT_FOUND is exposed here (same tradeoff as confirmPasswordReset):
+   * once the user has the OTP code in hand the enumeration tradeoff
+   * has already been paid by the request endpoint. The route maps
+   * USER_NOT_FOUND to the SAME Arabic message as INVALID_CODE so the
+   * HTTP boundary never leaks existence.
+   */
+  async confirmMagicLogin(
+    input: {
+      identifier: string;
+      code: string;
+      sourceIp?: string | null;
+      userAgent?: string | null;
+    },
+    otpService: EmailOtpService = new EmailOtpService(this.db),
+    audit: AuditLogService = new AuditLogService(),
+  ): Promise<
+    | { ok: true; payload: VerifySignupPayload }
+    | {
+        ok: false;
+        reason:
+          | 'INVALID_CODE'
+          | 'EXPIRED'
+          | 'NOT_FOUND'
+          | 'TOO_MANY_ATTEMPTS'
+          | 'USED'
+          | 'EMAIL_NOT_VERIFIED'
+          | 'USER_NOT_FOUND';
+      }
+  > {
+    const rawIdentifier = input.identifier.trim();
+    if (rawIdentifier.length === 0) {
+      return { ok: false, reason: 'USER_NOT_FOUND' };
+    }
+
+    // 1. Identifier resolution — same as requestMagicLogin / login.
+    const normalizedPhone = normalizeSaudiPhone(rawIdentifier);
+    let user: typeof s.users.$inferSelect | undefined;
+    if (normalizedPhone !== null) {
+      [user] = await this.db
+        .select()
+        .from(s.users)
+        .where(eq(s.users.phone, normalizedPhone))
+        .limit(1);
+    } else {
+      const emailLookup = rawIdentifier.toLowerCase();
+      [user] = await this.db
+        .select()
+        .from(s.users)
+        .where(eq(s.users.email, emailLookup))
+        .limit(1);
+      if (!user) {
+        [user] = await this.db
+          .select()
+          .from(s.users)
+          .where(eq(s.users.email, rawIdentifier))
+          .limit(1);
+      }
+    }
+
+    if (!user) {
+      return { ok: false, reason: 'USER_NOT_FOUND' };
+    }
+
+    // 2. Email-verified gate — magic login MUST NOT bypass the same
+    //    check that gates password login. The transitional env flag
+    //    (AUTH_LEGACY_VERIFIED=1) short-circuits the guard for the
+    //    staging backfill window — same shape as login().
+    const TREAT_LEGACY_AS_VERIFIED = process.env.AUTH_LEGACY_VERIFIED === '1';
+    if (user.emailVerifiedAt === null && !TREAT_LEGACY_AS_VERIFIED) {
+      return { ok: false, reason: 'EMAIL_NOT_VERIFIED' };
+    }
+
+    // 3. Verify the OTP. EmailOtpService stores email lowercased, so
+    //    we feed it the canonical email from the user row.
+    const verifyResult = await otpService.verify({
+      email: user.email,
+      purpose: 'magic_login',
+      code: input.code,
+    });
+
+    if (!verifyResult.ok) {
+      return { ok: false, reason: verifyResult.reason };
+    }
+
+    // 4. Audit. No password mutation; we just record the session-mint.
+    await audit.record({
+      actorUserId: user.id,
+      action: 'login',
+      entityType: 'user',
+      entityId: user.id,
+      ipAddress: input.sourceIp ?? null,
+      userAgent: input.userAgent ?? null,
+    });
+
+    // 5. Resolve tenant + active store (same as login() / confirmPasswordReset()).
+    const [tenantUser] = await this.db
+      .select()
+      .from(s.tenantUsers)
+      .where(eq(s.tenantUsers.userId, user.id))
+      .limit(1);
+    if (!tenantUser) {
+      return { ok: false, reason: 'NOT_FOUND' };
+    }
+
+    const userStoreRoles = await this.db
+      .select({ storeId: s.userStoreRoles.storeId })
+      .from(s.userStoreRoles)
+      .where(eq(s.userStoreRoles.userId, user.id));
+    const allowedStoreIds = userStoreRoles.map((r) => r.storeId);
+
+    const allStores = await this.db
+      .select()
+      .from(s.stores)
+      .where(eq(s.stores.tenantId, tenantUser.tenantId))
+      .limit(10);
+    let activeStore = allStores.find((st) => allowedStoreIds.includes(st.id));
+    if (!activeStore && allStores.length > 0) {
+      activeStore = allStores[0];
+    }
+
+    return {
+      ok: true,
+      payload: {
+        userId: user.id,
+        userName: user.name,
+        userEmail: user.email,
+        userPhone: user.phone,
+        userTokenVersion: user.tokenVersion,
+        tenantId: tenantUser.tenantId,
+        storeId: activeStore?.id ?? 0,
+        storeName: activeStore?.name ?? null,
+        storeSlug: activeStore?.slug ?? null,
+        role: tenantUser.role,
+      },
+    };
+  }
+
+  /**
    * Find or create a user from an OAuth provider (Google, Apple, etc.).
    * Returns LoginPayload on success (same shape as password login).
    * Returns LoginError if the account cannot be resolved.

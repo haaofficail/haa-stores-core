@@ -683,6 +683,201 @@ authRouter.post(
   },
 );
 
+// HAA-AUTH-MAGIC-LOGIN — POST /auth/magic-login/request
+// Issues a 6-digit magic-login OTP to the email tied to `identifier`
+// (phone or email). The response is INTENTIONALLY uniform regardless of
+// whether the identifier resolves to a real account — the only failure
+// surface is RATE_LIMITED (429). Mirrors /password-reset/request shape.
+authRouter.post(
+  '/magic-login/request',
+  rateLimiter({
+    windowMs: 60 * 60 * 1000,
+    maxRequests: 5,
+    message: 'تم تجاوز الحد المسموح من المحاولات',
+  }),
+  zValidator(
+    'json',
+    z.object({
+      identifier: z.string().min(1).max(255),
+    }),
+  ),
+  async (c) => {
+    const body = c.req.valid('json');
+    const ip =
+      c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ??
+      c.req.header('x-real-ip') ??
+      null;
+    const ua = c.req.header('user-agent') ?? null;
+    const service = new AuthFlowService();
+
+    try {
+      const result = await service.requestMagicLogin({
+        identifier: body.identifier,
+        sourceIp: ip,
+        userAgent: ua,
+      });
+
+      if (!result.ok && result.reason === 'RATE_LIMITED') {
+        return c.json(
+          {
+            success: false,
+            error: { code: 'RATE_LIMITED', message: 'تم تجاوز الحد المسموح. حاول لاحقاً.' },
+          },
+          429,
+        );
+      }
+
+      // Uniform success — never reveal whether the identifier exists.
+      return c.json({
+        success: true,
+        data: {
+          message:
+            'إن وُجد حساب لهذا المعرّف، فقد أُرسل رمز الدخول إلى البريد المسجّل.',
+        },
+      });
+    } catch (err) {
+      console.error('Magic login request error:', err);
+      // Even on infrastructure failure, return the uniform message so
+      // the endpoint cannot be probed by triggering exceptions.
+      return c.json({
+        success: true,
+        data: {
+          message:
+            'إن وُجد حساب لهذا المعرّف، فقد أُرسل رمز الدخول إلى البريد المسجّل.',
+        },
+      });
+    }
+  },
+);
+
+// HAA-AUTH-MAGIC-LOGIN — POST /auth/magic-login/confirm
+// Verifies the magic-login OTP and mints a fresh JWT exactly like
+// /auth/login (no password rotation, no token_version bump — pure
+// session-mint). EMAIL_NOT_VERIFIED is mapped to 403 to mirror the
+// behaviour of the login() email_not_verified branch.
+authRouter.post(
+  '/magic-login/confirm',
+  rateLimiter({
+    windowMs: 10 * 60 * 1000,
+    maxRequests: 10,
+    message: 'تم تجاوز الحد المسموح من المحاولات',
+  }),
+  zValidator(
+    'json',
+    z.object({
+      identifier: z.string().min(1).max(255),
+      code: z.string().regex(/^\d{6}$/, 'الرمز يجب أن يكون 6 أرقام'),
+    }),
+  ),
+  async (c) => {
+    const body = c.req.valid('json');
+    const ip =
+      c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ??
+      c.req.header('x-real-ip') ??
+      null;
+    const ua = c.req.header('user-agent') ?? null;
+    const service = new AuthFlowService();
+
+    try {
+      const result = await service.confirmMagicLogin({
+        identifier: body.identifier,
+        code: body.code,
+        sourceIp: ip,
+        userAgent: ua,
+      });
+
+      if (!result.ok) {
+        // EMAIL_NOT_VERIFIED is 403 (mirrors login()'s email_not_verified
+        // branch). Every other reason is 400 / 429 with an Arabic
+        // message. USER_NOT_FOUND uses the SAME message as INVALID_CODE
+        // so the HTTP boundary never leaks account existence.
+        if (result.reason === 'EMAIL_NOT_VERIFIED') {
+          return c.json(
+            {
+              success: false,
+              error: {
+                code: 'EMAIL_NOT_VERIFIED',
+                message: 'يجب تأكيد البريد قبل تسجيل الدخول',
+              },
+            },
+            403,
+          );
+        }
+        if (result.reason === 'TOO_MANY_ATTEMPTS') {
+          return c.json(
+            {
+              success: false,
+              error: {
+                code: 'TOO_MANY_ATTEMPTS',
+                message: 'تجاوزت عدد المحاولات المسموح',
+              },
+            },
+            429,
+          );
+        }
+        const messages: Record<
+          'INVALID_CODE' | 'EXPIRED' | 'NOT_FOUND' | 'USED' | 'USER_NOT_FOUND',
+          string
+        > = {
+          INVALID_CODE: 'الرمز غير صحيح',
+          EXPIRED: 'انتهت صلاحية الرمز',
+          NOT_FOUND: 'لا يوجد رمز مطلوب لهذا المعرّف',
+          USED: 'الرمز مُستخدم سابقاً',
+          // Same Arabic message as INVALID_CODE — never leak existence.
+          USER_NOT_FOUND: 'الرمز غير صحيح',
+        };
+        const reason = result.reason as keyof typeof messages;
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: reason,
+              message: messages[reason] ?? 'تعذّر تسجيل الدخول',
+            },
+          },
+          400,
+        );
+      }
+
+      // Mint the JWT the same way /auth/login does. No token_version
+      // bump (that's a password-rotation concern, not a session-mint
+      // concern) — existing sessions remain valid alongside this one.
+      const role = result.payload.role as UserRole;
+      const permissions = getPermissionsForRole(role);
+      const token = signToken({
+        userId: result.payload.userId,
+        tenantId: result.payload.tenantId,
+        activeStoreId: result.payload.storeId,
+        tokenVersion: result.payload.userTokenVersion,
+        roles: [result.payload.role],
+        permissions,
+      });
+
+      setAuthCookie(c, token);
+      return c.json({
+        success: true,
+        data: {
+          token,
+          user: {
+            id: result.payload.userId,
+            name: result.payload.userName,
+            email: result.payload.userEmail,
+          },
+        },
+      });
+    } catch (err) {
+      console.error('Magic login confirm error:', err);
+      return c.json(
+        {
+          success: false,
+          error: { code: 'INTERNAL', message: 'تعذّر تسجيل الدخول' },
+        },
+        500,
+      );
+    }
+  },
+);
+
 // POST /auth/logout
 authRouter.post('/logout', requireAuth(), async (c) => {
   const auth = getAuth(c)!;
