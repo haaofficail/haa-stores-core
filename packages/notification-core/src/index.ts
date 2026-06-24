@@ -1,6 +1,7 @@
 export const NOTIFICATION_CORE_VERSION = '0.3.0';
 
 export { ResendEmailProvider } from './providers/resend.js';
+export { SmtpEmailProvider } from './providers/smtp.js';
 export { UnifoncSmsProvider, UnifoncWhatsAppProvider } from './providers/unifonic.js';
 export { TaqnyatSmsProvider } from './providers/taqnyat.js';
 
