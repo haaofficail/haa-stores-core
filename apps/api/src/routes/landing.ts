@@ -21,7 +21,11 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { LandingContactsService } from '@haa/commerce-core';
 import { rateLimiter } from '../middleware/rate-limiter.js';
-import { ResendEmailProvider } from '@haa/notification-core';
+import {
+  ResendEmailProvider,
+  SmtpEmailProvider,
+  type NotificationProvider,
+} from '@haa/notification-core';
 
 const landingRouter = new Hono();
 
@@ -108,17 +112,29 @@ landingRouter.post(
 /**
  * Send an admin email for a fresh submission.
  *
- * Why we use `ResendEmailProvider` directly (not `NotificationService`):
+ * Why we hit a provider directly (not `NotificationService`):
  * `NotificationService.send(storeId, templateCode, data)` is store-scoped
  * — it looks up `notification_preferences` rows by `storeId` and only
  * sends if that store has opted into the channel for that template code.
- * Landing-page submissions are platform-level (no storeId), so we hit
- * the underlying provider directly with a hand-built email.
+ * Landing-page submissions are platform-level (no storeId), so we pick
+ * the first available provider and hand it a built email.
  *
- * TODO(owner): set RESEND_API_KEY + EMAIL_FROM in apps/api/src/env.ts
- * and the staging environment. Until then `isAvailable` is false and we
- * skip the network call — the DB row remains as the source of truth.
+ * Provider precedence:
+ *   1. SmtpEmailProvider  — when `SMTP_HOST/PORT/USER/PASSWORD` are set
+ *      (Hostinger / Workspace / Outlook — merchant owns deliverability)
+ *   2. ResendEmailProvider — when `RESEND_API_KEY` is set
+ *
+ * If neither is configured, the function no-ops; the DB row remains as
+ * the source of truth and the admin inbox UI surfaces it.
  */
+function pickEmailProvider(): NotificationProvider | null {
+  const smtp = new SmtpEmailProvider();
+  if (smtp.isAvailable) return smtp;
+  const resend = new ResendEmailProvider();
+  if (resend.isAvailable) return resend;
+  return null;
+}
+
 async function notifyAdmin(row: {
   id: number;
   name: string;
@@ -126,11 +142,9 @@ async function notifyAdmin(row: {
   phone: string | null;
   message: string;
 }): Promise<void> {
-  const provider = new ResendEmailProvider();
-  if (!provider.isAvailable) {
-    // Provider not configured (RESEND_API_KEY unset) — no-op in dev /
-    // unconfigured staging. The admin inbox UI (PR #159) will surface
-    // the row even without email delivery.
+  const provider = pickEmailProvider();
+  if (!provider) {
+    // No provider configured — no-op. Admin inbox UI is the recovery path.
     return;
   }
 
