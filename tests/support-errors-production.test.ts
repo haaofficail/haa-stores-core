@@ -28,4 +28,31 @@ describe('support-errors production behaviour (AGENTS.md §13 #5)', () => {
   it('uses NODE_ENV === development to enable local processing', () => {
     expect(SRC).toMatch(/NODE_ENV\s*===\s*['"]development['"]/);
   });
+
+  // W10 (Autopilot Phase 3): additional guards.
+  it('default NODE_ENV (unset) is treated as local (dev-friendly default)', () => {
+    // Without this, a misconfigured production container that lost
+    // NODE_ENV would silently expose the endpoint.
+    expect(SRC).toMatch(/!process\.env\.NODE_ENV/);
+  });
+
+  it('non-local 404 response carries no error details (no scanner hints)', () => {
+    const idx = SRC.indexOf('if (!IS_LOCAL)');
+    const block = SRC.slice(idx, idx + 250);
+    // The 404 body must be a generic "Not found." — NOT a stack trace
+    // or any string that hints at the real route purpose.
+    expect(block).toMatch(/Not found/);
+    expect(block).not.toMatch(/support|error|report|correlation/i);
+  });
+
+  it('route is mounted at /internal/support-errors (internal prefix)', () => {
+    // The /internal prefix is the canonical "not for public consumption"
+    // namespace. A future regression that mounted at /api/support-errors
+    // would defeat the obscurity goal.
+    const indexSrc = readFileSync(
+      resolve(__dirname, '../apps/api/src/index.ts'),
+      'utf-8',
+    );
+    expect(indexSrc).toMatch(/app\.route\(['"]\/internal\/support-errors['"]/);
+  });
 });
