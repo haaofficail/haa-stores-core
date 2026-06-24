@@ -1,5 +1,5 @@
 import { eq, and, like, sql } from 'drizzle-orm';
-import { createDbClient, DbClient } from '@haa/db';
+import { createDbClient, type DbOrTx } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { createCouponSchema, updateCouponSchema, applyCouponSchema } from '@haa/shared';
 import { z } from 'zod';
@@ -9,7 +9,7 @@ type UpdateCouponInput = z.infer<typeof updateCouponSchema>;
 type ApplyCouponInput = z.infer<typeof applyCouponSchema>;
 
 export class CouponsService {
-  constructor(private db: DbClient = createDbClient()) {}
+  constructor(private db: DbOrTx = createDbClient()) {}
 
   async list(storeId: number, opts?: { search?: string; status?: string }) {
     const conditions = [eq(s.coupons.storeId, storeId)];
@@ -140,6 +140,52 @@ export class CouponsService {
     return { valid: true, discount, total, code: validation.coupon.code, couponId: validation.coupon.id };
   }
 
+  /**
+   * Atomically claim one use of a coupon.
+   *
+   * Returns `true` if the increment succeeded (i.e., the coupon was
+   * still within `maxUses` at the moment of the UPDATE), and `false`
+   * if the coupon was already at its cap.
+   *
+   * This replaces the previous non-atomic flow where `validate()` (a
+   * SELECT) and `incrementUsed()` (an unconditional UPDATE) ran in
+   * separate round-trips. Under concurrent checkout (two customers
+   * apply the same single-use coupon at the same instant), both
+   * `validate()` calls would see `usedCount < maxUses` and both
+   * UPDATEs would succeed, taking `usedCount` from 0 to 2 on a
+   * `maxUses=1` coupon — the coupon would have been used twice.
+   *
+   * The SQL below enforces the `usedCount < maxUses` check inside the
+   * same row-locking UPDATE, so only one of the concurrent transactions
+   * can succeed. `maxUses IS NULL` allows unlimited-use coupons to
+   * continue incrementing without ceiling.
+   *
+   * Callers MUST check the return value and refuse the order if it's
+   * `false` (the coupon ran out between validation and finalization).
+   */
+  async tryClaimUse(storeId: number, couponId: number): Promise<boolean> {
+    const result = await this.db
+      .update(s.coupons)
+      .set({ usedCount: sql`${s.coupons.usedCount} + 1` })
+      .where(
+        and(
+          eq(s.coupons.id, couponId),
+          eq(s.coupons.storeId, storeId),
+          sql`(${s.coupons.maxUses} IS NULL OR ${s.coupons.usedCount} < ${s.coupons.maxUses})`,
+        ),
+      )
+      .returning({ id: s.coupons.id });
+    return result.length > 0;
+  }
+
+  /**
+   * @deprecated Use {@link tryClaimUse} instead. This method does not
+   * enforce the `usedCount < maxUses` invariant atomically, so two
+   * concurrent callers can both succeed and take a single-use coupon
+   * past its cap. Kept for backward compatibility with non-checkout
+   * call sites (admin manual increment); checkout MUST use
+   * `tryClaimUse` and refuse the order on a `false` return.
+   */
   async incrementUsed(storeId: number, couponId: number) {
     await this.db.update(s.coupons)
       .set({ usedCount: sql`${s.coupons.usedCount} + 1` })
