@@ -1,14 +1,53 @@
-import { eq, and, count, sql, or, like, gte, lte, inArray, ne } from 'drizzle-orm';
+import { eq, and, count, sql, or, like, gte, lte, inArray, ne, asc } from 'drizzle-orm';
 import { createDbClient, type DbOrTx } from '@haa/db';
 import * as s from '@haa/db/schema';
 import type { OrderStatus, PaymentStatus, FulfillmentStatus, PreparationStatus } from '@haa/shared';
 import { ORDER_STATUS_TRANSITIONS, PREPARATION_STATUS_TRANSITIONS } from '@haa/shared';
-import { NotificationService } from '@haa/notification-core';
+import {
+  NotificationService,
+  SmtpEmailProvider,
+  ResendEmailProvider,
+  renderOrderCreatedEmail,
+  renderOrderStatusChangeEmail,
+  renderOrderRefundEmail,
+  renderMerchantNewOrderEmail,
+  type NotificationProvider,
+  type OrderEmailContext,
+  type OrderStatusChangeContext,
+  type OrderRefundContext,
+} from '@haa/notification-core';
 import { AuditLogService } from '@haa/integration-core';
 import { WalletLedger } from '@haa/wallet-core';
 import { StoreBillingSettingsService } from './billing-settings-service.js';
 import { WalletPostingService } from './wallet-posting-service.js';
 import { LoyaltyService } from './loyalty.js';
+
+/**
+ * Discriminated union of order-email templates. `sendOrderEmail`
+ * dispatches on `kind`, builds the subject/HTML via the matching
+ * `@haa/notification-core` renderer, and hands the result to the
+ * picked provider — fire-and-forget. Each variant carries its own
+ * structured context plus the resolved recipient address.
+ */
+type OrderEmailTemplate =
+  | { kind: 'order_created'; recipient: string; ctx: OrderEmailContext }
+  | { kind: 'status_change'; recipient: string; ctx: OrderStatusChangeContext }
+  | { kind: 'order_refund'; recipient: string; ctx: OrderRefundContext }
+  | { kind: 'new_order'; recipient: string; ctx: OrderEmailContext & { merchantName: string } };
+
+/**
+ * Provider precedence mirrors `apps/api/src/routes/landing.ts`:
+ * SMTP first (merchant owns deliverability via Hostinger/Workspace
+ * /Outlook), Resend as a managed-API fallback. Returns null when
+ * neither is configured so callers can no-op silently.
+ */
+function pickOrderEmailProvider(): NotificationProvider | null {
+  const smtp = new SmtpEmailProvider();
+  if (smtp.isAvailable) return smtp;
+  const resend = new ResendEmailProvider();
+  if (resend.isAvailable) return resend;
+  return null;
+}
 
 export class OrdersService {
   constructor(private db: DbOrTx = createDbClient()) {}
@@ -251,6 +290,25 @@ export class OrdersService {
       this.fireReadyForPickupNotification(storeId, order, updated).catch(() => {});
     }
 
+    // Transactional email — fire-and-forget. The refund flow has its
+    // own dedicated email path; when a cancelled order also triggers
+    // a refund we let the refund email speak instead of double-notifying.
+    // Wrapped in an async IIFE + .catch so the context build and the
+    // provider call never block (or fail) the calling status change.
+    if (newStatus !== 'cancelled' || updated.paymentStatus !== 'refunded') {
+      void (async () => {
+        const ctx = await this.buildOrderEmailContext(storeId, updated);
+        if (!ctx) return;
+        await this.sendOrderEmail({
+          kind: 'status_change',
+          recipient: updated.customerEmail ?? '',
+          ctx: { ...ctx, oldStatus: order.status, newStatus, reasonNote: reason },
+        });
+      })().catch(() => {
+        // Email path is non-blocking; never let it surface.
+      });
+    }
+
     return updated;
   }
 
@@ -277,6 +335,22 @@ export class OrdersService {
   }
 
   async updatePaymentStatus(storeId: number, orderId: number, paymentStatus: PaymentStatus, paidAmount?: number) {
+    // Snapshot the previous payment status so the email hook can
+    // decide whether this is the FIRST transition to paid (worth
+    // emailing) vs a webhook replay (already paid — skip). Best-
+    // effort: a fetch failure must NOT block payment update.
+    let wasAlreadyPaid = false;
+    try {
+      const [previous] = await this.db
+        .select({ paymentStatus: s.orders.paymentStatus })
+        .from(s.orders)
+        .where(and(eq(s.orders.id, orderId), eq(s.orders.storeId, storeId)))
+        .limit(1);
+      wasAlreadyPaid = previous?.paymentStatus === 'paid';
+    } catch {
+      wasAlreadyPaid = false;
+    }
+
     const updateData: Record<string, unknown> = { paymentStatus, updatedAt: new Date() };
     if (paidAmount !== undefined) updateData.paidAmount = paidAmount.toString();
 
@@ -286,6 +360,45 @@ export class OrdersService {
     await this.db.insert(s.orderStatusHistory).values({
       orderId, fromStatus: undefined, toStatus: `payment:${paymentStatus}`,
     });
+
+    // Transactional emails — fire-and-forget. Each branch builds its
+    // own context lazily so we pay nothing when no provider is
+    // configured / no transition of interest happens. The whole
+    // IIFE is .catch-wrapped so the email path can never break the
+    // calling payment-status update.
+    if (paymentStatus === 'paid' && !wasAlreadyPaid) {
+      void (async () => {
+        const ctx = await this.buildOrderEmailContext(storeId, updated);
+        if (!ctx) return;
+        await this.sendOrderEmail({
+          kind: 'order_created',
+          recipient: updated.customerEmail ?? '',
+          ctx,
+        });
+        const merchant = await this.resolveMerchantContact(storeId);
+        if (merchant) {
+          await this.sendOrderEmail({
+            kind: 'new_order',
+            recipient: merchant.email,
+            ctx: { ...ctx, merchantName: merchant.name },
+          });
+        }
+      })().catch(() => {});
+    } else if (paymentStatus === 'refunded' || paymentStatus === 'partially_refunded') {
+      const isFull = paymentStatus === 'refunded';
+      void (async () => {
+        const ctx = await this.buildOrderEmailContext(storeId, updated);
+        if (!ctx) return;
+        const refundAmount = isFull
+          ? ctx.total
+          : `${Number(paidAmount ?? updated.paidAmount ?? updated.total).toFixed(2)} ر.س`;
+        await this.sendOrderEmail({
+          kind: 'order_refund',
+          recipient: updated.customerEmail ?? '',
+          ctx: { ...ctx, refundAmount, isFullRefund: isFull },
+        });
+      })().catch(() => {});
+    }
 
     return updated;
   }
@@ -452,6 +565,140 @@ export class OrdersService {
     });
 
     return true;
+  }
+
+  /**
+   * Send a transactional order email. Fire-and-forget: never
+   * throws and never blocks the calling order flow. The email is
+   * a courtesy — if delivery fails for any reason (no provider
+   * configured, SMTP down, missing recipient address) we swallow
+   * the error and log a non-PII trace.
+   *
+   * Callers SHOULD `void this.sendOrderEmail(...)` rather than
+   * await it; the method intentionally returns void.
+   */
+  private async sendOrderEmail(template: OrderEmailTemplate): Promise<void> {
+    try {
+      const recipient = template.recipient?.trim();
+      if (!recipient) return;
+
+      const provider = pickOrderEmailProvider();
+      if (!provider) return;
+
+      let subject: string;
+      let html: string;
+      if (template.kind === 'order_created') {
+        ({ subject, html } = renderOrderCreatedEmail(template.ctx));
+      } else if (template.kind === 'status_change') {
+        ({ subject, html } = renderOrderStatusChangeEmail(template.ctx));
+      } else if (template.kind === 'order_refund') {
+        ({ subject, html } = renderOrderRefundEmail(template.ctx));
+      } else {
+        ({ subject, html } = renderMerchantNewOrderEmail(template.ctx));
+      }
+
+      const result = await provider.send({
+        recipient,
+        subject,
+        body: html,
+        metadata: { source: 'order_email', kind: template.kind },
+      });
+      if (!result.success) {
+        // Log without PII — recipient + customer name omitted.
+        console.warn(`[order-email] kind=${template.kind} send failed`);
+      }
+    } catch {
+      // Swallow — the order flow must never fail because of an email.
+      console.warn(`[order-email] kind=${template.kind} dispatch error`);
+    }
+  }
+
+  /**
+   * Resolve the storefront base URL for an order. We don't have a
+   * shared `buildStoreUrl` helper, so we mirror the subdomain
+   * pattern used in `apps/storefront/src/lib/custom-host.ts`:
+   * `https://<slug>.haastores.com`. `STOREFRONT_URL` may override
+   * the apex when running on staging (`staging.haastores.com`).
+   */
+  private buildStoreBaseUrl(slug: string): string {
+    const apex = (process.env.STOREFRONT_APEX_DOMAIN || 'haastores.com').replace(/^https?:\/\//, '');
+    return `https://${slug}.${apex}`;
+  }
+
+  /**
+   * Look up the contact email for the merchant who should be
+   * notified about a new order. Strategy:
+   *   1. If the store row carries a public `email`, use it.
+   *   2. Otherwise pick the FIRST tenant owner by `users.created_at`
+   *      ascending (alphabetical by created_at, oldest first).
+   * Returns `{ email, name }` or null when no recipient resolvable.
+   */
+  private async resolveMerchantContact(
+    storeId: number,
+  ): Promise<{ email: string; name: string } | null> {
+    const [store] = await this.db
+      .select({ tenantId: s.stores.tenantId, email: s.stores.email, name: s.stores.name })
+      .from(s.stores)
+      .where(eq(s.stores.id, storeId))
+      .limit(1);
+    if (!store) return null;
+
+    if (store.email) {
+      return { email: store.email, name: store.name };
+    }
+
+    const owners = await this.db
+      .select({ email: s.users.email, name: s.users.name, createdAt: s.users.createdAt })
+      .from(s.tenantUsers)
+      .innerJoin(s.users, eq(s.users.id, s.tenantUsers.userId))
+      .where(eq(s.tenantUsers.tenantId, store.tenantId))
+      .orderBy(asc(s.users.createdAt))
+      .limit(1);
+
+    const first = owners[0];
+    if (!first) return null;
+    return { email: first.email, name: first.name };
+  }
+
+  /**
+   * Build the structured email context from an order row + its
+   * items. Pure data transformation — the result is what the
+   * `renderXxxEmail` builders consume.
+   */
+  private async buildOrderEmailContext(
+    storeId: number,
+    order: typeof s.orders.$inferSelect,
+  ): Promise<OrderEmailContext | null> {
+    const [store] = await this.db
+      .select({ slug: s.stores.slug, name: s.stores.name })
+      .from(s.stores)
+      .where(eq(s.stores.id, storeId))
+      .limit(1);
+    if (!store) return null;
+
+    const items = await this.db
+      .select()
+      .from(s.orderItems)
+      .where(eq(s.orderItems.orderId, order.id));
+
+    const itemsLines = items.map((item) => {
+      const qty = Number(item.quantity);
+      const total = Number(item.totalPrice).toFixed(2);
+      return `× ${qty}  ${item.name} — ${total} ر.س`;
+    });
+
+    const shipping = (order.shippingAddress ?? null) as { city?: string } | null;
+
+    return {
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      total: `${Number(order.total).toFixed(2)} ر.س`,
+      paymentMethod: order.paymentMethod ?? undefined,
+      shippingAddressCity: shipping?.city,
+      itemsLines,
+      storeName: store.name,
+      storeUrl: this.buildStoreBaseUrl(store.slug),
+    };
   }
 
   async markCODRefused(storeId: number, orderId: number, userId?: number) {
