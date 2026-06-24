@@ -7,6 +7,7 @@ export * from './schemas/index.js';
 export * from './utils.js';
 export * from './phone.js';
 export * from './legal/platform-legal.js';
+export * from './legal/platform-entity.js';
 export * from './demo/demo-rules.js';
 export * from './restricted-categories.js';
 export * from './dto/storefront-dto.js';

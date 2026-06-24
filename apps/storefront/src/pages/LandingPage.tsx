@@ -15,6 +15,7 @@ import { useSEO } from '@/hooks/useSEO';
 import { merchantDashboardUrl } from '@/lib/merchant';
 import { StoreButton, StoreCard, StoreInput, StoreTextarea } from '@/components/ui';
 import { SarIcon } from '@/components/ui/SarIcon';
+import { PLATFORM_LEGAL_ENTITY } from '@haa/shared';
 import '@/landing/landing.css';
 
 /* ─── data ─────────────────────────────────────────────────── */
@@ -1070,6 +1071,9 @@ export default function LandingPage() {
             </div>
             <div className="lp-foot__copy">© 2026 هاء متاجر · جميع الحقوق محفوظة</div>
           </div>
+          <p className="lp-legal-entity" dir="rtl">
+            {PLATFORM_LEGAL_ENTITY.displayLine}
+          </p>
         </div>
       </footer>
 

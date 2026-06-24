@@ -22,6 +22,8 @@
  *   they cannot reply-to-unsubscribe.
  */
 
+import { PLATFORM_LEGAL_ENTITY } from '@haa/shared';
+
 const BRAND_PRIMARY = '#5c9cd5';
 const BRAND_PRIMARY_DARK = '#3a7ab4';
 const BRAND_BG = '#f5f7fa';
@@ -143,6 +145,9 @@ export function renderHaaEmail(opts: HaaEmailOptions): string {
               </p>
               <p style="margin: 12px 0 0; font-size: 11px; color: ${TEXT_SECONDARY};">
                 هذه رسالة آلية — يُرجى عدم الرد عليها مباشرة.
+              </p>
+              <p style="margin: 8px 0 0; font-size: 10px; color: ${TEXT_SECONDARY};">
+                ${escapeHtml(PLATFORM_LEGAL_ENTITY.legalNameAr)} · السجل التجاري: ${escapeHtml(PLATFORM_LEGAL_ENTITY.commercialRegistration)}
               </p>
               ${footerNoteBlock}
             </td>
