@@ -17,14 +17,14 @@
 
 ## 1. Executive Status
 
-- **Overall completion:** **66%**
-- **Engineering completion:** **82%**
-- **Commercial launch readiness:** **42%**
-- **Current phase:** Phase 2 — transactional emails, billing reminders, legal-entity surfacing
+- **Overall completion:** **68%**
+- **Engineering completion:** **84%**
+- **Commercial launch readiness:** **44%**
+- **Current phase:** Phase 2 — transactional emails + billing reminders + legal + CI/Ops hardening
 - **Last updated:** 2026-06-24
-- **Last completed task:** PR #181 — platform legal entity (CR 7038798612) wired into email + landing + legal pages (merged main)
-- **Current blocker:** (1) Deploy #205 for PR #179 failed (fail2ban window on staging — retry after 15 min); (2) Migrations 0083 + 0084 + 0085 not yet applied on staging; (3) Geidea + shipping aggregator owner gates G1–G10
-- **Next recommended action:** Wait fail2ban window → re-run failed Deploy → batch `ops-staging-migrate` for 0083+0084+0085 → flip `AUTH_LEGACY_VERIFIED=0` → start 22-wave Autopilot from W0.
+- **Last completed task:** PR #183 — root-cause deploy failures: fail2ban 24-min warmup + watchdog + scheduler test gate (merged main)
+- **Current blocker:** (1) Migrations 0083 + 0084 + 0085 not yet applied on staging — needs `ops-staging-migrate`; (2) Geidea + shipping aggregator owner gates G1–G10
+- **Next recommended action:** Batch `ops-staging-migrate` for 0083+0084+0085 → flip `AUTH_LEGACY_VERIFIED=0` → start 22-wave Autopilot from W0.
 
 ## 2. Progress Scale
 
@@ -204,34 +204,34 @@
 
 ### M. Security / Ops
 
-| ID  | Task                                       | Status      | Progress | Evidence                                                                                | Blocker                                               | Next Action                                       |
-| --- | ------------------------------------------ | ----------- | -------: | --------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------- |
-| M1  | Gitleaks (current snapshot)                | Done        |     100% | CI passes Secret Scan (G4) + Secrets Scan                                               | —                                                     | —                                                 |
-| M2  | CI (lint + typecheck + tests)              | Done        |     100% | `.github/workflows/ci.yml` — every PR runs the suite                                    | —                                                     | —                                                 |
-| M3  | Lint (`pnpm exec eslint --max-warnings 0`) | Done        |     100% | Pre-commit hook + CI both enforce                                                       | —                                                     | —                                                 |
-| M4  | Tests (unit + source-grep)                 | Done        |     100% | ~120 test files in `tests/`; pre-commit runs full suite                                 | —                                                     | —                                                 |
-| M5  | E2E                                        | Done        |      75% | `tests/e2e-shipping-tracking.test.ts`, Playwright mounted (W17 of Autopilot may extend) | More journeys needed                                  | Wave 17 of Autopilot                              |
-| M6  | Branch protection                          | Done        |      90% | GitHub branch protection requires CI green + 1 approval                                 | Production branch policy TBD                          | Owner action when production launches             |
-| M7  | Release gate                               | Done        |      75% | `release-gate` skill exists; no production runs yet                                     | After H7 + production deploy plan                     | —                                                 |
-| M8  | Backup strategy                            | Done        |      75% | `ops-staging-migrate` snapshots DB pre-migration                                        | Automated nightly backup on staging not yet scheduled | Schedule nightly `pg_dump` cron                   |
-| M9  | Restore drill                              | Blocked     |      25% | Backup file path documented in workflow                                                 | **Owner gate G10** — DR tabletop                      | Owner: schedule DR drill                          |
-| M10 | Monitoring                                 | Not Started |      25% | Health-check endpoints exist (`/health`)                                                | No external uptime monitor                            | Pick: Uptime Kuma / Better Uptime / Sentry Status |
-| M11 | Alerting                                   | Not Started |      25% | No Slack/email alert pipeline yet                                                       | Owner Slack workspace + Sentry DSN                    | Owner: confirm Slack workspace                    |
-| M12 | Disaster recovery                          | Blocked     |      25% | DR plan doc exists (`docs/ops/OWNER_ACTION_G10_DR_PLAN.md`)                             | M9                                                    | M9                                                |
-| M13 | Secrets audit                              | Done        |      75% | `.env.example` + gitleaks regex; secrets never committed                                | Pen-test verification                                 | Owner gate G6/G7                                  |
+| ID  | Task                                       | Status      | Progress | Evidence                                                                                          | Blocker                                               | Next Action                                       |
+| --- | ------------------------------------------ | ----------- | -------: | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------- |
+| M1  | Gitleaks (current snapshot)                | Done        |     100% | CI passes Secret Scan (G4) + Secrets Scan                                                         | —                                                     | —                                                 |
+| M2  | CI (lint + typecheck + tests)              | Done        |     100% | `.github/workflows/ci.yml` + PR #183 (`live-presence` flake fix via NODE_ENV=test scheduler gate) | —                                                     | —                                                 |
+| M3  | Lint (`pnpm exec eslint --max-warnings 0`) | Done        |     100% | Pre-commit hook + CI both enforce                                                                 | —                                                     | —                                                 |
+| M4  | Tests (unit + source-grep)                 | Done        |     100% | ~120 test files in `tests/`; pre-commit runs full suite                                           | —                                                     | —                                                 |
+| M5  | E2E                                        | Done        |      75% | `tests/e2e-shipping-tracking.test.ts`, Playwright mounted (W17 of Autopilot may extend)           | More journeys needed                                  | Wave 17 of Autopilot                              |
+| M6  | Branch protection                          | Done        |      90% | GitHub branch protection requires CI green + 1 approval                                           | Production branch policy TBD                          | Owner action when production launches             |
+| M7  | Release gate                               | Done        |      75% | `release-gate` skill exists; no production runs yet                                               | After H7 + production deploy plan                     | —                                                 |
+| M8  | Backup strategy                            | Done        |      75% | `ops-staging-migrate` snapshots DB pre-migration                                                  | Automated nightly backup on staging not yet scheduled | Schedule nightly `pg_dump` cron                   |
+| M9  | Restore drill                              | Blocked     |      25% | Backup file path documented in workflow                                                           | **Owner gate G10** — DR tabletop                      | Owner: schedule DR drill                          |
+| M10 | Monitoring                                 | Not Started |      25% | Health-check endpoints exist (`/health`)                                                          | No external uptime monitor                            | Pick: Uptime Kuma / Better Uptime / Sentry Status |
+| M11 | Alerting                                   | Not Started |      25% | No Slack/email alert pipeline yet                                                                 | Owner Slack workspace + Sentry DSN                    | Owner: confirm Slack workspace                    |
+| M12 | Disaster recovery                          | Blocked     |      25% | DR plan doc exists (`docs/ops/OWNER_ACTION_G10_DR_PLAN.md`)                                       | M9                                                    | M9                                                |
+| M13 | Secrets audit                              | Done        |      75% | `.env.example` + gitleaks regex; secrets never committed                                          | Pen-test verification                                 | Owner gate G6/G7                                  |
 
 ### N. Staging / Production Launch
 
-| ID  | Task                        | Status  | Progress | Evidence                                                                      | Blocker                             | Next Action                                   |
-| --- | --------------------------- | ------- | -------: | ----------------------------------------------------------------------------- | ----------------------------------- | --------------------------------------------- |
-| N1  | Staging migrations workflow | Done    |     100% | `.github/workflows/ops-staging-migrate.yml`                                   | —                                   | —                                             |
-| N2  | Staging env workflow        | Done    |      90% | `.github/workflows/ops-staging-env.yml` + allow-list (PR #174 extended)       | Allow-list documentation policy     | Document the per-PR allow-list extension rule |
-| N3  | Staging deploy              | Done    |     100% | `.github/workflows/deploy.yml` — push-to-main → staging                       | —                                   | —                                             |
-| N4  | Staging smoke test          | Done    |      75% | `tests/pre-launch-smoke.test.ts` + manual smoke after deploys                 | No automated post-deploy smoke gate | Wire smoke into deploy.yml                    |
-| N5  | Production deploy plan      | Blocked |      25% | `docs/ops/PHASE_5_DEPLOY_RUNBOOK.md` exists                                   | **Owner gates G1–G10**              | Owner completes G1–G10                        |
-| N6  | Production rollback plan    | Done    |      75% | `ops-staging-migrate` keeps backup file; `docker compose` rollback documented | Owner-tested rollback drill         | M9                                            |
-| N7  | Beta merchants              | Blocked |      25% | No beta merchant onboarded yet                                                | Owner: identify 3 beta merchants    | Owner action                                  |
-| N8  | Launch checklist            | Done    |      75% | `docs/ops/BETA_LAUNCH_CHECKLIST.md` + `BETA_LAUNCH_TECHNICAL_CHECKLIST.md`    | —                                   | —                                             |
+| ID  | Task                        | Status  | Progress | Evidence                                                                                    | Blocker                                 | Next Action                                   |
+| --- | --------------------------- | ------- | -------: | ------------------------------------------------------------------------------------------- | --------------------------------------- | --------------------------------------------- |
+| N1  | Staging migrations workflow | Done    |     100% | `.github/workflows/ops-staging-migrate.yml`                                                 | —                                       | —                                             |
+| N2  | Staging env workflow        | Done    |      90% | `.github/workflows/ops-staging-env.yml` + allow-list (PR #174 extended)                     | Allow-list documentation policy         | Document the per-PR allow-list extension rule |
+| N3  | Staging deploy              | Done    |     100% | `deploy.yml` + PR #183 (6×backoff warmup ~24min + `deploy-watchdog.yml` auto-recovery)      | —                                       | —                                             |
+| N4  | Staging smoke test          | Done    |      85% | `tests/pre-launch-smoke.test.ts` + PR #183 watchdog opens `deploy-failure` issue on failure | No automated post-deploy smoke gate yet | Wire smoke into deploy.yml                    |
+| N5  | Production deploy plan      | Blocked |      25% | `docs/ops/PHASE_5_DEPLOY_RUNBOOK.md` exists                                                 | **Owner gates G1–G10**                  | Owner completes G1–G10                        |
+| N6  | Production rollback plan    | Done    |      75% | `ops-staging-migrate` keeps backup file; `docker compose` rollback documented               | Owner-tested rollback drill             | M9                                            |
+| N7  | Beta merchants              | Blocked |      25% | No beta merchant onboarded yet                                                              | Owner: identify 3 beta merchants        | Owner action                                  |
+| N8  | Launch checklist            | Done    |      75% | `docs/ops/BETA_LAUNCH_CHECKLIST.md` + `BETA_LAUNCH_TECHNICAL_CHECKLIST.md`                  | —                                       | —                                             |
 
 ### Owner Gates (G1–G10)
 
@@ -266,6 +266,23 @@ Status: `Not Started` · `In Progress` · `Blocked` · `Needs Review` · `Done` 
   1. Land PR #179 (Subscription renewal reminder) — stashed work, finish commit
   2. Land PR #180 (CR 7038798612 wiring into legal-facing surfaces)
   3. Begin 22-wave Autopilot from W0 (Truth Sync)
+
+### 2026-06-24 — PR #183 merged: deploy hardening + scheduler test gate
+
+- Completed: PR #183 (`fix(ci): root-cause deploy failures — fail2ban window + scheduler test flake`) — merged on main
+- Three structural fixes for repeating red Actions:
+  1. **SSH warmup window:** 3 retries × 30/60/90 s = ~3 min was below the staging fail2ban 15-min ban. Now 6 retries × 30/60/120/240/480/480 = ~24 min. Applied to BOTH staging and production warmup blocks.
+  2. **`deploy-watchdog.yml` (new workflow):** triggers on completed Deploy runs, classifies failure (`ssh-fail2ban` / `code-failure` / `unknown`), auto-reruns ONCE for transient SSH failures (after 18-min sleep past ban window), opens a `deploy-failure` issue otherwise, auto-closes issues on next successful deploy.
+  3. **`worker.ts` scheduler test gate:** `startScheduler` + `startBullMQWorker` now early-return on `NODE_ENV === 'test'`. Eliminates PROBLEM-012 (`EnvironmentTeardownError: Closing rpc while onUserConsoleLog was pending`) which had been killing CI on green test runs.
+- Companion docs: `docs/ops/DEPLOY_FAILURE_PLAYBOOK.md` documents all three failure classes + manual-unban commands + 4 anti-patterns.
+- Tests: `tests/deploy-hardening.test.ts` (19 source-grep guards) — including a "does NOT silently downgrade retry count" assertion to prevent the original 3-attempt regression from sneaking back. `tests/live-presence.test.ts` now passes without the teardown error.
+- Rows updated: M2 (CI evidence updated) · N3 (deploy hardening) · N4 (auto-recovery added, 75→85%)
+- New blockers: none (all three are removed)
+- Updated completion: overall **68%** (+2) / engineering **84%** (+2) / commercial **44%** (+2)
+- Recommendation:
+  1. Batch `ops-staging-migrate` for 0083 + 0084 + 0085 (now safe — watchdog catches failures)
+  2. Flip `AUTH_LEGACY_VERIFIED=0` via `ops-staging-env`
+  3. Begin 22-wave Autopilot from W0
 
 ### 2026-06-24 — PR #181 merged: platform legal entity wired
 
