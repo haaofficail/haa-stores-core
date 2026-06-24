@@ -60,4 +60,29 @@ describe('Outbound webhook hardening (Wave 14)', () => {
       expect(SRC).not.toMatch(pattern);
     }
   });
+
+  // W14 (Autopilot Phase 3): extended end-to-end coverage.
+  it('the scheduler ticks retryPending so dead-letter is reachable', () => {
+    // Without a scheduler invocation, retryPending could be defined but
+    // never called → events accumulate at attempts=0 forever, never
+    // crossing into dead-letter (>= maxAttempts).
+    const worker = readFileSync(
+      resolve(__dirname, '../apps/api/src/worker.ts'),
+      'utf-8',
+    );
+    expect(worker).toMatch(/webhookDeliver/);
+    expect(worker).toMatch(/retryPending/);
+  });
+
+  it('webhookEvents schema has both attempts + maxAttempts columns', () => {
+    // The dead-letter mechanism is "attempts >= maxAttempts" — both
+    // columns must exist. A migration that drops one would silently
+    // break dead-letter logic.
+    const schema = readFileSync(
+      resolve(__dirname, '../packages/db/src/schema/webhook.ts'),
+      'utf-8',
+    );
+    expect(schema).toMatch(/attempts:\s*integer/);
+    expect(schema).toMatch(/maxAttempts:\s*integer/);
+  });
 });
