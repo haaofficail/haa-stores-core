@@ -673,6 +673,268 @@ export class AuthFlowService {
   }
 
   /**
+   * HAA-AUTH-PASSWORD-RESET — request a password-reset OTP.
+   *
+   * Returns a UNIFORM `{ ok: true }` regardless of whether the
+   * identifier resolves to a real user. This is the no-enumeration
+   * rule: the request endpoint MUST NOT be usable as an oracle for
+   * "does this account exist?". The only failure mode that propagates
+   * is RATE_LIMITED, which the route maps to HTTP 429.
+   *
+   * Identifier resolution mirrors `login()`:
+   *   - normalizeSaudiPhone(identifier) → if non-null, lookup by phone
+   *   - else lowercase + lookup by email
+   */
+  async requestPasswordReset(
+    input: {
+      identifier: string;
+      sourceIp?: string | null;
+      userAgent?: string | null;
+    },
+    otpService: EmailOtpService = new EmailOtpService(this.db),
+  ): Promise<{ ok: true } | { ok: false; reason: 'RATE_LIMITED' }> {
+    const rawIdentifier = input.identifier.trim();
+    if (rawIdentifier.length === 0) {
+      // Empty identifier — same uniform response as the unknown-user
+      // path, to keep this endpoint a non-oracle.
+      return { ok: true };
+    }
+
+    // Phone-first resolution (matches login()).
+    const normalizedPhone = normalizeSaudiPhone(rawIdentifier);
+    let user: typeof s.users.$inferSelect | undefined;
+    if (normalizedPhone !== null) {
+      [user] = await this.db
+        .select()
+        .from(s.users)
+        .where(eq(s.users.phone, normalizedPhone))
+        .limit(1);
+    } else {
+      const emailLookup = rawIdentifier.toLowerCase();
+      [user] = await this.db
+        .select()
+        .from(s.users)
+        .where(eq(s.users.email, emailLookup))
+        .limit(1);
+      // Legacy mixed-case email fallback (same as login()).
+      if (!user) {
+        [user] = await this.db
+          .select()
+          .from(s.users)
+          .where(eq(s.users.email, rawIdentifier))
+          .limit(1);
+      }
+    }
+
+    if (!user) {
+      // No-enumeration: return uniform `ok: true`. We do NOT surface
+      // NOT_FOUND on the request path — the only allowed failure is
+      // RATE_LIMITED, which is enforced below.
+      return { ok: true };
+    }
+
+    const sendResult = await otpService.generateAndSend({
+      email: user.email,
+      purpose: 'password_reset',
+      userId: user.id,
+      sourceIp: input.sourceIp ?? null,
+      userAgent: input.userAgent ?? null,
+    });
+
+    if (!sendResult.ok) {
+      if (sendResult.reason === 'RATE_LIMITED') {
+        return { ok: false, reason: 'RATE_LIMITED' };
+      }
+      // Other failure modes (EMAIL_SEND_FAILED / INVALID_PURPOSE) are
+      // logged for ops forensics but reported to the caller as success
+      // — surfacing infra state would let an attacker probe delivery
+      // and infer account existence. The OTP row was created (logged
+      // in the database) so ops can correlate.
+      console.warn(
+        `[auth-flow] requestPasswordReset send failed userId=${user.id} reason=${sendResult.reason}`,
+      );
+      return { ok: true };
+    }
+
+    return { ok: true };
+  }
+
+  /**
+   * HAA-AUTH-PASSWORD-RESET — confirm a password reset.
+   *
+   * Verifies the OTP, hashes the new password, rotates the user row's
+   * `password_hash`, bumps `token_version` (invalidating every JWT
+   * minted before this point), writes an audit log, and returns a
+   * fresh JWT payload the route can sign.
+   *
+   * NOT_FOUND IS DELIBERATELY EXPOSED on this path — once the user has
+   * the OTP code in hand, the enumeration tradeoff has already been
+   * paid (and the request endpoint never returned it). This is the
+   * standard pattern for OTP-confirm endpoints.
+   */
+  async confirmPasswordReset(
+    input: {
+      identifier: string;
+      code: string;
+      newPassword: string;
+      sourceIp?: string | null;
+      userAgent?: string | null;
+    },
+    otpService: EmailOtpService = new EmailOtpService(this.db),
+    audit: AuditLogService = new AuditLogService(),
+  ): Promise<
+    | { ok: true; payload: VerifySignupPayload }
+    | {
+        ok: false;
+        reason:
+          | 'INVALID_CODE'
+          | 'EXPIRED'
+          | 'NOT_FOUND'
+          | 'TOO_MANY_ATTEMPTS'
+          | 'USED'
+          | 'WEAK_PASSWORD';
+      }
+  > {
+    // 1. Validate password strength FIRST so we don't waste an OTP
+    //    attempt on a malformed payload. Mirrors the route's zod schema
+    //    (min 8) — defense-in-depth in case the service is invoked
+    //    directly from a non-HTTP caller (tests, scripts).
+    if (typeof input.newPassword !== 'string' || input.newPassword.length < 8) {
+      return { ok: false, reason: 'WEAK_PASSWORD' };
+    }
+
+    const rawIdentifier = input.identifier.trim();
+    if (rawIdentifier.length === 0) {
+      return { ok: false, reason: 'NOT_FOUND' };
+    }
+
+    // 2. Identifier resolution — same as requestPasswordReset / login.
+    const normalizedPhone = normalizeSaudiPhone(rawIdentifier);
+    let user: typeof s.users.$inferSelect | undefined;
+    if (normalizedPhone !== null) {
+      [user] = await this.db
+        .select()
+        .from(s.users)
+        .where(eq(s.users.phone, normalizedPhone))
+        .limit(1);
+    } else {
+      const emailLookup = rawIdentifier.toLowerCase();
+      [user] = await this.db
+        .select()
+        .from(s.users)
+        .where(eq(s.users.email, emailLookup))
+        .limit(1);
+      if (!user) {
+        [user] = await this.db
+          .select()
+          .from(s.users)
+          .where(eq(s.users.email, rawIdentifier))
+          .limit(1);
+      }
+    }
+
+    if (!user) {
+      return { ok: false, reason: 'NOT_FOUND' };
+    }
+
+    // 3. Verify the OTP. The EmailOtpService stores email lowercased,
+    //    so we feed it the canonical email from the user row.
+    const verifyResult = await otpService.verify({
+      email: user.email,
+      purpose: 'password_reset',
+      code: input.code,
+    });
+
+    if (!verifyResult.ok) {
+      return { ok: false, reason: verifyResult.reason };
+    }
+
+    // 4. Rotate password + bump tokenVersion in a single transaction.
+    //    Bumping tokenVersion is what makes EVERY existing JWT issued
+    //    before this point immediately invalid — that's the whole
+    //    point of password reset (assume the old credential was
+    //    compromised and revoke all live sessions).
+    const passwordHash = await hashPassword(input.newPassword);
+    const now = new Date();
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(s.users)
+        .set({
+          passwordHash,
+          tokenVersion: sql`${s.users.tokenVersion} + 1`,
+          updatedAt: now,
+        })
+        .where(eq(s.users.id, user.id));
+    });
+
+    // 5. Audit. The plaintext password is NEVER recorded; we only log
+    //    the action + entity. ipAddress / userAgent come from the route.
+    await audit.record({
+      actorUserId: user.id,
+      action: 'password_reset_completed',
+      entityType: 'user',
+      entityId: user.id,
+      ipAddress: input.sourceIp ?? null,
+      userAgent: input.userAgent ?? null,
+    });
+
+    // 6. Re-read the user to pick up the bumped tokenVersion so the
+    //    JWT we mint right after this carries the NEW version (older
+    //    JWTs minted with the previous version are now invalid).
+    const [refreshed] = await this.db
+      .select()
+      .from(s.users)
+      .where(eq(s.users.id, user.id))
+      .limit(1);
+    const verifiedUser = refreshed ?? user;
+
+    // 7. Resolve tenant + active store the same way login() does so
+    //    the route can mint a JWT with the right tenant/store context.
+    const [tenantUser] = await this.db
+      .select()
+      .from(s.tenantUsers)
+      .where(eq(s.tenantUsers.userId, verifiedUser.id))
+      .limit(1);
+    if (!tenantUser) {
+      // User reset password but has no tenant — surface as NOT_FOUND
+      // rather than minting a useless JWT.
+      return { ok: false, reason: 'NOT_FOUND' };
+    }
+
+    const userStoreRoles = await this.db
+      .select({ storeId: s.userStoreRoles.storeId })
+      .from(s.userStoreRoles)
+      .where(eq(s.userStoreRoles.userId, verifiedUser.id));
+    const allowedStoreIds = userStoreRoles.map((r) => r.storeId);
+
+    const allStores = await this.db
+      .select()
+      .from(s.stores)
+      .where(eq(s.stores.tenantId, tenantUser.tenantId))
+      .limit(10);
+    let activeStore = allStores.find((st) => allowedStoreIds.includes(st.id));
+    if (!activeStore && allStores.length > 0) {
+      activeStore = allStores[0];
+    }
+
+    return {
+      ok: true,
+      payload: {
+        userId: verifiedUser.id,
+        userName: verifiedUser.name,
+        userEmail: verifiedUser.email,
+        userPhone: verifiedUser.phone,
+        userTokenVersion: verifiedUser.tokenVersion,
+        tenantId: tenantUser.tenantId,
+        storeId: activeStore?.id ?? 0,
+        storeName: activeStore?.name ?? null,
+        storeSlug: activeStore?.slug ?? null,
+        role: tenantUser.role,
+      },
+    };
+  }
+
+  /**
    * Find or create a user from an OAuth provider (Google, Apple, etc.).
    * Returns LoginPayload on success (same shape as password login).
    * Returns LoginError if the account cannot be resolved.

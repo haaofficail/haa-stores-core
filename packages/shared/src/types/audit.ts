@@ -95,6 +95,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   // Marketplace admin moderation (TASK-0040 Track 1C — P0-5)
   marketplace_product_review: 'مراجعة منتج في السوق',
   marketplace_product_feature: 'تمييز منتج في السوق',
+  // HAA-AUTH-PASSWORD-RESET — emitted by confirmPasswordReset.
+  password_reset_completed: 'إعادة تعيين كلمة المرور',
 };
 
 export const AUDIT_ENTITY_LABELS: Record<string, string> = {
