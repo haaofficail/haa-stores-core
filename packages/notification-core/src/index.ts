@@ -14,6 +14,10 @@ export {
   type OrderStatusChangeContext,
   type OrderRefundContext,
 } from './order-emails.js';
+export {
+  renderMerchantWelcomeEmail,
+  type MerchantWelcomeContext,
+} from './welcome-emails.js';
 
 export interface NotificationMessage {
   recipient: string;
