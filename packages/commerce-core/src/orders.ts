@@ -179,6 +179,31 @@ export class OrdersService {
     return { ...order, items, statusHistory: history };
   }
 
+  /**
+   * Public "my orders" lookup by phone. Returns the customer's last
+   * `limit` orders for this store, newest first. No order items — this
+   * is the LIST view; the storefront drills down to a single order via
+   * `getByOrderNumberPublic(orderNumber, phone)` for full detail.
+   *
+   * Phone match is exact — the storefront is responsible for normalizing
+   * (the same phone the customer used at checkout). Empty/invalid phone
+   * returns an empty array (no enumeration leak: every unknown phone
+   * looks identical to a brand-new customer with no orders).
+   */
+  async listForCustomerPhonePublic(
+    storeId: number,
+    phone: string,
+    limit = 50,
+  ): Promise<Array<typeof s.orders.$inferSelect>> {
+    const normalized = phone.trim();
+    if (!normalized) return [];
+    const safeLimit = Math.min(Math.max(1, limit), 100);
+    return this.db.select().from(s.orders)
+      .where(and(eq(s.orders.storeId, storeId), eq(s.orders.customerPhone, normalized)))
+      .orderBy(sql`${s.orders.createdAt} DESC`)
+      .limit(safeLimit);
+  }
+
   async create(data: {
     storeId: number; customerId?: number; orderNumber: string;
     checkoutSessionId?: string; idempotencyKey?: string;

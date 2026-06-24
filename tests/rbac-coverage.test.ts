@@ -63,6 +63,7 @@ const DENY_LIST = new Set<string>([
   'support.ts',               // /s/:slug/support/*, /s/:slug/events
   'loyalty-public.ts',        // /s/:slug/loyalty/{settings,balance,redeem-quote} — customer phone-identified, no enumeration leak
   'unsubscribe.ts',           // /s/:slug/unsubscribe/:token — public PDPL Article 18, HMAC-signed token instead of session auth
+  'my-orders.ts',             // /s/:slug/orders — public customer order-history by phone (same trust model as /track/:orderNumber)
 
   // Aggregator files (route definitions delegated to sub-routers)
   'index.ts',

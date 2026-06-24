@@ -11,6 +11,7 @@ import { pixelsPublicRouter } from './pixels.js';
 import { cartRecoveryRouter } from './cart-recovery.js';
 import { loyaltyPublicRouter } from './loyalty-public.js';
 import { unsubscribeRouter } from './unsubscribe.js';
+import { myOrdersRouter } from './my-orders.js';
 
 export const storefrontRouter = new Hono();
 
@@ -24,3 +25,4 @@ storefrontRouter.route('/', pixelsPublicRouter);
 storefrontRouter.route('/', cartRecoveryRouter);
 storefrontRouter.route('/', loyaltyPublicRouter);
 storefrontRouter.route('/', unsubscribeRouter);
+storefrontRouter.route('/', myOrdersRouter);

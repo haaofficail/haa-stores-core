@@ -1,5 +1,6 @@
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- pre-existing lucide usages; lucide→<Icon> migration tracked separately
 import { ShoppingCart, Menu, X, Search, Package, AlertTriangle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useStore } from '@/hooks/useStore';
@@ -173,10 +174,10 @@ export default function Header() {
 
             {showAccount && (
             <Link
-              to={`/s/${slug}/track`}
+              to={`/s/${slug}/my-orders`}
               className="hidden sm:inline-flex min-w-[44px] min-h-[44px] items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-2 rounded-xl transition-colors motion-reduce:transition-none"
-              title={t('store.trackOrder')}
-              aria-label={t('store.trackOrder', 'تتبع الطلب')}
+              title={t('store.myOrders', 'طلباتي')}
+              aria-label={t('store.myOrders', 'طلباتي')}
             >
               <Icon icon={Package} size="sm" />
             </Link>
@@ -241,11 +242,11 @@ export default function Header() {
               ))}
               {showAccount && (
               <Link
-                to={`/s/${slug}/track`}
+                to={`/s/${slug}/my-orders`}
                 className="px-3 py-2.5 rounded-lg text-sm font-medium opacity-70 hover:opacity-100 hover:bg-black/5 transition-all motion-reduce:transition-none sm:hidden"
                 onClick={() => setMenuOpen(false)}
               >
-                {t('store.trackOrder')}
+                {t('store.myOrders', 'طلباتي')}
               </Link>
               )}
             </nav>

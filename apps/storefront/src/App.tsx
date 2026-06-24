@@ -16,6 +16,7 @@ const Checkout = lazy(() => import('@/pages/Checkout'));
 const OrderSuccess = lazy(() => import('@/pages/OrderSuccess'));
 const TrackOrder = lazy(() => import('@/pages/TrackOrder'));
 const TrackOrderResult = lazy(() => import('@/pages/TrackOrderResult'));
+const MyOrders = lazy(() => import('@/pages/MyOrders'));
 const About = lazy(() => import('@/pages/About'));
 const Contact = lazy(() => import('@/pages/Contact'));
 const PolicyPage = lazy(() => import('@/pages/PolicyPage'));
@@ -77,6 +78,7 @@ export default function App() {
             <Route path="order/:orderNumber" element={<OrderSuccess />} />
             <Route path="track" element={<TrackOrder />} />
             <Route path="track/:orderNumber" element={<TrackOrderResult />} />
+            <Route path="my-orders" element={<MyOrders />} />
             <Route path="about" element={<About />} />
             <Route path="contact" element={<Contact />} />
             <Route path="policies/:policyType" element={<PolicyPage />} />
