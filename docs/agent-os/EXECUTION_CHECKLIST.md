@@ -19,10 +19,10 @@
 - [ ] Verification commands mapped per selected skill
 - [ ] Risk level assigned (low / medium / high)
 - [ ] Final Skill Compliance Report template loaded
-  (`docs/agent-os/templates/SKILL_COMPLIANCE_REPORT.md`)
+      (`docs/agent-os/templates/SKILL_COMPLIANCE_REPORT.md`)
 - [ ] Safety constraints reviewed (AGENTS.md §14.7) — no deploy,
-  no `db:migrate`, no secrets, no production action, no forbidden server
-  `187.124.41.239`
+      no `db:migrate`, no secrets, no production action, no forbidden server
+      `187.124.41.239`
 - [ ] Mandatory Skill Gate block published in the response BEFORE first edit
 - [ ] `pnpm check:skills` passes locally
 
@@ -85,3 +85,41 @@ found**`, pick fallback, log Pending addition in
 - ❌ No `db:migrate`. ❌ No secrets handled. ❌ No use of `187.124.41.239`.
 - ❌ No direct/hard tenant or merchant self-deletion as a feature.
 - ✅ One topic per commit. ✅ Verification before each commit.
+
+---
+
+## Post-Autopilot — Phase 2 (PRs #161 → #185, 2026-06-23 → 2026-06-24)
+
+After the original autopilot closed on `autopilot/post-qa-execution`, the next pass shipped **18 PRs to main**:
+
+| PR   | Theme                                                | Status |
+| ---- | ---------------------------------------------------- | ------ |
+| #161 | SMTP email provider                                  | Done   |
+| #162 | Email OTP infrastructure                             | Done   |
+| #163 | Phone-first registration                             | Done   |
+| #164 | Signup verify via OTP                                | Done   |
+| #165 | Password reset via email OTP                         | Done   |
+| #166 | Auth rate limits on register/login                   | Done   |
+| #167 | Order transactional emails                           | Done   |
+| #168 | Welcome email on signup verify                       | Done   |
+| #169 | Order state machine hardening + idempotency          | Done   |
+| #170 | Store publish checklist + migration 0082             | Done   |
+| #171 | CI hotfix (snapshot + route count)                   | Done   |
+| #172 | Publish-success email                                | Done   |
+| #173 | Magic-login OTP                                      | Done   |
+| #174 | Backfill legacy `email_verified_at` + retire flag    | Done   |
+| #175 | Drill-down UI + dedupe `/publish-checklist` endpoint | Done   |
+| #176 | Low-stock email + migration 0084                     | Done   |
+| #177 | Abandoned-cart email recovery ladder                 | Done   |
+| #179 | Subscription renewal reminder + migration 0085       | Done   |
+| #181 | Platform legal entity (CR 7038798612) wired          | Done   |
+| #183 | Deploy hardening (24-min fail2ban + watchdog)        | Done   |
+
+**Staging migrations applied on 2026-06-24** (run `28116088846`): 0083 + 0084 + 0085.
+**`AUTH_LEGACY_VERIFIED=0`** flipped on staging on 2026-06-24 (run `28116152919`).
+
+The canonical owner-facing dashboard going forward is `docs/HAA_TASK_LEDGER.md`.
+
+## Phase 3 — Autopilot resumption from W0
+
+The 22-wave SAFE FULL AUTOPILOT resumes at **W0 Truth Sync** (this commit). Subsequent waves W1–W21 will be planned per `docs/agent-os/REMAINING_WORK.md`.
