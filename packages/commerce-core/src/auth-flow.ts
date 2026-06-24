@@ -3,6 +3,7 @@ import { createDbClient, type DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { hashPassword, verifyPassword } from '@haa/auth-core';
 import { AuditLogService } from '@haa/integration-core';
+import { normalizeSaudiPhone } from '@haa/shared';
 
 /**
  * AuthFlowService — owns the user-account lifecycle business logic.
@@ -23,6 +24,14 @@ export interface RegisterInput {
   name: string;
   email: string;
   password: string;
+  /**
+   * Phone-first registration: required in the API layer (registerSchema),
+   * still typed as optional here to keep the OAuth auto-register path
+   * (`loginOrRegisterWithOAuth`) which does NOT collect a phone.
+   *
+   * When provided, MUST be a parseable Saudi mobile; the service runs
+   * `normalizeSaudiPhone` and returns `invalid_phone` (→ 400) on miss.
+   */
   phone?: string;
   storeName: string;
   storeSlug: string;
@@ -48,10 +57,21 @@ export interface RegisterPayload {
 
 export type RegisterError =
   | { kind: 'email_taken'; message: string }
-  | { kind: 'slug_taken'; message: string };
+  | { kind: 'slug_taken'; message: string }
+  | { kind: 'phone_taken'; message: string }
+  | { kind: 'invalid_phone'; message: string };
 
 export interface LoginInput {
-  email: string;
+  /**
+   * Canonical identifier (Saudi mobile in any accepted shape OR email).
+   * Either `identifier` OR the legacy `email` / `phone` aliases must be
+   * provided. The service resolves them in that order.
+   */
+  identifier?: string;
+  /** Legacy alias for `identifier` — kept for backwards-compat. */
+  email?: string;
+  /** Legacy alias for `identifier` — kept for backwards-compat. */
+  phone?: string;
   password: string;
   ipAddress?: string;
   userAgent?: string;
@@ -95,6 +115,21 @@ export class AuthFlowService {
    * status code (email_taken / slug_taken → 409).
    */
   async register(input: RegisterInput): Promise<RegisterPayload | RegisterError> {
+    // Phone-first: if a phone was supplied, normalize it FIRST so every
+    // downstream insert (users / tenants / stores) carries the same
+    // canonical +9665XXXXXXXX value. The DB UNIQUE index assumes this.
+    //
+    // The OAuth auto-register path passes no phone — leave `undefined`
+    // alone so legacy OAuth signups keep working.
+    let normalizedPhone: string | undefined = undefined;
+    if (input.phone !== undefined && input.phone !== null && input.phone !== '') {
+      const normalized = normalizeSaudiPhone(input.phone);
+      if (normalized === null) {
+        return { kind: 'invalid_phone', message: 'رقم الجوال غير صحيح' } as const;
+      }
+      normalizedPhone = normalized;
+    }
+
     return this.db.transaction(async (tx) => {
       const existingUser = await tx
         .select()
@@ -103,6 +138,21 @@ export class AuthFlowService {
         .limit(1);
       if (existingUser.length > 0) {
         return { kind: 'email_taken', message: 'Email already registered' } as const;
+      }
+
+      // Phone uniqueness pre-check. The DB also enforces this via the
+      // partial UNIQUE index (migration 0080) — this is a friendlier
+      // 409 path that avoids surfacing a raw DB constraint error to
+      // the API consumer.
+      if (normalizedPhone !== undefined) {
+        const existingPhone = await tx
+          .select()
+          .from(s.users)
+          .where(eq(s.users.phone, normalizedPhone))
+          .limit(1);
+        if (existingPhone.length > 0) {
+          return { kind: 'phone_taken', message: 'رقم الجوال مستخدم بالفعل' } as const;
+        }
       }
 
       const existingStore = await tx
@@ -122,7 +172,7 @@ export class AuthFlowService {
           name: input.name,
           email: input.email,
           passwordHash,
-          phone: input.phone,
+          phone: normalizedPhone,
         })
         .returning();
 
@@ -132,7 +182,7 @@ export class AuthFlowService {
           name: input.storeName,
           slug: input.storeSlug,
           email: input.email,
-          phone: input.phone,
+          phone: normalizedPhone,
         })
         .returning();
 
@@ -149,7 +199,7 @@ export class AuthFlowService {
           name: input.storeName,
           slug: input.storeSlug,
           email: input.email,
-          phone: input.phone,
+          phone: normalizedPhone,
         })
         .returning();
 
@@ -180,13 +230,52 @@ export class AuthFlowService {
     input: LoginInput,
     audit: AuditLogService = new AuditLogService(),
   ): Promise<LoginPayload | LoginError> {
-    const { email, password, ipAddress, userAgent } = input;
+    const { password, ipAddress, userAgent } = input;
 
-    const [user] = await this.db
-      .select()
-      .from(s.users)
-      .where(eq(s.users.email, email))
-      .limit(1);
+    // Resolve the identifier. Canonical clients send `identifier`.
+    // Legacy clients send `email` or `phone`. The order is:
+    //   identifier > email > phone
+    // LEGACY-ALIAS: drop this fallback once all frontends migrate to
+    // `identifier`. Tracked as an OWNER-FOLLOWUP in the report.
+    const rawIdentifier = input.identifier ?? input.email ?? input.phone ?? '';
+    if (rawIdentifier.length === 0) {
+      // Don't reveal that the identifier was missing — the only signal
+      // a caller should ever see on the login endpoint is "valid" or
+      // "INVALID_CREDENTIALS". This keeps us aligned with the no-
+      // enumeration-leak rule for username/password endpoints.
+      return { kind: 'invalid_credentials', message: 'Invalid credentials' };
+    }
+
+    // Phone-first lookup: if the identifier parses as a Saudi mobile,
+    // normalize and search by phone. Otherwise treat as email (lower-
+    // cased; emails are case-insensitive per RFC 5321 local-part norms
+    // we follow at insert time).
+    const normalizedPhone = normalizeSaudiPhone(rawIdentifier);
+    let user: typeof s.users.$inferSelect | undefined;
+    if (normalizedPhone !== null) {
+      [user] = await this.db
+        .select()
+        .from(s.users)
+        .where(eq(s.users.phone, normalizedPhone))
+        .limit(1);
+    } else {
+      const emailLookup = rawIdentifier.trim().toLowerCase();
+      [user] = await this.db
+        .select()
+        .from(s.users)
+        .where(eq(s.users.email, emailLookup))
+        .limit(1);
+      // Fallback for legacy rows inserted with original-case email
+      // (we did not lowercase emails on insert historically). Without
+      // this lookup, mixed-case email logins would 401.
+      if (!user) {
+        [user] = await this.db
+          .select()
+          .from(s.users)
+          .where(eq(s.users.email, rawIdentifier))
+          .limit(1);
+      }
+    }
     if (!user) {
       await audit.record({
         action: 'failed_login',
@@ -194,7 +283,9 @@ export class AuthFlowService {
         ipAddress,
         userAgent,
       });
-      return { kind: 'invalid_credentials', message: 'Invalid email or password' };
+      // Generic INVALID_CREDENTIALS — must not reveal whether the
+      // identifier was unknown vs the password was wrong.
+      return { kind: 'invalid_credentials', message: 'Invalid credentials' };
     }
 
     const valid = await verifyPassword(password, user.passwordHash);
@@ -207,7 +298,8 @@ export class AuthFlowService {
         ipAddress,
         userAgent,
       });
-      return { kind: 'invalid_credentials', message: 'Invalid email or password' };
+      // Same generic message as the missing-user branch.
+      return { kind: 'invalid_credentials', message: 'Invalid credentials' };
     }
 
     const [tenantUser] = await this.db

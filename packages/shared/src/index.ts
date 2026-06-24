@@ -5,6 +5,7 @@ export * from './constants/index.js';
 export * from './permissions.js';
 export * from './schemas/index.js';
 export * from './utils.js';
+export * from './phone.js';
 export * from './legal/platform-legal.js';
 export * from './demo/demo-rules.js';
 export * from './restricted-categories.js';
