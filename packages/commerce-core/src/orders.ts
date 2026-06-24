@@ -2,7 +2,12 @@ import { eq, and, count, sql, or, like, gte, lte, inArray, ne, asc } from 'drizz
 import { createDbClient, type DbOrTx } from '@haa/db';
 import * as s from '@haa/db/schema';
 import type { OrderStatus, PaymentStatus, FulfillmentStatus, PreparationStatus } from '@haa/shared';
-import { ORDER_STATUS_TRANSITIONS, PREPARATION_STATUS_TRANSITIONS } from '@haa/shared';
+import {
+  ORDER_STATUS_TRANSITIONS,
+  PREPARATION_STATUS_TRANSITIONS,
+  PAYMENT_STATUS_TRANSITIONS,
+  FULFILLMENT_STATUS_TRANSITIONS,
+} from '@haa/shared';
 import {
   NotificationService,
   SmtpEmailProvider,
@@ -255,15 +260,26 @@ export class OrdersService {
   }
 
   async changeStatus(storeId: number, orderId: number, newStatus: OrderStatus, userId?: number, reason?: string) {
-    const order = await this.getById(storeId, orderId);
-    if (!order) return null;
+    // Validate + write inside a single transaction so the
+    // read-then-write window is closed. The previous row was
+    // fetched OUTSIDE the tx which left a small TOCTOU gap
+    // (two concurrent status changes could both see the same
+    // `from` and both pass the guard).
+    const result = await this.db.transaction(async (tx) => {
+      const [order] = await tx.select().from(s.orders)
+        .where(and(eq(s.orders.id, orderId), eq(s.orders.storeId, storeId))).limit(1);
+      if (!order) return { updated: null, previousStatus: null, idempotent: false };
 
-    const allowed = ORDER_STATUS_TRANSITIONS[order.status] ?? [];
-    if (!allowed.includes(newStatus)) {
-      throw new Error(`Cannot transition from '${order.status}' to '${newStatus}'`);
-    }
+      // Idempotent same-status writes — no history row, no email.
+      if (newStatus === order.status) {
+        return { updated: order, previousStatus: order.status, idempotent: true };
+      }
 
-    const updated = await this.db.transaction(async (tx) => {
+      const allowed = ORDER_STATUS_TRANSITIONS[order.status] ?? [];
+      if (!allowed.includes(newStatus)) {
+        throw new Error(`Cannot transition from '${order.status}' to '${newStatus}'`);
+      }
+
       const updateData: Record<string, unknown> = { status: newStatus, updatedAt: new Date() };
       if (newStatus === 'cancelled') {
         updateData.cancelledAt = new Date();
@@ -282,12 +298,16 @@ export class OrdersService {
         changedByUserId: userId ?? null, reason: reason ?? null,
       });
 
-      return updated;
+      return { updated, previousStatus: order.status, idempotent: false };
     });
+
+    if (!result.updated) return null;
+    const { updated, previousStatus, idempotent } = result;
+    if (idempotent) return updated;
 
     // Notification hook — fire-and-forget: never blocks status change
     if (newStatus === 'ready_for_pickup') {
-      this.fireReadyForPickupNotification(storeId, order, updated).catch(() => {});
+      this.fireReadyForPickupNotification(storeId, updated, updated).catch(() => {});
     }
 
     // Transactional email — fire-and-forget. The refund flow has its
@@ -302,7 +322,7 @@ export class OrdersService {
         await this.sendOrderEmail({
           kind: 'status_change',
           recipient: updated.customerEmail ?? '',
-          ctx: { ...ctx, oldStatus: order.status, newStatus, reasonNote: reason },
+          ctx: { ...ctx, oldStatus: previousStatus ?? '', newStatus, reasonNote: reason },
         });
       })().catch(() => {
         // Email path is non-blocking; never let it surface.
@@ -335,31 +355,56 @@ export class OrdersService {
   }
 
   async updatePaymentStatus(storeId: number, orderId: number, paymentStatus: PaymentStatus, paidAmount?: number) {
-    // Snapshot the previous payment status so the email hook can
-    // decide whether this is the FIRST transition to paid (worth
-    // emailing) vs a webhook replay (already paid — skip). Best-
-    // effort: a fetch failure must NOT block payment update.
-    let wasAlreadyPaid = false;
-    try {
-      const [previous] = await this.db
-        .select({ paymentStatus: s.orders.paymentStatus })
+    // Read + validate + write inside the transaction so the
+    // transition guard cannot race against concurrent webhook
+    // replays. We also need `previous.paymentStatus` to:
+    //   1. detect first-paid (for the order_created email),
+    //   2. populate the `from:` half of the history row,
+    //   3. enforce PAYMENT_STATUS_TRANSITIONS.
+    const result = await this.db.transaction(async (tx) => {
+      const [previous] = await tx
+        .select()
         .from(s.orders)
         .where(and(eq(s.orders.id, orderId), eq(s.orders.storeId, storeId)))
         .limit(1);
-      wasAlreadyPaid = previous?.paymentStatus === 'paid';
-    } catch {
-      wasAlreadyPaid = false;
-    }
+      if (!previous) {
+        return { updated: null, previousPaymentStatus: null, idempotent: false };
+      }
 
-    const updateData: Record<string, unknown> = { paymentStatus, updatedAt: new Date() };
-    if (paidAmount !== undefined) updateData.paidAmount = paidAmount.toString();
+      // Idempotent webhook replays — same status, no history row,
+      // no email side effects. Return the existing row as-is.
+      if (paymentStatus === previous.paymentStatus) {
+        return { updated: previous, previousPaymentStatus: previous.paymentStatus, idempotent: true };
+      }
 
-    const [updated] = await this.db.update(s.orders).set(updateData)
-      .where(and(eq(s.orders.id, orderId), eq(s.orders.storeId, storeId))).returning();
+      const allowed = PAYMENT_STATUS_TRANSITIONS[previous.paymentStatus] ?? [];
+      if (!allowed.includes(paymentStatus)) {
+        throw new Error(
+          `Cannot transition payment status from '${previous.paymentStatus}' to '${paymentStatus}'`,
+        );
+      }
 
-    await this.db.insert(s.orderStatusHistory).values({
-      orderId, fromStatus: undefined, toStatus: `payment:${paymentStatus}`,
+      const updateData: Record<string, unknown> = { paymentStatus, updatedAt: new Date() };
+      if (paidAmount !== undefined) updateData.paidAmount = paidAmount.toString();
+
+      const [updated] = await tx.update(s.orders).set(updateData)
+        .where(and(eq(s.orders.id, orderId), eq(s.orders.storeId, storeId))).returning();
+
+      await tx.insert(s.orderStatusHistory).values({
+        orderId,
+        fromStatus: `payment:${previous.paymentStatus}`,
+        toStatus: `payment:${paymentStatus}`,
+      });
+
+      return { updated, previousPaymentStatus: previous.paymentStatus, idempotent: false };
     });
+
+    if (!result.updated) return null;
+    const { updated, previousPaymentStatus, idempotent } = result;
+    // Idempotent replays — skip ALL email side effects.
+    if (idempotent) return updated;
+
+    const wasAlreadyPaid = previousPaymentStatus === 'paid';
 
     // Transactional emails — fire-and-forget. Each branch builds its
     // own context lazily so we pay nothing when no provider is
@@ -404,9 +449,42 @@ export class OrdersService {
   }
 
   async updateFulfillmentStatus(storeId: number, orderId: number, fulfillmentStatus: FulfillmentStatus) {
-    const [updated] = await this.db.update(s.orders).set({ fulfillmentStatus, updatedAt: new Date() })
-      .where(and(eq(s.orders.id, orderId), eq(s.orders.storeId, storeId))).returning();
-    return updated;
+    // Same hardening pattern as updatePaymentStatus / changeStatus:
+    // read + validate + write inside a single transaction, with an
+    // idempotent same-status fast path and a transition guard
+    // against FULFILLMENT_STATUS_TRANSITIONS.
+    return this.db.transaction(async (tx) => {
+      const [previous] = await tx
+        .select()
+        .from(s.orders)
+        .where(and(eq(s.orders.id, orderId), eq(s.orders.storeId, storeId)))
+        .limit(1);
+      if (!previous) return null;
+
+      if (fulfillmentStatus === previous.fulfillmentStatus) {
+        return previous;
+      }
+
+      const allowed = FULFILLMENT_STATUS_TRANSITIONS[previous.fulfillmentStatus] ?? [];
+      if (!allowed.includes(fulfillmentStatus)) {
+        throw new Error(
+          `Cannot transition fulfillment status from '${previous.fulfillmentStatus}' to '${fulfillmentStatus}'`,
+        );
+      }
+
+      const [updated] = await tx.update(s.orders)
+        .set({ fulfillmentStatus, updatedAt: new Date() })
+        .where(and(eq(s.orders.id, orderId), eq(s.orders.storeId, storeId)))
+        .returning();
+
+      await tx.insert(s.orderStatusHistory).values({
+        orderId,
+        fromStatus: `fulfillment:${previous.fulfillmentStatus}`,
+        toStatus: `fulfillment:${fulfillmentStatus}`,
+      });
+
+      return updated;
+    });
   }
 
   /**
