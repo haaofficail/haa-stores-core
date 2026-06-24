@@ -22,6 +22,7 @@
  */
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- pre-existing single-icon; lucide→<Icon> migration tracked separately
 import { TrendingUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -35,6 +36,7 @@ import {
   BNPLBadges,
 } from '.';
 import CountdownTimer from '@/components/CountdownTimer';
+import { LoyaltyEarnHint } from '@/components/LoyaltyEarnHint';
 import { useStorefrontTheme } from '@/hooks/useTheme';
 
 /**
@@ -81,6 +83,7 @@ export interface ProductCardBaseProps {
   productCardSize?: number;
   /** Legacy prop from old ProductCard. */
   compact?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- callback shape is loosely-typed; storefront passes whatever the card receives
   onAddToCart?: (product: any) => Promise<void>;
   className?: string;
   imageAspectRatio?: 'square' | '4:3' | '16:9';
@@ -240,6 +243,8 @@ export function ProductCard({
           price={Number(product.price)}
           oldPrice={hasDiscount ? Number(product.compareAtPrice!) : null}
         />
+
+        <LoyaltyEarnHint priceSar={Number(product.price)} className="mt-1" />
 
         {showBNPL && (
           <div className="shrink-0">
