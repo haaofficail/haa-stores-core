@@ -33,7 +33,18 @@ function clearAuthCookie(c: Context): void {
 }
 
 // POST /auth/register
-authRouter.post('/register', zValidator('json', registerSchema), async (c) => {
+authRouter.post(
+  '/register',
+  // Phase 1 hardening — limit new-account creation per IP. Generous
+  // enough for office sharing while shutting down automated signup
+  // floods. Paired with /auth/login rate limit below.
+  rateLimiter({
+    windowMs: 60 * 60 * 1000,
+    maxRequests: 10,
+    message: 'تم تجاوز الحد المسموح من محاولات التسجيل. حاول لاحقًا.',
+  }),
+  zValidator('json', registerSchema),
+  async (c) => {
   const body = c.req.valid('json');
   const service = new AuthFlowService();
 
@@ -109,7 +120,18 @@ authRouter.post('/register', zValidator('json', registerSchema), async (c) => {
 });
 
 // POST /auth/login
-authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
+authRouter.post(
+  '/login',
+  // Phase 1 hardening — tighter window than register to limit
+  // credential stuffing. A real user retrying their password won't
+  // hit 20 attempts in 15 minutes.
+  rateLimiter({
+    windowMs: 15 * 60 * 1000,
+    maxRequests: 20,
+    message: 'تم تجاوز الحد المسموح من محاولات تسجيل الدخول. حاول لاحقًا.',
+  }),
+  zValidator('json', loginSchema),
+  async (c) => {
   const body = c.req.valid('json');
   const service = new AuthFlowService();
   const ipAddress = c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip');
