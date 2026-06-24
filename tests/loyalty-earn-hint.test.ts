@@ -55,7 +55,7 @@ describe('LoyaltyEarnHint wiring (source-grep)', () => {
   const hint = read('apps/storefront/src/components/LoyaltyEarnHint.tsx');
   const hook = read('apps/storefront/src/hooks/useLoyaltySettings.ts');
   const api = read('apps/storefront/src/lib/api.ts');
-  const route = read('apps/api/src/routes/storefront/loyalty.ts');
+  const route = read('apps/api/src/routes/storefront/loyalty-public.ts');
 
   it('ProductCard imports + renders LoyaltyEarnHint with the product price', () => {
     expect(card).toMatch(/import\s*\{\s*LoyaltyEarnHint\s*\}/);
@@ -95,7 +95,7 @@ describe('LoyaltyEarnHint wiring (source-grep)', () => {
     // policy knobs that the storefront does not need to render.
     // (earnOnTax + earnOnShipping were intentionally NOT included in
     // the public projection — verify they don't leak.)
-    const route = read('apps/api/src/routes/storefront/loyalty.ts');
+    const route = read('apps/api/src/routes/storefront/loyalty-public.ts');
     const settingsBlock = route.slice(
       route.indexOf("'/:slug/loyalty/settings'"),
       route.indexOf("'/:slug/loyalty/settings'") + 1500,
