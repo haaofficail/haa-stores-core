@@ -313,4 +313,39 @@ export function loadEnv(): EnvConfig {
   return config;
 }
 
-export const env = loadEnv();
+// Lazy-loaded env. Modules that import { env } from './env.js' get a
+// Proxy that calls loadEnv() on FIRST property access — not on module
+// load. Two reasons:
+//
+//   1. Tests can import { envSchema } from './env' without triggering
+//      validation, then exercise the schema directly with whatever
+//      env shapes they want (production-guardrails.test.ts pattern).
+//   2. Tools that import env.ts for type-only or build-tool reasons
+//      don't crash when run outside a configured environment.
+//
+// Production: the first real access (e.g. `env.NODE_ENV` in api/index.ts)
+// triggers loadEnv() and the result is cached for the process lifetime.
+// Behaviour is otherwise identical to the previous eager load.
+let _envCache: EnvConfig | undefined;
+export function getEnv(): EnvConfig {
+  if (!_envCache) _envCache = loadEnv();
+  return _envCache;
+}
+export const env: EnvConfig = new Proxy({} as EnvConfig, {
+  get(_target, prop) {
+    return getEnv()[prop as keyof EnvConfig];
+  },
+  has(_target, prop) {
+    return prop in getEnv();
+  },
+  ownKeys() {
+    return Reflect.ownKeys(getEnv());
+  },
+  getOwnPropertyDescriptor(_target, prop) {
+    const e = getEnv() as unknown as Record<string | symbol, unknown>;
+    if (prop in e) {
+      return { configurable: true, enumerable: true, value: e[prop] };
+    }
+    return undefined;
+  },
+});
