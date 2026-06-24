@@ -37,10 +37,14 @@ describe('Quality Pass 5 — Route Migration 1/24: auth.ts', () => {
 
   it('auth.ts must preserve all 4 endpoints (no breaking change)', () => {
     const content = read(authRouteFile);
-    expect(content).toMatch(/authRouter\.post\(['"]\/register['"]/);
-    expect(content).toMatch(/authRouter\.post\(['"]\/login['"]/);
-    expect(content).toMatch(/authRouter\.get\(['"]\/me['"]/);
-    expect(content).toMatch(/authRouter\.post\(['"]\/logout['"]/);
+    // The route literal may be on the same line as the .post( call,
+    // or on the next line if the handler is split across lines for
+    // middleware chaining (e.g. rateLimiter + zValidator). Accept
+    // optional whitespace/newline between `(` and the path literal.
+    expect(content).toMatch(/authRouter\.post\(\s*['"]\/register['"]/);
+    expect(content).toMatch(/authRouter\.post\(\s*['"]\/login['"]/);
+    expect(content).toMatch(/authRouter\.get\(\s*['"]\/me['"]/);
+    expect(content).toMatch(/authRouter\.post\(\s*['"]\/logout['"]/);
   });
 
   it('auth.ts must preserve the same response shape for each endpoint', () => {
