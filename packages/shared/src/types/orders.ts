@@ -218,7 +218,10 @@ export type AuditAction =
   | 'store_billing_settings_updated'
   // Marketplace admin moderation (TASK-0040 Track 1C — P0-5)
   | 'marketplace_product_review'
-  | 'marketplace_product_feature';
+  | 'marketplace_product_feature'
+  // HAA-AUTH-PASSWORD-RESET — emitted by confirmPasswordReset after the
+  // user's password_hash is rotated and token_version is bumped.
+  | 'password_reset_completed';
 
 export type UserRole = 'owner' | 'admin' | 'manager' | 'products_manager' | 'orders_manager' | 'accountant' | 'support' | 'viewer';
 

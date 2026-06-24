@@ -494,6 +494,173 @@ authRouter.post(
   },
 );
 
+// HAA-AUTH-PASSWORD-RESET — POST /auth/password-reset/request
+// Issues a 6-digit OTP to the email tied to `identifier` (phone or
+// email). The response is INTENTIONALLY uniform regardless of whether
+// the identifier resolves to a real account — the only failure surface
+// is RATE_LIMITED (429). This prevents the endpoint from being used as
+// a user-enumeration oracle.
+authRouter.post(
+  '/password-reset/request',
+  rateLimiter({
+    windowMs: 60 * 60 * 1000,
+    maxRequests: 5,
+    message: 'تم تجاوز الحد المسموح من المحاولات',
+  }),
+  zValidator(
+    'json',
+    z.object({
+      identifier: z.string().min(1).max(255),
+    }),
+  ),
+  async (c) => {
+    const body = c.req.valid('json');
+    const ip =
+      c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ??
+      c.req.header('x-real-ip') ??
+      null;
+    const ua = c.req.header('user-agent') ?? null;
+    const service = new AuthFlowService();
+
+    try {
+      const result = await service.requestPasswordReset({
+        identifier: body.identifier,
+        sourceIp: ip,
+        userAgent: ua,
+      });
+
+      if (!result.ok && result.reason === 'RATE_LIMITED') {
+        return c.json(
+          {
+            success: false,
+            error: { code: 'RATE_LIMITED', message: 'تم تجاوز الحد المسموح. حاول لاحقاً.' },
+          },
+          429,
+        );
+      }
+
+      // Uniform success — never reveal whether the identifier exists.
+      return c.json({
+        success: true,
+        data: {
+          message:
+            'إن وُجد حساب لهذا المعرّف، فقد أُرسل رمز إعادة تعيين كلمة المرور إلى البريد المسجّل.',
+        },
+      });
+    } catch (err) {
+      console.error('Password reset request error:', err);
+      // Even on infrastructure failure, return the uniform message so
+      // the endpoint cannot be probed by triggering exceptions.
+      return c.json({
+        success: true,
+        data: {
+          message:
+            'إن وُجد حساب لهذا المعرّف، فقد أُرسل رمز إعادة تعيين كلمة المرور إلى البريد المسجّل.',
+        },
+      });
+    }
+  },
+);
+
+// HAA-AUTH-PASSWORD-RESET — POST /auth/password-reset/confirm
+// Verifies the OTP, rotates the password hash, bumps token_version
+// (kills all existing JWTs), writes an audit log, and mints a fresh
+// JWT exactly like /auth/login. Same per-IP rate limit as the signup
+// verify route; per-(email, purpose) limits are enforced inside
+// EmailOtpService.
+authRouter.post(
+  '/password-reset/confirm',
+  rateLimiter({
+    windowMs: 10 * 60 * 1000,
+    maxRequests: 10,
+    message: 'تم تجاوز الحد المسموح من المحاولات',
+  }),
+  zValidator(
+    'json',
+    z.object({
+      identifier: z.string().min(1).max(255),
+      code: z.string().regex(/^\d{6}$/, 'الرمز يجب أن يكون 6 أرقام'),
+      newPassword: z.string().min(8).max(200),
+    }),
+  ),
+  async (c) => {
+    const body = c.req.valid('json');
+    const ip =
+      c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ??
+      c.req.header('x-real-ip') ??
+      null;
+    const ua = c.req.header('user-agent') ?? null;
+    const service = new AuthFlowService();
+
+    try {
+      const result = await service.confirmPasswordReset({
+        identifier: body.identifier,
+        code: body.code,
+        newPassword: body.newPassword,
+        sourceIp: ip,
+        userAgent: ua,
+      });
+
+      if (!result.ok) {
+        const messages: Record<typeof result.reason, string> = {
+          INVALID_CODE: 'الرمز غير صحيح',
+          EXPIRED: 'انتهت صلاحية الرمز',
+          NOT_FOUND: 'لا يوجد رمز مطلوب لهذا المعرّف',
+          TOO_MANY_ATTEMPTS: 'تجاوزت عدد المحاولات المسموح',
+          USED: 'الرمز مُستخدم سابقاً',
+          WEAK_PASSWORD: 'كلمة المرور لا تستوفي المتطلبات',
+        };
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: result.reason,
+              message: messages[result.reason] ?? 'تعذّر إعادة تعيين كلمة المرور',
+            },
+          },
+          400,
+        );
+      }
+
+      // Mint the JWT the same way /auth/login does (token_version was
+      // already bumped inside the service, so this JWT is the only
+      // valid one going forward — every prior JWT is now revoked).
+      const role = result.payload.role as UserRole;
+      const permissions = getPermissionsForRole(role);
+      const token = signToken({
+        userId: result.payload.userId,
+        tenantId: result.payload.tenantId,
+        activeStoreId: result.payload.storeId,
+        tokenVersion: result.payload.userTokenVersion,
+        roles: [result.payload.role],
+        permissions,
+      });
+
+      setAuthCookie(c, token);
+      return c.json({
+        success: true,
+        data: {
+          token,
+          user: {
+            id: result.payload.userId,
+            name: result.payload.userName,
+            email: result.payload.userEmail,
+          },
+        },
+      });
+    } catch (err) {
+      console.error('Password reset confirm error:', err);
+      return c.json(
+        {
+          success: false,
+          error: { code: 'INTERNAL', message: 'تعذّر إعادة تعيين كلمة المرور' },
+        },
+        500,
+      );
+    }
+  },
+);
+
 // POST /auth/logout
 authRouter.post('/logout', requireAuth(), async (c) => {
   const auth = getAuth(c)!;
