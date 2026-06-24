@@ -18,6 +18,7 @@ const Plans = lazy(() => import('./pages/Plans'));
 const Settings = lazy(() => import('./pages/Settings'));
 const StoreBillingSettings = lazy(() => import('./pages/StoreBillingSettings'));
 const Compliance = lazy(() => import('./pages/Compliance'));
+const LandingInbox = lazy(() => import('./pages/LandingInbox'));
 
 function PageSkeleton() {
   return (
@@ -55,6 +56,7 @@ const navItems = [
   { path: '/audit', label: 'سجل التدقيق' },
   { path: '/plans', label: 'الباقات' },
   { path: '/compliance', label: 'الامتثال' },
+  { path: '/landing-inbox', label: 'صندوق الوارد' },
   { path: '/settings', label: 'الإعدادات' },
 ];
 
@@ -150,6 +152,7 @@ export default function App() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/store-billing" element={<StoreBillingSettings />} />
               <Route path="/compliance" element={<Compliance />} />
+              <Route path="/landing-inbox" element={<LandingInbox />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

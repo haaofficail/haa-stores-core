@@ -341,3 +341,35 @@ export const adminApi = {
     changeReason?: string | null;
   }) => request<BillingSettingsUpdateResult>('PATCH', `/admin/stores/${storeId}/billing-settings`, data),
 };
+
+// ─── Landing Contacts (PR #157) ──────────────────────────────────────────────
+// Inbox for landing-page contact form submissions. Response shapes are
+// intentionally `unknown` — consumers narrow with a local LandingContact
+// interface so the API client stays loosely coupled to schema drift
+// (matches the post-P2-030 pattern used by getPayments/getAuditLogs above).
+
+export interface LandingContactsListResponse {
+  data: unknown[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export const landingContactsApi = {
+  list: (params?: { status?: string; page?: number; limit?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set('status', params.status);
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    const query = qs.toString();
+    return request<LandingContactsListResponse>(
+      'GET',
+      `/admin/landing-contacts${query ? `?${query}` : ''}`,
+    );
+  },
+  getById: (id: number) =>
+    request<unknown>('GET', `/admin/landing-contacts/${id}`),
+  update: (id: number, body: { status?: string; adminNotes?: string | null }) =>
+    request<unknown>('PATCH', `/admin/landing-contacts/${id}`, body),
+};
