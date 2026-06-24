@@ -7,6 +7,7 @@ import { KycService, StoreBillingSettingsService, describePlatformFeePolicy } fr
 import { AuditLogService } from '@haa/integration-core';
 import { paginationSchema, type Permission } from '@haa/shared';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
+import { idempotencyKey } from '../middleware/idempotency-key.js';
 
 const walletRouter = new Hono();
 
@@ -92,11 +93,15 @@ const payoutRequestSchema = z.object({
   amount: z.number().positive(),
 });
 
-walletRouter.post('/payouts/request', requireAnyPermission('wallet.payout.request', 'wallet:request_payout'), zValidator('json', payoutRequestSchema), async (c) => {
+// Shared handler for both payout endpoints. The two routes
+// (`POST /payouts` and `POST /payouts/request`) are kept for
+// backward compatibility — the dashboard and older integrations
+// each hit a different one. They MUST behave identically.
+async function handlePayoutRequest(c: Context) {
   const storeId = Number(c.req.param('storeId'));
   const auth = getAuth(c);
   const actorUserId = auth?.userId;
-  const body = c.req.valid('json');
+  const body = c.req.valid('json' as never) as z.infer<typeof payoutRequestSchema>;
   try {
     const payout = await new WalletLedger().requestPayout(storeId, body.amount, actorUserId);
     await new AuditLogService().record({
@@ -116,33 +121,28 @@ walletRouter.post('/payouts/request', requireAnyPermission('wallet.payout.reques
       error: { code: 'PAYOUT_NOT_READY', message: e instanceof Error ? e.message : 'Payout is not ready' },
     }, 400);
   }
-});
+}
 
-walletRouter.post('/payouts', requireAnyPermission('wallet.payout.request', 'wallet:request_payout'), zValidator('json', payoutRequestSchema), async (c) => {
-  const storeId = Number(c.req.param('storeId'));
-  const auth = getAuth(c);
-  const actorUserId = auth?.userId;
-  const body = c.req.valid('json');
-  try {
-    const payout = await new WalletLedger().requestPayout(storeId, body.amount, actorUserId);
-    await new AuditLogService().record({
-      actorUserId: actorUserId ?? null,
-      storeId,
-      action: 'payout_requested',
-      entityType: 'payout',
-      entityId: payout.id,
-      newValue: { amount: body.amount, status: payout.status },
-      ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
-      userAgent: c.req.header('user-agent'),
-    });
-    return c.json({ success: true, data: payout }, 201);
-  } catch (e) {
-    return c.json({
-      success: false,
-      error: { code: 'PAYOUT_NOT_READY', message: e instanceof Error ? e.message : 'Payout is not ready' },
-    }, 400);
-  }
-});
+// Idempotency-Key is REQUIRED here. Without it, a single double-click
+// (or a flaky network retry) on the merchant dashboard creates two
+// payout requests against the same available balance — and only one
+// is reversible. The client already auto-attaches the header in
+// `apps/merchant-dashboard/src/lib/api.ts`.
+walletRouter.post(
+  '/payouts/request',
+  requireAnyPermission('wallet.payout.request', 'wallet:request_payout'),
+  idempotencyKey({ required: true }),
+  zValidator('json', payoutRequestSchema),
+  handlePayoutRequest,
+);
+
+walletRouter.post(
+  '/payouts',
+  requireAnyPermission('wallet.payout.request', 'wallet:request_payout'),
+  idempotencyKey({ required: true }),
+  zValidator('json', payoutRequestSchema),
+  handlePayoutRequest,
+);
 
 walletRouter.get('/settlements', requirePermission('wallet:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
