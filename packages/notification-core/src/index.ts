@@ -5,6 +5,15 @@ export { SmtpEmailProvider } from './providers/smtp.js';
 export { UnifoncSmsProvider, UnifoncWhatsAppProvider } from './providers/unifonic.js';
 export { TaqnyatSmsProvider } from './providers/taqnyat.js';
 export { renderHaaEmail, escapeHtml, type HaaEmailOptions } from './email-template.js';
+export {
+  renderOrderCreatedEmail,
+  renderOrderStatusChangeEmail,
+  renderOrderRefundEmail,
+  renderMerchantNewOrderEmail,
+  type OrderEmailContext,
+  type OrderStatusChangeContext,
+  type OrderRefundContext,
+} from './order-emails.js';
 
 export interface NotificationMessage {
   recipient: string;
