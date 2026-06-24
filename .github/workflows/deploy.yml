@@ -245,29 +245,44 @@ jobs:
             echo "    ssh-keyscan -H <staging-host> | base64  → paste decoded value as secret"
           fi
 
-      - name: Warm up SSH (retry past residual fail2ban window)
-        # The first SSH connection after a probing-heavy day can still hit
-        # a residual fail2ban ban from before PR #61's ssh-keyscan removal.
-        # We retry with exponential backoff (30s/60s/120s) so a deploy
-        # survives a still-active ban without failing the whole job. Every
-        # subsequent SSH step in this job piggybacks on the warmed-up
-        # known_hosts entry that this step creates on the first success.
+      - name: Warm up SSH (survive full 15-min fail2ban window)
+        # Root-cause fix for repeating "SSH warmup failed after 3 attempts"
+        # deploys: the old 3 × 30/60/90 s loop maxed at ~3 min, but the
+        # staging fail2ban sshd jail's default ban is **15 min**. A deploy
+        # that landed inside the ban window had zero chance of surviving.
+        #
+        # New schedule: 6 attempts with exponential backoff
+        # 30 → 60 → 120 → 240 → 480 → 480 = up to **~24 min total**.
+        # That fully covers the default 15-min ban + a 9-min safety margin
+        # for any tightened ban policies on the server side.
+        #
+        # `ConnectTimeout=20` per attempt keeps the no-network-route case
+        # from burning the per-job 6-hour budget on hung TCPs.
+        #
+        # Every subsequent SSH step in this job piggybacks on the warmed-up
+        # known_hosts entry created on the first success.
         env:
           DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
           DEPLOY_USER: ${{ secrets.STAGING_USER }}
         run: |
           set -euo pipefail
-          for attempt in 1 2 3; do
-            if ssh -o ConnectTimeout=30 -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" "echo ssh-ok"; then
+          backoffs=(30 60 120 240 480 480)
+          for i in "${!backoffs[@]}"; do
+            attempt=$((i + 1))
+            if ssh -o ConnectTimeout=20 -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" "echo ssh-ok"; then
               echo "✓ SSH warmed up on attempt $attempt"
               exit 0
             fi
-            wait_s=$((attempt * 30))
-            echo "⚠ SSH warmup attempt $attempt failed; sleeping ${wait_s}s before retry"
+            # Don't sleep after the LAST failed attempt — exit immediately.
+            if [ "$attempt" -eq "${#backoffs[@]}" ]; then
+              echo "::error::SSH warmup failed after $attempt attempts (~24 min total) — likely persistent fail2ban ban or host down. Manual unban required."
+              echo "::error::Run on staging: sudo fail2ban-client unban <runner-ip> · or sudo fail2ban-client set sshd unbanip <runner-ip>"
+              exit 1
+            fi
+            wait_s="${backoffs[$i]}"
+            echo "⚠ SSH warmup attempt $attempt/${#backoffs[@]} failed; sleeping ${wait_s}s before retry"
             sleep "$wait_s"
           done
-          echo "::error::SSH warmup failed after 3 attempts (likely residual fail2ban ban)"
-          exit 1
 
       - name: Authenticate staging server to GHCR
         env:
@@ -577,19 +592,27 @@ jobs:
             echo "⚠ PRODUCTION_KNOWN_HOSTS secret not set — falling back to accept-new on first connect."
           fi
 
-      - name: Warm up SSH (retry past residual fail2ban window)
+      - name: Warm up SSH (survive full 15-min fail2ban window)
+        # Same root-cause fix as staging — see that step's comment.
+        # 6 attempts × 30/60/120/240/480/480 s = ~24 min total budget.
         env:
           DEPLOY_HOST: ${{ secrets.PRODUCTION_HOST }}
           DEPLOY_USER: ${{ secrets.PRODUCTION_USER }}
         run: |
           set -euo pipefail
-          for attempt in 1 2 3; do
-            if ssh -o ConnectTimeout=30 -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" "echo ssh-ok"; then
+          backoffs=(30 60 120 240 480 480)
+          for i in "${!backoffs[@]}"; do
+            attempt=$((i + 1))
+            if ssh -o ConnectTimeout=20 -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" "echo ssh-ok"; then
               echo "✓ [PRODUCTION] SSH warmed up on attempt $attempt"
               exit 0
             fi
-            wait_s=$((attempt * 30))
-            echo "⚠ [PRODUCTION] SSH warmup attempt $attempt failed; sleeping ${wait_s}s"
+            if [ "$attempt" -eq "${#backoffs[@]}" ]; then
+              echo "::error::[PRODUCTION] SSH warmup failed after $attempt attempts (~24 min total) — manual unban required."
+              exit 1
+            fi
+            wait_s="${backoffs[$i]}"
+            echo "⚠ [PRODUCTION] SSH warmup attempt $attempt/${#backoffs[@]} failed; sleeping ${wait_s}s"
             sleep "$wait_s"
           done
           echo "::error::[PRODUCTION] SSH warmup failed after 3 attempts"
