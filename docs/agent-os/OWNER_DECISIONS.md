@@ -246,3 +246,32 @@
 ### DECISION-OS-020 — Docs truth-sync first; archive cleanup later
 
 **Locked.** Truth-sync (Agent OS docs + `CURRENT_STATE` + `TASK_TRACKER`) happens first. Archive cleanup of root-level legacy reports happens after truth is stable. Agents must not rely on root-level legacy reports as a source of decision until they are marked or archived.
+
+### DECISION-OS-021 — Commercial Registration (CR) provided
+
+**Locked 2026-06-24.** The platform's official commercial registration data is owner-provided and constitutes the legal contracting entity for every Haa Stores user:
+
+| Field                        | Value                                 |
+| ---------------------------- | ------------------------------------- |
+| Legal name (Arabic)          | مؤسسة حرف الهاء التجارية              |
+| Entity type                  | مؤسسة (sole-proprietor establishment) |
+| Unified National Number / CR | **7038798612**                        |
+| Issue date                   | 2024-04-08                            |
+| Status                       | نشط (active)                          |
+
+**Single source of truth:** `packages/shared/src/legal/platform-entity.ts` (PR #181). Every surface that references the CR — email footer, storefront landing footer, Terms/Privacy legal pages, ZATCA invoices — MUST import the constant. **The CR must NEVER appear as a string literal elsewhere in the codebase.**
+
+**Affected agents:** future ZATCA Phase 2 invoice rendering (TASK-0036) consumes this same constant. Do not duplicate the value in invoice templates.
+
+**Supersedes:** none.
+**Unblocks:** G6 (PCI-DSS ASV scan), G9 (Tabby/Tamara DPA — needs legal entity).
+
+### DECISION-OS-022 — Owner-facing task ledger (HAA_TASK_LEDGER.md)
+
+**Locked 2026-06-24.** The canonical owner-facing task-progress dashboard is `docs/HAA_TASK_LEDGER.md` (PR #178). It consolidates §3 master checklist across 14 sections + Owner Gates G1–G10 + §5 dated update log + the **Mandatory Future Rule**:
+
+> After ANY task lands on `main`, the agent MUST update the ledger BEFORE delivering the task report. A task without a ledger update is INCOMPLETE.
+
+This is additive — it does not replace the deeper planning artifacts (`MASTER_CHECKLIST.md`, `TASK_TRACKER.md`, `EXECUTION_CHECKLIST.md`, `REMAINING_WORK.md`, `BETA_LAUNCH_CHECKLIST.md`). The ledger references them as evidence.
+
+**Supersedes:** none.

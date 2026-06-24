@@ -7,10 +7,10 @@
 
 ## Last Completed
 
-- **Task:** Deep staging-login audit fixes (Caddy security headers + logo container + signup link + `/api/api/brand` double-prefix).
-- **Last commit:** `5f598b5c fix(login): close 4 issues discovered in staging deep audit (#60)`.
-- **Verification:** `pnpm vitest run tests/staging-login-deep-fixes.test.ts` — 19/19 pass; full guard suite 112/112 pass.
-- **Notes:** All engineering items from the post-QA audit and the staging deep audit are shipped on `main`. The remaining backlog is exclusively owner-gated.
+- **Task:** Phase-2 closure (PRs #161 → #185) + migrations 0083+0084+0085 applied on staging + `AUTH_LEGACY_VERIFIED=0` flipped.
+- **Last commit:** see `docs/HAA_TASK_LEDGER.md` §5 Update Log for the latest dated entries.
+- **Verification:** every shipped PR carries its own verification block (typecheck + lint + unit + regression). The Aug-grade staging deploys passed via the hardened `deploy.yml` (PR #183).
+- **Notes:** Phase 1 email-verification loop is **closed**. Phase 2 (transactional emails + billing reminders + legal entity + deploy hardening) is **shipped to main + applied to staging**. Phase 3 starts with the 22-wave Autopilot, beginning at W0 (this commit).
 
 ## Engineering follow-ups landed on `main` (PRs #39 → #60)
 
@@ -42,7 +42,7 @@ These cannot be progressed by engineering code; they need owner action (legal, c
 
 ### Compliance gates (G1–G10)
 
-- [ ] **G1** — Commercial Registration (CR / سجل تجاري). Unblocks G6 + G9.
+- [x] **G1** — Commercial Registration ✅ provided 2026-06-24: مؤسسة حرف الهاء التجارية, CR `7038798612`, issued 2024-04-08, status نشط. Wired into the platform via PR #181. Unblocks G6 + G9.
 - [ ] **G2** — VAT / ZATCA registration.
 - [ ] **G3** — E-commerce license.
 - [ ] **G4** — DPO (Data Protection Officer) appointed.

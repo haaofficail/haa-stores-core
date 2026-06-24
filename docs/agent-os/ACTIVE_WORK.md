@@ -7,11 +7,19 @@
 
 ## Current task
 
-**SAFE FULL AUTOPILOT — Post-QA Execution: COMPLETE for safe scope.** All in-scope safe waves executed on branch `autopilot/post-qa-execution`. Remaining items are owner-gated, credential-gated, deploy-gated, or migration-gated — recorded in `REMAINING_WORK.md`.
+**Autopilot Wave 0 — Truth Sync (in progress).** First wave of the new 22-wave SAFE FULL AUTOPILOT pass. Sync agent-os + ops docs to the post-Phase-2 reality. The canonical owner-facing dashboard is now `docs/HAA_TASK_LEDGER.md` (created 2026-06-24, PR #178). After W0 the remaining 21 waves resume per `docs/agent-os/EXECUTION_CHECKLIST.md`.
+
+**Phase-2 closed on 2026-06-24:**
+
+- 18 PRs merged (PRs #161 → #185)
+- 5 migrations applied on staging (0079–0085 except 0082 was conditional)
+- `AUTH_LEGACY_VERIFIED=0` flipped — legacy email-verified bypass closed
+- Deploy hardened (24-min fail2ban warmup window + `deploy-watchdog.yml`)
+- Platform legal entity (CR 7038798612) wired into all legal surfaces
 
 ## Current branch
 
-`autopilot/post-qa-execution` (created 2026-06-22 from `main`).
+`autopilot/w0-truth-sync` (created 2026-06-24 from `main`).
 
 ## Last known commit
 
