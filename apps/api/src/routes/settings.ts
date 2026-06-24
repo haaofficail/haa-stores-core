@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { getPaymentProviderStatus, KycService, PublishGateService, AcknowledgementService, StoreSettingsService } from '@haa/commerce-core';
+import { getPaymentProviderStatus, KycService, PublishGateService, AcknowledgementService, StoreSettingsService, ComplianceChecklistService } from '@haa/commerce-core';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
 
 const settingsRouter = new Hono();
@@ -354,6 +354,15 @@ settingsRouter.get('/publish-status', requirePermission('stores:read'), async (c
   const storeId = Number(c.req.param('storeId'));
   const publishStatus = await new PublishGateService().getPublishStatus(storeId);
   return c.json({ success: true, data: { storeId, publishStatus } });
+});
+
+// Preview the compliance checklist without committing a publish attempt.
+// Pure read — merchants use this to see what's missing before POST /publish.
+settingsRouter.get('/publish-checklist', requirePermission('stores:read'), async (c) => {
+  const storeId = Number(c.req.param('storeId'));
+  const tenantId = getAuth(c)?.tenantId ?? 0;
+  const checklist = await new ComplianceChecklistService().run(storeId, tenantId);
+  return c.json({ success: true, data: { storeId, checklist } });
 });
 
 // Merchant Acknowledgement

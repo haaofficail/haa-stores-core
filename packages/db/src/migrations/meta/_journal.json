@@ -547,6 +547,13 @@
       "when": 1782000077000,
       "tag": "0081_users_email_verified_at",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1782000078000,
+      "tag": "0082_store_settings_compliance",
+      "breakpoints": true
     }
   ]
 }

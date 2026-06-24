@@ -162,6 +162,13 @@ export const storeSettings = pgTable('store_settings', {
   giftMessageMaxLength: integer('gift_message_max_length').default(250),
   giftWrapInstructions: text('gift_wrap_instructions'),
   pickupInstructions: text('pickup_instructions'),
+  // Saudi e-commerce law compliance (publish-gate compliance checklist):
+  // returnWindowDays — minimum return window in days (default 14 = nominal MoCI/CITC guidance)
+  // excludedReturnCategories — slug list of product categories excluded from returns
+  // delayCancellationNotice — merchant-authored notice shown when delivery > 15d
+  returnWindowDays: integer('return_window_days').default(14),
+  excludedReturnCategories: jsonb('excluded_return_categories').$type<string[]>().default([]),
+  delayCancellationNotice: text('delay_cancellation_notice'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

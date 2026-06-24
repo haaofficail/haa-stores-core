@@ -108,9 +108,9 @@ export class ComplianceChecklistService {
         estimatedDeliveryDays: sm.estimatedDeliveryDays,
       })),
       settings: {
-        returnWindowDays: null,
-        delayCancellationNotice: storeSettings?.pickupInstructions ?? null,
-        excludedReturnCategories: null,
+        returnWindowDays: storeSettings?.returnWindowDays ?? null,
+        delayCancellationNotice: storeSettings?.delayCancellationNotice ?? null,
+        excludedReturnCategories: storeSettings?.excludedReturnCategories ?? null,
       },
     };
   }

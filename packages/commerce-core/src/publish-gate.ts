@@ -57,7 +57,7 @@ export class PublishGateService {
         entityType: 'store',
         entityId: storeId,
         oldValue: { publishStatus: currentStatus },
-        newValue: { publishStatus: 'restricted', blockingErrorsCount: checklist.blockingErrorsCount },
+        newValue: { publishStatus: 'restricted', blockingErrorsCount: checklist.blockingErrorsCount, warningsCount: checklist.warningsCount },
         ipAddress: ctx?.ipAddress ?? null,
         userAgent: ctx?.userAgent ?? null,
       });
