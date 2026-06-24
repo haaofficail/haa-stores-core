@@ -533,6 +533,13 @@
       "when": 1782000075000,
       "tag": "0079_email_otp_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1782000076000,
+      "tag": "0080_users_phone_unique",
+      "breakpoints": true
     }
   ]
 }

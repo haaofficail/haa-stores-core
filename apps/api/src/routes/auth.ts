@@ -46,7 +46,22 @@ authRouter.post('/register', zValidator('json', registerSchema), async (c) => {
     });
 
     if ('kind' in result) {
-      // Both `email_taken` and `slug_taken` are 409 Conflicts.
+      // Phone-first registration error mapping:
+      //   - invalid_phone  → 400 INVALID_PHONE (Arabic message from service)
+      //   - phone_taken    → 409 PHONE_TAKEN  (Arabic message from service)
+      //   - email_taken / slug_taken → 409 CONFLICT (existing behaviour)
+      if (result.kind === 'invalid_phone') {
+        return c.json(
+          { success: false, error: { code: 'INVALID_PHONE', message: result.message } },
+          400,
+        );
+      }
+      if (result.kind === 'phone_taken') {
+        return c.json(
+          { success: false, error: { code: 'PHONE_TAKEN', message: result.message } },
+          409,
+        );
+      }
       return c.json(
         { success: false, error: { code: 'CONFLICT', message: result.message } },
         409,
@@ -93,8 +108,19 @@ authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
   const userAgent = c.req.header('user-agent');
 
   try {
+    // Phone-first login: forward `identifier` (canonical) plus the
+    // legacy `email` / `phone` aliases so the service can resolve
+    // whichever the client sent. LEGACY-ALIAS: a future cleanup PR
+    // can drop `email` / `phone` once all frontends ship `identifier`.
     const result = await service.login(
-      { email: body.email, password: body.password, ipAddress, userAgent },
+      {
+        identifier: body.identifier,
+        email: body.email,
+        phone: body.phone,
+        password: body.password,
+        ipAddress,
+        userAgent,
+      },
       new AuditLogService(),
     );
 
