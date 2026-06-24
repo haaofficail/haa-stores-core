@@ -540,6 +540,13 @@
       "when": 1782000076000,
       "tag": "0080_users_phone_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1782000077000,
+      "tag": "0081_users_email_verified_at",
+      "breakpoints": true
     }
   ]
 }

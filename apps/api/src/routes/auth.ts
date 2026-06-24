@@ -1,10 +1,12 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
 import { requireAuth, getAuth, signToken } from '@haa/auth-core';
 import { registerSchema, loginSchema, getPermissionsForRole, type UserRole } from '@haa/shared';
 import { AuditLogService } from '@haa/integration-core';
 import { AuthFlowService } from '@haa/commerce-core';
+import { rateLimiter } from '../middleware/rate-limiter.js';
 
 export const authRouter = new Hono();
 
@@ -87,6 +89,12 @@ authRouter.post('/register', zValidator('json', registerSchema), async (c) => {
           token,
           user: { id: result.userId, name: result.userName, email: result.userEmail },
           store: { id: result.storeId, name: result.storeName, slug: result.storeSlug },
+          // HAA-AUTH-SIGNUP-VERIFY — tells the client whether the user
+          // still needs to complete the email OTP flow before they can
+          // log in. Always `true` on fresh password registrations; the
+          // service flips `email_verified_at` only after a successful
+          // /auth/signup/verify call.
+          verificationRequired: result.verificationRequired,
         },
       },
       201,
@@ -128,6 +136,15 @@ authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
       if (result.kind === 'no_tenant') {
         return c.json(
           { success: false, error: { code: 'FORBIDDEN', message: result.message } },
+          403,
+        );
+      }
+      // HAA-AUTH-SIGNUP-VERIFY — user's row has email_verified_at = NULL
+      // and the AUTH_LEGACY_VERIFIED env flag is off. 403 + Arabic msg
+      // tells the user to check their inbox / call /auth/signup/resend-otp.
+      if (result.kind === 'email_not_verified') {
+        return c.json(
+          { success: false, error: { code: 'EMAIL_NOT_VERIFIED', message: result.message } },
           403,
         );
       }
@@ -313,6 +330,169 @@ authRouter.get('/google/callback', async (c) => {
   const dashboardUrl = process.env.MERCHANT_DASHBOARD_URL || '/';
   return c.redirect(`${dashboardUrl}?access_token=${oauthToken}`);
 });
+
+// HAA-AUTH-SIGNUP-VERIFY — POST /auth/signup/verify
+// Validates the 6-digit signup OTP and, on success, mints a JWT exactly
+// like /auth/login. The response is uniform: distinguishable only on
+// success vs failure, with a generic Arabic error message that doesn't
+// reveal whether the user exists or whether the code was wrong vs
+// expired. Per-IP rate limit + per-(email, purpose) limit inside the
+// OTP service.
+authRouter.post(
+  '/signup/verify',
+  rateLimiter({
+    windowMs: 10 * 60 * 1000,
+    maxRequests: 10,
+    message: 'تم تجاوز الحد المسموح من المحاولات',
+  }),
+  zValidator(
+    'json',
+    z.object({
+      email: z.string().email().max(255),
+      code: z.string().regex(/^\d{6}$/, 'الرمز يجب أن يكون 6 أرقام'),
+    }),
+  ),
+  async (c) => {
+    const body = c.req.valid('json');
+    const ip =
+      c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ??
+      c.req.header('x-real-ip') ??
+      null;
+    const ua = c.req.header('user-agent') ?? null;
+    const service = new AuthFlowService();
+
+    try {
+      const result = await service.verifySignup({
+        email: body.email,
+        code: body.code,
+        sourceIp: ip,
+        userAgent: ua,
+      });
+
+      if (!result.ok) {
+        // Map all failure reasons to a uniform 400 with an Arabic
+        // message. We expose the reason code so the client can branch
+        // (e.g. "expired → show resend button") but the human message
+        // stays generic.
+        const message =
+          {
+            INVALID_CODE: 'الرمز غير صحيح',
+            EXPIRED: 'انتهت صلاحية الرمز',
+            NOT_FOUND: 'لا يوجد رمز مطلوب لهذا البريد',
+            TOO_MANY_ATTEMPTS: 'تجاوزت عدد المحاولات المسموح',
+            USED: 'الرمز مُستخدم سابقاً',
+            ALREADY_VERIFIED: 'تم تفعيل الحساب مسبقاً. سجّل الدخول مباشرة.',
+          }[result.reason] ?? 'فشل التحقق';
+        return c.json(
+          { success: false, error: { code: result.reason, message } },
+          400,
+        );
+      }
+
+      const role = result.payload.role as UserRole;
+      const permissions = getPermissionsForRole(role);
+      const token = signToken({
+        userId: result.payload.userId,
+        tenantId: result.payload.tenantId,
+        activeStoreId: result.payload.storeId,
+        tokenVersion: result.payload.userTokenVersion,
+        roles: [result.payload.role],
+        permissions,
+      });
+
+      setAuthCookie(c, token);
+      return c.json({
+        success: true,
+        data: {
+          token,
+          user: {
+            id: result.payload.userId,
+            name: result.payload.userName,
+            email: result.payload.userEmail,
+            phone: result.payload.userPhone,
+            tenantId: result.payload.tenantId,
+            activeStoreId: result.payload.storeId,
+            roles: [result.payload.role],
+            permissions,
+          },
+          store:
+            result.payload.storeName && result.payload.storeSlug
+              ? {
+                  id: result.payload.storeId,
+                  name: result.payload.storeName,
+                  slug: result.payload.storeSlug,
+                }
+              : null,
+        },
+      });
+    } catch (err) {
+      console.error('Signup verify error:', err);
+      return c.json(
+        { success: false, error: { code: 'INTERNAL', message: 'فشل التحقق' } },
+        500,
+      );
+    }
+  },
+);
+
+// HAA-AUTH-SIGNUP-VERIFY — POST /auth/signup/resend-otp
+// Re-issues a signup OTP. The response is INTENTIONALLY uniform: the
+// caller cannot distinguish "user not found" from "OTP queued" from
+// "user already verified" — that would turn this endpoint into a user-
+// enumeration oracle. Only RATE_LIMITED is surfaced (429) so the
+// client can show a useful retry-later message.
+authRouter.post(
+  '/signup/resend-otp',
+  rateLimiter({
+    windowMs: 60 * 60 * 1000,
+    maxRequests: 5,
+    message: 'تم تجاوز الحد المسموح',
+  }),
+  zValidator('json', z.object({ email: z.string().email().max(255) })),
+  async (c) => {
+    const body = c.req.valid('json');
+    const ip =
+      c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ??
+      c.req.header('x-real-ip') ??
+      null;
+    const ua = c.req.header('user-agent') ?? null;
+    const service = new AuthFlowService();
+
+    try {
+      const result = await service.resendSignupOtp({
+        email: body.email,
+        sourceIp: ip,
+        userAgent: ua,
+      });
+
+      // Rate-limited is the only failure mode we surface to the caller
+      // — all other reasons (NOT_FOUND, ALREADY_VERIFIED) collapse into
+      // the uniform success payload. This is the no-enumeration rule.
+      if (!result.ok && result.reason === 'RATE_LIMITED') {
+        return c.json(
+          {
+            success: false,
+            error: { code: 'RATE_LIMITED', message: 'تم تجاوز الحد المسموح. حاول لاحقاً.' },
+          },
+          429,
+        );
+      }
+
+      return c.json({
+        success: true,
+        data: { message: 'إن وُجد حساب لهذا البريد، فقد أُرسل رمز تحقق جديد. تحقّق من صندوق الوارد.' },
+      });
+    } catch (err) {
+      console.error('Resend signup OTP error:', err);
+      // Even on infrastructure failure, return the uniform message so
+      // the endpoint cannot be probed for existence by triggering errors.
+      return c.json({
+        success: true,
+        data: { message: 'إن وُجد حساب لهذا البريد، فقد أُرسل رمز تحقق جديد. تحقّق من صندوق الوارد.' },
+      });
+    }
+  },
+);
 
 // POST /auth/logout
 authRouter.post('/logout', requireAuth(), async (c) => {

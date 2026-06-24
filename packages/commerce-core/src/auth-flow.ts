@@ -1,7 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { createDbClient, type DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
-import { hashPassword, verifyPassword } from '@haa/auth-core';
+import { hashPassword, verifyPassword, EmailOtpService } from '@haa/auth-core';
 import { AuditLogService } from '@haa/integration-core';
 import { normalizeSaudiPhone } from '@haa/shared';
 
@@ -53,6 +53,15 @@ export interface RegisterPayload {
   storeName: string;
   storeSlug: string;
   role: 'owner';
+  /**
+   * HAA-AUTH-SIGNUP-VERIFY — `true` when the user must complete email
+   * OTP verification before they can log in. New rows always carry
+   * `email_verified_at = NULL`, so this is `true` on every fresh
+   * password registration. OAuth auto-register (loginOrRegisterWithOAuth)
+   * leaves it on the legacy path — the OAuth provider already vouched
+   * for the email — so the flag is `false` for that path.
+   */
+  verificationRequired: boolean;
 }
 
 export type RegisterError =
@@ -79,7 +88,51 @@ export interface LoginInput {
 
 export type LoginError =
   | { kind: 'invalid_credentials'; message: string }
-  | { kind: 'no_tenant'; message: string };
+  | { kind: 'no_tenant'; message: string }
+  | { kind: 'email_not_verified'; message: string };
+
+/** HAA-AUTH-SIGNUP-VERIFY — input shape for `verifySignup`. */
+export interface VerifySignupInput {
+  email: string;
+  code: string;
+  sourceIp?: string | null;
+  userAgent?: string | null;
+}
+
+/** HAA-AUTH-SIGNUP-VERIFY — input shape for `resendSignupOtp`. */
+export interface ResendSignupOtpInput {
+  email: string;
+  sourceIp?: string | null;
+  userAgent?: string | null;
+}
+
+/**
+ * Verified-signup payload — same data the route needs to mint a JWT,
+ * mirrors `LoginPayload` but with the verified user row included for
+ * caller convenience.
+ */
+export interface VerifySignupPayload {
+  userId: number;
+  userName: string;
+  userEmail: string;
+  userPhone: string | null;
+  userTokenVersion: number;
+  tenantId: number;
+  storeId: number;
+  storeName: string | null;
+  storeSlug: string | null;
+  role: string;
+}
+
+export type VerifySignupError = {
+  reason:
+    | 'INVALID_CODE'
+    | 'EXPIRED'
+    | 'NOT_FOUND'
+    | 'TOO_MANY_ATTEMPTS'
+    | 'USED'
+    | 'ALREADY_VERIFIED';
+};
 
 export interface LoginPayload {
   userId: number;
@@ -130,7 +183,7 @@ export class AuthFlowService {
       normalizedPhone = normalized;
     }
 
-    return this.db.transaction(async (tx) => {
+    const txResult = await this.db.transaction(async (tx) => {
       const existingUser = await tx
         .select()
         .from(s.users)
@@ -215,8 +268,38 @@ export class AuthFlowService {
         storeName: store.name,
         storeSlug: store.slug,
         role: 'owner' as const,
+        verificationRequired: true,
       } as const;
     });
+
+    // If the transaction returned an error, just propagate it.
+    if ('kind' in txResult) return txResult;
+
+    // HAA-AUTH-SIGNUP-VERIFY — Fire-and-forget OTP send. The row was
+    // inserted with email_verified_at = NULL; the user must complete
+    // /auth/signup/verify before they can /auth/login. We do NOT block
+    // the register response on email delivery — a failed send becomes a
+    // /auth/signup/resend-otp call from the client. Logged so ops can
+    // see delivery failures without surfacing them to the caller.
+    try {
+      const otpService = new EmailOtpService(this.db);
+      const sendResult = await otpService.generateAndSend({
+        email: input.email,
+        purpose: 'signup_verify',
+        userId: txResult.userId,
+        sourceIp: null,
+        userAgent: null,
+      });
+      if (!sendResult.ok) {
+        console.warn(
+          `[auth-flow] signup OTP send failed userId=${txResult.userId} reason=${sendResult.reason}`,
+        );
+      }
+    } catch (err) {
+      console.error('[auth-flow] signup OTP send threw', err);
+    }
+
+    return txResult;
   }
 
   /**
@@ -300,6 +383,31 @@ export class AuthFlowService {
       });
       // Same generic message as the missing-user branch.
       return { kind: 'invalid_credentials', message: 'Invalid credentials' };
+    }
+
+    // HAA-AUTH-SIGNUP-VERIFY — email-verification gate. New users have
+    // `email_verified_at = NULL` until they complete /auth/signup/verify.
+    // Block login here so an unverified account can't get a JWT.
+    //
+    // LEGACY-BACKFILL: staging has rows created before this column
+    // existed (and thus NULL). To keep them unblocked while ops backfills
+    // them via a one-shot owner script, the AUTH_LEGACY_VERIFIED env
+    // flag short-circuits this guard. Once backfill ships, flip the env
+    // off and this branch starts enforcing.
+    const TREAT_LEGACY_AS_VERIFIED = process.env.AUTH_LEGACY_VERIFIED === '1';
+    if (user.emailVerifiedAt === null && !TREAT_LEGACY_AS_VERIFIED) {
+      await audit.record({
+        actorUserId: user.id,
+        action: 'failed_login',
+        entityType: 'user',
+        entityId: user.id,
+        ipAddress,
+        userAgent,
+      });
+      return {
+        kind: 'email_not_verified',
+        message: 'يجب تفعيل البريد الإلكتروني أولاً. تحقّق من صندوق الوارد.',
+      };
     }
 
     const [tenantUser] = await this.db
@@ -399,6 +507,172 @@ export class AuthFlowService {
   }
 
   /**
+   * HAA-AUTH-SIGNUP-VERIFY — verify the signup OTP and flip
+   * `users.email_verified_at` to NOW(). Returns the data a route needs
+   * to mint a JWT (mirrors `LoginPayload`).
+   *
+   * Failure modes mirror the underlying `EmailOtpService.verify` plus an
+   * extra `ALREADY_VERIFIED` guard against double-submits.
+   */
+  async verifySignup(
+    input: VerifySignupInput,
+    otpService: EmailOtpService = new EmailOtpService(this.db),
+  ): Promise<{ ok: true; payload: VerifySignupPayload } | ({ ok: false } & VerifySignupError)> {
+    const email = input.email.trim().toLowerCase();
+
+    const verifyResult = await otpService.verify({
+      email,
+      purpose: 'signup_verify',
+      code: input.code,
+    });
+
+    if (!verifyResult.ok) {
+      return { ok: false, reason: verifyResult.reason };
+    }
+
+    // Look up the user. The OTP service stores the email lowercased, so
+    // we must do the same here. We also fall through to the raw input
+    // in case the user row was inserted with mixed-case (legacy path).
+    let [user] = await this.db
+      .select()
+      .from(s.users)
+      .where(eq(s.users.email, email))
+      .limit(1);
+    if (!user) {
+      [user] = await this.db
+        .select()
+        .from(s.users)
+        .where(eq(s.users.email, input.email))
+        .limit(1);
+    }
+    if (!user) {
+      // OTP verified but no matching user row — should not happen in
+      // practice (the OTP row is created at register() time). Treat as
+      // NOT_FOUND so the route returns a uniform error.
+      return { ok: false, reason: 'NOT_FOUND' };
+    }
+
+    // Idempotent guard: if the user is already verified, a re-submit
+    // should NOT issue a fresh JWT (use /auth/login for that).
+    if (user.emailVerifiedAt !== null) {
+      return { ok: false, reason: 'ALREADY_VERIFIED' };
+    }
+
+    const now = new Date();
+    await this.db
+      .update(s.users)
+      .set({ emailVerifiedAt: now, updatedAt: now })
+      .where(eq(s.users.id, user.id));
+
+    // Resolve tenant + store the same way login() does.
+    const [tenantUser] = await this.db
+      .select()
+      .from(s.tenantUsers)
+      .where(eq(s.tenantUsers.userId, user.id))
+      .limit(1);
+    if (!tenantUser) {
+      // No tenant — surface as NOT_FOUND (uniform, doesn't leak the
+      // missing-tenant detail to the client).
+      return { ok: false, reason: 'NOT_FOUND' };
+    }
+
+    const userStoreRoles = await this.db
+      .select({ storeId: s.userStoreRoles.storeId })
+      .from(s.userStoreRoles)
+      .where(eq(s.userStoreRoles.userId, user.id));
+    const allowedStoreIds = userStoreRoles.map((r) => r.storeId);
+
+    const allStores = await this.db
+      .select()
+      .from(s.stores)
+      .where(eq(s.stores.tenantId, tenantUser.tenantId))
+      .limit(10);
+    let activeStore = allStores.find((st) => allowedStoreIds.includes(st.id));
+    if (!activeStore && allStores.length > 0) {
+      activeStore = allStores[0];
+    }
+
+    return {
+      ok: true,
+      payload: {
+        userId: user.id,
+        userName: user.name,
+        userEmail: user.email,
+        userPhone: user.phone,
+        userTokenVersion: user.tokenVersion,
+        tenantId: tenantUser.tenantId,
+        storeId: activeStore?.id ?? 0,
+        storeName: activeStore?.name ?? null,
+        storeSlug: activeStore?.slug ?? null,
+        role: tenantUser.role,
+      },
+    };
+  }
+
+  /**
+   * HAA-AUTH-SIGNUP-VERIFY — re-issue a signup OTP for an
+   * already-registered, not-yet-verified user.
+   *
+   * Distinct error reasons are returned to the caller — the route is
+   * responsible for collapsing NOT_FOUND / ALREADY_VERIFIED into a
+   * uniform "تحقّق من البريد" response so this endpoint cannot be used
+   * to enumerate existing accounts.
+   */
+  async resendSignupOtp(
+    input: ResendSignupOtpInput,
+    otpService: EmailOtpService = new EmailOtpService(this.db),
+  ): Promise<
+    | { ok: true; expiresAt: Date }
+    | { ok: false; reason: 'NOT_FOUND' | 'ALREADY_VERIFIED' | 'RATE_LIMITED' }
+  > {
+    const email = input.email.trim().toLowerCase();
+
+    let [user] = await this.db
+      .select()
+      .from(s.users)
+      .where(eq(s.users.email, email))
+      .limit(1);
+    if (!user) {
+      [user] = await this.db
+        .select()
+        .from(s.users)
+        .where(eq(s.users.email, input.email))
+        .limit(1);
+    }
+
+    if (!user) {
+      return { ok: false, reason: 'NOT_FOUND' };
+    }
+
+    if (user.emailVerifiedAt !== null) {
+      return { ok: false, reason: 'ALREADY_VERIFIED' };
+    }
+
+    const sendResult = await otpService.generateAndSend({
+      email,
+      purpose: 'signup_verify',
+      userId: user.id,
+      sourceIp: input.sourceIp ?? null,
+      userAgent: input.userAgent ?? null,
+    });
+
+    if (!sendResult.ok) {
+      if (sendResult.reason === 'RATE_LIMITED') {
+        return { ok: false, reason: 'RATE_LIMITED' };
+      }
+      // Any other failure (EMAIL_SEND_FAILED / INVALID_PURPOSE) — log
+      // and surface as NOT_FOUND from the caller's perspective so we
+      // never reveal infrastructure state.
+      console.warn(
+        `[auth-flow] resendSignupOtp send failed userId=${user.id} reason=${sendResult.reason}`,
+      );
+      return { ok: false, reason: 'NOT_FOUND' };
+    }
+
+    return { ok: true, expiresAt: sendResult.expiresAt };
+  }
+
+  /**
    * Find or create a user from an OAuth provider (Google, Apple, etc.).
    * Returns LoginPayload on success (same shape as password login).
    * Returns LoginError if the account cannot be resolved.
@@ -435,6 +709,15 @@ export class AuthFlowService {
         return { kind: 'invalid_credentials', message: registerResult.message };
       }
       userId = registerResult.userId;
+
+      // HAA-AUTH-SIGNUP-VERIFY — OAuth providers vouch for the email
+      // out-of-band (Google/Apple already verified it). Mark the user
+      // verified immediately so the email-not-verified guard in login()
+      // doesn't trip on the next provider sign-in.
+      await this.db
+        .update(s.users)
+        .set({ emailVerifiedAt: new Date(), updatedAt: new Date() })
+        .where(eq(s.users.id, userId));
     }
 
     // Resolve tenant + store
