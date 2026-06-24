@@ -519,6 +519,13 @@
       "when": 1782000073000,
       "tag": "0077_order_preparation_status",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1782000074000,
+      "tag": "0078_landing_contacts",
+      "breakpoints": true
     }
   ]
 }

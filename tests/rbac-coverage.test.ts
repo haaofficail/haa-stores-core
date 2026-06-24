@@ -43,6 +43,7 @@ const DENY_LIST = new Set<string>([
   'webhooks.ts',              // /webhooks/payments — verifyWebhookSignature + timingSafeEqual + dedup
   'shipping-webhooks.ts',     // /webhooks/shipping, /webhooks/oto — verifyOtoWebhookSignature + auth header + dedup
   'landing-ai-agent.ts',      // pre-signup public trial
+  'landing.ts',               // POST /landing/contact — public marketing form, rate-limited + honeypot, no auth by design
   'public-api.ts',            // API key auth (own middleware)
   'webhooks/shipping.ts',     // if exists
   'webhooks/oto.ts',          // if exists

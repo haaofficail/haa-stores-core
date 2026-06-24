@@ -38,6 +38,13 @@ import {
   usersRoute,
 } from './operations.js';
 import { getBillingSettings, patchBillingSettings } from './billing-settings.js';
+import {
+  listLandingContacts,
+  getLandingContact,
+  patchLandingContact,
+  listLandingContactsQuerySchema,
+  patchLandingContactBodySchema,
+} from './landing-contacts.js';
 
 // ── Permission guard used by settlement/payout routes. ────────────────────
 export function requireAdminPermission(permission: string) {
@@ -278,6 +285,29 @@ adminRouter.patch(
   requireAdminAuth(),
   requireAdminPermission('billing.platform_fee.update'),
   patchBillingSettings,
+);
+
+// /landing-contacts/* — public-landing inbox. Permissions added to the
+// admin role granularly; super-admin (admin:*) implicitly grants both.
+adminRouter.get(
+  '/landing-contacts',
+  requireAdminAuth(),
+  requireAdminPermission('landing_contacts.read'),
+  zValidator('query', listLandingContactsQuerySchema),
+  listLandingContacts,
+);
+adminRouter.get(
+  '/landing-contacts/:id',
+  requireAdminAuth(),
+  requireAdminPermission('landing_contacts.read'),
+  getLandingContact,
+);
+adminRouter.patch(
+  '/landing-contacts/:id',
+  requireAdminAuth(),
+  requireAdminPermission('landing_contacts.update'),
+  zValidator('json', patchLandingContactBodySchema),
+  patchLandingContact,
 );
 
 export { adminRouter };

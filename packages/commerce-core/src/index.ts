@@ -120,3 +120,13 @@ export {
   MAX_PLATFORM_FEE_PCT,
 } from '@haa/wallet-core';
 export type { PlatformFeeMode, PlatformFeePolicy } from '@haa/wallet-core';
+export {
+  LandingContactsService,
+  LANDING_CONTACT_STATUSES,
+} from './landing-contacts-service.js';
+export type {
+  CreateLandingContactInput,
+  UpdateLandingContactInput,
+  ListLandingContactsOpts,
+  LandingContactStatus,
+} from './landing-contacts-service.js';
