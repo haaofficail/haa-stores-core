@@ -67,6 +67,10 @@ export default tseslint.config(
             name: '@haa/theme-web',
             message: 'Merchant dashboard must not import the theme-web preview package (DECISION-OS-009).',
           },
+          {
+            name: '@haa/theme-react',
+            message: 'Merchant dashboard must not import @haa/theme-react — storefront-only runtime. System chrome uses @haa/system-theme (DECISION-OS-009).',
+          },
         ],
         patterns: [{
           group: ['@haa/storefront', '@haa/storefront/**'],
