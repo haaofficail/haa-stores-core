@@ -15,6 +15,7 @@ export class CustomersService {
         like(s.customers.name, `%${opts.search}%`),
         like(s.customers.phone, `%${opts.search}%`),
         like(s.customers.email, `%${opts.search}%`),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- drizzle SQL builder return-type quirk; touched while adding findByEmail
       ) as any);
     }
 
@@ -45,6 +46,21 @@ export class CustomersService {
     const [customer] = await this.db.select()
       .from(s.customers)
       .where(and(eq(s.customers.phone, phone), eq(s.customers.storeId, storeId)))
+      .limit(1);
+    return customer ?? null;
+  }
+
+  /**
+   * Lookup by normalized email (lowercased + trimmed). Returns null
+   * when the email isn't a registered customer — callers must NOT
+   * leak this distinction to public surfaces (no enumeration).
+   */
+  async findByEmail(storeId: number, email: string) {
+    const normalized = email.trim().toLowerCase();
+    if (!normalized) return null;
+    const [customer] = await this.db.select()
+      .from(s.customers)
+      .where(and(eq(s.customers.email, normalized), eq(s.customers.storeId, storeId)))
       .limit(1);
     return customer ?? null;
   }

@@ -13,6 +13,13 @@ export const customers = pgTable('customers', {
   whatsappMarketingConsent: boolean('whatsapp_marketing_consent').notNull().default(false),
   whatsappConsentAt: timestamp('whatsapp_consent_at'),
   whatsappOptOut: boolean('whatsapp_opt_out').notNull().default(false),
+  // PDPL Article 18 — Right to Withdraw Consent. NULL = subscribed.
+  // Set by the public unsubscribe endpoint. Marketing + cart-recovery
+  // emails MUST check this column before sending. Transactional emails
+  // the customer triggered (order confirmation, password reset) are
+  // NOT gated by this flag — they're consent-implicit.
+  emailOptOutAt: timestamp('email_opt_out_at'),
+  emailOptOutSource: varchar('email_opt_out_source', { length: 20 }),
   totalSpent: decimal('total_spent', { precision: 14, scale: 2 }).notNull().default('0'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),

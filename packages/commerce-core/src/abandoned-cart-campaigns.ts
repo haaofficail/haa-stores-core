@@ -9,6 +9,8 @@ import {
 } from '@haa/notification-core';
 import { buildWhatsappLink, normalizeWhatsappPhone } from './contact-channels.js';
 import { pickWelcomeEmailProvider } from './email-provider.js';
+import { isCustomerOptedOut, buildUnsubscribeToken } from './customer-email-preferences.js';
+import { CustomersService } from './customers.js';
 
 export interface CampaignInput {
   name: string;
@@ -81,6 +83,8 @@ export interface FireWhatsappRecoveryResult {
 export interface FireEmailRecoveryResult {
   sent: number;
   skippedNoEmail: number;
+  /** PDPL Article 18 — customer has email_opt_out_at set. */
+  skippedOptOut: number;
   skippedDedup: number;
   failed: number;
   step: 1 | 2 | 3;
@@ -422,7 +426,7 @@ export class AbandonedCartCampaignService {
   async fireEmailRecovery(storeId: number, cartAgeMinutes: number): Promise<FireEmailRecoveryResult> {
     const step = mapCartAgeToLadderStep(cartAgeMinutes) ?? 1;
     const base: FireEmailRecoveryResult = {
-      sent: 0, skippedNoEmail: 0, skippedDedup: 0, failed: 0, step,
+      sent: 0, skippedNoEmail: 0, skippedOptOut: 0, skippedDedup: 0, failed: 0, step,
     };
     if (!isEmailAutoRecoveryEnabled()) return base;
     if (mapCartAgeToLadderStep(cartAgeMinutes) === null) return base;
@@ -461,6 +465,15 @@ export class AbandonedCartCampaignService {
         continue;
       }
 
+      // 1b. PDPL Article 18 — opt-out gate. Cart recovery is a
+      // marketing-adjacent send; the customer's prior unsubscribe
+      // click must short-circuit it. Count under skippedOptOut so
+      // dashboards see the volume.
+      if (await isCustomerOptedOut(storeId, email, this.db)) {
+        base.skippedOptOut += 1;
+        continue;
+      }
+
       // 2. Dedup check — same `(checkoutSessionId, step, channel)`
       // triple as the WhatsApp path. The table has no UNIQUE
       // constraint on this triple yet (confirmed in
@@ -486,6 +499,24 @@ export class AbandonedCartCampaignService {
       const cartTotalSar = Number(session.total ?? 0).toFixed(2);
       const itemCount = await this.countCartItems(session.cartId);
 
+      // Resolve customer for the unsubscribe link. The session is
+      // phone-identified; we look up the matching customer row to
+      // get a stable id for the HMAC token. Failure → omit the link
+      // (the send still goes through, but no one-click unsubscribe).
+      let unsubscribeUrl: string | undefined;
+      try {
+        const customer = await new CustomersService(this.db).findByPhone(
+          storeId,
+          session.customerPhone,
+        );
+        if (customer) {
+          const token = buildUnsubscribeToken(customer.id, storeId);
+          unsubscribeUrl = `${storeCtx.storeUrl}/unsubscribe/${token}`;
+        }
+      } catch {
+        // Best-effort: missing token is preferable to a failed send.
+      }
+
       const { subject, html } = renderAbandonedCartEmail({
         customerName: session.customerName ?? '',
         storeName: storeCtx.storeName,
@@ -495,6 +526,7 @@ export class AbandonedCartCampaignService {
         storeUrl: storeCtx.storeUrl,
         supportEmail: storeCtx.supportEmail,
         step,
+        unsubscribeUrl,
       });
 
       // 4. Persist dedup row BEFORE the send — see the long comment

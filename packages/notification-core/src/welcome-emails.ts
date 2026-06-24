@@ -348,6 +348,13 @@ export type AbandonedCartContext = {
    *   3 → last-call with cart value ("فرصة أخيرة")
    */
   step: 1 | 2 | 3;
+  /**
+   * Optional one-click unsubscribe URL (PDPL Article 18). When set,
+   * the email footer renders an "إلغاء الاشتراك" link. Cart-recovery
+   * is the only customer-facing email that requires this — order
+   * confirmations and 3DS callbacks are transactional, consent-implicit.
+   */
+  unsubscribeUrl?: string;
 };
 
 /**
@@ -421,12 +428,19 @@ export function renderAbandonedCartEmail(
     </p>
   `;
 
+  // PDPL Article 18: footer-level unsubscribe link. Rendered as the
+  // template `footerNote` so it appears below the support disclaimer.
+  const footerNote = ctx.unsubscribeUrl
+    ? `لا تريد رسائل التذكير؟ <a href="${escapeHtml(ctx.unsubscribeUrl)}" style="color: #475569; text-decoration: underline;">إلغاء الاشتراك</a>`
+    : undefined;
+
   const html = renderHaaEmail({
     title: 'سلتك بانتظارك',
     preheader,
     bodyHtml,
     cta: { label: 'أكمل طلبك', href: ctx.recoveryLink },
     supportEmail: ctx.supportEmail,
+    footerNote,
   });
 
   return { subject, html };

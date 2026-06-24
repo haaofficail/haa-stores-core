@@ -10,6 +10,7 @@ import { supportRouter } from './support.js';
 import { pixelsPublicRouter } from './pixels.js';
 import { cartRecoveryRouter } from './cart-recovery.js';
 import { loyaltyPublicRouter } from './loyalty-public.js';
+import { unsubscribeRouter } from './unsubscribe.js';
 
 export const storefrontRouter = new Hono();
 
@@ -22,3 +23,4 @@ storefrontRouter.route('/', supportRouter);
 storefrontRouter.route('/', pixelsPublicRouter);
 storefrontRouter.route('/', cartRecoveryRouter);
 storefrontRouter.route('/', loyaltyPublicRouter);
+storefrontRouter.route('/', unsubscribeRouter);

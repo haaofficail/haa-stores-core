@@ -62,6 +62,7 @@ const DENY_LIST = new Set<string>([
   'haa-marketplace.ts',       // /marketplace/orders (public)
   'support.ts',               // /s/:slug/support/*, /s/:slug/events
   'loyalty-public.ts',        // /s/:slug/loyalty/{settings,balance,redeem-quote} — customer phone-identified, no enumeration leak
+  'unsubscribe.ts',           // /s/:slug/unsubscribe/:token — public PDPL Article 18, HMAC-signed token instead of session auth
 
   // Aggregator files (route definitions delegated to sub-routers)
   'index.ts',
