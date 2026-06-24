@@ -17,14 +17,14 @@
 
 ## 1. Executive Status
 
-- **Overall completion:** **64%**
-- **Engineering completion:** **80%**
-- **Commercial launch readiness:** **38%**
-- **Current phase:** Phase 2 — transactional emails, billing reminders, publish-gate UX
+- **Overall completion:** **66%**
+- **Engineering completion:** **82%**
+- **Commercial launch readiness:** **42%**
+- **Current phase:** Phase 2 — transactional emails, billing reminders, legal-entity surfacing
 - **Last updated:** 2026-06-24
-- **Last completed task:** PR #179 — subscription renewal reminder emails (7d + 1d) + worker.ts `any` cleanup (merged main)
-- **Current blocker:** Geidea production credentials + shipping-aggregator final selection (owner gates G1–G10)
-- **Next recommended action:** PR #180 (CR 7038798612 → email footer + storefront + legal pages), apply migrations 0083 + 0084 + 0085 via `ops-staging-migrate`, then begin 22-wave Autopilot from W0.
+- **Last completed task:** PR #181 — platform legal entity (CR 7038798612) wired into email + landing + legal pages (merged main)
+- **Current blocker:** (1) Deploy #205 for PR #179 failed (fail2ban window on staging — retry after 15 min); (2) Migrations 0083 + 0084 + 0085 not yet applied on staging; (3) Geidea + shipping aggregator owner gates G1–G10
+- **Next recommended action:** Wait fail2ban window → re-run failed Deploy → batch `ops-staging-migrate` for 0083+0084+0085 → flip `AUTH_LEGACY_VERIFIED=0` → start 22-wave Autopilot from W0.
 
 ## 2. Progress Scale
 
@@ -157,15 +157,15 @@
 
 ### I. VAT / ZATCA / Invoices
 
-| ID  | Task                                  | Status      | Progress | Evidence                                                     | Blocker                                                   | Next Action                      |
-| --- | ------------------------------------- | ----------- | -------: | ------------------------------------------------------------ | --------------------------------------------------------- | -------------------------------- |
-| I1  | VAT calculation                       | Done        |      90% | `packages/zatca-core/` + `tests/zatca-hash-chain.test.ts`    | —                                                         | —                                |
-| I2  | Invoice numbering                     | Done        |     100% | `orderPrefix` + sequential per-store                         | —                                                         | —                                |
-| I3  | QR (Phase 1)                          | Done        |      90% | ZATCA Phase 1 TLV QR implemented in zatca-core               | —                                                         | —                                |
-| I4  | ZATCA Phase 2 readiness               | Blocked     |      50% | Hash-chain + signing skeleton exists                         | **Owner gate G2** — VAT certificate + ZATCA portal access | Owner: complete ZATCA onboarding |
-| I5  | Refund invoice / credit note          | Not Started |      25% | Refund flow exists; credit-note doc not generated            | I4                                                        | After I4                         |
-| I6  | Tax settings per store                | Done        |     100% | `storeSettings.defaultCurrency` + VAT toggles in kycProfiles | —                                                         | —                                |
-| I7  | Platform legal entity (CR 7038798612) | In Progress |      25% | Memory `legal-entity-info.md` saved 2026-06-24               | PR #179 not yet opened                                    | Land PR #179                     |
+| ID  | Task                                  | Status      | Progress | Evidence                                                                                  | Blocker                                                   | Next Action                                               |
+| --- | ------------------------------------- | ----------- | -------: | ----------------------------------------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------- |
+| I1  | VAT calculation                       | Done        |      90% | `packages/zatca-core/` + `tests/zatca-hash-chain.test.ts`                                 | —                                                         | —                                                         |
+| I2  | Invoice numbering                     | Done        |     100% | `orderPrefix` + sequential per-store                                                      | —                                                         | —                                                         |
+| I3  | QR (Phase 1)                          | Done        |      90% | ZATCA Phase 1 TLV QR implemented in zatca-core                                            | —                                                         | —                                                         |
+| I4  | ZATCA Phase 2 readiness               | Blocked     |      50% | Hash-chain + signing skeleton exists                                                      | **Owner gate G2** — VAT certificate + ZATCA portal access | Owner: complete ZATCA onboarding                          |
+| I5  | Refund invoice / credit note          | Not Started |      25% | Refund flow exists; credit-note doc not generated                                         | I4                                                        | After I4                                                  |
+| I6  | Tax settings per store                | Done        |     100% | `storeSettings.defaultCurrency` + VAT toggles in kycProfiles                              | —                                                         | —                                                         |
+| I7  | Platform legal entity (CR 7038798612) | Done        |     100% | PR #181 (merged) — single source `platform-entity.ts` + email/landing/legal-page surfaces | —                                                         | ZATCA invoice rendering uses same constant in a follow-up |
 
 ### J. Analytics / Reports
 
@@ -266,6 +266,30 @@ Status: `Not Started` · `In Progress` · `Blocked` · `Needs Review` · `Done` 
   1. Land PR #179 (Subscription renewal reminder) — stashed work, finish commit
   2. Land PR #180 (CR 7038798612 wiring into legal-facing surfaces)
   3. Begin 22-wave Autopilot from W0 (Truth Sync)
+
+### 2026-06-24 — PR #181 merged: platform legal entity wired
+
+- Completed: PR #181 (`feat(legal): wire platform CR 7038798612 into email + landing + legal pages`) — merged on main
+- Changed:
+  - `packages/shared/src/legal/platform-entity.ts` (new) — single source of truth (CR `7038798612` lives here only)
+  - `packages/shared/src/index.ts` — re-export
+  - `packages/notification-core/src/email-template.ts` — entity footer block
+  - `apps/storefront/src/pages/LandingPage.tsx` — `<p className="lp-legal-entity">` below copyright
+  - `apps/storefront/src/pages/LegalPage.tsx` — entity header card above sections
+  - `apps/storefront/src/landing/landing.css` — `.lp-legal-entity` rule
+  - `apps/storefront/package.json` + `pnpm-lock.yaml` — added `@haa/shared` workspace dep
+  - `tests/platform-legal-entity.test.ts` (new — 14 tests)
+- Tests run: `pnpm typecheck` clean · ESLint `--max-warnings 0` clean (1 pre-existing lucide warning silenced with targeted disable + rationale) · 14 + 135 regression all green
+- CI status: green on PR; merged via squash
+- Rows updated: I7 (Done 100%)
+- New blockers:
+  - **Deploy #205 for PR #179 failed** — SSH timeout, fail2ban ban on staging runner IP. Per `staging-deploy-fail2ban` memory: wait ~15 min then re-run.
+- Updated completion: overall **66%** (+2) / engineering **82%** (+2) / commercial **42%** (+4 — first commercial-side surface complete)
+- Recommendation:
+  1. Re-run failed Deploy #205 once fail2ban window clears
+  2. Batch `ops-staging-migrate` for 0083 + 0084 + 0085
+  3. Flip `AUTH_LEGACY_VERIFIED=0` via `ops-staging-env`
+  4. Begin 22-wave Autopilot from W0
 
 ### 2026-06-24 — PR #179 merged: subscription renewal reminder
 
