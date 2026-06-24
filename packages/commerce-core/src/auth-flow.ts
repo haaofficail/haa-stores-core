@@ -4,6 +4,49 @@ import * as s from '@haa/db/schema';
 import { hashPassword, verifyPassword, EmailOtpService } from '@haa/auth-core';
 import { AuditLogService } from '@haa/integration-core';
 import { normalizeSaudiPhone } from '@haa/shared';
+import {
+  SmtpEmailProvider,
+  ResendEmailProvider,
+  renderMerchantWelcomeEmail,
+  type NotificationProvider,
+  type MerchantWelcomeContext,
+} from '@haa/notification-core';
+
+/**
+ * Provider precedence mirrors `OrdersService.pickOrderEmailProvider`
+ * + the landing-contact path: SMTP first (merchant-owned deliverability
+ * via Hostinger/Workspace/Outlook), Resend as the managed-API fallback.
+ * Returns null when neither is configured so callers can no-op silently.
+ */
+function pickWelcomeEmailProvider(): NotificationProvider | null {
+  const smtp = new SmtpEmailProvider();
+  if (smtp.isAvailable) return smtp;
+  const resend = new ResendEmailProvider();
+  if (resend.isAvailable) return resend;
+  return null;
+}
+
+/**
+ * Resolve the storefront base URL for a merchant's store. Mirrors the
+ * subdomain pattern used in `OrdersService.buildStoreBaseUrl` so all
+ * transactional emails point at the same canonical surface:
+ * `https://<slug>.haastores.com` (the `STOREFRONT_APEX_DOMAIN` env
+ * lets staging override the apex).
+ */
+function buildStoreBaseUrl(slug: string): string {
+  const apex = (process.env.STOREFRONT_APEX_DOMAIN || 'haastores.com').replace(/^https?:\/\//, '');
+  return `https://${slug}.${apex}`;
+}
+
+/**
+ * Resolve the merchant dashboard base URL. The dashboard is hosted on
+ * the apex `merchant.<apex>` subdomain. Falls back to the production
+ * value when `STOREFRONT_APEX_DOMAIN` is unset.
+ */
+function buildDashboardUrl(): string {
+  const apex = (process.env.STOREFRONT_APEX_DOMAIN || 'haastores.com').replace(/^https?:\/\//, '');
+  return `https://merchant.${apex}`;
+}
 
 /**
  * AuthFlowService — owns the user-account lifecycle business logic.
@@ -592,6 +635,30 @@ export class AuthFlowService {
       activeStore = allStores[0];
     }
 
+    // HAA-MERCHANT-WELCOME — Welcome email — fire-and-forget. The DB
+    // row (`users.email_verified_at`) is the source of truth for
+    // "this merchant is now verified"; email failure must NEVER fail
+    // the verify response. Same pattern as the OTP send in register()
+    // and the order emails in OrdersService.sendOrderEmail.
+    void (async () => {
+      try {
+        const provider = pickWelcomeEmailProvider();
+        if (!provider) return;
+        const ctx = await this.buildWelcomeContext(user.id);
+        if (!ctx) return;
+        const { subject, html } = renderMerchantWelcomeEmail(ctx);
+        await provider.send({ recipient: user.email, subject, body: html });
+      } catch (err) {
+        // Log only the kind + user id — no PII (no email, no name).
+        console.error(
+          '[welcome-email] kind=merchant_welcome user=' +
+            user.id +
+            ' err=' +
+            (err instanceof Error ? err.message : 'unknown'),
+        );
+      }
+    })();
+
     return {
       ok: true,
       payload: {
@@ -606,6 +673,48 @@ export class AuthFlowService {
         storeSlug: activeStore?.slug ?? null,
         role: tenantUser.role,
       },
+    };
+  }
+
+  /**
+   * HAA-MERCHANT-WELCOME — Assemble the welcome-email context for a
+   * freshly verified merchant. Joins users + stores + tenant to pull
+   * the merchant's display name, the store's display name + slug, and
+   * derives the public storefront + dashboard URLs.
+   *
+   * Returns `null` if the user has no resolvable tenant or store —
+   * the caller treats that as "skip the email" (no throw).
+   */
+  private async buildWelcomeContext(
+    userId: number,
+  ): Promise<MerchantWelcomeContext | null> {
+    const [user] = await this.db
+      .select({ name: s.users.name })
+      .from(s.users)
+      .where(eq(s.users.id, userId))
+      .limit(1);
+    if (!user) return null;
+
+    const [tenantUser] = await this.db
+      .select({ tenantId: s.tenantUsers.tenantId })
+      .from(s.tenantUsers)
+      .where(eq(s.tenantUsers.userId, userId))
+      .limit(1);
+    if (!tenantUser) return null;
+
+    const [store] = await this.db
+      .select({ name: s.stores.name, slug: s.stores.slug })
+      .from(s.stores)
+      .where(eq(s.stores.tenantId, tenantUser.tenantId))
+      .limit(1);
+    if (!store) return null;
+
+    return {
+      merchantName: user.name,
+      storeName: store.name,
+      storeSlug: store.slug,
+      storeUrl: buildStoreBaseUrl(store.slug),
+      dashboardUrl: buildDashboardUrl(),
     };
   }
 
