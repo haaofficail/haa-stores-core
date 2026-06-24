@@ -61,6 +61,7 @@ const DENY_LIST = new Set<string>([
   'checkout.ts',              // /s/:slug/checkout/*
   'haa-marketplace.ts',       // /marketplace/orders (public)
   'support.ts',               // /s/:slug/support/*, /s/:slug/events
+  'loyalty-public.ts',        // /s/:slug/loyalty/{settings,balance,redeem-quote} — customer phone-identified, no enumeration leak
 
   // Aggregator files (route definitions delegated to sub-routers)
   'index.ts',

@@ -33,7 +33,7 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   // paginated envelope. Detect that shape and unwrap one level so the
   // caller can decide what to do with the metadata.
   const raw = json?.data;
-  if (raw && typeof raw === 'object' && !Array.isArray(raw) && 'data' in (raw as Record<string, unknown>) && Array.isArray((raw as { data: unknown }).data)) {
+  if (raw && typeof raw === 'object' && !Array.isArray(raw) && 'data' in (raw as Record<string, unknown>) && Array.isArray((raw as unknown as { data: unknown }).data)) {
     return raw as unknown as T;
   }
 
