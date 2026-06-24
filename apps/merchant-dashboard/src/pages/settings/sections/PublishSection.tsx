@@ -5,17 +5,18 @@
  *   - publish status (draft / review / published / restricted / suspended)
  *   - publish/unpublish handlers
  *   - merchant acknowledgement dialog
- *   - compliance checklist gating
+ *   - compliance checklist gating + per-item drill-down
  */
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { publishApi, complianceApi, acknowledgementApi, ApiClientError } from "@/lib/api";
 import { PermissionGate } from "@/lib/permissions";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, CheckCircle2, XCircle, RefreshCw, ChevronDown } from "lucide-react";
 
 const PUBLISH_STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   draft: { label: 'مسودة', color: 'text-neutral-700', bg: 'bg-neutral-100' },
@@ -25,12 +26,189 @@ const PUBLISH_STATUS_CONFIG: Record<string, { label: string; color: string; bg: 
   suspended: { label: 'موقوف', color: 'text-red-700', bg: 'bg-red-100' },
 };
 
+// ---------- Checklist drill-down primitives ----------
+
+type ChecklistItem = {
+  key: string;
+  label: string;
+  passed: boolean;
+  required: boolean;
+  source: string;
+  severity: string;
+  message: string;
+};
+
+type ChecklistData = {
+  passed: boolean;
+  items: ChecklistItem[];
+  blockingErrorsCount: number;
+  warningsCount: number;
+  checkedAt: string;
+};
+
+// Source → Arabic group header. Order is intentional (most important first).
+const SOURCE_GROUPS: Array<{ source: string; label: string }> = [
+  { source: 'kyc', label: 'البيانات القانونية' },
+  { source: 'store', label: 'بيانات المتجر' },
+  { source: 'policies', label: 'السياسات' },
+  { source: 'payment', label: 'طرق الدفع' },
+  { source: 'shipping', label: 'الشحن' },
+  { source: 'settings', label: 'إعدادات الاسترجاع' },
+];
+
+// Source → fix-link target. The dashboard doesn't have nested /settings/<tab>
+// sub-routes (Settings.tsx is a single page with internal tabs), so we route to
+// the closest top-level page or fall back to /settings.
+function fixLinkForSource(source: string): string {
+  switch (source) {
+    case 'kyc': return '/compliance';
+    case 'policies': return '/policies';
+    case 'shipping': return '/shipping';
+    case 'store':
+    case 'payment':
+    case 'settings':
+    default:
+      return '/settings';
+  }
+}
+
+function ChecklistItemRow({ item }: { item: ChecklistItem }) {
+  // Icon selection follows the spec:
+  //   passed → CheckCircle2 (green)
+  //   !passed && severity === 'error' → XCircle (red)
+  //   !passed && severity === 'warning' → AlertTriangle (amber)
+  let icon;
+  if (item.passed) {
+    icon = <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" aria-hidden />;
+  } else if (item.severity === 'error') {
+    icon = <XCircle className="h-4 w-4 text-red-600 shrink-0" aria-hidden />;
+  } else {
+    icon = <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" aria-hidden />;
+  }
+
+  return (
+    <li className="flex items-start gap-3 py-2 px-2 rounded-lg hover:bg-neutral-50">
+      <div className="pt-0.5">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-neutral-900">{item.label}</div>
+        <div className="text-xs text-neutral-500 mt-0.5">{item.message}</div>
+      </div>
+      {!item.passed && (
+        <Link
+          to={fixLinkForSource(item.source)}
+          className="text-xs font-medium text-primary-600 hover:text-primary-700 hover:underline shrink-0 self-center"
+        >
+          اذهب لإصلاحه
+        </Link>
+      )}
+    </li>
+  );
+}
+
+function ChecklistDrillDown({
+  checklist,
+  onRefresh,
+  refreshing,
+}: {
+  checklist: ChecklistData;
+  onRefresh: () => void;
+  refreshing: boolean;
+}) {
+  const passedCount = checklist.items.filter(i => i.passed).length;
+  const totalCount = checklist.items.length;
+
+  // Build groups in canonical order, drop empty groups.
+  const groups = SOURCE_GROUPS
+    .map(g => ({
+      ...g,
+      items: checklist.items.filter(i => i.source === g.source),
+    }))
+    .filter(g => g.items.length > 0);
+
+  if (checklist.passed) {
+    return (
+      <div className="mt-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm text-neutral-600">{passedCount} من {totalCount} جاهز</span>
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={refreshing}
+            className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-700 disabled:opacity-50"
+            aria-label="تحديث قائمة الفحص"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            تحديث
+          </button>
+        </div>
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" aria-hidden />
+          <span className="text-sm font-medium text-emerald-700">كل المتطلبات مكتملة</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm text-neutral-600">{passedCount} من {totalCount} جاهز</span>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={refreshing}
+          className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-700 disabled:opacity-50"
+          aria-label="تحديث قائمة الفحص"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+          تحديث
+        </button>
+      </div>
+      <div className="space-y-2">
+        {groups.map(group => {
+          const hasFailing = group.items.some(i => !i.passed);
+          const groupPassed = group.items.filter(i => i.passed).length;
+          const groupTotal = group.items.length;
+          return (
+            <details
+              key={group.source}
+              open={hasFailing}
+              className="group border border-neutral-200 rounded-xl bg-white overflow-hidden"
+            >
+              <summary className="flex items-center justify-between gap-2 px-4 py-3 cursor-pointer list-none hover:bg-neutral-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400">
+                <div className="flex items-center gap-2 min-w-0">
+                  {hasFailing ? (
+                    <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" aria-hidden />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" aria-hidden />
+                  )}
+                  <span className="text-sm font-semibold text-neutral-900 truncate">{group.label}</span>
+                  <span className="text-xs text-neutral-500 shrink-0">({groupPassed}/{groupTotal})</span>
+                </div>
+                <ChevronDown className="h-4 w-4 text-neutral-400 transition-transform group-open:rotate-180 shrink-0" aria-hidden />
+              </summary>
+              <ul className="border-t border-neutral-100 px-2 py-1 divide-y divide-neutral-100">
+                {group.items.map(item => (
+                  <ChecklistItemRow key={item.key} item={item} />
+                ))}
+              </ul>
+            </details>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Main section ----------
+
 export function PublishSection({ storeId }: { storeId: number | null }) {
   const { t } = useTranslation();
   const [publishStatus, setPublishStatus] = useState<string>('draft');
-  const [checklist, setChecklist] = useState<{ passed: boolean; blockingErrorsCount: number; warningsCount: number } | null>(null);
+  const [checklist, setChecklist] = useState<ChecklistData | null>(null);
   const [acknowledgement, setAcknowledgement] = useState<{ acknowledged: boolean; missingItems: string[] } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [showAckDialog, setShowAckDialog] = useState(false);
   const [ackCheckboxes, setAckCheckboxes] = useState<Record<string, boolean>>({});
@@ -40,6 +218,7 @@ export function PublishSection({ storeId }: { storeId: number | null }) {
   const loadData = useCallback(async () => {
     if (!storeId) return;
     setLoading(true);
+    setRefreshing(true);
     try {
       const [statusData, checklistData, ackData] = await Promise.allSettled([
         publishApi.getPublishStatus(storeId),
@@ -47,10 +226,11 @@ export function PublishSection({ storeId }: { storeId: number | null }) {
         acknowledgementApi.getStatus(storeId),
       ]);
       if (statusData.status === 'fulfilled') setPublishStatus(statusData.value.publishStatus);
-      if (checklistData.status === 'fulfilled') setChecklist(checklistData.value);
+      if (checklistData.status === 'fulfilled') setChecklist(checklistData.value as ChecklistData);
       if (ackData.status === 'fulfilled') setAcknowledgement(ackData.value);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [storeId]);
 
@@ -64,8 +244,8 @@ export function PublishSection({ storeId }: { storeId: number | null }) {
       setPublishStatus(result.publishStatus);
       toast.success('تم نشر المتجر بنجاح');
       loadData();
-    } catch (err: any) {
-      const data = err?.data;
+    } catch (err: unknown) {
+      const data = (err as { data?: { error?: { code?: string }; data?: { checklist?: ChecklistData } } })?.data;
       if (data?.error?.code === 'STORE_COMPLIANCE_INCOMPLETE') {
         toast.error('الامتثال غير مكتمل — لا يمكن النشر');
         if (data?.data?.checklist) setChecklist(data.data.checklist);
@@ -157,13 +337,12 @@ export function PublishSection({ storeId }: { storeId: number | null }) {
           )}
         </div>
       </div>
-      {checklist && !checklist.passed && (
-        <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-xl flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-orange-500 shrink-0" />
-          <span className="text-sm text-orange-700">
-            {checklist.blockingErrorsCount} أخطاء يجب إصلاحها قبل النشر
-          </span>
-        </div>
+      {checklist && checklist.items && checklist.items.length > 0 && (
+        <ChecklistDrillDown
+          checklist={checklist}
+          onRefresh={loadData}
+          refreshing={refreshing}
+        />
       )}
       {acknowledgement && !acknowledgement.acknowledged && (
         <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-2">
