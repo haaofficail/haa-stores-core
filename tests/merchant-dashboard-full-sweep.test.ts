@@ -29,9 +29,14 @@ const SUBSCRIPTION = read('apps/merchant-dashboard/src/pages/dashboard/Subscript
 describe('Apple-grade full sweep (PR #65)', () => {
   describe('Deploy SSH warmup retry', () => {
     it('staging job has "Warm up SSH" step with retry loop + ConnectTimeout', () => {
-      expect(DEPLOY).toMatch(/Warm up SSH \(retry past residual fail2ban window\)/);
-      expect(DEPLOY).toMatch(/for attempt in 1 2 3; do/);
-      expect(DEPLOY).toMatch(/ConnectTimeout=30/);
+      // Updated by PR #183 (deploy hardening): the warmup step's name +
+      // schedule changed to survive the full 15-min fail2ban window.
+      // - Step name: "...survive full 15-min fail2ban window" (was "retry past residual...")
+      // - Loop:      6 attempts via `backoffs=(30 60 120 240 480 480)` (was `for attempt in 1 2 3`)
+      // - Timeout:   ConnectTimeout=20 (was 30) — gives the 24-min budget more headroom
+      expect(DEPLOY).toMatch(/Warm up SSH \(survive full 15-min fail2ban window\)/);
+      expect(DEPLOY).toMatch(/backoffs=\(\s*30\s+60\s+120\s+240\s+480\s+480\s*\)/);
+      expect(DEPLOY).toMatch(/ConnectTimeout=20/);
     });
     it('production job also has the warmup', () => {
       const prodIdx = DEPLOY.indexOf('Deploy to Production');

@@ -50,8 +50,11 @@ describe('Deploy hardening — fail2ban + watchdog + scheduler test gate', () =>
 
     it('triggers on completed Deploy runs', () => {
       expect(watchdogYml).toMatch(/workflow_run/);
-      expect(watchdogYml).toMatch(/workflows:\s*\['Deploy'\]/);
-      expect(watchdogYml).toMatch(/types:\s*\[completed\]/);
+      // Accept both single- and double-quoted forms — prettier reformats
+      // YAML scalars to double quotes during pre-commit. The semantics
+      // (workflow array contains "Deploy") are identical.
+      expect(watchdogYml).toMatch(/workflows:\s*\[\s*["']Deploy["']\s*\]/);
+      expect(watchdogYml).toMatch(/types:\s*\[\s*completed\s*\]/);
     });
 
     it('classifies failures (ssh-fail2ban / code-failure / unknown)', () => {
@@ -61,7 +64,8 @@ describe('Deploy hardening — fail2ban + watchdog + scheduler test gate', () =>
 
     it('only auto-retries ssh-fail2ban failures', () => {
       // Code failures must NOT be auto-retried — they need code fixes.
-      expect(watchdogYml).toMatch(/if: steps\.inspect\.outputs\.fail_kind == 'ssh-fail2ban'/);
+      // Accept either quote style (prettier-reformatted YAML strings).
+      expect(watchdogYml).toMatch(/if:\s*steps\.inspect\.outputs\.fail_kind\s*==\s*["']ssh-fail2ban["']/);
     });
 
     it('waits past the 15-min ban window before retry (sleep >= 1080)', () => {
