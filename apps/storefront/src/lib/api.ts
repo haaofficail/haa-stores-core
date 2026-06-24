@@ -596,11 +596,30 @@ export const checkoutApi = {
   ),
 };
 
+export interface MyOrderListItem {
+  id: number;
+  orderNumber: string;
+  status: string;
+  paymentStatus: string;
+  fulfillmentStatus: string;
+  total: string;
+  currency: string;
+  itemsCount: number | null;
+  createdAt: string;
+}
+
 export const orderApi = {
   getByOrderNumber: (slug: string, orderNumber: string, phone: string) =>
     request<PublicOrder>(`/s/${slug}/order/${orderNumber}?phone=${encodeURIComponent(phone)}`),
   track: (slug: string, orderNumber: string, phone: string) =>
     request<PublicOrder>(`/s/${slug}/track/${orderNumber}?phone=${encodeURIComponent(phone)}`),
+  /**
+   * "My orders" lookup. Returns the customer's recent orders for this
+   * store, newest first. Unknown phone → empty list (no enumeration
+   * leak). Server caps result count at 50.
+   */
+  listByPhone: (slug: string, phone: string) =>
+    request<MyOrderListItem[]>(`/s/${slug}/orders?phone=${encodeURIComponent(phone)}`),
 };
 
 export const featuresApi = {
