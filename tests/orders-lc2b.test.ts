@@ -158,12 +158,41 @@ describe('LC2B — Orders Service', () => {
   });
 
   describe('Order status transitions', () => {
+    // After the PR-#169 hardening pass, `changeStatus` reads the
+    // previous order row INSIDE the same transaction as the write
+    // (closing the validate-then-write TOCTOU window). These mocks
+    // therefore expose `tx.select` + `tx.update` + `tx.insert`.
+    function buildTxDb(opts: { row: any | null; updated?: any }) {
+      const txObj = {
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue(opts.row ? [opts.row] : []),
+            }),
+          }),
+        }),
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([opts.updated ?? opts.row]),
+            }),
+          }),
+        }),
+        insert: vi.fn().mockReturnValue({
+          values: vi.fn().mockResolvedValue(undefined),
+        }),
+      };
+      return {
+        transaction: vi.fn().mockImplementation(async (fn: any) => fn(txObj)),
+      };
+    }
+
     it('rejects invalid transition', async () => {
       const { OrdersService } = await import('@haa/commerce-core');
       const service = new OrdersService();
 
-      vi.spyOn(service as any, 'getById').mockResolvedValue({
-        id: 1, storeId: 1, status: 'cancelled',
+      Object.defineProperty(service, 'db', {
+        value: buildTxDb({ row: { id: 1, storeId: 1, status: 'cancelled' } }),
       });
 
       await expect(service.changeStatus(1, 1, 'confirmed')).rejects.toThrow('Cannot transition');
@@ -173,38 +202,23 @@ describe('LC2B — Orders Service', () => {
       const { OrdersService } = await import('@haa/commerce-core');
       const service = new OrdersService();
 
-      vi.spyOn(service as any, 'getById').mockResolvedValue({
-        id: 1, storeId: 1, status: 'draft',
-      });
-
-      const db = {
-        transaction: vi.fn().mockImplementation(async (fn: any) => {
-          return fn({
-            update: vi.fn().mockReturnValue({
-              set: vi.fn().mockReturnValue({
-                where: vi.fn().mockReturnValue({
-                  returning: vi.fn().mockResolvedValue([{ id: 1, status: 'cancelled' }]),
-                }),
-              }),
-            }),
-            insert: vi.fn().mockReturnValue({
-              values: vi.fn().mockResolvedValue(undefined),
-            }),
-          });
+      Object.defineProperty(service, 'db', {
+        value: buildTxDb({
+          row: { id: 1, storeId: 1, status: 'draft' },
+          updated: { id: 1, storeId: 1, status: 'cancelled', paymentStatus: 'unpaid' },
         }),
-      };
-      Object.defineProperty(service, 'db', { value: db });
+      });
 
       const result = await service.changeStatus(1, 1, 'cancelled');
       expect(result).toBeDefined();
-      expect(result.status).toBe('cancelled');
+      expect(result!.status).toBe('cancelled');
     });
 
     it('scoped by storeId — rejects cross-store access', async () => {
       const { OrdersService } = await import('@haa/commerce-core');
       const service = new OrdersService();
 
-      vi.spyOn(service as any, 'getById').mockResolvedValue(null);
+      Object.defineProperty(service, 'db', { value: buildTxDb({ row: null }) });
 
       const result = await service.changeStatus(999, 1, 'cancelled');
       expect(result).toBeNull();
