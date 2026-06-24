@@ -41,4 +41,55 @@ describe('Beta deletion policy (DECISION-OS-014)', () => {
     expect(block).toContain('FORBIDDEN_BETA_POLICY');
     expect(block).toContain('DECISION-OS-014');
   });
+
+  // W13 (Autopilot Phase 3): extended guards.
+  it('owner decision DECISION-OS-014 is documented + non-negotiable', () => {
+    // Doc must explicitly forbid both direct tenant delete + merchant
+    // self-delete in beta so a future contributor finds the rationale
+    // before touching either route.
+    const ownerDecisions = readFileSync(
+      resolve(__dirname, '../docs/agent-os/OWNER_DECISIONS.md'),
+      'utf-8',
+    );
+    expect(ownerDecisions).toMatch(/DECISION-OS-014/);
+    // The doc has two mentions: a one-line table row + a full-text
+    // section under '### DECISION-OS-014'. Target the full-text
+    // section so the slice captures the actual policy clauses.
+    const idx = ownerDecisions.indexOf('### DECISION-OS-014');
+    expect(idx).toBeGreaterThanOrEqual(0);
+    const slice = ownerDecisions.slice(idx, idx + 2000);
+    expect(slice.toLowerCase()).toMatch(/tenant\s+deletion/);
+    // Merchant rule wording: 'merchant account self-deletion' — the
+    // two key tokens are 'merchant' and 'self-delet' on the same line
+    // OR within a short window. Use a tolerant pattern.
+    expect(slice.toLowerCase()).toMatch(/merchant[^.\n]*self[- ]?delet/);
+  });
+
+  it('no new route reintroduces unguarded DELETE on tenants/stores/merchants', () => {
+    // Negative grep: any router.delete on a tenants/stores/merchants
+    // path that does NOT carry the FORBIDDEN_BETA_POLICY token in the
+    // surrounding 40 lines is a regression.
+    const checks: Array<{ src: string; label: string }> = [
+      { src: TENANT_SRC, label: 'admin/tenants-stores.ts' },
+      { src: MERCHANT_SRC, label: 'merchant-data.ts' },
+    ];
+    for (const { src, label } of checks) {
+      const lines = src.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        if (!/router\.delete\s*\(|Router\.delete\s*\(/.test(lines[i])) continue;
+        const window = lines.slice(Math.max(0, i - 10), Math.min(lines.length, i + 30)).join('\n');
+        // Allow the line if the surrounding block contains the guard.
+        if (window.includes('FORBIDDEN_BETA_POLICY')) continue;
+        // Allow if the delete is on a clearly-scoped sub-resource (not
+        // the tenant/store/merchant root). The hard-blocked surfaces are
+        // /tenants/:id, /stores/:id, /account, /merchant/:id.
+        if (/\/(tenants?|stores?|merchant|account)\b/.test(lines[i])) {
+          throw new Error(
+            `Unguarded DELETE in ${label}:${i + 1} — ${lines[i].trim()}`,
+          );
+        }
+      }
+    }
+    expect(true).toBe(true); // reached only if no unguarded route found
+  });
 });
