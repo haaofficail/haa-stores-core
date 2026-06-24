@@ -88,10 +88,10 @@ describe('Quality Pass 5 — Route Migration 9/24: settings.ts', () => {
     expect(content).toMatch(/settingsRouter\.post\(['"]\/acknowledge['"]/);
   });
 
-  it('settings.ts must preserve all permission requirements (13× stores:read, 14× settings:update)', () => {
+  it('settings.ts must preserve all permission requirements (14× stores:read, 14× settings:update)', () => {
     const content = read(settingsRouteFile);
     const readMatches = content.match(/requirePermission\(['"]stores:read['"]\)/g) || [];
-    expect(readMatches.length).toBe(13);
+    expect(readMatches.length).toBe(14);
     const updateMatches = content.match(/requirePermission\(['"]settings:update['"]\)/g) || [];
     expect(updateMatches.length).toBe(14);
   });
