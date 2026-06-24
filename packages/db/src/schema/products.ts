@@ -53,6 +53,15 @@ export const products = pgTable('products', {
   salesCount: integer('sales_count').notNull().default(0),
   seoTitle: varchar('seo_title', { length: 60 }),
   seoDescription: varchar('seo_description', { length: 160 }),
+  // HAA-LOW-STOCK-EMAIL — dedupe anchor for the per-product low-stock
+  // alert email. Set to NOW() the moment the merchant alert is
+  // successfully sent for this product (after stock drops at/below
+  // `store_settings.low_stock_threshold`). The notifier filters by a
+  // 24h window so a single dipping product never spams the merchant.
+  // Cleared (back to NULL) when stock is restocked above the threshold
+  // (refund path / manual restock) so the next dip re-arms the alert.
+  // Forward-only column added by migration 0084.
+  lastLowStockAlertedAt: timestamp('last_low_stock_alerted_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 }, (table) => ({

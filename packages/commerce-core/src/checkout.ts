@@ -16,6 +16,7 @@ import { CustomersService } from './customers.js';
 import { acquireLock, releaseLock } from './redis.js';
 import { isDemoStore, type ProviderCode } from '@haa/shared';
 import { WalletPostingService } from './wallet-posting-service.js';
+import { LowStockNotifier } from './low-stock-notifier.js';
 
 // Shape of a single cart row as returned by CartService.getCart()
 // (one `item` row joined with its `product` + optional `variant`).
@@ -489,6 +490,38 @@ export class CheckoutService {
         await this.cartService.clearCart(storeId, session.cartId);
       });
 
+      // HAA-LOW-STOCK-EMAIL — fire-and-forget merchant alert AFTER the
+      // payment transaction commits. NEVER inside the transaction —
+      // email failure must never roll back the order. The notifier
+      // itself swallows errors with structured logs; the outer
+      // `.catch(() => {})` is belt-and-suspenders for the rare case
+      // where the constructor/import throws.
+      //
+      // We feed the union of product ids and variant→product ids that
+      // actually had stock decremented (track_inventory=true filter
+      // already happened in decrementStock).
+      //
+      // The flip side: on payment failure we ran incrementStock inside
+      // the Phase 3 tx (line ~478). Once stock is restocked above the
+      // threshold the dedupe stamp must be cleared so the next dip
+      // re-arms — `resetForUpdatedProducts` is a no-op for products
+      // still at-or-below the threshold (e.g. partial restock).
+      if (!this.isDemo) {
+        const stockProductIds = cartItems
+          .filter((i) => i.product.trackInventory)
+          .map((i) => i.product.id);
+        if (paymentStatus === 'paid' || (paymentStatus === 'pending' && order.paymentMethod === 'cash_on_delivery')) {
+          void new LowStockNotifier(this.db)
+            .fireForUpdatedProducts(storeId, stockProductIds)
+            .catch(() => {});
+        } else if (paymentStatus !== 'requires_3ds') {
+          // Payment failed → stock was incremented in the Phase 3 tx.
+          void new LowStockNotifier(this.db)
+            .resetForUpdatedProducts(storeId, stockProductIds)
+            .catch(() => {});
+        }
+      }
+
       // Send notifications (demo stores skip real notifications)
       if (!this.isDemo && (paymentStatus === 'paid' || (paymentStatus === 'pending' && order.paymentMethod === 'cash_on_delivery'))) {
         const isCOD = order.paymentMethod === 'cash_on_delivery';
@@ -855,6 +888,18 @@ export class CheckoutService {
             amount: Number(payment.amount).toFixed(2),
           });
         } catch { /* notification failure non-blocking */ }
+
+        // HAA-LOW-STOCK-EMAIL — fire-and-forget merchant alert AFTER
+        // the BNPL paid tx commits. Same contract as the synchronous
+        // checkout path: never inside the tx, never throws.
+        const orderItemRows = await this.db
+          .select({ productId: s.orderItems.productId })
+          .from(s.orderItems)
+          .where(eq(s.orderItems.orderId, payment.orderId));
+        const productIds = orderItemRows.map((r) => r.productId);
+        void new LowStockNotifier(this.db)
+          .fireForUpdatedProducts(storeId, productIds)
+          .catch(() => {});
       }
 
       return { redirectUrl: frontendSuccess, status: 'paid' as const, orderNumber };
@@ -869,6 +914,7 @@ export class CheckoutService {
       return { redirectUrl: frontendCancel, status: 'cancelled' as const, orderNumber: cancelledOrder?.orderNumber ?? '' };
     }
 
+    let restockedProductIds: number[] = [];
     await this.db.transaction(async (tx) => {
       const txOrders = new OrdersService(tx);
       await txOrders.changeStatus(storeId, payment.orderId, 'payment_failed', actorUserId);
@@ -876,8 +922,19 @@ export class CheckoutService {
         .from(s.orderItems).where(eq(s.orderItems.orderId, payment.orderId));
       if (orderItems.length > 0) {
         await this.incrementStock(tx, orderItems);
+        restockedProductIds = orderItems.map((i) => i.productId);
       }
     });
+
+    // HAA-LOW-STOCK-EMAIL — fire-and-forget dedupe reset AFTER the
+    // incrementStock tx commits. Products whose stock is now strictly
+    // above the threshold get their last_low_stock_alerted_at cleared
+    // so the next dip re-arms the alert.
+    if (!this.isDemo && restockedProductIds.length > 0) {
+      void new LowStockNotifier(this.db)
+        .resetForUpdatedProducts(storeId, restockedProductIds)
+        .catch(() => {});
+    }
 
     const [failedOrder] = await this.db.select().from(s.orders).where(eq(s.orders.id, payment.orderId)).limit(1);
     return { redirectUrl: frontendFailure, status: 'failed' as const, orderNumber: failedOrder?.orderNumber ?? '' };
