@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -7,14 +8,20 @@ import {
   LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, UserCog, TrendingUp, Activity, ExternalLink, AlertTriangle, MessageSquare, Coins,
 } from 'lucide-react';
 
+type NavIcon = React.ComponentType<{ className?: string }>;
+
 interface NavItem {
   to: string;
-  icon: any;
+  icon: NavIcon;
   label: string;
   fallback: string;
   permission?: string;
 }
 
+// IA W1 (2026-06-25): groups reorganised to verb-noun, items moved to the
+// section they actually belong to (shipping→sales, coupons→marketing,
+// policies/ai→settings, etc.). Routes unchanged — pure label/grouping
+// pass so deep links and bookmarks keep working. See HAA_TASK_LEDGER §IA.
 const navGroups: Array<{
   titleKey: string;
   title: string;
@@ -28,47 +35,54 @@ const navGroups: Array<{
     ],
   },
   {
-    titleKey: 'sidebar.operations',
-    title: 'التشغيل',
+    titleKey: 'sidebar.catalog',
+    title: 'الكتالوج',
     items: [
-      { to: '/products', icon: Package, label: 'nav.products', fallback: 'المنتجات', permission: 'products:read' },
+      { to: '/products', icon: Package, label: 'nav.products', fallback: 'إدارة المنتجات', permission: 'products:read' },
       { to: '/categories', icon: Tags, label: 'nav.categories', fallback: 'التصنيفات', permission: 'categories:manage' },
       { to: '/brands', icon: Building2, label: 'nav.brands', fallback: 'الماركات', permission: 'brands:manage' },
-      { to: '/tags', icon: Tag, label: 'nav.tags', fallback: 'التاجات', permission: 'tags:manage' },
-      { to: '/orders', icon: ShoppingCart, label: 'nav.orders', fallback: 'الطلبات', permission: 'orders:read' },
-      { to: '/customers', icon: Users, label: 'nav.customers', fallback: 'العملاء', permission: 'customers:read' },
-      { to: '/channels', icon: Store, label: 'nav.channels', fallback: 'قنوات البيع', permission: 'settings:read' },
+      { to: '/tags', icon: Tag, label: 'nav.tags', fallback: 'الوسوم', permission: 'tags:manage' },
     ],
   },
   {
-    titleKey: 'sidebar.financial',
-    title: 'المالية',
+    titleKey: 'sidebar.sales',
+    title: 'البيع',
     items: [
-      { to: '/shipping', icon: Truck, label: 'nav.shipping', fallback: 'الشحن', permission: 'shipping:manage' },
-      { to: '/wallet', icon: Wallet, label: 'nav.wallet', fallback: 'المحفظة', permission: 'wallet:read' },
-      { to: '/coupons', icon: TicketPercent, label: 'nav.coupons', fallback: 'الكوبونات', permission: 'coupons:read' },
+      { to: '/orders', icon: ShoppingCart, label: 'nav.orders', fallback: 'معالجة الطلبات', permission: 'orders:read' },
+      { to: '/customers', icon: Users, label: 'nav.customers', fallback: 'إدارة العملاء', permission: 'customers:read' },
+      { to: '/abandoned-carts', icon: ShoppingBag, label: 'nav.abandonedCarts', fallback: 'العربات المتروكة', permission: 'orders:read' },
+      { to: '/shipping', icon: Truck, label: 'nav.shipping', fallback: 'إدارة الشحن', permission: 'shipping:manage' },
+      { to: '/channels', icon: Store, label: 'nav.channels', fallback: 'ربط قنوات البيع', permission: 'settings:read' },
     ],
   },
   {
     titleKey: 'sidebar.marketing',
     title: 'التسويق',
     items: [
-      { to: '/promotions', icon: Percent, label: 'nav.promotions', fallback: 'العروض', permission: 'promotions:read' },
-      { to: '/whatsapp', icon: MessageSquare, label: 'nav.whatsapp', fallback: 'الواتساب المحلي', permission: 'settings:read' },
-      { to: '/loyalty', icon: Coins, label: 'nav.loyalty', fallback: 'نقاط الولاء', permission: 'promotions:read' },
-      { to: '/abandoned-carts', icon: ShoppingBag, label: 'nav.abandonedCarts', fallback: 'العربات المتروكة', permission: 'orders:read' },
-      { to: '/policies', icon: FileText, label: 'nav.policies', fallback: 'الصفحات والسياسات', permission: 'settings:read' },
+      { to: '/promotions', icon: Percent, label: 'nav.promotions', fallback: 'إدارة العروض', permission: 'promotions:read' },
+      { to: '/coupons', icon: TicketPercent, label: 'nav.coupons', fallback: 'إدارة الكوبونات', permission: 'coupons:read' },
+      { to: '/loyalty', icon: Coins, label: 'nav.loyalty', fallback: 'إدارة الولاء', permission: 'promotions:read' },
+      { to: '/whatsapp', icon: MessageSquare, label: 'nav.whatsapp', fallback: 'حملات الواتساب', permission: 'settings:read' },
     ],
   },
   {
-    titleKey: 'sidebar.analytics',
+    titleKey: 'sidebar.finance',
+    title: 'المالية',
+    items: [
+      { to: '/wallet', icon: Wallet, label: 'nav.wallet', fallback: 'المحفظة والتسويات', permission: 'wallet:read' },
+      { to: '/subscriptions', icon: Crown, label: 'nav.subscriptions', fallback: 'الاشتراك والفواتير', permission: 'subscriptions:view' },
+      { to: '/compliance', icon: Shield, label: 'nav.compliance', fallback: 'التحقق والامتثال', permission: 'compliance:read' },
+    ],
+  },
+  {
+    titleKey: 'sidebar.insights',
     title: 'التحليلات',
     items: [
-      { to: '/reports', icon: BarChart3, label: 'nav.reports', fallback: 'التقارير', permission: 'reports:read' },
+      { to: '/reports', icon: BarChart3, label: 'nav.reports', fallback: 'التقارير التشغيلية', permission: 'reports:read' },
       { to: '/growth', icon: TrendingUp, label: 'nav.growth', fallback: 'مؤشرات النمو', permission: 'reports:read' },
-      { to: '/live', icon: Activity, label: 'nav.liveRadar', fallback: 'الرادار الحي', permission: 'reports:read' },
-      { to: '/exports', icon: Download, label: 'nav.exports', fallback: 'التصدير', permission: 'exports:create' },
-      { to: '/imports', icon: FileSpreadsheet, label: 'nav.imports', fallback: 'الاستيراد', permission: 'imports:create' },
+      { to: '/live', icon: Activity, label: 'nav.liveRadar', fallback: 'النشاط الحي', permission: 'reports:read' },
+      { to: '/exports', icon: Download, label: 'nav.exports', fallback: 'تصدير البيانات', permission: 'exports:create' },
+      { to: '/imports', icon: FileSpreadsheet, label: 'nav.imports', fallback: 'استيراد البيانات', permission: 'imports:create' },
     ],
   },
   {
@@ -82,23 +96,22 @@ const navGroups: Array<{
     titleKey: 'sidebar.settings',
     title: 'الإعدادات',
     items: [
-      { to: '/employees', icon: UserCog, label: 'nav.employees', fallback: 'الموظفين', permission: 'employees:view' },
-      { to: '/compliance', icon: Shield, label: 'nav.compliance', fallback: 'التحقق والامتثال', permission: 'compliance:read' },
-      { to: '/audit-logs', icon: History, label: 'nav.auditLogs', fallback: 'سجل التغييرات', permission: 'stores:read' },
-      { to: '/subscriptions', icon: Crown, label: 'nav.subscriptions', fallback: 'الاشتراكات', permission: 'subscriptions:view' },
-      { to: '/notifications', icon: Bell, label: 'nav.notifications', fallback: 'الإشعارات', permission: 'notifications:view' },
-      { to: '/theme-store', icon: Palette, label: 'nav.themeStore', fallback: 'متجر الثيمات', permission: 'theme:view' },
+      { to: '/settings', icon: Settings, label: 'nav.settings', fallback: 'إعدادات المتجر', permission: 'settings:read' },
+      { to: '/employees', icon: UserCog, label: 'nav.employees', fallback: 'الموظفون والصلاحيات', permission: 'employees:view' },
+      { to: '/policies', icon: FileText, label: 'nav.policies', fallback: 'السياسات والصفحات', permission: 'settings:read' },
+      { to: '/notifications', icon: Bell, label: 'nav.notifications', fallback: 'تفضيلات الإشعارات', permission: 'notifications:view' },
+      { to: '/ai-assistant', icon: Bot, label: 'nav.aiAssistant', fallback: 'المساعد الذكي', permission: 'settings:read' },
       { to: '/theme', icon: Palette, label: 'nav.themeEditor', fallback: 'تخصيص الثيم', permission: 'theme:view' },
-      { to: '/settings', icon: Settings, label: 'nav.settings', fallback: 'الإعدادات', permission: 'settings:read' },
+      { to: '/theme-store', icon: Palette, label: 'nav.themeStore', fallback: 'متجر الثيمات', permission: 'theme:view' },
+      { to: '/audit-logs', icon: History, label: 'nav.auditLogs', fallback: 'سجل التغييرات', permission: 'stores:read' },
     ],
   },
   {
     titleKey: 'sidebar.developers',
-    title: 'المطورين',
+    title: 'المطوّرون',
     items: [
       { to: '/api-keys', icon: Key, label: 'nav.apiKeys', fallback: 'مفاتيح API', permission: 'api_keys:view' },
-      { to: '/migration', icon: ArrowLeftRight, label: 'nav.migration', fallback: 'الهجرة والتسويق', permission: 'settings:read' },
-      { to: '/ai-assistant', icon: Bot, label: 'nav.aiAssistant', fallback: 'المساعد الذكي', permission: 'settings:read' },
+      { to: '/migration', icon: ArrowLeftRight, label: 'nav.migration', fallback: 'استيراد وهجرة المتجر', permission: 'settings:read' },
     ],
   },
 ];
