@@ -598,8 +598,8 @@ importers:
         specifier: ^0.45.2
         version: 0.45.2(postgres@3.4.9)
       nodemailer:
-        specifier: ^6.9.16
-        version: 6.10.1
+        specifier: ^9.0.1
+        version: 9.0.1
     devDependencies:
       "@types/node":
         specifier: ^20.14.12
@@ -7463,10 +7463,10 @@ packages:
       }
     engines: { node: ">=18" }
 
-  nodemailer@6.10.1:
+  nodemailer@9.0.1:
     resolution:
       {
-        integrity: sha512-Z+iLaBGVaSjbIzQ4pX6XV41HrooLsQ10ZWPUehGmuantvzWoDVBnmsdUcOIDM1t+yPor5pDhVlDESgOMEGxhHA==,
+        integrity: sha512-Gwv8SQewT616ZM/URn0H54b8PWo/Wum7md3EW2aWy1lO27+WZCX+Xyak3J+NlmHUjDh5ME+uesJUDRbR3Ye8Bw==,
       }
     engines: { node: ">=6.0.0" }
 
@@ -13129,7 +13129,7 @@ snapshots:
 
   node-releases@2.0.48: {}
 
-  nodemailer@6.10.1: {}
+  nodemailer@9.0.1: {}
 
   normalize-path@3.0.0: {}
 

@@ -20,7 +20,7 @@
     "@haa/db": "workspace:*",
     "@haa/shared": "workspace:*",
     "drizzle-orm": "^0.45.2",
-    "nodemailer": "^6.9.16"
+    "nodemailer": "^9.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.14.12",
