@@ -4,6 +4,7 @@ export { ResendEmailProvider } from './providers/resend.js';
 export { SmtpEmailProvider } from './providers/smtp.js';
 export { UnifoncSmsProvider, UnifoncWhatsAppProvider } from './providers/unifonic.js';
 export { TaqnyatSmsProvider } from './providers/taqnyat.js';
+export { renderHaaEmail, escapeHtml, type HaaEmailOptions } from './email-template.js';
 
 export interface NotificationMessage {
   recipient: string;

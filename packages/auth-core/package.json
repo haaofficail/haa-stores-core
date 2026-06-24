@@ -19,6 +19,7 @@
   "dependencies": {
     "@haa/db": "workspace:*",
     "@haa/integration-core": "workspace:*",
+    "@haa/notification-core": "workspace:*",
     "@haa/shared": "workspace:*",
     "bcryptjs": "^2.4.3",
     "drizzle-orm": "^0.45.2",

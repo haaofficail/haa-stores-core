@@ -7,3 +7,4 @@ export * from './admin-auth-service.js';
 export * from './permission-service.js';
 export * from './tenant-owners-helper.js';
 export * from './employee-service.js';
+export * from './email-otp-service.js';
