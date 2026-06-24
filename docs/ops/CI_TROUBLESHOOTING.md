@@ -109,6 +109,32 @@ type(scope): subject
 
 ---
 
+## Pre-push verification rule (mandatory)
+
+**Before pushing any PR that touches a workflow / config / yaml file**:
+
+```bash
+pnpm test
+```
+
+NOT `pnpm vitest run tests/<one-file>.test.ts`. The full suite catches:
+
+- pre-existing tests that pin the OLD content of the file you just changed
+- prettier-induced regex mismatches (the YAML quote-style trap)
+- cross-file contract guards in `tests/<feature>-contract.test.ts` lock files
+- the snapshot integrity test if a migration changed
+
+If `pnpm test` reports a local failure due to env vars (e.g.
+`production-guardrails.test.ts` needs `DATABASE_URL`), confirm the SAME
+test passes in CI before declaring it noise — the CI image has the
+required env vars set. Otherwise it's a real regression.
+
+This rule emerged from PR #190 (paths-ignore for docs) — I shipped
+single-quote regex on YAML strings, prettier double-quoted the YAML,
+six PRs in a row broke CI before the hotfix landed.
+
+---
+
 ## Related files
 
 - `.github/workflows/deploy.yml` — Deploy + hardened SSH warmup.
