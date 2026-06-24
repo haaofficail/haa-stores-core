@@ -49,6 +49,14 @@ const FORBIDDEN_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
     pattern: /from\s+['"]@haa\/theme-web['"]/,
     reason: 'Theme preview app — not for dashboards',
   },
+  {
+    // Added in W1 cleanup pass (Autopilot Phase 3): the dashboard used
+    // `<ThemeProvider>` as a dead wrapper at root. Removed; this guard
+    // prevents reintroduction. The dashboard's own chrome theme comes
+    // from @haa/system-theme (allowed).
+    pattern: /from\s+['"]@haa\/theme-react['"]/,
+    reason: 'Storefront-only React runtime — use @haa/system-theme for dashboard chrome',
+  },
 ];
 
 const DASHBOARD_ROOTS = [
