@@ -32,6 +32,9 @@ on:
           - FEATURE_WHATSAPP_LIVE
           - FEATURE_LOYALTY_LIVE
           - SENTRY_DSN
+          - RESEND_API_KEY
+          - EMAIL_FROM
+          - LANDING_CONTACT_ADMIN_EMAIL
         required: true
       value:
         description: "New value (leave blank to unset)"
@@ -100,8 +103,12 @@ jobs:
             cd "/srv/haa-stores"
 
             # Allow-list — refuse arbitrary keys.
+            # MUST stay in sync with the workflow_dispatch `key.options`
+            # list above; failing to update both leaves a UI option that
+            # this guard rejects.
             case "$ENV_KEY" in
               FEATURE_WHATSAPP_LIVE|FEATURE_LOYALTY_LIVE|SENTRY_DSN) ;;
+              RESEND_API_KEY|EMAIL_FROM|LANDING_CONTACT_ADMIN_EMAIL) ;;
               *)
                 echo "::error::Key '$ENV_KEY' is not on the allow-list. Refusing to edit .env."
                 exit 1 ;;
