@@ -113,20 +113,15 @@ describe('Deploy hardening — fail2ban + watchdog + scheduler test gate', () =>
     const ciYml = read(resolve(projectRoot, '.github/workflows/ci.yml'));
 
     it('deploy.yml skips on docs-only pushes', () => {
-      // Without this, every ledger / agent-os / README PR fires a 5-min
-      // Deploy. The operator saw 9 unnecessary Deploys in one hour
-      // after rapid-fire docs PRs. Paths-ignore eliminates that.
+      // Accept both single- and double-quote YAML scalars (prettier
+      // reformats to double quotes during pre-commit).
       expect(deployYml).toMatch(/paths-ignore:/);
-      expect(deployYml).toMatch(/'\*\*\/\*\.md'/);
-      expect(deployYml).toMatch(/'docs\/\*\*'/);
+      expect(deployYml).toMatch(/["']\*\*\/\*\.md["']/);
+      expect(deployYml).toMatch(/["']docs\/\*\*["']/);
     });
 
     it('deploy.yml skips when the watchdog YAML itself changes (no recursion)', () => {
-      // The watchdog file is part of the deploy lifecycle but does not
-      // itself need to be deployed. Without this guard, editing the
-      // watchdog could trigger a deploy that the watchdog then has to
-      // recover from — pure noise.
-      expect(deployYml).toMatch(/'\.github\/workflows\/deploy-watchdog\.yml'/);
+      expect(deployYml).toMatch(/["']\.github\/workflows\/deploy-watchdog\.yml["']/);
     });
 
     it('ci.yml skips push + pull_request when only docs change', () => {
