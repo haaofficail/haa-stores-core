@@ -155,3 +155,25 @@ Manual shipping means orders are fulfilled offline — merchants coordinate ship
 | `apps/api/src/env.ts`                   | Zod guardrails for OTO credentials            |
 | `tests/production-guardrails.test.ts`   | Automated guardrail tests                     |
 | `deploy/production/.env.example`        | Env variable template                         |
+
+---
+
+## W5 Failure Scenarios (Autopilot Phase 3)
+
+The shipping aggregator must handle the following 6 failure modes
+without crashing the checkout flow or silently dropping orders.
+Each scenario maps to a specific guard in the shipping-core layer:
+
+| Scenario                  | Handler module                                              | Guard                                                                                                      |
+| ------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Provider unavailable      | `packages/shipping-core/src/factory.ts`                     | `getShippingProviderStatus()` returns `provider_error`; UI falls back to manual.                           |
+| Invalid webhook signature | `apps/api/src/routes/shipping-webhooks.ts` + provider class | `verifyWebhookSignature()` returns false → 401 + audit log, no DB mutation.                                |
+| Duplicate webhook         | `apps/api/src/routes/shipping-webhooks.ts`                  | `deduplicateWebhook()` via `@haa/integration-core` — second arrival returns `duplicate_ignored`.           |
+| Rate timeout              | `packages/shipping-core/src/rate-cache.ts`                  | Cached rate served when provider exceeds the timeout budget; otherwise empty rates returned (no throw).    |
+| Label creation failure    | Provider class `createLabel()`                              | Returns `{ success: false }` shape (no exception); merchant dashboard surfaces the message + retry button. |
+| Return request failure    | `packages/shipping-core/src/returns.ts`                     | `requestReturn()` returns failure with a reason; UI prompts merchant to escalate to ops.                   |
+
+**Live shipping is gated** by the readiness state machine in
+`readiness.ts` — providers stay in `live_locked` until: (a) credentials
+are present, (b) sandbox is `sandbox_verified`, (c) owner has flipped
+the launch gate.
