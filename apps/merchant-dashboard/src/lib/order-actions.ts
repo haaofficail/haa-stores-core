@@ -41,11 +41,32 @@ const TERMINAL = new Set([
   'partially_refunded', 'returned_to_sender',
 ]);
 
+// Providers whose refund UI is intentionally hidden until live
+// implementation lands. W4 (Autopilot Phase 3) — DECISION-OS-011 +
+// GEIDEA_READINESS.md: GeideaPaymentProvider.refundPayment is still
+// a stub returning success:false, and GEIDEA_CAPABILITIES.supportsRefunds
+// is false. Showing the merchant a refund button that does nothing is
+// worse than not showing it at all. Remove from this set ONLY when
+// the provider's refund pipeline is verified end-to-end.
+const PROVIDERS_WITHOUT_REFUND_UI = new Set(['geidea']);
+
+function orderProviderCode(order: { paymentMethod?: string; paymentProvider?: string; provider?: string } | null | undefined): string | undefined {
+  // Field naming varies by call site:
+  //  - `paymentMethod` is the storefront-facing label (e.g. 'geidea_card', 'cash_on_delivery')
+  //  - `paymentProvider` / `provider` is the canonical provider code in payments table
+  // We accept any of the three, lower-case, and strip the "_card" / "_pay" suffix
+  // so 'geidea_card' resolves to 'geidea'.
+  const raw = (order?.paymentProvider ?? order?.provider ?? order?.paymentMethod ?? '').toString().toLowerCase();
+  return raw.replace(/_(card|pay|gateway)$/, '') || undefined;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getOrderActions(order: any): OrderActions {
   const status = order?.status;
   const isPickup = order?.fulfillmentType === 'local_pickup';
   const isCOD = order?.paymentMethod === 'cash_on_delivery';
+  const providerCode = orderProviderCode(order);
+  const refundUiAllowed = !providerCode || !PROVIDERS_WITHOUT_REFUND_UI.has(providerCode);
   const hasGift = !!(
     order?.sendAsGift ||
     order?.giftMessage ||
@@ -234,7 +255,7 @@ export function getOrderActions(order: any): OrderActions {
     }
   }
 
-  if (status === 'returned') {
+  if (status === 'returned' && refundUiAllowed) {
     pushDanger('refunded', 'refund', 'استرجاع');
   }
 
