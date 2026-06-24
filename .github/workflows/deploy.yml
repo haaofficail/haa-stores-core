@@ -1,8 +1,31 @@
 name: Deploy
 
+# Triggered on push to main BY DEFAULT, but skipped when the push only
+# touches documentation, workflow READMEs, or the ledger. This keeps the
+# Deploy queue free for code changes and prevents the "many cancelled /
+# pending" Actions noise that the operator was seeing after rapid-fire
+# docs-only PRs.
+#
+# To FORCE a deploy after a docs-only merge (e.g. you also need to
+# restart api to pick up a new env var), use `workflow_dispatch` with
+# the desired target.
 on:
   push:
     branches: [main]
+    paths-ignore:
+      # All Markdown documentation — including the HAA_TASK_LEDGER and
+      # all docs/ subtrees + the agent-os planning files.
+      - "**/*.md"
+      - "docs/**"
+      # The deploy-watchdog workflow is a recovery harness for THIS
+      # workflow; changes to it MUST NOT trigger a deploy (would loop).
+      - ".github/workflows/deploy-watchdog.yml"
+      # Sub-agent docs / private memory / readme files anywhere.
+      - "**/README.md"
+      - "**/CHANGELOG.md"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - "LICENSE*"
   workflow_dispatch:
     inputs:
       environment:
