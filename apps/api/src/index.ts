@@ -65,6 +65,7 @@ import { marketplacesRouter } from './routes/marketplaces.js';
 import { haaMarketplaceRouter } from './routes/haa-marketplace.js';
 import { sitemapRouter } from './routes/sitemap.js';
 import { createLandingAIAgentRoute } from './routes/landing-ai-agent.js';
+import { landingRouter } from './routes/landing.js';
 import { paymentSettingsRouter } from './routes/payment-settings.js';
 import { providerStatusRouter } from './routes/provider-status.js';
 import { supportRouter } from './routes/support.js';
@@ -320,6 +321,9 @@ app.route('/', sitemapRouter);
 // DECISION-OS-015: Caddy strips /api/* before forwarding (deploy/{staging,production}/Caddyfile).
 // Hono mounts WITHOUT the /api/ prefix; client SPAs continue to call /api/...
 app.route('/landing-ai-agent', createLandingAIAgentRoute());
+// Public landing contact form. Mounted at /landing so the storefront
+// hits /api/landing/contact (Caddy strips /api/* before forwarding).
+app.route('/landing', landingRouter);
 app.get('/brand', async (c) => {
   try {
     const [row] = await db
