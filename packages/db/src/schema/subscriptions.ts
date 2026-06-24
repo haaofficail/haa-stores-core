@@ -27,6 +27,17 @@ export const merchantSubscriptions = pgTable('merchant_subscriptions', {
   currentPeriodStart: timestamp('current_period_start').notNull().defaultNow(),
   currentPeriodEnd: timestamp('current_period_end'),
   trialEnd: timestamp('trial_end'),
+  // HAA-SUB-RENEWAL — dedupe anchor for the renewal-reminder email
+  // ladder. The notifier (SubscriptionRenewalNotifier.runDailySweep)
+  // fires at most one reminder per (period, step) pair:
+  //   - lastRenewalReminderStep: which ladder step we last reminded
+  //     for (7 = 7-day reminder, 1 = 1-day reminder). NULL means
+  //     "never reminded for the current period".
+  //   - lastRenewalReminderAt: when that reminder was sent. The
+  //     skip predicate anchors on currentPeriodStart so a brand-new
+  //     period resets dedup naturally without any backfill.
+  lastRenewalReminderAt: timestamp('last_renewal_reminder_at'),
+  lastRenewalReminderStep: integer('last_renewal_reminder_step'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
