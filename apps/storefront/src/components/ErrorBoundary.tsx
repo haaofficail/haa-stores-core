@@ -59,7 +59,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     console.error(`[ErrorBoundary] ${errorCode} | ${correlationId}`, error, info.componentStack);
 
-    const BASE_URL = (import.meta as any).env?.VITE_API_URL || '';
+    const BASE_URL = (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL || '';
 
     // Extract the top frame of the stack (filename:line) for debugging
     const firstFrame = (info.componentStack || '').split('\n')[1]?.trim() ?? null;
@@ -118,13 +118,13 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex flex-col gap-2 items-center">
               <button
                 onClick={() => window.location.reload()}
-                className="px-6 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors inline-block"
+                className="px-6 py-2 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition-colors inline-block"
               >
                 تحديث الصفحة
               </button>
               <a
                 href="/"
-                className="text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors"
+                className="text-primary-600 text-sm font-medium hover:text-primary-700 transition-colors"
               >
                 العودة للرئيسية
               </a>

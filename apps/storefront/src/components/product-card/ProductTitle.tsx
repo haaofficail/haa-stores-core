@@ -44,7 +44,7 @@ export function ProductTitle({
   size = 'md', 
   weight = 'semibold', 
   color = 'text-black',
-  hoverColor = 'text-blue-600',
+  hoverColor = 'text-primary-600',
   className = '',
   asLink = true
 }: ProductTitleProps) {
