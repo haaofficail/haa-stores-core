@@ -301,6 +301,22 @@ function startScheduler(): void {
     return;
   }
 
+  // Root-cause fix for PROBLEM-012 (CI flaky teardown):
+  // When this module is imported by a vitest test (e.g.
+  // `tests/live-presence.test.ts` reaching for `JOB_NAMES`),
+  // `setInterval` + the per-job `runJob` kick-off would race
+  // vitest's `onUserConsoleLog` RPC and surface as
+  // `EnvironmentTeardownError: Closing rpc while ...`. Killing
+  // 3947 green tests because of stray scheduler logs is a CI
+  // false-positive we've band-aided multiple times.
+  //
+  // The scheduler MUST NOT auto-start in test runs. NODE_ENV=test
+  // is set by vitest. CI build pipelines that legitimately want
+  // the scheduler should set NODE_ENV=production (deploy.yml does).
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
   console.log('[scheduler] starting with jobs:', scheduledJobs.map(j => `${j.name} (${j.intervalMs}ms)`).join(', '));
 
   for (const job of scheduledJobs) {
@@ -341,6 +357,9 @@ for (const job of scheduledJobs) {
 let bullWorker: { close: () => Promise<void>; on: (event: string, cb: (...args: unknown[]) => void) => void } | null = null;
 
 async function startBullMQWorker(): Promise<void> {
+  // Same NODE_ENV=test guard as startScheduler — no async workers
+  // during vitest runs (see PROBLEM-012 rationale in startScheduler).
+  if (process.env.NODE_ENV === 'test') return;
   const redisUrl = process.env.QUEUE_REDIS_URL;
   if (!redisUrl) return;
 

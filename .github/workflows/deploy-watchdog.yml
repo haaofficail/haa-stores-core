@@ -1,0 +1,153 @@
+name: Deploy Watchdog
+
+# Reacts to a failed Deploy run. If the failure looks like a transient
+# fail2ban / SSH-timeout issue, waits past the ban window then re-runs
+# the failed jobs once. If the deploy still fails, opens (or updates) a
+# tracking GitHub Issue so the operator sees one signal instead of N.
+#
+# Root cause this addresses: GitHub Actions had no automated recovery for
+# the staging-deploy fail2ban window. A failed deploy would sit red until
+# someone noticed and manually re-ran it.
+#
+# Safety:
+#   - Only ONE auto-rerun per failure (sentinel label in the issue).
+#   - Only on `main` branch (production stays manual).
+#   - No deploy, no migration — just `gh run rerun --failed`.
+#   - If the rerun also fails, we DO NOT loop. We open the issue and stop.
+
+on:
+  workflow_run:
+    workflows: ["Deploy"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: write
+  issues: write
+
+jobs:
+  recover:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect failed Deploy run
+        id: inspect
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          # Pull the first few logs from the failed jobs to detect the
+          # fail2ban signature. We classify the failure so we only auto-retry
+          # the transient class — never a real code regression.
+          logs="$(gh run view "$RUN_ID" --log-failed 2>&1 | head -200 || true)"
+          fail_kind="unknown"
+          if grep -qE "SSH warmup failed|ssh: connect to host.*port 22: Connection timed out|fail2ban" <<<"$logs"; then
+            fail_kind="ssh-fail2ban"
+          elif grep -qE "ESLint found too many warnings|TypeError|FAIL +tests/|##\[error\]Process completed with exit code" <<<"$logs"; then
+            fail_kind="code-failure"
+          fi
+          echo "fail_kind=$fail_kind" >> "$GITHUB_OUTPUT"
+          echo "Detected failure kind: $fail_kind"
+
+      - name: Wait past fail2ban window (only for transient SSH failures)
+        if: steps.inspect.outputs.fail_kind == 'ssh-fail2ban'
+        run: |
+          # Staging fail2ban sshd jail default ban = 15 min. We add a small
+          # safety margin so the rerun starts AFTER the unban happens.
+          echo "Sleeping 18 min to outlast the 15-min fail2ban window..."
+          sleep 1080
+
+      - name: Auto-rerun failed jobs (once)
+        if: steps.inspect.outputs.fail_kind == 'ssh-fail2ban'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          # The triggering run carries a sentinel marker in its name on
+          # second-attempt runs. Detect via the run's `attempt` field —
+          # GitHub increments it on rerun-failed. If attempt > 1 we have
+          # already retried; opening an issue is the next step.
+          attempt="$(gh run view "$RUN_ID" --json runAttempt --jq .runAttempt)"
+          echo "Run attempt = $attempt"
+          if [ "$attempt" -gt 1 ]; then
+            echo "Already retried once; not retrying again."
+            echo "WATCHDOG_GIVE_UP=1" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          echo "Rerunning failed jobs for run $RUN_ID..."
+          gh run rerun "$RUN_ID" --failed
+          echo "WATCHDOG_RETRIED=1" >> "$GITHUB_ENV"
+
+      - name: Open or update tracking issue
+        # Fires for: code-failure (always), unknown (always), or
+        # ssh-fail2ban after we've given up (attempt > 1).
+        if: steps.inspect.outputs.fail_kind != 'ssh-fail2ban' || env.WATCHDOG_GIVE_UP == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          FAIL_KIND: ${{ steps.inspect.outputs.fail_kind }}
+        run: |
+          set -euo pipefail
+          title="🚨 Deploy failed on main — ${HEAD_SHA:0:7} (${FAIL_KIND})"
+          body=$(cat <<EOM
+          The latest Deploy workflow run failed.
+
+          - **Run:** ${RUN_URL}
+          - **Commit:** \`${HEAD_SHA}\`
+          - **Failure class:** \`${FAIL_KIND}\`
+          - **Auto-retried by watchdog:** ${WATCHDOG_RETRIED:-0}
+
+          ## Playbook
+
+          1. Read \`docs/ops/DEPLOY_FAILURE_PLAYBOOK.md\` for the canonical
+             response sequence.
+          2. If the run logs show \`fail2ban\` or \`SSH warmup failed\`,
+             unban manually:
+             \`\`\`bash
+             ssh deploy@72.61.108.208 'sudo fail2ban-client unban <runner-ip>'
+             \`\`\`
+          3. Re-run the failed jobs via \`gh run rerun $RUN_ID --failed\`.
+          4. If failure recurs after the unban: this is NOT a fail2ban
+             issue. Read the run logs for the real cause.
+
+          ---
+          _Opened automatically by \`deploy-watchdog.yml\`. This issue will
+          be closed by the next successful Deploy on main._
+          EOM
+          )
+          # Search for an existing open issue with the same title prefix.
+          # We open at most ONE issue per failure class per run.
+          existing="$(gh issue list --state open --label deploy-failure --search "in:title $HEAD_SHA" --json number --jq '.[0].number' || true)"
+          if [ -n "$existing" ] && [ "$existing" != "null" ]; then
+            echo "Updating existing issue #$existing"
+            gh issue comment "$existing" --body "Retry also failed. Run: ${RUN_URL}"
+          else
+            gh issue create \
+              --title "$title" \
+              --body "$body" \
+              --label deploy-failure \
+              || true
+          fi
+
+  close_on_success:
+    # When a Deploy run finally succeeds on main, close any open
+    # deploy-failure issues so the dashboard self-heals.
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close open deploy-failure issues
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          set -euo pipefail
+          issues="$(gh issue list --state open --label deploy-failure --json number --jq '.[].number' || true)"
+          for n in $issues; do
+            gh issue comment "$n" --body "Resolved by successful Deploy: ${RUN_URL}"
+            gh issue close "$n"
+          done
