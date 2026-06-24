@@ -20,8 +20,8 @@ export function Features({ t }: { t: TFn }) {
       stat: '< 60 ثانية',
       title: t('landing.features.launch.title', 'إطلاق فوري'),
       desc: t('landing.features.launch.desc', 'افتح متجرك وأضف أول منتج في أقل من دقيقة. لا فريق تقني، لا انتظار.'),
-      gradient: 'from-blue-400 to-blue-700',
-      shadow: 'shadow-blue-500/30',
+      gradient: 'from-primary-400 to-primary-700',
+      shadow: 'shadow-primary-500/30',
     },
     {
       id: 'themes',
@@ -29,8 +29,8 @@ export function Features({ t }: { t: TFn }) {
       stat: getClaim('themeCount').text,
       title: t('landing.features.themes.title', 'ثيمات احترافية'),
       desc: t('landing.features.themes.desc', 'صمّمها مصممون محترفون. غيّر الألوان والخطوط بنقرة واحدة بدون لمس الكود.'),
-      gradient: 'from-blue-500 to-blue-800',
-      shadow: 'shadow-blue-600/30',
+      gradient: 'from-primary-500 to-primary-800',
+      shadow: 'shadow-primary-600/30',
     },
     {
       id: 'payments',
@@ -38,8 +38,8 @@ export function Features({ t }: { t: TFn }) {
       stat: getClaim('zeroCommission').text,
       title: t('landing.features.payments.title', 'دفع سعودي كامل'),
       desc: t('landing.features.payments.desc', 'مدى، Apple Pay، فيزا، ماستركارد، تابي، تمارا. كل البوابات بدون عمولات خفية.'),
-      gradient: 'from-blue-400 to-blue-600',
-      shadow: 'shadow-blue-500/30',
+      gradient: 'from-primary-400 to-primary-600',
+      shadow: 'shadow-primary-500/30',
     },
     {
       id: 'shipping',
@@ -47,8 +47,8 @@ export function Features({ t }: { t: TFn }) {
       stat: 'شحن مدمج',
       title: t('landing.features.shipping.title', 'شحن وتوصيل'),
       desc: t('landing.features.shipping.desc', 'اربط متجرك بشركات الشحن السعودية. احسب تكلفة التوصيل آليًا وتابع الطلبات.'),
-      gradient: 'from-blue-400 to-blue-700',
-      shadow: 'shadow-blue-500/30',
+      gradient: 'from-primary-400 to-primary-700',
+      shadow: 'shadow-primary-500/30',
     },
   ];
   return (
@@ -71,7 +71,7 @@ export function Features({ t }: { t: TFn }) {
               <span className={`relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg ${shadow}`}>
                 <Icon className="h-6 w-6" strokeWidth={1.75} />
               </span>
-              <div className="relative mt-8 text-sm font-bold uppercase tracking-wider text-blue-600">{stat}</div>
+              <div className="relative mt-8 text-sm font-bold uppercase tracking-wider text-primary-600">{stat}</div>
               <h3 className="relative mt-4 text-[18px] font-bold tracking-[-0.01em] text-text-primary">{title}</h3>
               <p className="relative mt-4 text-[15px] leading-[1.6] text-text-secondary">{desc}</p>
             </li>

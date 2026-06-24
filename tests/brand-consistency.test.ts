@@ -76,4 +76,52 @@ describe('Brand consistency (DECISION-OS-010)', () => {
     }
     expect(violations).toEqual([]);
   });
+
+  // W2 cleanup (Autopilot Phase 3): platform-side surfaces must use the
+  // primary-* Tailwind palette (centered on the canonical #5c9cd5) instead
+  // of the raw blue-* palette. EXCEPTION: third-party marketplace branding
+  // (e.g. Zid's actual blue brand color) is documented and allowed via the
+  // allow-list below.
+  it('platform-side landing + storefront surfaces use primary-* not blue-*', () => {
+    const allowList = [
+      // Zid marketplace integration uses Zid's actual brand color (blue).
+      // Per-vendor branding is legitimate and NOT platform brand drift.
+      'apps/storefront/src/landing/sections/AboutHaa.tsx',
+      'apps/merchant-dashboard/src/components/modals/MarketplaceGuideModal.tsx',
+      'apps/merchant-dashboard/src/pages/MarketplaceGuide.tsx',
+      'apps/merchant-dashboard/src/pages/Marketplaces.tsx',
+      'apps/merchant-dashboard/src/pages/SyncLogs.tsx',
+      'apps/merchant-dashboard/src/pages/IntegrationHub.tsx',
+      // Status semantic colors (shipping/in_progress) — debatable, deferred
+      // to a separate semantic-color audit. Not platform brand drift.
+      'apps/merchant-dashboard/src/pages/Support.tsx',
+      'apps/merchant-dashboard/src/pages/orders/OrderDetailDialog.tsx',
+    ];
+    const PLATFORM_ROOTS = [
+      resolve(ROOT, 'apps/storefront/src'),
+      resolve(ROOT, 'apps/merchant-dashboard/src'),
+    ];
+    const violations: string[] = [];
+    for (const r of PLATFORM_ROOTS) {
+      const files = walk(r);
+      for (const file of files) {
+        const rel = file.replace(ROOT + '/', '');
+        if (allowList.some((a) => rel === a)) continue;
+        if (!file.endsWith('.tsx') && !file.endsWith('.ts')) continue;
+        const text = readFileSync(file, 'utf-8');
+        // Match Tailwind class refs only (avoid matching e.g. `bluebox-shadow`)
+        if (/\b(text|bg|from|to|via|ring|shadow|border|hover:text|hover:bg)-blue-(500|600|700|800)\b/.test(text)) {
+          violations.push(rel);
+        }
+      }
+    }
+    if (violations.length > 0) {
+      throw new Error(
+        'W2 brand drift — platform surfaces using blue-* instead of primary-*:\n' +
+          violations.join('\n') +
+          '\n\nIf this is intentional (e.g. third-party brand badge), add the file to the allowList in this test.',
+      );
+    }
+    expect(violations).toEqual([]);
+  });
 });
