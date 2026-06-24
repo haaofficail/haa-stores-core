@@ -344,6 +344,9 @@ importers:
       "@haa/commerce-core":
         specifier: workspace:*
         version: link:../../packages/commerce-core
+      "@haa/shared":
+        specifier: workspace:*
+        version: link:../../packages/shared
       "@haa/storefront-themes":
         specifier: workspace:*
         version: link:../../packages/storefront-themes

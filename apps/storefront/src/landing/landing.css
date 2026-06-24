@@ -1073,6 +1073,13 @@
   font-size: var(--text-sm);
   color: var(--text-tertiary);
 }
+.lp-legal-entity {
+  margin: 12px 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  text-align: center;
+  line-height: 1.6;
+}
 .lp-foot__trust {
   border-top: 1px solid var(--border-subtle);
   padding-top: 26px;

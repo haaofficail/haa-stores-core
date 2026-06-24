@@ -1,5 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- pre-existing lucide usages; PR #181 only adds legal-entity import. Lucide→<Icon> migration tracked separately.
 import { ArrowRight, FileText, Calendar, Clock } from 'lucide-react';
+import { PLATFORM_LEGAL_ENTITY } from '@haa/shared';
 
 interface LegalDocumentSection {
   title: string;
@@ -120,6 +122,11 @@ function LegalPageContent({ doc }: { doc: LegalDocument }) {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="mb-6 p-4 rounded-2xl bg-surface-2/50 border border-border/60">
+        <p className="text-sm font-semibold text-text-primary">{PLATFORM_LEGAL_ENTITY.legalNameAr}</p>
+        <p className="text-xs text-text-secondary mt-1" dir="rtl">{PLATFORM_LEGAL_ENTITY.displayLine}</p>
       </div>
 
       <div className="space-y-6">
