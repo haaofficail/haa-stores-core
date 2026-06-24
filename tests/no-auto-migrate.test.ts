@@ -62,4 +62,45 @@ describe('No auto-migrate in deploy automation (DECISION-OS-016)', () => {
       expect(offenders).toEqual([]);
     });
   }
+
+  // W8 (Autopilot Phase 3): the spec ALSO requires that the manual
+  // operator path is documented + reachable. The canonical path is:
+  //   gh workflow run "Ops — Staging DB Migrate"
+  // backed by .github/workflows/ops-staging-migrate.yml. That workflow
+  // is explicit (workflow_dispatch only) and is NOT "auto" — it
+  // requires owner click.
+  it('ops-staging-migrate workflow exists + is workflow_dispatch ONLY (no push trigger)', () => {
+    const opsYml = readFileSync(
+      resolve(ROOT, '.github/workflows/ops-staging-migrate.yml'),
+      'utf-8',
+    );
+    expect(opsYml).toMatch(/workflow_dispatch/);
+    // It must NOT have a `push:` trigger — that would be auto-migrate.
+    // Allow `push:` only inside comments (lines starting with `#`).
+    const lines = opsYml.split('\n');
+    const pushTriggers = lines.filter((l) => /^\s*push:/.test(l));
+    expect(pushTriggers).toEqual([]);
+  });
+
+  it('deploy-bundle.sh requires HAA_DEPLOY_BUNDLE_MIGRATE_ACK to run migrate', () => {
+    const bundle = readFileSync(
+      resolve(ROOT, 'scripts/deploy-bundle.sh'),
+      'utf-8',
+    );
+    // The gate token is documented + checked before invoking migrate.
+    expect(bundle).toMatch(/HAA_DEPLOY_BUNDLE_MIGRATE_ACK/);
+    expect(bundle).toMatch(/I-have-reviewed-the-migrations/);
+    expect(bundle).toMatch(/DECISION-OS-016/);
+  });
+
+  it('agent memory / docs document the no-auto-migrate rule', () => {
+    // The rule must be discoverable from at least one OWNER_DECISIONS
+    // entry so any future agent finds it before touching deploy paths.
+    const ownerDecisions = readFileSync(
+      resolve(ROOT, 'docs/agent-os/OWNER_DECISIONS.md'),
+      'utf-8',
+    );
+    expect(ownerDecisions).toMatch(/DECISION-OS-016/);
+    expect(ownerDecisions.toLowerCase()).toMatch(/no auto-migrate|auto-migrate.*forbid|migrations.*separate/);
+  });
 });
