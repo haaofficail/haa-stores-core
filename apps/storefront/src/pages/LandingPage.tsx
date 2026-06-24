@@ -336,20 +336,58 @@ export default function LandingPage() {
 
   const [faqOpen, setFaqOpen] = useState(0);
 
-  // Contact form state. Submit composes a mailto: with the form body —
-  // no backend endpoint exists yet. The mailto fallback keeps the page
-  // useful before a real /api/contact route lands.
+  // Contact form state. Submit POSTs to /api/landing/contact (backend
+  // PR #157). Falls back to mailto: only when the network request itself
+  // throws (offline / CORS / DNS) so the user always has a path.
   const [contactForm, setContactForm] = useState({ name: '', email: '', phone: '', message: '' });
   const [contactSent, setContactSent] = useState(false);
-  const onContactSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const [contactSubmitting, setContactSubmitting] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
+
+  const onContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setContactSubmitting(true);
+    setContactError(null);
     const { name, email, phone, message } = contactForm;
-    const subject = encodeURIComponent(`استفسار من ${name || 'الموقع'}`);
-    const body = encodeURIComponent(
-      `الاسم: ${name}\nالبريد: ${email}\nالجوال: ${phone}\n\n${message}`
-    );
-    window.location.href = `mailto:hello@haastores.com?subject=${subject}&body=${body}`;
-    setContactSent(true);
+    try {
+      const res = await fetch('/api/landing/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email,
+          phone: phone || undefined,
+          message,
+          // Honeypot. Real users never see the hidden input; bots that
+          // auto-fill every field trip this and the server silently absorbs.
+          website: '',
+        }),
+      });
+      const json: unknown = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const code = (json as { error?: { code?: string } })?.error?.code;
+        const msg =
+          (json as { error?: { message?: string } })?.error?.message ??
+          (code === 'RATE_LIMITED'
+            ? 'تجاوزت الحد المسموح من الرسائل. حاول لاحقاً.'
+            : 'تعذّر إرسال رسالتك. حاول مرة أخرى.');
+        setContactError(msg);
+        return;
+      }
+      setContactSent(true);
+    } catch {
+      // Network / CORS / DNS / offline — fall back to mailto so the user
+      // still has a path. Pre-fills subject + body identical to the
+      // pre-backend version.
+      const subject = encodeURIComponent(`استفسار من ${name || 'الموقع'}`);
+      const body = encodeURIComponent(
+        `الاسم: ${name}\nالبريد: ${email}\nالجوال: ${phone}\n\n${message}`,
+      );
+      window.location.href = `mailto:hello@haastores.com?subject=${subject}&body=${body}`;
+      setContactSent(true);
+    } finally {
+      setContactSubmitting(false);
+    }
   };
 
   return (
@@ -857,8 +895,8 @@ export default function LandingPage() {
                     <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-pill bg-primary-50 text-primary-600">
                       <CheckCircle size={32} />
                     </div>
-                    <h3 className="text-2xl font-semibold text-text-primary">فتحنا لك بريدك الافتراضي</h3>
-                    <p className="text-text-secondary text-sm">راجع الرسالة وأرسلها — سنرد خلال يوم عمل.</p>
+                    <h3 className="text-2xl font-semibold text-text-primary">وصلتنا رسالتك</h3>
+                    <p className="text-text-secondary text-sm">سنرد عليك خلال يوم عمل واحد على البريد الذي زوّدتنا به.</p>
                   </div>
                 ) : (
                   <>
@@ -900,9 +938,32 @@ export default function LandingPage() {
                       onChange={(e) => setContactForm((s) => ({ ...s, message: e.target.value }))}
                       placeholder="اكتب استفسارك أو احتياجك — ما حجم متجرك المتوقع، ووش تحتاج منا؟"
                     />
+                    {/* Honeypot — hidden from real users, trips bots that auto-fill every field. */}
+                    <input
+                      type="text"
+                      name="website"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      defaultValue=""
+                      style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
+                    />
+                    {contactError && (
+                      <div
+                        role="alert"
+                        className="text-sm text-danger bg-danger-soft border border-danger-soft rounded-xl px-4 py-3"
+                      >
+                        {contactError}
+                      </div>
+                    )}
                     <div className="flex justify-end pt-2">
-                      <StoreButton type="submit" size="lg" iconEnd={<Send size={18} />}>
-                        أرسل الرسالة
+                      <StoreButton
+                        type="submit"
+                        size="lg"
+                        iconEnd={<Send size={18} />}
+                        disabled={contactSubmitting}
+                      >
+                        {contactSubmitting ? 'جاري الإرسال…' : 'أرسل الرسالة'}
                       </StoreButton>
                     </div>
                   </>
