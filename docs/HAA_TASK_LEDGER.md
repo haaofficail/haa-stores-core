@@ -17,14 +17,14 @@
 
 ## 1. Executive Status
 
-- **Overall completion:** **62%**
-- **Engineering completion:** **78%**
+- **Overall completion:** **64%**
+- **Engineering completion:** **80%**
 - **Commercial launch readiness:** **38%**
 - **Current phase:** Phase 2 — transactional emails, billing reminders, publish-gate UX
 - **Last updated:** 2026-06-24
-- **Last completed task:** PR #177 — system-default email abandoned-cart recovery ladder (merged main `11ff2b7c`)
+- **Last completed task:** PR #179 — subscription renewal reminder emails (7d + 1d) + worker.ts `any` cleanup (merged main)
 - **Current blocker:** Geidea production credentials + shipping-aggregator final selection (owner gates G1–G10)
-- **Next recommended action:** Land PR #178 (subscription renewal reminder), then PR #179 (legal entity CR 7038798612 wired into email footers + storefront), then start the 22-wave Autopilot from W0.
+- **Next recommended action:** PR #180 (CR 7038798612 → email footer + storefront + legal pages), apply migrations 0083 + 0084 + 0085 via `ops-staging-migrate`, then begin 22-wave Autopilot from W0.
 
 ## 2. Progress Scale
 
@@ -68,7 +68,7 @@
 | B6  | Order transactional emails    | Done        |     100% | PR #167 (`4bfcfd95`) — created/status/refund/new_order                              | —                                                              | —                                                            |
 | B7  | Low-stock email               | Done        |     100% | PR #176 (`7639b1a0`) + migration 0084 + 24h dedupe                                  | Migration 0084 not yet applied on staging                      | Apply 0084 via `ops-staging-migrate`                         |
 | B8  | Abandoned-cart recovery email | Done        |     100% | PR #177 (`11ff2b7c`) — system-default ladder gated by `FEATURE_EMAIL_RECOVERY_LIVE` | —                                                              | —                                                            |
-| B9  | Subscription renewal reminder | In Progress |      90% | PR #178 (open) — sub-agent finished, awaiting commit + merge                        | Stashed pre-existing-lint cleanup blocking commit              | Resume commit + push + merge + apply migration 0085          |
+| B9  | Subscription renewal reminder | Done        |     100% | PR #179 (merged) — migration 0085 + scheduler at 09:00 Asia/Riyadh + dedup columns  | Migration 0085 not yet applied on staging                      | Apply 0085 via `ops-staging-migrate`                         |
 | B10 | SPF / DKIM / DMARC            | Blocked     |      50% | Hostinger MX records are set (memory); DKIM/DMARC unverified                        | Owner: verify DKIM signature + DMARC policy on `haastores.com` | Run `dig TXT hello._domainkey.haastores.com` and DMARC check |
 | B11 | Email failure monitoring      | Not Started |      25% | Errors logged to stderr only; no Sentry/alert routing                               | Sentry DSN env (owner)                                         | After Sentry: wire SMTP failure events                       |
 | B12 | Unsubscribe / opt-out         | Not Started |      25% | Abandoned-cart footer has unsubscribe link (text-only)                              | No DB column for `customers.emailOptOut`                       | Add column + link handler endpoint                           |
@@ -149,7 +149,7 @@
 | H1  | Plans                       | Done        |     100% | `subscriptionPlans` table + 4 seeded plans (Starter/Growth/Pro/Business)   | —                                          | —                                    |
 | H2  | Trial / free plan           | Done        |      90% | `merchantSubscriptions.status = 'trialing'` + `trialEnd`                   | Trial→active transition cron not yet built | Add cron job                         |
 | H3  | Subscription lifecycle      | Done        |      75% | `packages/commerce-core/src/subscriptions.ts`                              | Renewal cron from PR #178                  | After H4 + H5                        | After PR #178 lands |
-| H4  | Renewal reminders (7d + 1d) | In Progress |      90% | PR #178 (open) — sub-agent done                                            | Same as B9                                 | Land PR #178                         |
+| H4  | Renewal reminders (7d + 1d) | Done        |     100% | PR #179 (merged) — same as B9                                              | Migration 0085 not yet applied on staging  | Apply 0085 via `ops-staging-migrate` |
 | H5  | Subscription invoices       | Done        |      75% | `subscriptionInvoices` table + ZATCA hooks pending                         | I4 (ZATCA)                                 | After I4                             |
 | H6  | Grace period                | Not Started |      25% | No explicit grace logic                                                    | Owner decision: # of days                  | Owner picks: 3 / 7 / 14 days         |
 | H7  | Suspension policy           | Not Started |      25% | `stores.publishStatus = 'suspended'` exists                                | H6 + owner decision                        | After H6: build auto-suspend cron    |
@@ -254,7 +254,7 @@ Status: `Not Started` · `In Progress` · `Blocked` · `Needs Review` · `Done` 
 
 ## 5. Update Log
 
-### 2026-06-24 — Initial ledger creation
+### 2026-06-24 — Initial ledger creation (PR #178)
 
 - Completed: PRs #160–#177 inventoried (auth + emails + state hardening + drill-down UI + recovery ladder)
 - Changed: New unified ledger file `docs/HAA_TASK_LEDGER.md`
@@ -263,9 +263,30 @@ Status: `Not Started` · `In Progress` · `Blocked` · `Needs Review` · `Done` 
 - New blockers: none (existing G1–G10 already tracked)
 - Updated completion: overall 62% / engineering 78% / commercial 38%
 - Recommendation:
-  1. Land PR #178 (Subscription renewal reminder) — stashed work, finish commit
-  2. Land PR #179 (CR 7038798612 wiring into legal-facing surfaces)
+  1. Land PR #179 (Subscription renewal reminder) — stashed work, finish commit
+  2. Land PR #180 (CR 7038798612 wiring into legal-facing surfaces)
   3. Begin 22-wave Autopilot from W0 (Truth Sync)
+
+### 2026-06-24 — PR #179 merged: subscription renewal reminder
+
+- Completed: PR #179 (`feat(billing): subscription renewal reminder emails (7d + 1d)`) — merged on main
+- Changed:
+  - `packages/db/src/schema/subscriptions.ts` — `lastRenewalReminderAt` + `lastRenewalReminderStep` columns
+  - `packages/db/src/migrations/0085_subscription_renewal_reminder_state.sql` + snapshot
+  - `packages/notification-core/src/welcome-emails.ts` — `renderSubscriptionRenewalEmail`
+  - `packages/commerce-core/src/subscription-renewal-notifier.ts` (new)
+  - `apps/api/src/worker.ts` — `JOB_NAMES.subscriptionRenewalReminder` at 09:00 Asia/Riyadh + 4 pre-existing `any` cleaned up
+  - `tests/subscription-renewal-reminder.test.ts` (new — 20 tests)
+- Tests run: `pnpm typecheck` clean · ESLint `--max-warnings 0` clean · 31 + 99 regression all green
+- CI status: green on PR; merged via squash
+- Rows updated: B9 (Done 100%) · H4 (Done 100%)
+- New blockers: migration 0085 not yet applied on staging — awaits `ops-staging-migrate`
+- Updated completion: overall **64%** (+2) / engineering **80%** (+2) / commercial 38%
+- Recommendation:
+  1. PR #180 — CR 7038798612 wiring into email footer + storefront + legal pages
+  2. Batch `ops-staging-migrate` to apply 0083 (legacy backfill) + 0084 (low-stock) + 0085 (renewal reminder)
+  3. After 0083 settled: flip `AUTH_LEGACY_VERIFIED=0` via `ops-staging-env`
+  4. Begin 22-wave Autopilot from W0
 
 ---
 
