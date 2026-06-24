@@ -318,3 +318,116 @@ export function renderLowStockEmail(
 
   return { subject, html };
 }
+
+export type AbandonedCartContext = {
+  /**
+   * Customer's display name. May be empty (guest checkout) — the
+   * renderer falls back to "عزيزي العميل" so we never produce a
+   * "مرحباً ،" line. Escaped before interpolation.
+   */
+  customerName: string;
+  /** Store display name, surfaced in the subject + body lead. */
+  storeName: string;
+  /**
+   * Cart total already formatted to two decimal places (the caller
+   * uses `Number(total).toFixed(2)` to match WhatsApp formatting).
+   */
+  cartTotalSar: string;
+  /** Number of distinct line items in the cart (affects singular/plural copy). */
+  itemCount: number;
+  /** Tokenised recovery URL — `${storeUrl}/recover?token=...`. */
+  recoveryLink: string;
+  /** Public storefront URL (footer link back to the store). */
+  storeUrl: string;
+  /** Support contact email shown in the email footer. */
+  supportEmail: string;
+  /**
+   * Ladder step (1..3) — drives subject tone escalation:
+   *   1 → gentle nudge ("تركت سلتك")
+   *   2 → warmer reminder ("لا تزال تنتظرك")
+   *   3 → last-call with cart value ("فرصة أخيرة")
+   */
+  step: 1 | 2 | 3;
+};
+
+/**
+ * "تركت سلتك في ${storeName}" — system-default abandoned-cart
+ * recovery email sent across the same 1h/6h/24h ladder as the
+ * WhatsApp recovery flow.
+ *
+ * Sent automatically by `AbandonedCartCampaignService.fireEmailRecovery`
+ * when `FEATURE_EMAIL_RECOVERY_LIVE=1`. This is the SYSTEM-DEFAULT
+ * path (works for every store with no per-store config) — distinct
+ * from the per-campaign email path in `processStep` which requires
+ * the merchant to configure an `abandoned_cart_campaigns` row.
+ *
+ * Pure function: no DB access, no provider invocation, no side
+ * effects. The caller handles provider selection + fire-and-forget
+ * dispatch + dedup writes — failure here must never throw out of the
+ * scheduler tick.
+ *
+ * Arabic-first, RTL. Every user-supplied string flows through
+ * `escapeHtml` before being interpolated into the body — the shared
+ * `renderHaaEmail` template does NOT auto-escape its `bodyHtml` field.
+ */
+export function renderAbandonedCartEmail(
+  ctx: AbandonedCartContext,
+): { subject: string; html: string } {
+  const displayName = ctx.customerName.trim() || 'عزيزي العميل';
+
+  // Subject tone escalates with the ladder step. Step 3 includes the
+  // cart total to maximise the "last chance" pull.
+  const subject =
+    ctx.step === 1
+      ? `تركت سلتك في ${ctx.storeName}`
+      : ctx.step === 2
+        ? `سلتك في ${ctx.storeName} لا تزال تنتظرك`
+        : `فرصة أخيرة — سلتك في ${ctx.storeName} بقيمة ${ctx.cartTotalSar} ر.س`;
+
+  const preheader =
+    ctx.step === 3
+      ? 'سلتك على وشك أن تنتهي — أكمل طلبك الآن.'
+      : 'سلتك لا تزال محفوظة — أكمل طلبك خلال دقائق.';
+
+  // Singular vs plural item phrasing — Arabic uses a dedicated "واحد"
+  // form for count=1 and the plural noun "منتجات" for count > 1.
+  const itemPhrase =
+    ctx.itemCount === 1 ? 'منتج واحد' : `${ctx.itemCount} منتجات`;
+
+  // Inline link style — matches the brand-primary colour used by the
+  // CTA button in `renderHaaEmail`. Email clients strip <style> blocks,
+  // so colours must live on each <a>.
+  const LINK_STYLE = 'color: #5c9cd5; text-decoration: none; font-weight: 600;';
+
+  const bodyHtml = `
+    <p style="margin: 0 0 12px;">
+      مرحباً ${escapeHtml(displayName)}،
+    </p>
+    <p style="margin: 0 0 12px;">
+      لاحظنا أنك تركت سلتك في متجر <strong>${escapeHtml(ctx.storeName)}</strong>
+      دون إتمام الطلب. سلتك (${escapeHtml(itemPhrase)} بقيمة
+      <strong>${escapeHtml(ctx.cartTotalSar)} ر.س</strong>) لا تزال محفوظة لك.
+    </p>
+    <p style="margin: 16px 0 8px;">
+      اضغط على الزر أدناه لمتابعة طلبك من حيث توقفت.
+    </p>
+    <div style="margin: 20px 0 0; padding: 14px 16px; background: #f5f7fa; border-radius: 12px; font-size: 14px;">
+      <strong>متجرك:</strong>
+      <a href="${escapeHtml(ctx.storeUrl)}" target="_blank" rel="noopener" style="${LINK_STYLE}">${escapeHtml(ctx.storeUrl)}</a>
+    </div>
+    <p style="margin: 20px 0 0; font-size: 14px; color: #475569;">
+      للاستفسار راسلنا على
+      <a href="mailto:${escapeHtml(ctx.supportEmail)}" style="${LINK_STYLE}">${escapeHtml(ctx.supportEmail)}</a>
+    </p>
+  `;
+
+  const html = renderHaaEmail({
+    title: 'سلتك بانتظارك',
+    preheader,
+    bodyHtml,
+    cta: { label: 'أكمل طلبك', href: ctx.recoveryLink },
+    supportEmail: ctx.supportEmail,
+  });
+
+  return { subject, html };
+}

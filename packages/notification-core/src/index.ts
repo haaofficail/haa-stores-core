@@ -18,9 +18,11 @@ export {
   renderMerchantWelcomeEmail,
   renderStorePublishedEmail,
   renderLowStockEmail,
+  renderAbandonedCartEmail,
   type MerchantWelcomeContext,
   type StorePublishedContext,
   type LowStockContext,
+  type AbandonedCartContext,
 } from './welcome-emails.js';
 
 export interface NotificationMessage {
