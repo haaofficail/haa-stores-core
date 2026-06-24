@@ -113,6 +113,13 @@ export type { ShipmentsResult } from './shipments-service.js';
 export { PaymentWebhookService } from './payment-webhook-service.js';
 export type { PaymentWebhookResult, PaymentWebhookInput } from './payment-webhook-service.js';
 export {
+  isCustomerOptedOut,
+  markCustomerOptedOut,
+  buildUnsubscribeToken,
+  verifyUnsubscribeToken,
+  type UnsubscribeTokenPayload,
+} from './customer-email-preferences.js';
+export {
   calcPlatformFee,
   normalizePlatformFeePolicy,
   describePlatformFeePolicy,
