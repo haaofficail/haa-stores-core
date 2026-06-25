@@ -94,7 +94,9 @@ interface LiveGeo {
   updatedAt: string;
 }
 
-function severityColor(severity: string): string {
+type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'success' | 'warning' | 'outline';
+
+function severityColor(severity: string): BadgeVariant {
   switch (severity) {
     case 'critical': return 'destructive';
     case 'warning': return 'warning';
@@ -105,9 +107,33 @@ function severityColor(severity: string): string {
 function SeverityBadge({ severity }: { severity: string }) {
   const map: Record<string, string> = { critical: 'حرج', warning: 'تنبيه', info: 'توصية' };
   return (
-    <Badge variant={severityColor(severity) as any} className="text-xs">
+    <Badge variant={severityColor(severity)} className="text-xs">
       {map[severity] ?? severity}
     </Badge>
+  );
+}
+
+// Tile component for the per-section history footer. Lives at module
+// scope — defining it inside LiveRadar would re-create the type on
+// every render and force React to unmount/remount every child every
+// 12 seconds (audit P0 #28, 2026-06-25).
+function HistoryCard({
+  label, value, icon, color, suffix = '',
+}: {
+  label: string;
+  value: number | string;
+  icon: React.ReactNode;
+  color: string;
+  suffix?: string;
+}) {
+  return (
+    <div className="text-center p-3 rounded-2xl bg-neutral-50 border border-neutral-100">
+      <div className={`w-8 h-8 rounded-full ${color} mx-auto mb-1 flex items-center justify-center`}>
+        {icon}
+      </div>
+      <div className="text-lg font-bold">{value}{suffix}</div>
+      <div className="text-xs text-neutral-500">{label}</div>
+    </div>
   );
 }
 
@@ -129,9 +155,17 @@ export default function LiveRadar() {
   const [fetchError, setFetchError] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  const loadData = useCallback(() => {
+  // `isInitial` separates first-load from auto-refresh:
+  //   - initial: show the full skeleton until data arrives.
+  //   - refresh: keep the previous data visible; only refresh values.
+  //
+  // Previously `setLoading(false)` was the first line (bug — the
+  // skeleton was hidden BEFORE the fetch started, so the merchant
+  // saw an empty screen until ~3s later when data arrived). Audit
+  // P0 #27 (2026-06-25).
+  const loadData = useCallback((isInitial = false) => {
     if (!storeId) return;
-    setLoading(false);
+    if (isInitial) setLoading(true);
     setFetchError(false);
     Promise.all([
       request<LiveOverview>(`/merchant/${storeId}/marketing/live/overview`),
@@ -158,27 +192,34 @@ export default function LiveRadar() {
         else toast.error(t('common.error'));
         setFetchError(true);
       })
-      .finally(() => setLoading(false));
+      .finally(() => { if (isInitial) setLoading(false); });
   }, [storeId, t, historyRange, historyInterval]);
 
-  useEffect(() => { loadData(); }, [loadData]);
-
-function HistoryCard({ label, value, icon, color, suffix = '' }: { label: string; value: number | string; icon: React.ReactNode; color: string; suffix?: string }) {
-  return (
-    <div className="text-center p-3 rounded-2xl bg-neutral-50 border border-neutral-100">
-      <div className={`w-8 h-8 rounded-full ${color} mx-auto mb-1 flex items-center justify-center`}>
-        {icon}
-      </div>
-      <div className="text-lg font-bold">{value}{suffix}</div>
-      <div className="text-xs text-neutral-500">{label}</div>
-    </div>
-  );
-}
+  useEffect(() => { loadData(true); }, [loadData]);
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const interval = setInterval(loadData, 12000);
-    return () => clearInterval(interval);
+    // Pause polling while the tab is hidden. Without this, a merchant
+    // who opens this tab and switches away keeps the server hammered
+    // at 40 req/min until they close it (audit P0 #29, 2026-06-25).
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const start = () => {
+      if (interval) return;
+      interval = setInterval(() => loadData(false), 12000);
+    };
+    const stop = () => {
+      if (interval) { clearInterval(interval); interval = null; }
+    };
+    if (document.visibilityState === 'visible') start();
+    const onVis = () => {
+      if (document.visibilityState === 'visible') start();
+      else stop();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, [autoRefresh, loadData]);
 
   if (loading) {
@@ -198,7 +239,7 @@ function HistoryCard({ label, value, icon, color, suffix = '' }: { label: string
       <div className="max-w-7xl mx-auto p-6 text-center">
         <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
         <p className="text-neutral-500">{t('common.error')}</p>
-        <button onClick={loadData} className="mt-4 text-primary-600 hover:text-primary-800 text-sm">{t('common.retry')}</button>
+        <button onClick={() => loadData(true)} className="mt-4 text-primary-600 hover:text-primary-800 text-sm">{t('common.retry')}</button>
       </div>
     );
   }
@@ -221,7 +262,7 @@ function HistoryCard({ label, value, icon, color, suffix = '' }: { label: string
             <RefreshCw className={`h-3 w-3 ${autoRefresh ? 'animate-spin' : ''}`} />
             {autoRefresh ? 'تحديث تلقائي' : 'إيقاف التحديث'}
           </button>
-          <button onClick={loadData} className="text-sm text-primary-600 hover:text-primary-800 flex items-center gap-1">
+          <button onClick={() => loadData(true)} className="text-sm text-primary-600 hover:text-primary-800 flex items-center gap-1">
             <RefreshCw className="h-4 w-4" />
             تحديث
           </button>
