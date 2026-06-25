@@ -15,9 +15,9 @@
 
 import {
   Activity, AlertTriangle, ArrowLeft, ArrowLeftRight, ArrowRight, BarChart3, Bell,
-  Bot, Building2, CheckCircle2, Clock, Coins, Crown, Download, Edit, FileSpreadsheet,
-  FileText, Headphones, History, Key, LayoutDashboard, Loader2, Lock, LogOut,
-  Mail, MapPin, MessageSquare, Package, Palette, Percent, Phone, Plus, Rocket, Search,
+  Bot, Building2, CheckCircle2, Clock, Coins, Crown, Download, Edit, ExternalLink,
+  FileSpreadsheet, FileText, Globe, Headphones, History, Key, LayoutDashboard, Loader2, Lock, LogOut,
+  Mail, MapPin, MessageCircle, MessageSquare, Package, Palette, Percent, Phone, Plus, Rocket, Search,
   Settings as SettingsIcon, Shield, ShoppingBag, ShoppingCart, Smartphone, Sparkles,
   Store, Tag, Tags, TicketPercent, Trash2, TrendingUp, Truck, User, UserCog, Users, Wallet,
   XCircle,
@@ -26,9 +26,9 @@ import {
 
 export const MERCHANT_ICON_REGISTRY = {
   Activity, AlertTriangle, ArrowLeft, ArrowLeftRight, ArrowRight, BarChart3, Bell,
-  Bot, Building2, CheckCircle2, Clock, Coins, Crown, Download, Edit, FileSpreadsheet,
-  FileText, Headphones, History, Key, LayoutDashboard, Loader2, Lock, LogOut,
-  Mail, MapPin, MessageSquare, Package, Palette, Percent, Phone, Plus, Rocket, Search,
+  Bot, Building2, CheckCircle2, Clock, Coins, Crown, Download, Edit, ExternalLink,
+  FileSpreadsheet, FileText, Globe, Headphones, History, Key, LayoutDashboard, Loader2, Lock, LogOut,
+  Mail, MapPin, MessageCircle, MessageSquare, Package, Palette, Percent, Phone, Plus, Rocket, Search,
   SettingsIcon, Shield, ShoppingBag, ShoppingCart, Smartphone, Sparkles,
   Store, Tag, Tags, TicketPercent, Trash2, TrendingUp, Truck, User, UserCog, Users, Wallet,
   XCircle,
