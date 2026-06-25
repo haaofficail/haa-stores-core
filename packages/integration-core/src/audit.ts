@@ -45,9 +45,12 @@ export class AuditLogService {
     return log;
   }
 
-  private buildConditions(storeId?: number, opts?: AuditListOptions): SQL[] {
-    const conditions: SQL[] = [];
-    if (storeId) conditions.push(eq(s.auditLogs.storeId, storeId));
+  private buildConditions(storeId: number, opts?: AuditListOptions): SQL[] {
+    // `storeId` is REQUIRED — the previous signature accepted an
+    // optional storeId and silently returned ALL platform audit logs
+    // when omitted. A future caller forgetting to pass it would leak
+    // every store's history. Audit P0 follow-up (2026-06-25).
+    const conditions: SQL[] = [eq(s.auditLogs.storeId, storeId)];
     if (opts?.action) conditions.push(eq(s.auditLogs.action, opts.action));
     if (opts?.entityType) conditions.push(eq(s.auditLogs.entityType, opts.entityType));
     if (opts?.dateFrom) conditions.push(gte(s.auditLogs.createdAt, new Date(opts.dateFrom)));
@@ -55,7 +58,7 @@ export class AuditLogService {
     return conditions;
   }
 
-  async list(storeId?: number, opts?: AuditListOptions) {
+  async list(storeId: number, opts?: AuditListOptions) {
     const page = opts?.page ?? 1;
     const limit = opts?.limit ?? 20;
     const conditions = this.buildConditions(storeId, opts);
