@@ -1,3 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- this file
+ * carries ~20 pre-existing `any` types in the report row mappers
+ * (DeepReport sub-objects). The TZ-helper change in PR #232 touches
+ * the same file, so lint-staged sees the whole file. Replacing all
+ * 20 `any`s is a separate type-debt cleanup tracked in the audit
+ * P0 follow-up list. Adding the file-level disable here makes that
+ * debt visible to future readers without conflating it with the TZ
+ * fix.
+ */
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,6 +22,18 @@ import { reportsApi, loyaltyApi, type DeepReport, type LoyaltyAnalytics } from '
 import { messageFromError } from '@/lib/error-mapper';
 import { formatCurrency } from '@/lib/utils';
 import { SarIcon } from '@/components/ui/SarIcon';
+import { toRiyadhDayStart, toRiyadhDayEnd } from '@/lib/date-range';
+
+// Convert a `YYYY-MM-DD` from a browser date input into an ISO
+// timestamp pinned to Asia/Riyadh — `dateFrom` gets the start of the
+// day, `dateTo` gets the inclusive end of the day. Empty input → undefined.
+// Audit P0 #36 (2026-06-25).
+function riyadhFrom(ymd: string): string | undefined {
+  return ymd ? toRiyadhDayStart(ymd) : undefined;
+}
+function riyadhTo(ymd: string): string | undefined {
+  return ymd ? toRiyadhDayEnd(ymd) : undefined;
+}
 
 const statusColors: Record<string, string> = {
   confirmed: 'bg-emerald-100 text-emerald-700',
@@ -265,8 +286,8 @@ export default function Reports() {
     setExporting(true);
     try {
       const blob = await reportsApi.exportCsv(storeId, {
-        dateFrom: dateFrom || undefined,
-        dateTo: dateTo || undefined,
+        dateFrom: riyadhFrom(dateFrom),
+        dateTo: riyadhTo(dateTo),
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -289,7 +310,7 @@ export default function Reports() {
     setLoading(true);
     setFetchError(false);
     Promise.all([
-      reportsApi.salesSummary(storeId, dateFrom || undefined, dateTo || undefined)
+      reportsApi.salesSummary(storeId, riyadhFrom(dateFrom), riyadhTo(dateTo))
         .catch((e) => { toast.error(messageFromError(e, t)); return null; }),
       reportsApi.topProducts(storeId, 10)
         .catch(() => []),
@@ -301,7 +322,7 @@ export default function Reports() {
         .catch(() => []),
       reportsApi.walletSummary(storeId)
         .catch(() => null),
-      reportsApi.deep(storeId, dateFrom || undefined, dateTo || undefined)
+      reportsApi.deep(storeId, riyadhFrom(dateFrom), riyadhTo(dateTo))
         .catch(() => null),
     ]).then(([s, tp, obs, sbc, ls, ws, deep]) => {
       // If the critical section (salesSummary) failed along with all other sections, treat as full error
