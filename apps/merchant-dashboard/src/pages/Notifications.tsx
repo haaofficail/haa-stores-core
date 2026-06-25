@@ -174,26 +174,56 @@ export default function Notifications() {
         <h1 className="text-2xl font-bold text-neutral-900">{t('notifications.title')}</h1>
       </div>
 
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-        <p className="font-medium mb-1">تنبيه: قنوات الاتصال تحتاج إعداد مزودات حقيقية</p>
-        <p className="text-amber-700">
-          البريد يعمل كقناة تواصل رسمية عبر hello@haastores.com حتى إعداد SMTP. واتساب هنا رابط/QR تواصل فقط، وليس WhatsApp Business API.
-        </p>
-      </div>
+      {/* Truthful warning — fires ONLY when the email provider is
+          actually in fallback mode (contact_only). Was previously a
+          hardcoded paragraph that contradicted the status table
+          below it whenever SMTP was wired. Audit (2026-06-25). */}
+      {providerStatus?.email.status === 'contact_only' && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <p className="font-medium mb-1">
+            {t('notifications.smtpFallbackTitle', 'تنبيه: قناة البريد في وضع الاحتياط')}
+          </p>
+          <p className="text-amber-700">
+            {t(
+              'notifications.smtpFallbackBody',
+              'البريد يعمل كقناة تواصل رسمية عبر {{email}} حتى يكتمل إعداد SMTP. واتساب هنا رابط/QR تواصل فقط، وليس WhatsApp Business API.',
+              { email: providerStatus.email.fromEmail },
+            )}
+          </p>
+        </div>
+      )}
 
+      {/* Communication-channel status table. Payment + shipping
+          providers (Geidea, OTO, OTO Label) are NOT shown here —
+          they belong on /settings/integrations or /channels. The
+          Notifications page is for outbound merchant→customer
+          messaging only. Audit (2026-06-25). */}
       {providerStatus && (
         <div className="grid gap-3 md:grid-cols-2">
           {[
-            { label: 'Geidea', value: providerStatus.payment.status, detail: providerStatus.payment.configured ? 'Sandbox configured' : 'Not configured' },
-            { label: 'OTO', value: providerStatus.shipping.status, detail: `${providerStatus.shipping.integrationModel} / ${providerStatus.shipping.mode}` },
-            { label: 'OTO Label', value: providerStatus.shippingLabel.status, detail: providerStatus.shippingLabel.labelType },
-            { label: 'Email', value: providerStatus.email.status, detail: providerStatus.email.realDelivery ? 'SMTP delivery' : `contact-only ${providerStatus.email.fromEmail}` },
-            { label: 'WhatsApp', value: providerStatus.whatsapp.status, detail: 'QR contact only' },
+            {
+              label: 'Email',
+              value: providerStatus.email.status,
+              detail: providerStatus.email.realDelivery
+                ? t('notifications.emailSmtpDelivery', 'SMTP delivery')
+                : t(
+                    'notifications.emailContactOnlyDetail',
+                    'contact-only — {{email}}',
+                    { email: providerStatus.email.fromEmail },
+                  ),
+            },
+            {
+              label: 'WhatsApp',
+              value: providerStatus.whatsapp.status,
+              detail: providerStatus.whatsapp.realDelivery
+                ? t('notifications.whatsappApiDelivery', 'Unifonic API')
+                : t('notifications.whatsappQrOnly', 'QR contact only'),
+            },
           ].map((item) => (
             <div key={item.label} className="rounded-2xl border border-neutral-100 bg-white/70 p-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-neutral-900">{item.label}</p>
-                <Badge variant={item.value === 'configured' || item.value === 'sandbox' ? 'default' : 'secondary'}>{item.value}</Badge>
+                <Badge variant={item.value === 'configured' ? 'default' : 'secondary'}>{item.value}</Badge>
               </div>
               <p className="mt-1 text-xs text-neutral-500">{item.detail}</p>
             </div>

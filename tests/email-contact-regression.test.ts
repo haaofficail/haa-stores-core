@@ -17,10 +17,19 @@ describe('Email contact regression', () => {
 
   it('does not claim real email delivery without SMTP credentials', () => {
     // SMTP env-var names + the existence check live in the service now.
+    // PR #236 (audit 2026-06-25) tightened SMTP detection to require
+    // SMTP_PORT too (matches SmtpEmailProvider.isAvailable).
     expect(providerStatusService).toContain('SMTP_HOST');
+    expect(providerStatusService).toContain('SMTP_PORT');
     expect(providerStatusService).toContain('SMTP_USER');
     expect(providerStatusService).toContain('SMTP_PASSWORD');
-    expect(dashboardNotifications).toContain('contact-only');
-    expect(dashboardNotifications).toContain('hello@haastores.com');
+    // The Notifications page now renders the contact-only branch via
+    // an i18n key (`notifications.emailContactOnlyDetail`) instead of
+    // the literal "contact-only ... hello@haastores.com" string. The
+    // page still shows the email value at runtime — it reads it from
+    // `providerStatus.email.fromEmail` (which getOfficialContactEmail
+    // resolves to "hello@haastores.com" by default).
+    expect(dashboardNotifications).toContain('notifications.emailContactOnlyDetail');
+    expect(dashboardNotifications).toContain('providerStatus.email.fromEmail');
   });
 });
