@@ -25,6 +25,9 @@ describe('Payout ledger integrity regression', () => {
     expect(walletLedger).toContain("status: 'failed'");
     expect(walletLedger).toContain("type: 'payout_reversal'");
     expect(walletLedger).not.toContain("status: 'paid',");
-    expect(walletRoutes).toContain("walletRouter.post('/payouts'");
+    // Tolerate single-line and multi-line route declarations. PR
+    // #217 reformatted `walletRouter.post('/payouts'` onto multiple
+    // lines when wiring `idempotencyKey({ required: true })`.
+    expect(walletRoutes).toMatch(/walletRouter\.post\(\s*['"]\/payouts['"]/);
   });
 });
