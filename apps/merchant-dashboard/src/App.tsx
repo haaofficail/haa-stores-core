@@ -32,6 +32,7 @@ const Imports = lazy(() => import('@/pages/Imports'));
 const Compliance = lazy(() => import('@/pages/Compliance'));
 const Subscriptions = lazy(() => import('@/pages/Subscriptions'));
 const Notifications = lazy(() => import('@/pages/Notifications'));
+const NotificationsInbox = lazy(() => import('@/pages/NotificationsInbox'));
 const ThemeEditor = lazy(() => import('@/pages/ThemeEditor'));
 const ThemeStore = lazy(() => import('@/pages/ThemeStore'));
 const ApiKeys = lazy(() => import('@/pages/ApiKeys'));
@@ -186,6 +187,7 @@ export default function App() {
               <Route path="/employees" element={<GuardedRoute permission="employees:view"><Employees /></GuardedRoute>} />
               <Route path="/policies" element={<GuardedRoute permission="settings:read"><Policies /></GuardedRoute>} />
               <Route path="/notifications" element={<GuardedRoute permission="notifications:view"><Notifications /></GuardedRoute>} />
+              <Route path="/notifications/inbox" element={<GuardedRoute permission="notifications:view"><NotificationsInbox /></GuardedRoute>} />
               <Route path="/ai-assistant" element={<GuardedRoute permission="settings:read"><AiAssistant /></GuardedRoute>} />
               <Route path="/theme" element={<GuardedRoute permission="theme:view"><ThemeEditor /></GuardedRoute>} />
               <Route path="/theme-store" element={<GuardedRoute permission="theme:view"><ThemeStore /></GuardedRoute>} />
