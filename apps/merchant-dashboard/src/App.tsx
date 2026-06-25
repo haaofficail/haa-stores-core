@@ -22,6 +22,7 @@ const Customers = lazy(() => import('@/pages/Customers'));
 const Shipping = lazy(() => import('@/pages/Shipping'));
 const WalletPage = lazy(() => import('@/pages/Wallet'));
 const Settings = lazy(() => import('@/pages/Settings'));
+const Account = lazy(() => import('@/pages/Account'));
 const Coupons = lazy(() => import('@/pages/Coupons'));
 const Promotions = lazy(() => import('@/pages/Promotions'));
 const Policies = lazy(() => import('@/pages/Policies'));
@@ -184,6 +185,7 @@ export default function App() {
 
               {/* ── Settings + dev + content ─────────────────────── */}
               <Route path="/settings" element={<GuardedRoute permission="settings:read"><Settings /></GuardedRoute>} />
+              <Route path="/account" element={<GuardedRoute permission="dashboard:view"><Account /></GuardedRoute>} />
               <Route path="/employees" element={<GuardedRoute permission="employees:view"><Employees /></GuardedRoute>} />
               <Route path="/policies" element={<GuardedRoute permission="settings:read"><Policies /></GuardedRoute>} />
               <Route path="/notifications" element={<GuardedRoute permission="notifications:view"><Notifications /></GuardedRoute>} />
