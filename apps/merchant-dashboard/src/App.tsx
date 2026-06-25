@@ -56,6 +56,7 @@ const CustomerSegments = lazy(() => import('@/pages/CustomerSegments'));
 // `/channels`. See audit P0 #31 (2026-06-25).
 const MarketingActions = lazy(() => import('@/pages/MarketingActions'));
 const MarketingHub = lazy(() => import('@/pages/MarketingHub'));
+const CatalogHub = lazy(() => import('@/pages/CatalogHub'));
 const SalesHub = lazy(() => import('@/pages/SalesHub'));
 const FinanceHub = lazy(() => import('@/pages/FinanceHub'));
 const WhatsAppPage = lazy(() => import('@/pages/WhatsApp'));
@@ -145,6 +146,7 @@ export default function App() {
               <Route path="/channels/listings" element={<GuardedRoute permission="settings:read"><MarketplaceListings /></GuardedRoute>} />
               <Route path="/channels/hub" element={<Navigate to="/channels" replace />} />
               <Route path="/channels/:provider" element={<GuardedRoute permission="settings:read"><MarketplaceDetail /></GuardedRoute>} />
+              <Route path="/catalog" element={<GuardedRoute permission="products:read"><CatalogHub /></GuardedRoute>} />
               <Route path="/marketing" element={<GuardedRoute permission="promotions:read"><MarketingHub /></GuardedRoute>} />
               <Route path="/sales" element={<GuardedRoute permission="orders:read"><SalesHub /></GuardedRoute>} />
               <Route path="/finance" element={<GuardedRoute permission="wallet:read"><FinanceHub /></GuardedRoute>} />
