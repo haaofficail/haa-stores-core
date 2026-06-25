@@ -98,7 +98,7 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
           className="relative h-11 w-11 inline-flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500"
           title={t('topbar.notifications', 'الإشعارات')}
           aria-label={t('topbar.notifications', 'الإشعارات')}
-          onClick={() => navigate('/notifications')}
+          onClick={() => navigate('/notifications/inbox')}
         >
           <Bell className="h-5 w-5" />
           <span className="absolute top-2.5 h-2 w-2 rounded-full bg-danger ring-2 ring-white" style={{ insetInlineStart: '0.75rem' }} />

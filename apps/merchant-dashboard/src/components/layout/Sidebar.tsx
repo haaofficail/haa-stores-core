@@ -104,6 +104,7 @@ const navGroups: Array<{
       { to: '/settings', icon: Settings, label: 'nav.settings', fallback: 'إعدادات المتجر', permission: 'settings:read' },
       { to: '/employees', icon: UserCog, label: 'nav.employees', fallback: 'الموظفون والصلاحيات', permission: 'employees:view' },
       { to: '/policies', icon: FileText, label: 'nav.policies', fallback: 'السياسات والصفحات', permission: 'settings:read' },
+      { to: '/notifications/inbox', icon: Bell, label: 'nav.notificationsInbox', fallback: 'صندوق الإشعارات', permission: 'notifications:view' },
       { to: '/notifications', icon: Bell, label: 'nav.notifications', fallback: 'تفضيلات الإشعارات', permission: 'notifications:view' },
       { to: '/ai-assistant', icon: Bot, label: 'nav.aiAssistant', fallback: 'المساعد الذكي', permission: 'settings:read' },
       { to: '/theme', icon: Palette, label: 'nav.themeEditor', fallback: 'تخصيص الثيم', permission: 'theme:view' },
