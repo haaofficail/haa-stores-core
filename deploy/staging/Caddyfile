@@ -45,6 +45,23 @@
 		reverse_proxy api:3001
 	}
 	encode gzip zstd
+
+	# Cache policy — fixes "stale cache after deploy" UX problem:
+	# 1. Vite-hashed bundles (filename-HASH.ext) → 1 year immutable.
+	#    The hash changes on every content change, so safe to cache long.
+	# 2. Unhashed public assets (logos, favicons, manifests, products
+	#    imagery) → short cache + must-revalidate so a re-deploy of an
+	#    SVG/PNG propagates within minutes, not days.
+	# 3. HTML / SPA shell → no-cache so the page always reflects the
+	#    latest deploy on first visit.
+	@vite_hashed path_regexp ^/assets/[^/]+-[A-Za-z0-9_-]{8,}\.(js|css|woff2?|ttf|otf|map)$
+	header @vite_hashed Cache-Control "public, max-age=31536000, immutable"
+
+	@unhashed_static path_regexp \.(svg|png|jpg|jpeg|webp|gif|ico|webmanifest|json)$
+	header @unhashed_static Cache-Control "public, max-age=300, must-revalidate"
+
+	@html_doc path / *.html
+	header @html_doc Cache-Control "no-cache, no-store, must-revalidate"
 }
 
 www.haastores.com {
