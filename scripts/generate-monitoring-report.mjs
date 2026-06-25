@@ -1,35 +1,50 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import {
+  countBy,
+  partitionOpsEvents,
+  readNdjsonEvents,
+  resolveOpsEventConfig,
+  topCounts,
+} from './ops-events.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
-const EVENTS_FILE = join(ROOT, 'storage', 'monitoring-events.ndjson')
-const SUPPORT_EVENTS_FILE = join(ROOT, 'storage', 'support-error-events.ndjson')
+const EVENTS_FILE = process.env.HAA_OPS_MONITORING_EVENTS_FILE || join(ROOT, 'storage', 'monitoring-events.ndjson')
+const SUPPORT_EVENTS_FILE = process.env.HAA_OPS_SUPPORT_EVENTS_FILE || join(ROOT, 'storage', 'support-error-events.ndjson')
 const REPORT_FILE = join(ROOT, 'docs', 'ops', 'LATEST_MONITORING_REPORT.md')
-
-function readEvents(filePath) {
-  if (!existsSync(filePath)) return []
-  const content = readFileSync(filePath, 'utf-8').trim()
-  if (!content) return []
-  return content.split('\n').filter(Boolean).map(line => {
-    try { return JSON.parse(line) } catch { return null }
-  }).filter(Boolean)
-}
+const config = resolveOpsEventConfig()
 
 const events = [
-  ...readEvents(EVENTS_FILE),
-  ...readEvents(SUPPORT_EVENTS_FILE),
+  ...readNdjsonEvents(EVENTS_FILE, 'monitoring'),
+  ...readNdjsonEvents(SUPPORT_EVENTS_FILE, 'support'),
 ]
 
 const now = new Date().toISOString()
+const { actionableEvents, historicalEvents, passiveEvents, windowEvents } = partitionOpsEvents(events, config)
+
+function latestCheckEvents(eventsToReduce) {
+  const latest = new Map()
+  for (const event of eventsToReduce) {
+    if (!event.checkType || !(event.target || event.route)) continue
+    const key = `${event.source || 'unknown'}::${event.checkType}::${event.app || 'system'}::${event.target || event.route}`
+    const previous = latest.get(key)
+    if (!previous || String(event.timestamp || '') > String(previous.timestamp || '')) {
+      latest.set(key, event)
+    }
+  }
+  return [...latest.values()]
+}
+
+const currentCheckEvents = latestCheckEvents(windowEvents)
 
 // Determine overall status
-const p0Count = events.filter(e => e.severity === 'P0').length
-const p1Count = events.filter(e => e.severity === 'P1').length
-const failCount = events.filter(e => e.status === 'fail').length
-const warnCount = events.filter(e => e.status === 'warn').length
-const passCount = events.filter(e => e.status === 'pass').length
+const p0Count = actionableEvents.filter(e => e.severity === 'P0').length
+const p1Count = actionableEvents.filter(e => e.severity === 'P1').length
+const failCount = actionableEvents.filter(e => e.status === 'fail').length
+const warnCount = currentCheckEvents.filter(e => e.status === 'warn').length
+const passCount = currentCheckEvents.filter(e => e.status === 'pass').length
 
 let overallStatus
 if (p0Count > 0) overallStatus = 'Critical'
@@ -38,83 +53,78 @@ else if (warnCount > 0) overallStatus = 'Degraded'
 else if (passCount > 0) overallStatus = 'Healthy'
 else overallStatus = 'Unknown'
 
-// Analysis: top error codes, apps, routes
-const errorCodes = {}
-const apps = {}
-const routes = {}
-const fingerprints = {}
+const errorCodes = countBy(actionableEvents, event => event.errorCode)
+const apps = countBy(actionableEvents, event => event.app)
+const routes = countBy(actionableEvents, event => event.route || event.target)
+const fingerprints = countBy(actionableEvents, event => event.fingerprint)
 
-for (const e of events) {
-  if (e.errorCode) errorCodes[e.errorCode] = (errorCodes[e.errorCode] || 0) + 1
-  if (e.app) apps[e.app] = (apps[e.app] || 0) + 1
-  if (e.route || e.target) {
-    const key = e.route || e.target
-    routes[key] = (routes[key] || 0) + 1
-  }
-  if (e.fingerprint) fingerprints[e.fingerprint] = (fingerprints[e.fingerprint] || 0) + 1
-}
-
-const topErrorCodes = Object.entries(errorCodes).sort((a, b) => b[1] - a[1]).slice(0, 10)
-const topApps = Object.entries(apps).sort((a, b) => b[1] - a[1]).slice(0, 5)
-const topRoutes = Object.entries(routes).sort((a, b) => b[1] - a[1]).slice(0, 5)
-const topFingerprints = Object.entries(fingerprints).sort((a, b) => b[1] - a[1]).slice(0, 5)
+const topErrorCodes = topCounts(errorCodes, 10)
+const topApps = topCounts(apps, 5)
+const topRoutes = topCounts(routes, 5)
+const topFingerprints = topCounts(fingerprints, 5)
 
 const content = `# Latest Monitoring Report
 
 - **Generated At:** ${now}
 - **Overall Status:** ${overallStatus}
-- **Period Events Analyzed:** ${events.length}
+- **Active Window:** last ${config.lookbackHours > 0 ? config.lookbackHours : 'all'} hour(s)
+- **Total Events Available:** ${events.length}
+- **Window Events Analyzed:** ${windowEvents.length}
+- **Actionable Events:** ${actionableEvents.length}
+- **Historical Events Ignored for Recommendations:** ${historicalEvents.length}
+- **Passive Pass/Warn Events Ignored for Recommendations:** ${passiveEvents.length}
 
 ---
 
-## P0 Alerts
+## Active P0 Alerts
 
-${p0Count > 0 ? events.filter(e => e.severity === 'P0').map(e =>
+${p0Count > 0 ? actionableEvents.filter(e => e.severity === 'P0').map(e =>
   `- [${e.eventId}] ${e.timestamp} — ${e.message || 'No message'} (${e.target || ''})`
 ).join('\n') : '*None*'}
 
-## P1 Alerts
+## Active P1 Alerts
 
-${p1Count > 0 ? events.filter(e => e.severity === 'P1').slice(0, 10).map(e =>
+${p1Count > 0 ? actionableEvents.filter(e => e.severity === 'P1').slice(0, 10).map(e =>
   `- [${e.eventId}] ${e.errorCode || 'N/A'} — ${e.message || 'No message'} (${e.app || ''})`
 ).join('\n') : '*None*'}
 
-## Health Summary
+## Active Window Health Summary
 
 | Metric | Count |
 |--------|------:|
 | Pass | ${passCount} |
 | Warning | ${warnCount} |
 | Fail | ${failCount} |
-| Total | ${events.length} |
+| Current checks | ${currentCheckEvents.length} |
+| Total in window | ${windowEvents.length} |
 
 ## Synthetic Checks Summary
 
 | Target | Status |
 |--------|--------|
-${events.filter(e => e.checkType === 'synthetic').slice(-10).reverse().map(e =>
+${currentCheckEvents.filter(e => e.checkType === 'synthetic').slice(-10).reverse().map(e =>
   `| ${e.target || 'N/A'} | ${e.status} |`
-).join('\n')}
+).join('\n') || '| None | N/A |'}
 
-## Top Repeated Error Codes
+## Top Active Error Codes
 
 | Code | Count |
 |------|------:|
-${topErrorCodes.map(([code, count]) => `| ${code} | ${count} |`).join('\n')}
+${topErrorCodes.map(([code, count]) => `| ${code} | ${count} |`).join('\n') || '| None | 0 |'}
 
-## Top Affected Apps
+## Top Active Affected Apps
 
 | App | Events |
 |-----|-------:|
-${topApps.map(([app, count]) => `| ${app} | ${count} |`).join('\n')}
+${topApps.map(([app, count]) => `| ${app} | ${count} |`).join('\n') || '| None | 0 |'}
 
-## Top Affected Routes / Targets
+## Top Active Routes / Targets
 
 | Route | Events |
 |-------|-------:|
-${topRoutes.map(([route, count]) => `| ${route} | ${count} |`).join('\n')}
+${topRoutes.map(([route, count]) => `| ${route} | ${count} |`).join('\n') || '| None | 0 |'}
 
-## Suspected Root Causes
+## Active Suspected Root Causes
 
 ${topFingerprints.length > 0 ? topFingerprints.map(([fp, count]) =>
   `- Fingerprint \`${fp}\` repeated ${count} times`
@@ -122,15 +132,15 @@ ${topFingerprints.length > 0 ? topFingerprints.map(([fp, count]) =>
 
 ## Recommended Tasks
 
-${events.filter(e => e.severity === 'P1').length >= 3
-  ? events.filter(e => e.severity === 'P1').slice(0, 3).map(e =>
+${actionableEvents.filter(e => e.severity === 'P1').length >= 3
+  ? actionableEvents.filter(e => e.severity === 'P1').slice(0, 3).map(e =>
     `- Investigate repeated ${e.errorCode || 'P1 error'} in ${e.app || 'system'}`
   ).join('\n')
   : '*None*'}
 
 ## Recommended Incidents
 
-${p0Count > 0 ? events.filter(e => e.severity === 'P0').map(e =>
+${p0Count > 0 ? actionableEvents.filter(e => e.severity === 'P0').map(e =>
   `- INC-${e.eventId}: ${e.message || 'P0 event'}`
 ).join('\n') : '*None*'}
 

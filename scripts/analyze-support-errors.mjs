@@ -1,60 +1,28 @@
-import { readFileSync, existsSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import {
+  countBy,
+  partitionOpsEvents,
+  readNdjsonEvents,
+  resolveOpsEventConfig,
+  topCounts,
+} from './ops-events.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 const EVENTS_FILE = process.env.HAA_OPS_MONITORING_EVENTS_FILE || join(ROOT, 'storage', 'monitoring-events.ndjson')
 const SUPPORT_EVENTS_FILE = process.env.HAA_OPS_SUPPORT_EVENTS_FILE || join(ROOT, 'storage', 'support-error-events.ndjson')
-const LOOKBACK_HOURS = Number(process.env.HAA_OPS_ERRORS_LOOKBACK_HOURS || 24)
-const NOW = process.env.HAA_OPS_NOW ? new Date(process.env.HAA_OPS_NOW) : new Date()
-
-function readEvents(filePath, sourceKind) {
-  if (!existsSync(filePath)) return []
-  const content = readFileSync(filePath, 'utf-8').trim()
-  if (!content) return []
-  return content.split('\n').filter(Boolean).map(line => {
-    try {
-      return {
-        ...JSON.parse(line),
-        sourceKind,
-      }
-    } catch { return null }
-  }).filter(Boolean)
-}
+const config = resolveOpsEventConfig()
 
 const events = [
-  ...readEvents(EVENTS_FILE, 'monitoring'),
-  ...readEvents(SUPPORT_EVENTS_FILE, 'support'),
+  ...readNdjsonEvents(EVENTS_FILE, 'monitoring'),
+  ...readNdjsonEvents(SUPPORT_EVENTS_FILE, 'support'),
 ]
 
-function isWithinLookback(event) {
-  if (!Number.isFinite(LOOKBACK_HOURS) || LOOKBACK_HOURS <= 0) return true
-  if (!event.timestamp) return false
-  const eventDate = new Date(event.timestamp)
-  if (Number.isNaN(eventDate.getTime())) return false
-  const ageMs = NOW.getTime() - eventDate.getTime()
-  return ageMs >= 0 && ageMs <= LOOKBACK_HOURS * 60 * 60 * 1000
-}
-
-function isActionableEvent(event) {
-  if (!isWithinLookback(event)) return false
-  if (event.status === 'pass') return false
-
-  if (event.sourceKind === 'support') {
-    return ['P0', 'P1', 'P2'].includes(event.severity)
-  }
-
-  if (event.status === 'fail') return true
-  return ['P0', 'P1'].includes(event.severity)
-}
-
-const actionableEvents = events.filter(isActionableEvent)
-const historicalEvents = events.filter(event => !isWithinLookback(event))
-const passiveEvents = events.filter(event => isWithinLookback(event) && !isActionableEvent(event))
+const { actionableEvents, historicalEvents, passiveEvents } = partitionOpsEvents(events, config)
 
 console.log(`\nAnalyzing ${events.length} total events...`)
-console.log(`Active action window: last ${LOOKBACK_HOURS > 0 ? LOOKBACK_HOURS : 'all'} hour(s)`)
+console.log(`Active action window: last ${config.lookbackHours > 0 ? config.lookbackHours : 'all'} hour(s)`)
 console.log(`Actionable events in window: ${actionableEvents.length}`)
 console.log(`Historical events outside window: ${historicalEvents.length}`)
 console.log(`Passive pass/warn events ignored for recommendations: ${passiveEvents.length}\n`)
@@ -72,13 +40,8 @@ for (const [sev, count] of Object.entries(bySeverity)) {
 if (Object.values(bySeverity).every(count => count === 0)) console.log('  None')
 
 // Top error codes
-const errorCodes = {}
-for (const e of actionableEvents) {
-  if (e.errorCode) {
-    errorCodes[e.errorCode] = (errorCodes[e.errorCode] || 0) + 1
-  }
-}
-const topErrorCodes = Object.entries(errorCodes).sort((a, b) => b[1] - a[1]).slice(0, 5)
+const errorCodes = countBy(actionableEvents, event => event.errorCode)
+const topErrorCodes = topCounts(errorCodes, 5)
 console.log('\n=== Top Actionable Error Codes ===')
 for (const [code, count] of topErrorCodes) {
   console.log(`  ${code}: ${count}`)
@@ -86,13 +49,8 @@ for (const [code, count] of topErrorCodes) {
 if (topErrorCodes.length === 0) console.log('  None')
 
 // Top fingerprints
-const fingerprints = {}
-for (const e of actionableEvents) {
-  if (e.fingerprint) {
-    fingerprints[e.fingerprint] = (fingerprints[e.fingerprint] || 0) + 1
-  }
-}
-const topFingerprints = Object.entries(fingerprints).sort((a, b) => b[1] - a[1]).slice(0, 5)
+const fingerprints = countBy(actionableEvents, event => event.fingerprint)
+const topFingerprints = topCounts(fingerprints, 5)
 console.log('\n=== Top Actionable Fingerprints ===')
 for (const [fp, count] of topFingerprints) {
   console.log(`  ${fp}: ${count}`)
@@ -100,13 +58,8 @@ for (const [fp, count] of topFingerprints) {
 if (topFingerprints.length === 0) console.log('  None')
 
 // Top affected apps
-const apps = {}
-for (const e of actionableEvents) {
-  if (e.app) {
-    apps[e.app] = (apps[e.app] || 0) + 1
-  }
-}
-const topApps = Object.entries(apps).sort((a, b) => b[1] - a[1]).slice(0, 5)
+const apps = countBy(actionableEvents, event => event.app)
+const topApps = topCounts(apps, 5)
 console.log('\n=== Top Actionable Affected Apps ===')
 for (const [app, count] of topApps) {
   console.log(`  ${app}: ${count}`)
@@ -114,14 +67,8 @@ for (const [app, count] of topApps) {
 if (topApps.length === 0) console.log('  None')
 
 // Top affected routes
-const routes = {}
-for (const e of actionableEvents) {
-  if (e.route || e.target) {
-    const key = e.route || e.target
-    routes[key] = (routes[key] || 0) + 1
-  }
-}
-const topRoutes = Object.entries(routes).sort((a, b) => b[1] - a[1]).slice(0, 5)
+const routes = countBy(actionableEvents, event => event.route || event.target)
+const topRoutes = topCounts(routes, 5)
 console.log('\n=== Top Actionable Routes/Targets ===')
 for (const [route, count] of topRoutes) {
   console.log(`  ${route}: ${count}`)

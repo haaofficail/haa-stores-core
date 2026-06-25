@@ -12,13 +12,13 @@
 - **Severity:** Medium (creates false operational urgency and hides current signal)
 - **Area:** Observability / Local monitoring / Support error analysis
 - **Related Tasks:** TASK-0078
-- **Symptoms:** `pnpm ops:monitor` and `pnpm ops:errors` reported repeated P0/RCA recommendations even though `pnpm preflight` and the full test suite were clean. The report also ranked passive health-check targets such as `package.json exists` as top affected targets.
-- **Expected:** Historical events should remain visible for context, but incident/RCA recommendations should be based only on recent actionable failures.
-- **Actual:** `scripts/analyze-support-errors.mjs` merged `storage/monitoring-events.ndjson` and `storage/support-error-events.ndjson`, counted every event forever, and did not exclude `status=pass` monitoring events from route/target rankings or recommendation logic.
-- **Root Cause:** The analyzer had no active lookback window and no actionable-event filter. As a result, old support/runtime errors from 2026-06-19 and accumulated health pass events were treated as if they were current operational failures.
-- **Fix:** Added a default 24-hour active action window, `HAA_OPS_ERRORS_LOOKBACK_HOURS` / file override envs for deterministic tests, an actionable-event filter, and separate reporting for total, historical, passive, and actionable events.
-- **Verification:** `pnpm vitest run tests/ops-errors-analyzer.test.ts` passes 3/3. `pnpm ops:errors` now reports no recommended tasks/incidents from the current local logs after filtering stale history.
-- **Prevention:** Regression coverage asserts stale P0/RCA events do not trigger recommendations, recent repeated support fingerprints still trigger RCA, and passive monitoring pass events do not rank as actionable targets.
+- **Symptoms:** `pnpm ops:monitor`, `pnpm ops:errors`, and `pnpm ops:monitor:report` reported repeated P0/RCA/Critical status even though `pnpm preflight` and the full test suite were clean. The report also ranked passive health-check targets such as `package.json exists` as top affected targets and stayed degraded after later passing checks.
+- **Expected:** Historical events should remain visible for context, but incident/RCA recommendations should be based only on recent actionable failures. Current health should represent the latest result per check target.
+- **Actual:** `scripts/analyze-support-errors.mjs` and `scripts/generate-monitoring-report.mjs` each merged `storage/monitoring-events.ndjson` and `storage/support-error-events.ndjson` with duplicated, unwindowed classification logic. The report counted every warning inside the active window even if the same target later passed.
+- **Root Cause:** Event classification lived in two scripts instead of one shared module, had no active lookback window, and the monitoring report summarized historical/window totals as current state instead of reducing checks to their latest target status.
+- **Fix:** Added `scripts/ops-events.mjs` as the single source of truth for NDJSON reading, lookback filtering, actionable-event classification, and count helpers. Refactored both analyzer and report generator to use it. The report now computes current health from the latest check event per source/checkType/app/target.
+- **Verification:** `pnpm vitest run tests/ops-errors-analyzer.test.ts` passes 6/6. `pnpm ops:errors` reports no recommended tasks/incidents. `pnpm ops:monitor` reports API/storefront/dashboard runtime and synthetic checks passing. `pnpm ops:monitor:report` reports `Overall Status: Healthy`.
+- **Prevention:** Regression coverage asserts shared classification is imported by both scripts, stale P0/RCA events do not trigger recommendations, recent repeated support fingerprints still trigger RCA, passive monitoring pass events do not rank as actionable targets, stale P0s do not make the report Critical, and recovered check targets produce Healthy status.
 - **Status:** Fixed.
 
 ---

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,6 +8,8 @@ import { describe, expect, it } from 'vitest';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 const scriptPath = resolve(projectRoot, 'scripts/analyze-support-errors.mjs');
+const reportScriptPath = resolve(projectRoot, 'scripts/generate-monitoring-report.mjs');
+const sharedOpsEventsPath = resolve(projectRoot, 'scripts/ops-events.mjs');
 
 function runAnalyzer(params: {
   monitoringEvents?: unknown[];
@@ -40,7 +42,49 @@ function runAnalyzer(params: {
   });
 }
 
+function runReport(params: {
+  monitoringEvents?: unknown[];
+  supportEvents?: unknown[];
+  now?: string;
+  lookbackHours?: number;
+}) {
+  const dir = mkdtempSync(resolve(tmpdir(), 'haa-monitor-report-'));
+  const monitoringPath = resolve(dir, 'monitoring-events.ndjson');
+  const supportPath = resolve(dir, 'support-error-events.ndjson');
+  writeFileSync(
+    monitoringPath,
+    (params.monitoringEvents || []).map(event => JSON.stringify(event)).join('\n'),
+  );
+  writeFileSync(
+    supportPath,
+    (params.supportEvents || []).map(event => JSON.stringify(event)).join('\n'),
+  );
+
+  return execFileSync(process.execPath, [reportScriptPath], {
+    cwd: projectRoot,
+    encoding: 'utf-8',
+    env: {
+      ...process.env,
+      HAA_OPS_MONITORING_EVENTS_FILE: monitoringPath,
+      HAA_OPS_SUPPORT_EVENTS_FILE: supportPath,
+      HAA_OPS_NOW: params.now || '2026-06-25T12:00:00.000Z',
+      HAA_OPS_ERRORS_LOOKBACK_HOURS: String(params.lookbackHours ?? 24),
+    },
+  });
+}
+
 describe('ops error analyzer active window', () => {
+  it('uses a shared ops event classification module across analyzer and report scripts', () => {
+    const analyzerSource = readFileSync(scriptPath, 'utf-8');
+    const reportSource = readFileSync(reportScriptPath, 'utf-8');
+    const sharedSource = readFileSync(sharedOpsEventsPath, 'utf-8');
+
+    expect(analyzerSource).toContain("from './ops-events.mjs'");
+    expect(reportSource).toContain("from './ops-events.mjs'");
+    expect(sharedSource).toContain('function isActionableEvent');
+    expect(sharedSource).toContain('function partitionOpsEvents');
+  });
+
   it('does not recommend incidents or RCA from stale historical support errors', () => {
     const output = runAnalyzer({
       supportEvents: [
@@ -140,5 +184,52 @@ describe('ops error analyzer active window', () => {
     expect(output).toContain('Passive pass/warn events ignored for recommendations: 1');
     expect(output).toContain('api-health: 1');
     expect(output).not.toContain('package.json exists: 1');
+  });
+
+  it('monitoring report does not mark stale P0 events as critical', () => {
+    const output = runReport({
+      supportEvents: [
+        {
+          eventId: 'old-p0',
+          timestamp: '2026-06-19T12:00:00.000Z',
+          severity: 'P0',
+          errorCode: 'DASH-001',
+          fingerprint: 'DASH-001::old',
+          message: 'old dashboard crash',
+          app: 'merchant-dashboard',
+        },
+      ],
+    });
+
+    expect(output).toContain('Overall Status: Unknown');
+  });
+
+  it('monitoring report status uses the latest result per check target', () => {
+    const output = runReport({
+      monitoringEvents: [
+        {
+          eventId: 'warn-api',
+          timestamp: '2026-06-25T10:00:00.000Z',
+          source: 'synthetic-checks.mjs',
+          checkType: 'synthetic',
+          target: 'api-health',
+          app: 'api',
+          status: 'warn',
+          severity: 'P3',
+        },
+        {
+          eventId: 'pass-api',
+          timestamp: '2026-06-25T11:00:00.000Z',
+          source: 'synthetic-checks.mjs',
+          checkType: 'synthetic',
+          target: 'api-health',
+          app: 'api',
+          status: 'pass',
+          severity: 'P3',
+        },
+      ],
+    });
+
+    expect(output).toContain('Overall Status: Healthy');
   });
 });
