@@ -6,7 +6,7 @@ const marketingRouter = new Hono();
 
 marketingRouter.use('*', requireAuth(), requireStoreAccess());
 
-function getPeriod(c: any): { dateFrom?: string; dateTo?: string } {
+function getPeriod(c: { req: { query: (k: string) => string | undefined } }): { dateFrom?: string; dateTo?: string } {
   return {
     dateFrom: c.req.query('dateFrom') || undefined,
     dateTo: c.req.query('dateTo') || undefined,
@@ -135,7 +135,12 @@ marketingRouter.get('/actions/:id', requirePermission('reports:read'), async (c)
   return c.json({ success: true, data });
 });
 
-marketingRouter.patch('/actions/:id', requirePermission('reports:read'), async (c) => {
+// WRITE — requires promotions:update (not reports:read). The previous
+// permission allowed any reports-only role to mutate marketing
+// actions; the dashboard route in App.tsx gates the page on
+// `promotions:read`, but a careful reader of the audit could call
+// PATCH directly. See audit P0 #8 (2026-06-25).
+marketingRouter.patch('/actions/:id', requirePermission('promotions:update'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const id = Number(c.req.param('id'));
   const body = await c.req.json();
@@ -160,7 +165,10 @@ marketingRouter.patch('/actions/:id', requirePermission('reports:read'), async (
   return c.json({ success: true, data });
 });
 
-marketingRouter.post('/actions/generate', requirePermission('reports:read'), async (c) => {
+// WRITE — generation triggers a heavy server pass. promotions:update
+// matches the "edit marketing campaigns" intent and gates expensive
+// recomputation behind a write permission.
+marketingRouter.post('/actions/generate', requirePermission('promotions:update'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const generated = await actions.generateActions(storeId);
   return c.json({ success: true, data: { generated: generated.length } });
@@ -191,7 +199,9 @@ marketingRouter.get('/settings/thresholds', requirePermission('reports:read'), a
   return c.json({ success: true, data });
 });
 
-marketingRouter.patch('/settings', requirePermission('reports:read'), async (c) => {
+// WRITE — updates marketing thresholds. promotions:update is the
+// natural fit; the read-side endpoint above stays on reports:read.
+marketingRouter.patch('/settings', requirePermission('promotions:update'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const body = await c.req.json();
 
@@ -225,6 +235,12 @@ marketingRouter.get('/segments/:type', requirePermission('reports:read'), async 
   }
   const page = Number(c.req.query('page') ?? 1);
   const limit = Number(c.req.query('limit') ?? 20);
+  // The runtime `validTypes` check above narrows `type` to the
+  // CustomerSegmentType union, but TypeScript can't follow `includes()`
+  // narrowing on a `string[]` literal — `type` stays `string`. The
+  // cast is safe because the line below is unreachable for invalid
+  // values.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data = await segments.getSegmentMembers(storeId, type as any, { page, limit });
   return c.json({ success: true, data });
 });
