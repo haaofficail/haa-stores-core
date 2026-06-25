@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Layout from '@/components/Layout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -18,6 +18,7 @@ const TrackOrder = lazy(() => import('@/pages/TrackOrder'));
 const TrackOrderResult = lazy(() => import('@/pages/TrackOrderResult'));
 const MyOrders = lazy(() => import('@/pages/MyOrders'));
 const About = lazy(() => import('@/pages/About'));
+const PlatformAbout = lazy(() => import('@/pages/PlatformAbout'));
 const Contact = lazy(() => import('@/pages/Contact'));
 const PolicyPage = lazy(() => import('@/pages/PolicyPage'));
 const LegalPage = lazy(() => import('@/pages/LegalPage'));
@@ -89,8 +90,9 @@ export default function App() {
             <Route path="*" element={<StoreNotFound />} />
           </Route>
           <Route path="/marketplace" element={<HaaMarketplace />} />
-          {/* /about على مستوى المنصة: لا متجر/slug — وجّه للّاندينق بدل صفحة المتجر التي تعلّق على skeleton */}
-          <Route path="/about" element={<Navigate to="/" replace />} />
+          {/* /about على مستوى المنصة (haastores.com/about): يقدّم متاجر هاء كمنتج من Haa Soft.
+              منفصل عن /s/:slug/about المخصّص لمحتوى التاجر القابل للتحرير. */}
+          <Route path="/about" element={<PlatformAbout />} />
           <Route path="/marketplace/cart" element={<MarketplaceCart />} />
           <Route path="/marketplace/checkout" element={<MarketplaceCheckout />} />
           <Route path="/marketplace/orders" element={<MarketplaceOrderTrack />} />
