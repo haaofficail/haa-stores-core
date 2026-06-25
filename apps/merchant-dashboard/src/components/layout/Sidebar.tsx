@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
 import { usePermissions } from '@/lib/permissions';
 import {
-  LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, UserCog, TrendingUp, Activity, ExternalLink, AlertTriangle, MessageSquare, Coins, Sparkles,
+  LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, UserCog, TrendingUp, Activity, ExternalLink, AlertTriangle, MessageSquare, Coins, Sparkles, ClipboardList,
 } from 'lucide-react';
 
 type NavIcon = React.ComponentType<{ className?: string }>;
@@ -48,6 +48,7 @@ const navGroups: Array<{
     titleKey: 'sidebar.sales',
     title: 'البيع',
     items: [
+      { to: '/sales', icon: ClipboardList, label: 'nav.salesHub', fallback: 'مركز البيع', permission: 'orders:read' },
       { to: '/orders', icon: ShoppingCart, label: 'nav.orders', fallback: 'معالجة الطلبات', permission: 'orders:read' },
       { to: '/customers', icon: Users, label: 'nav.customers', fallback: 'إدارة العملاء', permission: 'customers:read' },
       { to: '/abandoned-carts', icon: ShoppingBag, label: 'nav.abandonedCarts', fallback: 'العربات المتروكة', permission: 'orders:read' },
@@ -70,6 +71,7 @@ const navGroups: Array<{
     titleKey: 'sidebar.finance',
     title: 'المالية',
     items: [
+      { to: '/finance', icon: Coins, label: 'nav.financeHub', fallback: 'مركز المالية', permission: 'wallet:read' },
       { to: '/wallet', icon: Wallet, label: 'nav.wallet', fallback: 'المحفظة والتسويات', permission: 'wallet:read' },
       { to: '/subscriptions', icon: Crown, label: 'nav.subscriptions', fallback: 'الاشتراك والفواتير', permission: 'subscriptions:view' },
       { to: '/compliance', icon: Shield, label: 'nav.compliance', fallback: 'التحقق والامتثال', permission: 'compliance:read' },
