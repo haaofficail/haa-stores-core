@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
 import { usePermissions } from '@/lib/permissions';
 import {
-  LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, UserCog, TrendingUp, Activity, ExternalLink, AlertTriangle, MessageSquare, Coins, Sparkles, ClipboardList, Rocket,
+  LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, UserCog, TrendingUp, Activity, ExternalLink, AlertTriangle, MessageSquare, Coins, Sparkles, ClipboardList, Rocket, User,
 } from 'lucide-react';
 
 type NavIcon = React.ComponentType<{ className?: string }>;
@@ -101,6 +101,7 @@ const navGroups: Array<{
     titleKey: 'sidebar.settings',
     title: 'الإعدادات',
     items: [
+      { to: '/account', icon: User, label: 'nav.account', fallback: 'حسابي', permission: 'dashboard:view' },
       { to: '/settings', icon: Settings, label: 'nav.settings', fallback: 'إعدادات المتجر', permission: 'settings:read' },
       { to: '/employees', icon: UserCog, label: 'nav.employees', fallback: 'الموظفون والصلاحيات', permission: 'employees:view' },
       { to: '/policies', icon: FileText, label: 'nav.policies', fallback: 'السياسات والصفحات', permission: 'settings:read' },
