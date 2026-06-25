@@ -4,6 +4,30 @@
 
 ---
 
+### TASK-0080: Mainline CI launch-readiness truth sync
+
+- **Type:** Documentation / Support/Ops
+- **Priority:** P1
+- **Status:** Done
+- **Created:** 2026-06-26
+- **Updated:** 2026-06-26
+- **Original Request:** "نعم" after recommending the next launch-readiness/backlog truth-sync step.
+- **Expanded Requirement:** Reconcile current `main` CI evidence with stale ops/Agent OS records so fixed CI failures do not appear as active work for future agents.
+- **Problem:** TASK-0054 still showed `In Progress` even though GitHub Actions CI run `28206650868` passed on `main` commit `6f3f95c1e8dc53949cb9d20c7397b8d7a7df6bf6`. `docs/agent-os/ACTIVE_WORK.md` and the owner ledger also contained stale autopilot-branch language.
+- **Scope:** Documentation truth-sync only: close TASK-0054, update current state, refresh active-work handoff, and update the owner-facing task ledger.
+- **Out of Scope:** Product code, tests, migrations, deploy, production actions, secrets, live payment/shipping calls, and local Graphify artifact classification.
+- **Skills Used:** `documentation-handoff-gate`, `single-source-of-truth-gate`, `evidence-led-reporting`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] TASK-0054 reflects the green `main` CI run and is no longer an active failure source.
+  - [x] `CURRENT_STATE.md` records the CI run ID, commit SHA, and passed jobs.
+  - [x] `ACTIVE_WORK.md` reflects the current `main` state instead of stale autopilot branch instructions.
+  - [x] `HAA_TASK_LEDGER.md` no longer recommends starting an already-historical Wave 0 as the next action.
+  - [x] Local Graphify artifacts are called out as separate untracked work, not mixed with this task.
+- **Test Plan:** `git diff`; `git diff --check`; `pnpm check:skills`; `git status --short --branch`.
+- **Files Changed:** `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/HAA_TASK_LEDGER.md`.
+
+---
+
 ### TASK-0079: Workspace hygiene ignore local agent/tool artifacts
 
 - **Type:** Documentation / Support/Ops
@@ -124,9 +148,9 @@
 
 - **Type:** Bug Fix / Support/Ops / Testing
 - **Priority:** P0 Critical
-- **Status:** In Progress
+- **Status:** Done
 - **Created:** 2026-06-20
-- **Updated:** 2026-06-20
+- **Updated:** 2026-06-26
 - **Original Request:** "حل مشاكل الاكشن ، الفشل كثير ما انحلت"
 - **Expanded Requirement:** Fix the failing checks on PR #1 and the Docker build failure seen by the main-branch Deploy workflow.
 - **Problem:** The Test job had no PostgreSQL service despite running DB-backed tests; migration 0010 lacked the explicit PostgreSQL `USING` cast required on a clean database; app build jobs compiled apps before their workspace packages; the API production image ran the root Husky `prepare` hook after excluding devDependencies.
@@ -143,8 +167,9 @@
   - [x] Full local test suite passes.
   - [x] All four app builds pass.
   - [x] Troubleshooting and recovery guide documents root causes, commands, and prevention.
-  - [ ] GitHub Actions PR checks pass after push.
-- **Test Results:** `pnpm preflight` ✅; `pnpm ops:monitor` services/synthetics ✅; `tests/ci-cd-pipeline.test.ts` 12/12 ✅; workspace package build ✅; API + merchant + admin + storefront builds ✅; full suite 2668 passed, 1 skipped ✅. Local Docker verification unavailable because the `docker` CLI is not installed.
+  - [x] GitHub Actions checks pass after merge on `main`.
+- **Test Results:** `pnpm preflight` ✅; `pnpm ops:monitor` services/synthetics ✅; `tests/ci-cd-pipeline.test.ts` 12/12 ✅; workspace package build ✅; API + merchant + admin + storefront builds ✅; full suite 2668 passed, 1 skipped ✅. GitHub Actions CI run `28206650868` on `main` commit `6f3f95c1e8dc53949cb9d20c7397b8d7a7df6bf6` completed with conclusion `success` on 2026-06-25T23:25:14Z: Secret Scan, Preflight, Test, Lint, Typecheck, all four app builds, and E2E Tests all passed. Local Docker verification unavailable because the `docker` CLI is not installed.
+- **Closure Note (2026-06-26):** This task is no longer an active failure source. Any future CI failure must be logged as a new task with its own failing run ID instead of reopening this historical recovery task.
 
 ### TASK-0026: Quality Pass 2 — Component Unification
 

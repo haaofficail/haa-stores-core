@@ -7,27 +7,21 @@
 
 ## Current task
 
-**Autopilot Wave 0 — Truth Sync (in progress).** First wave of the new 22-wave SAFE FULL AUTOPILOT pass. Sync agent-os + ops docs to the post-Phase-2 reality. The canonical owner-facing dashboard is now `docs/HAA_TASK_LEDGER.md` (created 2026-06-24, PR #178). After W0 the remaining 21 waves resume per `docs/agent-os/EXECUTION_CHECKLIST.md`.
+**Mainline CI / launch-readiness truth sync (2026-06-26).** The repo is on `main`, synced with `origin/main`, and the latest relevant GitHub Actions CI run is green for commit `6f3f95c1e8dc53949cb9d20c7397b8d7a7df6bf6`. Historical CI recovery task TASK-0054 is closed so future agents do not chase already-fixed CI failures.
 
-**Phase-2 closed on 2026-06-24:**
-
-- 18 PRs merged (PRs #161 → #185)
-- 5 migrations applied on staging (0079–0085 except 0082 was conditional)
-- `AUTH_LEGACY_VERIFIED=0` flipped — legacy email-verified bypass closed
-- Deploy hardened (24-min fail2ban warmup window + `deploy-watchdog.yml`)
-- Platform legal entity (CR 7038798612) wired into all legal surfaces
+Current non-code follow-up observed during this session: untracked Graphify artifacts are present locally (`.graphifyignore`, `fix-graphify-haa.sh`, `graphify-out/`, `setup-graphify-haa.sh`). They were not touched in this truth-sync pass.
 
 ## Current branch
 
-`autopilot/w0-truth-sync` (created 2026-06-24 from `main`).
+`main`.
 
 ## Last known commit
 
-See `EXECUTION_CHECKLIST.md` for the per-wave commit SHA. The last engineering commit was `40b7b6c7 test(quality): add RTL accessibility and brand guards`. A tracker close-out commit follows immediately.
+`6f3f95c1e8dc53949cb9d20c7397b8d7a7df6bf6` — `chore(ops): ignore local workspace artifacts`.
 
 ## Branch state vs main
 
-Per `git log main..HEAD`, this branch is many commits ahead of `main` (one per wave + tracker closure). **Not pushed.** Owner review required before push / PR / merge.
+`main` matches `origin/main` before this truth-sync edit. Expected working tree noise: the Graphify artifacts listed above are untracked and not part of the repo state.
 
 ## Wave-by-wave outcomes
 
@@ -40,29 +34,29 @@ See `EXECUTION_CHECKLIST.md` for the table. Summary:
 
 ## Verification
 
-- `pnpm preflight`: green.
-- `pnpm typecheck`: green.
-- `pnpm test`: ~2873 passing / 1 skipped / 14 todo / 0 failing after Wave 18.
-- `git diff --check`: clean at every commit.
+- `pnpm preflight`: green locally on 2026-06-26.
+- GitHub Actions CI run `28206650868`: `success` on `main` commit `6f3f95c1e8dc53949cb9d20c7397b8d7a7df6bf6`.
+- CI jobs green: Secret Scan, Preflight, Test, Lint, Typecheck, Build — storefront, Build — admin-dashboard, Build — api, Build — merchant-dashboard, E2E Tests.
 
 ## Untracked files
 
-None — all autopilot files are committed.
+Graphify local artifacts are present and were not modified by the truth-sync pass:
+
+- `.graphifyignore`
+- `fix-graphify-haa.sh`
+- `graphify-out/`
+- `setup-graphify-haa.sh`
 
 ## Next safe action
 
-Owner review of `autopilot/post-qa-execution` branch. After approval:
-
-1. `git push -u origin autopilot/post-qa-execution`
-2. `gh pr create ...` (one big PR, or split per wave if preferred).
-3. Run CI; merge after green.
+Run a dedicated local-artifact hygiene pass for the Graphify files if they are disposable/generated. If they are intentional project assets, classify them and add the right tracker entry before committing.
 
 ## Resume instructions
 
 For any agent picking this up:
 
 1. `cd /Users/thwany/Desktop/haa-stores-core` (canonical; DECISION-OS-006).
-2. `git branch --show-current` → expect `autopilot/post-qa-execution` (or whichever branch the owner specifies post-merge).
-3. Read `docs/agent-os/EXECUTION_CHECKLIST.md` for what was done.
-4. Read `docs/agent-os/REMAINING_WORK.md` for what is left, grouped by P-level + blockers.
-5. Never push, merge, deploy, or run `db:migrate` without explicit owner approval.
+2. `git branch --show-current` → expect `main` unless the owner explicitly requested a feature branch.
+3. `git status --short --branch` → distinguish repo edits from the Graphify local artifacts above.
+4. Read `docs/agent-os/REMAINING_WORK.md` for owner-gated launch blockers.
+5. Never deploy, SSH, touch secrets, call live providers, or run `db:migrate` without explicit owner approval.
