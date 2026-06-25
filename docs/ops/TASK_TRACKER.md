@@ -4,6 +4,29 @@
 
 ---
 
+### TASK-0079: Workspace hygiene ignore local agent/tool artifacts
+
+- **Type:** Documentation / Support/Ops
+- **Priority:** P2
+- **Status:** Done
+- **Created:** 2026-06-26
+- **Updated:** 2026-06-26
+- **Original Request:** "نفذ" after recommending a Workspace Hygiene Pass.
+- **Expanded Requirement:** Classify untracked local files that were making branch state look dirty and prevent known local agent/tool artifacts from appearing in `git status`.
+- **Problem:** Local artifacts (`.agents/`, `.playwright-mcp/`, personal `.claude/skills/*`, `merchant-login-current.png`, `skills-lock.json`) appeared as untracked files on `main`, making it harder to distinguish real repo changes from local tool state.
+- **Scope:** `.gitignore` and ops docs only. No product code changes and no deletion of user files.
+- **Out of Scope:** Deleting artifacts, committing personal skills, changing admin/pricing feature work, or cleaning tracked generated monitoring logs beyond normal restore.
+- **Skills Used:** `evidence-led-reporting`, `verification-before-completion`, `regression-safety-gate`, `acceptance-criteria-gate`.
+- **Acceptance Criteria:**
+  - [x] Project preflight passes before hygiene changes.
+  - [x] Untracked local artifacts are classified from actual paths/content.
+  - [x] `.gitignore` ignores only local artifacts and specific untracked personal skill folders, not tracked Agent OS skills.
+  - [x] `git status --short --branch` no longer shows those artifacts.
+- **Test Plan:** `pnpm preflight`; `git status --short --branch`; `git diff --check`.
+- **Files Changed:** `.gitignore`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`.
+
+---
+
 ### TASK-0078: Fix noisy ops error analyzer active-window reporting
 
 - **Type:** Observability / Support/Ops

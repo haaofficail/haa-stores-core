@@ -35,6 +35,20 @@ deploy/staging/.env
 .claude/worktrees/
 .worktrees/
 
+# Local agent/plugin artifacts (not project source of truth)
+.agents/
+.playwright-mcp/
+skills-lock.json
+merchant-login-current.png
+.claude/skills/brandkit/
+.claude/skills/design-taste-frontend/
+.claude/skills/full-output-enforcement/
+.claude/skills/redesign-existing-projects/
+.claude/skills/brandkit
+.claude/skills/design-taste-frontend
+.claude/skills/full-output-enforcement
+.claude/skills/redesign-existing-projects
+
 # Generated build artifacts
 packages/theme-web/.next/
 packages/theme-web/storybook-static/
