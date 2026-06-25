@@ -14,10 +14,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'react-router-dom';
-import {
-  Bell, Mail, MessageSquare, Smartphone, AlertTriangle,
-  CheckCircle2, XCircle, Clock, Settings as SettingsIcon,
-} from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
 import { notificationApi, ApiClientError } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -36,31 +33,31 @@ interface NotificationLog {
 }
 
 function ChannelIcon({ channel }: { channel: string }) {
-  if (channel === 'email') return <Mail className="h-4 w-4" />;
-  if (channel === 'sms') return <Smartphone className="h-4 w-4" />;
-  if (channel === 'whatsapp') return <MessageSquare className="h-4 w-4" />;
-  return <Bell className="h-4 w-4" />;
+  if (channel === 'email') return <Icon name="Mail" size="xs" />;
+  if (channel === 'sms') return <Icon name="Smartphone" size="xs" />;
+  if (channel === 'whatsapp') return <Icon name="MessageSquare" size="xs" />;
+  return <Icon name="Bell" size="xs" />;
 }
 
 function StatusBadge({ status }: { status: string }) {
   if (status === 'sent' || status === 'delivered') {
     return (
       <Badge variant="success" className="text-xs gap-1">
-        <CheckCircle2 className="h-3 w-3" /> {status}
+        <Icon name="CheckCircle2" size="2xs" /> {status}
       </Badge>
     );
   }
   if (status === 'failed' || status === 'bounced') {
     return (
       <Badge variant="destructive" className="text-xs gap-1">
-        <XCircle className="h-3 w-3" /> {status}
+        <Icon name="XCircle" size="2xs" /> {status}
       </Badge>
     );
   }
   if (status === 'queued' || status === 'pending') {
     return (
       <Badge variant="secondary" className="text-xs gap-1">
-        <Clock className="h-3 w-3" /> {status}
+        <Icon name="Clock" size="2xs" /> {status}
       </Badge>
     );
   }
@@ -106,7 +103,7 @@ export default function NotificationsInbox() {
     <div className="space-y-6 max-w-4xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Bell className="h-6 w-6 text-primary-500" />
+          <Icon name="Bell" size="default" className="text-primary-500" />
           <div>
             <h1 className="text-2xl font-bold text-neutral-900">
               {t('notifications.inbox.title', 'صندوق الإشعارات')}
@@ -120,7 +117,7 @@ export default function NotificationsInbox() {
           to="/notifications"
           className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700"
         >
-          <SettingsIcon className="h-4 w-4" />
+          <Icon name="SettingsIcon" size="xs" />
           {t('notifications.inbox.preferencesLink', 'تفضيلات الإشعارات')}
         </Link>
       </div>
@@ -156,7 +153,7 @@ export default function NotificationsInbox() {
         ) : logs.length === 0 ? (
           <div className="p-12 text-center">
             <div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4">
-              <Bell className="h-8 w-8 text-neutral-400" />
+              <Icon name="Bell" size="lg" className="text-neutral-400" />
             </div>
             <p className="text-sm text-neutral-500">
               {t('notifications.inbox.empty', 'لا توجد إشعارات بعد')}
@@ -190,7 +187,7 @@ export default function NotificationsInbox() {
                     </div>
                     {log.errorMessage && (
                       <div className="mt-2 flex items-start gap-1.5 text-xs text-rose-600 bg-rose-50 rounded-lg p-2">
-                        <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                        <Icon name="AlertTriangle" size="2xs" className="mt-0.5" />
                         <span className="break-words">{log.errorMessage}</span>
                       </div>
                     )}
