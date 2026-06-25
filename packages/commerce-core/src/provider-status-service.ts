@@ -71,8 +71,28 @@ export class ProviderStatusService {
     const geideaConfigured = paymentProviderStatus.geideaConfigured;
     const geideaMode = paymentProviderStatus.activeMode === 'live' ? 'live' : 'sandbox';
 
-    const whatsappConfigured = !!prefs?.whatsappEnabled && isValidWhatsappPhone(prefs.whatsappPhone);
-    const smtpConfigured = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD);
+    // WhatsApp "configured" MUST require an actual provider transport
+    // to be wired (Unifonic in this build). Previously a merchant who
+    // toggled `whatsappEnabled` ON and saved a phone number saw the
+    // status flip to "configured" — but no notification was ever sent
+    // because `UnifoncWhatsAppProvider.isAvailable` checks for
+    // UNIFONIC_APP_SID + UNIFONIC_WHATSAPP_SENDER, which were never
+    // present. Audit findings (2026-06-25).
+    const unifoncReady = !!(process.env.UNIFONIC_APP_SID && process.env.UNIFONIC_WHATSAPP_SENDER);
+    const whatsappConfigured = unifoncReady
+      && !!prefs?.whatsappEnabled
+      && isValidWhatsappPhone(prefs.whatsappPhone);
+
+    // SMTP "configured" mirrors `SmtpEmailProvider.isAvailable` — all
+    // four env vars (HOST/PORT/USER/PASSWORD) must be present.
+    // Previously the check missed SMTP_PORT, so the dashboard could
+    // claim "configured" while the actual transport throws on send.
+    const smtpConfigured = !!(
+      process.env.SMTP_HOST
+      && process.env.SMTP_PORT
+      && process.env.SMTP_USER
+      && process.env.SMTP_PASSWORD
+    );
 
     return {
       payment: {
@@ -97,9 +117,11 @@ export class ProviderStatusService {
         status: shipping.status === 'configured' ? 'configured' : shipping.manualFallback ? 'partial' : 'not_configured',
       },
       whatsapp: {
-        mode: 'qr_contact',
+        // `mode` advertises the truth: 'api' when Unifonic is wired,
+        // 'qr_contact' when only the support QR link is shown.
+        mode: unifoncReady ? 'api' : 'qr_contact',
         configured: whatsappConfigured,
-        realDelivery: false,
+        realDelivery: unifoncReady && whatsappConfigured,
         status: whatsappConfigured ? 'configured' : 'not_configured',
       },
       email: {
