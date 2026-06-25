@@ -1,11 +1,12 @@
 # Haa Stores — Production reverse proxy (Caddy v2)
 # ---------------------------------------------------------------------------
-# Automatic HTTPS (Let's Encrypt) for the three production hostnames. Requires
-# DNS A records pointing each name at the production server and ports 80/443 open:
+# Automatic HTTPS (Let's Encrypt) for production hostnames. Requires DNS A
+# records pointing each name at the production server and ports 80/443 open:
 #
 #   haastores.com           A   <production-server-ip>
 #   admin.haastores.com     A   <production-server-ip>
 #   merchant.haastores.com  A   <production-server-ip>
+#   api.haastores.com       A   <production-server-ip>
 #
 # The www subdomain redirects to the apex. The SPA images are built with
 # VITE_API_URL=/api, so each frontend calls the API under the /api/* prefix
@@ -14,23 +15,12 @@
 {
 	email haa.officail@gmail.com
 
-	# On-demand TLS for merchant custom domains (QA Custom Domain). Before
-	# issuing a Let's Encrypt cert for an unknown host, Caddy asks the API;
-	# it returns 200 only for an ACTIVE custom domain, blocking
-	# cert-exhaustion abuse from arbitrary hostnames. Rate limited.
 	on_demand_tls {
 		ask http://api:3001/internal/tls-check
-		interval 2m
-		burst 5
 	}
 }
 
 (security_headers) {
-	# Edge-level security headers. Defined on Caddy because the SPA nginx
-	# `add_header` directives are silently overridden by per-location
-	# blocks (nginx inheritance gotcha) — moving them up here guarantees
-	# every response carries them regardless of which nginx location
-	# served the request.
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		X-Frame-Options "SAMEORIGIN"
@@ -43,7 +33,6 @@
 }
 
 (admin_security_headers) {
-	# Admin gets the stricter set — DENY framing + no-referrer.
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		X-Frame-Options "DENY"
@@ -93,10 +82,16 @@ merchant.haastores.com {
 	}
 }
 
-# Merchant custom domains (QA Custom Domain). Any host NOT matched above is a
-# candidate custom domain: serve the storefront SPA with on-demand TLS. The
-# SPA bootstraps the right store via GET /api/resolve-host (Host header). The
-# on_demand ask gate above ensures certs are only issued for active domains.
+dashboard.haastores.com {
+	redir https://merchant.haastores.com{uri} permanent
+}
+
+api.haastores.com {
+	import security_headers
+	encode gzip zstd
+	reverse_proxy api:3001
+}
+
 :443 {
 	tls {
 		on_demand
