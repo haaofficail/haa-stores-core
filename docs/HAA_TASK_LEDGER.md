@@ -20,11 +20,11 @@
 - **Overall completion:** **71%**
 - **Engineering completion:** **87%**
 - **Commercial launch readiness:** **46%**
-- **Current phase:** Phase 3 — Autopilot waves (Truth-Sync, theme gateway, brand tokens, payment env, …)
-- **Last updated:** 2026-06-24
-- **Last completed task:** Migrations 0083 + 0084 + 0085 applied on staging + `AUTH_LEGACY_VERIFIED=0` flipped — Phase-1 legacy auth bypass retired
+- **Current phase:** Phase 3 — Launch-readiness execution after mainline CI recovery
+- **Last updated:** 2026-06-26
+- **Last completed task:** Mainline CI recovery truth-sync: run `28206650868` passed on `main` commit `6f3f95c1e8dc53949cb9d20c7397b8d7a7df6bf6`; historical TASK-0054 closed.
 - **Current blocker:** Geidea credentials + shipping-aggregator selection (owner gates G1–G10 only — engineering side is unblocked)
-- **Next recommended action:** Begin 22-wave SAFE FULL AUTOPILOT — Wave 0 (Truth Sync of `docs/agent-os/*` + `docs/ops/*`).
+- **Next recommended action:** Resolve or intentionally ignore the local Graphify artifacts, then continue owner-gated launch-readiness items from `docs/agent-os/REMAINING_WORK.md`.
 
 ## 2. Progress Scale
 
@@ -253,6 +253,16 @@
 Status: `Not Started` · `In Progress` · `Blocked` · `Needs Review` · `Done` · `Deferred`
 
 ## 5. Update Log
+
+### 2026-06-26 — Mainline CI recovery truth-sync
+
+- Completed: Historical CI recovery TASK-0054 closed after GitHub Actions CI run `28206650868` passed on `main` commit `6f3f95c1e8dc53949cb9d20c7397b8d7a7df6bf6`.
+- Jobs passed: Secret Scan, Preflight, Test, Lint, Typecheck, Build — storefront, Build — admin-dashboard, Build — api, Build — merchant-dashboard, E2E Tests.
+- Changed: `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/agent-os/ACTIVE_WORK.md`, and this ledger now agree that the old CI failure loop is closed.
+- Tests run: documentation-only verification (`git diff`, `git diff --check`, `pnpm check:skills`, `git status --short --branch`).
+- New blockers: none. Local Graphify artifacts are present and need a separate classification pass if they should be ignored or committed.
+- Updated completion: unchanged — this pass syncs truth rather than shipping product capability.
+- Recommendation: classify Graphify artifacts next, then continue the owner-gated launch-readiness checklist.
 
 ### 2026-06-24 — Initial ledger creation (PR #178)
 
