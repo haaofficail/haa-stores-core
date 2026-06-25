@@ -55,11 +55,15 @@ describe('Notifications provider gating (audit Part 5 P0 #2)', () => {
     expect(NOTIFICATIONS).toMatch(
       /<Switch[^>]*data-testid="sms-channel-switch"[\s\S]*?checked=\{smsConfigured\s*\?\s*prefs\.smsEnabled\s*:\s*false\}/,
     );
-    // Configure link points at /settings/integrations.
-    expect(NOTIFICATIONS).toMatch(/data-testid="sms-configure-link"/);
-    expect(NOTIFICATIONS).toMatch(
-      /<Link[^>]*data-testid="sms-configure-link"[^>]*to="\/settings\/integrations"/,
-    );
+    // PR #223 (fake-feature cleanup, audit P0 #11): the SMS row
+    // previously linked to /settings/integrations, but that page
+    // had no SMS provider to configure. The link was misleading.
+    // It was replaced with a "coming soon" copy block — no link.
+    // The row STILL exists so merchants know SMS is on the roadmap.
+    expect(NOTIFICATIONS).toMatch(/notifications\.providerComingSoonBadge/);
+    expect(NOTIFICATIONS).toMatch(/notifications\.smsComingSoon/);
+    // Negative assertion: the misleading link is gone.
+    expect(NOTIFICATIONS).not.toMatch(/data-testid="sms-configure-link"/);
   });
 
   it('gates the WhatsApp switch on providerStatus.whatsapp.status', () => {
