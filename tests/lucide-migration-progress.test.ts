@@ -29,6 +29,27 @@ function walk(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
+/**
+ * Strip TS/JS comments before scanning for `from 'lucide-react'`.
+ *
+ * Without this, a docstring that contains an example like
+ *
+ *   * import { ChevronRight } from 'lucide-react';
+ *
+ * would count as a real direct import. The icon-standards governance
+ * doc (packages/ui/src/utils/icon-standards.ts) is exactly that
+ * shape and was triggering a false positive — its only "lucide-react"
+ * mention is the example in the docstring. Stripping comments
+ * eliminates the false positive without weakening the real check.
+ */
+function stripComments(text: string): string {
+  return text
+    // Block comments /* ... */ (multi-line, non-greedy).
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    // Line comments // ... (single line).
+    .replace(/\/\/.*$/gm, '');
+}
+
 const ROOTS = [
   resolve(ROOT, 'apps/storefront/src'),
   resolve(ROOT, 'apps/merchant-dashboard/src'),
@@ -36,15 +57,27 @@ const ROOTS = [
   resolve(ROOT, 'packages/ui/src'),
 ];
 
-// Captured 2026-06-22 during Wave 17 (152). Raised to 153 on 2026-06-22 to
-// accommodate the new ForgotPassword.tsx page in merchant-dashboard (P1 audit
-// follow-up; ArrowLeft + LifeBuoy + Mail icons used in a brand-new page that
-// did not previously exist). Raised to 154 on 2026-06-22 to accommodate the
-// new WhatsApp.tsx pairing page in merchant-dashboard (WA-PR-2;
-// Smartphone + QrCode + CheckCircle2 + AlertTriangle + Loader2 used in a
-// brand-new page). Lower this when files are migrated; increasing again
+/**
+ * Sanctioned Icon wrappers — the ONE permitted direct lucide-react import
+ * per app. They are governed by a separate contract test
+ * (tests/merchant-icon-wrapper-contract.test.ts) that locks the shape +
+ * the single eslint-disable on the lucide import. Excluding them here
+ * makes the ceiling reflect *real consumers* of lucide, not architectural
+ * exceptions. If a new wrapper is added (e.g. admin-dashboard), append its
+ * path here AND write a parallel contract test.
+ */
+const WRAPPER_FILES = new Set([
+  resolve(ROOT, 'apps/storefront/src/components/ui/icon.tsx'),
+  resolve(ROOT, 'apps/merchant-dashboard/src/components/ui/icon.tsx'),
+]);
+
+// Captured 2026-06-25 after the architectural cleanup: stripComments was
+// added (eliminates the icon-standards.ts docstring false positive), and
+// the sanctioned Icon wrappers were excluded from the scan. The ceiling
+// now reflects ONLY real consumers — files that still need to migrate to
+// the `<Icon>` wrapper. Lower this when files are migrated; raising it
 // requires an explicit owner ruling.
-const CEILING = 165;
+const CEILING = 164;
 
 describe('Lucide migration progress (F-QA-D-004 / ISSUE-0009)', () => {
   it(`direct lucide-react imports remain ≤ ${CEILING}`, () => {
@@ -58,8 +91,10 @@ describe('Lucide migration progress (F-QA-D-004 / ISSUE-0009)', () => {
         continue;
       }
       for (const file of files) {
-        const text = readFileSync(file, 'utf-8');
-        if (/from\s+['"]lucide-react['"]/.test(text)) {
+        if (WRAPPER_FILES.has(file)) continue;
+        const raw = readFileSync(file, 'utf-8');
+        const code = stripComments(raw);
+        if (/from\s+['"]lucide-react['"]/.test(code)) {
           count++;
           offenders.push(file.replace(ROOT + '/', ''));
         }
