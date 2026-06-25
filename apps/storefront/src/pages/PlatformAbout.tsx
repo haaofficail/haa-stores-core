@@ -1,39 +1,55 @@
+// Platform "About" — editorial Saudi modernism.
+//
+// Earlier iteration of this page was a competent landing-style stack of
+// cards. This one trades that for an editorial sensibility — large
+// Reem Kufi display type, El Messiri serif for prose, ivory paper +
+// deep ink with one accent blue used like a drop-cap. The page reads
+// less like a marketing landing and more like a magazine feature.
+//
+// Single source of truth for the legal entity remains
+// `@haa/shared` PLATFORM_LEGAL_ENTITY — name, CR number, issue date.
+// The "status" field is intentionally not surfaced (a live published
+// page implies the registration is active; restating it adds visual
+// noise and creates a maintenance burden).
+
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useSEO } from '@/hooks/useSEO';
-import { StoreButton } from '@/components/ui';
-import { Icon } from '@/components/ui/icon';
 import { PLATFORM_LEGAL_ENTITY } from '@haa/shared';
-import '@/landing/landing.css';
+import './settings-about-editorial.css';
 
 /* ─── data ─────────────────────────────────────────────────── */
 
-import type { IconName } from '@/components/ui/icon';
+interface Offering {
+  num: string;
+  title: string;
+  desc: string;
+}
 
-const OFFERINGS: { iconName: IconName; title: string; desc: string }[] = [
+const OFFERINGS: Offering[] = [
   {
-    iconName: 'ShoppingBag',
+    num: '01',
     title: 'متجر إلكتروني جاهز',
     desc: 'ثيمات أنيقة ومرنة، وأدوات تحرير بدون كود — يطلق التاجر متجره ويبدأ البيع في دقائق.',
   },
   {
-    iconName: 'CreditCard',
+    num: '02',
     title: 'دفع سعودي متكامل',
     desc: 'مدى وApple Pay وSTC Pay وVisa وMastercard، إضافةً إلى التقسيط عبر تابي وتمارا — جاهزة ومتوافقة محلياً.',
   },
   {
-    iconName: 'Truck',
+    num: '03',
     title: 'شحن وتسليم مدمج',
     desc: 'تكامل مباشر مع شركات الشحن السعودية، مع طباعة بوليصة الشحن وتتبّع آلي للطلبات.',
   },
   {
-    iconName: 'BarChart3',
+    num: '04',
     title: 'تحليلات وقرارات أذكى',
     desc: 'تقارير مبيعات لحظية، معدّل تحويل، حركة الزوّار، ولوحة تحكم موحّدة لإدارة كل شيء.',
   },
 ];
 
-/* ─── helpers ───────────────────────────────────────────────── */
+/* ─── primitives ─────────────────────────────────────────── */
 
 function ScrollProgress() {
   const ref = useRef<HTMLDivElement>(null);
@@ -41,7 +57,8 @@ function ScrollProgress() {
     const onScroll = () => {
       if (!ref.current) return;
       const h = document.documentElement.scrollHeight - window.innerHeight;
-      ref.current.style.transform = `scaleX(${h > 0 ? window.scrollY / h : 0})`;
+      const ratio = h > 0 ? window.scrollY / h : 0;
+      ref.current.style.transform = `scaleX(${ratio})`;
     };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -51,356 +68,264 @@ function ScrollProgress() {
       window.removeEventListener('resize', onScroll);
     };
   }, []);
-  return <div aria-hidden="true" className="lp-scroll-bar" ref={ref} style={{ transform: 'scaleX(0)' }} />;
+  return <div ref={ref} className="about-ed__progress" aria-hidden="true" />;
 }
-
-function BackToTop() {
-  const ref = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    const onScroll = () => {
-      if (!ref.current) return;
-      const show = window.scrollY > 600;
-      ref.current.style.opacity = show ? '1' : '0';
-      ref.current.style.transform = show ? 'translateY(0)' : 'translateY(1rem)';
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-  return (
-    <button
-      ref={ref}
-      type="button"
-      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      aria-label="العودة للأعلى"
-      className="lp-back-top"
-      style={{ opacity: 0, transform: 'translateY(1rem)', transition: 'opacity 300ms, transform 300ms' }}
-    >
-      <Icon name="ArrowUp" size="md" />
-    </button>
-  );
-}
-
-/* ─── page ──────────────────────────────────────────────────── */
 
 /**
- * Platform-level "About Us" page for haastores.com/about.
- *
- * Distinct from the per-merchant `apps/storefront/src/pages/About.tsx`
- * (mounted under `/s/:slug/about`) which renders editable content for an
- * individual store. This page positions Haa Stores as a product of
- * Haa Soft (the parent software house), and is the canonical
- * institutional page at the apex domain.
- *
- * Anchored on:
- *   - PLATFORM_LEGAL_ENTITY (single source of truth for CR + legal name)
- *   - Outbound link to haasoft.com (parent company, opens in new tab)
+ * Reveals all `[data-reveal]` elements inside the page as the reader
+ * scrolls past them. One observer for the whole tree keeps it cheap;
+ * elements are unobserved after their first reveal so we don't burn
+ * cycles on every scroll event.
  */
+function useScrollReveal() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!rootRef.current) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      // Older browsers: just show everything.
+      rootRef.current.querySelectorAll('[data-reveal]').forEach((el) => el.classList.add('is-in'));
+      return;
+    }
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-in');
+            obs.unobserve(entry.target);
+          }
+        }
+      },
+      { rootMargin: '0px 0px -10% 0px', threshold: 0.05 },
+    );
+    rootRef.current.querySelectorAll('[data-reveal]').forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+  return rootRef;
+}
+
+/* ─── page ───────────────────────────────────────────────── */
+
 export default function PlatformAbout() {
   useSEO({
-    title: 'من نحن | متاجر هاء — منتج من Haa Soft',
+    title: 'من نحن — متاجر هاء',
     description:
-      'متاجر هاء منصة سعودية للتجارة الإلكترونية، وأحد منتجات شركة Haa Soft. تعرّف على قصّتنا، ما الذي نقدّمه للتجار، وكيف ننتمي لـ Haa Soft.',
+      'متاجر هاء — منصة سعودية لإطلاق وإدارة المتاجر الإلكترونية، من إنتاج Haa Soft. متجر جاهز، دفع محلي، شحن مدمج، وقرارات أذكى.',
   });
 
-  useEffect(() => {
-    // honour <html lang/dir> while this page is mounted — keeps SEO
-    // signals consistent for crawlers that read the root attributes.
-    const prevLang = document.documentElement.lang;
-    const prevDir = document.documentElement.dir;
-    document.documentElement.lang = 'ar';
-    document.documentElement.dir = 'rtl';
-    return () => {
-      document.documentElement.lang = prevLang;
-      document.documentElement.dir = prevDir;
-    };
-  }, []);
+  const root = useScrollReveal();
 
+  // RTL on the page root so the design system inherits direction
+  // correctly even if the visitor lands here from a non-RTL route.
   useEffect(() => {
-    const els = document.querySelectorAll<HTMLElement>('.reveal, .reveal-stagger');
-    const io = new IntersectionObserver(
-      (entries) =>
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add('is-visible');
-            io.unobserve(e.target);
-          }
-        }),
-      { threshold: 0.06 },
-    );
-    els.forEach((el) => io.observe(el));
-    const safety = setTimeout(() => els.forEach((el) => el.classList.add('is-visible')), 1200);
+    const prev = { dir: document.documentElement.dir, lang: document.documentElement.lang };
+    document.documentElement.dir = 'rtl';
+    document.documentElement.lang = 'ar';
     return () => {
-      io.disconnect();
-      clearTimeout(safety);
+      document.documentElement.dir = prev.dir;
+      document.documentElement.lang = prev.lang;
     };
   }, []);
 
   return (
-    <div id="storefront-scope" className="lp-page" lang="ar" dir="rtl">
+    <div ref={root} className="about-ed overflow-x-hidden" dir="rtl" lang="ar">
       <ScrollProgress />
 
-      {/* ── Nav ─────────────────────────────────────────── */}
-      <nav className="lp-nav">
-        <div className="lp-container lp-nav__in">
-          <Link to="/" className="lp-logo">
-            <img src="/assets/haa-stores-logo.png" alt="هاء متاجر" />
-          </Link>
-          <div className="lp-nav__links">
-            <Link to="/">الرئيسية</Link>
-            <Link to="/about" aria-current="page">من نحن</Link>
-          </div>
-          <div className="lp-nav__cta">
-            <StoreButton size="sm" iconEnd={<Icon name="ArrowLeft" size="xs" />} href="/signup">
-              ابدأ مجاناً
-            </StoreButton>
-          </div>
-        </div>
-      </nav>
+      <main className="about-ed__wrap">
+        {/* ─────────── Hero ─────────── */}
+        <header className="about-ed__hero">
+          <span className="about-ed__year" aria-hidden="true">2024</span>
 
-      <main>
-        {/* ── Hero ────────────────────────────────────────── */}
-        <header className="lp-hero">
-          <div className="lp-hero__glow" />
-          <div className="lp-container lp-hero__in">
-            <div className="reveal">
-              <span className="lp-pill">
-                <Icon name="Sparkles" size="2xs" /> منتج من Haa Soft
-              </span>
-              <h1>
-                متاجر هاء — <b>منصة سعودية</b> للتجارة الإلكترونية، من بيت Haa Soft
-              </h1>
-              <p className="lp-hero__sub">
-                نبني الأدوات التي يحتاجها التاجر السعودي ليطلق متجره ويُديره ويُنميه بثقة —
-                دفع محلّي، شحن مدمج، تحليلات لحظية، وتجربة عميل أنيقة.
-              </p>
-              <div className="lp-hero__cta">
-                <StoreButton size="lg" iconEnd={<Icon name="ArrowLeft" size="sm" />} href="/signup">
-                  ابدأ متجرك
-                </StoreButton>
-                <StoreButton size="lg" variant="secondary" href="/#contact">
-                  تواصل مع المبيعات
-                </StoreButton>
-              </div>
+          <p className="about-ed__eyebrow">منتج من هاء سوفت — Haa Soft</p>
+
+          <h1 className="about-ed__hero-title">
+            متجر إلكتروني سعودي،
+            <br />
+            <em>كما يجب أن يكون.</em>
+          </h1>
+
+          <p className="about-ed__hero-lede">
+            بُنيت متاجر هاء لتمنح التاجر السعودي أداةً تليق بمنتجه
+            — هادئة في تصميمها، عميقة في تفاصيلها، ومتوافقة كلياً
+            مع السوق المحلي من اللحظة الأولى.
+          </p>
+
+          <dl className="about-ed__hero-meta">
+            <div className="about-ed__hero-meta-item">
+              <dt>التأسيس</dt>
+              <dd>2024</dd>
             </div>
-          </div>
+            <div className="about-ed__hero-meta-item">
+              <dt>المقر</dt>
+              <dd>المملكة العربية السعودية</dd>
+            </div>
+            <div className="about-ed__hero-meta-item">
+              <dt>الانتماء</dt>
+              <dd>{PLATFORM_LEGAL_ENTITY.legalNameAr}</dd>
+            </div>
+          </dl>
         </header>
 
-        {/* ── Story ───────────────────────────────────────── */}
-        <section id="story" className="lp-sec">
-          <div className="lp-container">
-            <div className="lp-sec__head reveal">
-              <div className="lp-sec__eyebrow">قصّتنا</div>
-              <h2>من نحن، ولماذا أنشأنا متاجر هاء</h2>
-              <p style={{ textWrap: 'balance' }}>
-                Haa Soft بيت تقني سعودي يبني منتجات برمجية للسوق المحلّي. لاحظنا أنّ التاجر
-                السعودي بحاجة إلى منصّة تتحدّث لغته فعلاً — تتكامل مع وسائل الدفع المحلّية،
-                وتفهم متطلّبات هيئة الزكاة والضريبة، وتقدّم تجربة شراء بسيطة وأنيقة لعميله.
-                أنشأنا "متاجر هاء" لتكون هذه المنصّة: أداة احترافية، أوضح ماليّاً وتشغيليّاً،
-                وتُدار بالكامل من الرياض.
+        {/* ─────────── Story ─────────── */}
+        <section className="about-ed__section">
+          <div className="about-ed__chapter">
+            <div data-reveal>
+              <p className="about-ed__chapter-eyebrow">
+                <span className="num">01</span>
+                <span>القصّة</span>
               </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Offerings ───────────────────────────────────── */}
-        <section id="offerings" className="lp-sec" style={{ paddingTop: 0 }}>
-          <div className="lp-container">
-            <div className="lp-sec__head reveal">
-              <div className="lp-sec__eyebrow">ما الذي نقدّمه</div>
-              <h2>منصّة متكاملة للتاجر السعودي</h2>
-              <p>أدوات صُمّمت خصّيصاً للسوق المحلّي، تُدير متجرك من الألف إلى الياء.</p>
-            </div>
-            <div className="lp-feats reveal-stagger">
-              {OFFERINGS.map(({ iconName, title, desc }) => (
-                <div className="lp-feat" key={title}>
-                  <div className="lp-feat__ic">
-                    <Icon name={iconName} size="default" />
-                  </div>
-                  <h3>{title}</h3>
-                  <p>{desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Haa Soft affiliation ────────────────────────── */}
-        <section id="haasoft" className="lp-sec" style={{ paddingTop: 0 }}>
-          <div className="lp-container">
-            <div className="lp-sec__head reveal">
-              <div className="lp-sec__eyebrow">انتماؤنا</div>
-              <h2>
-                متاجر هاء أحد منتجات <b>Haa Soft</b>
+              <h2 className="about-ed__chapter-title">
+                بداية من فجوة، لا من فكرة.
               </h2>
-              <p style={{ textWrap: 'balance' }}>
-                Haa Soft (هاء سوفت) هي الشركة الأم التي تطوّر متاجر هاء وتشغّلها.
-                نحن جزء من مجموعة منتجات برمجية يبنيها فريق هاء سوفت لخدمة السوق السعودي،
-                ومتاجر هاء هي منتج التجارة الإلكترونية الرسمي من هذه المجموعة.
-              </p>
-              <div style={{ display: 'inline-flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                <a
-                  href="https://haasoft.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="lp-pill"
-                  style={{ textDecoration: 'none' }}
-                  data-testid="haasoft-outbound-link"
-                >
-                  <Icon name="Building2" size="2xs" /> زُر موقع Haa Soft الرسمي
-                  <Icon name="ExternalLink" size="2xs" />
-                </a>
-              </div>
             </div>
-          </div>
-        </section>
-
-        {/* ── Haa Soft product family ─────────────────────── */}
-        <section id="family" className="lp-sec" style={{ paddingTop: 0 }}>
-          <div className="lp-container">
-            <div className="lp-sec__head reveal">
-              <div className="lp-sec__eyebrow">عائلة منتجات Haa Soft</div>
-              <h2>منصّات بُنيت محلّياً</h2>
-              <p style={{ textWrap: 'balance' }}>
-                تُطوّر Haa Soft عدداً من المنتجات البرمجيّة للسوق السعودي. تجد القائمة
-                الكاملة والمحدّثة على الموقع الرسمي للشركة الأم.
+            <div className="about-ed__prose" data-reveal data-reveal-delay="1">
+              <p>
+                <span className="drop">ر</span>
+                أينا التجار السعوديين يبيعون بأدوات صُمّمت لأسواق أخرى:
+                واجهات لا تحترم العربية، دفع مُعقّد، شحن غير متوافق،
+                وفواتير لا تنطبق على نظام الزكاة والضريبة. الفجوة كانت
+                واضحة، والحاجة أوضح.
+              </p>
+              <p>
+                ولدت متاجر هاء من هذه الفجوة — منصّة بُنيت من الأرض إلى
+                السماء داخل المملكة، بأيدٍ تعرف السوق وتفهم اللغة وتقدّر
+                التفاصيل التي تفرّق بين تجربة جيدة وأخرى لا تُنسى.
+              </p>
+              <p>
+                نحن جزء من <strong>Haa Soft</strong> — بيت تقني سعودي يبني
+                منتجات برمجية للسوق المحلّي. كل سطر شفرة، كل ركن من
+                لوحة التحكم، كل قرار تصميمي: مكتوب لأجل التاجر الذي
+                سيستخدم الأداة، لا لأجل عرض تقني.
               </p>
             </div>
-            <div className="lp-feats reveal-stagger" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', maxWidth: 760, margin: '0 auto' }}>
-              <div className="lp-feat">
-                <div className="lp-feat__ic">
-                  <Icon name="ShoppingBag" size="default" />
-                </div>
-                <h3>متاجر هاء</h3>
-                <p>منصّة التجارة الإلكترونية للتجار السعوديين — هذا المنتج.</p>
-              </div>
-              <div className="lp-feat">
-                <div className="lp-feat__ic">
-                  <Icon name="LinkIcon" size="default" />
-                </div>
-                <h3>منتجات Haa Soft الأخرى</h3>
-                <p>
-                  للاطّلاع على بقية منتجات وحلول هاء سوفت، يُرجى زيارة الموقع الرسمي{' '}
-                  <a href="https://haasoft.com" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>
-                    haasoft.com
-                  </a>
-                  .
-                </p>
-              </div>
-            </div>
           </div>
         </section>
 
-        {/* ── Legal entity ────────────────────────────────── */}
-        <section id="legal" className="lp-sec" style={{ paddingTop: 0 }}>
-          <div className="lp-container">
-            <div className="lp-sec__head reveal">
-              <div className="lp-sec__eyebrow">الكيان القانوني</div>
-              <h2>منشأة رسميّة ومسجّلة في المملكة</h2>
+        {/* ─────────── Offerings ─────────── */}
+        <section className="about-ed__section about-ed__section--accent">
+          <div className="about-ed__chapter">
+            <div data-reveal>
+              <p className="about-ed__chapter-eyebrow">
+                <span className="num">02</span>
+                <span>ما الذي نقدّمه</span>
+              </p>
+              <h2 className="about-ed__chapter-title">
+                منصّة كاملة، لا أدوات متفرّقة.
+              </h2>
             </div>
-            <div className="lp-feats reveal" style={{ gridTemplateColumns: '1fr', maxWidth: 720, margin: '0 auto' }}>
-              <div className="lp-feat">
-                <div className="lp-feat__ic">
-                  <Icon name="ShieldCheck" size="default" />
-                </div>
-                <h3>{PLATFORM_LEGAL_ENTITY.legalNameAr}</h3>
-                <p>
-                  السجل التجاري:{' '}
-                  <span dir="ltr" style={{ unicodeBidi: 'isolate' }}>
-                    {PLATFORM_LEGAL_ENTITY.commercialRegistration}
-                  </span>
-                  <br />
-                  جهة الإصدار: المملكة العربية السعودية · الحالة: نشطة.
-                </p>
+            <div className="about-ed__prose" data-reveal data-reveal-delay="1">
+              <p>
+                المتجر، الدفع، الشحن، التحليلات — كلّها في مكان واحد،
+                تتحدّث مع بعضها، وتفهم السياق السعودي افتراضياً. لا
+                إضافات تشتري، لا تكاملات تربط يدوياً، لا أدوات تستبدل
+                بعد سنة.
+              </p>
+            </div>
+          </div>
+
+          <ol className="about-ed__offerings" data-reveal data-reveal-delay="2">
+            {OFFERINGS.map((o) => (
+              <li className="about-ed__offering" key={o.num}>
+                <span className="about-ed__offering-num">— {o.num}</span>
+                <h3 className="about-ed__offering-title">{o.title}</h3>
+                <p className="about-ed__offering-desc">{o.desc}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* ─────────── Provenance (legal entity) ─────────── */}
+        <section className="about-ed__section">
+          <div className="about-ed__chapter">
+            <div data-reveal>
+              <p className="about-ed__chapter-eyebrow">
+                <span className="num">03</span>
+                <span>الكيان القانوني</span>
+              </p>
+              <h2 className="about-ed__chapter-title">
+                مُسجَّلون. موثَّقون. مسؤولون.
+              </h2>
+            </div>
+            <div className="about-ed__prose" data-reveal data-reveal-delay="1">
+              <p>
+                نعمل تحت كيان تجاري سعودي مُسجَّل رسمياً. الشفافية في
+                الانتماء ليست تفصيلاً قانونياً — هي وعد للتاجر بأنّ
+                هناك من يقف خلف المنصّة، باسم وعنوان ومسؤولية.
+              </p>
+            </div>
+          </div>
+
+          <div className="about-ed__certificate" data-reveal data-reveal-delay="2">
+            <p className="about-ed__certificate-label">شهادة الكيان</p>
+            <h3 className="about-ed__certificate-name">{PLATFORM_LEGAL_ENTITY.legalNameAr}</h3>
+            <dl className="about-ed__certificate-rows">
+              <div>
+                <dt>السجل التجاري</dt>
+                <dd dir="ltr">{PLATFORM_LEGAL_ENTITY.commercialRegistration}</dd>
               </div>
-            </div>
+              <div>
+                <dt>تاريخ الإصدار</dt>
+                <dd dir="ltr">{PLATFORM_LEGAL_ENTITY.issueDate}</dd>
+              </div>
+              <div>
+                <dt>جهة الإصدار</dt>
+                <dd>المملكة العربية السعودية</dd>
+              </div>
+              <div>
+                <dt>الاسم بالإنجليزية</dt>
+                <dd dir="ltr">{PLATFORM_LEGAL_ENTITY.legalNameEn}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <a
+            className="about-ed__anchor"
+            href="https://haasoft.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-reveal
+            data-reveal-delay="3"
+            style={{ display: 'block', textDecoration: 'none' }}
+          >
+            <p className="about-ed__anchor-label">الانتماء — Affiliation</p>
+            <p className="about-ed__anchor-quote">
+              متاجر هاء واحد من منتجات <strong>Haa Soft</strong> —
+              بيتٍ تقني سعودي يبني أدوات برمجية للسوق المحلّي.
+              زر الموقع الرسمي للاطّلاع على باقي المنتجات.
+            </p>
+            <span className="about-ed__anchor-link">
+              haasoft.com
+              <span aria-hidden="true">↗</span>
+            </span>
+          </a>
+        </section>
+
+        {/* ─────────── CTA ─────────── */}
+        <section className="about-ed__cta">
+          <p className="about-ed__cta-eyebrow">ابدأ — Begin</p>
+          <h2 className="about-ed__cta-title">
+            أطلق متجرك<br />
+            في دقائق <em>لا أيام.</em>
+          </h2>
+          <div className="about-ed__cta-actions">
+            <Link to="/signup?ref=about" className="about-ed__btn about-ed__btn--primary">
+              ابدأ متجرك مجاناً
+              <span aria-hidden="true">→</span>
+            </Link>
+            <a href="/#contact" className="about-ed__btn about-ed__btn--ghost">
+              تواصل مع المبيعات
+            </a>
           </div>
         </section>
 
-        {/* ── Contact ─────────────────────────────────────── */}
-        <section id="contact" className="lp-sec" style={{ paddingTop: 0 }}>
-          <div className="lp-container">
-            <div className="lp-sec__head reveal">
-              <div className="lp-sec__eyebrow">التواصل</div>
-              <h2>كيف نصلك</h2>
-            </div>
-            <div className="lp-feats reveal-stagger" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', maxWidth: 760, margin: '0 auto' }}>
-              <a className="lp-feat" href="mailto:hello@haastores.com" style={{ textDecoration: 'none' }}>
-                <div className="lp-feat__ic">
-                  <Icon name="Mail" size="default" />
-                </div>
-                <h3>البريد الرسمي</h3>
-                <p dir="ltr" style={{ unicodeBidi: 'isolate' }}>hello@haastores.com</p>
-              </a>
-              <Link className="lp-feat" to="/" style={{ textDecoration: 'none' }}>
-                <div className="lp-feat__ic">
-                  <Icon name="Users" size="default" />
-                </div>
-                <h3>الدعم والمبيعات</h3>
-                <p>تواصل معنا من نموذج الاتصال على الصفحة الرئيسيّة، نردّ خلال يوم عمل واحد.</p>
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ── CTA ─────────────────────────────────────────── */}
-        <section className="lp-cta">
-          <div className="lp-container">
-            <div className="lp-cta__in reveal">
-              <div className="lp-cta__pattern" />
-              <h2>جاهز تطلق متجرك مع متاجر هاء؟</h2>
-              <p>انضم لأكثر من ١٢٠٠ تاجر يبيعون بثقة عبر منصّتنا.</p>
-              <div className="lp-cta__btn">
-                <StoreButton size="lg" iconEnd={<Icon name="ArrowLeft" size="sm" />} href="/signup">
-                  ابدأ متجرك
-                </StoreButton>
-                <StoreButton size="lg" variant="secondary" href="/#contact">
-                  تواصل مع المبيعات
-                </StoreButton>
-              </div>
-            </div>
-          </div>
-        </section>
+        <footer className="about-ed__footer">
+          <span>
+            © {new Date().getFullYear()} {PLATFORM_LEGAL_ENTITY.legalNameAr} — جميع الحقوق محفوظة.
+          </span>
+          <span>
+            <Link to="/">العودة للرئيسية</Link>
+          </span>
+        </footer>
       </main>
-
-      {/* ── Footer ───────────────────────────────────────── */}
-      <footer className="lp-foot">
-        <div className="lp-container">
-          <div className="lp-foot__grid">
-            <div className="lp-foot__brand">
-              <Link to="/" className="lp-logo">
-                <img src="/assets/haa-stores-logo.png" alt="هاء متاجر" style={{ height: 36 }} />
-              </Link>
-              <p>منصّة المتاجر السعوديّة الأسهل والأوضح ماليّاً وتشغيليّاً. منتج من Haa Soft.</p>
-            </div>
-            <div className="lp-foot__col">
-              <h4>المنتج</h4>
-              <Link to="/#features">المزايا</Link>
-              <Link to="/#pricing">الأسعار</Link>
-            </div>
-            <div className="lp-foot__col">
-              <h4>الشركة</h4>
-              <Link to="/about">من نحن</Link>
-              <a href="https://haasoft.com" target="_blank" rel="noopener noreferrer">
-                Haa Soft
-              </a>
-              <a href="mailto:hello@haastores.com">تواصل معنا</a>
-            </div>
-            <div className="lp-foot__col">
-              <h4>القانوني</h4>
-              <Link to="/legal/terms">الشروط</Link>
-              <Link to="/legal/privacy">الخصوصيّة</Link>
-            </div>
-          </div>
-          <div className="lp-foot__bottom">
-            <div className="lp-foot__copy">© 2026 هاء متاجر · جميع الحقوق محفوظة</div>
-          </div>
-          <p className="lp-legal-entity" dir="rtl">
-            {PLATFORM_LEGAL_ENTITY.displayLine}
-          </p>
-        </div>
-      </footer>
-
-      <BackToTop />
     </div>
   );
 }

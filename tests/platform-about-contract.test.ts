@@ -95,7 +95,9 @@ describe('PlatformAbout — institutional /about page', () => {
   });
 
   it('uses semantic <main> for the page body', () => {
-    expect(PLATFORM_ABOUT_SRC).toMatch(/<main>/);
+    // Allow attributes on <main> — what matters is the element is
+    // present and closed, not that it has zero classes.
+    expect(PLATFORM_ABOUT_SRC).toMatch(/<main[\s>]/);
     expect(PLATFORM_ABOUT_SRC).toMatch(/<\/main>/);
   });
 });
