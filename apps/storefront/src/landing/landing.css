@@ -1383,6 +1383,14 @@
   max-height: 50px;
   max-width: 144px;
 }
+/* Square-aspect logos (Saudi Business Center, Maroof, Saudi Made) need a
+ * larger max-height to occupy a comparable visual area to the wider
+ * landscape logos in the same chip strip — otherwise object-fit:contain
+ * shrinks them to 56×56 while landscape PNGs fill ~120×56. */
+.lp-gov__chip img.g-square {
+  max-height: 72px;
+  max-width: 72px;
+}
 
 /* ── هاء AI section ── */
 .lp-ai {
