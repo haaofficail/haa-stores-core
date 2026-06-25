@@ -19,6 +19,8 @@ const TrackOrderResult = lazy(() => import('@/pages/TrackOrderResult'));
 const MyOrders = lazy(() => import('@/pages/MyOrders'));
 const About = lazy(() => import('@/pages/About'));
 const PlatformAbout = lazy(() => import('@/pages/PlatformAbout'));
+const Pricing = lazy(() => import('@/pages/Pricing'));
+const PlatformSupport = lazy(() => import('@/pages/PlatformSupport'));
 const Contact = lazy(() => import('@/pages/Contact'));
 const PolicyPage = lazy(() => import('@/pages/PolicyPage'));
 const LegalPage = lazy(() => import('@/pages/LegalPage'));
@@ -93,6 +95,11 @@ export default function App() {
           {/* /about على مستوى المنصة (haastores.com/about): يقدّم متاجر هاء كمنتج من Haa Soft.
               منفصل عن /s/:slug/about المخصّص لمحتوى التاجر القابل للتحرير. */}
           <Route path="/about" element={<PlatformAbout />} />
+          {/* /pricing — standalone platform pricing page (extracted from landing). */}
+          <Route path="/pricing" element={<Pricing />} />
+          {/* /support — platform help-center.
+              Distinct from /s/:slug/support (per-store, theme-controlled). */}
+          <Route path="/support" element={<PlatformSupport />} />
           <Route path="/marketplace/cart" element={<MarketplaceCart />} />
           <Route path="/marketplace/checkout" element={<MarketplaceCheckout />} />
           <Route path="/marketplace/orders" element={<MarketplaceOrderTrack />} />
