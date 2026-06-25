@@ -1,0 +1,26 @@
+{
+  "name": "متاجر هاء",
+  "short_name": "متاجر هاء",
+  "description": "منصة متاجر هاء — تجارة إلكترونية للسوق السعودي.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#5c9cd5",
+  "icons": [
+    {
+      "src": "/haa-logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/haa-logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
