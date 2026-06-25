@@ -38,6 +38,7 @@ const navGroups: Array<{
     titleKey: 'sidebar.catalog',
     title: 'الكتالوج',
     items: [
+      { to: '/catalog', icon: Package, label: 'nav.catalogHub', fallback: 'مركز الكتالوج', permission: 'products:read' },
       { to: '/products', icon: Package, label: 'nav.products', fallback: 'إدارة المنتجات', permission: 'products:read' },
       { to: '/categories', icon: Tags, label: 'nav.categories', fallback: 'التصنيفات', permission: 'categories:manage' },
       { to: '/brands', icon: Building2, label: 'nav.brands', fallback: 'الماركات', permission: 'brands:manage' },
