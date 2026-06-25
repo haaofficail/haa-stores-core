@@ -170,6 +170,23 @@ authRouter.post(
           403,
         );
       }
+      // Multi-membership user: NO JWT issued. The client must follow
+      // up with POST /auth/select-store. The response carries a SAFE
+      // summary of available stores — no role, no permissions count,
+      // no other user's email. Audit P0 (2026-06-25).
+      if (result.kind === 'tenant_selection_required') {
+        return c.json(
+          {
+            success: false,
+            error: { code: 'TENANT_SELECTION_REQUIRED', message: result.message },
+            data: {
+              userId: result.userId,
+              memberships: result.memberships,
+            },
+          },
+          409,
+        );
+      }
       return c.json(
         { success: false, error: { code: 'INVALID_CREDENTIALS', message: result.message } },
         401,
@@ -217,6 +234,157 @@ authRouter.post(
     );
   }
 });
+
+// POST /auth/select-store
+// Multi-membership users hit this AFTER /auth/login returned
+// `tenant_selection_required`. The body carries `userId` and the
+// chosen `storeId`. The server verifies the user really has an
+// active membership for that (tenant, store) — refusing every
+// cross-tenant variation — and only then mints the JWT.
+//
+// This endpoint MUST stay unauthenticated (no requireAuth) because
+// the caller has no JWT yet. The userId arrives in the body and the
+// password is RE-VERIFIED so a leaked userId alone cannot select a
+// store.
+const selectStoreSchema = z.object({
+  identifier: z.string().min(1),
+  password: z.string().min(1),
+  storeId: z.number().int().positive(),
+});
+
+authRouter.post(
+  '/select-store',
+  rateLimiter({
+    windowMs: 15 * 60 * 1000,
+    maxRequests: 20,
+    message: 'تم تجاوز الحد المسموح من محاولات اختيار المتجر. حاول لاحقًا.',
+  }),
+  zValidator('json', selectStoreSchema),
+  async (c) => {
+    const body = c.req.valid('json');
+    const service = new AuthFlowService();
+    const ipAddress = c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip');
+    const userAgent = c.req.header('user-agent');
+
+    try {
+      // Step 1: re-verify the password. This is identical to the
+      // login flow's authentication. Reusing it ensures a leaked
+      // userId cannot select a store without the password.
+      const loginResult = await service.login(
+        { identifier: body.identifier, password: body.password, ipAddress, userAgent },
+        new AuditLogService(),
+      );
+
+      // If login itself returned an auth error (wrong password, no
+      // tenant, unverified email), surface it identically to the
+      // /login endpoint — no signal to the client about whether the
+      // userId+password are valid for a DIFFERENT outcome.
+      if ('kind' in loginResult) {
+        if (loginResult.kind === 'tenant_selection_required') {
+          // Good — the user really does need to pick a store.
+          // Proceed to selectStore with the verified userId.
+          const selected = await service.selectStore(
+            loginResult.userId,
+            body.storeId,
+            ipAddress,
+            userAgent,
+          );
+          if ('kind' in selected) {
+            return c.json(
+              { success: false, error: { code: 'INVALID_SELECTION', message: selected.message } },
+              403,
+            );
+          }
+
+          const role = selected.role as UserRole;
+          const permissions = getPermissionsForRole(role);
+          const token = signToken({
+            userId: selected.userId,
+            tenantId: selected.tenantId,
+            activeStoreId: selected.storeId,
+            tokenVersion: selected.userTokenVersion,
+            roles: [selected.role],
+            permissions,
+          });
+          setAuthCookie(c, token);
+          return c.json({
+            success: true,
+            data: {
+              token,
+              user: {
+                id: selected.userId,
+                name: selected.userName,
+                email: selected.userEmail,
+                phone: selected.userPhone,
+                tenantId: selected.tenantId,
+                activeStoreId: selected.storeId,
+                roles: [selected.role],
+                permissions,
+              },
+              store: { id: selected.storeId, name: selected.storeName, slug: selected.storeSlug },
+            },
+          });
+        }
+        if (loginResult.kind === 'no_tenant') {
+          return c.json({ success: false, error: { code: 'FORBIDDEN', message: loginResult.message } }, 403);
+        }
+        if (loginResult.kind === 'email_not_verified') {
+          return c.json({ success: false, error: { code: 'EMAIL_NOT_VERIFIED', message: loginResult.message } }, 403);
+        }
+        return c.json(
+          { success: false, error: { code: 'INVALID_CREDENTIALS', message: loginResult.message } },
+          401,
+        );
+      }
+
+      // Single-membership user reached /select-store — their token
+      // was already mintable. We still respect their choice IF it
+      // matches the store they have access to; otherwise reject.
+      if (loginResult.storeId !== body.storeId) {
+        return c.json(
+          { success: false, error: { code: 'INVALID_SELECTION', message: 'Membership not found' } },
+          403,
+        );
+      }
+      const role = loginResult.role as UserRole;
+      const permissions = getPermissionsForRole(role);
+      const token = signToken({
+        userId: loginResult.userId,
+        tenantId: loginResult.tenantId,
+        activeStoreId: loginResult.storeId,
+        tokenVersion: loginResult.userTokenVersion,
+        roles: [loginResult.role],
+        permissions,
+      });
+      setAuthCookie(c, token);
+      return c.json({
+        success: true,
+        data: {
+          token,
+          user: {
+            id: loginResult.userId,
+            name: loginResult.userName,
+            email: loginResult.userEmail,
+            phone: loginResult.userPhone,
+            tenantId: loginResult.tenantId,
+            activeStoreId: loginResult.storeId,
+            roles: [loginResult.role],
+            permissions,
+          },
+          store: loginResult.storeName && loginResult.storeSlug
+            ? { id: loginResult.storeId, name: loginResult.storeName, slug: loginResult.storeSlug }
+            : null,
+        },
+      });
+    } catch (err) {
+      console.error('Select-store error:', err);
+      return c.json(
+        { success: false, error: { code: 'INTERNAL', message: 'Select store failed' } },
+        500,
+      );
+    }
+  },
+);
 
 // GET /auth/me
 authRouter.get('/me', requireAuth(), async (c) => {
