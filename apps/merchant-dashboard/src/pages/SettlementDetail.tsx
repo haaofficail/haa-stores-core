@@ -123,7 +123,7 @@ export default function SettlementDetail() {
         <div className="flex items-center gap-3">
           {/* Back nav — touch target ≥ 44x44 (WCAG 2.5.5). */}
           <Button variant="ghost" size="icon" className="h-11 w-11" asChild>
-            <Link to="/wallet" aria-label={t('common.back', 'رجوع')}><ArrowLeft className="h-4 w-4" /></Link>
+            <Link to="/finance/wallet" aria-label={t('common.back', 'رجوع')}><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('settlement.detailTitle', 'تفاصيل التسوية')}</h1>
         </div>
@@ -182,7 +182,7 @@ export default function SettlementDetail() {
       <div className="flex items-center gap-3">
         {/* Back nav — touch target ≥ 44x44 (WCAG 2.5.5). */}
         <Button variant="ghost" size="icon" className="h-11 w-11" asChild>
-          <Link to="/wallet" aria-label={t('common.back', 'رجوع')}><ArrowLeft className="h-4 w-4" /></Link>
+          <Link to="/finance/wallet" aria-label={t('common.back', 'رجوع')}><ArrowLeft className="h-4 w-4" /></Link>
         </Button>
         <div>
           <div className="flex items-center gap-3">
@@ -320,7 +320,7 @@ export default function SettlementDetail() {
                   <TableRow key={tx.id} className="border-neutral-100 hover:bg-neutral-50">
                     <TableCell className="p-3 whitespace-nowrap">
                       <Link
-                        to={`/orders/${tx.orderId}`}
+                        to={`/sales/orders/${tx.orderId}`}
                         className="font-mono text-sm font-semibold text-primary-600 hover:text-primary-800 hover:underline inline-flex items-center gap-1"
                       >
                         {tx.orderNumber ?? `#${tx.orderId}`}

@@ -74,16 +74,21 @@ describe('Merchant Scheduled Settlement UI', () => {
   });
 
   it('wallet page has link to settlement overview', () => {
-    expect(merchantWallet).toContain('/wallet/settlements');
+    // IA W3: /wallet/settlements → /finance/settlements. App.tsx keeps
+    // a redirect for the legacy path.
+    expect(merchantWallet).toContain('/finance/settlements');
     expect(merchantWallet).toContain('viewSettlements');
   });
 
   it('merchant dashboard has route for settlement overview', () => {
+    // The legacy /wallet/settlements path still exists as a redirect
+    // in App.tsx (no breaking change for old tabs/bookmarks).
     expect(merchantApp).toContain('/wallet/settlements');
   });
 
   it('order numbers are clickable in settlement detail', () => {
-    expect(settlementDetail).toContain('to={`/orders/${tx.orderId}`}');
+    // IA W3: /orders/:id → /sales/orders/:id.
+    expect(settlementDetail).toContain('to={`/sales/orders/${tx.orderId}`}');
   });
 
   it('merchant settlement detail shows loading state', () => {

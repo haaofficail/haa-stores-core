@@ -77,7 +77,9 @@ describe('Notifications provider gating (audit Part 5 P0 #2)', () => {
     );
     expect(NOTIFICATIONS).toMatch(/data-testid="whatsapp-configure-link"/);
     expect(NOTIFICATIONS).toMatch(
-      /<Link[^>]*data-testid="whatsapp-configure-link"[^>]*to="\/settings\/integrations"/,
+      // IA W3: /settings/integrations was deprecated; WhatsApp + other
+      // channel provider configs live under /sales/channels now.
+      /<Link[^>]*data-testid="whatsapp-configure-link"[^>]*to="\/sales\/channels"/,
     );
   });
 

@@ -81,7 +81,9 @@ function fmt(n: number | string | undefined): string {
 export default function WalletPage() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy wallet-summary shape; typing tracked separately, untouched by IA-W3 link refactor.
   const [summary, setSummary] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy wallet-entry shape; typing tracked separately.
   const [entries, setEntries] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -169,7 +171,7 @@ export default function WalletPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('wallet.title')}</h1>
           <Button variant="outline" className="h-9 text-sm gap-1.5" asChild>
-            <Link to="/wallet/settlements">{t('wallet.viewSettlements', 'التسويات')}</Link>
+            <Link to="/finance/settlements">{t('wallet.viewSettlements', 'التسويات')}</Link>
           </Button>
         </div>
 
@@ -474,6 +476,7 @@ export default function WalletPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- entries typed `any[]` upstream (see useState above). */}
                 {entries.map((e: any) => (
                   <TableRow key={e.id} className="border-neutral-100 hover:bg-neutral-50">
                     <TableCell className="text-xs whitespace-nowrap text-neutral-400 p-3">
@@ -484,6 +487,7 @@ export default function WalletPage() {
                         <span className={`flex h-5 w-5 items-center justify-center rounded ${typeColors[e.type]?.bg ?? 'bg-neutral-100'} ${typeColors[e.type]?.icon ?? 'text-neutral-600'}`}>
                           {typeIcons[e.type] ?? null}
                         </span>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic i18n key; type derived at runtime. */}
                         {t(`wallet.${e.type}` as any)}
                       </span>
                     </TableCell>
@@ -492,6 +496,7 @@ export default function WalletPage() {
                         <span className={`flex h-5 w-5 items-center justify-center rounded ${directionStyles[e.direction]?.bg ?? 'bg-neutral-100'} ${directionStyles[e.direction]?.icon ?? 'text-neutral-600'}`}>
                           {e.direction === 'credit' ? <ArrowUpCircle className="h-3 w-3" /> : <ArrowDownCircle className="h-3 w-3" />}
                         </span>
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic i18n key. */}
                         {t(`wallet.${e.direction}` as any)}
                       </span>
                     </TableCell>
@@ -500,6 +505,7 @@ export default function WalletPage() {
                     </TableCell>
                     <TableCell className="p-3">
                       <Badge variant={statusColors[e.status] ?? 'default'} className="text-xs px-2.5 py-0.5">
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic i18n key. */}
                         {t(`wallet.status_${e.status}` as any)}
                       </Badge>
                     </TableCell>
@@ -511,7 +517,7 @@ export default function WalletPage() {
                       {e.referenceType === 'order' && e.referenceId && (
                         // Touch target ≥ 44x44 (WCAG 2.5.5).
                         <Button variant="ghost" size="icon" className="h-11 w-11" asChild>
-                          <Link to={`/orders?id=${e.referenceId}`} title={t('wallet.viewOrder')} aria-label={t('wallet.viewOrder', 'عرض الطلب')}>
+                          <Link to={`/sales/orders/${e.referenceId}`} title={t('wallet.viewOrder')} aria-label={t('wallet.viewOrder', 'عرض الطلب')}>
                             <ExternalLink className="h-3.5 w-3.5" />
                           </Link>
                         </Button>

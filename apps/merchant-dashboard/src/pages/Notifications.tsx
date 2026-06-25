@@ -389,7 +389,7 @@ export default function Notifications() {
                     )}
                     <Link
                       data-testid="whatsapp-configure-link"
-                      to="/settings/integrations"
+                      to="/sales/channels"
                       className="inline-flex items-center gap-1 font-semibold text-primary-600 hover:underline"
                     >
                       <SettingsIcon className="h-3.5 w-3.5" />

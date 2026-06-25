@@ -49,8 +49,11 @@ describe('Settlement → Order linking', () => {
     expect(ordersRoutes).toContain('settlementInfo');
   });
 
-  it('merchant dashboard links order number to /orders/:orderId', () => {
-    expect(merchantSettlementDetail).toContain("to={`/orders/${tx.orderId}`}");
+  it('merchant dashboard links order number to /sales/orders/:orderId', () => {
+    // IA W3 moved /orders → /sales/orders. The link follows the new
+    // canonical path. App.tsx keeps a redirect for the legacy path so
+    // existing tabs and bookmarks still resolve.
+    expect(merchantSettlementDetail).toContain("to={`/sales/orders/${tx.orderId}`}");
   });
 
   it('merchant dashboard has /orders/:orderId route', () => {
