@@ -89,9 +89,11 @@ import { eq, sql } from 'drizzle-orm';
 import {
   setTokenVersionVerifier,
   setStoreTenantResolver,
+  setStoreMembershipResolver,
   setStoreAccessFailureTracker,
   createInMemoryStoreAccessFailureTracker,
 } from '@haa/auth-core';
+import { and } from 'drizzle-orm';
 import * as s from '@haa/db/schema';
 
 const app = new Hono();
@@ -418,6 +420,47 @@ setStoreTenantResolver(async (storeId) => {
     return null;
   } catch {
     return null;
+  }
+});
+
+// BOLA/IDOR Defense layer 4 (audit P0 follow-up, 2026-06-25):
+// Confirm the user has an ACTIVE membership scoped to THIS store.
+//
+// Pre-fix the middleware only checked tenant boundary — owner of
+// store A could change the URL :storeId to store B (sibling in the
+// same tenant) and the tenant check would pass. Every downstream
+// service then scoped its queries by that storeId and served B's
+// data.
+//
+// Match rules:
+//   1. tenant_users.user_id = auth.userId      (the caller themselves)
+//   2. tenant_users.tenant_id = tenantId       (defense-in-depth)
+//   3. tenant_users.store_id = storeId OR NULL (NULL = tenant-wide
+//      role, e.g. platform admin, which legitimately spans stores)
+//   4. tenant_users.is_active = true           (revoked memberships
+//      do NOT pass; they surface as a separate denial reason)
+//
+// No cache here: membership state is mutable from the dashboard
+// (revoke / re-invite) and a stale cache could either lock a user
+// out OR keep a revoked one in. The query is a single indexed read.
+setStoreMembershipResolver(async (userId, storeId, tenantId) => {
+  try {
+    const [row] = await db
+      .select({ isActive: s.tenantUsers.isActive })
+      .from(s.tenantUsers)
+      .where(and(
+        eq(s.tenantUsers.userId, userId),
+        eq(s.tenantUsers.tenantId, tenantId),
+        sql`(${s.tenantUsers.storeId} IS NULL OR ${s.tenantUsers.storeId} = ${storeId})`,
+      ))
+      .limit(1);
+    if (!row) return 'no_role';
+    if (!row.isActive) return 'revoked';
+    return 'ok';
+  } catch {
+    // Fail CLOSED — a DB outage MUST NOT silently allow cross-store
+    // access. Surfaced as 'no_role' so the user sees a clear 403.
+    return 'no_role';
   }
 });
 
