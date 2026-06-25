@@ -13,8 +13,11 @@ const settlementBatchDetail = readFileSync(new URL('../apps/admin-dashboard/src/
 const merchantApp = readFileSync(new URL('../apps/merchant-dashboard/src/App.tsx', import.meta.url), 'utf-8');
 
 describe('Settlement Order Drill-Down', () => {
-  it('merchant order numbers link to /orders/:orderId in settlement detail', () => {
-    expect(settlementDetail).toContain('to={`/orders/${tx.orderId}`}');
+  it('merchant order numbers link to /sales/orders/:orderId in settlement detail', () => {
+    // IA W3 moved /orders → /sales/orders. App.tsx keeps a /orders
+    // redirect for the legacy path so the auto-open dialog on
+    // navigation still works for old bookmarks (see test below).
+    expect(settlementDetail).toContain('to={`/sales/orders/${tx.orderId}`}');
   });
 
   it('admin order numbers link with store context in batch detail', () => {

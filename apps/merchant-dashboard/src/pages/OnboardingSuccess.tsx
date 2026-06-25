@@ -95,7 +95,7 @@ export default function OnboardingSuccess() {
   }
 
   const suggestions = [
-    { icon: ShoppingBag, label: t('onboarding.suggestProducts'), href: '/products' },
+    { icon: ShoppingBag, label: t('onboarding.suggestProducts'), href: '/catalog/products' },
     { icon: Palette, label: t('onboarding.suggestTheme'), href: '/settings' },
     { icon: BarChart3, label: t('onboarding.suggestReports'), href: '/reports' },
   ];
@@ -145,7 +145,7 @@ export default function OnboardingSuccess() {
           <Button className="h-9 text-sm px-4 gap-2" onClick={() => navigate('/dashboard')}>
             <Store className="h-4 w-4" /> {t('onboarding.goToDashboard')}
           </Button>
-          <Button variant="outline" className="h-9 text-sm gap-2" onClick={() => navigate('/products')}>
+          <Button variant="outline" className="h-9 text-sm gap-2" onClick={() => navigate('/catalog/products')}>
             <ShoppingBag className="h-4 w-4" /> {t('onboarding.manageProducts')}
           </Button>
         </div>
