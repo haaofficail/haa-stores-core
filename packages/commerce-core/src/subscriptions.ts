@@ -190,7 +190,33 @@ export class SubscriptionService {
       : Number(newPlan.priceMonthly);
 
     if (newPrice > oldPrice) {
-      const proratedAmount = ((newPrice - oldPrice) / 2).toFixed(2);
+      // Proration based on remaining days in the merchant's current
+      // billing cycle (not a fixed /2 split). Previously every upgrade
+      // charged half the price difference, so a merchant who upgraded
+      // on day 1 paid the same as one who upgraded on day 29 of a
+      // 30-day cycle — overcharging the day-29 customer and
+      // undercharging the day-1 customer.
+      //
+      // Formula (audit P0 #3, 2026-06-25):
+      //   prorated = (newPrice - oldPrice) × (remainingDays / periodDays)
+      //
+      // Where:
+      //   periodDays    = days in the merchant's billing cycle (30 monthly, 365 annual)
+      //   remainingDays = whole days between today and the OLD period end
+      //
+      // We compute against the OLD period end (saved in
+      // `subscription.currentPeriodEnd` before the upgrade query
+      // replaced it). This is the period the merchant already paid
+      // for; we charge the price delta only for that remaining
+      // window. The new full-cycle billing starts fresh from `now`.
+      const periodDays = currentCycle === 'annual' ? 365 : 30;
+      const oldPeriodEndMs = subscription.currentPeriodEnd
+        ? new Date(subscription.currentPeriodEnd).getTime()
+        : now.getTime() + periodDays * 86400000;
+      const msRemaining = Math.max(0, oldPeriodEndMs - now.getTime());
+      const remainingDays = Math.min(periodDays, Math.ceil(msRemaining / 86400000));
+      const proratedRaw = ((newPrice - oldPrice) * remainingDays) / periodDays;
+      const proratedAmount = proratedRaw.toFixed(2);
       if (Number(proratedAmount) > 0) {
         const invoiceNumber = `INV-${Date.now()}`;
         await this.db.insert(s.subscriptionInvoices).values({
