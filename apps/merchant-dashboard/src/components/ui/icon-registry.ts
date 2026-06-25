@@ -14,16 +14,24 @@
 // component is loaded. Keep the list scoped to icons actually used.
 
 import {
-  AlertTriangle, ArrowLeft, Bell, CheckCircle2, Clock, Lock, LogOut,
-  Mail, MessageSquare, Phone, Settings as SettingsIcon, Shield, Smartphone,
-  User, XCircle,
+  Activity, AlertTriangle, ArrowLeft, ArrowLeftRight, ArrowRight, BarChart3, Bell,
+  Bot, Building2, CheckCircle2, Clock, Coins, Crown, Download, FileSpreadsheet,
+  FileText, Headphones, History, Key, LayoutDashboard, Lock, LogOut,
+  Mail, MessageSquare, Package, Palette, Percent, Phone, Plus, Rocket, Search,
+  Settings as SettingsIcon, Shield, ShoppingBag, ShoppingCart, Smartphone, Sparkles,
+  Store, Tag, Tags, TicketPercent, TrendingUp, Truck, User, UserCog, Users, Wallet,
+  XCircle,
   type LucideIcon,
 } from 'lucide-react';
 
 export const MERCHANT_ICON_REGISTRY = {
-  AlertTriangle, ArrowLeft, Bell, CheckCircle2, Clock, Lock, LogOut,
-  Mail, MessageSquare, Phone, SettingsIcon, Shield, Smartphone,
-  User, XCircle,
+  Activity, AlertTriangle, ArrowLeft, ArrowLeftRight, ArrowRight, BarChart3, Bell,
+  Bot, Building2, CheckCircle2, Clock, Coins, Crown, Download, FileSpreadsheet,
+  FileText, Headphones, History, Key, LayoutDashboard, Lock, LogOut,
+  Mail, MessageSquare, Package, Palette, Percent, Phone, Plus, Rocket, Search,
+  SettingsIcon, Shield, ShoppingBag, ShoppingCart, Smartphone, Sparkles,
+  Store, Tag, Tags, TicketPercent, TrendingUp, Truck, User, UserCog, Users, Wallet,
+  XCircle,
 } as const satisfies Record<string, LucideIcon>;
 
 export type MerchantIconName = keyof typeof MERCHANT_ICON_REGISTRY;

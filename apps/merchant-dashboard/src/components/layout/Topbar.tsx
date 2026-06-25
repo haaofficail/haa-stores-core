@@ -4,17 +4,20 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Bell, Search, User, Menu } from 'lucide-react';
 import { useState } from 'react';
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut';
+import { CommandPalette } from '@/components/CommandPalette';
 
 export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
-  // Cmd+K (macOS) / Ctrl+K (other) opens the search input — a standard
-  // power-user shortcut in modern dashboards.
-  useKeyboardShortcut({ key: 'k', onTrigger: () => setSearchOpen(true) });
+  // Cmd+K (macOS) / Ctrl+K (other) opens the global command palette
+  // (IA W5). Pre-fix the same shortcut opened an empty text input
+  // that did nothing — the audit (2026-06-25) flagged it as a fake
+  // power-user feature.
+  useKeyboardShortcut({ key: 'k', onTrigger: () => setPaletteOpen(true) });
 
   const pageTitles: Record<string, { title: string; subtitle: string }> = {
     '/dashboard': { title: t('pageTitle.dashboard', 'لوحة التحكم'), subtitle: t('pageTitle.dashboardSub', 'نظرة عامة على متجرك') },
@@ -67,30 +70,19 @@ export function Topbar({ onToggleSidebar }: { onToggleSidebar?: () => void }) {
       </div>
 
       <div className="flex items-center gap-3">
-        {searchOpen ? (
-          <div className="relative">
-            <input
-              type="text"
-              placeholder={t('topbar.search', 'بحث...')}
-              aria-label={t('topbar.search', 'بحث')}
-              className="h-10 w-64 rounded-lg border border-neutral-300 bg-surface-1 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent shadow-sm"
-              style={{ paddingInlineEnd: '2.5rem' }}
-              autoFocus
-              onBlur={() => setSearchOpen(false)}
-            />
-            <Search className="absolute top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" style={{ insetInlineEnd: '0.75rem' }} />
-          </div>
-        ) : (
-          // Touch target ≥ 44x44 (WCAG 2.5.5).
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="h-11 w-11 inline-flex items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500"
-            title={t('topbar.search', 'بحث')}
-            aria-label={t('topbar.search', 'بحث')}
-          >
-            <Search className="h-5 w-5" />
-          </button>
-        )}
+        {/* Touch target ≥ 44x44 (WCAG 2.5.5). Opens the global
+            command palette (Cmd+K / Ctrl+K). */}
+        <button
+          onClick={() => setPaletteOpen(true)}
+          className="h-11 inline-flex items-center gap-2 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500 px-3"
+          title={t('topbar.search', 'بحث (⌘K)')}
+          aria-label={t('topbar.search', 'بحث')}
+          data-testid="cmdk-trigger"
+        >
+          <Search className="h-4 w-4" />
+          <kbd className="hidden md:inline text-xs font-mono text-neutral-400 bg-neutral-100 rounded px-1.5 py-0.5">⌘K</kbd>
+        </button>
+        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
         {/* Notification bell — hit area bumped to 44x44 (WCAG 2.5.5).
             The red dot keeps its position relative to the icon via top-3/start-3. */}
