@@ -55,6 +55,7 @@ const CustomerSegments = lazy(() => import('@/pages/CustomerSegments'));
 // route `/settings/integrations` now redirects to the canonical
 // `/channels`. See audit P0 #31 (2026-06-25).
 const MarketingActions = lazy(() => import('@/pages/MarketingActions'));
+const MarketingHub = lazy(() => import('@/pages/MarketingHub'));
 const WhatsAppPage = lazy(() => import('@/pages/WhatsApp'));
 const LoyaltyPage = lazy(() => import('@/pages/Loyalty'));
 const MarketplaceGuide = lazy(() => import('@/pages/MarketplaceGuide'));
@@ -142,6 +143,7 @@ export default function App() {
               <Route path="/channels/listings" element={<GuardedRoute permission="settings:read"><MarketplaceListings /></GuardedRoute>} />
               <Route path="/channels/hub" element={<Navigate to="/channels" replace />} />
               <Route path="/channels/:provider" element={<GuardedRoute permission="settings:read"><MarketplaceDetail /></GuardedRoute>} />
+              <Route path="/marketing" element={<GuardedRoute permission="promotions:read"><MarketingHub /></GuardedRoute>} />
               <Route path="/marketing/actions" element={<GuardedRoute permission="promotions:read"><MarketingActions /></GuardedRoute>} />
               <Route path="/whatsapp" element={<GuardedRoute permission="settings:read"><WhatsAppPage /></GuardedRoute>} />
               <Route path="/loyalty" element={<GuardedRoute permission="promotions:read"><LoyaltyPage /></GuardedRoute>} />

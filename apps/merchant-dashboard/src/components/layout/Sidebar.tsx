@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
 import { usePermissions } from '@/lib/permissions';
 import {
-  LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, UserCog, TrendingUp, Activity, ExternalLink, AlertTriangle, MessageSquare, Coins,
+  LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, UserCog, TrendingUp, Activity, ExternalLink, AlertTriangle, MessageSquare, Coins, Sparkles,
 } from 'lucide-react';
 
 type NavIcon = React.ComponentType<{ className?: string }>;
@@ -59,6 +59,7 @@ const navGroups: Array<{
     titleKey: 'sidebar.marketing',
     title: 'التسويق',
     items: [
+      { to: '/marketing', icon: Sparkles, label: 'nav.marketingHub', fallback: 'مركز التسويق', permission: 'promotions:read' },
       { to: '/promotions', icon: Percent, label: 'nav.promotions', fallback: 'إدارة العروض', permission: 'promotions:read' },
       { to: '/coupons', icon: TicketPercent, label: 'nav.coupons', fallback: 'إدارة الكوبونات', permission: 'coupons:read' },
       { to: '/loyalty', icon: Coins, label: 'nav.loyalty', fallback: 'إدارة الولاء', permission: 'promotions:read' },
