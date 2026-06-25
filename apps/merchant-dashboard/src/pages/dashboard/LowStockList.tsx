@@ -51,7 +51,7 @@ export function LowStockList({
         </h3>
         {products.length > 3 && (
           <button
-            onClick={() => navigate("/products")}
+            onClick={() => navigate("/catalog/products")}
             aria-label={t("dashboard.lowStockViewAllAria", "عرض كل المنتجات منخفضة المخزون")}
             className="text-xs font-bold text-primary-600"
           >

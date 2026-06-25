@@ -368,7 +368,7 @@ export default function SettingsPage() {
               <div className="text-sm text-amber-800">
                 <p className="font-bold">{t('settings.walletDisabledTitle')}</p>
                 <p className="text-sm mt-1">{t('settings.walletDisabledDesc')}</p>
-                <a href="/wallet" className="inline-flex items-center gap-1 text-sm text-amber-700 hover:underline mt-2">
+                <a href="/finance/wallet" className="inline-flex items-center gap-1 text-sm text-amber-700 hover:underline mt-2">
                   {t('settings.goToWallet')} <ExternalLink className="h-3 w-3" />
                 </a>
               </div>

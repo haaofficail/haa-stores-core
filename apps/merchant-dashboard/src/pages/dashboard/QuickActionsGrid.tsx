@@ -33,7 +33,7 @@ export function QuickActionsGrid({ t }: Props) {
       </h3>
       <div className="grid gap-2 grid-cols-2 sm:grid-cols-4">
         <button
-          onClick={() => navigate("/products?create=true")}
+          onClick={() => navigate("/catalog/products?create=true")}
           aria-label={t("dashboard.quickActions.addProductAria", "إضافة منتج جديد")}
           className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
         >
@@ -43,7 +43,7 @@ export function QuickActionsGrid({ t }: Props) {
           </span>
         </button>
         <button
-          onClick={() => navigate("/orders")}
+          onClick={() => navigate("/sales/orders")}
           aria-label={t("dashboard.quickActions.viewOrdersAria", "عرض كل الطلبات")}
           className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-neutral-100 text-neutral-900 hover:bg-neutral-200 transition-all hover:-translate-y-0.5"
         >

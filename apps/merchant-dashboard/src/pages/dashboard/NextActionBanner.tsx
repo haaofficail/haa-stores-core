@@ -54,7 +54,7 @@ export function NextActionBanner({ items, t }: Props) {
         </div>
         {items.length > 3 && (
           <button
-            onClick={() => navigate("/orders")}
+            onClick={() => navigate("/sales/orders")}
             aria-label={t("dashboard.actionCenter.viewAllAria", "عرض كل الإجراءات المعلّقة")}
             className="text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors"
           >
