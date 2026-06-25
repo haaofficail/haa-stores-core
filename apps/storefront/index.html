@@ -2,13 +2,26 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Favicon / app-icon set — canonical Haa Stores brand.
+      Order matters: Chrome/Firefox prefer rel="icon" with type hints,
+      Safari uses apple-touch-icon, PWA installers read the manifest.
+      Contract test: tests/storefront-favicon-contract.test.ts
+      TODO(owner): provide a true multi-resolution /favicon.ico (16+32+48 px)
+      so IE / very old user agents fall back gracefully. Until then, modern
+      browsers will use the PNG declared below.
+    -->
+    <link rel="icon" type="image/png" sizes="64x64" href="/haa-logo-64.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/haa-logo-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/haa-logo-512.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#5c9cd5" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <title>المتجر</title>
+    <title>متاجر هاء</title>
   </head>
   <body>
     <!-- P2-#5: skip-link for keyboard users. Visually hidden until
