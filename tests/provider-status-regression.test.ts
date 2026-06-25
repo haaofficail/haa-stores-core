@@ -18,7 +18,10 @@ describe('Provider status regression', () => {
     // The route is now a thin pass-through.
     expect(providerStatusService).toContain("provider: 'geidea'");
     expect(providerStatusService).toContain("provider: 'oto'");
-    expect(providerStatusService).toContain("mode: 'qr_contact'");
+    // PR #236 (audit 2026-06-25): WhatsApp `mode` is now dynamic —
+    // 'api' when Unifonic is wired, 'qr_contact' otherwise. The
+    // string literal lives in the ternary's else branch.
+    expect(providerStatusService).toMatch(/mode:\s*unifoncReady\s*\?\s*['"]api['"]\s*:\s*['"]qr_contact['"]/);
     expect(providerStatusService).toContain("getOfficialContactEmail()");
     // The route itself never touches any secret VALUE.
     expect(providerStatusRoute).not.toContain('GEIDEA_API_PASSWORD,');
