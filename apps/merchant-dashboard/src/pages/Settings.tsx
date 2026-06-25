@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { settingsApi, uploadFile, categoriesApi, type StoreConfig } from '@/lib/api';
@@ -42,7 +42,10 @@ function FieldError({ message }: { message?: string }) {
 export default function SettingsPage() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
-  const [store, setStore] = useState<{ name?: string; slug?: string; description?: string; status?: string; logoUrl?: string; primaryColor?: string; email?: string; phone?: string; seoTitle?: string; seoDescription?: string } | null>(null);
+  // `setStore` is still used (in loadAll); the `store` value itself
+  // was only read by the old Cancel handler that we replaced with the
+  // snapshot-based revert below.
+  const [, setStore] = useState<{ name?: string; slug?: string; description?: string; status?: string; logoUrl?: string; primaryColor?: string; email?: string; phone?: string; seoTitle?: string; seoDescription?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -98,33 +101,59 @@ export default function SettingsPage() {
     seoTitle: '', seoDescription: '',
   });
 
-  useEffect(() => {
+  // Snapshot of the last server-side state for every editable
+  // section. Used for: (a) computing isDirty against current values,
+  // (b) restoring on Cancel (so Cancel reverts ALL sections, not just
+  // `form`), (c) gating the beforeunload prompt. Audit P0 #22–#24
+  // (2026-06-25).
+  const originalSnapshot = useRef<{
+    form: typeof form;
+    features: typeof features;
+    storeConfig: typeof storeConfig;
+    giftOptions: typeof giftOptions;
+  } | null>(null);
+
+  const loadAll = useCallback(() => {
     if (!storeId) { setLoading(false); return; }
     setLoading(true);
     settingsApi.get(storeId)
       .then((raw) => {
         const s = raw as { name?: string; slug?: string; description?: string; status?: string; logoUrl?: string; primaryColor?: string; email?: string; phone?: string; seoTitle?: string; seoDescription?: string };
         setStore(s);
-        setForm({
+        const next = {
           name: s.name ?? '', slug: s.slug ?? '', description: s.description ?? '',
           status: s.status ?? 'active', logoUrl: s.logoUrl ?? '', primaryColor: s.primaryColor ?? '#5c9cd5',
           email: s.email ?? '', phone: s.phone ?? '',
           seoTitle: s.seoTitle ?? '', seoDescription: s.seoDescription ?? '',
-        });
+        };
+        setForm(next);
+        // Refresh just the `form` slice of the snapshot — other
+        // slices are filled by their own loaders below.
+        originalSnapshot.current = {
+          ...(originalSnapshot.current ?? { features: {}, storeConfig, giftOptions }),
+          form: next,
+        };
       })
       .catch(() => toast.error(t('common.error')))
       .finally(() => setLoading(false));
     settingsApi.getProductFeatures(storeId)
-      .then(setFeatures)
+      .then((data) => {
+        setFeatures(data);
+        if (originalSnapshot.current) originalSnapshot.current.features = data;
+      })
       .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
       .finally(() => setFeaturesLoading(false));
     settingsApi.getGiftOptions(storeId)
-      .then(data => setGiftOptions({
-        giftWrapDefaultPrice: data.giftWrapDefaultPrice ?? '0',
-        giftMessageMaxLength: data.giftMessageMaxLength ?? 250,
-        giftWrapInstructions: data.giftWrapInstructions ?? null,
-        pickupInstructions: data.pickupInstructions ?? null,
-      }))
+      .then(data => {
+        const next = {
+          giftWrapDefaultPrice: data.giftWrapDefaultPrice ?? '0',
+          giftMessageMaxLength: data.giftMessageMaxLength ?? 250,
+          giftWrapInstructions: data.giftWrapInstructions ?? null,
+          pickupInstructions: data.pickupInstructions ?? null,
+        };
+        setGiftOptions(next);
+        if (originalSnapshot.current) originalSnapshot.current.giftOptions = next;
+      })
       .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
       .finally(() => setGiftOptionsLoading(false));
     settingsApi.listPickupLocations(storeId)
@@ -139,10 +168,44 @@ export default function SettingsPage() {
       .then((data) => setCategoriesList(data as Array<{ id: number; name: string }>))
       .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err));
     settingsApi.getStoreConfig(storeId)
-      .then((data) => setStoreConfig(data as StoreConfig))
+      .then((data) => {
+        setStoreConfig(data as StoreConfig);
+        if (originalSnapshot.current) originalSnapshot.current.storeConfig = data as StoreConfig;
+      })
       .catch((err: unknown) => console.warn('Settings: failed to load secondary data', err))
       .finally(() => setStoreConfigLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadAll is the initial-load function; it intentionally captures the empty initial state of storeConfig/giftOptions so we can seed originalSnapshot. Subsequent updates flow through setStoreConfig/setGiftOptions which write to the ref directly.
   }, [storeId, t]);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
+
+  // Dirty-state guard: when any section diverges from the snapshot,
+  // the browser asks the merchant to confirm before navigating away
+  // (close tab, reload, back). Without this guard, edits to
+  // `storeConfig` / `features` / `giftOptions` were lost silently
+  // when the merchant clicked a sidebar link. Audit P0 #23.
+  const isDirty = (() => {
+    const snap = originalSnapshot.current;
+    if (!snap) return false;
+    return (
+      JSON.stringify(snap.form) !== JSON.stringify(form) ||
+      JSON.stringify(snap.features) !== JSON.stringify(features) ||
+      JSON.stringify(snap.storeConfig) !== JSON.stringify(storeConfig) ||
+      JSON.stringify(snap.giftOptions) !== JSON.stringify(giftOptions)
+    );
+  })();
+
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // Modern browsers ignore the custom message but require
+      // returnValue to be set to trigger the native prompt.
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
 
   const parseSizeGuideRows = (text: string) => {
     const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
@@ -971,16 +1034,18 @@ export default function SettingsPage() {
       <PublishSection storeId={storeId} />
 
       <div className="flex justify-end gap-3 sticky bottom-4 bg-white/80 backdrop-blur-xl p-4 rounded-3xl border border-white/50 shadow-card">
+        {/* Cancel reverts EVERY editable section from the snapshot,
+            not just `form` — previously edits to storeConfig /
+            features / giftOptions stayed dirty after Cancel (P0 #22). */}
         <Button variant="outline" className="h-9 text-sm" onClick={() => {
-          if (store) {
-            setForm({
-              name: store.name ?? '', slug: store.slug ?? '', description: store.description ?? '',
-              status: store.status ?? 'active', logoUrl: store.logoUrl ?? '', primaryColor: store.primaryColor ?? '#5c9cd5',
-              email: store.email ?? '', phone: store.phone ?? '',
-              seoTitle: store.seoTitle ?? '', seoDescription: store.seoDescription ?? '',
-            });
-            setErrors({});
+          const snap = originalSnapshot.current;
+          if (snap) {
+            setForm(snap.form);
+            setFeatures(snap.features);
+            setStoreConfig(snap.storeConfig);
+            setGiftOptions(snap.giftOptions);
           }
+          setErrors({});
         }}>{t('common.cancel')}</Button>
         <PermissionGate permission="settings:update"><Button className="h-9 text-sm" onClick={save} disabled={saving}>
           {saving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
