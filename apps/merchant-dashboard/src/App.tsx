@@ -50,7 +50,10 @@ const Employees = lazy(() => import('@/pages/Employees'));
 const GrowthInsights = lazy(() => import('@/pages/GrowthInsights'));
 const LiveRadar = lazy(() => import('@/pages/LiveRadar'));
 const CustomerSegments = lazy(() => import('@/pages/CustomerSegments'));
-const IntegrationHub = lazy(() => import('@/pages/IntegrationHub'));
+// IntegrationHub.tsx was a duplicate of Marketplaces.tsx with an
+// older sync-all toast handler that lied about partial failures. The
+// route `/settings/integrations` now redirects to the canonical
+// `/channels`. See audit P0 #31 (2026-06-25).
 const MarketingActions = lazy(() => import('@/pages/MarketingActions'));
 const WhatsAppPage = lazy(() => import('@/pages/WhatsApp'));
 const LoyaltyPage = lazy(() => import('@/pages/Loyalty'));
@@ -142,7 +145,10 @@ export default function App() {
               <Route path="/marketing/actions" element={<GuardedRoute permission="promotions:read"><MarketingActions /></GuardedRoute>} />
               <Route path="/whatsapp" element={<GuardedRoute permission="settings:read"><WhatsAppPage /></GuardedRoute>} />
               <Route path="/loyalty" element={<GuardedRoute permission="promotions:read"><LoyaltyPage /></GuardedRoute>} />
-              <Route path="/settings/integrations" element={<GuardedRoute permission="settings:read"><IntegrationHub /></GuardedRoute>} />
+              {/* Deprecated path — old SMS notification link and any
+                  bookmarked merchant URL still arrive here. Forward
+                  to the canonical channels page. */}
+              <Route path="/settings/integrations" element={<Navigate to="/channels" replace />} />
               <Route path="/ai-assistant" element={<GuardedRoute permission="settings:read"><AiAssistant /></GuardedRoute>} />
               <Route path="/audit-logs" element={<GuardedRoute permission="stores:read"><AuditLogs /></GuardedRoute>} />
               <Route path="/support" element={<GuardedRoute permission="support:read"><Support /></GuardedRoute>} />

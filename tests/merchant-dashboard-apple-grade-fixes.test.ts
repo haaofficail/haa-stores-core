@@ -28,7 +28,9 @@ const TOPBAR = read('apps/merchant-dashboard/src/components/layout/Topbar.tsx');
 const PRODUCT_LIST = read('apps/merchant-dashboard/src/components/products/ProductListTable.tsx');
 const PRODUCT_FORM = read('apps/merchant-dashboard/src/components/products/ProductFormDialog.tsx');
 const MARKETPLACES = read('apps/merchant-dashboard/src/pages/Marketplaces.tsx');
-const INTEGRATION = read('apps/merchant-dashboard/src/pages/IntegrationHub.tsx');
+// IntegrationHub.tsx was deleted in PR #229 — it was a duplicate of
+// Marketplaces.tsx. The status-dot assertion below is retained
+// against Marketplaces only.
 const SIDEBAR = read('apps/merchant-dashboard/src/components/layout/Sidebar.tsx');
 const ONBOARDING = read('apps/merchant-dashboard/src/pages/OnboardingWizard.tsx');
 
@@ -83,8 +85,12 @@ describe('Apple-grade merchant dashboard fixes (audit 2026-06-22)', () => {
       expect(MARKETPLACES).not.toMatch(/bg-red-500 inline-block/);
     });
 
-    it('IntegrationHub status dot uses danger', () => {
-      expect(INTEGRATION).toMatch(/bg-danger inline-block/);
+    // IntegrationHub.tsx was removed in PR #229 — the status-dot
+    // assertion is enforced on Marketplaces.tsx (the canonical
+    // implementation) above. Leaving a placeholder so the test count
+    // stays meaningful in CI logs.
+    it.skip('IntegrationHub status dot uses danger — file removed in PR #229', () => {
+      // intentionally empty
     });
   });
 
