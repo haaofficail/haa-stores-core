@@ -46,6 +46,24 @@ export default function AiAssistant() {
   const [inputText, setInputText] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Track the in-flight chat request so the merchant can cancel a
+  // slow / runaway response. Audit P0 #14 (2026-06-25).
+  const chatAbortRef = useRef<AbortController | null>(null);
+
+  // Abort any in-flight chat request when the component unmounts.
+  useEffect(() => {
+    return () => {
+      chatAbortRef.current?.abort();
+    };
+  }, []);
+
+  function cancelInFlight() {
+    if (chatAbortRef.current) {
+      chatAbortRef.current.abort();
+      chatAbortRef.current = null;
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (messages.length > 1) {
@@ -119,6 +137,13 @@ export default function AiAssistant() {
     setInputText('');
     setLoading(true);
 
+    // Per-request AbortController so the merchant can cancel via the
+    // "Stop" button. A previous request would be cancelled by the
+    // input being `disabled={loading}`, so there's never more than
+    // one in flight.
+    const controller = new AbortController();
+    chatAbortRef.current = controller;
+
     try {
       const history = messages
         .filter((m) => m.id !== 'welcome')
@@ -127,11 +152,20 @@ export default function AiAssistant() {
           content: m.text,
         }));
 
-      const result = await aiApi.chat(storeId, prompt, history) as { text: string; suggestions?: string[]; actions?: Array<{ label: string; action: string; params?: Record<string, unknown> }>; confidence?: number };
+      const result = await aiApi.chat(storeId, prompt, history, controller.signal) as { text: string; suggestions?: string[]; actions?: Array<{ label: string; action: string; params?: Record<string, unknown> }>; confidence?: number };
       addAssistantMessage(result);
     } catch (err: unknown) {
-      toast.error((err as { message?: string })?.message || t('ai.error'));
+      // Suppress the "aborted" error toast — the user explicitly
+      // cancelled, so an error toast would be noise. All other
+      // errors still surface.
+      const name = (err as { name?: string })?.name;
+      if (name !== 'AbortError' && !(err as { message?: string })?.message?.includes('abort')) {
+        toast.error((err as { message?: string })?.message || t('ai.error'));
+      }
     } finally {
+      if (chatAbortRef.current === controller) {
+        chatAbortRef.current = null;
+      }
       setLoading(false);
     }
   }
@@ -365,14 +399,29 @@ export default function AiAssistant() {
               disabled={loading}
               dir="rtl"
             />
-            <button
-              type="submit"
-              disabled={loading || !inputText.trim()}
-              aria-label="إرسال الرسالة"
-              className="absolute end-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white flex items-center justify-center shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-            >
-              <ArrowUp className="h-4 w-4" />
-            </button>
+            {loading ? (
+              // Cancel button — replaces the send button while an
+              // AI request is in flight, so the merchant can stop
+              // a slow response without waiting for a network
+              // timeout. Audit P0 #14 (2026-06-25).
+              <button
+                type="button"
+                onClick={cancelInFlight}
+                aria-label={t('ai.cancelRequest', 'إيقاف الرد')}
+                className="absolute end-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-neutral-200 text-neutral-700 flex items-center justify-center shadow-card hover:bg-neutral-300 active:scale-95 transition-all"
+              >
+                <span className="block h-3 w-3 rounded-sm bg-neutral-700" />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!inputText.trim()}
+                aria-label="إرسال الرسالة"
+                className="absolute end-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white flex items-center justify-center shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </form>
       </div>

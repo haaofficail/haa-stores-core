@@ -773,8 +773,17 @@ export const aiApi = {
   wallet: (storeId: number) => request<unknown>(`/merchant/${storeId}/ai/wallet`),
   generateProducts: (storeId: number, data: { category?: string; count?: number }) =>
     request<unknown>(`/merchant/${storeId}/ai/generate-products`, { method: 'POST', body: JSON.stringify(data) }),
-  chat: (storeId: number, prompt: string, history?: Array<{ role: 'user' | 'assistant'; content: string }>) =>
-    request<unknown>(`/merchant/${storeId}/ai/chat`, { method: 'POST', body: JSON.stringify({ prompt, history }) }),
+  chat: (
+    storeId: number,
+    prompt: string,
+    history?: Array<{ role: 'user' | 'assistant'; content: string }>,
+    signal?: AbortSignal,
+  ) =>
+    request<unknown>(`/merchant/${storeId}/ai/chat`, {
+      method: 'POST',
+      body: JSON.stringify({ prompt, history }),
+      signal,
+    }),
 };
 
 export interface Employee {
