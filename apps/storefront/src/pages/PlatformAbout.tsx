@@ -17,37 +17,6 @@ import { useSEO } from '@/hooks/useSEO';
 import { PLATFORM_LEGAL_ENTITY } from '@haa/shared';
 import './settings-about-editorial.css';
 
-/* ─── data ─────────────────────────────────────────────────── */
-
-interface Offering {
-  num: string;
-  title: string;
-  desc: string;
-}
-
-const OFFERINGS: Offering[] = [
-  {
-    num: '01',
-    title: 'متجر إلكتروني جاهز',
-    desc: 'ثيمات أنيقة ومرنة، وأدوات تحرير بدون كود — يطلق التاجر متجره ويبدأ البيع في دقائق.',
-  },
-  {
-    num: '02',
-    title: 'دفع سعودي متكامل',
-    desc: 'مدى وApple Pay وSTC Pay وVisa وMastercard، إضافةً إلى التقسيط عبر تابي وتمارا — جاهزة ومتوافقة محلياً.',
-  },
-  {
-    num: '03',
-    title: 'شحن وتسليم مدمج',
-    desc: 'تكامل مباشر مع شركات الشحن السعودية، مع طباعة بوليصة الشحن وتتبّع آلي للطلبات.',
-  },
-  {
-    num: '04',
-    title: 'تحليلات وقرارات أذكى',
-    desc: 'تقارير مبيعات لحظية، معدّل تحويل، حركة الزوّار، ولوحة تحكم موحّدة لإدارة كل شيء.',
-  },
-];
-
 /* ─── primitives ─────────────────────────────────────────── */
 
 function ScrollProgress() {
@@ -190,33 +159,6 @@ export default function PlatformAbout() {
           </article>
         </section>
 
-        {/* ─────────── Offerings ─────────── */}
-        <section className="about-ed__section">
-          <div className="about-ed__section-head" data-reveal>
-            <p className="about-ed__section-eyebrow">ما الذي نقدّمه</p>
-            <h2 className="about-ed__section-title">منصّة كاملة، لا أدوات متفرّقة.</h2>
-            <p className="about-ed__section-lede">
-              المتجر، الدفع، الشحن، التحليلات — كلّها في مكان واحد،
-              تتحدّث مع بعضها، وتفهم السياق السعودي افتراضياً.
-            </p>
-          </div>
-
-          <ol className="about-ed__offerings">
-            {OFFERINGS.map((o, idx) => (
-              <li
-                className="about-ed__offering"
-                key={o.num}
-                data-reveal
-                data-reveal-delay={String(Math.min(idx + 1, 4))}
-              >
-                <span className="about-ed__offering-icon" aria-hidden="true">{o.num}</span>
-                <h3 className="about-ed__offering-title">{o.title}</h3>
-                <p className="about-ed__offering-desc">{o.desc}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
-
         {/* ─────────── Provenance ─────────── */}
         <section className="about-ed__section about-ed__section--soft">
           <div className="about-ed__section-head" data-reveal>
@@ -236,10 +178,6 @@ export default function PlatformAbout() {
                 <div className="about-ed__entity-row">
                   <dt>السجل التجاري</dt>
                   <dd dir="ltr">{PLATFORM_LEGAL_ENTITY.commercialRegistration}</dd>
-                </div>
-                <div className="about-ed__entity-row">
-                  <dt>تاريخ الإصدار</dt>
-                  <dd dir="ltr">{PLATFORM_LEGAL_ENTITY.issueDate}</dd>
                 </div>
                 <div className="about-ed__entity-row">
                   <dt>جهة الإصدار</dt>

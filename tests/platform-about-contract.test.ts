@@ -51,16 +51,13 @@ describe('PlatformAbout — institutional /about page', () => {
     expect(PLATFORM_ABOUT_SRC).toMatch(/PLATFORM_LEGAL_ENTITY\.commercialRegistration/);
   });
 
-  it('contains the "ما الذي نقدّمه" offerings section', () => {
-    // The owner explicitly listed this section as required content —
-    // 3–4 cards covering store / payment / shipping / analytics.
-    expect(PLATFORM_ABOUT_SRC).toMatch(/ما الذي نقدّمه/);
-    expect(PLATFORM_ABOUT_SRC).toMatch(/OFFERINGS/);
-    // Sanity-check the four pillars are represented.
-    expect(PLATFORM_ABOUT_SRC).toMatch(/متجر إلكتروني/);
-    expect(PLATFORM_ABOUT_SRC).toMatch(/دفع/);
-    expect(PLATFORM_ABOUT_SRC).toMatch(/شحن/);
-    expect(PLATFORM_ABOUT_SRC).toMatch(/تحليلات/);
+  it('keeps the legal-entity card grounded in the shared constant', () => {
+    // Owner trimmed the "ما الذي نقدّمه" offerings section on
+    // 2026-06-25 — the page is intentionally tighter now. What MUST
+    // remain is the legal-entity card (covered by an earlier test
+    // already) and at minimum one body section between hero and CTA.
+    expect(PLATFORM_ABOUT_SRC).toMatch(/الكيان القانوني/);
+    expect(PLATFORM_ABOUT_SRC).toMatch(/<section/);
   });
 
   it('declares Arabic + RTL semantics on the page root', () => {

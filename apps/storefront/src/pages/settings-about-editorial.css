@@ -183,8 +183,10 @@
     box-shadow 0.25s var(--h-ease);
 }
 .about-ed__btn--primary {
+  /* `#storefront-scope *` forces color: #000 via !important; we need
+   * to escalate here so the white label on the brand-blue pill wins. */
   background: var(--h-accent);
-  color: #ffffff;
+  color: #ffffff !important;
   box-shadow:
     0 1px 2px rgba(20, 40, 80, 0.18),
     0 14px 28px -14px color-mix(in srgb, var(--h-accent) 60%, #000 0%);
@@ -192,6 +194,9 @@
 .about-ed__btn--primary:hover {
   background: var(--h-accent-strong);
   transform: translateY(-1px);
+}
+.about-ed__btn--primary .pa-arrow {
+  color: #ffffff !important;
 }
 .about-ed__btn--ghost {
   background: var(--h-surface-1);
