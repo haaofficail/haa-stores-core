@@ -13,6 +13,10 @@ import { resolve } from 'node:path';
 
 const INDEX = resolve(__dirname, '../apps/api/src/index.ts');
 
+function readRepo(path: string) {
+  return readFileSync(resolve(__dirname, '..', path), 'utf-8');
+}
+
 describe('API /api strip contract (DECISION-OS-015)', () => {
   const src = readFileSync(INDEX, 'utf-8');
 
@@ -48,6 +52,26 @@ describe('API /api strip contract (DECISION-OS-015)', () => {
     ]) {
       const text = readFileSync(f, 'utf-8');
       expect(text).toMatch(/handle_path\s+\/api\/\*/);
+    }
+  });
+
+  it('public Haa-owned domains are explicit before the custom-domain TLS catch-all', () => {
+    for (const file of ['deploy/staging/Caddyfile', 'deploy/production/Caddyfile']) {
+      const text = readRepo(file);
+      const catchAllIndex = text.indexOf(':443 {');
+      expect(catchAllIndex, `${file} must contain the custom-domain :443 catch-all`).toBeGreaterThan(0);
+
+      for (const host of [
+        'haastores.com',
+        'www.haastores.com',
+        'admin.haastores.com',
+        'merchant.haastores.com',
+        'api.haastores.com',
+      ]) {
+        const hostIndex = text.indexOf(`${host} {`);
+        expect(hostIndex, `${file} must declare ${host} explicitly`).toBeGreaterThan(0);
+        expect(hostIndex, `${host} must be declared before :443 catch-all in ${file}`).toBeLessThan(catchAllIndex);
+      }
     }
   });
 
