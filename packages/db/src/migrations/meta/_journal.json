@@ -582,6 +582,13 @@
       "when": 1782000082000,
       "tag": "0086_customers_email_opt_out",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1782950000000,
+      "tag": "0087_tenant_users_store_scope",
+      "breakpoints": true
     }
   ]
 }
