@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { settingsApi, uploadFile, categoriesApi, type StoreConfig } from '@/lib/api';
@@ -15,7 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   Settings as SettingsIcon, Store, Phone, CreditCard, Truck, Wallet,
   Loader2, Info, ExternalLink,
-  AlertTriangle, Globe, MapPin, Eye, EyeOff, Gift, Package,
+  Globe, MapPin, Eye, EyeOff, Gift, Package,
   Plus, Edit, Trash2, Ruler, MessageCircle, Clock, ShoppingCart,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -24,6 +24,20 @@ import { PermissionGate } from '@/lib/permissions';
 import { PaymentStatusSection } from './settings/sections/PaymentStatusSection';
 import { ReadinessChecklist } from './settings/sections/ReadinessChecklist';
 import { PublishSection } from './settings/sections/PublishSection';
+
+// W4 — lazy-loaded tabs (split from Settings.tsx). Only loaded when the
+// user activates the tab, shrinking the Settings shell's initial chunk.
+const GiftTab = lazy(() => import('./settings/tabs/GiftTab'));
+
+function TabFallback() {
+  return (
+    <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
+      <Skeleton className="h-6 w-1/3 mb-3" />
+      <Skeleton className="h-4 w-2/3 mb-4" />
+      <div className="space-y-2"><Skeleton className="h-9 w-full" /><Skeleton className="h-9 w-full" /></div>
+    </div>
+  );
+}
 
 function SectionHeader({ title, description }: { title: string; description?: string }) {
   return (
@@ -862,68 +876,19 @@ export default function SettingsPage() {
           </div>
         </TabsContent>
 
-        {/* Gift Tab */}
+        {/* Gift Tab — lazy-loaded (W4) */}
         <TabsContent value="gift" className="space-y-4">
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
-            <SectionHeader title={t('settings.sectionGift', 'الهدايا والتغليف')} description={t('settings.sectionGiftDesc', 'إعدادات تغليف الهدايا وإرسالها')} />
-            {!features.giftWrap && !features.sendAsGift ? (
-              <div className="p-4 bg-amber-50 text-amber-700 rounded-2xl text-sm">
-                <AlertTriangle className="h-4 w-4 inline ms-1" />
-                {t('settings.giftDisabledHint', 'فعّل خيار تغليف الهدايا أو إرسال كهدية من تبويب الميزات لاستخدام هذه الإعدادات')}
-              </div>
-            ) : giftOptionsLoading ? (
-              <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-2xl" />)}</div>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-neutral-500">{t('settings.giftWrapDefaultPrice', 'سعر التغليف الافتراضي')} (SAR)</Label>
-                    <Input type="number" min="0" value={giftOptions.giftWrapDefaultPrice}
-                      onChange={e => setGiftOptions(p => ({ ...p, giftWrapDefaultPrice: e.target.value }))}
-                      className="h-9 text-sm" dir="ltr" />
-                    <p className="text-xs text-neutral-400">{t('settings.giftWrapDefaultPriceDesc', 'السعر الذي ستُحتسب تلقائيًا عند اختيار تغليف الهدية')}</p>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-neutral-500">{t('settings.giftMessageMaxLength', 'الحد الأقصى لأحرف رسالة الهدية')}</Label>
-                    <Input type="number" min="1" max="1000" value={giftOptions.giftMessageMaxLength}
-                      onChange={e => setGiftOptions(p => ({ ...p, giftMessageMaxLength: Number(e.target.value) }))}
-                      className="h-9 text-sm" dir="ltr" />
-                    <p className="text-xs text-neutral-400">{t('settings.giftMessageMaxLengthDesc', 'أقصى عدد أحرف مسموح به في رسالة الهدية')}</p>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-neutral-500">{t('settings.giftWrapInstructions', 'تعليمات التغليف')}</Label>
-                  <textarea className="flex h-20 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                    value={giftOptions.giftWrapInstructions ?? ''}
-                    onChange={e => setGiftOptions(p => ({ ...p, giftWrapInstructions: e.target.value || null }))}
-                    placeholder={t('settings.giftWrapInstructionsPlaceholder', 'سيتم تغليف الطلب كهدية مناسبة...')} />
-                </div>
-                <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
-                  <Button variant="outline" className="h-9 text-sm"
-                    onClick={() => settingsApi.getGiftOptions(storeId!).then(setGiftOptions)}>
-                    {t('common.cancel')}
-                  </Button>
-                  <PermissionGate permission="settings:update"><Button className="h-9 text-sm" disabled={giftOptionsSaving || giftOptionsLoading}
-                    onClick={async () => {
-                      setGiftOptionsSaving(true);
-                      try {
-                        await settingsApi.updateGiftOptions(storeId!, {
-                          giftWrapDefaultPrice: Number(giftOptions.giftWrapDefaultPrice),
-                          giftMessageMaxLength: giftOptions.giftMessageMaxLength,
-                          giftWrapInstructions: giftOptions.giftWrapInstructions,
-                          pickupInstructions: giftOptions.pickupInstructions,
-                        });
-                        toast.success(t('settings.saved'));
-                      } catch { toast.error(t('common.error')); }
-                      finally { setGiftOptionsSaving(false); }
-                    }}>
-                    {giftOptionsSaving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
-                    {giftOptionsSaving ? t('common.saving') : t('common.save')}
-                  </Button></PermissionGate>
-                </div>
-              </div>
-            )}
-          </div>
+          <Suspense fallback={<TabFallback />}>
+            <GiftTab
+              features={features}
+              giftOptions={giftOptions}
+              setGiftOptions={setGiftOptions}
+              giftOptionsLoading={giftOptionsLoading}
+              giftOptionsSaving={giftOptionsSaving}
+              setGiftOptionsSaving={setGiftOptionsSaving}
+              storeId={storeId}
+            />
+          </Suspense>
         </TabsContent>
 
         {/* Pickup Tab */}
