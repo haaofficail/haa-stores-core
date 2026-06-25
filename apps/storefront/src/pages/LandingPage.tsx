@@ -495,9 +495,12 @@ export default function LandingPage() {
               <span className="lp-marquee__item"><img src="/assets/payment-logos/mastercard.svg"       alt="Mastercard"/></span>
               <span className="lp-marquee__item"><img src="/assets/payment-logos/trim/tabby.png"       alt="tabby"     /></span>
               <span className="lp-marquee__item"><img src="/assets/payment-logos/trim/tamara.png"      alt="تمارا"     /></span>
-              <span className="lp-marquee__item ship"><img src="/assets/shipping-logos/aramex.svg"     alt="أرامكس"    /></span>
-              <span className="lp-marquee__item ship"><img src="/assets/shipping-logos/redbox.svg"     alt="ريدبوكس"   /></span>
-              <span className="lp-marquee__item ship spl"><img src="/assets/shipping-logos/spl.svg"    alt="سبل"       /></span>
+              <span className="lp-marquee__item ship"><img src="/assets/shipping-logos/aramex.svg"      alt="أرامكس"    /></span>
+              <span className="lp-marquee__item ship"><img src="/assets/shipping-logos/redbox.svg"      alt="ريدبوكس"   /></span>
+              <span className="lp-marquee__item ship spl"><img src="/assets/shipping-logos/spl.svg"     alt="سبل"       /></span>
+              <span className="lp-marquee__item ship"><img src="/assets/shipping-logos/naqel.svg"       alt="ناقل"      /></span>
+              <span className="lp-marquee__item ship"><img src="/assets/shipping-logos/dhl.svg"         alt="DHL"       /></span>
+              <span className="lp-marquee__item ship"><img src="/assets/shipping-logos/saudi-post.svg"  alt="البريد السعودي" /></span>
             </div>
           ))}
         </div>
@@ -508,10 +511,12 @@ export default function LandingPage() {
         <div className="lp-container">
           <div className="lp-gov__label">متوافق ومسجّل لدى الجهات الرسمية في المملكة</div>
           <div className="lp-gov__row reveal-stagger">
-            <span className="lp-gov__chip"><img className="g-wide" src="/assets/payment-logos/trim/ministry-of-commerce.png" alt="وزارة التجارة"                  /></span>
-            <span className="lp-gov__chip"><img src="/assets/payment-logos/trim/citc.png"                                     alt="هيئة الاتصالات وتقنية المعلومات" /></span>
-            <span className="lp-gov__chip"><img src="/assets/payment-logos/trim/zatca.png"                                    alt="هيئة الزكاة والضريبة والجمارك"   /></span>
-            <span className="lp-gov__chip"><img src="/assets/payment-logos/saudi-business-center.svg"                         alt="المركز السعودي للأعمال"           /></span>
+            <span className="lp-gov__chip"><img className="g-wide"   src="/assets/payment-logos/trim/ministry-of-commerce.png"  alt="وزارة التجارة"                  /></span>
+            <span className="lp-gov__chip"><img                       src="/assets/payment-logos/trim/citc.png"                 alt="هيئة الاتصالات وتقنية المعلومات" /></span>
+            <span className="lp-gov__chip"><img                       src="/assets/payment-logos/trim/zatca.png"                alt="هيئة الزكاة والضريبة والجمارك"   /></span>
+            <span className="lp-gov__chip"><img className="g-square" src="/assets/payment-logos/saudi-business-center.svg"     alt="المركز السعودي للأعمال"           /></span>
+            <span className="lp-gov__chip"><img className="g-square" src="/assets/payment-logos/trim/maroof.png"                alt="معروف"                              /></span>
+            <span className="lp-gov__chip"><img className="g-square" src="/assets/payment-logos/trim/saudi-made-official.png"   alt="صنع في السعودية"                    /></span>
           </div>
         </div>
       </section>
