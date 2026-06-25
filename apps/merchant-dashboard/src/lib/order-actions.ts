@@ -221,11 +221,11 @@ export function getOrderActions(order: any): OrderActions {
       }
       pushDanger('cancelled', 'cancel', 'إلغاء');
     } else if (status === 'shipped') {
-      actions.push({
-        key: 'resend_tracking', label: 'إعادة إرسال بيانات الشحن', icon: 'RefreshCw',
-        targetStatus: 'shipped', isDestructive: false, needsConfirm: false,
-        section: 'shipping',
-      });
+      // `resend_tracking` removed (audit P0 #10, 2026-06-25): the
+      // handler showed a success toast without calling any API. There
+      // is no backend route for re-sending the tracking notification
+      // today. If this is wanted, wire it to ordersApi.* and the
+      // notification service first, then add the action back.
       if (hasTrackingUrl) {
         actions.push({
           key: 'open_tracking', label: 'فتح رابط التتبع', icon: 'ExternalLink',

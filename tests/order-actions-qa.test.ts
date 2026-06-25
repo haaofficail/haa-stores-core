@@ -82,9 +82,13 @@ describe('QA: Order Actions — Full Scenario Coverage', () => {
       expect(hasAction(a, 'hand_to_carrier')).toBe(true);
     });
 
-    it('shipped: resend_tracking + deliver + return', () => {
+    it('shipped: deliver + return (resend_tracking removed in PR #223)', () => {
+      // The `resend_tracking` action was removed in PR #223 — its
+      // handler showed a success toast without calling any API.
+      // The user can still view/copy the tracking link via the
+      // open_tracking / copy_tracking actions.
       const a = getOrderActions(order({ status: 'shipped', shipment: { id: 1, trackingNumber: 'TN123' } }));
-      expect(keys(a, 'shipping')).toContain('resend_tracking');
+      expect(keys(a, 'shipping')).not.toContain('resend_tracking');
       expect(keys(a, 'primary')).toContain('deliver');
       expect(keys(a, 'danger')).toContain('return');
     });
@@ -253,7 +257,8 @@ describe('QA: Order Actions — Full Scenario Coverage', () => {
     const allSections = ['primary', 'payment', 'shipping', 'pickup', 'gift', 'documents', 'danger'];
     const sectionKeys: Record<string, string[]> = {
       payment: ['collect_payment', 'collection_failed', 'customer_refused'],
-      shipping: ['create_label', 'print_label', 'download_pdf', 'copy_tracking', 'open_tracking', 'resend_tracking', 'hand_to_carrier'],
+      // `resend_tracking` removed in PR #223 (no backing endpoint).
+      shipping: ['create_label', 'print_label', 'download_pdf', 'copy_tracking', 'open_tracking', 'hand_to_carrier'],
       pickup: ['confirm_pickup', 'ready_for_pickup'],
       gift: ['view_gift_message', 'print_gift_message', 'copy_gift_message', 'notify_buyer', 'notify_recipient'],
     };

@@ -127,7 +127,50 @@ function translateDiffValue(val: unknown): string {
   return DIFF_VALUE_LABELS[s] || s;
 }
 
-function DiffView({ oldValue, newValue }: { oldValue: any; newValue: any }) {
+// Field-name patterns that hold sensitive PII/financial identifiers.
+// When AuditLogs renders a diff for any of these keys, the value is
+// masked — only the last 4 characters are exposed. The full value is
+// already stored in the audit log table (immutable record); masking
+// just keeps it out of the rendered UI where any user with
+// `compliance:read` could see it.
+//
+// Audit reference: P0 #7 in the dashboard-quality audit (2026-06-25).
+const SENSITIVE_DIFF_KEY_PATTERN = /^(iban|bankAccount|bank_account|accountNumber|account_number|vat|vatNumber|vat_number|commercialRegistration|commercial_registration|cr|crNumber|nationalId|national_id|phone|mobile|email|apiKey|api_key|secret|password|token|cardNumber|card_number)$/i;
+
+export function isSensitiveDiffKey(key: string): boolean {
+  return SENSITIVE_DIFF_KEY_PATTERN.test(key);
+}
+
+export function maskSensitiveValue(raw: unknown): string {
+  if (raw === null || raw === undefined) return '';
+  const s = String(raw);
+  // Empty / very short values: mask entirely. Avoids leaking
+  // information about length.
+  if (s.length === 0) return '';
+  if (s.length <= 4) return '•'.repeat(s.length);
+  // Show only the last 4 characters with bullets for everything else.
+  // The last 4 are usually enough for the merchant to recognize "yes
+  // that's the account I set" without exposing the full number.
+  return `${'•'.repeat(Math.max(4, s.length - 4))}${s.slice(-4)}`;
+}
+
+type DiffPayload = Record<string, unknown> | null | undefined;
+
+interface AuditLogRow {
+  id: number | string;
+  action: string;
+  entityType: string;
+  entityId?: number | string | null;
+  actor?: { name?: string | null; email?: string | null } | null;
+  actorUserId?: number | null;
+  oldValue?: DiffPayload;
+  newValue?: DiffPayload;
+  createdAt: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
+
+function DiffView({ oldValue, newValue }: { oldValue: DiffPayload; newValue: DiffPayload }) {
   const { t } = useTranslation();
   if (!oldValue && !newValue) return null;
   const oldKeys = oldValue ? Object.keys(oldValue) : [];
@@ -141,18 +184,26 @@ function DiffView({ oldValue, newValue }: { oldValue: any; newValue: any }) {
         const oldVal = oldValue?.[key];
         const newVal = newValue?.[key];
         if (oldVal === newVal) return null;
+        const sensitive = isSensitiveDiffKey(key);
+        // Sensitive fields (IBAN, bank account, VAT, CR, phone, etc.)
+        // render with the value masked to the last 4 chars. The full
+        // diff still exists in the immutable audit log row — this is
+        // a UI-only mask to prevent shoulder-surfing and casual leaks
+        // among staff who hold `compliance:read`.
+        const renderOld = sensitive ? maskSensitiveValue(oldVal) : translateDiffValue(oldVal).substring(0, 50);
+        const renderNew = sensitive ? maskSensitiveValue(newVal) : translateDiffValue(newVal).substring(0, 50);
         return (
           <div key={key} className="flex gap-2 items-start">
             <span className="text-neutral-500 min-w-[80px] shrink-0">{t(`audit.diffKey_${key}`, formatDiffKey(key))}:</span>
             <div className="flex gap-1 items-center flex-wrap">
               {oldVal !== undefined && oldVal !== null && (
-                <span className="line-through text-red-500/70">{translateDiffValue(oldVal).substring(0, 50)}</span>
+                <span className="line-through text-red-500/70" dir={sensitive ? 'ltr' : undefined}>{renderOld}</span>
               )}
               {oldVal !== undefined && oldVal !== null && newVal !== undefined && (
                 <span className="text-neutral-400">←</span>
               )}
               {newVal !== undefined && newVal !== null && (
-                <span className="text-green-600 font-medium">{translateDiffValue(newVal).substring(0, 50)}</span>
+                <span className="text-green-600 font-medium" dir={sensitive ? 'ltr' : undefined}>{renderNew}</span>
               )}
             </div>
           </div>
@@ -169,7 +220,7 @@ export default function AuditLogs() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<AuditLogRow[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [page, setPage] = useState(1);
@@ -199,7 +250,7 @@ export default function AuditLogs() {
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
       });
-      setLogs(result.data);
+      setLogs(result.data as AuditLogRow[]);
       setTotal(result.total);
       setTotalPages(result.totalPages);
     } catch (e) {

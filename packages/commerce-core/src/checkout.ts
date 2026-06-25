@@ -269,9 +269,17 @@ export class CheckoutService {
         });
 
         if (session.couponCode && session.couponDiscount) {
-          const couponService = new CouponsService(this.db);
+          // Atomic coupon claim — runs inside the order transaction so
+          // a coupon-cap exhaustion rolls the entire order back. See
+          // `CouponsService.tryClaimUse` for the race fix.
+          const couponService = new CouponsService(tx);
           const couponRecord = await couponService.getByCode(storeId, session.couponCode);
-          if (couponRecord) await couponService.incrementUsed(storeId, couponRecord.id);
+          if (couponRecord) {
+            const claimed = await couponService.tryClaimUse(storeId, couponRecord.id);
+            if (!claimed) {
+              throw new Error('COUPON_EXHAUSTED');
+            }
+          }
         }
 
         await tx.update(s.checkoutSessions).set({ status: 'completed', completedAt: new Date() })
@@ -652,9 +660,14 @@ export class CheckoutService {
           });
 
           if (session.couponCode && session.couponDiscount) {
-            const couponService = new CouponsService(this.db);
+            const couponService = new CouponsService(tx);
             const couponRecord = await couponService.getByCode(storeId, session.couponCode);
-            if (couponRecord) await couponService.incrementUsed(storeId, couponRecord.id);
+            if (couponRecord) {
+              const claimed = await couponService.tryClaimUse(storeId, couponRecord.id);
+              if (!claimed) {
+                throw new Error('COUPON_EXHAUSTED');
+              }
+            }
           }
 
           await tx.update(s.checkoutSessions).set({ status: 'completed', completedAt: new Date() })
@@ -735,9 +748,14 @@ export class CheckoutService {
         });
 
         if (session.couponCode && session.couponDiscount) {
-          const couponService = new CouponsService(this.db);
+          const couponService = new CouponsService(tx);
           const couponRecord = await couponService.getByCode(storeId, session.couponCode);
-          if (couponRecord) await couponService.incrementUsed(storeId, couponRecord.id);
+          if (couponRecord) {
+            const claimed = await couponService.tryClaimUse(storeId, couponRecord.id);
+            if (!claimed) {
+              throw new Error('COUPON_EXHAUSTED');
+            }
+          }
         }
 
         await tx.update(s.checkoutSessions).set({ status: 'completed', completedAt: new Date() })
