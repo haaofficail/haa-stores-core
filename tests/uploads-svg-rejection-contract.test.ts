@@ -22,8 +22,11 @@ const UPLOADS_SRC = readFileSync(
   resolve(__dirname, '../apps/api/src/routes/uploads.ts'),
   'utf-8',
 );
+// W4 slice 4a: the logo uploader moved from Settings.tsx into the
+// dedicated InfoTab. Update the contract to scan the new file so the
+// SVG-rejection guarantee follows the code.
 const SETTINGS_SRC = readFileSync(
-  resolve(__dirname, '../apps/merchant-dashboard/src/pages/Settings.tsx'),
+  resolve(__dirname, '../apps/merchant-dashboard/src/pages/settings/tabs/InfoTab.tsx'),
   'utf-8',
 );
 
