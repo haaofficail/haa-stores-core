@@ -104,7 +104,7 @@ export default function CatalogHub() {
               'catalog.hub.tools.products.description',
               'كل منتج في متجرك — إضافة، تعديل، أرشفة، نشر على القنوات، وإدارة الصور والمتغيرات.',
             )}
-            to="/products"
+            to="/catalog/products"
             cta={t('catalog.hub.tools.products.cta', 'فتح المنتجات')}
           />
           <HubCard
@@ -115,7 +115,7 @@ export default function CatalogHub() {
               'catalog.hub.tools.categories.description',
               'بنية تصنيفات شجرية — رتّب منتجاتك بحيث يجدها العميل بنقرتين.',
             )}
-            to="/categories"
+            to="/catalog/categories"
             cta={t('catalog.hub.tools.categories.cta', 'فتح التصنيفات')}
           />
           <HubCard
@@ -126,7 +126,7 @@ export default function CatalogHub() {
               'catalog.hub.tools.brands.description',
               'العلامات التجارية في متجرك مع شعاراتها. اربط كل منتج بماركته للبحث والتصفية.',
             )}
-            to="/brands"
+            to="/catalog/brands"
             cta={t('catalog.hub.tools.brands.cta', 'فتح الماركات')}
           />
           <HubCard
@@ -137,7 +137,7 @@ export default function CatalogHub() {
               'catalog.hub.tools.tags.description',
               'وسوم بحث ملوّنة — تساعد عميلك على إيجاد ما يبحث عنه دون الحاجة لشجرة تصنيفات.',
             )}
-            to="/tags"
+            to="/catalog/tags"
             cta={t('catalog.hub.tools.tags.cta', 'فتح الوسوم')}
           />
           <HubCard

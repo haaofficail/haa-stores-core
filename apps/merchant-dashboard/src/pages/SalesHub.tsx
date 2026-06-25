@@ -121,7 +121,7 @@ export default function SalesHub() {
               'sales.hub.tools.orders.description',
               'كل الطلبات الواردة — تأكيد، تجهيز، شحن، استرداد — مع تصفية حسب الحالة والقناة.',
             )}
-            to="/orders"
+            to="/sales/orders"
             cta={t('sales.hub.tools.orders.cta', 'فتح الطلبات')}
           />
           <HubCard
@@ -132,7 +132,7 @@ export default function SalesHub() {
               'sales.hub.tools.customers.description',
               'سجلّ كل عميل اشترى من متجرك — مع بحث، شرائح، ورصيد ولاء.',
             )}
-            to="/customers"
+            to="/sales/customers"
             cta={t('sales.hub.tools.customers.cta', 'فتح العملاء')}
           />
           <HubCard
@@ -143,7 +143,7 @@ export default function SalesHub() {
               'sales.hub.tools.abandoned.description',
               'العملاء الذين تركوا سلالهم — تابعهم تلقائياً عبر بريد الاسترداد.',
             )}
-            to="/abandoned-carts"
+            to="/sales/abandoned-carts"
             cta={t('sales.hub.tools.abandoned.cta', 'عرض السلال')}
           />
           <HubCard
@@ -154,7 +154,7 @@ export default function SalesHub() {
               'sales.hub.tools.shipping.description',
               'طرق الشحن، نطاقات التغطية، الشحنات، وأسعار الشركات.',
             )}
-            to="/shipping"
+            to="/sales/shipping"
             cta={t('sales.hub.tools.shipping.cta', 'فتح الشحن')}
           />
           <HubCard
@@ -165,7 +165,7 @@ export default function SalesHub() {
               'sales.hub.tools.channels.description',
               'اربط متجرك بسلة وزد ونون وأمازون — مزامنة المنتجات والطلبات.',
             )}
-            to="/channels"
+            to="/sales/channels"
             cta={t('sales.hub.tools.channels.cta', 'فتح القنوات')}
           />
           <HubCard
@@ -176,7 +176,7 @@ export default function SalesHub() {
               'sales.hub.tools.catalog.description',
               'المنتجات والتصنيفات — مدخل سريع لمن يحتاج تعديل الكتالوج من سياق الطلبات.',
             )}
-            to="/products"
+            to="/catalog/products"
             cta={t('sales.hub.tools.catalog.cta', 'فتح الكتالوج')}
           />
         </div>

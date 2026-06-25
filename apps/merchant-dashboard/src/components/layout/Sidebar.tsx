@@ -39,10 +39,10 @@ const navGroups: Array<{
     title: 'الكتالوج',
     items: [
       { to: '/catalog', icon: Package, label: 'nav.catalogHub', fallback: 'مركز الكتالوج', permission: 'products:read' },
-      { to: '/products', icon: Package, label: 'nav.products', fallback: 'إدارة المنتجات', permission: 'products:read' },
-      { to: '/categories', icon: Tags, label: 'nav.categories', fallback: 'التصنيفات', permission: 'categories:manage' },
-      { to: '/brands', icon: Building2, label: 'nav.brands', fallback: 'الماركات', permission: 'brands:manage' },
-      { to: '/tags', icon: Tag, label: 'nav.tags', fallback: 'الوسوم', permission: 'tags:manage' },
+      { to: '/catalog/products', icon: Package, label: 'nav.products', fallback: 'إدارة المنتجات', permission: 'products:read' },
+      { to: '/catalog/categories', icon: Tags, label: 'nav.categories', fallback: 'التصنيفات', permission: 'categories:manage' },
+      { to: '/catalog/brands', icon: Building2, label: 'nav.brands', fallback: 'الماركات', permission: 'brands:manage' },
+      { to: '/catalog/tags', icon: Tag, label: 'nav.tags', fallback: 'الوسوم', permission: 'tags:manage' },
     ],
   },
   {
@@ -50,11 +50,11 @@ const navGroups: Array<{
     title: 'البيع',
     items: [
       { to: '/sales', icon: ClipboardList, label: 'nav.salesHub', fallback: 'مركز البيع', permission: 'orders:read' },
-      { to: '/orders', icon: ShoppingCart, label: 'nav.orders', fallback: 'معالجة الطلبات', permission: 'orders:read' },
-      { to: '/customers', icon: Users, label: 'nav.customers', fallback: 'إدارة العملاء', permission: 'customers:read' },
-      { to: '/abandoned-carts', icon: ShoppingBag, label: 'nav.abandonedCarts', fallback: 'العربات المتروكة', permission: 'orders:read' },
-      { to: '/shipping', icon: Truck, label: 'nav.shipping', fallback: 'إدارة الشحن', permission: 'shipping:manage' },
-      { to: '/channels', icon: Store, label: 'nav.channels', fallback: 'ربط قنوات البيع', permission: 'settings:read' },
+      { to: '/sales/orders', icon: ShoppingCart, label: 'nav.orders', fallback: 'معالجة الطلبات', permission: 'orders:read' },
+      { to: '/sales/customers', icon: Users, label: 'nav.customers', fallback: 'إدارة العملاء', permission: 'customers:read' },
+      { to: '/sales/abandoned-carts', icon: ShoppingBag, label: 'nav.abandonedCarts', fallback: 'العربات المتروكة', permission: 'orders:read' },
+      { to: '/sales/shipping', icon: Truck, label: 'nav.shipping', fallback: 'إدارة الشحن', permission: 'shipping:manage' },
+      { to: '/sales/channels', icon: Store, label: 'nav.channels', fallback: 'ربط قنوات البيع', permission: 'settings:read' },
     ],
   },
   {
@@ -62,10 +62,10 @@ const navGroups: Array<{
     title: 'التسويق',
     items: [
       { to: '/marketing', icon: Sparkles, label: 'nav.marketingHub', fallback: 'مركز التسويق', permission: 'promotions:read' },
-      { to: '/promotions', icon: Percent, label: 'nav.promotions', fallback: 'إدارة العروض', permission: 'promotions:read' },
-      { to: '/coupons', icon: TicketPercent, label: 'nav.coupons', fallback: 'إدارة الكوبونات', permission: 'coupons:read' },
-      { to: '/loyalty', icon: Coins, label: 'nav.loyalty', fallback: 'إدارة الولاء', permission: 'promotions:read' },
-      { to: '/whatsapp', icon: MessageSquare, label: 'nav.whatsapp', fallback: 'حملات الواتساب', permission: 'settings:read' },
+      { to: '/marketing/promotions', icon: Percent, label: 'nav.promotions', fallback: 'إدارة العروض', permission: 'promotions:read' },
+      { to: '/marketing/coupons', icon: TicketPercent, label: 'nav.coupons', fallback: 'إدارة الكوبونات', permission: 'coupons:read' },
+      { to: '/marketing/loyalty', icon: Coins, label: 'nav.loyalty', fallback: 'إدارة الولاء', permission: 'promotions:read' },
+      { to: '/marketing/whatsapp', icon: MessageSquare, label: 'nav.whatsapp', fallback: 'حملات الواتساب', permission: 'settings:read' },
     ],
   },
   {
@@ -73,9 +73,9 @@ const navGroups: Array<{
     title: 'المالية',
     items: [
       { to: '/finance', icon: Coins, label: 'nav.financeHub', fallback: 'مركز المالية', permission: 'wallet:read' },
-      { to: '/wallet', icon: Wallet, label: 'nav.wallet', fallback: 'المحفظة والتسويات', permission: 'wallet:read' },
-      { to: '/subscriptions', icon: Crown, label: 'nav.subscriptions', fallback: 'الاشتراك والفواتير', permission: 'subscriptions:view' },
-      { to: '/compliance', icon: Shield, label: 'nav.compliance', fallback: 'التحقق والامتثال', permission: 'compliance:read' },
+      { to: '/finance/wallet', icon: Wallet, label: 'nav.wallet', fallback: 'المحفظة والتسويات', permission: 'wallet:read' },
+      { to: '/finance/subscriptions', icon: Crown, label: 'nav.subscriptions', fallback: 'الاشتراك والفواتير', permission: 'subscriptions:view' },
+      { to: '/finance/compliance', icon: Shield, label: 'nav.compliance', fallback: 'التحقق والامتثال', permission: 'compliance:read' },
     ],
   },
   {

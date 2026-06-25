@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from '@/hooks/useAuth';
 import { AuthGuard } from '@/components/auth/AuthGuard';
@@ -83,6 +83,21 @@ function GuardedRoute({
   );
 }
 
+/**
+ * Redirect to `template`, substituting `:param` placeholders with the
+ * current URL params. Used by the IA W3 backwards-compat redirects so
+ * e.g. `/orders/12345` correctly forwards to `/sales/orders/12345`
+ * instead of literally `/sales/orders/:orderId`.
+ */
+function NavWithParams({ template }: { template: string }) {
+  const params = useParams();
+  let path = template;
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) path = path.replace(`:${key}`, value);
+  }
+  return <Navigate to={path} replace />;
+}
+
 function NotFound() {
   const { t } = useTranslation();
   return (
@@ -109,60 +124,108 @@ export default function App() {
             <Route path="/onboarding" element={<Lazy><OnboardingWizard /></Lazy>} />
             <Route path="/onboarding/success" element={<Lazy><OnboardingSuccess /></Lazy>} />
             <Route element={<DashboardLayout />}>
+              {/* IA W3 (2026-06-25): canonical paths are now namespaced
+                  under their section hub (/catalog, /sales, /marketing,
+                  /finance). Old top-level paths remain as <Navigate>
+                  redirects so bookmarks, email links, and any external
+                  reference keep working. The leaf pages still ship
+                  under their existing component imports — only the
+                  URL changed. */}
+
+              {/* Home */}
               <Route path="/dashboard" element={<GuardedRoute permission="dashboard:view"><DashboardHome /></GuardedRoute>} />
-              <Route path="/products" element={<GuardedRoute permission="products:read"><Products /></GuardedRoute>} />
-              <Route path="/categories" element={<GuardedRoute permission="categories:manage"><Categories /></GuardedRoute>} />
-              <Route path="/brands" element={<GuardedRoute permission="brands:manage"><Brands /></GuardedRoute>} />
-              <Route path="/tags" element={<GuardedRoute permission="tags:manage"><Tags /></GuardedRoute>} />
-              <Route path="/orders" element={<GuardedRoute permission="orders:read"><Orders /></GuardedRoute>} />
-              <Route path="/orders/:orderId" element={<GuardedRoute permission="orders:read"><Orders /></GuardedRoute>} />
-              <Route path="/customers" element={<GuardedRoute permission="customers:read"><Customers /></GuardedRoute>} />
-              <Route path="/shipping" element={<GuardedRoute permission="shipping:manage"><Shipping /></GuardedRoute>} />
-              <Route path="/wallet" element={<GuardedRoute permission="wallet:read"><WalletPage /></GuardedRoute>} />
-              <Route path="/wallet/settlements" element={<GuardedRoute permission="wallet:read"><SettlementOverview /></GuardedRoute>} />
-              <Route path="/wallet/settlements/:batchId" element={<GuardedRoute permission="wallet:read"><SettlementDetail /></GuardedRoute>} />
-              <Route path="/coupons" element={<GuardedRoute permission="coupons:read"><Coupons /></GuardedRoute>} />
-              <Route path="/promotions" element={<GuardedRoute permission="promotions:read"><Promotions /></GuardedRoute>} />
-              <Route path="/policies" element={<GuardedRoute permission="settings:read"><Policies /></GuardedRoute>} />
-              <Route path="/abandoned-carts" element={<GuardedRoute permission="orders:read"><AbandonedCarts /></GuardedRoute>} />
-              <Route path="/exports" element={<GuardedRoute permission="exports:create"><Exports /></GuardedRoute>} />
+
+              {/* ── Catalog ─────────────────────────────────────── */}
+              <Route path="/catalog" element={<GuardedRoute permission="products:read"><CatalogHub /></GuardedRoute>} />
+              <Route path="/catalog/products" element={<GuardedRoute permission="products:read"><Products /></GuardedRoute>} />
+              <Route path="/catalog/categories" element={<GuardedRoute permission="categories:manage"><Categories /></GuardedRoute>} />
+              <Route path="/catalog/brands" element={<GuardedRoute permission="brands:manage"><Brands /></GuardedRoute>} />
+              <Route path="/catalog/tags" element={<GuardedRoute permission="tags:manage"><Tags /></GuardedRoute>} />
+
+              {/* ── Sales ───────────────────────────────────────── */}
+              <Route path="/sales" element={<GuardedRoute permission="orders:read"><SalesHub /></GuardedRoute>} />
+              <Route path="/sales/orders" element={<GuardedRoute permission="orders:read"><Orders /></GuardedRoute>} />
+              <Route path="/sales/orders/:orderId" element={<GuardedRoute permission="orders:read"><Orders /></GuardedRoute>} />
+              <Route path="/sales/customers" element={<GuardedRoute permission="customers:read"><Customers /></GuardedRoute>} />
+              <Route path="/sales/customers/segments" element={<GuardedRoute permission="customers:read"><CustomerSegments /></GuardedRoute>} />
+              <Route path="/sales/abandoned-carts" element={<GuardedRoute permission="orders:read"><AbandonedCarts /></GuardedRoute>} />
+              <Route path="/sales/shipping" element={<GuardedRoute permission="shipping:manage"><Shipping /></GuardedRoute>} />
+              <Route path="/sales/channels" element={<GuardedRoute permission="settings:read"><Marketplaces /></GuardedRoute>} />
+              <Route path="/sales/channels/sync-logs" element={<GuardedRoute permission="settings:read"><SyncLogs /></GuardedRoute>} />
+              <Route path="/sales/channels/guide" element={<GuardedRoute permission="settings:read"><MarketplaceGuide /></GuardedRoute>} />
+              <Route path="/sales/channels/listings" element={<GuardedRoute permission="settings:read"><MarketplaceListings /></GuardedRoute>} />
+              <Route path="/sales/channels/:provider" element={<GuardedRoute permission="settings:read"><MarketplaceDetail /></GuardedRoute>} />
+
+              {/* ── Marketing ───────────────────────────────────── */}
+              <Route path="/marketing" element={<GuardedRoute permission="promotions:read"><MarketingHub /></GuardedRoute>} />
+              <Route path="/marketing/promotions" element={<GuardedRoute permission="promotions:read"><Promotions /></GuardedRoute>} />
+              <Route path="/marketing/coupons" element={<GuardedRoute permission="coupons:read"><Coupons /></GuardedRoute>} />
+              <Route path="/marketing/loyalty" element={<GuardedRoute permission="promotions:read"><LoyaltyPage /></GuardedRoute>} />
+              <Route path="/marketing/whatsapp" element={<GuardedRoute permission="settings:read"><WhatsAppPage /></GuardedRoute>} />
+              <Route path="/marketing/actions" element={<GuardedRoute permission="promotions:read"><MarketingActions /></GuardedRoute>} />
+
+              {/* ── Finance ─────────────────────────────────────── */}
+              <Route path="/finance" element={<GuardedRoute permission="wallet:read"><FinanceHub /></GuardedRoute>} />
+              <Route path="/finance/wallet" element={<GuardedRoute permission="wallet:read"><WalletPage /></GuardedRoute>} />
+              <Route path="/finance/settlements" element={<GuardedRoute permission="wallet:read"><SettlementOverview /></GuardedRoute>} />
+              <Route path="/finance/settlements/:batchId" element={<GuardedRoute permission="wallet:read"><SettlementDetail /></GuardedRoute>} />
+              <Route path="/finance/subscriptions" element={<GuardedRoute permission="subscriptions:view"><Subscriptions /></GuardedRoute>} />
+              <Route path="/finance/compliance" element={<GuardedRoute permission="compliance:read"><Compliance /></GuardedRoute>} />
+
+              {/* ── Insights ────────────────────────────────────── */}
               <Route path="/reports" element={<GuardedRoute permission="reports:read"><Reports /></GuardedRoute>} />
               <Route path="/growth" element={<GuardedRoute permission="reports:read"><GrowthInsights /></GuardedRoute>} />
               <Route path="/live" element={<GuardedRoute permission="reports:read"><LiveRadar /></GuardedRoute>} />
               <Route path="/imports" element={<GuardedRoute permission="imports:create"><Imports /></GuardedRoute>} />
+              <Route path="/exports" element={<GuardedRoute permission="exports:create"><Exports /></GuardedRoute>} />
+
+              {/* ── Settings + dev + content ─────────────────────── */}
               <Route path="/settings" element={<GuardedRoute permission="settings:read"><Settings /></GuardedRoute>} />
+              <Route path="/employees" element={<GuardedRoute permission="employees:view"><Employees /></GuardedRoute>} />
+              <Route path="/policies" element={<GuardedRoute permission="settings:read"><Policies /></GuardedRoute>} />
+              <Route path="/notifications" element={<GuardedRoute permission="notifications:view"><Notifications /></GuardedRoute>} />
+              <Route path="/ai-assistant" element={<GuardedRoute permission="settings:read"><AiAssistant /></GuardedRoute>} />
               <Route path="/theme" element={<GuardedRoute permission="theme:view"><ThemeEditor /></GuardedRoute>} />
               <Route path="/theme-store" element={<GuardedRoute permission="theme:view"><ThemeStore /></GuardedRoute>} />
-              <Route path="/employees" element={<GuardedRoute permission="employees:view"><Employees /></GuardedRoute>} />
-              <Route path="/compliance" element={<GuardedRoute permission="compliance:read"><Compliance /></GuardedRoute>} />
-              <Route path="/subscriptions" element={<GuardedRoute permission="subscriptions:view"><Subscriptions /></GuardedRoute>} />
-              <Route path="/notifications" element={<GuardedRoute permission="notifications:view"><Notifications /></GuardedRoute>} />
+              <Route path="/audit-logs" element={<GuardedRoute permission="stores:read"><AuditLogs /></GuardedRoute>} />
               <Route path="/api-keys" element={<GuardedRoute permission="api_keys:view"><ApiKeys /></GuardedRoute>} />
               <Route path="/migration" element={<GuardedRoute permission="settings:read"><MigrationHub /></GuardedRoute>} />
-              <Route path="/customers/segments" element={<GuardedRoute permission="customers:read"><CustomerSegments /></GuardedRoute>} />
-              <Route path="/channels" element={<GuardedRoute permission="settings:read"><Marketplaces /></GuardedRoute>} />
-              <Route path="/channels/sync-logs" element={<GuardedRoute permission="settings:read"><SyncLogs /></GuardedRoute>} />
-              <Route path="/channels/guide" element={<GuardedRoute permission="settings:read"><MarketplaceGuide /></GuardedRoute>} />
-              <Route path="/channels/listings" element={<GuardedRoute permission="settings:read"><MarketplaceListings /></GuardedRoute>} />
-              <Route path="/channels/hub" element={<Navigate to="/channels" replace />} />
-              <Route path="/channels/:provider" element={<GuardedRoute permission="settings:read"><MarketplaceDetail /></GuardedRoute>} />
-              <Route path="/catalog" element={<GuardedRoute permission="products:read"><CatalogHub /></GuardedRoute>} />
-              <Route path="/marketing" element={<GuardedRoute permission="promotions:read"><MarketingHub /></GuardedRoute>} />
-              <Route path="/sales" element={<GuardedRoute permission="orders:read"><SalesHub /></GuardedRoute>} />
-              <Route path="/finance" element={<GuardedRoute permission="wallet:read"><FinanceHub /></GuardedRoute>} />
-              <Route path="/marketing/actions" element={<GuardedRoute permission="promotions:read"><MarketingActions /></GuardedRoute>} />
-              <Route path="/whatsapp" element={<GuardedRoute permission="settings:read"><WhatsAppPage /></GuardedRoute>} />
-              <Route path="/loyalty" element={<GuardedRoute permission="promotions:read"><LoyaltyPage /></GuardedRoute>} />
-              {/* Deprecated path — old SMS notification link and any
-                  bookmarked merchant URL still arrive here. Forward
-                  to the canonical channels page. */}
-              <Route path="/settings/integrations" element={<Navigate to="/channels" replace />} />
-              <Route path="/ai-assistant" element={<GuardedRoute permission="settings:read"><AiAssistant /></GuardedRoute>} />
-              <Route path="/audit-logs" element={<GuardedRoute permission="stores:read"><AuditLogs /></GuardedRoute>} />
+
+              {/* ── Support ─────────────────────────────────────── */}
               <Route path="/support" element={<GuardedRoute permission="support:read"><Support /></GuardedRoute>} />
-              <Route path="/support/tickets" element={<Navigate to="/support" replace />} />
               <Route path="/support/tickets/:ticketId" element={<GuardedRoute permission="support:read"><SupportTicketDetail /></GuardedRoute>} />
+              <Route path="/support/tickets" element={<Navigate to="/support" replace />} />
               <Route path="/support/kb" element={<Navigate to="/support" replace />} />
+
+              {/* ── Backwards-compat redirects (old top-level paths
+                  ↦ new namespaced canonical). Every Navigate uses
+                  `replace` so the back button skips the old URL. */}
+              <Route path="/products" element={<Navigate to="/catalog/products" replace />} />
+              <Route path="/categories" element={<Navigate to="/catalog/categories" replace />} />
+              <Route path="/brands" element={<Navigate to="/catalog/brands" replace />} />
+              <Route path="/tags" element={<Navigate to="/catalog/tags" replace />} />
+              <Route path="/orders" element={<Navigate to="/sales/orders" replace />} />
+              <Route path="/orders/:orderId" element={<NavWithParams template="/sales/orders/:orderId" />} />
+              <Route path="/customers" element={<Navigate to="/sales/customers" replace />} />
+              <Route path="/customers/segments" element={<Navigate to="/sales/customers/segments" replace />} />
+              <Route path="/abandoned-carts" element={<Navigate to="/sales/abandoned-carts" replace />} />
+              <Route path="/shipping" element={<Navigate to="/sales/shipping" replace />} />
+              <Route path="/channels" element={<Navigate to="/sales/channels" replace />} />
+              <Route path="/channels/sync-logs" element={<Navigate to="/sales/channels/sync-logs" replace />} />
+              <Route path="/channels/guide" element={<Navigate to="/sales/channels/guide" replace />} />
+              <Route path="/channels/listings" element={<Navigate to="/sales/channels/listings" replace />} />
+              <Route path="/channels/hub" element={<Navigate to="/sales/channels" replace />} />
+              <Route path="/channels/:provider" element={<NavWithParams template="/sales/channels/:provider" />} />
+              <Route path="/promotions" element={<Navigate to="/marketing/promotions" replace />} />
+              <Route path="/coupons" element={<Navigate to="/marketing/coupons" replace />} />
+              <Route path="/loyalty" element={<Navigate to="/marketing/loyalty" replace />} />
+              <Route path="/whatsapp" element={<Navigate to="/marketing/whatsapp" replace />} />
+              <Route path="/wallet" element={<Navigate to="/finance/wallet" replace />} />
+              <Route path="/wallet/settlements" element={<Navigate to="/finance/settlements" replace />} />
+              <Route path="/wallet/settlements/:batchId" element={<NavWithParams template="/finance/settlements/:batchId" />} />
+              <Route path="/subscriptions" element={<Navigate to="/finance/subscriptions" replace />} />
+              <Route path="/compliance" element={<Navigate to="/finance/compliance" replace />} />
+              <Route path="/settings/integrations" element={<Navigate to="/sales/channels" replace />} />
             </Route>
           </Route>
           <Route path="*" element={<NotFound />} />

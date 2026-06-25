@@ -41,7 +41,7 @@ describe('CatalogHub — page', () => {
   });
 
   it('cross-links to every catalog-section page', () => {
-    for (const to of ['/products', '/categories', '/brands', '/tags', '/imports', '/exports']) {
+    for (const to of ['/catalog/products', '/catalog/categories', '/catalog/brands', '/catalog/tags', '/imports', '/exports']) {
       expect(HUB, `must link to ${to}`).toMatch(new RegExp(`to=['"]${to.replace(/\//g, '\\/')}['"]`));
     }
   });
@@ -61,7 +61,7 @@ describe('Route + sidebar wiring', () => {
 
   it('Sidebar lists "مركز الكتالوج" at the top of the Catalog group', () => {
     const hubIdx = SIDEBAR.indexOf("to: '/catalog'");
-    const productsIdx = SIDEBAR.indexOf("to: '/products'");
+    const productsIdx = SIDEBAR.indexOf("to: '/catalog/products'");
     expect(hubIdx).toBeGreaterThan(0);
     expect(productsIdx).toBeGreaterThan(hubIdx);
     expect(SIDEBAR).toMatch(/label:\s*['"]nav\.catalogHub['"]/);

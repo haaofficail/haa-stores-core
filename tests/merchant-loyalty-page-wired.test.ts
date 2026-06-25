@@ -25,14 +25,19 @@ describe('Merchant Loyalty page wiring (L-PR-4)', () => {
     expect(API).toMatch(/method:\s*['"]PUT['"]/);
   });
 
-  it('registers the /loyalty route guarded by promotions:read', () => {
+  it('registers the loyalty route guarded by promotions:read', () => {
+    // IA W3 (PR #241): canonical path moved from `/loyalty` to
+    // `/marketing/loyalty`. The old `/loyalty` still resolves via a
+    // <Navigate> redirect.
     expect(APP).toMatch(/lazy\(\(\)\s*=>\s*import\(['"]@\/pages\/Loyalty['"]\)\)/);
-    expect(APP).toMatch(/path="\/loyalty"[\s\S]*?permission="promotions:read"/);
+    expect(APP).toMatch(/path="\/marketing\/loyalty"[\s\S]*?permission="promotions:read"/);
+    // The legacy redirect must also remain in the route table.
+    expect(APP).toMatch(/path=['"]\/loyalty['"]\s+element=\{<Navigate\s+to=['"]\/marketing\/loyalty['"]\s+replace\s*\/>/);
   });
 
-  it('Sidebar has a /loyalty entry under marketing group (Coins icon)', () => {
+  it('Sidebar has a /marketing/loyalty entry under marketing group (Coins icon)', () => {
     expect(SIDEBAR).toMatch(/Coins,/);
-    expect(SIDEBAR).toMatch(/to:\s*['"]\/loyalty['"][^}]*icon:\s*Coins[^}]*permission:\s*['"]promotions:read['"]/);
+    expect(SIDEBAR).toMatch(/to:\s*['"]\/marketing\/loyalty['"][^}]*icon:\s*Coins[^}]*permission:\s*['"]promotions:read['"]/);
   });
 
   it('Loyalty.tsx uses messageFromError + Coins + the preview calculator', () => {
