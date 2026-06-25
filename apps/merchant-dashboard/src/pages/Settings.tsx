@@ -332,15 +332,20 @@ export default function SettingsPage() {
                   <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-200 bg-white text-sm text-neutral-600 cursor-pointer hover:bg-neutral-50 transition-colors">
                     <input
                       type="file"
-                      accept="image/*"
+                      // SVG intentionally excluded: SVGs can carry inline
+                      // <script> tags and execute in the storefront when
+                      // the logo is rendered. The server rejects SVG too
+                      // (defense in depth) — see packages/shared/src/media.ts
+                      // ALLOWED_MIME_TYPES.
+                      accept="image/jpeg,image/png,image/webp"
                       className="hidden"
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
                         const maxSize = 5 * 1024 * 1024;
-                        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+                        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
                         if (!allowedTypes.includes(file.type)) {
-                          toast.error(t('settings.invalidFileType', 'نوع الملف غير مدعوم. يرجى اختيار صورة'));
+                          toast.error(t('settings.invalidFileType', 'نوع الملف غير مدعوم. يرجى اختيار JPEG أو PNG أو WebP'));
                           return;
                         }
                         if (file.size > maxSize) {

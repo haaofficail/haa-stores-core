@@ -18,6 +18,30 @@ uploadsRouter.post('/', requirePermission('settings:update'), async (c) => {
   const buffer = Buffer.from(await file.arrayBuffer());
   const mimetype = file.type || 'image/png';
 
+  // Hard reject SVG with a clear error code. The downstream adapter
+  // also rejects SVG via its ALLOWED_MIME_TYPES whitelist (defense in
+  // depth) — duplicating the check here gives the merchant a specific
+  // message ("SVG is not allowed for security reasons") instead of a
+  // generic "Unsupported file type" wrapped by adapter validation.
+  //
+  // Why: SVG files can carry inline <script> elements that execute
+  // when the file is rendered as an image in the storefront. Even
+  // declared as image/png, a malicious SVG sniffed by the browser
+  // would XSS the merchant's customers. The whitelist + magic-byte
+  // check together close both attack vectors.
+  if (mimetype === 'image/svg+xml' || mimetype.includes('svg')) {
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'SVG_NOT_ALLOWED',
+          message: 'SVG uploads are not allowed. Please use JPEG, PNG, or WebP.',
+        },
+      },
+      400,
+    );
+  }
+
   try {
     const adapter = createMediaAdapter();
     const validationError = adapter.validateFile(buffer, mimetype);
