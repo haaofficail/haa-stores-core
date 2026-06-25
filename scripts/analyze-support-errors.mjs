@@ -1,103 +1,91 @@
-import { readFileSync, existsSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import {
+  countBy,
+  partitionOpsEvents,
+  readNdjsonEvents,
+  resolveOpsEventConfig,
+  topCounts,
+} from './ops-events.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
-const EVENTS_FILE = join(ROOT, 'storage', 'monitoring-events.ndjson')
-const SUPPORT_EVENTS_FILE = join(ROOT, 'storage', 'support-error-events.ndjson')
-
-function readEvents(filePath) {
-  if (!existsSync(filePath)) return []
-  const content = readFileSync(filePath, 'utf-8').trim()
-  if (!content) return []
-  return content.split('\n').filter(Boolean).map(line => {
-    try { return JSON.parse(line) } catch { return null }
-  }).filter(Boolean)
-}
+const EVENTS_FILE = process.env.HAA_OPS_MONITORING_EVENTS_FILE || join(ROOT, 'storage', 'monitoring-events.ndjson')
+const SUPPORT_EVENTS_FILE = process.env.HAA_OPS_SUPPORT_EVENTS_FILE || join(ROOT, 'storage', 'support-error-events.ndjson')
+const config = resolveOpsEventConfig()
 
 const events = [
-  ...readEvents(EVENTS_FILE),
-  ...readEvents(SUPPORT_EVENTS_FILE),
+  ...readNdjsonEvents(EVENTS_FILE, 'monitoring'),
+  ...readNdjsonEvents(SUPPORT_EVENTS_FILE, 'support'),
 ]
 
-console.log(`\nAnalyzing ${events.length} total events...\n`)
+const { actionableEvents, historicalEvents, passiveEvents } = partitionOpsEvents(events, config)
+
+console.log(`\nAnalyzing ${events.length} total events...`)
+console.log(`Active action window: last ${config.lookbackHours > 0 ? config.lookbackHours : 'all'} hour(s)`)
+console.log(`Actionable events in window: ${actionableEvents.length}`)
+console.log(`Historical events outside window: ${historicalEvents.length}`)
+console.log(`Passive pass/warn events ignored for recommendations: ${passiveEvents.length}\n`)
 
 // Counts by severity
 const bySeverity = { P0: 0, P1: 0, P2: 0, P3: 0, P4: 0 }
-for (const e of events) {
+for (const e of actionableEvents) {
   const s = e.severity || 'P3'
   bySeverity[s] = (bySeverity[s] || 0) + 1
 }
-console.log('=== Events by Severity ===')
+console.log('=== Actionable Events by Severity ===')
 for (const [sev, count] of Object.entries(bySeverity)) {
   if (count > 0) console.log(`  ${sev}: ${count}`)
 }
+if (Object.values(bySeverity).every(count => count === 0)) console.log('  None')
 
 // Top error codes
-const errorCodes = {}
-for (const e of events) {
-  if (e.errorCode) {
-    errorCodes[e.errorCode] = (errorCodes[e.errorCode] || 0) + 1
-  }
-}
-const topErrorCodes = Object.entries(errorCodes).sort((a, b) => b[1] - a[1]).slice(0, 5)
-console.log('\n=== Top Error Codes ===')
+const errorCodes = countBy(actionableEvents, event => event.errorCode)
+const topErrorCodes = topCounts(errorCodes, 5)
+console.log('\n=== Top Actionable Error Codes ===')
 for (const [code, count] of topErrorCodes) {
   console.log(`  ${code}: ${count}`)
 }
+if (topErrorCodes.length === 0) console.log('  None')
 
 // Top fingerprints
-const fingerprints = {}
-for (const e of events) {
-  if (e.fingerprint) {
-    fingerprints[e.fingerprint] = (fingerprints[e.fingerprint] || 0) + 1
-  }
-}
-const topFingerprints = Object.entries(fingerprints).sort((a, b) => b[1] - a[1]).slice(0, 5)
-console.log('\n=== Top Fingerprints ===')
+const fingerprints = countBy(actionableEvents, event => event.fingerprint)
+const topFingerprints = topCounts(fingerprints, 5)
+console.log('\n=== Top Actionable Fingerprints ===')
 for (const [fp, count] of topFingerprints) {
   console.log(`  ${fp}: ${count}`)
 }
+if (topFingerprints.length === 0) console.log('  None')
 
 // Top affected apps
-const apps = {}
-for (const e of events) {
-  if (e.app) {
-    apps[e.app] = (apps[e.app] || 0) + 1
-  }
-}
-const topApps = Object.entries(apps).sort((a, b) => b[1] - a[1]).slice(0, 5)
-console.log('\n=== Top Affected Apps ===')
+const apps = countBy(actionableEvents, event => event.app)
+const topApps = topCounts(apps, 5)
+console.log('\n=== Top Actionable Affected Apps ===')
 for (const [app, count] of topApps) {
   console.log(`  ${app}: ${count}`)
 }
+if (topApps.length === 0) console.log('  None')
 
 // Top affected routes
-const routes = {}
-for (const e of events) {
-  if (e.route || e.target) {
-    const key = e.route || e.target
-    routes[key] = (routes[key] || 0) + 1
-  }
-}
-const topRoutes = Object.entries(routes).sort((a, b) => b[1] - a[1]).slice(0, 5)
-console.log('\n=== Top Affected Routes/Targets ===')
+const routes = countBy(actionableEvents, event => event.route || event.target)
+const topRoutes = topCounts(routes, 5)
+console.log('\n=== Top Actionable Routes/Targets ===')
 for (const [route, count] of topRoutes) {
   console.log(`  ${route}: ${count}`)
 }
+if (topRoutes.length === 0) console.log('  None')
 
 // P0 alerts
-const p0s = events.filter(e => e.severity === 'P0')
+const p0s = actionableEvents.filter(e => e.severity === 'P0')
 if (p0s.length > 0) {
-  console.log(`\n🚨 P0 Alerts (${p0s.length}):`)
+  console.log(`\n🚨 Active P0 Alerts (${p0s.length}):`)
   for (const p0 of p0s) {
     console.log(`  [${p0.timestamp}] ${p0.message || 'No message'} — ${p0.target || ''}`)
   }
 }
 
 // P1 repeated
-const p1s = events.filter(e => e.severity === 'P1')
+const p1s = actionableEvents.filter(e => e.severity === 'P1')
 const p1ByCode = {}
 for (const p1 of p1s) {
   const code = p1.errorCode || 'UNKNOWN'
@@ -114,7 +102,7 @@ if (repeatedP1.length > 0) {
 // Repeated fingerprints (>=3)
 const repeatedFps = Object.entries(fingerprints).filter(([_, count]) => count >= 3)
 if (repeatedFps.length > 0) {
-  console.log(`\n🔍 Repeated Fingerprints (>=3) — Suggest Root Cause Analysis:`)
+  console.log(`\n🔍 Active Repeated Fingerprints (>=3) — Suggest Root Cause Analysis:`)
   for (const [fp, count] of repeatedFps) {
     console.log(`  ${fp}: ${count} times`)
   }

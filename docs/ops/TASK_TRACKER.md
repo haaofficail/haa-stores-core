@@ -4,6 +4,34 @@
 
 ---
 
+### TASK-0078: Fix noisy ops error analyzer active-window reporting
+
+- **Type:** Observability / Support/Ops
+- **Priority:** P1
+- **Status:** Done
+- **Created:** 2026-06-26
+- **Updated:** 2026-06-26
+- **Original Request:** "ليش يصير فشل كثير في الريبو ، لا تفترض افحص بعمق" then "نفذ مثل بروفيسور برمجة وتطوير في ابل"
+- **Expanded Requirement:** Stop `pnpm ops:errors` and `pnpm ops:monitor:report` from recommending incidents/RCA or Critical status from stale historical logs, passive health-check pass events, or warnings that have since recovered. Keep historical counts visible, but base recommendations only on recent actionable events and base report health on the latest result per check target.
+- **Problem:** `scripts/analyze-support-errors.mjs` and `scripts/generate-monitoring-report.mjs` each had their own event-classification logic. Both analyzed every event forever; the report also counted any warning inside the active window even after a later pass for the same target. This made old P0/support fingerprints and recovered local runtime warnings look like current failures.
+- **Scope:** shared ops event classification, analyzer, monitoring report generator, targeted analyzer/report tests, ops docs.
+- **Out of Scope:** Runtime API/storefront startup, lint warning cleanup, log truncation/archive, production monitoring.
+- **Skills Used:** `evidence-led-reporting`, `verification-before-completion`, `regression-safety-gate`, `acceptance-criteria-gate`.
+- **Acceptance Criteria:**
+  - [x] Stale P0/support errors outside the active window do not produce incident/RCA recommendations.
+  - [x] Recent repeated support fingerprints still produce RCA recommendations.
+  - [x] Passive monitoring pass events do not rank as affected routes/targets.
+  - [x] Analyzer and report generator share one classification module so the same bug cannot recur in parallel scripts.
+  - [x] Monitoring report health uses the latest result per check target, so recovered warnings do not keep the report degraded.
+  - [x] Current local `pnpm ops:errors` reports no recommended incidents/tasks when only stale history and passive warnings exist.
+  - [x] Current local `pnpm ops:monitor:report` reports `Overall Status: Healthy` after API/storefront/dashboard checks pass.
+- **Test Plan:** `pnpm vitest run tests/ops-errors-analyzer.test.ts`; `pnpm ops:errors`; `pnpm ops:monitor`; `pnpm ops:monitor:report`; `pnpm preflight`; `git diff --check`.
+- **Test Results:** Targeted analyzer/report tests pass (6/6). `pnpm ops:errors` reports no recommended tasks/incidents. `pnpm ops:monitor` reports all runtime checks passing after local dev servers are running. `pnpm ops:monitor:report` reports `Overall Status: Healthy`.
+- **Files Changed:** `scripts/ops-events.mjs`, `scripts/analyze-support-errors.mjs`, `scripts/generate-monitoring-report.mjs`, `tests/ops-errors-analyzer.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/LATEST_MONITORING_REPORT.md`.
+- **Related Issues:** ISSUE-0020.
+
+---
+
 ### TASK-0077: Staging login deep audit + closure (PRs #55 → #60)
 
 - **Type:** Quality / UX / Security (multi-area)

@@ -1,80 +1,71 @@
 # Latest Monitoring Report
 
-- **Generated At:** 2026-06-13T06:45:21.130Z
+- **Generated At:** 2026-06-25T23:05:31.647Z
 - **Overall Status:** Healthy
-- **Period Events Analyzed:** 617
+- **Active Window:** last 24 hour(s)
+- **Total Events Available:** 1599
+- **Window Events Analyzed:** 56
+- **Actionable Events:** 0
+- **Historical Events Ignored for Recommendations:** 1543
+- **Passive Pass/Warn Events Ignored for Recommendations:** 56
 
 ---
 
-## P0 Alerts
+## Active P0 Alerts
 
-*None*
+_None_
 
-## P1 Alerts
+## Active P1 Alerts
 
-*None*
+_None_
 
-## Health Summary
+## Active Window Health Summary
 
-| Metric | Count |
-|--------|------:|
-| Pass | 616 |
-| Warning | 0 |
-| Fail | 0 |
-| Total | 617 |
+| Metric          | Count |
+| --------------- | ----: |
+| Pass            |    28 |
+| Warning         |     0 |
+| Fail            |     0 |
+| Current checks  |    28 |
+| Total in window |    56 |
 
 ## Synthetic Checks Summary
 
-| Target | Status |
-|--------|--------|
-| api-health | pass |
-| dashboard-root | pass |
-| storefront-home | pass |
-| api-health | pass |
-| dashboard-root | pass |
-| storefront-home | pass |
-| api-health | pass |
-| dashboard-root | pass |
-| storefront-home | pass |
-| api-health | pass |
+| Target          | Status |
+| --------------- | ------ |
+| api-health      | pass   |
+| dashboard-root  | pass   |
+| storefront-home | pass   |
 
-## Top Repeated Error Codes
+## Top Active Error Codes
 
 | Code | Count |
-|------|------:|
-| ORDER-001 | 1 |
+| ---- | ----: |
+| None |     0 |
 
-## Top Affected Apps
+## Top Active Affected Apps
 
-| App | Events |
-|-----|-------:|
-| api | 132 |
-| merchant-dashboard | 132 |
-| storefront | 132 |
-| admin-dashboard | 88 |
-| worker | 1 |
+| App  | Events |
+| ---- | -----: |
+| None |      0 |
 
-## Top Affected Routes / Targets
+## Top Active Routes / Targets
 
 | Route | Events |
-|-------|-------:|
-| package.json exists | 22 |
-| pnpm-workspace.yaml exists | 22 |
-| apps directory exists | 22 |
-| packages directory exists | 22 |
-| AGENTS.md exists | 22 |
+| ----- | -----: |
+| None  |      0 |
 
-## Suspected Root Causes
+## Active Suspected Root Causes
 
-- Fingerprint `ORDER-001::system::/dashboard/webhooks::simulated_ORDER-001_error` repeated 1 times
+_None identified_
 
 ## Recommended Tasks
 
-*None*
+_None_
 
 ## Recommended Incidents
 
-*None*
+_None_
 
 ## Next Actions
 
