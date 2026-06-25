@@ -3,15 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { settingsApi, categoriesApi, type StoreConfig } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Settings as SettingsIcon, Store, Phone, CreditCard, Truck, Wallet,
   Loader2, Info, ExternalLink,
-  Globe, MapPin, Eye, EyeOff, Gift, Package,
-  Ruler, MessageCircle, Clock, ShoppingCart,
+  Eye, EyeOff, Gift, Package,
+  Ruler,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api';
@@ -26,6 +24,8 @@ const GiftTab = lazy(() => import('./settings/tabs/GiftTab'));
 const PickupTab = lazy(() => import('./settings/tabs/PickupTab'));
 const SizesTab = lazy(() => import('./settings/tabs/SizesTab'));
 const InfoTab = lazy(() => import('./settings/tabs/InfoTab'));
+const ContactTab = lazy(() => import('./settings/tabs/ContactTab'));
+const GeneralTab = lazy(() => import('./settings/tabs/GeneralTab'));
 
 function TabFallback() {
   return (
@@ -44,11 +44,6 @@ function SectionHeader({ title, description }: { title: string; description?: st
       {description && <p className="text-sm text-neutral-500 mt-1">{description}</p>}
     </div>
   );
-}
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="text-xs text-red-500 mt-1">{message}</p>;
 }
 
 export default function SettingsPage() {
@@ -318,181 +313,33 @@ export default function SettingsPage() {
           </Suspense>
         </TabsContent>
 
+        {/* Contact Tab — lazy-loaded (W4 slice 4b) */}
         <TabsContent value="contact" className="space-y-4">
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
-            <SectionHeader title={t('settings.sectionContact')} description={t('settings.sectionContactDesc')} />
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-sm text-neutral-500">{t('settings.phone')}</Label>
-                <Input value={form.phone} onChange={e => updateField('phone', e.target.value)} dir="ltr" className="text-end h-9 text-sm" placeholder="+966..." />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm text-neutral-500">{t('settings.email')}</Label>
-                <Input value={form.email} onChange={e => updateField('email', e.target.value)} dir="ltr" className="text-end h-9 text-sm" placeholder="store@example.com" />
-                <FieldError message={errors.email} />
-              </div>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-5">
-                <div className="flex items-start gap-3">
-                  <div className="p-2.5 rounded-xl bg-neutral-100 text-neutral-400"><Globe className="h-4 w-4" /></div>
-                  <div className="flex-1">
-                    <p className="font-bold text-sm text-neutral-900">{t('settings.socialPlaceholder')}</p>
-                    <p className="text-sm text-neutral-400 mt-1">{t('settings.socialLinksHint', 'تعديل روابط التواصل من محرر الثيم')}</p>
-                    <a href="/theme" className="inline-flex items-center gap-1 text-sm text-primary-500 hover:underline mt-2">
-                      {t('settings.openThemeEditor', 'فتح محرر الثيم')} <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
-                </div>
-              </div>
-              {storeConfigLoading ? (
-                <Skeleton className="h-28 rounded-3xl" />
-              ) : (
-                <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2.5 rounded-xl bg-neutral-100 text-neutral-400"><MapPin className="h-4 w-4" /></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm text-neutral-900 mb-2">{t('settings.addressPlaceholder')}</p>
-                      <div className="space-y-2">
-                        <input type="text" value={storeConfig.city ?? ''}
-                          onChange={e => setStoreConfig(p => ({ ...p, city: e.target.value || null }))}
-                          className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                          placeholder={t('settings.cityPlaceholder', 'المدينة')} />
-                        <input type="text" value={storeConfig.district ?? ''}
-                          onChange={e => setStoreConfig(p => ({ ...p, district: e.target.value || null }))}
-                          className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                          placeholder={t('settings.districtPlaceholder', 'الحي')} />
-                        <input type="text" value={storeConfig.street ?? ''}
-                          onChange={e => setStoreConfig(p => ({ ...p, street: e.target.value || null }))}
-                          className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                          placeholder={t('settings.streetPlaceholder', 'الشارع')} />
-                        <input type="text" value={storeConfig.postalCode ?? ''}
-                          onChange={e => setStoreConfig(p => ({ ...p, postalCode: e.target.value || null }))}
-                          className="w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                          placeholder={t('settings.postalCodePlaceholder', 'الرمز البريدي')} />
-                      </div>
-                      <div className="flex justify-end gap-2 mt-2">
-                        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => settingsApi.getStoreConfig(storeId!).then((data) => setStoreConfig(data as StoreConfig))}>
-                          {t('common.cancel')}
-                        </Button>
-                        <PermissionGate permission="settings:update"><Button size="sm" className="h-7 text-xs" onClick={async () => {
-                          if (!storeId) return;
-                          try {
-                            const updated = await settingsApi.updateStoreConfig(storeId, {
-                              city: storeConfig.city, district: storeConfig.district,
-                              street: storeConfig.street, postalCode: storeConfig.postalCode,
-                            }) as Partial<StoreConfig>;
-                            setStoreConfig(prev => ({ ...prev, ...updated }));
-                            toast.success(t('settings.saved'));
-                          } catch { toast.error(t('common.error')); }
-                        }}>
-                          {t('common.save')}
-                        </Button></PermissionGate>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <Suspense fallback={<TabFallback />}>
+            <ContactTab
+              form={form}
+              errors={errors}
+              updateField={updateField}
+              storeConfig={storeConfig}
+              setStoreConfig={setStoreConfig}
+              storeConfigLoading={storeConfigLoading}
+              storeId={storeId}
+            />
+          </Suspense>
         </TabsContent>
 
+        {/* General Tab — lazy-loaded (W4 slice 4c) */}
         <TabsContent value="general" className="space-y-4">
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card p-6">
-            <SectionHeader title={t('settings.sectionGeneral')} description={t('settings.sectionGeneralDesc')} />
-            {storeConfigLoading ? (
-              <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)}</div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2.5 rounded-xl bg-neutral-100 text-neutral-400"><MessageCircle className="h-4 w-4" /></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-bold text-sm text-neutral-900">{t('settings.welcomeMessage')}</p>
-                      <label className="flex items-center gap-2 text-xs text-neutral-500 cursor-pointer shrink-0">
-                        <input type="checkbox" checked={storeConfig.welcomeMessageEnabled}
-                          onChange={e => setStoreConfig(p => ({ ...p, welcomeMessageEnabled: e.target.checked }))}
-                          className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
-                        {t('common.enabled', 'مفعل')}
-                      </label>
-                    </div>
-                    <textarea value={storeConfig.welcomeMessage ?? ''}
-                      onChange={e => setStoreConfig(p => ({ ...p, welcomeMessage: e.target.value || null }))}
-                      className="mt-2 w-full border border-neutral-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                      rows={2} maxLength={500}
-                      placeholder={t('settings.welcomeMessagePlaceholder', 'رسالة ترحيبية تظهر للعملاء...')} />
-                    <p className="text-xs text-neutral-400 mt-1">{t('settings.welcomeMessageHint', 'تظهر في صفحة المتجر الرئيسية')}</p>
-                  </div>
-                </div>
-
-                <hr className="border-neutral-100" />
-
-                <div className="flex items-start gap-3">
-                  <div className="p-2.5 rounded-xl bg-neutral-100 text-neutral-400"><Clock className="h-4 w-4" /></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-bold text-sm text-neutral-900">{t('settings.prepTime')}</p>
-                      <label className="flex items-center gap-2 text-xs text-neutral-500 cursor-pointer shrink-0">
-                        <input type="checkbox" checked={storeConfig.preparationTimeEnabled}
-                          onChange={e => setStoreConfig(p => ({ ...p, preparationTimeEnabled: e.target.checked }))}
-                          className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
-                        {t('common.enabled', 'مفعل')}
-                      </label>
-                    </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <input type="number" min={0} max={365} value={storeConfig.preparationTime}
-                        onChange={e => setStoreConfig(p => ({ ...p, preparationTime: Math.max(0, parseInt(e.target.value) || 0) }))}
-                        className="w-20 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-primary-500" />
-                      <span className="text-sm text-neutral-500">{t('settings.prepTimeUnit', 'أيام')}</span>
-                    </div>
-                    <p className="text-xs text-neutral-400 mt-1">{t('settings.prepTimeHint', 'الوقت المتوقع لتجهيز الطلب قبل الشحن')}</p>
-                  </div>
-                </div>
-
-                <hr className="border-neutral-100" />
-
-                <div className="flex items-start gap-3">
-                  <div className="p-2.5 rounded-xl bg-neutral-100 text-neutral-400"><ShoppingCart className="h-4 w-4" /></div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-bold text-sm text-neutral-900">{t('settings.minOrder')}</p>
-                      <label className="flex items-center gap-2 text-xs text-neutral-500 cursor-pointer shrink-0">
-                        <input type="checkbox" checked={storeConfig.minOrderEnabled}
-                          onChange={e => setStoreConfig(p => ({ ...p, minOrderEnabled: e.target.checked }))}
-                          className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />
-                        {t('common.enabled', 'مفعل')}
-                      </label>
-                    </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <input type="number" min={0} step={0.01} value={Number(storeConfig.minOrderAmount)}
-                        onChange={e => setStoreConfig(p => ({ ...p, minOrderAmount: e.target.value || '0' }))}
-                        className="w-24 border border-neutral-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-1 focus:ring-primary-500" />
-                      <span className="text-sm text-neutral-500">SAR</span>
-                    </div>
-                    <p className="text-xs text-neutral-400 mt-1">{t('settings.minOrderHint', 'الحد الأدنى لقيمة الطلب ليتم تأكيده')}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-neutral-100">
-              <Button variant="outline" className="h-9 text-sm" onClick={() => settingsApi.getStoreConfig(storeId!).then((data) => setStoreConfig(data as StoreConfig))}>
-                {t('common.cancel')}
-              </Button>
-              <PermissionGate permission="settings:update"><Button className="h-9 text-sm" disabled={storeConfigSaving || storeConfigLoading} onClick={async () => {
-                if (!storeId) return;
-                setStoreConfigSaving(true);
-                try {
-                  const updated = await settingsApi.updateStoreConfig(storeId, storeConfig) as StoreConfig;
-                  setStoreConfig(updated);
-                  toast.success(t('settings.saved'));
-                } catch { toast.error(t('common.error')); }
-                finally { setStoreConfigSaving(false); }
-              }}>
-                {storeConfigSaving && <Loader2 className="h-4 w-4 me-2 animate-spin" />}
-                {storeConfigSaving ? t('common.saving') : t('common.save')}
-              </Button></PermissionGate>
-            </div>
-          </div>
+          <Suspense fallback={<TabFallback />}>
+            <GeneralTab
+              storeConfig={storeConfig}
+              setStoreConfig={setStoreConfig}
+              storeConfigLoading={storeConfigLoading}
+              storeConfigSaving={storeConfigSaving}
+              setStoreConfigSaving={setStoreConfigSaving}
+              storeId={storeId}
+            />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="payment" className="space-y-4">
