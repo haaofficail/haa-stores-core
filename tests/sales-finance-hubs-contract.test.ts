@@ -58,7 +58,7 @@ describe('SalesHub', () => {
   });
 
   it('cross-links to every sales-section page', () => {
-    for (const to of ['/orders', '/customers', '/abandoned-carts', '/shipping', '/channels', '/products']) {
+    for (const to of ['/sales/orders', '/sales/customers', '/sales/abandoned-carts', '/sales/shipping', '/sales/channels', '/catalog/products']) {
       expect(SALES, `must link to ${to}`).toMatch(new RegExp(`to=['"]${to.replace(/\//g, '\\/')}['"]`));
     }
   });
@@ -88,7 +88,7 @@ describe('FinanceHub', () => {
   });
 
   it('cross-links to every finance-section page', () => {
-    for (const to of ['/wallet', '/wallet/settlements', '/subscriptions', '/compliance']) {
+    for (const to of ['/finance/wallet', '/finance/settlements', '/finance/subscriptions', '/finance/compliance']) {
       expect(FINANCE, `must link to ${to}`).toMatch(new RegExp(`to=['"]${to.replace(/\//g, '\\/')}['"]`));
     }
   });
@@ -107,7 +107,7 @@ describe('Route + sidebar wiring', () => {
 
   it('Sidebar lists Sales Hub at the top of the Sales group', () => {
     const hubIdx = SIDEBAR.indexOf("to: '/sales'");
-    const ordersIdx = SIDEBAR.indexOf("to: '/orders'");
+    const ordersIdx = SIDEBAR.indexOf("to: '/sales/orders'");
     expect(hubIdx).toBeGreaterThan(0);
     expect(ordersIdx).toBeGreaterThan(hubIdx);
     expect(SIDEBAR).toMatch(/label:\s*['"]nav\.salesHub['"]/);
@@ -115,7 +115,7 @@ describe('Route + sidebar wiring', () => {
 
   it('Sidebar lists Finance Hub at the top of the Finance group', () => {
     const hubIdx = SIDEBAR.indexOf("to: '/finance'");
-    const walletIdx = SIDEBAR.indexOf("to: '/wallet'");
+    const walletIdx = SIDEBAR.indexOf("to: '/finance/wallet'");
     expect(hubIdx).toBeGreaterThan(0);
     expect(walletIdx).toBeGreaterThan(hubIdx);
     expect(SIDEBAR).toMatch(/label:\s*['"]nav\.financeHub['"]/);

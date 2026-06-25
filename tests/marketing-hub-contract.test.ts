@@ -49,7 +49,7 @@ describe('MarketingHub — page', () => {
   });
 
   it('cross-links to all 6 marketing pages', () => {
-    for (const to of ['/promotions', '/coupons', '/loyalty', '/whatsapp', '/abandoned-carts', '/marketing/actions']) {
+    for (const to of ['/marketing/promotions', '/marketing/coupons', '/marketing/loyalty', '/marketing/whatsapp', '/sales/abandoned-carts', '/marketing/actions']) {
       expect(HUB, `must link to ${to}`).toMatch(new RegExp(`to=['"]${to.replace(/\//g, '\\/')}['"]`));
     }
   });
@@ -71,7 +71,7 @@ describe('MarketingHub — route + nav wiring', () => {
     // The Hub item must appear BEFORE the leaf items so the merchant
     // lands on overview first.
     const hubIdx = SIDEBAR.indexOf("to: '/marketing'");
-    const promosIdx = SIDEBAR.indexOf("to: '/promotions'");
+    const promosIdx = SIDEBAR.indexOf("to: '/marketing/promotions'");
     expect(hubIdx).toBeGreaterThan(0);
     expect(promosIdx).toBeGreaterThan(hubIdx);
     expect(SIDEBAR).toMatch(/label:\s*['"]nav\.marketingHub['"]/);

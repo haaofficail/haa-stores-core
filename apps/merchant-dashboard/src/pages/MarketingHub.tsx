@@ -215,7 +215,7 @@ export default function MarketingHub() {
               'marketing.hub.tools.promotions.description',
               'أنشئ تخفيضات موسمية أو حملات بالنسبة المئوية، وأطلقها على شريحة محددة من منتجاتك.',
             )}
-            to="/promotions"
+            to="/marketing/promotions"
             cta={t('marketing.hub.tools.promotions.cta', 'فتح العروض')}
           />
           <HubCard
@@ -226,7 +226,7 @@ export default function MarketingHub() {
               'marketing.hub.tools.coupons.description',
               'كوبونات خصم بأكواد قابلة للمشاركة، بحدود استخدام وفترات صلاحية.',
             )}
-            to="/coupons"
+            to="/marketing/coupons"
             cta={t('marketing.hub.tools.coupons.cta', 'فتح الكوبونات')}
           />
           <HubCard
@@ -237,7 +237,7 @@ export default function MarketingHub() {
               'marketing.hub.tools.loyalty.description',
               'نقاط مكسب على كل شراء، يستبدلها العميل في طلباته القادمة لزيادة معدل التكرار.',
             )}
-            to="/loyalty"
+            to="/marketing/loyalty"
             cta={t('marketing.hub.tools.loyalty.cta', 'إعدادات الولاء')}
           />
           <HubCard
@@ -248,7 +248,7 @@ export default function MarketingHub() {
               'marketing.hub.tools.whatsapp.description',
               'تواصل مباشر مع عملائك عبر واتساب لاسترداد السلال أو إعلان العروض.',
             )}
-            to="/whatsapp"
+            to="/marketing/whatsapp"
             cta={t('marketing.hub.tools.whatsapp.cta', 'فتح الواتساب')}
           />
           <HubCard
@@ -259,7 +259,7 @@ export default function MarketingHub() {
               'marketing.hub.tools.abandoned.description',
               'العملاء الذين تركوا سلالهم — تابعهم تلقائياً عبر بريد الاسترداد المُفعّل.',
             )}
-            to="/abandoned-carts"
+            to="/sales/abandoned-carts"
             cta={t('marketing.hub.tools.abandoned.cta', 'عرض السلال')}
           />
           <HubCard

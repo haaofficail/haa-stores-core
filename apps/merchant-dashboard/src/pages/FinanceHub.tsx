@@ -114,7 +114,7 @@ export default function FinanceHub() {
               'finance.hub.tools.wallet.description',
               'الرصيد والمعاملات — كل قيود الإيرادات والخصومات والرسوم.',
             )}
-            to="/wallet"
+            to="/finance/wallet"
             cta={t('finance.hub.tools.wallet.cta', 'فتح المحفظة')}
           />
           <HubCard
@@ -125,7 +125,7 @@ export default function FinanceHub() {
               'finance.hub.tools.settlements.description',
               'طلبات صرف الرصيد إلى حسابك البنكي وحالة كل تحويل.',
             )}
-            to="/wallet/settlements"
+            to="/finance/settlements"
             cta={t('finance.hub.tools.settlements.cta', 'عرض التسويات')}
           />
           <HubCard
@@ -136,7 +136,7 @@ export default function FinanceHub() {
               'finance.hub.tools.subscription.description',
               'خطتك الحالية، تاريخ الفواتير، والترقية أو التخفيض.',
             )}
-            to="/subscriptions"
+            to="/finance/subscriptions"
             cta={t('finance.hub.tools.subscription.cta', 'إدارة الاشتراك')}
           />
           <HubCard
@@ -147,7 +147,7 @@ export default function FinanceHub() {
               'finance.hub.tools.compliance.description',
               'السجل التجاري، الرقم الضريبي، وحساب البنك — متطلبات الإطلاق وZATCA.',
             )}
-            to="/compliance"
+            to="/finance/compliance"
             cta={t('finance.hub.tools.compliance.cta', 'فتح التحقق')}
           />
         </div>
