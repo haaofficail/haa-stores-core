@@ -28,7 +28,11 @@ describe('Manual settlement review workflow', () => {
   });
 
   it('adds merchant and admin settlement APIs', () => {
-    expect(walletRoutes).toContain("walletRouter.post('/payouts/request'");
+    // Regex tolerant of single-line and multi-line `.post(...)` formatting.
+    // The route registration was reformatted to multi-line in PR #217
+    // (idempotency-key middleware) — the route still exists, just spans
+    // multiple source lines now.
+    expect(walletRoutes).toMatch(/walletRouter\.post\(\s*['"]\/payouts\/request['"]/);
     expect(walletRoutes).toContain("walletRouter.get('/payouts/:payoutId'");
     expect(adminRoutes).toContain("'/settlements/manual-payouts'");
     expect(adminRoutes).toContain("'/settlements/manual-payouts/:payoutId/approve'");
