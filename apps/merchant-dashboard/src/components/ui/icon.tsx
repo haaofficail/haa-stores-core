@@ -10,9 +10,10 @@
 // this file from the count (WRAPPER_FILES set).
 //
 // Two call shapes:
-//   <Icon icon={Bell} />                  — pass a lucide ref
-//   <Icon icon={Bell} size="md" />        — with a token size
-//   <Icon icon={Bell} className="…" />    — extra classes
+//   <Icon name="Bell" />                  — registry name (preferred; new code)
+//   <Icon icon={Bell} />                  — lucide ref (legacy; in-flight migration)
+//   <Icon name="Bell" size="md" />
+//   <Icon name="Bell" className="…" />
 //
 // Size tokens (matches storefront for cross-app consistency):
 //   3xs  10px    inline badge
@@ -26,6 +27,9 @@
 //   2xl  64px    illustration
 
 import { type LucideIcon } from 'lucide-react';
+import { MERCHANT_ICON_REGISTRY, type MerchantIconName } from './icon-registry';
+
+export type { MerchantIconName };
 
 export type IconSize =
   | '3xs' | '2xs' | 'xs' | 'sm' | 'md' | 'default' | 'lg' | 'xl' | '2xl';
@@ -42,27 +46,31 @@ const sizeMap: Record<IconSize, string> = {
   '2xl': 'h-16 w-16',
 };
 
-interface IconProps {
-  icon: LucideIcon;
+type CommonProps = {
   size?: IconSize;
   className?: string;
   style?: React.CSSProperties;
   'aria-hidden'?: boolean | 'true' | 'false';
   'aria-label'?: string;
-}
+};
+type IconByName = CommonProps & { name: MerchantIconName; icon?: never };
+type IconByRef = CommonProps & { icon: LucideIcon; name?: never };
+type IconProps = IconByName | IconByRef;
 
-export function Icon({
-  icon: LucideRef,
-  size = 'default',
-  className = '',
-  style,
-  ...rest
-}: IconProps) {
+export function Icon(props: IconProps) {
+  const { size = 'default', className = '', style, ...rest } = props;
+  const Resolved: LucideIcon = 'name' in props && props.name
+    ? MERCHANT_ICON_REGISTRY[props.name]
+    : (props as IconByRef).icon;
+  // Strip discriminant props before spreading to the DOM element.
+  const { name: _name, icon: _icon, ...domProps } = rest as Record<string, unknown>;
+  void _name;
+  void _icon;
   return (
-    <LucideRef
+    <Resolved
       className={`${sizeMap[size]} shrink-0 ${className}`}
       style={style}
-      {...rest}
+      {...domProps}
     />
   );
 }

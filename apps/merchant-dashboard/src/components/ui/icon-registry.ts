@@ -1,0 +1,29 @@
+// SANCTIONED REGISTRY — ISSUE-0009 (merchant-dashboard).
+//
+// Mirror of apps/storefront/src/components/ui/icon-registry.ts. Holds every
+// lucide icon used in merchant-dashboard, keyed by PascalCase name. Feature
+// code no longer imports `lucide-react` directly — it passes a string name to
+// `<Icon name="Bell" />` from `@/components/ui/icon`. The registry is the
+// only file (besides the Icon wrapper) that touches lucide.
+//
+// Adding a new icon? Import it from lucide-react here and add it to the
+// map. The exported `IconName` union picks up the keys automatically, so
+// TypeScript will fail if a feature file uses an unregistered name.
+//
+// Bundle note: every icon in this registry is bundled wherever the Icon
+// component is loaded. Keep the list scoped to icons actually used.
+
+import {
+  AlertTriangle, ArrowLeft, Bell, CheckCircle2, Clock, Lock, LogOut,
+  Mail, MessageSquare, Phone, Settings as SettingsIcon, Shield, Smartphone,
+  User, XCircle,
+  type LucideIcon,
+} from 'lucide-react';
+
+export const MERCHANT_ICON_REGISTRY = {
+  AlertTriangle, ArrowLeft, Bell, CheckCircle2, Clock, Lock, LogOut,
+  Mail, MessageSquare, Phone, SettingsIcon, Shield, Smartphone,
+  User, XCircle,
+} as const satisfies Record<string, LucideIcon>;
+
+export type MerchantIconName = keyof typeof MERCHANT_ICON_REGISTRY;
