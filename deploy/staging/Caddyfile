@@ -1,40 +1,19 @@
 # Haa Stores — Staging reverse proxy (Caddy v2)
 # ---------------------------------------------------------------------------
-# Automatic HTTPS (Let's Encrypt) for the three staging hostnames. Requires
-# DNS A records pointing each name at the staging server and ports 80/443 open:
-#
-#   staging.haastores.com           A   72.61.108.208
-#   admin.staging.haastores.com     A   72.61.108.208
-#   merchant.staging.haastores.com  A   72.61.108.208
-#
-# The SPA images are built with VITE_API_URL=/api, so each frontend calls the
-# API under the /api/* prefix on its own origin. Caddy strips /api and forwards
-# to the api service; /health is proxied for the deploy health check; everything
-# else is served by the SPA. This avoids the /s/:slug path collision between the
-# storefront's API endpoints and its client-side page routes.
+# The staging server is currently also the official Haa Stores target. Public
+# Haa-owned hostnames must be declared explicitly before the catch-all :443
+# custom-domain block; otherwise Caddy treats them as merchant custom domains
+# and the TLS ask gate can reject certificate issuance.
 
 {
 	email haa.officail@gmail.com
 
-	# On-demand TLS for merchant custom domains (QA Custom Domain). Before
-	# issuing a Let's Encrypt cert for an unknown host, Caddy asks the API;
-	# it returns 200 only for an ACTIVE custom domain, which blocks
-	# cert-exhaustion abuse from arbitrary hostnames. The `ask` gate IS the
-	# rate-limit: the API rejects unknown/inactive hosts before Caddy ever
-	# touches ACME, so `interval`/`burst` (removed in Caddy v2.5+) are not
-	# needed here. If we ever need true per-IP throttling, add the
-	# caddy-rate-limit plugin and wire it on the cert-issuance path explicitly.
 	on_demand_tls {
 		ask http://api:3001/internal/tls-check
 	}
 }
 
 (security_headers) {
-	# Edge-level security headers. Defined on Caddy because the SPA nginx
-	# `add_header` directives are silently overridden by per-location
-	# blocks (nginx inheritance gotcha) — moving them up here guarantees
-	# every response carries them regardless of which nginx location
-	# served the request.
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		X-Frame-Options "SAMEORIGIN"
@@ -47,7 +26,6 @@
 }
 
 (admin_security_headers) {
-	# Admin gets the stricter set — DENY framing + no-referrer.
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		X-Frame-Options "DENY"
@@ -60,8 +38,6 @@
 }
 
 (spa_site) {
-	# Deploy health check + API. handle_path strips the /api prefix before
-	# proxying, so /api/s/x -> api:/s/x.
 	handle /health* {
 		reverse_proxy api:3001
 	}
@@ -69,6 +45,44 @@
 		reverse_proxy api:3001
 	}
 	encode gzip zstd
+}
+
+www.haastores.com {
+	redir https://haastores.com{uri} permanent
+}
+
+haastores.com {
+	import security_headers
+	import spa_site
+	handle {
+		reverse_proxy storefront:80
+	}
+}
+
+admin.haastores.com {
+	import admin_security_headers
+	import spa_site
+	handle {
+		reverse_proxy admin-dashboard:80
+	}
+}
+
+merchant.haastores.com {
+	import security_headers
+	import spa_site
+	handle {
+		reverse_proxy merchant-dashboard:80
+	}
+}
+
+dashboard.haastores.com {
+	redir https://merchant.haastores.com{uri} permanent
+}
+
+api.haastores.com {
+	import security_headers
+	encode gzip zstd
+	reverse_proxy api:3001
 }
 
 staging.haastores.com {
@@ -95,10 +109,6 @@ merchant.staging.haastores.com {
 	}
 }
 
-# Merchant custom domains (QA Custom Domain). Any host NOT matched above is a
-# candidate custom domain: serve the storefront SPA with on-demand TLS. The
-# SPA bootstraps the right store via GET /api/resolve-host (Host header). The
-# on_demand ask gate above ensures certs are only issued for active domains.
 :443 {
 	tls {
 		on_demand
