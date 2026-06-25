@@ -365,10 +365,11 @@ export function OrderDetailDialog(props: OrderDetailDialogProps) {
                     if (url) window.open(url, '_blank');
                     return;
                   }
-                  if (action.key === 'resend_tracking') {
-                    toast.success(t('orders.trackingResent', 'تم إعادة إرسال بيانات الشحن'));
-                    return;
-                  }
+                  // `resend_tracking` handler removed with the action
+                  // itself (see lib/order-actions.ts comment). The old
+                  // handler showed a success toast without any API
+                  // call, which misled merchants into thinking the
+                  // tracking notification had been re-sent.
                   // COD actions
                   if (action.key === 'collect_payment') {
                     if (!storeId) return;

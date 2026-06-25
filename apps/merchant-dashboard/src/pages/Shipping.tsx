@@ -835,7 +835,14 @@ function ShippingStatusSection({ storeId, onTabChange }: { storeId: number; onTa
         <div className="flex items-center justify-between mb-3">
           <p className="font-bold text-sm text-neutral-900">{t('shipping.haaShipping')}</p>
           {isMock ? (
-            <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs">{t('shipping.mockStatus')}</Badge>
+            // Audit P0 #12 (2026-06-25): the green/success styling
+            // told the merchant "everything is fine" when in fact the
+            // shipping rates are stubbed/fake. Switched to amber +
+            // explicit "تجريبي" wording so the merchant knows not to
+            // ship real orders against these rates.
+            <Badge className="bg-amber-50 text-amber-700 border-amber-200 text-xs">
+              {t('shipping.mockStatusBadge', 'وضع تجريبي')}
+            </Badge>
           ) : isManual ? (
             <Badge variant="outline" className="text-xs">{t('shipping.manualStatus')}</Badge>
           ) : (
@@ -843,7 +850,14 @@ function ShippingStatusSection({ storeId, onTabChange }: { storeId: number; onTa
           )}
         </div>
         <p className="text-sm text-neutral-400">
-          {isMock ? t('shipping.mockDesc') : isManual ? t('shipping.manualDesc') : t('shipping.providerDesc', { provider: activeProvider })}
+          {isMock
+            ? t(
+                'shipping.mockDescWarning',
+                'الأسعار هنا تجريبية فقط — لا تستخدم لشحن طلبات حقيقية حتى تُفعّل مزوّداً.',
+              )
+            : isManual
+              ? t('shipping.manualDesc')
+              : t('shipping.providerDesc', { provider: activeProvider })}
         </p>
       </div>
 
