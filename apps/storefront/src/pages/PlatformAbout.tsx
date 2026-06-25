@@ -127,7 +127,7 @@ export default function PlatformAbout() {
   }, []);
 
   return (
-    <div ref={root} className="about-ed" dir="rtl" lang="ar">
+    <div ref={root} className="about-ed overflow-x-hidden" dir="rtl" lang="ar">
       <ScrollProgress />
 
       <main className="about-ed__wrap">
