@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { createDbClient, type DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { hashPassword } from './password.js';
@@ -126,44 +126,81 @@ export class EmployeeService {
   }
 
   /**
-   * Read a membership + its user record, scoped to the tenant.
-   * Returns `null` if the membership does not exist in the tenant.
+   * Build the store-scoping clause: matches members whose storeId is
+   * NULL (tenant-wide role) OR equals the caller's storeId.
+   *
+   * Before migration 0087 this scoping did not exist and the
+   * Employees page leaked owners of OTHER stores in the same tenant.
+   * The clause MUST be applied to every read/write in this service
+   * — adding a method without it reopens the leak. See
+   * `tests/employees-cross-store-isolation.test.ts`.
    */
-  private async findEmployee(tenantId: number, employeeId: number) {
+  private storeScopeClause(ctx: Pick<EmployeeContext, 'storeId'>) {
+    if (ctx.storeId === undefined) {
+      // No storeId in context = caller is platform-admin (no merchant
+      // dashboard request). Return a no-op clause.
+      return sql`TRUE`;
+    }
+    return sql`(${s.tenantUsers.storeId} IS NULL OR ${s.tenantUsers.storeId} = ${ctx.storeId})`;
+  }
+
+  /**
+   * Read a membership + its user record, scoped to the tenant AND
+   * the caller's store. Returns `null` if the membership does not
+   * exist in this (tenant, store) pair.
+   */
+  private async findEmployee(ctx: Pick<EmployeeContext, 'tenantId' | 'storeId'>, employeeId: number) {
     const [row] = await this.db
       .select({
         id: s.tenantUsers.id,
+        storeId: s.tenantUsers.storeId,
         userId: s.users.id,
         name: s.users.name,
         email: s.users.email,
         role: s.tenantUsers.role,
-        isActive: s.users.isActive,
+        // Per-membership active flag (post-migration 0087). The
+        // previous code used s.users.isActive which is a GLOBAL
+        // flag — flipping it off here would lock the user out of
+        // every other tenant they belong to.
+        isActive: s.tenantUsers.isActive,
         lastLoginAt: s.users.lastLoginAt,
         createdAt: s.tenantUsers.createdAt,
       })
       .from(s.tenantUsers)
       .innerJoin(s.users, eq(s.tenantUsers.userId, s.users.id))
-      .where(and(eq(s.tenantUsers.id, employeeId), eq(s.tenantUsers.tenantId, tenantId)))
+      .where(and(
+        eq(s.tenantUsers.id, employeeId),
+        eq(s.tenantUsers.tenantId, ctx.tenantId),
+        this.storeScopeClause(ctx),
+      ))
       .limit(1);
     return row ?? null;
   }
 
-  /** List all employees in a tenant. */
-  async list(ctx: Pick<EmployeeContext, 'tenantId'>): Promise<ListEmployeesResult> {
+  /** List all employees of a store inside the tenant. */
+  async list(ctx: Pick<EmployeeContext, 'tenantId' | 'storeId'>): Promise<ListEmployeesResult> {
     const rows = await this.db
       .select({
         id: s.tenantUsers.id,
+        storeId: s.tenantUsers.storeId,
         userId: s.users.id,
         name: s.users.name,
         email: s.users.email,
         role: s.tenantUsers.role,
-        isActive: s.users.isActive,
+        // Per-membership active flag (post-migration 0087). The
+        // previous code used s.users.isActive which is a GLOBAL
+        // flag — flipping it off here would lock the user out of
+        // every other tenant they belong to.
+        isActive: s.tenantUsers.isActive,
         lastLoginAt: s.users.lastLoginAt,
         createdAt: s.tenantUsers.createdAt,
       })
       .from(s.tenantUsers)
       .innerJoin(s.users, eq(s.tenantUsers.userId, s.users.id))
-      .where(eq(s.tenantUsers.tenantId, ctx.tenantId))
+      .where(and(
+        eq(s.tenantUsers.tenantId, ctx.tenantId),
+        this.storeScopeClause(ctx),
+      ))
       .orderBy(s.tenantUsers.createdAt);
 
     return rows.map((r) => this.toEmployeeRow(r));
@@ -194,11 +231,18 @@ export class EmployeeService {
 
     if (existingUser.length > 0) {
       userId = existingUser[0].id;
-      // Check if the user is already linked to this tenant
+      // Check if the user is already linked to THIS (tenant, store)
+      // pair. A user CAN hold memberships in two different stores of
+      // the same tenant (multi-store franchise pattern), so we scope
+      // the duplicate check to the caller's store.
       const existingLink = await this.db
         .select()
         .from(s.tenantUsers)
-        .where(and(eq(s.tenantUsers.tenantId, ctx.tenantId), eq(s.tenantUsers.userId, userId)))
+        .where(and(
+          eq(s.tenantUsers.tenantId, ctx.tenantId),
+          eq(s.tenantUsers.userId, userId),
+          this.storeScopeClause(ctx),
+        ))
         .limit(1);
       if (existingLink.length > 0) {
         await this.audit.record({
@@ -223,10 +267,13 @@ export class EmployeeService {
       userId = user.id;
     }
 
-    // 4. Create the tenant link
+    // 4. Create the tenant link, scoped to the caller's store.
+    // `storeId: ctx.storeId ?? null` keeps the tenant-wide branch open
+    // for platform-level invites (no store in context) and pins
+    // merchant-dashboard invites to the merchant's active store.
     const [tenantUser] = await this.db
       .insert(s.tenantUsers)
-      .values({ tenantId: ctx.tenantId, userId, role: input.role })
+      .values({ tenantId: ctx.tenantId, storeId: ctx.storeId ?? null, userId, role: input.role })
       .returning();
 
     // 5. Read back the user record for the response
@@ -272,7 +319,7 @@ export class EmployeeService {
     input: UpdateEmployeeInput,
   ): Promise<EmployeeRow | UpdateEmployeeError> {
     // 1. Read existing
-    const existing = await this.findEmployee(ctx.tenantId, employeeId);
+    const existing = await this.findEmployee(ctx, employeeId);
     if (!existing) {
       return { kind: 'not_found', message: 'الموظف غير موجود' };
     }
@@ -281,7 +328,7 @@ export class EmployeeService {
     if (input.role && input.role !== existing.role) {
       // 2a. Last-owner check (uses the shared helper)
       if (existing.role === 'owner') {
-        const remainingOwners = await countTenantOwners(this.db, ctx.tenantId, existing.userId);
+        const remainingOwners = await countTenantOwners(this.db, ctx.tenantId, existing.userId, ctx.storeId);
         if (remainingOwners < 1) {
           return { kind: 'last_owner', message: 'لا يمكن تخفيض آخر مالك. قم بتعيين مالك آخر أولاً.' };
         }
@@ -329,16 +376,29 @@ export class EmployeeService {
         .where(eq(s.tenantUsers.id, employeeId));
     }
 
-    // 3. isActive change
+    // 3. isActive change — scoped to this MEMBERSHIP, not the global
+    // user record. Pre-fix this called `db.update(users).set({isActive})`
+    // — a user who was a member of multiple tenants got locked out
+    // of every tenant when removed from any one. Audit P0 (2026-06-25).
     if (input.isActive !== undefined) {
+      // Defensive: include tenantId in the WHERE so a malicious
+      // employeeId from another tenant cannot be touched even if it
+      // somehow slipped past findEmployee.
       await this.db
-        .update(s.users)
-        .set({ isActive: input.isActive })
-        .where(eq(s.users.id, existing.userId));
+        .update(s.tenantUsers)
+        .set({
+          isActive: input.isActive,
+          revokedAt: input.isActive ? null : new Date(),
+          revokedByUserId: input.isActive ? null : ctx.actorUserId,
+        })
+        .where(and(
+          eq(s.tenantUsers.id, employeeId),
+          eq(s.tenantUsers.tenantId, ctx.tenantId),
+        ));
     }
 
     // 4. Read back the updated record
-    const updated = await this.findEmployee(ctx.tenantId, employeeId);
+    const updated = await this.findEmployee(ctx, employeeId);
     if (!updated) {
       // Shouldn't happen — we just updated it. Map to not_found to
       // satisfy the type, then return as last resort.
@@ -397,16 +457,20 @@ export class EmployeeService {
         role: s.tenantUsers.role,
       })
       .from(s.tenantUsers)
-      .where(and(eq(s.tenantUsers.id, employeeId), eq(s.tenantUsers.tenantId, ctx.tenantId)))
+      .where(and(
+        eq(s.tenantUsers.id, employeeId),
+        eq(s.tenantUsers.tenantId, ctx.tenantId),
+        this.storeScopeClause(ctx),
+      ))
       .limit(1);
 
     if (!existing) {
       return { kind: 'not_found', message: 'الموظف غير موجود' };
     }
 
-    // 2. Last-owner check
+    // 2. Last-owner check (store-scoped — see countTenantOwners doc).
     if (existing.role === 'owner') {
-      const remainingOwners = await countTenantOwners(this.db, ctx.tenantId, existing.userId);
+      const remainingOwners = await countTenantOwners(this.db, ctx.tenantId, existing.userId, ctx.storeId);
       if (remainingOwners < 1) {
         await this.audit.record({
           actorUserId: ctx.actorUserId,
@@ -439,9 +503,24 @@ export class EmployeeService {
       return { kind: 'self_modification', message: 'لا يمكنك حذف نفسك' };
     }
 
-    // 4. Soft-revoke: delete the link, disable the user
-    await this.db.delete(s.tenantUsers).where(eq(s.tenantUsers.id, employeeId));
-    await this.db.update(s.users).set({ isActive: false }).where(eq(s.users.id, existing.userId));
+    // 4. Soft-revoke at the MEMBERSHIP level only. We do NOT delete
+    // the row (we want the audit history) and we do NOT touch
+    // `users.isActive` — that would lock the user out of any OTHER
+    // tenant they belong to. Audit P0 (2026-06-25).
+    //
+    // The defensive WHERE on tenant_id prevents a malicious caller
+    // from passing a tenant_users.id that belongs to a different
+    // tenant — even if the caller bypassed the read above somehow.
+    await this.db.update(s.tenantUsers)
+      .set({
+        isActive: false,
+        revokedAt: new Date(),
+        revokedByUserId: ctx.actorUserId,
+      })
+      .where(and(
+        eq(s.tenantUsers.id, employeeId),
+        eq(s.tenantUsers.tenantId, ctx.tenantId),
+      ));
 
     // 5. Audit
     await this.audit.record({

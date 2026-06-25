@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- pre-existing
+ * `any` types for shaping dynamic insert rows. Tracked separately;
+ * not in scope for the cross-store isolation P0. */
 import dotenv from 'dotenv';
 dotenv.config({ path: '../../.env' });
 import { createDbClient } from '../../index.js';
@@ -124,6 +127,30 @@ async function seedPerfumeDemo() {
     }).returning();
     store = created;
     console.log(`  ✓ Perfume demo store created: ${store.slug}`);
+  }
+
+  // ── Tenant-User (perfume merchant scoped to THIS store) ─────
+  // Audit P0 (2026-06-25): membership MUST carry storeId so this
+  // merchant does NOT appear in the haa-demo store's Employees view
+  // even though both share the same tenant.
+  if (perfumeDemoMerchant) {
+    const [existingMembership] = await db.select()
+      .from(s.tenantUsers)
+      .where(and(
+        eq(s.tenantUsers.tenantId, tenant.id),
+        eq(s.tenantUsers.userId, perfumeDemoMerchant.id),
+        eq(s.tenantUsers.storeId, store.id),
+      ))
+      .limit(1);
+    if (!existingMembership) {
+      await db.insert(s.tenantUsers).values({
+        tenantId: tenant.id,
+        storeId: store.id,
+        userId: perfumeDemoMerchant.id,
+        role: 'owner',
+      });
+      console.log(`  ✓ Perfume merchant membership created (storeId=${store.id})`);
+    }
   }
 
   // ── Store Settings (luxury-showcase theme, idempotent) ──

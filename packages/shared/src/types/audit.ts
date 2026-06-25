@@ -37,6 +37,9 @@ export interface AuditLogListResult {
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   login: 'تسجيل دخول',
   failed_login: 'فشل تسجيل الدخول',
+  login_tenant_selection_required: 'طلب اختيار المتجر',
+  login_select_store: 'اختيار المتجر',
+  login_cross_tenant_rejected: 'محاولة دخول لمتجر غير مأذون',
   admin_login: 'دخول الإدارة',
   admin_login_failed: 'فشل دخول الإدارة',
   store_created: 'إنشاء متجر',

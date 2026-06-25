@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- seed script
+ * has 2 pre-existing `any` types for shaping dynamic insert rows
+ * (lines 23 + 198). Tracked separately; not in scope for the
+ * cross-store isolation P0. */
 import 'dotenv/config';
 import { createDbClient } from '../index.js';
 import * as s from '../schema/index.js';
@@ -127,13 +131,12 @@ async function seed() {
   }).returning();
   console.log(`  ✓ demo-perfumes customer user created: ${perfumeDemoCustomer.email}`);
 
-  // ── Tenant-User (merchants are tenant owners) ───────
-  await db.insert(s.tenantUsers).values([
-    { tenantId: tenant.id, userId: haaDemoMerchant.id, role: 'owner' },
-    { tenantId: tenant.id, userId: perfumeDemoMerchant.id, role: 'owner' },
-  ]);
-
   // ── Store ───────────────────────────────────────────
+  // Create the haa-demo store first so we can scope its merchant
+  // membership to it. Migration 0087 added storeId to tenant_users
+  // to enforce per-store isolation — without it the two merchants
+  // (haa-demo + demo-perfumes) under the same tenant would see each
+  // other in the Employees page (audit P0, 2026-06-25).
   const [store] = await db.insert(s.stores).values({
     tenantId: tenant.id,
     name: 'متجر هاء التجريبي',
@@ -157,6 +160,19 @@ async function seed() {
     },
   }).returning();
   console.log(`  ✓ Store created: ${store.slug}`);
+
+  // ── Tenant-User (merchant scoped to THIS store) ─────
+  // Per audit P0 (2026-06-25): membership MUST carry storeId so
+  // store A's owner does not see store B's owner in the same tenant.
+  // The demo-perfumes merchant is created in
+  // packages/db/src/seed/demo/perfume-demo.ts and gets its own
+  // store-scoped membership there.
+  await db.insert(s.tenantUsers).values({
+    tenantId: tenant.id,
+    storeId: store.id,
+    userId: haaDemoMerchant.id,
+    role: 'owner',
+  });
 
   // ── Store Settings ──────────────────────────────────
   await db.insert(s.storeSettings).values({

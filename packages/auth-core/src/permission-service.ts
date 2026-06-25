@@ -1,4 +1,4 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { createDbClient, type DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { PERMISSION_CATALOG, type UserRole } from '@haa/shared';
@@ -102,6 +102,12 @@ export class PermissionService {
     ctx: MembershipContext,
     membershipId: number,
   ): Promise<MembershipBasic | GetMembershipError> {
+    // The membership must belong to the SAME (tenant, store) the caller
+    // is acting on. Pre-migration 0087 we only checked tenantId via the
+    // store join — which let owner of store A modify the membership
+    // permissions of owner of store B if they shared a tenant. Audit
+    // P0 (2026-06-25) — the leak is now closed by requiring storeId
+    // match (or NULL = tenant-wide).
     const [membership] = await this.db
       .select({
         id: s.tenantUsers.id,
@@ -110,7 +116,11 @@ export class PermissionService {
       })
       .from(s.tenantUsers)
       .innerJoin(s.stores, eq(s.tenantUsers.tenantId, s.stores.tenantId))
-      .where(and(eq(s.stores.id, ctx.storeId), eq(s.tenantUsers.id, membershipId)))
+      .where(and(
+        eq(s.stores.id, ctx.storeId),
+        eq(s.tenantUsers.id, membershipId),
+        sql`(${s.tenantUsers.storeId} IS NULL OR ${s.tenantUsers.storeId} = ${ctx.storeId})`,
+      ))
       .limit(1);
 
     if (!membership) {
@@ -165,7 +175,7 @@ export class PermissionService {
 
     // 2. Owner protection: can't demote the last owner
     if (membership.role === 'owner') {
-      const remainingOwners = await countTenantOwners(this.db, ctx.tenantId);
+      const remainingOwners = await countTenantOwners(this.db, ctx.tenantId, undefined, ctx.storeId);
       if (remainingOwners <= 0) {
         return { kind: 'last_owner', message: LAST_OWNER_MESSAGE };
       }

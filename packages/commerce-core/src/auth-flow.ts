@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { createDbClient, type DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { hashPassword, verifyPassword, EmailOtpService } from '@haa/auth-core';
@@ -113,10 +113,36 @@ export interface LoginInput {
   userAgent?: string;
 }
 
+/**
+ * Safe summary of one of the user's available memberships, returned
+ * when login can NOT auto-pick a tenant/store (multi-membership case).
+ *
+ * Intentionally MINIMAL: no email, no role, no permission count — the
+ * caller doesn't need them to render a "pick your store" screen, and
+ * any extra field is a leak surface across tenants.
+ */
+export interface AvailableMembership {
+  tenantId: number;
+  storeId: number;
+  storeName: string;
+  storeSlug: string;
+}
+
 export type LoginError =
   | { kind: 'invalid_credentials'; message: string }
   | { kind: 'no_tenant'; message: string }
-  | { kind: 'email_not_verified'; message: string };
+  | { kind: 'email_not_verified'; message: string }
+  // Multi-tenant user: login refuses to auto-pick a tenant. The caller
+  // must POST to /auth/select-store with a chosen storeId before a JWT
+  // is issued. Audit P0 (2026-06-25): the previous `.limit(1)` flow
+  // silently logged a multi-membership user into whichever row Postgres
+  // returned first — effectively random for the user.
+  | {
+      kind: 'tenant_selection_required';
+      message: string;
+      userId: number;
+      memberships: AvailableMembership[];
+    };
 
 /** HAA-AUTH-SIGNUP-VERIFY — input shape for `verifySignup`. */
 export interface VerifySignupInput {
@@ -437,12 +463,27 @@ export class AuthFlowService {
       };
     }
 
-    const [tenantUser] = await this.db
-      .select()
+    // Fetch ALL ACTIVE memberships for this user. Pre-fix this query
+    // used `.limit(1)` which picked an arbitrary tenant for users
+    // with multiple memberships — a hard tenant-isolation leak. We
+    // also filter on `is_active` (column added in migration 0087) so
+    // a revoked membership doesn't let the user back in.
+    // Audit P0 (2026-06-25).
+    const memberships = await this.db
+      .select({
+        id: s.tenantUsers.id,
+        tenantId: s.tenantUsers.tenantId,
+        storeId: s.tenantUsers.storeId,
+        role: s.tenantUsers.role,
+      })
       .from(s.tenantUsers)
-      .where(eq(s.tenantUsers.userId, user.id))
-      .limit(1);
-    if (!tenantUser) {
+      .where(and(
+        eq(s.tenantUsers.userId, user.id),
+        eq(s.tenantUsers.isActive, true),
+      ))
+      .orderBy(s.tenantUsers.createdAt);
+
+    if (memberships.length === 0) {
       await audit.record({
         actorUserId: user.id,
         action: 'failed_login',
@@ -454,23 +495,85 @@ export class AuthFlowService {
       return { kind: 'no_tenant', message: 'No tenant access' };
     }
 
-    // Resolve the active store: prefer stores the user has explicit
-    // userStoreRoles access to, fall back to the first store in the
-    // tenant (for tenant owners without per-store roles).
-    const userStoreRoles = await this.db
-      .select({ storeId: s.userStoreRoles.storeId })
-      .from(s.userStoreRoles)
-      .where(eq(s.userStoreRoles.userId, user.id));
-    const allowedStoreIds = userStoreRoles.map((r) => r.storeId);
+    // Multi-membership users MUST explicitly pick a store before a JWT
+    // is issued. Return a safe summary list and require a follow-up
+    // POST to /auth/select-store. The summary excludes sensitive
+    // fields (role, permission count, email of co-owners, etc.) to
+    // avoid leaking other tenants' information.
+    if (memberships.length > 1) {
+      // Build the safe list. A store-scoped membership shows ONLY its
+      // own store; a tenant-wide membership (storeId IS NULL, e.g. a
+      // platform admin) gets expanded into the stores it can reach.
+      const storeIds = memberships
+        .map((m) => m.storeId)
+        .filter((id): id is number => id !== null && id !== undefined);
+      const stores = storeIds.length > 0
+        ? await this.db
+            .select({
+              id: s.stores.id,
+              tenantId: s.stores.tenantId,
+              name: s.stores.name,
+              slug: s.stores.slug,
+            })
+            .from(s.stores)
+            .where(inArray(s.stores.id, storeIds))
+        : [];
 
-    const allStores = await this.db
-      .select()
-      .from(s.stores)
-      .where(eq(s.stores.tenantId, tenantUser.tenantId))
-      .limit(10);
-    let activeStore = allStores.find((st) => allowedStoreIds.includes(st.id));
-    if (!activeStore && allStores.length > 0) {
-      activeStore = allStores[0];
+      const available: AvailableMembership[] = stores.map((st) => ({
+        tenantId: st.tenantId,
+        storeId: st.id,
+        storeName: st.name,
+        storeSlug: st.slug,
+      }));
+
+      await audit.record({
+        actorUserId: user.id,
+        action: 'login_tenant_selection_required',
+        entityType: 'user',
+        entityId: user.id,
+        newValue: { memberships: memberships.length },
+        ipAddress,
+        userAgent,
+      });
+
+      return {
+        kind: 'tenant_selection_required',
+        message: 'يرجى اختيار المتجر',
+        userId: user.id,
+        memberships: available,
+      };
+    }
+
+    // Single-membership path — preserves the original behaviour for
+    // the common case. `memberships[0]` is guaranteed to exist
+    // because we returned early for length === 0.
+    const tenantUser = memberships[0];
+
+    // Resolve the active store: prefer the membership's own storeId
+    // (post migration 0087 this is the canonical scope), then fall
+    // back to userStoreRoles, then the first store in the tenant
+    // (legacy tenant-owner path).
+    let activeStore: { id: number; name: string; slug: string } | undefined;
+    if (tenantUser.storeId) {
+      const [store] = await this.db
+        .select({ id: s.stores.id, name: s.stores.name, slug: s.stores.slug })
+        .from(s.stores)
+        .where(eq(s.stores.id, tenantUser.storeId))
+        .limit(1);
+      if (store) activeStore = store;
+    }
+    if (!activeStore) {
+      const userStoreRoles = await this.db
+        .select({ storeId: s.userStoreRoles.storeId })
+        .from(s.userStoreRoles)
+        .where(eq(s.userStoreRoles.userId, user.id));
+      const allowedStoreIds = userStoreRoles.map((r) => r.storeId);
+      const allStores = await this.db
+        .select({ id: s.stores.id, name: s.stores.name, slug: s.stores.slug })
+        .from(s.stores)
+        .where(eq(s.stores.tenantId, tenantUser.tenantId))
+        .limit(10);
+      activeStore = allStores.find((st) => allowedStoreIds.includes(st.id)) ?? allStores[0];
     }
 
     await audit.record({
@@ -495,6 +598,105 @@ export class AuthFlowService {
       storeName: activeStore?.name ?? null,
       storeSlug: activeStore?.slug ?? null,
       role: tenantUser.role,
+    };
+  }
+
+  /**
+   * Selecting a (tenant, store) pair for a multi-membership user.
+   *
+   * Called after `login` returned `tenant_selection_required`. Verifies
+   * that the user actually has a membership for the (tenantId, storeId)
+   * pair AND that the store belongs to that tenant — refusing every
+   * cross-tenant variation regardless of source.
+   *
+   * Returns a `LoginPayload` ready for JWT minting.
+   */
+  async selectStore(
+    userId: number,
+    targetStoreId: number,
+    ipAddress?: string | null,
+    userAgent?: string | null,
+  ): Promise<LoginPayload | { kind: 'invalid_selection'; message: string }> {
+    const audit = new AuditLogService(this.db);
+
+    // Load the target store first so we can constrain the membership
+    // lookup to its tenant — refuses cross-tenant variations from
+    // any source (a malicious client passing an arbitrary storeId
+    // can only succeed if THAT store's tenant contains a membership
+    // for this user).
+    const [store] = await this.db
+      .select({ id: s.stores.id, tenantId: s.stores.tenantId, name: s.stores.name, slug: s.stores.slug })
+      .from(s.stores)
+      .where(eq(s.stores.id, targetStoreId))
+      .limit(1);
+    if (!store) {
+      return { kind: 'invalid_selection', message: 'Store not found' };
+    }
+
+    // The membership MUST match BOTH the user AND the store. Tenant-
+    // wide memberships (storeId IS NULL) match every store in the
+    // tenant — that path keeps platform-admin login working.
+    const [membership] = await this.db
+      .select({
+        id: s.tenantUsers.id,
+        tenantId: s.tenantUsers.tenantId,
+        storeId: s.tenantUsers.storeId,
+        role: s.tenantUsers.role,
+      })
+      .from(s.tenantUsers)
+      .where(and(
+        eq(s.tenantUsers.userId, userId),
+        eq(s.tenantUsers.tenantId, store.tenantId),
+        eq(s.tenantUsers.isActive, true),
+        sql`(${s.tenantUsers.storeId} IS NULL OR ${s.tenantUsers.storeId} = ${store.id})`,
+      ))
+      .limit(1);
+    if (!membership) {
+      // Audit refused cross-tenant selection — useful trail when
+      // chasing abuse.
+      await audit.record({
+        actorUserId: userId,
+        action: 'login_cross_tenant_rejected',
+        entityType: 'user',
+        entityId: userId,
+        newValue: { attemptedStoreId: store.id, attemptedTenantId: store.tenantId },
+        ipAddress,
+        userAgent,
+      });
+      return { kind: 'invalid_selection', message: 'Membership not found' };
+    }
+
+    const [user] = await this.db
+      .select({ id: s.users.id, name: s.users.name, email: s.users.email, phone: s.users.phone, tokenVersion: s.users.tokenVersion })
+      .from(s.users)
+      .where(eq(s.users.id, userId))
+      .limit(1);
+    if (!user) {
+      return { kind: 'invalid_selection', message: 'User not found' };
+    }
+
+    await audit.record({
+      actorUserId: user.id,
+      tenantId: membership.tenantId,
+      storeId: store.id,
+      action: 'login_select_store',
+      entityType: 'user',
+      entityId: user.id,
+      ipAddress,
+      userAgent,
+    });
+
+    return {
+      userId: user.id,
+      userName: user.name,
+      userEmail: user.email,
+      userPhone: user.phone,
+      userTokenVersion: user.tokenVersion,
+      tenantId: membership.tenantId,
+      storeId: store.id,
+      storeName: store.name,
+      storeSlug: store.slug,
+      role: membership.role,
     };
   }
 

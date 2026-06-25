@@ -153,6 +153,13 @@ export type WebhookEventType =
 export type AuditAction =
   | 'login'
   | 'failed_login'
+  // Multi-membership user hit /auth/login; refused to auto-pick a
+  // tenant. The follow-up /auth/select-store call audits as
+  // 'login_select_store' or 'login_cross_tenant_rejected'.
+  // Added with the cross-store isolation P0 (2026-06-25).
+  | 'login_tenant_selection_required'
+  | 'login_select_store'
+  | 'login_cross_tenant_rejected'
   | 'admin_login'
   | 'admin_login_failed'
   | 'store_created'

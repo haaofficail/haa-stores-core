@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
@@ -29,11 +29,22 @@ const updateEmployeeSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-function buildCtx(c: any) {
+function buildCtx(c: Context) {
   const auth = getAuth(c)!;
+  // storeId MUST come from the URL path, not from `auth.activeStoreId`
+  // — the latter is the user's currently-active store in the JWT,
+  // which may be a different store than the one this route operates
+  // on. `requireStoreAccess()` (above) already verified the user has
+  // access to this specific store, so the path param is the correct
+  // and authoritative source for store-scoping employee queries.
+  // Audit P0 (2026-06-25): pre-migration 0087 storeId was ignored
+  // entirely; using activeStoreId here would silently let a user
+  // operate on store A while their JWT said B (or vice-versa).
+  const storeIdRaw = c.req.param('storeId');
+  const storeId = storeIdRaw ? Number(storeIdRaw) : undefined;
   return {
     tenantId: auth.tenantId,
-    storeId: auth.activeStoreId,
+    storeId: Number.isFinite(storeId) ? storeId : auth.activeStoreId,
     actorUserId: auth.userId,
     actorRoles: auth.roles,
     actorPermissions: auth.permissions,
