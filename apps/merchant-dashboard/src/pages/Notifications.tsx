@@ -250,8 +250,14 @@ export default function Notifications() {
                     <Smartphone className="h-5 w-5 text-neutral-400" />
                     <span className="font-medium text-sm text-neutral-900">{t('notifications.sms')}</span>
                     {!smsConfigured && (
+                      // Honest framing: no SMS provider exists on the
+                      // platform yet (audit P0 #11, 2026-06-25 — the
+                      // previous "لم يُعدّ بعد" implied the merchant
+                      // could configure it, but the integration
+                      // doesn't exist). Switch to a "coming soon"
+                      // label until the provider lands.
                       <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                        {t('notifications.providerNotConfiguredBadge', 'لم يُعدّ بعد')}
+                        {t('notifications.providerComingSoonBadge', 'قريباً')}
                       </Badge>
                     )}
                   </div>
@@ -278,19 +284,15 @@ export default function Notifications() {
                   </Tooltip>
                 </div>
                 {!smsConfigured && (
-                  <p className="text-xs text-amber-700">
+                  // Removed the "go configure" link — the integration
+                  // does not exist yet, so the link mis-directed
+                  // merchants. The "coming soon" badge above is the
+                  // only message they need until SMS lands.
+                  <p className="text-xs text-neutral-500">
                     {t(
-                      'notifications.smsProviderNotConfigured',
-                      'قناة SMS غير مُعدّة. ',
+                      'notifications.smsComingSoon',
+                      'قناة SMS غير متاحة بعد — سنُعلن عند إطلاقها.',
                     )}
-                    <Link
-                      data-testid="sms-configure-link"
-                      to="/settings/integrations"
-                      className="inline-flex items-center gap-1 font-semibold text-primary-600 hover:underline"
-                    >
-                      <SettingsIcon className="h-3.5 w-3.5" />
-                      {t('notifications.configureProvider', 'اذهب إلى إعداد المزود')}
-                    </Link>
                   </p>
                 )}
                 {smsConfigured && prefs.smsEnabled && (

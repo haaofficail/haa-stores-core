@@ -5,10 +5,24 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ShoppingBag, AlertTriangle, Users, DollarSign, Clock, Send } from 'lucide-react';
+import { ShoppingBag, AlertTriangle, Users, DollarSign, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { abandonedCartsApi, ApiClientError } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+
+interface AbandonedCartRow {
+  id: number | string;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  itemCount?: number;
+  items?: unknown[];
+  total?: number | string;
+  totalAmount?: number | string;
+  lastActive?: string | null;
+  abandonedAt?: string | null;
+  expiresAt?: string | null;
+}
 
 const HOURS_OPTIONS = [
   { value: 24, labelKey: 'abandonedCarts.filter.hours_24' },
@@ -20,7 +34,7 @@ const HOURS_OPTIONS = [
 export default function AbandonedCarts() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
-  const [carts, setCarts] = useState<any[]>([]);
+  const [carts, setCarts] = useState<AbandonedCartRow[]>([]);
   const [stats, setStats] = useState<{ count: number; recoverableTotal: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -35,7 +49,7 @@ export default function AbandonedCarts() {
       abandonedCartsApi.stats(storeId, hours),
     ])
       .then(([cartsData, statsData]) => {
-        setCarts(cartsData);
+        setCarts(cartsData as AbandonedCartRow[]);
         setStats(statsData);
       })
       .catch((err) => {
@@ -122,11 +136,10 @@ export default function AbandonedCarts() {
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('abandonedCarts.table.total')}</TableHead>
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('abandonedCarts.table.lastActive')}</TableHead>
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('abandonedCarts.table.expiresAt')}</TableHead>
-                <TableHead className="h-10 w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {carts.map((cart: any) => (
+              {carts.map((cart) => (
                 <TableRow key={cart.id} className="border-neutral-100 hover:bg-neutral-50">
                   <TableCell className="text-sm font-medium text-neutral-900 p-3">{cart.customerName || cart.customerEmail || '-'}</TableCell>
                   <TableCell className="text-sm text-neutral-400 p-3" dir="ltr">{cart.customerPhone || '-'}</TableCell>
@@ -138,19 +151,16 @@ export default function AbandonedCarts() {
                   <TableCell className="text-sm text-neutral-400 p-3">
                     {cart.expiresAt ? new Date(cart.expiresAt).toLocaleDateString('ar-SA') : '-'}
                   </TableCell>
-                  <TableCell className="p-3">
-                    {/* Touch target ≥ 44x44 (WCAG 2.5.5). */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-11 w-11 opacity-40 cursor-not-allowed"
-                      title="إرسال تذكير — قيد التطوير"
-                      aria-label="إرسال تذكير — قيد التطوير"
-                      disabled
-                    >
-                      <Send className="h-4 w-4 text-neutral-400" />
-                    </Button>
-                  </TableCell>
+                  {/* Reminder button removed (audit P0 #9, 2026-06-25):
+                      the action had no backend endpoint, so it was
+                      permanently disabled. Recovery already runs
+                      automatically via the abandoned-cart campaign
+                      worker (packages/commerce-core/src/
+                      abandoned-cart-campaigns.ts), which DOES honour
+                      the customer's email_opt_out_at flag from PR #214.
+                      A manual "send now" button can return once the
+                      backend exposes it and we can plumb the same
+                      opt-out check through this UI path. */}
                 </TableRow>
               ))}
             </TableBody>
