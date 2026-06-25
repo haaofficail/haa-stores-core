@@ -37,9 +37,12 @@ describe('IntegrationHub deduplication', () => {
     expect(APP_SRC).not.toMatch(/<IntegrationHub\s*\/>/);
   });
 
-  it('/settings/integrations redirects to /channels', () => {
+  it('/settings/integrations redirects to the channels canonical', () => {
     // The path stays in the route table (BC for bookmarks and the
     // notification links) but resolves via <Navigate>.
-    expect(APP_SRC).toMatch(/path=['"]\/settings\/integrations['"]\s+element=\{<Navigate\s+to=['"]\/channels['"]\s+replace\s*\/>/);
+    // IA W3 (PR #241): the channels canonical itself moved from
+    // `/channels` to `/sales/channels`. This redirect now points
+    // directly at the new canonical, skipping a double-redirect.
+    expect(APP_SRC).toMatch(/path=['"]\/settings\/integrations['"]\s+element=\{<Navigate\s+to=['"]\/sales\/channels['"]\s+replace\s*\/>/);
   });
 });
