@@ -16,7 +16,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { User, Mail, Phone, Lock, Shield, LogOut, ArrowLeft } from 'lucide-react';
+import { Icon, type MerchantIconName } from '@/components/ui/icon';
 import { authApi } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,12 +34,12 @@ interface MeData {
 }
 
 function Field({
-  icon: Icon,
+  iconName,
   label,
   value,
   dir,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  iconName: MerchantIconName;
   label: string;
   value: string | null | undefined;
   dir?: 'ltr' | 'rtl';
@@ -47,7 +47,7 @@ function Field({
   return (
     <div className="flex items-start gap-3 p-4 rounded-2xl bg-white border border-neutral-100">
       <div className="p-2.5 rounded-xl bg-primary-50 text-primary-600 shrink-0">
-        <Icon className="h-4 w-4" />
+        <Icon name={iconName} size="xs" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-neutral-500 mb-0.5">{label}</p>
@@ -60,14 +60,14 @@ function Field({
 }
 
 function ActionLink({
-  icon: Icon,
+  iconName,
   iconClass,
   title,
   description,
   cta,
   onClick,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  iconName: MerchantIconName;
   iconClass: string;
   title: string;
   description: string;
@@ -81,7 +81,7 @@ function ActionLink({
       className="group w-full flex items-start gap-3 p-4 rounded-2xl border border-neutral-100 bg-white hover:bg-neutral-50 hover:border-primary-200 transition-all text-start"
     >
       <div className={`p-2.5 rounded-xl shrink-0 ${iconClass}`}>
-        <Icon className="h-4 w-4" />
+        <Icon name={iconName} size="xs" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-neutral-900">{title}</p>
@@ -89,7 +89,7 @@ function ActionLink({
       </div>
       <span className="text-xs font-medium text-primary-600 shrink-0 mt-2 flex items-center gap-1">
         {cta}
-        <ArrowLeft className="h-3 w-3" />
+        <Icon name="ArrowLeft" size="2xs" />
       </span>
     </button>
   );
@@ -137,7 +137,7 @@ export default function Account() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white shadow-lg shadow-primary-500/25">
-          <User className="h-6 w-6" />
+          <Icon name="User" size="default" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">
@@ -156,24 +156,24 @@ export default function Account() {
         </h2>
         <div className="grid gap-3 md:grid-cols-2">
           <Field
-            icon={User}
+            iconName="User"
             label={t('account.identity.name', 'الاسم')}
             value={me.name}
           />
           <Field
-            icon={Mail}
+            iconName="Mail"
             label={t('account.identity.email', 'البريد الإلكتروني')}
             value={me.email}
             dir="ltr"
           />
           <Field
-            icon={Phone}
+            iconName="Phone"
             label={t('account.identity.phone', 'رقم الجوال')}
             value={me.phone}
             dir="ltr"
           />
           <Field
-            icon={Shield}
+            iconName="Shield"
             label={t('account.identity.role', 'الدور')}
             value={me.roles?.join(', ') || '—'}
           />
@@ -187,7 +187,7 @@ export default function Account() {
         </h2>
         <div className="grid gap-3">
           <ActionLink
-            icon={Lock}
+            iconName="Lock"
             iconClass="bg-amber-50 text-amber-600"
             title={t('account.security.password.title', 'تغيير كلمة المرور')}
             description={t(
@@ -198,7 +198,7 @@ export default function Account() {
             onClick={comingSoon}
           />
           <ActionLink
-            icon={Shield}
+            iconName="Shield"
             iconClass="bg-emerald-50 text-emerald-600"
             title={t('account.security.twofa.title', 'التحقق بخطوتين')}
             description={t(
@@ -234,7 +234,7 @@ export default function Account() {
           onClick={logout}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 transition-colors"
         >
-          <LogOut className="h-4 w-4" />
+          <Icon name="LogOut" size="xs" />
           {t('account.logout', 'تسجيل الخروج')}
         </button>
       </section>
