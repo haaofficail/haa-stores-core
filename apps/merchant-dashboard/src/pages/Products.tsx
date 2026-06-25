@@ -92,8 +92,19 @@ export default function Products() {
 
   const limit = 20;
 
+  // Monotonic load id — every call to loadProducts() bumps this and
+  // captures it locally. When the in-flight response resolves, it
+  // checks the captured id against the current ref; if a newer
+  // call started while we were waiting, the older response is
+  // discarded. Without this guard, filter changes in quick
+  // succession could show the OLDER response's data because the
+  // network returned them in the wrong order. Audit P0 #25
+  // (2026-06-25).
+  const loadIdRef = useRef(0);
+
   const loadProducts = useCallback(() => {
     if (!storeId) { setLoading(false); return; }
+    const myLoadId = ++loadIdRef.current;
     setLoading(true);
     setFetchError(false);
     Promise.all([
@@ -101,10 +112,14 @@ export default function Products() {
       brandsApi.list(storeId),
       tagsApi.list(storeId),
     ]).then(([cats, brs, tgs]) => {
+      if (myLoadId !== loadIdRef.current) return; // stale, drop
       setCategories(cats as Array<{ id: number; name: string }>);
       setBrands(brs as Array<{ id: number; name: string }>);
       setTags(tgs as Array<{ id: number; name: string }>);
-    }).catch(() => toast.error(t('common.error', 'فشل تحميل البيانات')));
+    }).catch(() => {
+      if (myLoadId !== loadIdRef.current) return;
+      toast.error(t('common.error', 'فشل تحميل البيانات'));
+    });
     productsApi.list(storeId, {
       page, limit,
       status: statusFilter || undefined,
@@ -115,9 +130,22 @@ export default function Products() {
       stockFilter: stockFilter || undefined,
       typeFilter: typeFilter || undefined,
     })
-      .then((raw) => { const res = raw as { data: ProductRowData[]; total?: number; totalPages?: number }; setProducts(res.data); setTotal(res.total ?? 0); setTotalPages(res.totalPages ?? 1); })
-      .catch(() => { setFetchError(true); toast.error(t('common.error')); })
-      .finally(() => setLoading(false));
+      .then((raw) => {
+        if (myLoadId !== loadIdRef.current) return; // stale
+        const res = raw as { data: ProductRowData[]; total?: number; totalPages?: number };
+        setProducts(res.data);
+        setTotal(res.total ?? 0);
+        setTotalPages(res.totalPages ?? 1);
+      })
+      .catch(() => {
+        if (myLoadId !== loadIdRef.current) return;
+        setFetchError(true);
+        toast.error(t('common.error'));
+      })
+      .finally(() => {
+        if (myLoadId !== loadIdRef.current) return;
+        setLoading(false);
+      });
   }, [storeId, page, statusFilter, categoryFilter, brandFilter, tagFilter, search, stockFilter, typeFilter, t]);
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
@@ -309,11 +337,15 @@ export default function Products() {
           toast.success(t('products.created'));
         }
 
+        // Post-create flow: refresh the list, close the dialog. The
+        // previous code closed the dialog and immediately re-opened
+        // it via `openEdit(created.id)` — causing a visible flicker
+        // and wiping the form state mid-transition. The merchant can
+        // open the new product from the refreshed list. Audit P0 #26
+        // (2026-06-25).
+        loadProducts();
         setDialogOpen(false);
-        if (created?.id) {
-          await openEdit(created.id);
-          return;
-        }
+        return;
       }
       setDialogOpen(false);
       loadProducts();
