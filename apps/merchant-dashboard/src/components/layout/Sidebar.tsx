@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
 import { usePermissions } from '@/lib/permissions';
 import {
-  LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, UserCog, TrendingUp, Activity, ExternalLink, AlertTriangle, MessageSquare, Coins, Sparkles, ClipboardList,
+  LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, UserCog, TrendingUp, Activity, ExternalLink, AlertTriangle, MessageSquare, Coins, Sparkles, ClipboardList, Rocket,
 } from 'lucide-react';
 
 type NavIcon = React.ComponentType<{ className?: string }>;
@@ -32,6 +32,7 @@ const navGroups: Array<{
     title: 'الرئيسية',
     items: [
       { to: '/dashboard', icon: LayoutDashboard, label: 'nav.dashboard', fallback: 'لوحة التحكم', permission: 'dashboard:view' },
+      { to: '/getting-started', icon: Rocket, label: 'nav.gettingStarted', fallback: 'بدء الاستخدام', permission: 'dashboard:view' },
     ],
   },
   {

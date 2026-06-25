@@ -12,6 +12,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 const Login = lazy(() => import('@/pages/Login'));
 const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
 const DashboardHome = lazy(() => import('@/pages/DashboardHome'));
+const GettingStarted = lazy(() => import('@/pages/GettingStarted'));
 const Products = lazy(() => import('@/pages/Products'));
 const Categories = lazy(() => import('@/pages/Categories'));
 const Brands = lazy(() => import('@/pages/Brands'));
@@ -134,6 +135,7 @@ export default function App() {
 
               {/* Home */}
               <Route path="/dashboard" element={<GuardedRoute permission="dashboard:view"><DashboardHome /></GuardedRoute>} />
+              <Route path="/getting-started" element={<GuardedRoute permission="dashboard:view"><GettingStarted /></GuardedRoute>} />
 
               {/* ── Catalog ─────────────────────────────────────── */}
               <Route path="/catalog" element={<GuardedRoute permission="products:read"><CatalogHub /></GuardedRoute>} />
