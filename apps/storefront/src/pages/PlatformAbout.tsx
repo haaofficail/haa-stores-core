@@ -1,36 +1,33 @@
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- platform about page icon bundle
-import {
-  Sparkles, ArrowLeft, ArrowUp, ShoppingBag, CreditCard, Truck,
-  BarChart3, Building2, Link as LinkIcon, Mail, ExternalLink,
-  ShieldCheck, Users,
-} from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useSEO } from '@/hooks/useSEO';
 import { StoreButton } from '@/components/ui';
+import { Icon } from '@/components/ui/icon';
 import { PLATFORM_LEGAL_ENTITY } from '@haa/shared';
 import '@/landing/landing.css';
 
 /* ─── data ─────────────────────────────────────────────────── */
 
-const OFFERINGS: { icon: typeof ShoppingBag; title: string; desc: string }[] = [
+import type { IconName } from '@/components/ui/icon';
+
+const OFFERINGS: { iconName: IconName; title: string; desc: string }[] = [
   {
-    icon: ShoppingBag,
+    iconName: 'ShoppingBag',
     title: 'متجر إلكتروني جاهز',
     desc: 'ثيمات أنيقة ومرنة، وأدوات تحرير بدون كود — يطلق التاجر متجره ويبدأ البيع في دقائق.',
   },
   {
-    icon: CreditCard,
+    iconName: 'CreditCard',
     title: 'دفع سعودي متكامل',
     desc: 'مدى وApple Pay وSTC Pay وVisa وMastercard، إضافةً إلى التقسيط عبر تابي وتمارا — جاهزة ومتوافقة محلياً.',
   },
   {
-    icon: Truck,
+    iconName: 'Truck',
     title: 'شحن وتسليم مدمج',
     desc: 'تكامل مباشر مع شركات الشحن السعودية، مع طباعة بوليصة الشحن وتتبّع آلي للطلبات.',
   },
   {
-    icon: BarChart3,
+    iconName: 'BarChart3',
     title: 'تحليلات وقرارات أذكى',
     desc: 'تقارير مبيعات لحظية، معدّل تحويل، حركة الزوّار، ولوحة تحكم موحّدة لإدارة كل شيء.',
   },
@@ -78,7 +75,7 @@ function BackToTop() {
       className="lp-back-top"
       style={{ opacity: 0, transform: 'translateY(1rem)', transition: 'opacity 300ms, transform 300ms' }}
     >
-      <ArrowUp size={20} />
+      <Icon name="ArrowUp" size="md" />
     </button>
   );
 }
@@ -153,7 +150,7 @@ export default function PlatformAbout() {
             <Link to="/about" aria-current="page">من نحن</Link>
           </div>
           <div className="lp-nav__cta">
-            <StoreButton size="sm" iconEnd={<ArrowLeft size={16} />} href="/signup">
+            <StoreButton size="sm" iconEnd={<Icon name="ArrowLeft" size="xs" />} href="/signup">
               ابدأ مجاناً
             </StoreButton>
           </div>
@@ -167,7 +164,7 @@ export default function PlatformAbout() {
           <div className="lp-container lp-hero__in">
             <div className="reveal">
               <span className="lp-pill">
-                <Sparkles size={14} /> منتج من Haa Soft
+                <Icon name="Sparkles" size="2xs" /> منتج من Haa Soft
               </span>
               <h1>
                 متاجر هاء — <b>منصة سعودية</b> للتجارة الإلكترونية، من بيت Haa Soft
@@ -177,7 +174,7 @@ export default function PlatformAbout() {
                 دفع محلّي، شحن مدمج، تحليلات لحظية، وتجربة عميل أنيقة.
               </p>
               <div className="lp-hero__cta">
-                <StoreButton size="lg" iconEnd={<ArrowLeft size={18} />} href="/signup">
+                <StoreButton size="lg" iconEnd={<Icon name="ArrowLeft" size="sm" />} href="/signup">
                   ابدأ متجرك
                 </StoreButton>
                 <StoreButton size="lg" variant="secondary" href="/#contact">
@@ -214,10 +211,10 @@ export default function PlatformAbout() {
               <p>أدوات صُمّمت خصّيصاً للسوق المحلّي، تُدير متجرك من الألف إلى الياء.</p>
             </div>
             <div className="lp-feats reveal-stagger">
-              {OFFERINGS.map(({ icon: Icon, title, desc }) => (
+              {OFFERINGS.map(({ iconName, title, desc }) => (
                 <div className="lp-feat" key={title}>
                   <div className="lp-feat__ic">
-                    <Icon size={24} />
+                    <Icon name={iconName} size="default" />
                   </div>
                   <h3>{title}</h3>
                   <p>{desc}</p>
@@ -249,8 +246,8 @@ export default function PlatformAbout() {
                   style={{ textDecoration: 'none' }}
                   data-testid="haasoft-outbound-link"
                 >
-                  <Building2 size={14} /> زُر موقع Haa Soft الرسمي
-                  <ExternalLink size={12} aria-hidden="true" />
+                  <Icon name="Building2" size="2xs" /> زُر موقع Haa Soft الرسمي
+                  <Icon name="ExternalLink" size="2xs" />
                 </a>
               </div>
             </div>
@@ -271,14 +268,14 @@ export default function PlatformAbout() {
             <div className="lp-feats reveal-stagger" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', maxWidth: 760, margin: '0 auto' }}>
               <div className="lp-feat">
                 <div className="lp-feat__ic">
-                  <ShoppingBag size={24} />
+                  <Icon name="ShoppingBag" size="default" />
                 </div>
                 <h3>متاجر هاء</h3>
                 <p>منصّة التجارة الإلكترونية للتجار السعوديين — هذا المنتج.</p>
               </div>
               <div className="lp-feat">
                 <div className="lp-feat__ic">
-                  <LinkIcon size={24} />
+                  <Icon name="LinkIcon" size="default" />
                 </div>
                 <h3>منتجات Haa Soft الأخرى</h3>
                 <p>
@@ -303,7 +300,7 @@ export default function PlatformAbout() {
             <div className="lp-feats reveal" style={{ gridTemplateColumns: '1fr', maxWidth: 720, margin: '0 auto' }}>
               <div className="lp-feat">
                 <div className="lp-feat__ic">
-                  <ShieldCheck size={24} />
+                  <Icon name="ShieldCheck" size="default" />
                 </div>
                 <h3>{PLATFORM_LEGAL_ENTITY.legalNameAr}</h3>
                 <p>
@@ -329,14 +326,14 @@ export default function PlatformAbout() {
             <div className="lp-feats reveal-stagger" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', maxWidth: 760, margin: '0 auto' }}>
               <a className="lp-feat" href="mailto:hello@haastores.com" style={{ textDecoration: 'none' }}>
                 <div className="lp-feat__ic">
-                  <Mail size={24} />
+                  <Icon name="Mail" size="default" />
                 </div>
                 <h3>البريد الرسمي</h3>
                 <p dir="ltr" style={{ unicodeBidi: 'isolate' }}>hello@haastores.com</p>
               </a>
               <Link className="lp-feat" to="/" style={{ textDecoration: 'none' }}>
                 <div className="lp-feat__ic">
-                  <Users size={24} />
+                  <Icon name="Users" size="default" />
                 </div>
                 <h3>الدعم والمبيعات</h3>
                 <p>تواصل معنا من نموذج الاتصال على الصفحة الرئيسيّة، نردّ خلال يوم عمل واحد.</p>
@@ -353,7 +350,7 @@ export default function PlatformAbout() {
               <h2>جاهز تطلق متجرك مع متاجر هاء؟</h2>
               <p>انضم لأكثر من ١٢٠٠ تاجر يبيعون بثقة عبر منصّتنا.</p>
               <div className="lp-cta__btn">
-                <StoreButton size="lg" iconEnd={<ArrowLeft size={18} />} href="/signup">
+                <StoreButton size="lg" iconEnd={<Icon name="ArrowLeft" size="sm" />} href="/signup">
                   ابدأ متجرك
                 </StoreButton>
                 <StoreButton size="lg" variant="secondary" href="/#contact">
