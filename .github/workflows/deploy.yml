@@ -1,12 +1,12 @@
 name: Deploy
 
 # Triggered on push to main BY DEFAULT, but skipped when the push only
-# touches documentation, workflow READMEs, or the ledger. This keeps the
+# touches documentation, tests, or workflow READMEs. This keeps the
 # Deploy queue free for code changes and prevents the "many cancelled /
 # pending" Actions noise that the operator was seeing after rapid-fire
-# docs-only PRs.
+# PRs (audit follow-up, 2026-06-25).
 #
-# To FORCE a deploy after a docs-only merge (e.g. you also need to
+# To FORCE a deploy after a skipped merge (e.g. you also need to
 # restart api to pick up a new env var), use `workflow_dispatch` with
 # the desired target.
 on:
@@ -17,6 +17,14 @@ on:
       # all docs/ subtrees + the agent-os planning files.
       - "**/*.md"
       - "docs/**"
+      # Test files do not ship to production. A test-only PR (e.g.
+      # the source-grep contract tests this audit added) does NOT
+      # need a Deploy run — CI already validates them on the PR.
+      - "tests/**"
+      - "**/*.test.ts"
+      - "**/*.test.tsx"
+      - "**/__tests__/**"
+      - "**/__mocks__/**"
       # The deploy-watchdog workflow is a recovery harness for THIS
       # workflow; changes to it MUST NOT trigger a deploy (would loop).
       - ".github/workflows/deploy-watchdog.yml"
@@ -26,6 +34,10 @@ on:
       - "AGENTS.md"
       - "CLAUDE.md"
       - "LICENSE*"
+      # GitIgnore / Prettier config / editorconfig — local-only.
+      - ".gitignore"
+      - ".prettierrc*"
+      - ".editorconfig"
   workflow_dispatch:
     inputs:
       environment:
