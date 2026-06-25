@@ -48,7 +48,7 @@ export function isActionableEvent(event, config) {
   if (event.status === 'pass') return false
 
   if (event.sourceKind === 'support') {
-    return ['P0', 'P1', 'P2'].includes(event.severity)
+    return ['P0', 'P1', 'P2', 'P3'].includes(event.severity)
   }
 
   if (event.status === 'fail') return true

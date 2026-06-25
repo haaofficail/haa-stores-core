@@ -4,6 +4,30 @@
 
 ---
 
+### TASK-0081: Keep P3 support fingerprints actionable in ops analyzer
+
+- **Type:** Observability / Support/Ops
+- **Priority:** P2
+- **Status:** Done
+- **Created:** 2026-06-26
+- **Updated:** 2026-06-26
+- **Original Request:** PR #270 review context showed Codex feedback: repeated P3 support fingerprints were dropped before RCA logic.
+- **Expanded Requirement:** Preserve repeated P3 support-error fingerprints in `pnpm ops:errors` recommendations while still ignoring passive P3 monitoring pass/warn noise.
+- **Problem:** `scripts/ops-events.mjs` classified only P0/P1/P2 support events as actionable. Three recent P3 support errors with the same fingerprint therefore produced `Actionable events in window: 0` and never opened the repeated-fingerprint RCA path.
+- **Scope:** Shared ops event classifier, analyzer regression test, and ops documentation.
+- **Out of Scope:** Storefront PR #270 pages, production monitoring, log retention, deploy, migrations, and external alerting.
+- **Skills Used:** `evidence-led-reporting`, `environment-safety-gate`, `regression-safety-gate`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] Repeated recent P3 support fingerprints are counted as actionable.
+  - [x] Repeated P3 support fingerprints still trigger RCA recommendations.
+  - [x] Passive P3 monitoring pass/warn events remain ignored for recommendations.
+  - [x] Existing stale-event and recovered-warning analyzer/report tests keep passing.
+- **Test Plan:** `pnpm vitest run tests/ops-errors-analyzer.test.ts`; `pnpm ops:errors`; `git diff --check`; `pnpm check:skills`.
+- **Files Changed:** `scripts/ops-events.mjs`, `tests/ops-errors-analyzer.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`.
+- **Related Issues:** ISSUE-0021.
+
+---
+
 ### TASK-0080: Mainline CI launch-readiness truth sync
 
 - **Type:** Documentation / Support/Ops
