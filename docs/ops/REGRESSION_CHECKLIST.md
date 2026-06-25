@@ -214,6 +214,7 @@
 - [ ] `POST /internal/support-errors/report` works in development
 - [ ] `POST /internal/support-errors/report` returns 404 in production
 - [ ] `pnpm ops:errors` reads both monitoring-events and support-error-events
+- [ ] `pnpm ops:errors` recommendations use only recent actionable events, not stale history or `status=pass` health checks
 - [ ] `pnpm ops:errors:simulate` generates a valid test event
 - [ ] Stack traces are only included in development mode
 - [ ] `error-handler.ts` writes to support-error-log on API errors

@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0020: Ops Error Analyzer Recommended Incidents from Stale and Passive Events
+
+- **ID:** ISSUE-0020
+- **Date:** 2026-06-26
+- **Severity:** Medium (creates false operational urgency and hides current signal)
+- **Area:** Observability / Local monitoring / Support error analysis
+- **Related Tasks:** TASK-0078
+- **Symptoms:** `pnpm ops:monitor` and `pnpm ops:errors` reported repeated P0/RCA recommendations even though `pnpm preflight` and the full test suite were clean. The report also ranked passive health-check targets such as `package.json exists` as top affected targets.
+- **Expected:** Historical events should remain visible for context, but incident/RCA recommendations should be based only on recent actionable failures.
+- **Actual:** `scripts/analyze-support-errors.mjs` merged `storage/monitoring-events.ndjson` and `storage/support-error-events.ndjson`, counted every event forever, and did not exclude `status=pass` monitoring events from route/target rankings or recommendation logic.
+- **Root Cause:** The analyzer had no active lookback window and no actionable-event filter. As a result, old support/runtime errors from 2026-06-19 and accumulated health pass events were treated as if they were current operational failures.
+- **Fix:** Added a default 24-hour active action window, `HAA_OPS_ERRORS_LOOKBACK_HOURS` / file override envs for deterministic tests, an actionable-event filter, and separate reporting for total, historical, passive, and actionable events.
+- **Verification:** `pnpm vitest run tests/ops-errors-analyzer.test.ts` passes 3/3. `pnpm ops:errors` now reports no recommended tasks/incidents from the current local logs after filtering stale history.
+- **Prevention:** Regression coverage asserts stale P0/RCA events do not trigger recommendations, recent repeated support fingerprints still trigger RCA, and passive monitoring pass events do not rank as actionable targets.
+- **Status:** Fixed.
+
+---
+
 ### ISSUE-0012: Fresh PostgreSQL Migration Fails Converting customers.total_spent
 
 - **ID:** ISSUE-0012

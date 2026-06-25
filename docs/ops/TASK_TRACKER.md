@@ -4,6 +4,31 @@
 
 ---
 
+### TASK-0078: Fix noisy ops error analyzer active-window reporting
+
+- **Type:** Observability / Support/Ops
+- **Priority:** P1
+- **Status:** Done
+- **Created:** 2026-06-26
+- **Updated:** 2026-06-26
+- **Original Request:** "ليش يصير فشل كثير في الريبو ، لا تفترض افحص بعمق" then "نفذ مثل بروفيسور برمجة وتطوير في ابل"
+- **Expanded Requirement:** Stop `pnpm ops:errors` from recommending incidents/RCA from stale historical logs or passive health-check pass events. Keep historical counts visible, but base recommendations only on recent actionable events.
+- **Problem:** `scripts/analyze-support-errors.mjs` analyzed every event in `storage/monitoring-events.ndjson` and `storage/support-error-events.ndjson` without a lookback window and without filtering `status=pass` events. This made old P0/support fingerprints and repeated health pass targets look like current failures.
+- **Scope:** `scripts/analyze-support-errors.mjs`, targeted analyzer tests, ops docs.
+- **Out of Scope:** Runtime API/storefront startup, lint warning cleanup, log truncation/archive, production monitoring.
+- **Skills Used:** `evidence-led-reporting`, `verification-before-completion`, `regression-safety-gate`, `acceptance-criteria-gate`.
+- **Acceptance Criteria:**
+  - [x] Stale P0/support errors outside the active window do not produce incident/RCA recommendations.
+  - [x] Recent repeated support fingerprints still produce RCA recommendations.
+  - [x] Passive monitoring pass events do not rank as affected routes/targets.
+  - [x] Current local `pnpm ops:errors` reports no recommended incidents/tasks when only stale history and passive warnings exist.
+- **Test Plan:** `pnpm vitest run tests/ops-errors-analyzer.test.ts`; `pnpm ops:errors`; `pnpm preflight`; `git diff --check`.
+- **Test Results:** Targeted analyzer tests pass (3/3). `pnpm ops:errors` now reports no recommended tasks/incidents from stale logs.
+- **Files Changed:** `scripts/analyze-support-errors.mjs`, `tests/ops-errors-analyzer.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`.
+- **Related Issues:** ISSUE-0020.
+
+---
+
 ### TASK-0077: Staging login deep audit + closure (PRs #55 → #60)
 
 - **Type:** Quality / UX / Security (multi-area)
