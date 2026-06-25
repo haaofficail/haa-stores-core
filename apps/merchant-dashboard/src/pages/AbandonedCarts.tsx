@@ -9,6 +9,21 @@ import { ShoppingBag, AlertTriangle, Users, DollarSign, Clock, Send } from 'luci
 import { toast } from 'sonner';
 import { abandonedCartsApi, ApiClientError } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
+import { PermissionGate } from '@/lib/permissions';
+
+interface AbandonedCartRow {
+  id: number | string;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  itemCount?: number;
+  items?: unknown[];
+  total?: number | string;
+  totalAmount?: number | string;
+  lastActive?: string | null;
+  abandonedAt?: string | null;
+  expiresAt?: string | null;
+}
 
 const HOURS_OPTIONS = [
   { value: 24, labelKey: 'abandonedCarts.filter.hours_24' },
@@ -20,7 +35,7 @@ const HOURS_OPTIONS = [
 export default function AbandonedCarts() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
-  const [carts, setCarts] = useState<any[]>([]);
+  const [carts, setCarts] = useState<AbandonedCartRow[]>([]);
   const [stats, setStats] = useState<{ count: number; recoverableTotal: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -35,7 +50,7 @@ export default function AbandonedCarts() {
       abandonedCartsApi.stats(storeId, hours),
     ])
       .then(([cartsData, statsData]) => {
-        setCarts(cartsData);
+        setCarts(cartsData as AbandonedCartRow[]);
         setStats(statsData);
       })
       .catch((err) => {
@@ -126,10 +141,17 @@ export default function AbandonedCarts() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {carts.map((cart: any) => (
+              {carts.map((cart) => (
                 <TableRow key={cart.id} className="border-neutral-100 hover:bg-neutral-50">
                   <TableCell className="text-sm font-medium text-neutral-900 p-3">{cart.customerName || cart.customerEmail || '-'}</TableCell>
-                  <TableCell className="text-sm text-neutral-400 p-3" dir="ltr">{cart.customerPhone || '-'}</TableCell>
+                  <TableCell className="text-sm text-neutral-400 p-3" dir="ltr">
+                    <PermissionGate
+                      permission="orders:view_sensitive"
+                      fallback={<span className="text-xs text-neutral-300 font-mono">••••••••</span>}
+                    >
+                      {cart.customerPhone || '-'}
+                    </PermissionGate>
+                  </TableCell>
                   <TableCell className="text-sm text-neutral-900 p-3">{cart.itemCount ?? cart.items?.length ?? 0}</TableCell>
                   <TableCell className="text-sm font-semibold text-neutral-900 p-3 font-mono">{formatCurrency(cart.total || cart.totalAmount || 0)} {t('common.sar')}</TableCell>
                   <TableCell className="text-sm text-neutral-400 p-3">

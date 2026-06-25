@@ -13,7 +13,8 @@ import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { SarIcon } from '@/components/ui/SarIcon';
-import { PermissionGate } from '@/lib/permissions';
+import { PermissionGate, usePermissions } from '@/lib/permissions';
+import { escapeCsvCell } from '@/lib/csv';
 import {
   orderStatusColors,
   paymentStatusColors,
@@ -25,6 +26,7 @@ import { OrderConfirmDialog } from './orders/OrderConfirmDialog';
 
 export default function Orders() {
   const { t, i18n } = useTranslation();
+  const orderPerms = usePermissions();
   const { storeId } = useAuth();
   const { orderId: routeOrderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
@@ -281,12 +283,20 @@ export default function Orders() {
           </div>
           <div className="flex gap-2">
             <Button size="sm" className="h-8 text-xs bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50" onClick={() => {
+              // PII guard: print echoes customerPhone, which is masked
+              // in the table for users without orders:view_sensitive.
+              // Mirror that guard here — and apply CSV-injection escape
+              // on every cell so an Excel-opened printout cannot run a
+              // formula injected via a malicious customer name.
+              const canSeeSensitive = orderPerms.can('orders:view_sensitive');
+              const safe = (v: string) => escapeCsvCell(v);
               selectedOrders.forEach(id => {
                 const order = orders.find(o => o.id === id);
                 if (order) {
                   const win = window.open('', '_blank');
                   if (win) {
-                    win.document.write(`<!DOCTYPE html><html dir="rtl"><head><title>${order.orderNumber}</title><style>body{font-family:sans-serif;padding:40px;max-width:800px;margin:0 auto}</style></head><body><h2>${order.orderNumber}</h2><p>${order.customerName} - ${order.customerPhone}</p><p>${t(`orders.status_${order.status}`)}</p></body></html>`);
+                    const phoneLine = canSeeSensitive ? ` - ${safe(order.customerPhone)}` : '';
+                    win.document.write(`<!DOCTYPE html><html dir="rtl"><head><title>${safe(order.orderNumber)}</title><style>body{font-family:sans-serif;padding:40px;max-width:800px;margin:0 auto}</style></head><body><h2>${safe(order.orderNumber)}</h2><p>${safe(order.customerName)}${phoneLine}</p><p>${safe(t(`orders.status_${order.status}`))}</p></body></html>`);
                     win.document.close();
                     win.print();
                   }
@@ -295,12 +305,28 @@ export default function Orders() {
             }}>{t('orders.bulk_print', 'طباعة')}</Button>
             <PermissionGate permission="orders:export" fallback={null}>
               <Button size="sm" className="h-8 text-xs bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50" onClick={() => {
-                const csv = [['رقم الطلب', 'العميل', 'الجوال', 'الحالة', 'المجموع', 'التاريخ']];
+                // PII guard + CSV-injection escape. Users without
+                // orders:view_sensitive get the phone column masked.
+                // Every cell runs through escapeCsvCell so a name like
+                // `=cmd|'/C calc'!A1` cannot execute in Excel.
+                const canSeeSensitive = orderPerms.can('orders:view_sensitive');
+                const phoneHeader = canSeeSensitive ? t('orders.phone', 'الجوال') : '';
+                const csv: string[][] = [
+                  [t('orders.orderNumber', 'رقم الطلب'), t('orders.customer', 'العميل'), phoneHeader, t('orders.status', 'الحالة'), t('orders.total', 'المجموع'), t('orders.date', 'التاريخ')]
+                    .filter(h => h !== ''),
+                ];
                 selectedOrders.forEach(id => {
                   const o = orders.find(o => o.id === id);
-                  if (o) csv.push([o.orderNumber, o.customerName, o.customerPhone, t(`orders.status_${o.status}`), `${formatCurrency(o.total)} ${t('common.sar')}`, new Date(o.createdAt).toLocaleDateString('ar-SA')]);
+                  if (!o) return;
+                  const row: string[] = [o.orderNumber, o.customerName];
+                  if (canSeeSensitive) row.push(o.customerPhone);
+                  row.push(t(`orders.status_${o.status}`));
+                  row.push(`${formatCurrency(o.total)} ${t('common.sar')}`);
+                  row.push(new Date(o.createdAt).toLocaleDateString('ar-SA'));
+                  csv.push(row);
                 });
-                const blob = new Blob(['﻿' + csv.map(r => r.join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
+                const escaped = csv.map(r => r.map(escapeCsvCell).join(',')).join('\n');
+                const blob = new Blob(['﻿' + escaped], { type: 'text/csv;charset=utf-8' });
                 const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `orders-${Date.now()}.csv`; a.click();
               }}>{t('orders.bulk_export', 'تصدير CSV')}</Button>
             </PermissionGate>

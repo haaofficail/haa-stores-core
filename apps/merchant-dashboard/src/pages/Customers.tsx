@@ -12,10 +12,21 @@ import { Plus, Edit, Search, Users, AlertTriangle, RotateCcw, ChevronLeft, Chevr
 import { toast } from 'sonner';
 import { PermissionGate } from '@/lib/permissions';
 
+interface CustomerRow {
+  id: number;
+  name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  notes?: string | null;
+  createdAt?: string;
+}
+
+type CustomerFormField = 'name' | 'phone' | 'email' | 'notes';
+
 export default function Customers() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [searchInput, setSearchInput] = useState('');
@@ -98,7 +109,7 @@ export default function Customers() {
     setLoading(true);
     setFetchError(false);
     customersApi.list(storeId, { page, limit, search: search || undefined })
-      .then(r => { setCustomers(r.data); setTotal(r.total ?? 0); })
+      .then(r => { setCustomers(r.data as CustomerRow[]); setTotal(r.total ?? 0); })
       .catch(() => { setFetchError(true); toast.error('فشل تحميل العملاء'); })
       .finally(() => setLoading(false));
   }, [storeId, page, search]);
@@ -120,7 +131,7 @@ export default function Customers() {
     setEditId(null); setForm({ name: '', phone: '', email: '', notes: '' }); setDialogOpen(true);
   };
 
-  const openEdit = (c: any) => {
+  const openEdit = (c: CustomerRow) => {
     setEditId(c.id); setForm({ name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '', notes: c.notes ?? '' }); setDialogOpen(true);
   };
 
@@ -201,8 +212,22 @@ export default function Customers() {
               {customers.map((c) => (
                 <TableRow key={c.id} className="border-neutral-100 hover:bg-neutral-50 transition-colors">
                   <TableCell className="text-sm font-medium text-neutral-900 p-3">{c.name}</TableCell>
-                  <TableCell className="text-sm text-neutral-900 p-3" dir="ltr"><PermissionGate permission="customers:view_sensitive" fallback={null}>{c.phone}</PermissionGate></TableCell>
-                  <TableCell className="text-sm text-neutral-400 p-3">{c.email || '-'}</TableCell>
+                  <TableCell className="text-sm text-neutral-900 p-3" dir="ltr">
+                    <PermissionGate
+                      permission="customers:view_sensitive"
+                      fallback={<span className="text-xs text-neutral-300 font-mono">••••••••</span>}
+                    >
+                      {c.phone}
+                    </PermissionGate>
+                  </TableCell>
+                  <TableCell className="text-sm text-neutral-400 p-3">
+                    <PermissionGate
+                      permission="customers:view_sensitive"
+                      fallback={<span className="text-xs text-neutral-300 font-mono">••••••••</span>}
+                    >
+                      {c.email || '-'}
+                    </PermissionGate>
+                  </TableCell>
                   <TableCell className="p-3">
                     <div className="flex items-center gap-1 justify-end">
                       <PermissionGate permission="promotions:read" fallback={null}>
@@ -210,7 +235,7 @@ export default function Customers() {
                           variant="ghost"
                           size="icon"
                           className="h-11 w-11"
-                          onClick={() => openLoyalty({ id: c.id, name: c.name })}
+                          onClick={() => openLoyalty({ id: c.id, name: c.name ?? '' })}
                           aria-label="عرض نقاط الولاء"
                           data-testid="customer-loyalty-btn"
                         >
@@ -252,10 +277,10 @@ export default function Customers() {
         <DialogContent className="bg-white/95 backdrop-blur-2xl border border-neutral-100 shadow-2xl rounded-3xl">
           <DialogHeader><DialogTitle className="text-lg font-bold text-neutral-900">{editId ? t('customers.edit') : t('customers.create')}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            {[['name', t('customers.name')], ['phone', t('customers.phone')], ['email', t('customers.email')]].map(([field, label]) => (
+            {([['name', t('customers.name')], ['phone', t('customers.phone')], ['email', t('customers.email')]] as Array<[CustomerFormField, string]>).map(([field, label]) => (
               <div key={field} className="space-y-1.5">
                 <Label className="text-sm text-neutral-500">{label}</Label>
-                <Input value={(form as any)[field]} onChange={(e) => setForm({ ...form, [field]: e.target.value })} dir={field === 'phone' || field === 'email' ? 'ltr' : 'rtl'} className="h-9 text-sm" />
+                <Input value={form[field]} onChange={(e) => setForm({ ...form, [field]: e.target.value })} dir={field === 'phone' || field === 'email' ? 'ltr' : 'rtl'} className="h-9 text-sm" />
               </div>
             ))}
             <div className="space-y-1.5">
