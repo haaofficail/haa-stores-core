@@ -28,9 +28,17 @@ describe('Merchant Icon wrapper', () => {
     }
   });
 
-  it('keeps the single lucide-react import under an eslint-disable (ISSUE-0009)', () => {
+  it('declares itself as the SANCTIONED WRAPPER and imports lucide directly (ISSUE-0009)', () => {
     const src = readFileSync(WRAPPER_PATH, 'utf-8');
-    expect(src).toMatch(/eslint-disable-next-line[\s\S]{0,400}no-restricted-imports[\s\S]{0,200}from\s+['"]lucide-react['"]/);
+    // Wrapper must self-identify with the governance marker so a future
+    // refactor can't accidentally repurpose this file path.
+    expect(src, 'must contain "SANCTIONED WRAPPER — ISSUE-0009" governance marker').toMatch(
+      /SANCTIONED WRAPPER\s+—\s+ISSUE-0009/,
+    );
+    // And it must be the only file importing lucide directly — enforced
+    // structurally by the WRAPPER_FILES exclusion in
+    // tests/lucide-migration-progress.test.ts.
+    expect(src).toMatch(/from\s+['"]lucide-react['"]/);
   });
 
   it('accepts an `icon` prop (LucideIcon ref) — the merchant-dashboard call shape', () => {

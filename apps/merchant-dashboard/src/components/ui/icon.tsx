@@ -2,10 +2,12 @@
 // (apps/storefront/src/components/ui/icon.tsx) so the same icon size
 // governance (AGENTS.md §9.2 + icon-standards.ts) applies here.
 //
-// Going forward, new merchant-dashboard files MUST use this wrapper
-// instead of importing `lucide-react` directly. The eslint-disable on
-// the lucide import below is the ONE permitted direct import for the
-// merchant-dashboard app — same convention as storefront.
+// SANCTIONED WRAPPER — ISSUE-0009. Going forward, new merchant-dashboard
+// files MUST use this wrapper instead of importing `lucide-react`
+// directly. This is the ONE permitted direct lucide import for the
+// merchant-dashboard app — same convention as storefront. The
+// `tests/lucide-migration-progress.test.ts` ceiling explicitly excludes
+// this file from the count (WRAPPER_FILES set).
 //
 // Two call shapes:
 //   <Icon icon={Bell} />                  — pass a lucide ref
@@ -23,7 +25,6 @@
 //   xl   48px    empty state
 //   2xl  64px    illustration
 
- 
 import { type LucideIcon } from 'lucide-react';
 
 export type IconSize =
