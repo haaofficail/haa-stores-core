@@ -2,21 +2,30 @@ import { eq, and, count, sql, gte, lte, desc, sum } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 
+// Cells starting with these characters are interpreted as formulas by
+// Excel/Calc/Numbers, opening the door to RCE via untrusted strings
+// like a malicious product name (`=cmd|'/C calc'!A1`). We prepend a
+// single quote (invisible inside the spreadsheet cell, breaks the
+// formula parse). See dashboard audit P0 #35 (2026-06-25).
+const CSV_FORMULA_TRIGGERS = /^[=+\-@\t\r]/;
+
+function escapeCsvCell(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  let str = String(value);
+  if (CSV_FORMULA_TRIGGERS.test(str)) str = `'${str}`;
+  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
 function toCsv(rows: Record<string, unknown>[]): string {
   if (!rows.length) return '';
   const headers = Object.keys(rows[0]);
   const lines = rows.map(row =>
-    headers.map(h => {
-      const val = row[h];
-      if (val === null || val === undefined) return '';
-      const str = String(val);
-      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-        return `"${str.replace(/"/g, '""')}"`;
-      }
-      return str;
-    }).join(','),
+    headers.map(h => escapeCsvCell(row[h])).join(','),
   );
-  return [headers.join(','), ...lines].join('\n');
+  return [headers.map(escapeCsvCell).join(','), ...lines].join('\n');
 }
 
 export class ReportsService {
