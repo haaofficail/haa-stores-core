@@ -2,6 +2,7 @@ import { eq, and, desc, sql } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { isDemoStore } from '@haa/shared';
+import { vatAmount, DEFAULT_VAT_RATE } from './vat.js';
 
 export class SubscriptionService {
   constructor(private db: DbClient = createDbClient(), private store?: { id: number; isDemo?: boolean | null }) {}
@@ -218,14 +219,26 @@ export class SubscriptionService {
       const proratedRaw = ((newPrice - oldPrice) * remainingDays) / periodDays;
       const proratedAmount = proratedRaw.toFixed(2);
       if (Number(proratedAmount) > 0) {
+        // ZATCA-compliant invoice: VAT (15% by default per Saudi
+        // tax law) is calculated EXCLUSIVELY on the prorated amount
+        // and recorded on its own column. Previously vatAmount was
+        // hard-coded to '0', producing an invalid invoice for any
+        // subscription over the ZATCA threshold (audit P0 #4,
+        // 2026-06-25).
+        //
+        // The plan price field carries an ex-VAT base; downstream
+        // ZATCA report generation will read `total = amount + vatAmount`
+        // and compute the QR / XML accordingly.
+        const vat = vatAmount(Number(proratedAmount), DEFAULT_VAT_RATE).toFixed(2);
+        const totalWithVat = (Number(proratedAmount) + Number(vat)).toFixed(2);
         const invoiceNumber = `INV-${Date.now()}`;
         await this.db.insert(s.subscriptionInvoices).values({
           subscriptionId: updated.id,
           storeId,
           invoiceNumber,
           amount: proratedAmount,
-          vatAmount: '0',
-          total: proratedAmount,
+          vatAmount: vat,
+          total: totalWithVat,
           status: 'pending',
           billingPeriod: `${now.toISOString().split('T')[0]} - ${periodEnd.toISOString().split('T')[0]}`,
           dueDate: new Date(now.getTime() + 7 * 86400000),
