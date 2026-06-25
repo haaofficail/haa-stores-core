@@ -909,6 +909,19 @@ const SCHEMA_DELTAS = {
       we.columns['total_failures'] = { name: 'total_failures', type: 'integer', primaryKey: false, notNull: true, default: '0' };
     }
   },
+
+  // ── 0087: tenant_users gains store_id + is_active + revoked_at +
+  //          revoked_by_user_id. Closes the cross-store employee
+  //          isolation leak (audit P0, 2026-06-25).
+  '0087': (snap) => {
+    const tu = snap.tables['public.tenant_users'];
+    if (tu) {
+      tu.columns['store_id'] = { name: 'store_id', type: 'integer', primaryKey: false, notNull: false };
+      tu.columns['is_active'] = { name: 'is_active', type: 'boolean', primaryKey: false, notNull: true, default: true };
+      tu.columns['revoked_at'] = { name: 'revoked_at', type: 'timestamp', primaryKey: false, notNull: false };
+      tu.columns['revoked_by_user_id'] = { name: 'revoked_by_user_id', type: 'integer', primaryKey: false, notNull: false };
+    }
+  },
 };
 
 function main() {
