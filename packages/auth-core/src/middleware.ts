@@ -9,11 +9,42 @@ export interface Variables {
 type TokenVersionVerifier = (decoded: JwtPayload) => Promise<boolean> | boolean;
 type StoreTenantResolver = (storeId: number) => Promise<number | null>;
 
+/**
+ * Confirm that `userId` has an ACTIVE membership scoped to `storeId`
+ * within the user's tenant. Returns:
+ *   - 'ok'         — the user has a tenant_users row that matches
+ *                    storeId (or a tenant-wide row with storeId NULL)
+ *                    AND `is_active = true`.
+ *   - 'no_role'    — the user is in the tenant but has no membership
+ *                    for THIS store. Common cause: tenant has multiple
+ *                    stores and the user only manages one of them.
+ *   - 'revoked'    — there is a membership row but it has been
+ *                    revoked (is_active = false). Surfaced separately
+ *                    so the dashboard can show "your access was
+ *                    revoked" instead of a generic 403.
+ *
+ * Implemented in the API layer (avoids circular deps; same pattern as
+ * StoreTenantResolver). Audit P0 follow-up (2026-06-25): the previous
+ * middleware only checked tenant boundary, letting owner of store A
+ * use a sibling store B's URL.
+ */
+export type StoreMembershipResolver = (
+  userId: number,
+  storeId: number,
+  tenantId: number,
+) => Promise<'ok' | 'no_role' | 'revoked'>;
+
 export type StoreAccessDenialReason =
   | 'no_store'
   | 'invalid_id'
   | 'not_found'
-  | 'cross_tenant';
+  | 'cross_tenant'
+  // The user is in the tenant but has no membership for THIS store
+  // (or their membership was revoked). Surfaced as a distinct reason
+  // so the failure tracker can rate-limit cross-store probing without
+  // accidentally locking out a user whose role on another store was
+  // legitimately revoked.
+  | 'no_store_role';
 
 export interface StoreAccessFailureTrackerResult {
   blocked: boolean;
@@ -28,6 +59,7 @@ export type StoreAccessFailureTracker = (
 
 let _tokenVersionVerifier: TokenVersionVerifier | null = null;
 let _storeTenantResolver: StoreTenantResolver | null = null;
+let _storeMembershipResolver: StoreMembershipResolver | null = null;
 let _storeAccessFailureTracker: StoreAccessFailureTracker | null = null;
 
 export function setTokenVersionVerifier(fn: TokenVersionVerifier): void {
@@ -55,6 +87,18 @@ export function setTokenVersionVerifier(fn: TokenVersionVerifier): void {
  */
 export function setStoreTenantResolver(fn: StoreTenantResolver): void {
   _storeTenantResolver = fn;
+}
+
+/**
+ * Install the per-request store-membership verifier. Required for
+ * `requireStoreAccess` to perform the full check (tenant boundary +
+ * actual role on this store). Without it, the middleware only checks
+ * tenant boundary — which lets owner of store A use store B's URL.
+ *
+ * Implemented in the API layer (avoids circular deps).
+ */
+export function setStoreMembershipResolver(fn: StoreMembershipResolver): void {
+  _storeMembershipResolver = fn;
 }
 
 /**
@@ -199,6 +243,29 @@ export function requireStoreAccess() {
 
     if (storeTenantId !== auth.tenantId) {
       return deny('cross_tenant', 403, 'FORBIDDEN', 'Store access denied');
+    }
+
+    // FOURTH LAYER (audit P0 follow-up, 2026-06-25):
+    // Confirm the user has a membership for THIS specific store
+    // within the tenant. Without this, owner of store A could change
+    // `:storeId` in the URL to a sibling store B's id and pass the
+    // tenant boundary check — every downstream service then scopes
+    // its queries by that storeId and happily serves store B's data.
+    //
+    // The resolver is OPTIONAL (some installations may not have
+    // tenant_users seeded yet); when unset we fall back to the old
+    // tenant-only check and log a single warning.
+    if (_storeMembershipResolver) {
+      const membership = await _storeMembershipResolver(auth.userId, storeId, auth.tenantId);
+      if (membership === 'no_role') {
+        return deny('no_store_role', 403, 'FORBIDDEN', 'No role on this store');
+      }
+      if (membership === 'revoked') {
+        // Surfaced separately so the dashboard can render
+        // "your access to this store has been revoked" instead of a
+        // generic 403. Same HTTP code; richer i18n surface.
+        return deny('no_store_role', 403, 'FORBIDDEN', 'Your access to this store has been revoked');
+      }
     }
 
     await next();

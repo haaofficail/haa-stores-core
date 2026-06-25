@@ -563,17 +563,30 @@ export class AuthFlowService {
       if (store) activeStore = store;
     }
     if (!activeStore) {
+      // Tenant-wide membership (storeId IS NULL). Pick a store the
+      // user has an explicit `userStoreRoles` row for. Pre-fix this
+      // fell back to "first store in the tenant" — silently issuing a
+      // JWT for a store the user has NO role on. The middleware now
+      // catches the access at request time, but minting that JWT in
+      // the first place is wrong: the dashboard should show the user
+      // their picker. Audit P0 follow-up (2026-06-25).
       const userStoreRoles = await this.db
         .select({ storeId: s.userStoreRoles.storeId })
         .from(s.userStoreRoles)
         .where(eq(s.userStoreRoles.userId, user.id));
       const allowedStoreIds = userStoreRoles.map((r) => r.storeId);
-      const allStores = await this.db
-        .select({ id: s.stores.id, name: s.stores.name, slug: s.stores.slug })
-        .from(s.stores)
-        .where(eq(s.stores.tenantId, tenantUser.tenantId))
-        .limit(10);
-      activeStore = allStores.find((st) => allowedStoreIds.includes(st.id)) ?? allStores[0];
+      if (allowedStoreIds.length > 0) {
+        const allStores = await this.db
+          .select({ id: s.stores.id, name: s.stores.name, slug: s.stores.slug })
+          .from(s.stores)
+          .where(eq(s.stores.tenantId, tenantUser.tenantId))
+          .limit(10);
+        activeStore = allStores.find((st) => allowedStoreIds.includes(st.id));
+      }
+      // If we still have no activeStore, leave it undefined — the
+      // payload renders with storeId=0 / null name. The middleware
+      // will refuse every /merchant/:storeId/* call, and the dashboard
+      // can detect storeId=0 and prompt the user to pick a store.
     }
 
     await audit.record({
