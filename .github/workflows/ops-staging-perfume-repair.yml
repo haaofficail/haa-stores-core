@@ -2,23 +2,28 @@ name: Ops — Staging Perfume Membership Repair
 
 # Owner-triggered, guarded repair for the B2 seed-data isolation bug
 # (workflow_dispatch only). Default mode is `plan` (read-only). `apply`
-# removes the single mis-seeded tenant_users row that maps
-# `merchant.perfumes@example.com` onto the `haa-demo` store, then runs the
-# demo-perfumes seed so the merchant is scoped to its own store.
+# removes the single mis-mapped tenant_users row that ties
+# `merchant.perfumes@example.com` to the `haa-demo` store, and gives that
+# merchant a minimal home store (`demo-perfumes`) so it is not left orphaned.
+#
+# The full demo catalogue seed runs through a dev-only loader that is not
+# present in the deployed runtime image, so this workflow uses a SELF-CONTAINED
+# minimal path built on the `postgres` package already shipped in the api
+# container — no extra tooling, no image change, no deploy.
 #
 # Safety
 # ------
 #   - Manual trigger only; never auto-runs.
 #   - STAGING only — no environment chooser, no live tier here.
-#   - Default mode `plan` is read-only.
+#   - Default mode `plan` is read-only and writes nothing.
 #   - `apply` proceeds ONLY when every guard holds:
 #       * confirm phrase matches exactly
 #       * haa-demo store exists and is_demo = true
 #       * merchant.perfumes exists
 #       * the wrong-membership row count is EXACTLY 1
-#   - Before any write it snapshots tenant_users into a backup table.
-#   - If the demo-perfumes seed is not runnable in the container it FAILS
-#     BEFORE removing anything (never leaves a half-repair).
+#       * a demo-perfumes store, if it already exists, is itself a demo store
+#   - Snapshots the affected tables before writing.
+#   - The whole change runs in ONE transaction; any failed check rolls back.
 #   - Never prints the connection string or any secret.
 
 "on":
@@ -95,7 +100,7 @@ jobs:
             # the staging connection string in its own environment; it is read
             # there and never echoed.
 
-            echo "==> [1/5] Plan + guards (read-only)"
+            echo "==> [1/4] Plan + guards (read-only)"
             docker compose -p "$PROJECT" exec -T -e RUN_MODE="$MODE" -w /app/packages/db api \
               node --input-type=module -e '
                 import postgres from "postgres";
@@ -105,7 +110,7 @@ jobs:
                 try {
                   await sql.begin(async (tx) => {
                     await tx.unsafe("SET TRANSACTION READ ONLY");
-                    const store = await tx.unsafe("SELECT id, is_demo FROM stores WHERE slug = $1 LIMIT 1", ["haa-demo"]);
+                    const store = await tx.unsafe("SELECT id, is_demo, tenant_id FROM stores WHERE slug = $1 LIMIT 1", ["haa-demo"]);
                     if (!store.length || store[0].is_demo !== true) {
                       throw new Error("GUARD: haa-demo demo store not found / not a demo DB — not the staging seed.");
                     }
@@ -115,11 +120,21 @@ jobs:
                     if (!user.length) { console.log("  Nothing to repair."); return; }
                     const uid = user[0].id;
                     const wrong = await tx.unsafe("SELECT id FROM tenant_users WHERE user_id = $1 AND store_id = $2", [uid, haaId]);
-                    const pstore = await tx.unsafe("SELECT id FROM stores WHERE slug = $1 LIMIT 1", ["demo-perfumes"]);
+                    const ps = await tx.unsafe("SELECT id, is_demo FROM stores WHERE slug = $1 LIMIT 1", ["demo-perfumes"]);
+                    const psid = ps.length ? ps[0].id : null;
+                    const settings = psid ? await tx.unsafe("SELECT id FROM store_settings WHERE store_id = $1 LIMIT 1", [psid]) : [];
+                    const role = psid ? await tx.unsafe("SELECT id FROM roles WHERE store_id = $1 AND name = $2 LIMIT 1", [psid, "admin"]) : [];
+                    const usr = psid ? await tx.unsafe("SELECT id FROM user_store_roles WHERE user_id = $1 AND store_id = $2 LIMIT 1", [uid, psid]) : [];
+                    const mem = psid ? await tx.unsafe("SELECT id FROM tenant_users WHERE user_id = $1 AND store_id = $2 LIMIT 1", [uid, psid]) : [];
                     const others = await tx.unsafe("SELECT DISTINCT u.email AS email FROM tenant_users tu JOIN users u ON u.id = tu.user_id WHERE tu.store_id = $1 AND u.id <> $2", [haaId, uid]);
                     console.log("  wrong rows in haa-demo:", wrong.length);
-                    console.log("  demo-perfumes store:", pstore.length ? "exists" : "MISSING");
+                    console.log("  demo-perfumes store:", ps.length ? "exists" : "MISSING");
+                    if (ps.length && ps[0].is_demo !== true) console.log("  WARNING: a non-demo store already owns slug demo-perfumes (apply will refuse).");
                     console.log("  other merchants on haa-demo (left untouched):", others.map((r) => r.email).join(", ") || "none");
+                    console.log("  apply would create -> store:", ps.length ? "no" : "yes",
+                                "| storeSettings:", (psid && settings.length) ? "no" : "yes",
+                                "| userStoreRole:", (psid && usr.length) ? "no" : "yes",
+                                "| tenantUser membership:", (psid && mem.length) ? "no" : "yes");
                     if (MODE === "apply" && wrong.length !== 1) {
                       throw new Error("GUARD: expected EXACTLY 1 wrong row, found " + wrong.length + " — refusing to write.");
                     }
@@ -137,67 +152,98 @@ jobs:
               exit 0
             fi
 
-            echo "==> [2/5] Pre-write check: is the demo-perfumes seed runnable in the container?"
-            if ! docker compose -p "$PROJECT" exec -T -w /app/packages/db api \
-                   sh -c 'test -f src/seed/demo/perfume-demo.ts && pnpm exec tsx --version' </dev/null >/dev/null 2>&1; then
-              echo "::error::demo-perfumes seed is NOT runnable here (tsx/seed source unavailable). Failing BEFORE any write — no half-repair."
-              exit 1
-            fi
-
-            echo "==> [3/5] Snapshot tenant_users before writing"
+            echo "==> [2/4] Snapshot affected tables before writing"
             docker compose -p "$PROJECT" exec -T -e RUN_ID="$GH_RUN_ID" -w /app/packages/db api \
               node --input-type=module -e '
                 import postgres from "postgres";
                 const sql = postgres(process.env.DATABASE_URL, { max: 1 });
                 const rid = process.env.RUN_ID || "";
+                const TABLES = ["tenant_users", "stores", "store_settings", "user_store_roles", "roles"];
                 try {
                   if (!/^[0-9]+$/.test(rid)) throw new Error("bad run id for backup name");
-                  await sql.unsafe("CREATE TABLE IF NOT EXISTS tenant_users_bak_" + rid + " AS SELECT * FROM tenant_users");
-                  const n = await sql.unsafe("SELECT count(*)::int AS c FROM tenant_users_bak_" + rid);
-                  console.log("  backup table tenant_users_bak_" + rid + " rows:", n[0].c);
+                  for (const t of TABLES) {
+                    const name = t + "_bak_" + rid;
+                    await sql.unsafe("CREATE TABLE IF NOT EXISTS " + name + " AS SELECT * FROM " + t);
+                    const n = await sql.unsafe("SELECT count(*)::int AS c FROM " + name);
+                    console.log("  backup " + name + " rows: " + n[0].c);
+                  }
                 } catch (e) { console.error("  snapshot failed:", e.message); process.exitCode = 1; }
                 finally { await sql.end(); }
               ' </dev/null
 
-            echo "==> [4/5] Remove the single wrong membership row (guarded transaction)"
+            echo "==> [3/4] Apply minimal repair in ONE transaction (create home store + correct membership, remove wrong row)"
             docker compose -p "$PROJECT" exec -T -w /app/packages/db api \
               node --input-type=module -e '
                 import postgres from "postgres";
                 const sql = postgres(process.env.DATABASE_URL, { max: 1 });
                 const PERFUME = "merchant.perfumes@example.com";
+                const STORE_NAME = "عطور هاء (متجر تجريبي)";
                 try {
                   await sql.begin(async (tx) => {
-                    const store = await tx.unsafe("SELECT id, is_demo FROM stores WHERE slug = $1 LIMIT 1", ["haa-demo"]);
+                    const store = await tx.unsafe("SELECT id, is_demo, tenant_id FROM stores WHERE slug = $1 LIMIT 1", ["haa-demo"]);
                     if (!store.length || store[0].is_demo !== true) throw new Error("GUARD: not the staging demo DB.");
                     const haaId = store[0].id;
+                    const tid = store[0].tenant_id;
                     const user = await tx.unsafe("SELECT id FROM users WHERE email = $1 LIMIT 1", [PERFUME]);
                     if (!user.length) throw new Error("GUARD: perfume user not found.");
                     const uid = user[0].id;
                     const wrong = await tx.unsafe("SELECT id FROM tenant_users WHERE user_id = $1 AND store_id = $2", [uid, haaId]);
-                    if (wrong.length !== 1) throw new Error("ABORT: expected EXACTLY 1 wrong row, found " + wrong.length);
+                    if (wrong.length !== 1) throw new Error("GUARD: expected EXACTLY 1 wrong row, found " + wrong.length);
+
+                    // Home store (create if missing; never reuse a non-demo store on this slug).
+                    let ps = await tx.unsafe("SELECT id, is_demo FROM stores WHERE slug = $1 LIMIT 1", ["demo-perfumes"]);
+                    let psid;
+                    if (ps.length) {
+                      if (ps[0].is_demo !== true) throw new Error("GUARD: slug demo-perfumes is owned by a NON-demo store — refusing.");
+                      psid = ps[0].id;
+                    } else {
+                      const created = await tx.unsafe(
+                        "INSERT INTO stores (tenant_id, name, slug, is_demo, demo_profile, status, is_active, publish_status) VALUES ($1, $2, $3, true, $4, $5, true, $6) RETURNING id",
+                        [tid, STORE_NAME, "demo-perfumes", "perfume", "active", "published"]);
+                      psid = created[0].id;
+                    }
+
+                    const hasSettings = await tx.unsafe("SELECT id FROM store_settings WHERE store_id = $1 LIMIT 1", [psid]);
+                    if (!hasSettings.length) await tx.unsafe("INSERT INTO store_settings (store_id) VALUES ($1)", [psid]);
+
+                    let role = await tx.unsafe("SELECT id FROM roles WHERE store_id = $1 AND name = $2 LIMIT 1", [psid, "admin"]);
+                    let rid;
+                    if (role.length) { rid = role[0].id; }
+                    else { const r = await tx.unsafe("INSERT INTO roles (store_id, name) VALUES ($1, $2) RETURNING id", [psid, "admin"]); rid = r[0].id; }
+
+                    const hasUsr = await tx.unsafe("SELECT id FROM user_store_roles WHERE user_id = $1 AND store_id = $2 LIMIT 1", [uid, psid]);
+                    if (!hasUsr.length) await tx.unsafe("INSERT INTO user_store_roles (user_id, store_id, role_id) VALUES ($1, $2, $3)", [uid, psid, rid]);
+
+                    const hasMem = await tx.unsafe("SELECT id FROM tenant_users WHERE user_id = $1 AND store_id = $2 LIMIT 1", [uid, psid]);
+                    if (!hasMem.length) await tx.unsafe("INSERT INTO tenant_users (tenant_id, store_id, user_id, role) VALUES ($1, $2, $3, $4)", [tid, psid, uid, "owner"]);
+
                     const gone = await tx.unsafe("DELETE FROM tenant_users WHERE user_id = $1 AND store_id = $2 RETURNING id", [uid, haaId]);
-                    if (gone.length !== 1) throw new Error("ABORT: removed " + gone.length + " rows, expected 1 — transaction rolled back.");
-                    console.log("  removed rows:", gone.length);
+                    if (gone.length !== 1) throw new Error("ABORT: removed " + gone.length + " rows, expected 1 — rolled back.");
+
+                    console.log("  demo-perfumes store id:", psid, "| removed wrong rows:", gone.length);
                   });
-                } catch (e) { console.error("  removal failed:", e.message); process.exitCode = 1; }
+                } catch (e) { console.error("  apply failed (rolled back):", e.message); process.exitCode = 1; }
                 finally { await sql.end(); }
               ' </dev/null
 
-            echo "==> [4b] Seed the demo-perfumes store + correct membership"
-            docker compose -p "$PROJECT" exec -T -w /app/packages/db api \
-              sh -c 'pnpm run seed:perfume' </dev/null
-
-            echo "==> [5/5] Re-verify (read-only)"
+            echo "==> [4/4] Re-verify (read-only)"
             docker compose -p "$PROJECT" exec -T -w /app/packages/db api \
               node --input-type=module -e '
                 import postgres from "postgres";
                 const sql = postgres(process.env.DATABASE_URL, { max: 1 });
                 const PERFUME = "merchant.perfumes@example.com";
+                const HAA = "merchant.haa-demo@example.com";
                 try {
                   await sql.begin(async (tx) => {
                     await tx.unsafe("SET TRANSACTION READ ONLY");
-                    const rows = await tx.unsafe("SELECT s.slug AS store, tu.role FROM tenant_users tu JOIN users u ON u.id = tu.user_id JOIN stores s ON s.id = tu.store_id WHERE u.email = $1 ORDER BY s.slug", [PERFUME]);
+                    const haa = await tx.unsafe("SELECT id FROM stores WHERE slug = $1 LIMIT 1", ["haa-demo"]);
+                    const u = await tx.unsafe("SELECT id FROM users WHERE email = $1 LIMIT 1", [PERFUME]);
+                    const wrong = await tx.unsafe("SELECT count(*)::int AS c FROM tenant_users WHERE user_id = $1 AND store_id = $2", [u[0].id, haa[0].id]);
+                    const rows = await tx.unsafe("SELECT s.slug AS store, tu.role FROM tenant_users tu JOIN users uu ON uu.id = tu.user_id JOIN stores s ON s.id = tu.store_id WHERE uu.email = $1 ORDER BY s.slug", [PERFUME]);
+                    const haaMember = await tx.unsafe("SELECT count(*)::int AS c FROM tenant_users tu JOIN users uu ON uu.id = tu.user_id WHERE uu.email = $1 AND tu.store_id = $2", [HAA, haa[0].id]);
+                    console.log("  wrong rows in haa-demo now:", wrong[0].c, "(want 0)");
                     console.log("  perfume memberships now:", rows.map((r) => r.store + "(" + r.role + ")").join(", ") || "none");
+                    console.log("  merchant.haa-demo still on haa-demo:", haaMember[0].c === 1 ? "yes (untouched)" : "CHANGED — investigate");
                   });
                 } catch (e) { console.error("  verify failed:", e.message); process.exitCode = 1; }
                 finally { await sql.end(); }
