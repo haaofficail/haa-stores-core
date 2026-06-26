@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { settingsApi, onboardingApi, productsApi } from '@/lib/api';
 import { formatNumber } from '@/lib/utils';
+import { getStorefrontOrigin } from '@/lib/storefront-url';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,27 +23,6 @@ const steps = [
   { key: 'products', icon: ShoppingBag },
   { key: 'launch', icon: Rocket },
 ];
-
-function getStorefrontOrigin(): string {
-  // Explicit override first (dev sets VITE_STOREFRONT_URL=http://localhost:5174).
-  // Otherwise derive from the current host: the merchant dashboard lives at
-  //   merchant.<apex>      → https://merchant.staging.haastores.com
-  // and the storefront lives at
-  //   <apex>               → https://staging.haastores.com
-  // so we strip the leading "merchant." subdomain. Falls back to the
-  // dev-server :5173 → :5174 swap for local development.
-  if (import.meta.env.VITE_STOREFRONT_URL) {
-    return String(import.meta.env.VITE_STOREFRONT_URL).replace(/\/$/, '');
-  }
-  if (typeof window !== 'undefined' && window.location?.host) {
-    const host = window.location.host;
-    if (host.startsWith('merchant.')) {
-      return `${window.location.protocol}//${host.slice('merchant.'.length)}`;
-    }
-    return window.location.origin.replace(/:5173$/, ':5174');
-  }
-  return 'http://localhost:5174';
-}
 
 export default function OnboardingWizard() {
   const { t } = useTranslation();

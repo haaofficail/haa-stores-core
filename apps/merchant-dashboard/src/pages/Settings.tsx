@@ -2,6 +2,7 @@ import { lazy, Suspense, useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { settingsApi, categoriesApi, type StoreConfig } from '@/lib/api';
+import { getStorefrontOrigin } from '@/lib/storefront-url';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -277,7 +278,7 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-neutral-900">{t('settings.title')}</h1>
         {form.slug && (
-          <a href={`${import.meta.env.VITE_STOREFRONT_URL || 'http://localhost:5174'}/s/${form.slug}`} target="_blank" rel="noopener noreferrer"
+          <a href={`${getStorefrontOrigin()}/s/${form.slug}`} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 text-neutral-700 text-sm font-medium rounded-xl hover:bg-neutral-200 transition-colors">
             <ExternalLink className="h-4 w-4" />
             {t('settings.viewStore', 'عرض المتجر')}

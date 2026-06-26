@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { getStorefrontOrigin } from '@/lib/storefront-url';
 import { useState, useMemo } from 'react';
 import { usePermissions } from '@/lib/permissions';
 import {
@@ -170,7 +171,7 @@ function NavGroup({ titleKey, title, items }: { titleKey: string; title: string;
 export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: () => void }) {
   const { t } = useTranslation();
   const [isRTL] = useState(() => document.dir === 'rtl');
-  const storefrontBase = import.meta.env.VITE_STOREFRONT_URL || 'http://localhost:5174';
+  const storefrontBase = getStorefrontOrigin();
 
   return (
     <>
