@@ -3,7 +3,9 @@ import postgres from 'postgres';
 import * as schema from './schema/index.js';
 
 export * from './schema/index.js';
-export { setRlsContext, clearRlsContext } from './rls.js';
+export { sql } from 'drizzle-orm';
+export { setRlsContext, clearRlsContext, withTenantContext } from './rls.js';
+export type { TenantContext } from './rls.js';
 
 export type DbClient = ReturnType<typeof drizzle>;
 
