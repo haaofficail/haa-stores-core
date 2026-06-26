@@ -4,6 +4,31 @@
 
 ---
 
+### TASK-0082: Fix Saudi policy generator CJK contamination and compliance copy
+
+- **Type:** UX/UI Polish / Support/Ops
+- **Priority:** P1
+- **Status:** Done
+- **Created:** 2026-06-27
+- **Updated:** 2026-06-27
+- **Original Request:** "افحص توليد سياسات وفق النظام السعودي" after staging `/policies` showed Chinese characters.
+- **Expanded Requirement:** Inspect the merchant policy generator source, remove non-Arabic CJK contamination from generated Saudi policy drafts, and add regression coverage so the issue cannot recur silently.
+- **Problem:** `SaudiPolicyGenerator` templates contained mixed-language fragments (`plus 5`, `ت交易`, `除非`) plus minor Arabic typos, so staging displayed broken policy drafts to merchants.
+- **Scope:** Commerce-core policy template copy, generator regression test, and ops documentation.
+- **Out of Scope:** Deploying staging/production, database changes, legal sign-off, or rewriting the full policy-generation product flow.
+- **Skills Used:** `acceptance-criteria-gate`, `design-ux-excellence-gate`, `test-strategy-gate`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] Generated policy drafts contain no CJK characters.
+  - [x] Generated policy drafts no longer contain mixed English fragment `plus 5` inside Arabic legal copy.
+  - [x] Privacy drafts mention legal basis, data-subject rights, retention, and secure deletion.
+  - [x] Shipping/terms drafts mention the Saudi e-commerce 15-day delayed-delivery cancellation rule.
+  - [x] Regression test fails on the original staging text and passes after the source-template fix.
+- **Test Plan:** `pnpm vitest run tests/saudi-policy-generator.test.ts`; targeted CJK grep; wider typecheck/build before PR.
+- **Files Changed:** `packages/commerce-core/src/saudi-policy-generator.ts`, `tests/saudi-policy-generator.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`.
+- **Related Issues:** ISSUE-0022.
+
+---
+
 ### TASK-0081: Keep P3 support fingerprints actionable in ops analyzer
 
 - **Type:** Observability / Support/Ops

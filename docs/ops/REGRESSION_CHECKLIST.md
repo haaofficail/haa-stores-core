@@ -44,6 +44,8 @@
 - [ ] No random colors — tokens used
 - [ ] No layout overflow or scroll issues
 - [ ] Touch targets ≥ 44px on mobile
+- [ ] Generated merchant policy drafts contain no CJK characters or unintended mixed-language fragments
+- [ ] Saudi policy generator keeps privacy legal-basis/rights/retention clauses and delayed-delivery cancellation language covered by tests
 
 ## Theme
 
