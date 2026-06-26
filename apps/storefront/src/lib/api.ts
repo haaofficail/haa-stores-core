@@ -398,10 +398,12 @@ export const productsApi = {
   },
   /**
    * Returns the full paginated envelope (`{ data, total, page, totalPages }`).
-   * Use this when you need pagination metadata (e.g. a category page with
-   * multiple pages).
+   * The products endpoint returns a flat shape at the top level
+   * (`{ success, data: [...], total, totalPages }`) rather than a nested
+   * envelope, so we fetch directly instead of going through `request<T>`
+   * (which extracts only `json.data` and would return the raw array).
    */
-  listPaginated: (slug: string, params?: ProductListParams) => {
+  listPaginated: async (slug: string, params?: ProductListParams): Promise<ProductListResult> => {
     const q = new URLSearchParams();
     if (params?.page) q.set('page', String(params.page));
     if (params?.limit) q.set('limit', String(params.limit));
@@ -413,7 +415,28 @@ export const productsApi = {
     if (params?.maxPrice !== undefined) q.set('maxPrice', String(params.maxPrice));
     if (params?.sort) q.set('sort', params.sort);
     const qs = q.toString();
-    return request<ProductListResult>(`/s/${slug}/products${qs ? `?${qs}` : ''}`);
+    const res = await fetch(`${BASE_URL}/s/${slug}/products${qs ? `?${qs}` : ''}`, {
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    });
+    const json = await res.json() as {
+      success?: boolean;
+      data?: PublicProduct[];
+      total?: number;
+      page?: number;
+      limit?: number;
+      totalPages?: number;
+      error?: { code: string; message: string };
+    };
+    if (json.success === false && json.error) {
+      throw new ApiClientError(json.error.code, json.error.message);
+    }
+    return {
+      data: json.data ?? [],
+      total: json.total ?? 0,
+      page: json.page ?? 1,
+      limit: json.limit ?? 20,
+      totalPages: json.totalPages ?? 0,
+    };
   },
   getBySlug: (slug: string, productSlug: string) =>
     request<PublicProduct>(`/s/${slug}/products/${productSlug}`),
