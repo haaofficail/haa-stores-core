@@ -6,6 +6,9 @@ import { SystemThemeProvider } from '@haa/system-theme';
 import App from './App';
 import './i18n';
 import './index.css';
+import { initObservability } from './lib/observability';
+
+initObservability();
 
 // W1 (DECISION-OS-009): the dashboard does NOT use storefront theme runtime.
 // `<ThemeProvider>` from @haa/theme-react was a dead wrapper — no `useTheme()`

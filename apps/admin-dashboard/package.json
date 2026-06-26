@@ -12,6 +12,7 @@
   "dependencies": {
     "@haa/system-theme": "workspace:*",
     "@haa/tokens": "workspace:*",
+    "@sentry/react": "^10.61.0",
     "i18next": "^23.11.0",
     "i18next-browser-languagedetector": "^7.1.0",
     "lucide-react": "^0.441.0",
