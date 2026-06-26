@@ -16,7 +16,7 @@
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports -- ISSUE-0009: the registry is the single canonical entry point that's allowed to touch lucide.
 import {
   AlertTriangle, ArrowLeft, ArrowRight, ArrowUp, BadgeCheck, Banknote, BarChart3, Bell, Box,
-  Building, Building2, Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Clock,
+  Building, Building2, Calendar, Check, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Clock,
   Coins, CreditCard, ExternalLink, Eye, FileText, Gift, Heart, Link as LinkIcon, Loader2, Lock, Mail, MapPin, Menu,
   Minus, Package, Phone, Plus, RefreshCcw, RefreshCw, Ruler, Search, Share2,
   Shield, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Star, Store, Tag,
@@ -26,7 +26,7 @@ import {
 
 export const ICON_REGISTRY = {
   AlertTriangle, ArrowLeft, ArrowRight, ArrowUp, BadgeCheck, Banknote, BarChart3, Bell, Box,
-  Building, Building2, Calendar, Check, ChevronDown, ChevronLeft, ChevronRight, Clock,
+  Building, Building2, Calendar, Check, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Clock,
   Coins, CreditCard, ExternalLink, Eye, FileText, Gift, Heart, LinkIcon, Loader2, Lock, Mail, MapPin, Menu,
   Minus, Package, Phone, Plus, RefreshCcw, RefreshCw, Ruler, Search, Share2,
   Shield, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Star, Store, Tag,

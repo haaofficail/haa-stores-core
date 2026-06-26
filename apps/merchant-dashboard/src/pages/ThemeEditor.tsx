@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { settingsApi } from '@/lib/api';
+import { getStorefrontOrigin } from '@/lib/storefront-url';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -74,10 +75,10 @@ export default function ThemeEditor() {
 
   useEffect(() => {
     if (!storeId || storeSlug) return;
-    settingsApi.get(storeId).then(s => setStoreSlug((s as any).slug || '')).catch(() => toast.error('فشل تحميل معلومات المتجر'));
+    settingsApi.get(storeId).then(s => setStoreSlug((s as { slug?: string }).slug || '')).catch(() => toast.error('فشل تحميل معلومات المتجر'));
   }, [storeId, storeSlug]);
 
-  const storefrontUrl = import.meta.env.VITE_STOREFRONT_URL || 'http://localhost:5174';
+  const storefrontUrl = getStorefrontOrigin();
   const previewOrigin = (() => {
     try { return new URL(storefrontUrl, window.location.origin).origin; }
     catch { return ''; }
@@ -282,17 +283,20 @@ export default function ThemeEditor() {
                 {t('theme.rollback', 'الإصدارات السابقة')} ({history.length})
               </summary>
               <div className="mt-2 space-y-1">
-                {history.map((h: any, i: number) => (
+                {history.map((h, i: number) => {
+                  const entry = h as { appliedAt?: string; preset?: string };
+                  return (
                   <button
-                    key={h.appliedAt || i}
+                    key={entry.appliedAt || i}
                     onClick={() => handleRollback(i)}
                     className="w-full text-end px-3 py-2 rounded-xl text-xs hover:bg-neutral-100 transition-colors flex items-center justify-between gap-2"
                   >
                     <span className="text-neutral-400 font-mono">#{history.length - i}</span>
-                    <span className="text-neutral-600">{new Date(h.appliedAt).toLocaleString('ar-SA')}</span>
-                    <span className="px-1.5 py-0.5 bg-neutral-100 rounded text-neutral-500">{h.preset || '—'}</span>
+                    <span className="text-neutral-600">{new Date(entry.appliedAt ?? '').toLocaleString('ar-SA')}</span>
+                    <span className="px-1.5 py-0.5 bg-neutral-100 rounded text-neutral-500">{entry.preset || '—'}</span>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </details>
           )}

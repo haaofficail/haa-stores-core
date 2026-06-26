@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { buildCheckoutStepKeys, clampStepIndex, type CheckoutStepKey } from '@/lib/checkout-steps';
 import { isSafeRedirectUrl } from '@/lib/safe-redirect';
+import { saveTrackPhone } from '@/lib/order-track-storage';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useSharedCart } from '@/hooks/CartContext';
@@ -291,6 +292,9 @@ export default function Checkout() {
         if (couponCode) {
           tracker.trackCouponApplied(slug, couponCode, cart.id);
         }
+        // Persist the buyer's phone so the order page auto-loads on return
+        // from the BNPL provider without re-asking for it (same-origin).
+        saveTrackPhone(bnplResult.order.orderNumber, customer.phone);
         window.location.href = bnplResult.redirectUrl;
         return;
       }
@@ -309,6 +313,9 @@ export default function Checkout() {
           return;
         }
         tracker.trackPurchase(slug, result.order.id, cart.id, { orderNumber: result.order.orderNumber, paymentMethod: '3ds_pending' });
+        // Persist phone before the 3DS redirect so the order page auto-loads
+        // when the issuer returns the customer to the callback.
+        saveTrackPhone(result.order.orderNumber, customer.phone);
         toast.info(t('checkout.threeDsRedirect', 'جاري التحقق من بطاقتك…'));
         // Use a relative path for the fake provider's local 3DS page;
         // for real providers, redirectUrl is an absolute issuer URL.
@@ -321,6 +328,9 @@ export default function Checkout() {
         tracker.trackCouponApplied(slug, couponCode, cart.id);
       }
       toast.success(t('checkout.success'));
+      // Persist the buyer's phone so the confirmation page loads the order
+      // immediately instead of showing the "enter phone to track" gate.
+      saveTrackPhone(result.order.orderNumber, customer.phone);
       navigate(`/s/${slug}/order/${result.order.orderNumber}`);
     } catch (err: unknown) {
       const msg = (err as { message?: string } | null)?.message || t('checkout.error');

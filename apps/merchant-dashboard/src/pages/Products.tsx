@@ -12,6 +12,7 @@ import { Plus, Search, Package, AlertTriangle, Loader2, Globe, Store, LayoutGrid
 import { toast } from 'sonner';
 import { ApiClientError } from '@/lib/api';
 import { generateSlug } from '@/lib/slug';
+import { getStorefrontOrigin } from '@/lib/storefront-url';
 import { validateProduct, getWarnings, type ProductFormData, type ProductOption, type ProductVariant, type ValidationError } from '@/lib/product-validation';
 import { ProductBulkActionsBar } from '@/components/products/ProductBulkActionsBar';
 import { ProductListTable, type ProductRowData } from '@/components/products/ProductListTable';
@@ -83,7 +84,7 @@ export default function Products() {
     if (typeof window === 'undefined') return 'table';
     return localStorage.getItem('products_view_mode') === 'grid' ? 'grid' : 'table';
   });
-  const STOREFRONT_BASE = import.meta.env.VITE_STOREFRONT_URL || 'http://localhost:5174';
+  const STOREFRONT_BASE = getStorefrontOrigin();
 
   useEffect(() => {
     if (!storeId) return;
