@@ -70,7 +70,7 @@ jobs:
             # script is silently swallowed. The container already has the
             # staging connection string in its own environment; we read it
             # there and never echo it.
-            docker compose -p "$PROJECT" exec -T -w /app/apps/api api \
+            docker compose -p "$PROJECT" exec -T -w /app/packages/db api \
               node --input-type=module -e '
                 import postgres from "postgres";
                 const sql = postgres(process.env.DATABASE_URL, { max: 1 });
