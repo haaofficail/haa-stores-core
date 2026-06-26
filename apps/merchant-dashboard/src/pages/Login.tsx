@@ -102,7 +102,8 @@ export default function Login() {
   };
 
   return (
-    <div
+    <main
+      id="main"
       dir="rtl"
       className="relative min-h-screen overflow-hidden bg-gradient-to-br from-primary-50/80 via-white to-primary-50/40 p-4 sm:p-6"
     >
@@ -281,6 +282,6 @@ export default function Login() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
