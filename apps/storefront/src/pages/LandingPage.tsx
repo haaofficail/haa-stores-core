@@ -414,6 +414,8 @@ export default function LandingPage() {
         </div>
       </nav>
 
+      <main id="main">
+
       {/* ── Hero ────────────────────────────────────────── */}
       <header className="lp-hero">
         <div className="lp-hero__glow" />
@@ -1042,6 +1044,8 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      </main>
 
       {/* ── Footer ───────────────────────────────────────── */}
       <footer className="lp-foot">
