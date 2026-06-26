@@ -19,6 +19,8 @@ storage
 tests/e2e/test-results/
 tests/e2e/report/
 tests/e2e/screenshots/
+/test-results/
+/playwright-report/
 .hostinger-mcp.env
 
 # Production secrets — never commit
