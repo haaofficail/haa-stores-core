@@ -20,8 +20,12 @@ test.describe('merchant login (invalid credentials)', () => {
 
     await page.goto(MERCHANT_LOGIN_URL);
 
-    // Logo + form are baseline expectations.
-    const logo = page.locator('header, nav').first().locator('img, svg').first();
+    // Logo + form are baseline expectations. The login page wraps the
+    // brand mark in a plain <div> (no <header>/<nav> landmark), so we
+    // look for the first image OR SVG anywhere in the document — the
+    // mark uses an <img src="/haa-logo-192.png"> with a <Sparkles>
+    // <svg> fallback if the image 404s.
+    const logo = page.locator('img, svg').first();
     await expect(logo).toBeVisible();
 
     const emailInput = page

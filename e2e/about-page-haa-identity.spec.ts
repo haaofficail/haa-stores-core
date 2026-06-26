@@ -11,9 +11,12 @@ test.describe('about page — Haa identity', () => {
   }) => {
     await page.goto('/about');
 
-    // Page title (Arabic).
+    // Page hero heading. The actual <h1> reads
+    //   "متجر إلكتروني سعودي، كما يجب أن يكون."
+    // The string "من نحن" only appears in <title>; matching against
+    // /كما يجب أن يكون/ pins us to the visible hero copy.
     await expect(
-      page.getByRole('heading', { name: /من نحن/ }).first(),
+      page.getByRole('heading', { name: /كما يجب أن يكون/ }).first(),
     ).toBeVisible();
 
     // Primary CTA: copy + computed brand styling.
