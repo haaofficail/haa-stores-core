@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Inbox, Mail, X } from 'lucide-react';
+import { Icon } from '../components/ui/icon';
 import { landingContactsApi } from '../lib/api';
 
 // ─── Domain types (narrowed locally from `unknown` per post-P2-030 pattern) ──
@@ -259,7 +259,7 @@ export default function LandingInbox() {
           </div>
         ) : contacts.length === 0 ? (
           <div className="p-12 text-center">
-            <Inbox className="h-10 w-10 text-gray-300 mx-auto mb-3" aria-hidden="true" />
+            <Icon name="Inbox" size="lg" className="text-gray-300 mx-auto mb-3" aria-hidden="true" />
             <p className="text-sm text-gray-500">لا توجد رسائل بعد</p>
           </div>
         ) : (
@@ -346,7 +346,7 @@ export default function LandingInbox() {
                 className="text-gray-400 hover:text-gray-600 rounded p-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 aria-label="إغلاق"
               >
-                <X className="h-5 w-5" />
+                <Icon name="X" size="md" />
               </button>
             </div>
 
@@ -440,7 +440,7 @@ export default function LandingInbox() {
                 href={mailtoHref}
                 className="flex-1 min-w-[120px] px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors text-center inline-flex items-center justify-center gap-2"
               >
-                <Mail className="h-4 w-4" />
+                <Icon name="Mail" size="xs" />
                 رد عبر البريد
               </a>
               <button

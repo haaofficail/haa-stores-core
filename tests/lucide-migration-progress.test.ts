@@ -71,6 +71,8 @@ const WRAPPER_FILES = new Set([
   resolve(ROOT, 'apps/storefront/src/components/ui/icon-registry.ts'),
   resolve(ROOT, 'apps/merchant-dashboard/src/components/ui/icon.tsx'),
   resolve(ROOT, 'apps/merchant-dashboard/src/components/ui/icon-registry.ts'),
+  resolve(ROOT, 'apps/admin-dashboard/src/components/ui/icon.tsx'),
+  resolve(ROOT, 'apps/admin-dashboard/src/components/ui/icon-registry.ts'),
 ]);
 
 // Captured 2026-06-25 after the architectural cleanup: stripComments was

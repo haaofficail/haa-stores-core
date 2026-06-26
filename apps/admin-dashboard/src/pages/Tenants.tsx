@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
 import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
-import { Plus } from 'lucide-react';
+import { Icon } from '../components/ui/icon';
 import { useTranslation } from 'react-i18next';
 
 export default function Tenants() {
@@ -102,7 +103,7 @@ export default function Tenants() {
           onClick={() => handleOpenDialog()}
           className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
         >
-          <Plus className="h-4 w-4" /> {t('tenants.addTenant', 'إضافة تاجر')}
+          <Icon name="Plus" size="xs" /> {t('tenants.addTenant', 'إضافة تاجر')}
         </button>
       </div>
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">

@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
-import { Eye, FileText } from 'lucide-react';
+import { Icon } from '../components/ui/icon';
 
 export default function KycReview() {
   const { t } = useTranslation();
@@ -108,7 +109,7 @@ export default function KycReview() {
                   </td>
                   <td className="px-4 py-3 space-x-2">
                     <button onClick={() => openDetail(p)} className="text-sm text-gray-600 hover:text-gray-900 ms-2 transition-colors cursor-pointer px-2 py-1" title={t('kyc.viewDetails', 'عرض التفاصيل')}>
-                      <Eye className="h-4 w-4 inline-block" />
+                      <Icon name="Eye" size="xs" className="inline-block" />
                     </button>
                     {p.status === 'submitted' || p.status === 'under_review' ? (
                       <>
@@ -165,7 +166,7 @@ export default function KycReview() {
                 {selectedProfile.documents?.map((doc: any) => (
                   <div key={doc.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-gray-50">
                     <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-gray-400" />
+                      <Icon name="FileText" size="md" className="text-gray-400" />
                       <span className="text-sm text-gray-700">{doc.type}</span>
                     </div>
                     {doc.fileUrl ? (
