@@ -1,0 +1,205 @@
+name: Ops — Staging Perfume Membership Repair
+
+# Owner-triggered, guarded repair for the B2 seed-data isolation bug
+# (workflow_dispatch only). Default mode is `plan` (read-only). `apply`
+# removes the single mis-seeded tenant_users row that maps
+# `merchant.perfumes@example.com` onto the `haa-demo` store, then runs the
+# demo-perfumes seed so the merchant is scoped to its own store.
+#
+# Safety
+# ------
+#   - Manual trigger only; never auto-runs.
+#   - STAGING only — no environment chooser, no live tier here.
+#   - Default mode `plan` is read-only.
+#   - `apply` proceeds ONLY when every guard holds:
+#       * confirm phrase matches exactly
+#       * haa-demo store exists and is_demo = true
+#       * merchant.perfumes exists
+#       * the wrong-membership row count is EXACTLY 1
+#   - Before any write it snapshots tenant_users into a backup table.
+#   - If the demo-perfumes seed is not runnable in the container it FAILS
+#     BEFORE removing anything (never leaves a half-repair).
+#   - Never prints the connection string or any secret.
+
+"on":
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "plan or apply"
+        required: true
+        default: "plan"
+        type: choice
+        options:
+          - plan
+          - apply
+      confirm:
+        description: "Required only for apply. Type: REPAIR_STAGING_PERFUME_MEMBERSHIP"
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  repair:
+    name: Perfume membership repair (staging)
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    env:
+      DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
+      DEPLOY_USER: ${{ secrets.STAGING_USER }}
+      SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+      PROJECT_NAME: haa-staging
+      MODE: ${{ inputs.mode }}
+      CONFIRM: ${{ inputs.confirm }}
+      GH_RUN_ID: ${{ github.run_id }}
+
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ env.SSH_KEY }}
+
+      - name: Add server to known hosts (pre-baked, no probing)
+        env:
+          STAGING_KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if [ -n "${STAGING_KNOWN_HOSTS:-}" ]; then
+            printf '%s\n' "$STAGING_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+            chmod 644 ~/.ssh/known_hosts
+          else
+            ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+            echo "::warning::STAGING_KNOWN_HOSTS not set — used ssh-keyscan fallback."
+          fi
+
+      - name: Guarded perfume membership repair (staging)
+        run: |
+          set -euo pipefail
+
+          # Runner-side gate: apply requires the exact confirm phrase.
+          if [ "$MODE" = "apply" ] && [ "$CONFIRM" != "REPAIR_STAGING_PERFUME_MEMBERSHIP" ]; then
+            echo "::error::apply mode requires confirm=REPAIR_STAGING_PERFUME_MEMBERSHIP (got a different value). Refusing."
+            exit 1
+          fi
+
+          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+            "PROJECT='$PROJECT_NAME' MODE='$MODE' GH_RUN_ID='$GH_RUN_ID' bash -s" <<'EOSSH'
+            set -euo pipefail
+            cd "/srv/haa-stores"
+
+            # `docker compose exec -T` inherits stdin from this heredoc, so every
+            # exec MUST close stdin with `</dev/null`. The container already holds
+            # the staging connection string in its own environment; it is read
+            # there and never echoed.
+
+            echo "==> [1/5] Plan + guards (read-only)"
+            docker compose -p "$PROJECT" exec -T -e RUN_MODE="$MODE" -w /app/packages/db api \
+              node --input-type=module -e '
+                import postgres from "postgres";
+                const sql = postgres(process.env.DATABASE_URL, { max: 1 });
+                const MODE = process.env.RUN_MODE || "plan";
+                const PERFUME = "merchant.perfumes@example.com";
+                try {
+                  await sql.begin(async (tx) => {
+                    await tx.unsafe("SET TRANSACTION READ ONLY");
+                    const store = await tx.unsafe("SELECT id, is_demo FROM stores WHERE slug = $1 LIMIT 1", ["haa-demo"]);
+                    if (!store.length || store[0].is_demo !== true) {
+                      throw new Error("GUARD: haa-demo demo store not found / not a demo DB — not the staging seed.");
+                    }
+                    const haaId = store[0].id;
+                    const user = await tx.unsafe("SELECT id FROM users WHERE email = $1 LIMIT 1", [PERFUME]);
+                    console.log("  merchant.perfumes present:", user.length ? "yes" : "no");
+                    if (!user.length) { console.log("  Nothing to repair."); return; }
+                    const uid = user[0].id;
+                    const wrong = await tx.unsafe("SELECT id FROM tenant_users WHERE user_id = $1 AND store_id = $2", [uid, haaId]);
+                    const pstore = await tx.unsafe("SELECT id FROM stores WHERE slug = $1 LIMIT 1", ["demo-perfumes"]);
+                    const others = await tx.unsafe("SELECT DISTINCT u.email AS email FROM tenant_users tu JOIN users u ON u.id = tu.user_id WHERE tu.store_id = $1 AND u.id <> $2", [haaId, uid]);
+                    console.log("  wrong rows in haa-demo:", wrong.length);
+                    console.log("  demo-perfumes store:", pstore.length ? "exists" : "MISSING");
+                    console.log("  other merchants on haa-demo (left untouched):", others.map((r) => r.email).join(", ") || "none");
+                    if (MODE === "apply" && wrong.length !== 1) {
+                      throw new Error("GUARD: expected EXACTLY 1 wrong row, found " + wrong.length + " — refusing to write.");
+                    }
+                  });
+                } catch (e) {
+                  console.error("  plan/guard failed:", e.message);
+                  process.exitCode = 1;
+                } finally {
+                  await sql.end();
+                }
+              ' </dev/null
+
+            if [ "$MODE" != "apply" ]; then
+              echo "==> PLAN ONLY — no changes were made."
+              exit 0
+            fi
+
+            echo "==> [2/5] Pre-write check: is the demo-perfumes seed runnable in the container?"
+            if ! docker compose -p "$PROJECT" exec -T -w /app/packages/db api \
+                   sh -c 'test -f src/seed/demo/perfume-demo.ts && pnpm exec tsx --version' </dev/null >/dev/null 2>&1; then
+              echo "::error::demo-perfumes seed is NOT runnable here (tsx/seed source unavailable). Failing BEFORE any write — no half-repair."
+              exit 1
+            fi
+
+            echo "==> [3/5] Snapshot tenant_users before writing"
+            docker compose -p "$PROJECT" exec -T -e RUN_ID="$GH_RUN_ID" -w /app/packages/db api \
+              node --input-type=module -e '
+                import postgres from "postgres";
+                const sql = postgres(process.env.DATABASE_URL, { max: 1 });
+                const rid = process.env.RUN_ID || "";
+                try {
+                  if (!/^[0-9]+$/.test(rid)) throw new Error("bad run id for backup name");
+                  await sql.unsafe("CREATE TABLE IF NOT EXISTS tenant_users_bak_" + rid + " AS SELECT * FROM tenant_users");
+                  const n = await sql.unsafe("SELECT count(*)::int AS c FROM tenant_users_bak_" + rid);
+                  console.log("  backup table tenant_users_bak_" + rid + " rows:", n[0].c);
+                } catch (e) { console.error("  snapshot failed:", e.message); process.exitCode = 1; }
+                finally { await sql.end(); }
+              ' </dev/null
+
+            echo "==> [4/5] Remove the single wrong membership row (guarded transaction)"
+            docker compose -p "$PROJECT" exec -T -w /app/packages/db api \
+              node --input-type=module -e '
+                import postgres from "postgres";
+                const sql = postgres(process.env.DATABASE_URL, { max: 1 });
+                const PERFUME = "merchant.perfumes@example.com";
+                try {
+                  await sql.begin(async (tx) => {
+                    const store = await tx.unsafe("SELECT id, is_demo FROM stores WHERE slug = $1 LIMIT 1", ["haa-demo"]);
+                    if (!store.length || store[0].is_demo !== true) throw new Error("GUARD: not the staging demo DB.");
+                    const haaId = store[0].id;
+                    const user = await tx.unsafe("SELECT id FROM users WHERE email = $1 LIMIT 1", [PERFUME]);
+                    if (!user.length) throw new Error("GUARD: perfume user not found.");
+                    const uid = user[0].id;
+                    const wrong = await tx.unsafe("SELECT id FROM tenant_users WHERE user_id = $1 AND store_id = $2", [uid, haaId]);
+                    if (wrong.length !== 1) throw new Error("ABORT: expected EXACTLY 1 wrong row, found " + wrong.length);
+                    const gone = await tx.unsafe("DELETE FROM tenant_users WHERE user_id = $1 AND store_id = $2 RETURNING id", [uid, haaId]);
+                    if (gone.length !== 1) throw new Error("ABORT: removed " + gone.length + " rows, expected 1 — transaction rolled back.");
+                    console.log("  removed rows:", gone.length);
+                  });
+                } catch (e) { console.error("  removal failed:", e.message); process.exitCode = 1; }
+                finally { await sql.end(); }
+              ' </dev/null
+
+            echo "==> [4b] Seed the demo-perfumes store + correct membership"
+            docker compose -p "$PROJECT" exec -T -w /app/packages/db api \
+              sh -c 'pnpm run seed:perfume' </dev/null
+
+            echo "==> [5/5] Re-verify (read-only)"
+            docker compose -p "$PROJECT" exec -T -w /app/packages/db api \
+              node --input-type=module -e '
+                import postgres from "postgres";
+                const sql = postgres(process.env.DATABASE_URL, { max: 1 });
+                const PERFUME = "merchant.perfumes@example.com";
+                try {
+                  await sql.begin(async (tx) => {
+                    await tx.unsafe("SET TRANSACTION READ ONLY");
+                    const rows = await tx.unsafe("SELECT s.slug AS store, tu.role FROM tenant_users tu JOIN users u ON u.id = tu.user_id JOIN stores s ON s.id = tu.store_id WHERE u.email = $1 ORDER BY s.slug", [PERFUME]);
+                    console.log("  perfume memberships now:", rows.map((r) => r.store + "(" + r.role + ")").join(", ") || "none");
+                  });
+                } catch (e) { console.error("  verify failed:", e.message); process.exitCode = 1; }
+                finally { await sql.end(); }
+              ' </dev/null
+          EOSSH
