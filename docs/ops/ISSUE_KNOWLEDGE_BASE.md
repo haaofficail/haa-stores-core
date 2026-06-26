@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0022: Saudi Policy Generator Templates Contained CJK Fragments
+
+- **ID:** ISSUE-0022
+- **Date:** 2026-06-27
+- **Severity:** Medium (merchant-facing trust/compliance issue on staging policy drafts)
+- **Area:** Merchant Dashboard / Commerce Core / Saudi policy generator
+- **Related Tasks:** TASK-0082
+- **Symptoms:** Merchant staging `/policies` displayed Chinese characters inside Arabic policy drafts, including `ت交易` in the privacy retention clause and `除非` in the returns-cost clause. The same output also contained `plus 5` inside Arabic copy and minor typos such as `الععميل` and `كمالياً`.
+- **Expected:** Generated Saudi policy drafts should be clean Arabic legal/product copy with no CJK contamination and no mixed-language fragments unless explicitly intentional.
+- **Actual:** The non-Arabic fragments were embedded directly in `packages/commerce-core/src/saudi-policy-generator.ts`, so every preview/apply flow inherited the broken text.
+- **Root Cause:** Policy copy was edited as static template text without a regression guard for unexpected Unicode ranges or core Saudi compliance phrases.
+- **Fix:** Replaced contaminated phrases at the source, corrected Arabic typos, and strengthened privacy/shipping/terms copy with legal-basis, data-subject-rights, retention/deletion, and 15-day delayed-delivery cancellation language.
+- **Verification:** `tests/saudi-policy-generator.test.ts` now asserts generated drafts contain no CJK characters, do not contain `plus 5`, and include required Saudi compliance phrases.
+- **Prevention:** Keep a source-level generator regression for forbidden CJK characters and required Saudi e-commerce/privacy clauses whenever policy templates change.
+- **Status:** Fixed.
+
+---
+
 ### ISSUE-0021: P3 Support Fingerprints Were Dropped Before RCA Logic
 
 - **ID:** ISSUE-0021

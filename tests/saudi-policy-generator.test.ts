@@ -1,6 +1,34 @@
 import { describe, it, expect } from 'vitest';
 
 describe('Saudi Policy Generator', () => {
+  it('generates Arabic Saudi policy drafts without CJK contamination', async () => {
+    const { SaudiPolicyGenerator } = await import('../packages/commerce-core/src/saudi-policy-generator.js');
+    const generator = new SaudiPolicyGenerator();
+    const result = generator.generate({
+      storeName: 'هاء',
+      legalName: 'مؤسسة حرف الهاء التجارية',
+      commercialRegistrationNumber: '1111111111',
+      vatNumber: '300000000000003',
+      supportEmail: 'support@haastores.com',
+      supportPhone: '+966500000000',
+      businessAddress: 'الرياض',
+      returnWindowDays: 7,
+      refundProcessingDays: 7,
+      deliveryMinDays: 3,
+      deliveryMaxDays: 7,
+      shippingFee: 0,
+    });
+
+    const allContent = result.policies.map((policy) => policy.content).join('\n');
+    expect(allContent).not.toMatch(/[\u3400-\u9fff]/u);
+    expect(allContent).not.toContain('plus 5');
+    expect(allContent).toContain('خمس سنوات');
+    expect(allContent).toContain('يحق للعميل إلغاء الطلب إذا تأخر التسليم أو التنفيذ لأكثر من 15 يومًا');
+    expect(allContent).toContain('حقوق صاحب البيانات');
+    expect(allContent).toContain('المسوغ النظامي');
+    expect(result.errors).toHaveLength(0);
+  });
+
   it('generates privacy policy with complete data', async () => {
     const { SaudiPolicyGenerator } = await import('../packages/commerce-core/src/saudi-policy-generator.js');
     const generator = new SaudiPolicyGenerator();
