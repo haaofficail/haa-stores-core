@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0021: P3 Support Fingerprints Were Dropped Before RCA Logic
+
+- **ID:** ISSUE-0021
+- **Date:** 2026-06-26
+- **Severity:** Low/Medium (does not create false alerts, but can hide repeated reportable support problems)
+- **Area:** Observability / Local monitoring / Support error analysis
+- **Related Tasks:** TASK-0081
+- **Symptoms:** Recent P3 support-error events such as `NETWORK-001` or `VALIDATION-001` were counted as passive events. Three current events with the same P3 support fingerprint produced `Actionable events in window: 0` and did not trigger the repeated-fingerprint RCA recommendation.
+- **Expected:** Passive monitoring pass/warn noise should be ignored, but active support-error events through P3 should stay visible in analyzer counts and repeated-fingerprint RCA recommendations.
+- **Actual:** `scripts/ops-events.mjs` allowed only P0/P1/P2 support events through `isActionableEvent()`. P3 support events were grouped with passive monitoring noise.
+- **Root Cause:** The stale-noise fix correctly filtered passive monitoring events but made the support severity allow-list too narrow. It conflated support P3 events with passive P3 health/check events.
+- **Fix:** Extended the support-event actionable severity allow-list to include P3. Added regression coverage that mixes three repeated P3 support events with one passive P3 monitoring pass and asserts only the support events are actionable and RCA-triggering.
+- **Verification:** `pnpm vitest run tests/ops-errors-analyzer.test.ts` covers the failing case and the existing stale/passive/recovered cases.
+- **Prevention:** Keep support-event classification separate from monitoring pass/warn classification. P3 support errors are reportable; P3 monitoring pass/warn events are passive unless they become explicit failures.
+- **Status:** Fixed.
+
+---
+
 ### ISSUE-0020: Ops Error Analyzer Recommended Incidents from Stale and Passive Events
 
 - **ID:** ISSUE-0020

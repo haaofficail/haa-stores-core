@@ -154,6 +154,41 @@ describe('ops error analyzer active window', () => {
     expect(output).toContain('Open Root Cause Analysis for fingerprint: API-001::recent-repeat');
   });
 
+  it('keeps repeated P3 support fingerprints visible for RCA while ignoring passive monitoring noise', () => {
+    const output = runAnalyzer({
+      supportEvents: [1, 2, 3].map(n => ({
+        eventId: `recent-p3-${n}`,
+        timestamp: `2026-06-25T11:1${n}:00.000Z`,
+        severity: 'P3',
+        errorCode: 'NETWORK-001',
+        fingerprint: 'NETWORK-001::storefront-fetch-repeat',
+        message: 'recent storefront fetch warning',
+        app: 'storefront',
+        route: '/pricing',
+      })),
+      monitoringEvents: [
+        {
+          eventId: 'pass-p3',
+          timestamp: '2026-06-25T11:20:00.000Z',
+          status: 'pass',
+          severity: 'P3',
+          target: 'storefront runtime',
+          checkType: 'health',
+          app: 'storefront',
+        },
+      ],
+    });
+
+    expect(output).toContain('Actionable events in window: 3');
+    expect(output).toContain('Passive pass/warn events ignored for recommendations: 1');
+    expect(output).toContain('P3: 3');
+    expect(output).toContain('NETWORK-001::storefront-fetch-repeat: 3 times');
+    expect(output).toContain(
+      'Open Root Cause Analysis for fingerprint: NETWORK-001::storefront-fetch-repeat',
+    );
+    expect(output).not.toContain('storefront runtime: 1');
+  });
+
   it('ignores passive monitoring pass events when ranking actionable targets', () => {
     const output = runAnalyzer({
       monitoringEvents: [
