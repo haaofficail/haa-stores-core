@@ -1,0 +1,129 @@
+name: Ops — Staging Perfume Isolation Dry-run
+
+# Owner-triggered, read-only diagnostic (workflow_dispatch only).
+#
+# Purpose
+# -------
+# Verify whether the `merchant.perfumes@example.com` demo merchant is still
+# mis-mapped to the `haa-demo` store on STAGING (B2 seed-data isolation
+# check). This runs SELECT-only probes inside the staging api container,
+# wrapped in a READ ONLY transaction. It changes nothing and never prints
+# the database connection string or any secret.
+#
+# Safety
+# ------
+#   - Manual trigger only; never auto-runs.
+#   - STAGING only — there is no environment chooser and no live tier here.
+#   - Read-only transaction; no row-changing statements.
+#   - No repair is performed and no flags are passed to anything.
+#   - A data guard aborts if the haa-demo demo store is absent (wrong DB).
+
+"on":
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Perfume isolation dry-run (staging)
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    env:
+      DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
+      DEPLOY_USER: ${{ secrets.STAGING_USER }}
+      SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+      PROJECT_NAME: haa-staging
+
+    steps:
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ env.SSH_KEY }}
+
+      - name: Add server to known hosts (pre-baked, no probing)
+        env:
+          STAGING_KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if [ -n "${STAGING_KNOWN_HOSTS:-}" ]; then
+            printf '%s\n' "$STAGING_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+            chmod 644 ~/.ssh/known_hosts
+          else
+            ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+            echo "::warning::STAGING_KNOWN_HOSTS not set — used ssh-keyscan fallback."
+          fi
+
+      - name: Run read-only isolation probe inside staging api container
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+            "PROJECT='$PROJECT_NAME' bash -s" <<'EOSSH'
+            set -euo pipefail
+            cd "/srv/haa-stores"
+
+            # `docker compose exec -T` inherits stdin from this heredoc, so the
+            # node call MUST close stdin with `</dev/null` or the rest of the
+            # script is silently swallowed. The container already has the
+            # staging connection string in its own environment; we read it
+            # there and never echo it.
+            docker compose -p "$PROJECT" exec -T -w /app/apps/api api \
+              node --input-type=module -e '
+                import postgres from "postgres";
+                const sql = postgres(process.env.DATABASE_URL, { max: 1 });
+                const PERFUME = "merchant.perfumes@example.com";
+                try {
+                  await sql.begin(async (tx) => {
+                    await tx.unsafe("SET TRANSACTION READ ONLY");
+
+                    const store = await tx.unsafe("SELECT id, is_demo FROM stores WHERE slug = $1 LIMIT 1", ["haa-demo"]);
+                    if (!store.length || store[0].is_demo !== true) {
+                      throw new Error("GUARD: haa-demo demo store not found / not a demo DB — refusing to proceed (this is not the staging seed).");
+                    }
+                    const haaId = store[0].id;
+                    const meta = await tx.unsafe("SELECT current_database() AS d");
+                    console.log("== Environment ==");
+                    console.log("  database:", meta[0].d);
+                    console.log("  haa-demo store: id=" + haaId + " is_demo=" + store[0].is_demo);
+                    console.log("");
+                    console.log("== Findings (read-only) ==");
+
+                    const user = await tx.unsafe("SELECT id FROM users WHERE email = $1 LIMIT 1", [PERFUME]);
+                    if (!user.length) {
+                      console.log("  merchant.perfumes present: no — nothing to check.");
+                      return;
+                    }
+                    const uid = user[0].id;
+                    console.log("  merchant.perfumes present: yes (user id=" + uid + ")");
+
+                    const wrong = await tx.unsafe("SELECT id, role FROM tenant_users WHERE user_id = $1 AND store_id = $2", [uid, haaId]);
+                    console.log("  wrong membership in haa-demo: " + (wrong.length ? "YES" : "no"));
+                    console.log("  rows a future repair would remove: " + wrong.length);
+
+                    const pstore = await tx.unsafe("SELECT id FROM stores WHERE slug = $1 LIMIT 1", ["demo-perfumes"]);
+                    if (!pstore.length) {
+                      console.log("  demo-perfumes store: MISSING (correct membership cannot exist yet)");
+                    } else {
+                      const ok = await tx.unsafe("SELECT id FROM tenant_users WHERE user_id = $1 AND store_id = $2", [uid, pstore[0].id]);
+                      console.log("  demo-perfumes store: exists (id=" + pstore[0].id + ")");
+                      console.log("  correct membership in demo-perfumes: " + (ok.length ? "yes" : "no"));
+                    }
+
+                    const others = await tx.unsafe("SELECT DISTINCT u.email AS email FROM tenant_users tu JOIN users u ON u.id = tu.user_id WHERE tu.store_id = $1 AND u.id <> $2", [haaId, uid]);
+                    const list = others.map((r) => r.email).join(", ");
+                    console.log("  other merchants mapped to haa-demo (a future repair leaves these untouched): " + (list || "none"));
+                    console.log("");
+                    console.log("== Summary ==");
+                    console.log("  A future repair would affect ONLY the perfume->haa-demo row(s). No other user or store is in scope. No changes were made by this run.");
+                  });
+                } catch (e) {
+                  console.error("  probe failed:", e.message);
+                  process.exitCode = 1;
+                } finally {
+                  await sql.end();
+                }
+              ' </dev/null
+          EOSSH
