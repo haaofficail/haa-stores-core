@@ -33,6 +33,11 @@ const MARKETPLACES = read('apps/merchant-dashboard/src/pages/Marketplaces.tsx');
 // against Marketplaces only.
 const SIDEBAR = read('apps/merchant-dashboard/src/components/layout/Sidebar.tsx');
 const ONBOARDING = read('apps/merchant-dashboard/src/pages/OnboardingWizard.tsx');
+// The storefront-origin derivation was extracted from OnboardingWizard into a
+// shared helper so every "open the storefront" link resolves it the same way
+// (no hardcoded localhost on deployed builds). Fix 6 now asserts the contract
+// against the helper + that onboarding wires it.
+const STOREFRONT_URL = read('apps/merchant-dashboard/src/lib/storefront-url.ts');
 
 describe('Apple-grade merchant dashboard fixes (audit 2026-06-22)', () => {
   describe('Fix 1+2: KPI bidi + spacing', () => {
@@ -113,12 +118,18 @@ describe('Apple-grade merchant dashboard fixes (audit 2026-06-22)', () => {
 
   describe('Fix 6: onboarding storefront URL', () => {
     it('getStorefrontOrigin strips a leading "merchant." subdomain', () => {
-      expect(ONBOARDING).toMatch(/host\.startsWith\(['"]merchant\.['"]\)/);
-      expect(ONBOARDING).toMatch(/host\.slice\(['"]merchant\.['"]\.length\)/);
+      expect(STOREFRONT_URL).toMatch(/host\.startsWith\(['"]merchant\.['"]\)/);
+      expect(STOREFRONT_URL).toMatch(/host\.slice\(['"]merchant\.['"]\.length\)/);
     });
 
     it('respects VITE_STOREFRONT_URL as explicit override (still)', () => {
-      expect(ONBOARDING).toMatch(/import\.meta\.env\.VITE_STOREFRONT_URL/);
+      expect(STOREFRONT_URL).toMatch(/import\.meta\.env\.VITE_STOREFRONT_URL/);
+    });
+
+    it('onboarding wires the shared resolver instead of hardcoding localhost', () => {
+      expect(ONBOARDING).toMatch(/from ['"]@\/lib\/storefront-url['"]/);
+      expect(ONBOARDING).toMatch(/getStorefrontOrigin\(\)/);
+      expect(ONBOARDING).not.toContain("'http://localhost:5174'");
     });
   });
 
