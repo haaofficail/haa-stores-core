@@ -16,6 +16,7 @@
     "@haa/theme-system": "workspace:*",
     "@haa/tokens": "workspace:*",
     "@haa/ui": "workspace:*",
+    "@sentry/react": "^10.61.0",
     "@splidejs/react-splide": "^0.7.12",
     "@splidejs/splide-extension-auto-scroll": "^0.5.3",
     "@types/dompurify": "^3.2.0",
