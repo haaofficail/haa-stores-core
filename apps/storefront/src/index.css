@@ -162,10 +162,14 @@
   --surface-3: #e8e8ed;
   --surface-inverse: #1d1d1f;
 
-  /* Text colors (matches tailwind.config extended colors.text) */
+  /* Text colors (matches tailwind.config extended colors.text).
+     secondary/tertiary darkened to Apple-family grays that meet WCAG AA
+     (≥4.5:1): #636366 = 5.99:1 and #6e6e73 = 5.07:1 on #fff (5.50 / 4.66 on
+     surface-2). The previous #86868b / #aeaeb2 measured 3.62 / 2.21 and read
+     as faint / unclear. */
   --text-primary: #1d1d1f;
-  --text-secondary: #86868b;
-  --text-tertiary: #aeaeb2;
+  --text-secondary: #636366;
+  --text-tertiary: #6e6e73;
   --text-disabled: #c6c6c8;
   --text-link: var(--brand-primary);
 
@@ -193,6 +197,13 @@
   --color-info: var(--brand-primary);
   --color-info-subtle: color-mix(in srgb, var(--brand-primary) 8%, #fff);
   --color-info-text: color-mix(in srgb, var(--brand-primary) 88%, #000);
+  /* -strong = readable foreground for accent text ON a -soft tinted background
+     (e.g. StoreAlert). The bright accent on -soft failed WCAG AA badly
+     (warning 2.02:1, danger 3.10:1); these dark shades measure 5.6–6.1:1. */
+  --color-info-strong: #1f5f99;
+  --color-success-strong: #15703a;
+  --color-warning-strong: #8a5300;
+  --color-danger-strong: #b3261e;
 }
 
 /* Splide carousel arrow styling */
@@ -621,7 +632,7 @@
   --store-primary: var(--brand-primary);
 
   /* ── Primary palette ── */
-  --color-primary-50:  color-mix(in srgb, var(--brand-primary)  8%, #fff);
+  --color-primary-50: color-mix(in srgb, var(--brand-primary) 8%, #fff);
   --color-primary-100: color-mix(in srgb, var(--brand-primary) 14%, #fff);
   --color-primary-200: color-mix(in srgb, var(--brand-primary) 26%, #fff);
   --color-primary-300: color-mix(in srgb, var(--brand-primary) 42%, #fff);
@@ -642,39 +653,40 @@
   --surface-inverse: #111827;
 
   /* ── Text ── */
-  --text-primary:    #111827;
-  --text-secondary:  #4b5563;
-  --text-tertiary:   #6b7280;
-  --text-muted:      #6b7280;
-  --text-disabled:   #d1d5db;
-  --text-link:       var(--brand-primary);
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #6b7280;
+  --text-muted: #6b7280;
+  --text-disabled: #d1d5db;
+  --text-link: var(--brand-primary);
 
   /* ── Border ── */
-  --border-subtle:   #f0f0f1;
-  --border-default:  #e5e7eb;
-  --border-hover:    #d1d5db;
-  --border-focus:    var(--brand-primary);
+  --border-subtle: #f0f0f1;
+  --border-default: #e5e7eb;
+  --border-hover: #d1d5db;
+  --border-focus: var(--brand-primary);
   --border-disabled: #f3f4f6;
 
   /* ── Status ── */
-  --color-success:        #15803d;
+  --color-success: #15803d;
   --color-success-subtle: #f0fdf4;
-  --color-success-text:   #15803d;
-  --color-warning:        #f59e0b;
+  --color-success-text: #15803d;
+  --color-warning: #f59e0b;
   --color-warning-subtle: #fffbeb;
-  --color-warning-text:   #b45309;
-  --color-danger:         #b91c1c;
-  --color-danger-subtle:  #fef2f2;
-  --color-danger-text:    #b91c1c;
-  --color-info:           var(--brand-primary);
-  --color-info-subtle:    color-mix(in srgb, var(--brand-primary) 8%, #fff);
-  --color-info-text:      color-mix(in srgb, var(--brand-primary) 88%, #000);
+  --color-warning-text: #b45309;
+  --color-danger: #b91c1c;
+  --color-danger-subtle: #fef2f2;
+  --color-danger-text: #b91c1c;
+  --color-info: var(--brand-primary);
+  --color-info-subtle: color-mix(in srgb, var(--brand-primary) 8%, #fff);
+  --color-info-text: color-mix(in srgb, var(--brand-primary) 88%, #000);
 
   /* ── Shadows & radius ── */
   --card-radius: 16px;
   --radius-pill: 9999px;
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-md:
+    0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.05);
 
   /* ── Legacy haa-* aliases (keep for backward compat) ── */
   --haa-surface-1: #ffffff;
@@ -687,17 +699,30 @@
   background-color: transparent;
   color: var(--text-primary);
 }
-.auth-scope .bg-surface    { background-color: var(--surface-1) !important; }
-.auth-scope .text-text-primary   { color: var(--text-primary)   !important; }
-.auth-scope .text-text-secondary { color: var(--text-secondary) !important; }
-.auth-scope .text-text-muted     { color: var(--text-muted)     !important; }
-.auth-scope .text-text-tertiary  { color: var(--text-muted)     !important; }
-.auth-scope .border-border-subtle { border-color: var(--border-subtle) !important; }
+.auth-scope .bg-surface {
+  background-color: var(--surface-1) !important;
+}
+.auth-scope .text-text-primary {
+  color: var(--text-primary) !important;
+}
+.auth-scope .text-text-secondary {
+  color: var(--text-secondary) !important;
+}
+.auth-scope .text-text-muted {
+  color: var(--text-muted) !important;
+}
+.auth-scope .text-text-tertiary {
+  color: var(--text-muted) !important;
+}
+.auth-scope .border-border-subtle {
+  border-color: var(--border-subtle) !important;
+}
 
 /* ── Auth: حقول الإدخال بيضاء داخل glass card ─────────────────────
    StoreInput يستخدم bg-surface-2 (#f9fafb) — في سياق الـ glass card
    يجب أن تكون الحقول بيضاء مع حدود خفيفة وfocus ring بلون الـ brand. */
-.auth-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.auth-scope
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 .auth-scope select,
 .auth-scope textarea {
   background-color: rgba(255, 255, 255, 0.92) !important;
@@ -709,7 +734,8 @@
 .auth-scope textarea:focus-visible {
   background-color: #ffffff !important;
   border-color: var(--brand-primary) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 15%, transparent) !important;
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--brand-primary) 15%, transparent) !important;
   outline: none !important;
 }
 
@@ -732,8 +758,7 @@
   ring
   (cleaner UX).
   */
-  #storefront-scope
-  a:focus-visible,
+#storefront-scope a:focus-visible,
 #storefront-scope button:focus-visible,
 #storefront-scope input:focus-visible,
 #storefront-scope select:focus-visible,
