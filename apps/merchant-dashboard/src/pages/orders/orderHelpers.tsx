@@ -70,6 +70,26 @@ export const arabicFulfillmentLabels: Record<string, string> = {
   fulfilled: 'تم التجهيز',
 };
 
+export const arabicPaymentMethodLabels: Record<string, string> = {
+  cash_on_delivery: 'الدفع عند الاستلام',
+  cod: 'الدفع عند الاستلام',
+  bank_transfer: 'تحويل بنكي',
+  card: 'بطاقة',
+  credit_card: 'بطاقة ائتمانية',
+  mada: 'مدى',
+  apple_pay: 'Apple Pay',
+  stc_pay: 'STC Pay',
+  wallet: 'محفظة',
+  fake_card_success: 'بطاقة (اختبار)',
+  fake_card_failure: 'بطاقة (اختبار فاشل)',
+};
+
+export function getArabicPaymentMethod(method: string | null | undefined): string {
+  if (!method) return '—';
+  const m = String(method).toLowerCase().trim();
+  return arabicPaymentMethodLabels[m] || method;
+}
+
 export function getArabicLabel(status: string | null | undefined): string | undefined {
   if (!status) return undefined;
   const s = String(status).toLowerCase().trim();

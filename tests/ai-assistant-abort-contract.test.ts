@@ -28,8 +28,8 @@ describe('AiAssistant — cancellable chat', () => {
     expect(AI).toMatch(/chatAbortRef\s*=\s*useRef<AbortController \| null>\(null\)/);
   });
 
-  it('handleChatSubmit creates a controller and passes its signal to aiApi.chat', () => {
-    const fn = AI.slice(AI.indexOf('async function handleChatSubmit'));
+  it('the send handler (sendPrompt) creates a controller and passes its signal to aiApi.chat', () => {
+    const fn = AI.slice(AI.indexOf('async function sendPrompt'));
     expect(fn).toMatch(/const\s+controller\s*=\s*new\s+AbortController\(\)/);
     expect(fn).toMatch(/aiApi\.chat\([^)]*controller\.signal/);
   });

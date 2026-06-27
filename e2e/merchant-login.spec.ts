@@ -2,10 +2,15 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Merchant dashboard login — invalid credentials path.
- * Hard-codes the merchant subdomain so the test is independent of baseURL.
+ * Uses the local merchant dev server in CI, while keeping staging available
+ * for manual runs through E2E_MERCHANT_URL.
  * Requires API to be reachable for authentication failure to surface.
  */
-const MERCHANT_LOGIN_URL = 'https://merchant.staging.haastores.com/login';
+const MERCHANT_LOGIN_URL =
+  process.env.E2E_MERCHANT_URL ||
+  (process.env.CI
+    ? 'http://localhost:5173/login'
+    : 'https://merchant.staging.haastores.com/login');
 
 test.describe('merchant login (invalid credentials)', () => {
   test('shows an inline error and stays on /login (never 500)', async ({

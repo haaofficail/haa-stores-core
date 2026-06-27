@@ -22,9 +22,52 @@ function generateMarketplaceOrderNumber(): string {
   return `HM-${y}${m}${d}-${rand}`;
 }
 
-function mapProduct(row: any) {
+// ── Marketplace visibility — SINGLE SOURCE OF TRUTH ──────────────────────
+// A product is visible in سوق هاء iff it satisfies one of these branches.
+// Used by the product feed AND every count/facet/seller query so an
+// advertised count can never exceed what the feed actually returns
+// (fixes the "20 منتج في السوق" badge over an empty grid — broken promise).
+//
+// BOTH branches require haaMarketplaceEnabled=true (TASK-0038 moderation gate);
+// demo stores additionally need an approved demoProfile (TASK-0040 whitelist).
+// Callers still apply their own `products.status='active'` + store-active
+// filters alongside this OR-branch, exactly as the feed does.
+const realStoreMarketplaceCondition = () =>
+  and(
+    eq(s.stores.isDemo, false),
+    eq(s.products.haaMarketplaceEnabled, true),
+    eq(s.products.haaMarketplaceReviewStatus, 'approved'),
+  );
+
+const demoStoreMarketplaceCondition = () =>
+  and(
+    eq(s.stores.isDemo, true),
+    eq(s.products.haaMarketplaceEnabled, true),
+    // SQL form of the shared `shouldShowInMarketplace` whitelist
+    // (packages/shared/src/demo/demo-rules.ts): only 'main' / 'perfume'
+    // demo profiles surface in سوق هاء. Keep this list in sync with it.
+    sql`${s.stores.demoProfile} IN ('main', 'perfume')`,
+  );
+
+const marketplaceVisibleProductCondition = () =>
+  or(realStoreMarketplaceCondition(), demoStoreMarketplaceCondition())!;
+
+type ProductImageRow = { url: string | null; thumbUrl: string | null };
+
+interface MarketplaceProductRow {
+  images?: ProductImageRow[] | null;
+  storeIsDemo?: boolean | null;
+  categorySlug?: string | null;
+  sfdaNumber?: string | null;
+  sfdaExpiryDate?: string | Date | null;
+  sfdaVerifiedAt?: string | Date | null;
+  // The remaining columns are passed straight through to the JSON response.
+  [key: string]: unknown;
+}
+
+function mapProduct(row: MarketplaceProductRow) {
   const imageUrls: string[] = Array.isArray(row.images)
-    ? row.images.map((img: any) => img?.url ?? img?.thumbUrl ?? '').filter(Boolean)
+    ? row.images.map((img) => img?.url ?? img?.thumbUrl ?? '').filter(Boolean)
     : [];
   const demoStore = row.storeIsDemo === true;
   // TASK-0038 audit P0-#6: SFDA + restricted categories enforcement.
@@ -95,16 +138,19 @@ haaMarketplaceRouter.get('/stats', async (c) => {
     .innerJoin(s.stores, eq(s.stores.tenantId, s.tenants.id))
     .where(eq(s.stores.isDemo, false));
 
-  // Total active products in marketplace
+  // Total marketplace-visible products — same predicate as the feed so the
+  // "X منتج متاح" header can't disagree with the grid (now includes enabled
+  // demo products instead of excluding all demo stores).
   const [{ productCount }] = await db
     .select({ productCount: count() })
     .from(s.products)
     .innerJoin(s.stores, eq(s.products.storeId, s.stores.id))
     .where(and(
-      eq(s.products.haaMarketplaceEnabled, true),
-      eq(s.products.haaMarketplaceReviewStatus, 'approved'),
       eq(s.products.status, 'active'),
-      eq(s.stores.isDemo, false),
+      eq(s.stores.status, 'active'),
+      eq(s.stores.isActive, true),
+      eq(s.stores.publishStatus, 'published'),
+      marketplaceVisibleProductCondition(),
     ));
 
   return c.json({
@@ -130,31 +176,15 @@ haaMarketplaceRouter.get('/products', async (c) => {
   const sort = c.req.query('sort') || 'featured';
   const db = createDbClient();
 
-  // Real stores: strict marketplace approval. Demo stores: visible if shouldShowInMarketplace.
-  const realStoreCondition = and(
-    eq(s.stores.isDemo, false),
-    eq(s.products.haaMarketplaceEnabled, true),
-    eq(s.products.haaMarketplaceReviewStatus, 'approved'),
-  );
-
-  const demoStoreCondition = and(
-    eq(s.stores.isDemo, true),
-    eq(s.products.status, 'active'),
-    // TASK-0038 audit P0-#7: demo stores must explicitly opt in to
-    // marketplace. They get the same haaMarketplaceEnabled=true gate
-    // as real stores so demo content does not bypass moderation.
-    eq(s.products.haaMarketplaceEnabled, true),
-    // Use shared shouldShowInMarketplace whitelist (demo-rules.ts).
-    // Recognized profiles: 'main', 'perfume'. Anything else is rejected.
-    sql`${s.stores.demoProfile} IN ('main', 'perfume')`,
-  );
-
+  // Real stores: strict marketplace approval. Demo stores: enabled + whitelisted
+  // profile. Both via the shared marketplaceVisibleProductCondition() so the feed
+  // and every count/facet query stay in lock-step (TASK-0038 + TASK-0040).
   const conditions = [
     eq(s.products.status, 'active'),
     eq(s.stores.status, 'active'),
     eq(s.stores.isActive, true),
     eq(s.stores.publishStatus, 'published'),
-    or(realStoreCondition, demoStoreCondition)!,
+    marketplaceVisibleProductCondition(),
   ];
 
   if (search) {
@@ -171,7 +201,7 @@ haaMarketplaceRouter.get('/products', async (c) => {
       WHERE ${s.productCategories.productId} = ${s.products.id}
         AND ${s.categories.slug} = ${category}
         AND ${s.categories.prohibitedInMarketplace} = false
-    )` as any);
+    )`);
   }
   if (storeSlug) {
     conditions.push(eq(s.stores.slug, storeSlug));
@@ -235,7 +265,7 @@ haaMarketplaceRouter.get('/products', async (c) => {
       ORDER BY ${s.categories.sortOrder} ASC
       LIMIT 1
     )`,
-    images: sql<any[]>`COALESCE((
+    images: sql<ProductImageRow[]>`COALESCE((
       SELECT jsonb_agg(jsonb_build_object('url', ${s.productImages.url}, 'thumbUrl', ${s.productImages.thumbUrl}) ORDER BY ${s.productImages.sortOrder})
       FROM ${s.productImages}
       WHERE ${s.productImages.productId} = ${s.products.id}
@@ -256,7 +286,7 @@ haaMarketplaceRouter.get('/products', async (c) => {
   return c.json({
     success: true,
     data: {
-      data: rows.map(mapProduct).filter((p: any): p is NonNullable<typeof p> => p !== null),
+      data: rows.map(mapProduct).filter((p): p is NonNullable<ReturnType<typeof mapProduct>> => p !== null),
       total: Number(total),
       page: query.page,
       limit: query.limit,
@@ -315,7 +345,7 @@ haaMarketplaceRouter.get('/products/:storeSlug/:productSlug', async (c) => {
       ORDER BY ${s.categories.sortOrder} ASC
       LIMIT 1
     )`,
-    images: sql<any[]>`COALESCE((
+    images: sql<ProductImageRow[]>`COALESCE((
       SELECT jsonb_agg(jsonb_build_object('url', ${s.productImages.url}, 'thumbUrl', ${s.productImages.thumbUrl}) ORDER BY ${s.productImages.sortOrder})
       FROM ${s.productImages}
       WHERE ${s.productImages.productId} = ${s.products.id}
@@ -330,10 +360,7 @@ haaMarketplaceRouter.get('/products/:storeSlug/:productSlug', async (c) => {
       eq(s.stores.status, 'active'),
       eq(s.stores.isActive, true),
       eq(s.stores.publishStatus, 'published'),
-      or(
-        and(eq(s.stores.isDemo, false), eq(s.products.haaMarketplaceEnabled, true), eq(s.products.haaMarketplaceReviewStatus, 'approved')),
-        and(eq(s.stores.isDemo, true), sql`${s.stores.demoProfile} IN ('main', 'perfume')`),
-      )!,
+      marketplaceVisibleProductCondition(),
     ))
     .limit(1);
 
@@ -381,23 +408,17 @@ haaMarketplaceRouter.get('/sellers/:storeSlug', async (c) => {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'البائع غير موجود في سوق هاء.' } }, 404);
   }
 
-  // Count marketplace-visible products
-  const productJoin = storeRow.isDemo
-    ? and(
-        eq(s.products.storeId, s.stores.id),
-        eq(s.products.status, 'active'),
-      )
-    : and(
-        eq(s.products.storeId, s.stores.id),
-        eq(s.products.haaMarketplaceEnabled, true),
-        eq(s.products.haaMarketplaceReviewStatus, 'approved'),
-        eq(s.products.status, 'active'),
-      );
-
+  // Count marketplace-visible products — same predicate as the feed so the
+  // header badge can never disagree with the grid (demo stores previously
+  // counted unmoderated products here).
   const [{ productCount }] = await db.select({ productCount: count(s.products.id) })
     .from(s.products)
     .innerJoin(s.stores, eq(s.products.storeId, s.stores.id))
-    .where(productJoin);
+    .where(and(
+      eq(s.stores.id, storeRow.id),
+      eq(s.products.status, 'active'),
+      marketplaceVisibleProductCondition(),
+    ));
 
   if (Number(productCount) === 0) {
     return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'البائع غير موجود في سوق هاء.' } }, 404);
@@ -448,9 +469,7 @@ haaMarketplaceRouter.get('/sellers', async (c) => {
     .from(s.stores)
     .innerJoin(s.products, eq(s.products.storeId, s.stores.id))
     .where(and(
-      eq(s.stores.isDemo, false),
-      eq(s.products.haaMarketplaceEnabled, true),
-      eq(s.products.haaMarketplaceReviewStatus, 'approved'),
+      realStoreMarketplaceCondition(),
       eq(s.products.status, 'active'),
       eq(s.stores.status, 'active'),
       eq(s.stores.isActive, true),
@@ -458,7 +477,8 @@ haaMarketplaceRouter.get('/sellers', async (c) => {
     ))
     .groupBy(s.stores.id, s.stores.name, s.stores.slug, s.stores.description, s.stores.logoUrl, s.stores.coverUrl, s.stores.city, s.stores.district, s.stores.isDemo);
 
-  // Demo stores with active products and valid demoProfile
+  // Demo stores: marketplace-enabled products with a whitelisted demoProfile
+  // (same gate as the feed — previously counted unmoderated demo products).
   const demoSellers = db.select({
     id: s.stores.id,
     name: s.stores.name,
@@ -474,8 +494,7 @@ haaMarketplaceRouter.get('/sellers', async (c) => {
     .from(s.stores)
     .innerJoin(s.products, eq(s.products.storeId, s.stores.id))
     .where(and(
-      eq(s.stores.isDemo, true),
-    sql`${s.stores.demoProfile} IN ('main', 'perfume')`,
+      demoStoreMarketplaceCondition(),
       eq(s.products.status, 'active'),
       eq(s.stores.status, 'active'),
       eq(s.stores.isActive, true),
@@ -524,10 +543,7 @@ haaMarketplaceRouter.get('/categories', async (c) => {
       // TASK-0041 Phase 2 — Track 2.1 — P0-2 category blocklist.
       // Exclude prohibited categories from the marketplace category list.
       eq(s.categories.prohibitedInMarketplace, false),
-      or(
-        and(eq(s.stores.isDemo, false), eq(s.products.haaMarketplaceEnabled, true), eq(s.products.haaMarketplaceReviewStatus, 'approved')),
-        and(eq(s.stores.isDemo, true), sql`${s.stores.demoProfile} IN ('main', 'perfume')`),
-      )!,
+      marketplaceVisibleProductCondition(),
     ))
     .groupBy(s.categories.name, s.categories.slug)
     .orderBy(sql`count(${s.products.id}) DESC`, s.categories.name);
@@ -641,14 +657,14 @@ haaMarketplaceRouter.post('/orders', zValidator('json', createMarketplaceOrderSc
       customerName: body.customerName,
       customerPhone: body.customerPhone,
       customerEmail: body.customerEmail ?? null,
-      shippingAddress: body.shippingAddress as any ?? null,
+      shippingAddress: (body.shippingAddress as Record<string, unknown>) ?? null,
       subtotal: subtotal.toString(),
       shippingTotal: shippingTotal.toString(),
       total: total.toString(),
       platformCommission: platformCommission.toString(),
       paymentMethod: isDemoOrder ? 'demo_mock' : (body.paymentMethod ?? null),
       notes: body.notes ?? null,
-      metadata: meta as any,
+      metadata: meta as Record<string, unknown>,
     }).returning();
 
     for (const link of links) {
@@ -668,8 +684,8 @@ haaMarketplaceRouter.post('/orders', zValidator('json', createMarketplaceOrderSc
       await tx.update(s.orders)
         .set({
           metadata: isDemoOrder
-            ? { ...orderMeta, marketplaceOrderNumber, marketplaceOrderId: marketplaceOrder.id, isMockOrder: true } as any
-            : { ...orderMeta, marketplaceOrderNumber, marketplaceOrderId: marketplaceOrder.id } as any,
+            ? { ...orderMeta, marketplaceOrderNumber, marketplaceOrderId: marketplaceOrder.id, isMockOrder: true } as Record<string, unknown>
+            : { ...orderMeta, marketplaceOrderNumber, marketplaceOrderId: marketplaceOrder.id } as Record<string, unknown>,
           updatedAt: new Date(),
         })
         .where(eq(s.orders.id, link.order.id));

@@ -149,14 +149,31 @@ export class EmailOtpService {
     if (!row) return { ok: false, reason: 'NOT_FOUND' };
     if (row.usedAt) return { ok: false, reason: 'USED' };
     if (row.expiresAt < new Date()) return { ok: false, reason: 'EXPIRED' };
+    // Fast path: already exhausted (cheap, but NOT the authoritative gate).
     if (row.attempts >= row.maxAttempts) return { ok: false, reason: 'TOO_MANY_ATTEMPTS' };
 
-    // Increment attempts FIRST so a parallel request can't slip through
-    // the max-attempts gate.
-    await this.db
+    // Authoritative, race-safe gate: atomically increment attempts in a
+    // single UPDATE that only matches while still BELOW the cap. The
+    // `attempts = attempts + 1` is computed DB-side (not read-modify-write),
+    // and the `attempts < max_attempts` predicate makes the row-level lock
+    // serialise concurrent verifies — closing the lost-update window where
+    // N parallel requests all read attempts=0 and each got a free guess.
+    // When the cap is reached the UPDATE matches no row → TOO_MANY_ATTEMPTS.
+    const [bumped] = await this.db
       .update(s.emailOtpCodes)
-      .set({ attempts: row.attempts + 1, updatedAt: new Date() })
-      .where(eq(s.emailOtpCodes.id, row.id));
+      .set({
+        attempts: sql`${s.emailOtpCodes.attempts} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(s.emailOtpCodes.id, row.id),
+          sql`${s.emailOtpCodes.attempts} < ${s.emailOtpCodes.maxAttempts}`,
+        ),
+      )
+      .returning({ attempts: s.emailOtpCodes.attempts });
+
+    if (!bumped) return { ok: false, reason: 'TOO_MANY_ATTEMPTS' };
 
     // bcrypt.compare is constant-time.
     const match = await bcrypt.compare(input.code, row.codeHash);

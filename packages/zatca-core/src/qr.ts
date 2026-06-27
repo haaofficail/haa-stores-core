@@ -13,6 +13,15 @@
 
 function tlvField(tag: number, value: string): Uint8Array {
   const valueBytes = new TextEncoder().encode(value);
+  // ZATCA TLV length is a single byte (0–255). A longer value (e.g. a long
+  // UTF-8 Arabic seller name — 2 bytes/char) would silently overflow
+  // `result[1] = length & 0xFF`, producing a corrupt QR a scanner misparses.
+  // Fail loud instead of emitting a malformed invoice QR.
+  if (valueBytes.length > 255) {
+    throw new Error(
+      `generateZatcaQr: TLV value for tag ${tag} is ${valueBytes.length} bytes; ZATCA TLV length is a single byte (max 255).`,
+    );
+  }
   const result = new Uint8Array(2 + valueBytes.length);
   result[0] = tag;
   result[1] = valueBytes.length;

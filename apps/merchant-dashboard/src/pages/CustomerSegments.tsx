@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, Crown, Repeat, UserPlus, UserX, ShoppingCart, AlertTriangle as RiskIcon, Package, Tag, Users, Settings, ArrowLeft, Phone, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { request, ApiClientError } from '@/lib/api';
+import { PermissionGate } from '@/lib/permissions';
 
 interface Segment {
   type: string;
@@ -127,8 +128,8 @@ export default function CustomerSegments() {
       setMembers(res.data);
       setMembersPage(res.page);
       setMembersTotalPages(res.totalPages);
-    } catch (err: any) {
-      toast.error(err?.message || 'فشل تحميل الأعضاء');
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : 'فشل تحميل الأعضاء');
     } finally {
       setLoadingMembers(false);
     }
@@ -152,8 +153,8 @@ export default function CustomerSegments() {
       setThresholds(editingThresholds);
       setShowSettings(false);
       loadSummary();
-    } catch (err: any) {
-      toast.error(err?.message || 'فشل الحفظ');
+    } catch (err) {
+      toast.error(err instanceof ApiClientError ? err.message : 'فشل الحفظ');
     } finally {
       setSavingSettings(false);
     }
@@ -217,14 +218,19 @@ export default function CustomerSegments() {
                         <div>
                           <h3 className="font-semibold text-sm">{m.name}</h3>
                           <div className="flex items-center gap-2 text-xs text-neutral-400">
-                            <Phone className="h-3 w-3" />
-                            {m.phone}
-                            {m.email && (
-                              <>
-                                <Mail className="h-3 w-3 me-1" />
-                                {m.email}
-                              </>
-                            )}
+                            <PermissionGate
+                              permission="customers:view_sensitive"
+                              fallback={<span className="text-xs text-neutral-300 font-mono">••••••••</span>}
+                            >
+                              <Phone className="h-3 w-3" />
+                              {m.phone}
+                              {m.email && (
+                                <>
+                                  <Mail className="h-3 w-3 me-1" />
+                                  {m.email}
+                                </>
+                              )}
+                            </PermissionGate>
                           </div>
                         </div>
                       </div>

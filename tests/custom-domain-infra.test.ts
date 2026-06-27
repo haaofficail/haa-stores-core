@@ -19,7 +19,7 @@ describe('custom-domain infra (QA Custom Domain)', () => {
       expect(cfg).toContain('ask http://api:3001/internal/tls-check');
     });
     it(`${name} Caddyfile has a custom-domain catch-all with on_demand TLS`, () => {
-      expect(cfg).toMatch(/:443\s*\{[\s\S]*on_demand[\s\S]*reverse_proxy storefront:80/);
+      expect(cfg).toMatch(/:443\s*\{[\s\S]*on_demand[\s\S]*reverse_proxy storefront:3001/);
     });
   }
 });

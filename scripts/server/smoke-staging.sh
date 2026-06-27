@@ -16,6 +16,16 @@ set -euo pipefail
 
 BASE_URL="${1:?Usage: smoke-staging.sh <BASE_URL>}"
 
+# Derive the sibling SPA hosts (merchant./admin.) from the base host so the
+# smoke verifies ALL THREE frontends are alive — not just the storefront. A
+# 502 on merchant/admin (e.g. a Caddy↔Dockerfile port drift) now fails the
+# gate and triggers rollback instead of shipping a broken login page.
+# Overridable via env for non-standard topologies.
+_scheme="${BASE_URL%%://*}"
+_host="${BASE_URL#*://}"; _host="${_host%%/*}"
+MERCHANT_URL="${MERCHANT_URL:-${_scheme}://merchant.${_host}}"
+ADMIN_URL="${ADMIN_URL:-${_scheme}://admin.${_host}}"
+
 PASS=0
 FAIL=0
 
@@ -55,6 +65,12 @@ check "storefront-html"     "$BASE_URL/"                                    '<!d
 # 3. API reachable through /api/* Caddy strip-prefix
 #    payment-methods proves STORE-001 fix and full API→DB→store chain
 check "api-payment-methods" "$BASE_URL/api/s/haa-demo/payment-methods"     '"methods"'
+
+# 4. Merchant dashboard login — SPA HTML served via the merchant. subdomain
+check "merchant-login-html" "$MERCHANT_URL/"                               '<!doctype html'
+
+# 5. Admin dashboard login — SPA HTML served via the admin. subdomain
+check "admin-login-html"    "$ADMIN_URL/"                                  '<!doctype html'
 
 echo ""
 echo "==> Smoke results: $PASS passed, $FAIL failed"

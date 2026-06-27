@@ -44,6 +44,28 @@ describe('OTO multi-tenant marketplace platform regression', () => {
     expect(shippingWebhooksRoute).toContain('verifyOtoWebhookSignature');
   });
 
+  it('fails closed (false, never throws) on wrong / length-mismatched signatures', () => {
+    const payload = { orderId: 'OTO-1', status: 'delivered', timestamp: '2026-06-12T00:00:00Z' };
+    const secret = 'webhook-secret';
+    const real = crypto.createHmac('sha256', secret)
+      .update(`${payload.orderId}:${payload.status}:${payload.timestamp}`)
+      .digest('base64');
+
+    // crypto.timingSafeEqual throws RangeError when buffer lengths differ;
+    // an attacker controls the signature header, and the OTO route does not
+    // wrap this call — so it must turn a length mismatch into a plain false.
+    for (const sig of ['', 'x', 'short', 'A'.repeat(500)]) {
+      expect(() => verifyOtoWebhookSignature('orderStatus', payload, sig, secret)).not.toThrow();
+      expect(verifyOtoWebhookSignature('orderStatus', payload, sig, secret)).toBe(false);
+    }
+
+    // Wrong-but-equal-length signature: reaches timingSafeEqual, returns false.
+    const tampered = (real[0] === 'A' ? 'B' : 'A') + real.slice(1);
+    expect(tampered.length).toBe(real.length);
+    expect(() => verifyOtoWebhookSignature('orderStatus', payload, tampered, secret)).not.toThrow();
+    expect(verifyOtoWebhookSignature('orderStatus', payload, tampered, secret)).toBe(false);
+  });
+
   it('keeps tenant isolation by querying OTO records with store_id/storeId', () => {
     expect(otoMarketplaceSource).toContain('eq(s.otoVendorMappings.storeId, storeId)');
     expect(otoMarketplaceSource).toContain('eq(s.senderLocations.storeId, storeId)');

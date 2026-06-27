@@ -1,28 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ShoppingBag, AlertTriangle, Users, DollarSign, Clock } from 'lucide-react';
+import { ShoppingBag, AlertTriangle, Users, DollarSign, Clock, ChevronDown, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { abandonedCartsApi, ApiClientError } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { PermissionGate } from '@/lib/permissions';
 
-interface AbandonedCartRow {
-  id: number | string;
-  customerName?: string | null;
-  customerEmail?: string | null;
-  customerPhone?: string | null;
-  itemCount?: number;
-  items?: unknown[];
-  total?: number | string;
-  totalAmount?: number | string;
-  lastActive?: string | null;
-  abandonedAt?: string | null;
-  expiresAt?: string | null;
+// Each enriched cart item is { item: cartItems, product: products } as
+// returned by AbandonedCartsService.list() (innerJoin on products).
+interface CartLineItem {
+  item?: { quantity?: number; unitPrice?: number | string; totalPrice?: number | string } | null;
+  product?: { name?: string | null; sku?: string | null; barcode?: string | null } | null;
+  imageUrl?: string | null;
 }
 
 interface AbandonedCartRow {
@@ -31,7 +25,7 @@ interface AbandonedCartRow {
   customerEmail?: string | null;
   customerPhone?: string | null;
   itemCount?: number;
-  items?: unknown[];
+  items?: CartLineItem[];
   total?: number | string;
   totalAmount?: number | string;
   lastActive?: string | null;
@@ -54,6 +48,15 @@ export default function AbandonedCarts() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [hours, setHours] = useState(24);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = (id: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const loadData = useCallback(() => {
     if (!storeId) { setLoading(false); return; }
@@ -154,8 +157,14 @@ export default function AbandonedCarts() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {carts.map((cart) => (
-                <TableRow key={cart.id} className="border-neutral-100 hover:bg-neutral-50">
+              {carts.map((cart) => {
+                const id = String(cart.id);
+                const items = cart.items ?? [];
+                const isOpen = expanded.has(id);
+                const count = cart.itemCount ?? items.length ?? 0;
+                return (
+                <Fragment key={id}>
+                <TableRow className="border-neutral-100 hover:bg-neutral-50">
                   <TableCell className="text-sm font-medium text-neutral-900 p-3">{cart.customerName || cart.customerEmail || '-'}</TableCell>
                   <TableCell className="text-sm text-neutral-400 p-3" dir="ltr">
                     <PermissionGate
@@ -165,7 +174,22 @@ export default function AbandonedCarts() {
                       {cart.customerPhone || '-'}
                     </PermissionGate>
                   </TableCell>
-                  <TableCell className="text-sm text-neutral-900 p-3">{cart.itemCount ?? cart.items?.length ?? 0}</TableCell>
+                  <TableCell className="text-sm text-neutral-900 p-3">
+                    {items.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(id)}
+                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-neutral-900 hover:bg-neutral-100 transition-colors"
+                        aria-expanded={isOpen}
+                        aria-label={t('abandonedCarts.table.toggleItems', 'عرض المنتجات')}
+                      >
+                        {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+                        <span>{count}</span>
+                      </button>
+                    ) : (
+                      count
+                    )}
+                  </TableCell>
                   <TableCell className="text-sm font-semibold text-neutral-900 p-3 font-mono">{formatCurrency(cart.total || cart.totalAmount || 0)} {t('common.sar')}</TableCell>
                   <TableCell className="text-sm text-neutral-400 p-3">
                     {cart.lastActive ? new Date(cart.lastActive).toLocaleString('ar-SA', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) : '-'}
@@ -173,18 +197,48 @@ export default function AbandonedCarts() {
                   <TableCell className="text-sm text-neutral-400 p-3">
                     {cart.expiresAt ? new Date(cart.expiresAt).toLocaleDateString('ar-SA') : '-'}
                   </TableCell>
-                  {/* Reminder button removed (audit P0 #9, 2026-06-25):
-                      the action had no backend endpoint, so it was
-                      permanently disabled. Recovery already runs
-                      automatically via the abandoned-cart campaign
-                      worker (packages/commerce-core/src/
-                      abandoned-cart-campaigns.ts), which DOES honour
-                      the customer's email_opt_out_at flag from PR #214.
-                      A manual "send now" button can return once the
-                      backend exposes it and we can plumb the same
-                      opt-out check through this UI path. */}
                 </TableRow>
-              ))}
+                {isOpen && items.length > 0 && (
+                  <TableRow className="border-neutral-100 bg-neutral-50/60 hover:bg-neutral-50/60">
+                    <TableCell colSpan={6} className="p-0">
+                      <div className="px-4 py-3">
+                        <p className="mb-2 text-xs font-medium text-neutral-500">{t('abandonedCarts.table.products', 'منتجات السلة')}</p>
+                        <div className="space-y-1.5">
+                          {items.map((line, idx) => {
+                            const code = line.product?.sku || line.product?.barcode;
+                            return (
+                            <div key={idx} className="flex items-center gap-3 rounded-xl bg-white px-3 py-2 text-sm">
+                              {line.imageUrl ? (
+                                <img
+                                  src={line.imageUrl}
+                                  alt={line.product?.name ?? ''}
+                                  className="h-11 w-11 shrink-0 rounded-lg border border-neutral-100 object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-neutral-100 bg-neutral-50 text-neutral-300">
+                                  <ShoppingBag className="h-4 w-4" />
+                                </span>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate font-medium text-neutral-900">{line.product?.name || t('abandonedCarts.table.unknownProduct', 'منتج محذوف')}</p>
+                                {code && <p className="text-xs text-neutral-400 font-mono" dir="ltr">{code}</p>}
+                              </div>
+                              <div className="flex shrink-0 items-center gap-3 text-neutral-500">
+                                <span className="text-xs">{line.item?.quantity ?? 1} × {formatCurrency(line.item?.unitPrice ?? 0)}</span>
+                                <span className="font-mono font-semibold text-neutral-900">{formatCurrency(line.item?.totalPrice ?? 0)} {t('common.sar')}</span>
+                              </div>
+                            </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+                </Fragment>
+                );
+              })}
             </TableBody>
           </Table>
         )}

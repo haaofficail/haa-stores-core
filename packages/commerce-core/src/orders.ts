@@ -112,8 +112,23 @@ export class OrdersService {
     const [order] = await this.db.select().from(s.orders)
       .where(and(eq(s.orders.id, orderId), eq(s.orders.storeId, storeId))).limit(1);
     if (!order) return null;
-    const items = await this.db.select().from(s.orderItems)
+    const rawItems = await this.db.select().from(s.orderItems)
       .where(eq(s.orderItems.orderId, orderId));
+    // Enrich items with the primary product image so the fulfillment view can
+    // show a thumbnail next to the SKU (mirrors getRecentWithImages).
+    const productIds = [...new Set(rawItems.map(i => i.productId))];
+    const images = productIds.length > 0
+      ? await this.db.select().from(s.productImages)
+          .where(inArray(s.productImages.productId, productIds))
+      : [];
+    const imageMap = new Map<number, string>();
+    for (const img of images) {
+      if (!imageMap.has(img.productId)) imageMap.set(img.productId, img.thumbUrl ?? img.url);
+    }
+    const items = rawItems.map(item => ({
+      ...item,
+      productImageUrl: imageMap.get(item.productId) ?? null,
+    }));
     const history = await this.db.select().from(s.orderStatusHistory)
       .where(eq(s.orderStatusHistory.orderId, orderId))
       .orderBy(s.orderStatusHistory.createdAt);
