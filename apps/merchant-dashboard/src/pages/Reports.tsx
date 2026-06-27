@@ -587,7 +587,7 @@ export default function Reports() {
               <button
                 onClick={() => handleExportSection('sales-by-city',
                   [t('reports.city'), t('reports.orders'), t('reports.sales')],
-                  salesByCity.map((c: any) => [c.city || t('reports.unknownCity'), String(c.orderCount ?? 0), `${formatCurrency(c.totalSales ?? 0)} ${t('common.sar')}`]),
+                  salesByCity.map((c: any) => [c.city || t('reports.unknownCity'), String(c.orders ?? 0), `${formatCurrency(c.sales ?? 0)} ${t('common.sar')}`]),
                 )}
                 className="text-neutral-400 hover:text-neutral-900 transition-colors print:hidden"
                 title={t('reports.exportCsv')}
@@ -612,8 +612,8 @@ export default function Reports() {
                   {salesByCity.map((c: any, i: number) => (
                     <TableRow key={i} className="border-neutral-100 hover:bg-neutral-50">
                       <TableCell className="text-sm font-medium text-neutral-900 p-3"><MapPin className="h-3.5 w-3.5 inline me-1" />{c.city || t('reports.unknownCity')}</TableCell>
-                      <TableCell className="text-sm text-neutral-900 p-3">{c.orderCount ?? 0}</TableCell>
-                      <TableCell className="text-sm font-semibold text-neutral-900 p-3">{formatCurrency(c.totalSales ?? 0)} <SarIcon size="sm" /></TableCell>
+                      <TableCell className="text-sm text-neutral-900 p-3">{c.orders ?? 0}</TableCell>
+                      <TableCell className="text-sm font-semibold text-neutral-900 p-3">{formatCurrency(c.sales ?? 0)} <SarIcon size="sm" /></TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
