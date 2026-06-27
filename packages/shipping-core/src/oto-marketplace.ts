@@ -60,7 +60,15 @@ export function verifyOtoWebhookSignature(
     : String(payload.status ?? "");
   const signedPayload = `${orderId}:${middle}:${timestamp}`;
   const expected = crypto.createHmac("sha256", secret).update(signedPayload).digest("base64");
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  // Fail closed on a length mismatch: crypto.timingSafeEqual throws a
+  // RangeError when the two buffers differ in length, and `signature` is
+  // attacker-controlled (webhook header). The OTO route does not wrap this
+  // call, so an unguarded throw would surface as a 500 instead of a clean
+  // 401. Mirror the length guard used by the payment-provider verifiers.
+  const expectedBuf = Buffer.from(expected);
+  const signatureBuf = Buffer.from(signature);
+  if (expectedBuf.length !== signatureBuf.length) return false;
+  return crypto.timingSafeEqual(expectedBuf, signatureBuf);
 }
 
 export class OtoMarketplaceService {
