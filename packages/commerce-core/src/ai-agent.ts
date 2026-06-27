@@ -188,7 +188,7 @@ export class AiCommerceAgent {
     return null; // No match found in library
   }
 
-  private async generateResponseWithData(prompt: string, action: string, data: unknown, context: Record<string, unknown>): Promise<AiAgentResponse> {
+  private async generateResponseWithData(_prompt: string, action: string, data: unknown, context: Record<string, unknown>): Promise<AiAgentResponse> {
     const enrichedPrompt = `
 أنت "Haa AI"، محلل متجر إلكتروني سعودي متخصص. مهمتك تحليل البيانات التالية وإعطاء رد مختصر بلغة عربية فصحى سليمة.
 
@@ -455,12 +455,12 @@ ${knowledge}
           });
           return { text: `تم إنشاء الكوبون ${coupon.code} بنجاح!`, confidence: 1 };
 
-        case 'update_product_price':
-          const _product = await this.productsService.update(storeId, params.productId as number, {
+        case 'update_product_price': {
+          await this.productsService.update(storeId, params.productId as number, {
             price: params.price as number,
           });
           return { text: `تم تحديث سعر المنتج بنجاح إلى ${params.price} ر.س`, confidence: 1 };
-
+        }
         default:
           return { text: `عذرًا، هذه العملية (${action}) غير مدعومة حاليًا.`, confidence: 0 };
       }

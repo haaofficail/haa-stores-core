@@ -220,7 +220,7 @@ export class PaymentWebhookService {
     await this.db.transaction(async (tx) => {
       // P3-001 resolved: services now accept `DbOrTx`, so the tx
       // value flows in without an `as any` cast.
-      const _txPaymentService = new PaymentService(tx);
+      const __txPaymentService = new PaymentService(tx);
       const txOrdersService = new OrdersService(tx);
       const txWallet = new WalletLedger(tx);
       const txOutbox = new WebhookOutboxService(tx);

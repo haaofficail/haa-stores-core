@@ -59,7 +59,7 @@ export class ImportsService {
     private audit: AuditLogService = new AuditLogService(),
   ) {}
 
-  async previewProducts(storeId: number, csvContent: string) {
+  async previewProducts(_storeId: number, csvContent: string) {
     const rows = parseCsv(csvContent);
     const preview = rows.slice(0, 5).map((r, i) => {
       const errors: string[] = [];

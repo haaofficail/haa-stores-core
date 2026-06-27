@@ -117,10 +117,6 @@ export default function PlatformAbout() {
 
           <dl className="about-ed__hero-meta">
             <div className="about-ed__hero-meta-item">
-              <dt>التأسيس</dt>
-              <dd>2024</dd>
-            </div>
-            <div className="about-ed__hero-meta-item">
               <dt>المقر</dt>
               <dd>المملكة العربية السعودية</dd>
             </div>
@@ -230,14 +226,6 @@ export default function PlatformAbout() {
         </section>
       </main>
 
-      <footer className="about-ed__footer">
-        <div className="about-ed__footer-inner">
-          <span>
-            © {new Date().getFullYear()} {PLATFORM_LEGAL_ENTITY.legalNameAr}
-          </span>
-          <Link to="/">العودة للرئيسية</Link>
-        </div>
-      </footer>
     </div>
   );
 }

@@ -138,22 +138,22 @@ export default function Tenants() {
               </tr>
             </thead>
             <tbody>
-              {tenants.map(t => (
-                <tr key={t.id} className="border-t hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900">{t.name}</td>
-                  <td className="px-4 py-3 text-gray-500">{t.email || '-'}</td>
+              {tenants.map(tenant => (
+                <tr key={tenant.id} className="border-t hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 font-medium text-gray-900">{tenant.name}</td>
+                  <td className="px-4 py-3 text-gray-500">{tenant.email || '-'}</td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${t.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {t.status === 'active' ? t('tenants.active', 'نشط') : t('tenants.inactive', 'موقوف')}
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${tenant.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {tenant.status === 'active' ? t('tenants.active', 'نشط') : t('tenants.inactive', 'موقوف')}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => toggleStatus(t.id, t.status)} className="text-sm text-primary-600 hover:text-primary-700 transition-colors px-2 py-1">
-                        {t.status === 'active' ? t('tenants.suspend', 'تعليق') : t('tenants.activate', 'تفعيل')}
+                      <button onClick={() => toggleStatus(tenant.id, tenant.status)} className="text-sm text-primary-600 hover:text-primary-700 transition-colors px-2 py-1">
+                        {tenant.status === 'active' ? t('tenants.suspend', 'تعليق') : t('tenants.activate', 'تفعيل')}
                       </button>
-                      <button onClick={() => handleOpenDialog(t)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors px-2 py-1">{t('tenants.edit', 'تعديل')}</button>
-                      <button onClick={() => setConfirmDelete(t.id)} className="text-sm text-red-600 hover:text-red-800 transition-colors px-2 py-1">{t('tenants.delete', 'حذف')}</button>
+                      <button onClick={() => handleOpenDialog(tenant)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors px-2 py-1">{t('tenants.edit', 'تعديل')}</button>
+                      <button onClick={() => setConfirmDelete(tenant.id)} className="text-sm text-red-600 hover:text-red-800 transition-colors px-2 py-1">{t('tenants.delete', 'حذف')}</button>
                     </div>
                   </td>
                 </tr>

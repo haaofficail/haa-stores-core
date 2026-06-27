@@ -11,7 +11,7 @@ import type {
 const THIRTY_MINUTES = 30 * 60 * 1000;
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
-const _ACTION_TYPES: MarketingActionType[] = [
+const __ACTION_TYPES: MarketingActionType[] = [
   'high_views_low_add_to_cart',
   'active_carts_no_checkout',
   'checkout_no_payment',
