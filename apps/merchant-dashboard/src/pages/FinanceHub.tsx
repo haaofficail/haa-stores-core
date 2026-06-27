@@ -12,7 +12,7 @@ import { formatCurrency } from '@/lib/utils';
 import { HubHeader, MetricGrid, MetricTile, HubCard } from '@/components/hub/HubShell';
 
 interface FinanceCounts {
-  netBalance: string | null;
+  netBalance: string | number | null;
   pendingPayouts: number | null;
   planName: string | null;
   complianceStatus: string | null;
@@ -41,7 +41,7 @@ export default function FinanceHub() {
       setCounts({
         netBalance:
           summary.status === 'fulfilled'
-            ? (summary.value as { netBalance?: string })?.netBalance ?? '0'
+            ? (summary.value as { netBalance?: number | string })?.netBalance ?? 0
             : null,
         pendingPayouts:
           payouts.status === 'fulfilled' && Array.isArray(payouts.value)
@@ -110,7 +110,7 @@ export default function FinanceHub() {
       <MetricGrid loading={loading}>
         <MetricTile
           label={t('finance.hub.kpi.netBalance', 'صافي المحفظة')}
-          value={counts.netBalance ? `${formatCurrency(counts.netBalance)} ر.س` : null}
+          value={counts.netBalance != null ? `${formatCurrency(counts.netBalance)} ر.س` : null}
         />
         <MetricTile
           label={t('finance.hub.kpi.pendingPayouts', 'طلبات تسوية معلّقة')}
