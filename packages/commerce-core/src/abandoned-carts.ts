@@ -21,6 +21,15 @@ export class AbandonedCartsService {
       const items = await this.db.select({
         item: s.cartItems,
         product: s.products,
+        // Primary product image (lowest sort_order, prefer thumbnail) so the
+        // merchant can visually identify the item during fulfillment.
+        imageUrl: sql<string | null>`(
+          SELECT COALESCE(pi.thumb_url, pi.url)
+          FROM ${s.productImages} pi
+          WHERE pi.product_id = ${s.products.id}
+          ORDER BY pi.sort_order ASC, pi.id ASC
+          LIMIT 1
+        )`,
       }).from(s.cartItems)
         .innerJoin(s.products, eq(s.cartItems.productId, s.products.id))
         .where(eq(s.cartItems.cartId, session.cartId));
