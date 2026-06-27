@@ -50,6 +50,54 @@ export const LISTING_STATUS: StatusMap = {
   error: { label: 'خطأ', tone: 'danger' },
 };
 
+// Settlement batches + payout requests (SettlementOverview, SettlementDetail).
+export const SETTLEMENT_STATUS: StatusMap = {
+  pending: { label: 'قيد الانتظار', tone: 'warning' },
+  requested: { label: 'مطلوبة', tone: 'warning' },
+  under_review: { label: 'قيد المراجعة', tone: 'warning' },
+  approved: { label: 'معتمدة', tone: 'info' },
+  processing: { label: 'قيد المعالجة', tone: 'info' },
+  transfer_pending: { label: 'بانتظار التحويل', tone: 'info' },
+  transferred: { label: 'حُوّلت', tone: 'info' },
+  proof_uploaded: { label: 'رُفع الإثبات', tone: 'info' },
+  transfer_verified: { label: 'تم التحقق', tone: 'success' },
+  reversed: { label: 'معكوسة', tone: 'danger' },
+  verified: { label: 'مؤكدة', tone: 'success' },
+  completed: { label: 'مكتملة', tone: 'success' },
+  failed: { label: 'فشلت', tone: 'danger' },
+  rejected: { label: 'مرفوضة', tone: 'danger' },
+  cancelled: { label: 'ملغاة', tone: 'neutral' },
+};
+
+// Notification delivery logs (Notifications, NotificationsInbox).
+export const NOTIFICATION_STATUS: StatusMap = {
+  sent: { label: 'أُرسلت', tone: 'success' },
+  delivered: { label: 'وصلت', tone: 'success' },
+  queued: { label: 'في الطابور', tone: 'neutral' },
+  pending: { label: 'قيد الانتظار', tone: 'neutral' },
+  failed: { label: 'فشلت', tone: 'danger' },
+  bounced: { label: 'مرتدّة', tone: 'danger' },
+};
+
+// Channel provider configuration state (Notifications hub).
+export const PROVIDER_STATUS: StatusMap = {
+  configured: { label: 'مُفعّل', tone: 'success' },
+  contact_only: { label: 'تواصل فقط', tone: 'warning' },
+  not_configured: { label: 'غير مُفعّل', tone: 'neutral' },
+};
+
+// Plain (tone-less) label maps.
+export const CHANNEL_LABEL: Record<string, string> = {
+  email: 'بريد إلكتروني',
+  sms: 'رسالة نصية',
+  whatsapp: 'واتساب',
+};
+
+export function plainLabel(map: Record<string, string>, value: string | null | undefined): string {
+  if (value == null || value === '') return '—';
+  return map[String(value).toLowerCase().trim()] ?? String(value);
+}
+
 // Returns the Arabic label + tone for a raw enum value. Unknown/empty values
 // fall back to a neutral "—" or the raw value, never a misleading other-state.
 export function statusInfo(map: StatusMap, value: string | null | undefined): StatusEntry {

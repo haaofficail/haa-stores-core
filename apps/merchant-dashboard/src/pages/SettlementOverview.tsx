@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { walletApi } from '@/lib/api';
 import { messageFromError } from '@/lib/error-mapper';
 import { formatCurrency } from '@/lib/utils';
+import { statusInfo, SETTLEMENT_STATUS } from '@/lib/status-labels';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -73,19 +74,6 @@ const payoutStatusColors: Record<string, 'default' | 'success' | 'warning' | 'se
   reversed: 'secondary',
 };
 
-const payoutStatusLabels: Record<string, string> = {
-  requested: 'تم الطلب',
-  under_review: 'قيد المراجعة',
-  approved: 'معتمد',
-  rejected: 'مرفوض',
-  transfer_pending: 'بانتظار التحويل',
-  transferred: 'تم التحويل',
-  proof_uploaded: 'تم رفع الإثبات',
-  transfer_verified: 'تم التحقق',
-  failed: 'فشل',
-  cancelled: 'ملغي',
-  reversed: 'معكوس',
-};
 
 export default function SettlementOverview() {
   const { t } = useTranslation();
@@ -489,7 +477,7 @@ export default function SettlementOverview() {
                   </TableCell>
                   <TableCell className="p-3">
                     <Badge variant={payoutStatusColors[payout.status] ?? 'default'} className="text-xs px-2.5 py-0.5">
-                      {payoutStatusLabels[payout.status] ?? payout.status}
+                      {statusInfo(SETTLEMENT_STATUS, payout.status).label}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm font-semibold tabular-nums text-start text-emerald-600 p-3">
@@ -539,7 +527,7 @@ export default function SettlementOverview() {
                     </TableCell>
                     <TableCell className="p-3">
                       <Badge variant={settlementStatusColors[batch.status] ?? 'default'} className="text-xs px-2.5 py-0.5">
-                        {batch.status}
+                        {statusInfo(SETTLEMENT_STATUS, batch.status).label}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm tabular-nums text-start p-3">

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { statusInfo, plainLabel, NOTIFICATION_STATUS, PROVIDER_STATUS, CHANNEL_LABEL } from '@/lib/status-labels';
 import {
   Tooltip,
   TooltipTrigger,
@@ -223,7 +224,7 @@ export default function Notifications() {
             <div key={item.label} className="rounded-2xl border border-neutral-100 bg-white/70 p-4">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-semibold text-neutral-900">{item.label}</p>
-                <Badge variant={item.value === 'configured' ? 'default' : 'secondary'}>{item.value}</Badge>
+                <Badge variant={item.value === 'configured' ? 'default' : 'secondary'}>{statusInfo(PROVIDER_STATUS, item.value).label}</Badge>
               </div>
               <p className="mt-1 text-xs text-neutral-500">{item.detail}</p>
             </div>
@@ -473,15 +474,17 @@ export default function Notifications() {
                       <td className="py-2 px-3">
                         <div className="flex items-center gap-1">
                           {channelIcon(log.channel)}
-                          <span className="text-xs text-neutral-900">{log.channel}</span>
+                          <span className="text-xs text-neutral-900">{plainLabel(CHANNEL_LABEL, log.channel)}</span>
                         </div>
                       </td>
                       <td className="py-2 px-3 text-sm text-neutral-900">{log.subject || log.templateCode || '-'}</td>
                       <td className="py-2 px-3 text-xs text-neutral-900">{log.recipient}</td>
                       <td className="py-2 px-3">
-                        <Badge variant={log.status === 'sent' ? 'default' : 'destructive'} className="text-xs px-2.5 py-0.5">
-                          {log.status === 'sent' ? t('notifications.sent') : t('notifications.failed')}
-                        </Badge>
+                        {(() => {
+                          const info = statusInfo(NOTIFICATION_STATUS, log.status);
+                          const variant = info.tone === 'success' ? 'default' : info.tone === 'danger' ? 'destructive' : 'secondary';
+                          return <Badge variant={variant} className="text-xs px-2.5 py-0.5">{info.label}</Badge>;
+                        })()}
                       </td>
                       <td className="py-2 px-3 text-xs text-neutral-400">{formatDate(log.sentAt)}</td>
                     </tr>
