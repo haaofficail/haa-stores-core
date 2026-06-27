@@ -4,6 +4,32 @@
 
 ---
 
+### TASK-0085: Make CI E2E target local servers instead of staging
+
+- **Type:** Testing / Support-Ops
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-27
+- **Updated:** 2026-06-27
+- **Original Request:** "ليش كنسل ... كمل" after PR #308 was merged and its `main` CI run showed cancelled.
+- **Expanded Requirement:** Explain the cancelled #308 CI run, continue post-merge verification, diagnose the new `main` E2E failure, and fix the confirmed E2E environment mismatch without editing CI workflows or touching production.
+- **Problem:** CI starts local API/storefront/merchant/admin dev servers, but Playwright defaulted to `https://staging.haastores.com` and `merchant-login.spec.ts` hardcoded `https://merchant.staging.haastores.com/login`. When a newer `main` push triggered Deploy at the same time as CI E2E, all four E2E tests hit shared staging during deployment and failed with `page.goto: net::ERR_ABORTED`.
+- **Scope:** Playwright environment defaults, merchant-login E2E target selection, root-cause documentation, and regression checklist updates.
+- **Out of Scope:** `.github/workflows/*` edits, deploy reruns, production action, `db:migrate`, disabling/removing tests, and unrelated local dirty files.
+- **Skills Used:** `test-strategy-gate`, `regression-safety-gate`, `environment-safety-gate`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] CI Playwright defaults to local storefront `http://localhost:5174`.
+  - [x] Merchant-login E2E defaults to local merchant dashboard `http://localhost:5173/login` in CI.
+  - [x] Manual staging E2E remains possible through explicit environment variables.
+  - [x] No CI workflow YAML is edited without explicit owner approval.
+  - [x] Relevant checks and E2E verification are run or any limitation is documented.
+- **Test Plan:** `pnpm ops:monitor`; `pnpm typecheck`; `pnpm lint`; `pnpm test`; `pnpm test:e2e` with local servers if feasible; `pnpm check:skills`; `git diff --check`.
+- **Files Changed:** `playwright.config.ts`, `e2e/merchant-login.spec.ts`, required ops docs.
+- **Test Results:** PR #308 merged successfully at merge commit `3af46fd809a6ab669b4e42effa312cadd4307ac8`; its Deploy run passed staging smoke 5/5, while its CI run was cancelled by GitHub Actions concurrency after newer `main` commit `9348e03c510b80d3c3593f92ac34e5f411dbe14b`. The newer `main` CI failure was isolated to four E2E tests hitting shared staging during deploy. Local verification after the fix: `pnpm typecheck` passed; `pnpm lint` exited 0 with 514 pre-existing warnings and 0 errors; `pnpm test` passed 4530 active tests with 3 skipped and 14 todo; `CI=true pnpm test:e2e` passed 4/4 against local servers; `pnpm check:skills` passed 43/43; `git diff --check` clean; `pnpm preflight` passed; final `pnpm ops:monitor` passed runtime and synthetic checks with no recommended tasks/incidents.
+- **Related Issues:** ISSUE-0025.
+
+---
+
 ### TASK-0084: Harden gift-message sanitization and verify unpaid-shipping guard
 
 - **Type:** Security / Testing
