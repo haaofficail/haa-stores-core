@@ -70,7 +70,7 @@ export type PostResult = {
 export class WalletPostingService {
   private dedupMap = new Map<string, PostResult>();
 
-  constructor(private db: DbOrTx = createDbClient()) {}
+  constructor(private _db: DbOrTx = createDbClient()) {}
 
   // ---------- helpers ----------
 

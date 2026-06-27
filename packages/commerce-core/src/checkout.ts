@@ -31,25 +31,25 @@ type CartItemWithProduct = {
 export class CheckoutService {
   private cartService: CartService;
   private ordersService: OrdersService;
-  private paymentService: PaymentService;
+  private _paymentService: PaymentService;
   private paymentProvider: PaymentProvider;
-  private walletLedger: WalletLedger;
-  private webhookOutbox: WebhookOutboxService;
-  private auditLog: AuditLogService;
+  private _walletLedger: WalletLedger;
+  private _webhookOutbox: WebhookOutboxService;
+  private _auditLog: AuditLogService;
   private shippingProvider: ManualShippingProvider;
   private customersService: CustomersService;
   private isDemo: boolean;
 
-  constructor(private db: DbClient = createDbClient(), provider?: PaymentProvider, private store?: { id: number; isDemo?: boolean | null }) {
+  constructor(private db: DbClient = createDbClient(), provider?: PaymentProvider, _store?: { id: number; isDemo?: boolean | null }) {
     this.cartService = new CartService(this.db);
     this.ordersService = new OrdersService(this.db);
-    this.paymentService = new PaymentService(this.db);
-    this.isDemo = isDemoStore(store) ?? false;
+    this._paymentService = new PaymentService(this.db);
+    this.isDemo = isDemoStore(_store) ?? false;
     // Demo stores always use FakePaymentProvider (no real API calls)
     this.paymentProvider = this.isDemo ? new FakePaymentProvider() : (provider ?? createPaymentProvider());
-    this.walletLedger = new WalletLedger(this.db);
-    this.webhookOutbox = new WebhookOutboxService(this.db);
-    this.auditLog = new AuditLogService(this.db);
+    this._walletLedger = new WalletLedger(this.db);
+    this._webhookOutbox = new WebhookOutboxService(this.db);
+    this._auditLog = new AuditLogService(this.db);
     this.shippingProvider = new ManualShippingProvider();
     this.customersService = new CustomersService(this.db);
   }
