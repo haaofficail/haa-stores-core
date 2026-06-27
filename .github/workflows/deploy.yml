@@ -488,6 +488,7 @@ jobs:
         env:
           STAGING_URL: ${{ vars.STAGING_URL }}
         run: |
+          echo "::notice::Smoke-testing staging at SHA ${{ github.sha }} (image tag sha-${{ github.sha }}) → $STAGING_URL"
           echo "Waiting for services to stabilize..."
           sleep 15
 
@@ -514,6 +515,27 @@ jobs:
             echo "health=failed" >> "$GITHUB_OUTPUT"
             exit 1
           fi
+
+      # Capture container + Caddy logs BEFORE rolling back, so a 502 / smoke
+      # failure is diagnosable from the Actions log (G9 follow-up). Read-only.
+      - name: Capture diagnostics on smoke failure — staging
+        if: failure() && steps.health-check.outputs.health == 'failed'
+        env:
+          DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
+          DEPLOY_USER: ${{ secrets.STAGING_USER }}
+          DEPLOY_PATH: ${{ secrets.STAGING_DEPLOY_PATH }}
+        run: |
+          echo "::group::Staging container + Caddy logs at failure (SHA ${{ github.sha }})"
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash -s" << 'DIAG' || true
+            set +e
+            cd "$DEPLOY_PATH" || exit 0
+            echo "==> docker compose ps"; docker compose ps
+            for svc in caddy storefront merchant-dashboard admin-dashboard api; do
+              echo "==> last 60 log lines: $svc"
+              docker compose logs --no-color --tail=60 "$svc" 2>&1
+            done
+          DIAG
+          echo "::endgroup::"
 
       - name: Rollback staging on failure
         if: failure() && steps.health-check.outputs.health == 'failed'
@@ -822,6 +844,26 @@ jobs:
             echo "health=failed" >> "$GITHUB_OUTPUT"
             exit 1
           fi
+
+      # Capture container + Caddy logs BEFORE rolling back (parity with staging).
+      - name: Capture diagnostics on smoke failure — production
+        if: failure() && steps.prod-health-check.outputs.health == 'failed'
+        env:
+          DEPLOY_HOST: ${{ secrets.PRODUCTION_HOST }}
+          DEPLOY_USER: ${{ secrets.PRODUCTION_USER }}
+          DEPLOY_PATH: ${{ secrets.PRODUCTION_DEPLOY_PATH }}
+        run: |
+          echo "::group::Production container + Caddy logs at failure (SHA ${{ github.sha }})"
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash -s" << 'DIAG' || true
+            set +e
+            cd "$DEPLOY_PATH" || exit 0
+            echo "==> docker compose ps"; docker compose ps
+            for svc in caddy storefront merchant-dashboard admin-dashboard api; do
+              echo "==> last 60 log lines: $svc"
+              docker compose logs --no-color --tail=60 "$svc" 2>&1
+            done
+          DIAG
+          echo "::endgroup::"
 
       - name: Rollback production on failure
         if: failure() && steps.prod-health-check.outputs.health == 'failed'
