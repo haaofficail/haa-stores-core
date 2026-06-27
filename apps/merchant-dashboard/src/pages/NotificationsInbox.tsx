@@ -18,6 +18,7 @@ import { Icon } from '@/components/ui/icon';
 import { notificationApi, ApiClientError } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { statusInfo, NOTIFICATION_STATUS } from '@/lib/status-labels';
 import { messageFromError } from '@/lib/error-mapper';
 import { toast } from 'sonner';
 
@@ -40,28 +41,29 @@ function ChannelIcon({ channel }: { channel: string }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const label = statusInfo(NOTIFICATION_STATUS, status).label;
   if (status === 'sent' || status === 'delivered') {
     return (
       <Badge variant="success" className="text-xs gap-1">
-        <Icon name="CheckCircle2" size="2xs" /> {status}
+        <Icon name="CheckCircle2" size="2xs" /> {label}
       </Badge>
     );
   }
   if (status === 'failed' || status === 'bounced') {
     return (
       <Badge variant="destructive" className="text-xs gap-1">
-        <Icon name="XCircle" size="2xs" /> {status}
+        <Icon name="XCircle" size="2xs" /> {label}
       </Badge>
     );
   }
   if (status === 'queued' || status === 'pending') {
     return (
       <Badge variant="secondary" className="text-xs gap-1">
-        <Icon name="Clock" size="2xs" /> {status}
+        <Icon name="Clock" size="2xs" /> {label}
       </Badge>
     );
   }
-  return <Badge variant="secondary" className="text-xs">{status}</Badge>;
+  return <Badge variant="secondary" className="text-xs">{label}</Badge>;
 }
 
 type ChannelFilter = 'all' | 'email' | 'sms' | 'whatsapp';
