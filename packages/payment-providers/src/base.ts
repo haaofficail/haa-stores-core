@@ -234,5 +234,9 @@ export function verifyGeideaCallbackSignature(payload: Record<string, unknown>, 
     value(payload.merchantReferenceId ?? payload.MerchantReferenceId),
     value(payload.timeStamp ?? payload.timestamp),
   ], apiPassword);
+  // مقارنة ثابتة الزمن مع حراسة الطول (QA S5) — timingSafeEqual يرمي RangeError
+  // على اختلاف الطول، والتوقيع متحكَّم به من المرسِل؛ fail-closed على اختلاف الطول
+  // اتساقاً مع أصناف المزوّدين (tabby/moyasar/tamara/geidea).
+  if (Buffer.from(expected).length !== Buffer.from(signature).length) return false;
   return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
 }

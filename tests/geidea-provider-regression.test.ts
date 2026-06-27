@@ -37,4 +37,25 @@ describe('Geidea provider regression', () => {
     expect(signature).not.toContain(apiPassword);
     expect(verifyGeideaCallbackSignature({ ...payload, signature }, apiPassword)).toBe(true);
   });
+
+  it('rejects a wrong-but-equal-length signature without leaking timing (returns false, never throws)', () => {
+    const apiPassword = 'test-secret';
+    const real = createGeideaSignature(['ORD-1'], apiPassword);
+    // toggle one char while keeping the exact same length
+    const tampered = (real[0] === 'A' ? 'B' : 'A') + real.slice(1);
+    expect(tampered.length).toBe(real.length);
+    expect(() => verifyGeideaCallbackSignature({ orderId: 'ORD-1', signature: tampered }, apiPassword)).not.toThrow();
+    expect(verifyGeideaCallbackSignature({ orderId: 'ORD-1', signature: tampered }, apiPassword)).toBe(false);
+  });
+
+  it('fails closed on a length-mismatched signature instead of throwing RangeError (QA S5 length guard)', () => {
+    // timingSafeEqual throws "Input buffers must have the same byte length"
+    // when the attacker-controlled signature differs in length from the
+    // expected base64 HMAC. The guard must turn that into a plain `false`.
+    const apiPassword = 'test-secret';
+    for (const sig of ['', 'x', 'short', 'A'.repeat(1000)]) {
+      expect(() => verifyGeideaCallbackSignature({ orderId: 'ORD-1', signature: sig }, apiPassword)).not.toThrow();
+      expect(verifyGeideaCallbackSignature({ orderId: 'ORD-1', signature: sig }, apiPassword)).toBe(false);
+    }
+  });
 });
