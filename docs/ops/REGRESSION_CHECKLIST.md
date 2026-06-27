@@ -148,6 +148,9 @@
 
 - [ ] Order state transitions valid
 - [ ] Payment methods unaffected
+- [ ] BNPL callback payment lookup is scoped by both `providerPaymentId` and `storeId` before provider confirmation or wallet/order side effects
+- [ ] Gift messages are plain-text sanitized before cart/session/order storage and again at public cart/order DTO output
+- [ ] Shipment creation rejects unpaid non-COD orders, unconfirmed COD orders, unpacked orders, incomplete shipping addresses, and duplicate active shipments
 - [ ] Checkout safe path works
 - [ ] Shipping label flow unaffected
 - [ ] Webhooks considered (if relevant)

@@ -26,6 +26,7 @@ import { WalletLedger } from '@haa/wallet-core';
 import { StoreBillingSettingsService } from './billing-settings-service.js';
 import { WalletPostingService } from './wallet-posting-service.js';
 import { LoyaltyService } from './loyalty.js';
+import { sanitizeGiftMessage } from './gift-message-sanitizer.js';
 
 /**
  * Discriminated union of order-email templates. `sendOrderEmail`
@@ -223,6 +224,13 @@ export class OrdersService {
     metadata?: Record<string, unknown>;
   }) {
     return this.db.transaction(async (tx) => {
+      const sanitizedGiftOptions = data.giftOptions
+        ? {
+            ...data.giftOptions,
+            message: sanitizeGiftMessage(data.giftOptions.message) ?? undefined,
+          }
+        : null;
+
       const [order] = await tx.insert(s.orders).values({
         storeId: data.storeId,
         customerId: data.customerId ?? null,
@@ -251,7 +259,7 @@ export class OrdersService {
         platformCommission: data.platformCommission?.toString() ?? null,
         fulfillmentType: data.fulfillmentType ?? 'shipping',
         pickupLocationId: data.pickupLocationId ?? null,
-        giftOptions: data.giftOptions ?? null,
+        giftOptions: sanitizedGiftOptions,
         metadata: data.metadata ?? null,
       }).returning();
 
@@ -269,7 +277,7 @@ export class OrdersService {
           giftWrapSelected: item.giftWrapSelected ?? false,
           giftWrapPrice: item.giftWrapPrice?.toString() ?? null,
           sendAsGift: item.sendAsGift ?? false,
-          giftMessage: item.giftMessage ?? null,
+          giftMessage: sanitizeGiftMessage(item.giftMessage) ?? null,
           source: item.source ?? 'storefront',
           platformCommissionRate: item.platformCommissionRate?.toString() ?? null,
           platformCommission: item.platformCommission?.toString() ?? null,

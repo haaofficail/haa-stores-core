@@ -5,6 +5,22 @@
 
 ---
 
+## 2026-06-27 — Gift Message Sanitization + Shipping Guard Verification (TASK-0084)
+
+- Added a plain-text gift-message sanitizer for commerce-core write paths and shared storefront DTO output paths.
+- Wired cart item storage, checkout session gift metadata, order-level gift options, order-item gift messages, public cart DTOs, and public order DTOs through sanitizer calls.
+- Added `tests/gift-message-sanitization.test.ts` to cover malicious HTML/script/control-character cleanup, Arabic text preservation, input/output boundary wiring, and safe React text rendering.
+- Re-verified the existing shipment guard: unpaid non-COD and unconfirmed COD orders are blocked before shipment creation; paid or COD-pending packed orders remain valid.
+- Classified repo-wide lint warnings as pre-existing cleanup debt rather than mixing a broad refactor into this security task.
+
+## 2026-06-27 — BNPL Callback Tenant-Isolation Fix (TASK-0083)
+
+- Fixed a confirmed P0 from the attached deep security review: `CheckoutService.handleBNPLCallback` now resolves BNPL payments by both `providerPaymentId` and `storeId` before provider confirmation or side effects.
+- Added `tests/bnpl-callback-tenant-isolation.test.ts` to lock the ownership predicate and the ownership-specific not-found path.
+- Verified the pasted wallet-idempotency concern against current code: schema partial unique indexes, migrations `0062`/`0073`, and ledger `onConflictDoNothing` guards are already covered by existing tests.
+- Verified the direct `pending_payment -> shipped` claim is already rejected by the order state machine; stricter unpaid-shipping guards for indirect progressions remain a separate follow-up candidate.
+- Gift-message sanitization was not changed in this P0 patch to avoid mixing scopes; it should be handled as a dedicated medium-risk security task if prioritized.
+
 ## 2026-06-20 — GitHub Actions CI/Docker Recovery (TASK-0054)
 
 - Added a PostgreSQL 16 service plus the documented fresh-database bootstrap/seed preparation to the CI Test job; E2E now uses the same bootstrap path.

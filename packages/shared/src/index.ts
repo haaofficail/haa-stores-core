@@ -6,6 +6,7 @@ export * from './permissions.js';
 export * from './schemas/index.js';
 export * from './utils.js';
 export * from './phone.js';
+export * from './gift-message.js';
 export * from './legal/platform-legal.js';
 export * from './legal/platform-entity.js';
 export * from './demo/demo-rules.js';
