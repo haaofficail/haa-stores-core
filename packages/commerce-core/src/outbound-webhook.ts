@@ -13,6 +13,7 @@ import { eq, and, lt, inArray } from 'drizzle-orm';
 import { createDbClient, type DbOrTx } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { createHmac, randomBytes } from 'crypto';
+import { assertWebhookUrlAllowed, assertWebhookTargetResolvesPublic } from './webhook-ssrf-guard.js';
 
 const CIRCUIT_BREAKER_THRESHOLD = 5;
 const CIRCUIT_BREAKER_PAUSE_MINUTES = 60;
@@ -104,6 +105,11 @@ export class OutboundWebhookService {
     let success = false;
 
     try {
+      // SSRF guard: re-resolve the host at delivery time and reject any
+      // private/reserved address (defeats DNS-rebinding). Throws before any
+      // socket is opened to an internal target.
+      await assertWebhookTargetResolvesPublic(url);
+
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), DELIVERY_TIMEOUT_MS);
 
@@ -112,6 +118,8 @@ export class OutboundWebhookService {
         headers,
         body,
         signal: controller.signal,
+        // A 3xx to an internal host would otherwise bypass the guard above.
+        redirect: 'error',
       });
 
       clearTimeout(timer);
@@ -243,6 +251,8 @@ export class OutboundWebhookService {
   }
 
   async createEndpoint(storeId: number, data: { url: string; events: string[]; secret: string }) {
+    // SSRF guard: reject private/loopback/metadata targets at config time.
+    assertWebhookUrlAllowed(data.url);
     const [endpoint] = await this.db.insert(s.webhookEndpoints).values({
       storeId,
       url: data.url,
@@ -253,6 +263,8 @@ export class OutboundWebhookService {
   }
 
   async updateEndpoint(id: number, storeId: number, data: Partial<{ url: string; events: string[]; isActive: boolean }>) {
+    // SSRF guard: re-validate when the URL is being changed.
+    if (typeof data.url === 'string') assertWebhookUrlAllowed(data.url);
     const [updated] = await this.db.update(s.webhookEndpoints)
       .set({ ...data, updatedAt: new Date() })
       .where(and(eq(s.webhookEndpoints.id, id), eq(s.webhookEndpoints.storeId, storeId)))

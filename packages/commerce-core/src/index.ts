@@ -108,6 +108,12 @@ export {
   LOYALTY_EVENT_TYPES,
 } from './outbound-webhook.js';
 export type { LoyaltyEventType } from './outbound-webhook.js';
+export {
+  assertWebhookUrlAllowed,
+  assertWebhookTargetResolvesPublic,
+  isBlockedIp,
+  WebhookUrlNotAllowedError,
+} from './webhook-ssrf-guard.js';
 export { ShipmentsService } from './shipments-service.js';
 export type { ShipmentsResult } from './shipments-service.js';
 export { PaymentWebhookService } from './payment-webhook-service.js';
