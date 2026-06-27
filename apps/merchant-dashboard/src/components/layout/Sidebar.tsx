@@ -148,6 +148,10 @@ function NavGroup({ titleKey, title, items }: { titleKey: string; title: string;
             <NavLink
               key={item.to}
               to={item.to}
+              // `end` = exact match only. Without it, a hub link like /finance
+              // also matches its child /finance/wallet, so BOTH the hub item and
+              // the active sub-page lit up at once (the double-highlight bug).
+              end
               className={({ isActive }) =>
                 cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
@@ -177,7 +181,11 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
     <>
       {open && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onClose} />}
       <aside className={cn(
-        'w-64 bg-surface-1/50 backdrop-blur-xl flex flex-col shrink-0 shadow-xl',
+        // Opaque background: as a mobile drawer this slides OVER page content,
+        // so a translucent bg-surface-1/50 let the page bleed through (the
+        // "transparent menu" bug). Solid on mobile; keep the glass effect only
+        // on desktop where the sidebar sits in normal flow with nothing behind.
+        'w-64 bg-surface-1 lg:bg-surface-1/80 lg:backdrop-blur-xl flex flex-col shrink-0 shadow-xl',
 
         'fixed inset-y-0 z-50 transition-transform duration-200 ease-timing',
         isRTL ? 'left-0' : 'right-0',
