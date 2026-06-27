@@ -1,72 +1,60 @@
 # ════════════════════════════════════════════════════════════════════
-#  Haa Stores — Storefront  (@haa/storefront)
-#  Build tool : Vite + tsc   |  Served by : nginx:alpine
-#  Multi-stage : deps → build → prod
+#  Haa Stores — Storefront (@haa/storefront)
+#  Runtime: Node.js + serve   |  Build tool: Vite
+#  Multi-stage: deps → build → prod
 # ════════════════════════════════════════════════════════════════════
 
 ARG NODE_VERSION=22
 ARG ALPINE_VERSION=3.20
-ARG NGINX_VERSION=1.27-alpine
 ARG PNPM_VERSION=10
 
-ARG VERSION=0.1.0
-ARG MAINTAINER="Haa Stores DevOps <haa.officail@gmail.com>"
-
-# ─────────────────────────────────────────────
-# Stage 1 — deps
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
+# Stage 1 — deps: install dependencies
+# ─────────────────────────────────────────────────────────────────────
 FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS deps
 
-# Re-declare build args — Docker ARGs before FROM are not visible inside stages
 ARG PNPM_VERSION=10
 
-LABEL maintainer="${MAINTAINER}" \
-      description="Storefront — dependency stage"
+LABEL description="Haa Stores Storefront — dependency stage"
 
 RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 
 WORKDIR /repo
 
-COPY pnpm-workspace.yaml ./
-COPY pnpm-lock.yaml      ./
-COPY package.json        ./
+# Copy workspace manifests
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY apps/storefront/package.json ./apps/storefront/
+COPY packages/ ./packages/
 
-COPY apps/api/package.json                  ./apps/api/
-COPY apps/storefront/package.json           ./apps/storefront/
-COPY apps/merchant-dashboard/package.json   ./apps/merchant-dashboard/
-COPY apps/admin-dashboard/package.json      ./apps/admin-dashboard/
-COPY packages/                              ./packages/
-
+# Install dependencies
 RUN pnpm install --frozen-lockfile --prefer-offline
 
-
-# ─────────────────────────────────────────────
-# Stage 2 — build
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────
+# Stage 2 — build: compile with Vite
+# ─────────────────────────────────────────────────────────────────────
 FROM deps AS build
 
-LABEL description="Storefront — build stage"
+LABEL description="Haa Stores Storefront — build stage"
 
-COPY packages/ ./packages/
-COPY apps/storefront/ ./apps/storefront/
-COPY tsconfig.base.json ./
-COPY tsconfig.json      ./
+# Copy source
+COPY . .
 
-# Bake the API base URL into the SPA bundle. Empty in dev (relative same-origin
-# to the Vite proxy); staging/prod build with VITE_API_URL=/api so API calls hit
-# the reverse proxy's API route instead of colliding with the SPA's own
-# /s/:slug page routes on the same origin.
+# Bake the API base URL into the SPA bundle. Staging/prod build with
+# VITE_API_URL=/api so API calls hit the reverse proxy's API route instead
+# of colliding with the SPA's own page routes on the same origin.
 ARG VITE_API_URL=""
 ENV VITE_API_URL=${VITE_API_URL}
 
+# Build shared packages first
 RUN pnpm -r --filter './packages/**' --workspace-concurrency=1 build
+
+# Build storefront
 RUN pnpm --filter @haa/storefront build
 
-
-# ─────────────────────────────────────────────
-# Stage 3 — prod
-# ─────────────────────────────────────────────
-FROM nginx:${NGINX_VERSION} AS prod
+# ─────────────────────────────────────────────────────────────────────
+# Stage 3 — prod: lean runtime image
+# ─────────────────────────────────────────────────────────────────────
+FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS prod
 
 ARG VERSION=0.1.0
 ARG MAINTAINER="Haa Stores DevOps <haa.officail@gmail.com>"
@@ -77,14 +65,27 @@ LABEL maintainer="${MAINTAINER}" \
       org.opencontainers.image.title="haa-storefront" \
       org.opencontainers.image.version="${VERSION}"
 
-RUN rm -rf /usr/share/nginx/html/*
+# Install runtime deps
+RUN apk add --no-cache curl dumb-init
 
-COPY --from=build /repo/apps/storefront/dist /usr/share/nginx/html
-COPY apps/storefront/nginx.conf /etc/nginx/conf.d/default.conf
+# Install serve globally
+RUN npm install -g serve@^14
 
-EXPOSE 80
+WORKDIR /app
+
+# Copy dist from build stage
+COPY --from=build /repo/apps/storefront/dist ./dist
+
+# Run as the built-in non-root `node` user (uid/gid 1000 already exist in node:alpine)
+RUN chown -R node:node /app
+USER node
+
+EXPOSE 3001
+
+ENV NODE_ENV=production
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost/healthz || exit 1
+  CMD curl -fs http://localhost:3001/ || exit 1
 
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["serve", "-s", "dist", "-l", "3001"]
