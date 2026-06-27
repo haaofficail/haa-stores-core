@@ -1,11 +1,31 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Copy, Package, Search, Store } from 'lucide-react';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- icons fed into <Icon icon={…}> per repo convention; lucide migration tracked separately
+import { Copy, Info, KeyRound, Package, Search, Store, type LucideIcon } from 'lucide-react';
 import { haaMarketplaceApi, type MarketplaceOrder } from '@/lib/api';
 import { StoreAlert, StoreButton, StoreCard, StoreContainer, StoreInput, StoreSkeleton } from '@/components/ui';
 import { Icon } from '@/components/ui/icon';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { useSEO } from '@/hooks/useSEO';
+
+// Quiet, high-contrast helper note. Replaces the loud, low-contrast tinted
+// alert boxes (Apple accent text on soft tints measured 2.0–3.1:1, below
+// WCAG AA) for purely informational copy. Neutral surface + readable
+// text-primary/secondary keeps the page calm and legible; loud colored
+// alerts are reserved for real warnings/errors.
+function TrackNote({ icon, title, children }: { icon: LucideIcon; title: string; children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-2.5 rounded-[10px] border border-border bg-surface-1 px-3.5 py-3">
+      <span className="mt-0.5 shrink-0 text-text-secondary">
+        <Icon icon={icon} size="xs" />
+      </span>
+      <div className="min-w-0 text-[13px] leading-relaxed">
+        <p className="mb-0.5 font-semibold text-text-primary">{title}</p>
+        <p className="text-text-secondary">{children}</p>
+      </div>
+    </div>
+  );
+}
 
 function statusLabel(status: string) {
   const labels: Record<string, string> = {
@@ -130,9 +150,15 @@ export default function MarketplaceOrderTrack() {
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-text-primary">استعلام وتتبع طلبات سوق هاء</h1>
-            <p className="mt-1 text-sm text-text-secondary">
-              {orderNumber || 'أدخل رقم طلب السوق ورمز الدخول لعرض الطلبات التي تمت من السوق.'}
-            </p>
+            {orderNumber ? (
+              <p className="mt-1 text-sm text-text-secondary">
+                الطلب <span dir="ltr" className="font-mono font-semibold text-text-primary">{orderNumber}</span>
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-text-secondary">
+                أدخل رقم طلب السوق ورمز الدخول لعرض الطلبات التي تمت من السوق.
+              </p>
+            )}
           </div>
           <StoreButton href="/marketplace" variant="outline">العودة للسوق</StoreButton>
         </div>
@@ -167,12 +193,14 @@ export default function MarketplaceOrderTrack() {
               استعلام وتتبع
             </StoreButton>
           </div>
-          <StoreAlert variant="info" title="دور السوق بعد الطلب" className="mt-4">
-            سوق هاء يستعلم ويتابع الطلبات التي تمت من طرفه فقط. بعد الشراء يتحول كل جزء إلى طلب تاجر عادي وتكتمل إجراءاته من المتجر.
-          </StoreAlert>
-          <StoreAlert variant="warning" title="احتفظ برمز الدخول" className="mt-2">
-            رمز الدخول يُعرض مرة واحدة عند إنشاء الطلب. إذا فقدته، تواصل مع دعم التاجر لإعادة الإرسال.
-          </StoreAlert>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <TrackNote icon={Info} title="دور السوق بعد الطلب">
+              سوق هاء يجمع الطلب فقط. بعد الشراء يتحوّل كل جزء إلى طلب تاجر عادي وتكتمل إجراءاته من المتجر.
+            </TrackNote>
+            <TrackNote icon={KeyRound} title="احتفظ برمز الدخول">
+              يُعرض مرة واحدة عند إنشاء الطلب. إذا فقدته، تواصل مع دعم التاجر لإعادة الإرسال.
+            </TrackNote>
+          </div>
         </StoreCard>
 
         {loading && (
@@ -196,7 +224,7 @@ export default function MarketplaceOrderTrack() {
                         <Icon icon={Store} size="xs" />
                         <span className="truncate">{subOrder.storeName}</span>
                       </div>
-                      <p className="mt-1 text-xs text-text-tertiary">{subOrder.orderNumber}</p>
+                      <p className="mt-1 text-xs text-text-secondary">{subOrder.orderNumber}</p>
                     </div>
                     <Link to={`/s/${subOrder.storeSlug}/order/${subOrder.orderNumber}`} className="text-xs font-semibold text-primary-600 hover:text-primary-700">
                       تفاصيل المتجر
@@ -204,24 +232,24 @@ export default function MarketplaceOrderTrack() {
                   </div>
                   <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
                     <div className="rounded-[8px] bg-surface-2 p-2">
-                      <p className="text-text-tertiary">الطلب</p>
+                      <p className="text-text-secondary">الطلب</p>
                       <p className="mt-1 font-semibold">{statusLabel(subOrder.status)}</p>
                     </div>
                     <div className="rounded-[8px] bg-surface-2 p-2">
-                      <p className="text-text-tertiary">الدفع</p>
+                      <p className="text-text-secondary">الدفع</p>
                       <p className="mt-1 font-semibold">{statusLabel(subOrder.paymentStatus)}</p>
                     </div>
                     <div className="rounded-[8px] bg-surface-2 p-2">
-                      <p className="text-text-tertiary">الشحن</p>
+                      <p className="text-text-secondary">الشحن</p>
                       <p className="mt-1 font-semibold">{statusLabel(subOrder.fulfillmentStatus)}</p>
                     </div>
                   </div>
                   <p className="mt-3 text-sm font-bold text-text-primary">
                     {formatAmount(subOrder.total)} <SarIcon size="md" />
                   </p>
-                  <StoreAlert variant="info" title="يكتمل عند التاجر" className="mt-3">
-                    هذا الطلب تحول داخليًا إلى طلب متجر عادي. الشحن والإرجاع والاستبدال والدعم تتم من صفحة طلب المتجر.
-                  </StoreAlert>
+                  <p className="mt-3 text-xs leading-relaxed text-text-secondary">
+                    يكتمل هذا الطلب عند التاجر: الشحن والإرجاع والاستبدال والدعم تتم من صفحة طلب المتجر.
+                  </p>
                   <StoreButton href={`/s/${subOrder.storeSlug}/order/${subOrder.orderNumber}`} variant="outline" className="mt-3">
                     متابعة إجراءات الطلب عند التاجر
                   </StoreButton>
@@ -235,14 +263,11 @@ export default function MarketplaceOrderTrack() {
                 <h2 className="text-base font-bold text-text-primary">ملخص الطلب الموحد</h2>
               </div>
               <div className="mt-4 space-y-3 text-sm">
-                <StoreAlert variant="info" title="دور سوق هاء">
-                  السوق يعرض المنتجات ويجمع الطلب فقط. بعد إنشاء الطلب يتحول كل جزء إلى طلب تاجر عادي ويكتمل بنفس مسار المتجر.
-                </StoreAlert>
                 {order.accessToken && (
                   <div className="rounded-[8px] border border-border bg-surface-2 p-2">
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-xs text-text-tertiary">رمز الدخول</p>
+                        <p className="text-xs text-text-secondary">رمز الدخول</p>
                         <p className="mt-1 truncate font-mono text-xs">{order.accessToken}</p>
                       </div>
                       <button
