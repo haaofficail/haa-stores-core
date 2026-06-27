@@ -17,7 +17,9 @@
      the same primary text color prevents the "two products" perception. */
   --haa-text-primary: #1d1d1f;
   --haa-text-secondary: #475569;
-  --haa-text-tertiary: #94a3b8;
+  /* #94a3b8 measured 2.56:1 (fails WCAG AA); darken to 5.07:1. This var backs
+     the Tailwind `text-tertiary` class (tailwind.config.js). */
+  --haa-text-tertiary: #6e6e73;
   --haa-text-disabled: #cbd5e1;
   --haa-text-inverse: #ffffff;
   --haa-text-link: #5c9cd5;
@@ -56,9 +58,12 @@
   --color-neutral-900: #1d1d1f;
   --color-neutral-950: #0a0a0a;
 
-  /* ── Apple-style secondary/tertiary text (parity with landing) ── */
-  --text-secondary: #86868b;
-  --text-tertiary: #aeaeb2;
+  /* ── Apple-style secondary/tertiary text (parity with landing) ──
+     Darkened to Apple-family grays that meet WCAG AA (≥4.5:1): #636366 =
+     5.99:1, #6e6e73 = 5.07:1 on #fff. Previous #86868b / #aeaeb2 measured
+     3.62 / 2.21 and failed AA. Mirrors the storefront fix (#312). */
+  --text-secondary: #636366;
+  --text-tertiary: #6e6e73;
 
   /* ── Semantic ── */
   --haa-success: #16a34a;
