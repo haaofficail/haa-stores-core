@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { orderApi, pickupLocationsApi, type PublicOrder, type PickupLocation } from '@/lib/api';
+import { formatOrderStatus, formatPaymentStatus, formatFulfillmentStatus } from '@/lib/order-status';
 import {
   StoreContainer, StoreCard, StoreInput, StoreButton, StoreBadge,
   StoreSkeleton,
 } from '@/components/ui';
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports -- icons fed into <Icon icon={…}> per repo convention; lucide migration tracked separately
 import { Package, Truck, CheckCircle, Clock, ArrowLeft, MapPin, CreditCard, ShoppingBag, Store, Gift, Phone, FileText } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { SarIcon } from '@/components/ui/SarIcon';
@@ -151,19 +153,19 @@ export default function TrackOrderResult() {
               <div className="text-center p-3 bg-surface-2 rounded-xl">
                 <p className="text-xs text-text-secondary mb-1">{t('order.status', 'الحالة')}</p>
                 <StoreBadge variant="info" icon={statusIcons[order.status]}>
-                  {statusLabels[order.status] ?? order.status}
+                  {statusLabels[order.status] ?? formatOrderStatus(order.status)}
                 </StoreBadge>
               </div>
               <div className="text-center p-3 bg-surface-2 rounded-xl">
                 <p className="text-xs text-text-secondary mb-1">{t('order.paymentStatus', 'حالة الدفع')}</p>
                 <StoreBadge variant={order.paymentStatus === 'paid' ? 'success' : order.paymentStatus === 'failed' ? 'danger' : 'warning'}>
-                  {order.paymentStatus === 'paid' ? t('track.paid', 'مدفوع') : order.paymentStatus === 'unpaid' ? t('track.unpaid', 'غير مدفوع') : order.paymentStatus === 'failed' ? t('status.payment_failed', 'فشل الدفع') : order.paymentStatus}
+                  {order.paymentStatus === 'paid' ? t('track.paid', 'مدفوع') : order.paymentStatus === 'unpaid' ? t('track.unpaid', 'غير مدفوع') : order.paymentStatus === 'failed' ? t('status.payment_failed', 'فشل الدفع') : formatPaymentStatus(order.paymentStatus)}
                 </StoreBadge>
               </div>
               {order.fulfillmentStatus && (
                 <div className="text-center p-3 bg-surface-2 rounded-xl">
                   <p className="text-xs text-text-secondary mb-1">{t('order.shipmentStatus', 'حالة الشحن')}</p>
-                  <StoreBadge>{order.fulfillmentStatus}</StoreBadge>
+                  <StoreBadge>{formatFulfillmentStatus(order.fulfillmentStatus)}</StoreBadge>
                 </div>
               )}
             </div>
@@ -199,7 +201,7 @@ export default function TrackOrderResult() {
                 )}
                 <h3 className="font-bold text-sm mb-3">{t('order.items', 'المنتجات')}</h3>
                 <div className="space-y-2 mb-4">
-                  {order.items.map((item: any) => (
+                  {order.items.map((item) => (
                     <div key={item.id} className="flex justify-between text-sm py-1.5 border-b border-border/40 last:border-0">
                       <div>
                         <span className="text-text-primary">{item.name} × {item.quantity}</span>
@@ -229,7 +231,7 @@ export default function TrackOrderResult() {
               <div className="relative">
                 <div className="absolute end-4 top-0 bottom-0 w-px bg-border" />
                 <div className="space-y-4">
-                  {[...order.statusHistory].reverse().map((h: any, i: number) => (
+                  {[...order.statusHistory].reverse().map((h, i) => (
                     <div key={h.id} className="flex items-start gap-3 relative">
                       <div className={`h-8 w-8 rounded-full flex items-center justify-center z-10 shrink-0 ${
                         i === 0 ? 'bg-primary-100 text-primary-600' : 'bg-surface-2 text-text-tertiary'
@@ -238,7 +240,7 @@ export default function TrackOrderResult() {
                       </div>
                       <div className="flex-1 pt-1">
                         <p className="text-sm font-medium text-text-primary">
-                          {statusLabels[h.toStatus] ?? h.toStatus}
+                          {statusLabels[h.toStatus] ?? formatOrderStatus(h.toStatus)}
                         </p>
                         <p className="text-xs text-text-secondary mt-0.5">
                           {new Date(h.createdAt).toLocaleString(i18n.language === 'ar' ? 'ar-SA' : i18n.language)}

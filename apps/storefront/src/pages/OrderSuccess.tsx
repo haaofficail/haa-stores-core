@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { orderApi, pickupLocationsApi, type PublicOrder, type PickupLocation } from '@/lib/api';
+import { formatOrderStatus, formatPaymentStatus, formatFulfillmentStatus } from '@/lib/order-status';
 import { getTrackPhone, saveTrackPhone } from '@/lib/order-track-storage';
 import {
   StoreContainer, StoreButton, StoreCard, StoreBadge, StoreSkeleton,
@@ -34,29 +35,6 @@ const statusIconNames: Record<string, IconName> = {
   partially_refunded: 'CreditCard',
 };
 
-const statusLabels: Record<string, string> = {
-  draft: 'مسودة',
-  checkout_started: 'بدأ الدفع',
-  pending_payment: 'بانتظار الدفع',
-  payment_failed: 'فشل الدفع',
-  confirmed: 'مؤكد',
-  processing: 'قيد التجهيز',
-  ready_to_ship: 'جاهز للشحن',
-  ready_for_pickup: 'جاهز للاستلام',
-  shipped: 'تم الشحن',
-  delivered: 'تم التوصيل',
-  picked_up: 'تم الاستلام',
-  completed: 'مكتمل',
-  cancelled: 'ملغي',
-  returned: 'مرتجع',
-  refunded: 'مسترد',
-  partially_refunded: 'مسترد جزئيًا',
-};
-
-const paymentLabels: Record<string, string> = {
-  unpaid: 'غير مدفوع', paid: 'مدفوع', refunded: 'مسترد', partially_refunded: 'مسترد جزئيًا',
-  failed: 'فشل الدفع',
-};
 
 export default function OrderSuccess() {
   const { t } = useTranslation();
@@ -159,19 +137,19 @@ export default function OrderSuccess() {
               <div className="text-center p-3 bg-surface-2 rounded-xl">
                 <p className="text-xs text-text-secondary mb-1">{t('order.status')}</p>
                 <StoreBadge variant="info" icon={statusIconNames[order.status] ? <Icon name={statusIconNames[order.status]} size="xs" /> : undefined}>
-                  {t('status.' + order.status, statusLabels[order.status] ?? order.status)}
+                  {t('status.' + order.status, formatOrderStatus(order.status))}
                 </StoreBadge>
               </div>
               <div className="text-center p-3 bg-surface-2 rounded-xl">
                 <p className="text-xs text-text-secondary mb-1">{t('order.paymentStatus')}</p>
                 <StoreBadge variant={order.paymentStatus === 'paid' ? 'success' : order.paymentStatus === 'failed' ? 'danger' : 'warning'}>
-                  {paymentLabels[order.paymentStatus] ?? order.paymentStatus}
+                  {formatPaymentStatus(order.paymentStatus)}
                 </StoreBadge>
               </div>
               {order.fulfillmentStatus && (
                 <div className="text-center p-3 bg-surface-2 rounded-xl">
                   <p className="text-xs text-text-secondary mb-1">{t('order.shipmentStatus')}</p>
-                  <StoreBadge>{order.fulfillmentStatus}</StoreBadge>
+                  <StoreBadge>{formatFulfillmentStatus(order.fulfillmentStatus)}</StoreBadge>
                 </div>
               )}
             </div>
