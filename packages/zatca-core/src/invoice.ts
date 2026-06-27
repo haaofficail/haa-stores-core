@@ -32,24 +32,42 @@ export function buildZatcaInvoice(input: ZatcaInvoiceInput): ZatcaInvoiceResult 
   let subtotal = 0;
   let discountTotal = 0;
   let vatTotal = 0;
+  // Sum of the per-line rounded net amounts. BR-CO-10 requires the header
+  // LineExtensionAmount to equal the SUM of line LineExtensionAmounts exactly,
+  // so we accumulate the same rounded value each line emits — never recompute
+  // from raw floats (which can drift by a cent).
+  let lineExtensionTotal = 0;
 
   const lineItems = input.lineItems.map((item, i) => {
     const lineSubtotal = item.unitPrice * item.quantity;
     const lineDiscount = item.discountAmount || 0;
-    const taxableAmount = lineSubtotal - lineDiscount;
+    const taxableAmount = parseFloat((lineSubtotal - lineDiscount).toFixed(2));
     const lineVat = parseFloat((taxableAmount * item.vatRate).toFixed(2));
 
     subtotal += lineSubtotal;
     discountTotal += lineDiscount;
     vatTotal += lineVat;
+    lineExtensionTotal += taxableAmount;
 
     const vatCode = item.vatCategoryCode || 'S';
     const vatPct = (item.vatRate * 100).toFixed(2);
 
+    // BR-CO-10 / line consistency: a line-level discount must be declared as a
+    // cac:AllowanceCharge so that Price × Quantity − allowance = LineExtensionAmount.
+    // Without it, PriceAmount(${unitPrice}) × Qty ≠ the net LineExtensionAmount and
+    // ZATCA portal validation rejects the line. Document-level AllowanceTotalAmount
+    // stays 0 because the discount is already reflected in the line net amount.
+    const lineAllowanceXml = lineDiscount > 0 ? `
+      <cac:AllowanceCharge>
+        <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+        <cbc:AllowanceChargeReason>discount</cbc:AllowanceChargeReason>
+        <cbc:Amount currencyID="${currency}">${lineDiscount.toFixed(2)}</cbc:Amount>
+      </cac:AllowanceCharge>` : '';
+
     return `    <cac:InvoiceLine>
       <cbc:ID>${i + 1}</cbc:ID>
       <cbc:InvoicedQuantity unitCode="PCE">${item.quantity}</cbc:InvoicedQuantity>
-      <cbc:LineExtensionAmount currencyID="${currency}">${taxableAmount.toFixed(2)}</cbc:LineExtensionAmount>
+      <cbc:LineExtensionAmount currencyID="${currency}">${taxableAmount.toFixed(2)}</cbc:LineExtensionAmount>${lineAllowanceXml}
       <cac:TaxTotal>
         <cbc:TaxAmount currencyID="${currency}">${lineVat.toFixed(2)}</cbc:TaxAmount>
       </cac:TaxTotal>
@@ -67,8 +85,9 @@ export function buildZatcaInvoice(input: ZatcaInvoiceInput): ZatcaInvoiceResult 
     </cac:InvoiceLine>`;
   });
 
-  const grandTotal = parseFloat((subtotal - discountTotal + vatTotal).toFixed(2));
-  const taxableTotal = subtotal - discountTotal;
+  // Tax base = sum of per-line rounded net amounts (BR-CO-10 / BR-CO-13).
+  const taxableTotal = parseFloat(lineExtensionTotal.toFixed(2));
+  const grandTotal = parseFloat((taxableTotal + vatTotal).toFixed(2));
   const timestamp = `${input.issueDate}T${input.issueTime}`;
 
   const qrCode = generateZatcaQr({
@@ -128,10 +147,10 @@ export function buildZatcaInvoice(input: ZatcaInvoiceInput): ZatcaInvoiceResult 
     </cac:TaxSubtotal>
   </cac:TaxTotal>
   <cac:LegalMonetaryTotal>
-    <cbc:LineExtensionAmount currencyID="${currency}">${subtotal.toFixed(2)}</cbc:LineExtensionAmount>
+    <cbc:LineExtensionAmount currencyID="${currency}">${taxableTotal.toFixed(2)}</cbc:LineExtensionAmount>
     <cbc:TaxExclusiveAmount currencyID="${currency}">${taxableTotal.toFixed(2)}</cbc:TaxExclusiveAmount>
     <cbc:TaxInclusiveAmount currencyID="${currency}">${grandTotal.toFixed(2)}</cbc:TaxInclusiveAmount>
-    <cbc:AllowanceTotalAmount currencyID="${currency}">${discountTotal.toFixed(2)}</cbc:AllowanceTotalAmount>
+    <cbc:AllowanceTotalAmount currencyID="${currency}">0.00</cbc:AllowanceTotalAmount>
     <cbc:PayableAmount currencyID="${currency}">${grandTotal.toFixed(2)}</cbc:PayableAmount>
   </cac:LegalMonetaryTotal>
 ${lineItems.join('\n')}
