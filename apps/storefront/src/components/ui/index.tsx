@@ -279,15 +279,17 @@ interface StoreBadgeProps {
   className?: string;
 }
 
+// Foreground uses the -strong shade (WCAG AA on the -soft background); the
+// bright accent on -soft measured ~2–3:1 (same issue fixed in StoreAlert).
 const badgeVariantClasses: Record<BadgeVariant, string> = {
   neutral: 'bg-surface-2 text-text-secondary',
-  success: 'bg-success-soft text-success',
-  warning: 'bg-warning-soft text-warning',
-  danger: 'bg-danger-soft text-danger',
-  info: 'bg-info-soft text-info',
-  discount: 'bg-danger-soft text-danger',
-  stock: 'bg-success-soft text-success',
-  new: 'bg-info-soft text-info',
+  success: 'bg-success-soft text-success-strong',
+  warning: 'bg-warning-soft text-warning-strong',
+  danger: 'bg-danger-soft text-danger-strong',
+  info: 'bg-info-soft text-info-strong',
+  discount: 'bg-danger-soft text-danger-strong',
+  stock: 'bg-success-soft text-success-strong',
+  new: 'bg-info-soft text-info-strong',
 };
 
 const badgeSizeClasses: Record<BadgeSize, string> = {
