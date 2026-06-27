@@ -57,3 +57,7 @@ packages/theme-web/storybook-static/
 
 # Local backups
 CLAUDE.md.backup.*
+.next/
+
+# Security scan reports (local only — never commit)
+reports/
