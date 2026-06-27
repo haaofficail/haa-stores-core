@@ -96,7 +96,11 @@ export default function ProductDetail() {
   const recentlyViewed = useRecentlyViewed(slug, product);
 
   useSEO({
-    title: product ? `${product.name} - ${store?.name || ''}` : t('product.loading'),
+    title: product
+      ? `${product.name} - ${store?.name || ''}`
+      : loading
+        ? t('product.loading', 'جاري تحميل المنتج…')
+        : t('product.notFound', 'المنتج غير موجود'),
     description: product?.description || undefined,
     ogImage: product?.images?.[0],
     ogType: 'product',
