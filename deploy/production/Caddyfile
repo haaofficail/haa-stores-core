@@ -72,7 +72,7 @@ haastores.com {
 	import security_headers
 	import spa_site
 	handle {
-		reverse_proxy storefront:80
+		reverse_proxy storefront:3001
 	}
 }
 
@@ -80,7 +80,7 @@ admin.haastores.com {
 	import admin_security_headers
 	import spa_site
 	handle {
-		reverse_proxy admin-dashboard:80
+		reverse_proxy admin-dashboard:3001
 	}
 }
 
@@ -88,7 +88,7 @@ merchant.haastores.com {
 	import security_headers
 	import spa_site
 	handle {
-		reverse_proxy merchant-dashboard:80
+		reverse_proxy merchant-dashboard:3001
 	}
 }
 
@@ -109,6 +109,6 @@ api.haastores.com {
 	import security_headers
 	import spa_site
 	handle {
-		reverse_proxy storefront:80
+		reverse_proxy storefront:3001
 	}
 }
