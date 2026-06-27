@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { marketplaceApi } from '@/lib/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { formatNumber } from '@/lib/utils';
+import { statusInfo, toneBadgeClass, LISTING_STATUS } from '@/lib/status-labels';
 import { messageFromError } from '@/lib/error-mapper';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -442,9 +443,10 @@ export default function MarketplaceDetailPage() {
                         <p className="text-xs text-neutral-400">{listing.price && `${formatNumber(listing.price)} ${t('marketplaceDetail.currency', 'ر.س')}`} {listing.quantity != null && `${t('marketplaceDetail.quantityLabel', '— كمية: ')}${listing.quantity}`}</p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge className={listing.status === 'active' ? 'bg-emerald-500/10 text-emerald-700 border-emerald-200 text-xs' : 'bg-neutral-100 text-neutral-500 text-xs'}>
-                          {listing.status === 'active' ? t('marketplaceDetail.status.active', 'نشط') : t('marketplaceDetail.status.inactive', 'غير نشط')}
-                        </Badge>
+                        {(() => {
+                          const info = statusInfo(LISTING_STATUS, listing.status);
+                          return <Badge className={`${toneBadgeClass[info.tone]} text-xs`}>{info.label}</Badge>;
+                        })()}
                         {listing.marketplaceUrl && (
                           <a href={listing.marketplaceUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-500 transition-colors">
                             <ExternalLink className="h-3.5 w-3.5" />

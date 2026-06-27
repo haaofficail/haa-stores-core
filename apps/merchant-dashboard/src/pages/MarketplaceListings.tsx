@@ -11,6 +11,7 @@ import {
   ArrowRight, Package, Trash2, ExternalLink, Loader2, ChevronDown,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { statusInfo, toneBadgeClass, LISTING_STATUS } from '@/lib/status-labels';
 import { toast } from 'sonner';
 
 /**
@@ -34,12 +35,22 @@ import { toast } from 'sonner';
  */
 const PAGE_SIZE = 50;
 
+interface MarketplaceListing {
+  id: number;
+  marketplaceSku?: string | null;
+  marketplaceUrl?: string | null;
+  price?: number | string | null;
+  salePrice?: number | string | null;
+  quantity?: number | null;
+  status?: string | null;
+}
+
 export default function MarketplaceListingsPage() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
   const { provider } = useParams<{ provider: string }>();
   const navigate = useNavigate();
-  const [listings, setListings] = useState<any[]>([]);
+  const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -56,7 +67,7 @@ export default function MarketplaceListingsPage() {
     setLoading(true);
     marketplaceApi.listListings(storeId, provider)
       .then((data) => {
-        setListings(data);
+        setListings(data as MarketplaceListing[]);
         setVisibleCount(PAGE_SIZE);
       })
       .catch(() => toast.error(t('common.error', 'حدث خطأ')))
@@ -140,16 +151,17 @@ export default function MarketplaceListingsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {visibleListings.map((listing: any) => (
+                  {visibleListings.map((listing: MarketplaceListing) => (
                     <TableRow key={listing.id}>
                       <TableCell className="font-medium">{listing.marketplaceSku || '—'}</TableCell>
                       <TableCell>{listing.price} {t('marketplaces.currency', 'ر.س')}</TableCell>
                       <TableCell>{listing.salePrice ? `${listing.salePrice} ${t('marketplaces.currency', 'ر.س')}` : '—'}</TableCell>
                       <TableCell>{listing.quantity ?? '—'}</TableCell>
                       <TableCell>
-                        <Badge className={listing.status === 'active' ? 'bg-emerald-500/10 text-emerald-700 border-emerald-200' : 'bg-neutral-100 text-neutral-500'}>
-                          {listing.status === 'active' ? t('marketplaces.active', 'نشط') : t('marketplaces.inactive', 'غير نشط')}
-                        </Badge>
+                        {(() => {
+                          const info = statusInfo(LISTING_STATUS, listing.status);
+                          return <Badge className={toneBadgeClass[info.tone]}>{info.label}</Badge>;
+                        })()}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
