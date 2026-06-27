@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import {
   validatePixelScripts,
   type PixelValidationResult,
-} from '@haa/commerce-core';
+} from '@haa/commerce-core/pixel-validation';
 
 const BASE_URL = (import.meta.env as Record<string, string>).VITE_API_URL ?? '';
 

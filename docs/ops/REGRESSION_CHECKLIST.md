@@ -235,10 +235,11 @@
 - [x] `pnpm audit` returns 0 vulnerabilities on every PR (vite pinned to >= 6.4.3; esbuild pinned to >= 0.25.0; uuid pinned to >= 11.1.1 via pnpm overrides)
 - [x] `pnpm deps:audit` (prod-only) returns 0 vulnerabilities on every PR
 - [x] Storefront pixel payloads are validated against `PIXEL_PROVIDER_SIGNATURES` (meta/fbq, tiktok/ttq, snapchat/snaptr, twitter/twq, ga4/gtag, gtm/dataLayer, pinterest/pintrk) before DOM injection in `usePixels.ts`
+- [x] Storefront imports pixel validation from browser-safe `@haa/commerce-core/pixel-validation`, not the main `@haa/commerce-core` export
 - [x] `<!-- HAA-PIXEL-PROVIDER: <name> -->` markers are present on every script block emitted by `PixelService.buildScripts`
 - [x] Tampered or arbitrary `<script>` payloads are dropped silently with `console.warn` and never reach `innerHTML`
 - [x] `window.__haaPixelsLoaded` records matched providers after a successful injection (observability for future CSP report-only collectors)
-- [x] `tests/pixel-provider-allowlist.test.ts` is run on every change to `pixels.ts` or `usePixels.ts`
+- [x] `tests/pixel-provider-allowlist.test.ts` and `pnpm --filter @haa/storefront build` are run on every change to `pixels.ts`, `pixel-validation.ts`, or `usePixels.ts`
 
 - [ ] `requireStoreAccess()` is applied on all merchant routes that use `:storeId`
 - [ ] `requirePermission()` uses correct permission string (not `read` for write operations)

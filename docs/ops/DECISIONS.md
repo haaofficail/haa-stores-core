@@ -176,12 +176,14 @@
 - **Owner:** Platform
 
 ### Context
+
 Haa's platform fee was hardcoded as `* 0.02` in 3 places
 (`packages/commerce-core/src/checkout.ts` × 2, `apps/api/src/routes/webhooks.ts`).
 This blocks per-store plans (free, 1%, 2%, fixed, hybrid), promo exemptions,
 and auditability.
 
 ### Decision
+
 1. New `store_billing_settings` table (1 row per store) with:
    `platformFeeMode` (none / percentage / fixed / percentage_plus_fixed),
    `platformFeePct`, `platformFeeFixed`, `isPlatformFeeEnabled`, audit fields
@@ -219,6 +221,7 @@ and auditability.
     are still returned for existing UI.
 
 ### Immutability contract
+
 - Order's `platform_fee` wallet entry carries its own `feeRatePct` +
   `feeFixed` + `feeSource='platform_policy'`.
 - Changing `store_billing_settings.platformFeePct` after the order is
@@ -228,6 +231,7 @@ and auditability.
   order reference (no double-charge on retry).
 
 ### Out of scope (intentionally)
+
 - Tiered billing plans, marketplace-specific fees, volume discounts.
 - Removing the legacy flat `platformFees` field from the wallet summary
   (kept for backward compat).
@@ -235,6 +239,7 @@ and auditability.
   no-op SUM (returns 0 until/unless that type is introduced).
 
 ### Acceptance check
+
 - `pnpm typecheck` → all 21 packages clean.
 - `pnpm vitest run tests/platform-fees.test.ts tests/platform-fees-wiring.test.ts` → 57/57.
 - `pnpm preflight` → PASSED.
@@ -245,6 +250,7 @@ and auditability.
   → no remaining hardcoded platform-fee values.
 
 ### Related Risks
+
 - Pre-existing service-layer enforcement budget: 14/14 — my refactor
   was careful to move drizzle-orm imports to the service layer
   (the `StoreBillingSettingsService.getStoreSummary` helper) so the
@@ -276,9 +282,9 @@ and auditability.
      reference DB (the synthesis workaround is documented in agent
      memory `MEMORY.md` for future reference, but the resulting
      snapshots must be validated against the strict `tableV7` shape).
-  This is logged as a known migration-tooling issue, NOT a TASK-0030
-  bug. The SQL is correct and idempotent; the toolchain limitation is
-  orthogonal.
+     This is logged as a known migration-tooling issue, NOT a TASK-0030
+     bug. The SQL is correct and idempotent; the toolchain limitation is
+     orthogonal.
 
 ### Resolution (post-commit follow-up, 2026-06-16)
 
@@ -301,10 +307,12 @@ the missing snapshot files:
    idempotent no-op).
 
 The bootstrap is codified in:
+
 - `scripts/bootstrap-fresh-db.sh` — orchestrator
 - `scripts/record-migration-hashes.mjs` — drizzle-orm migrator wrapper
 
 **End-to-end verification on a brand-new DB (`bootstrap_e2e`)**:
+
 - 53 SQL files applied via `psql -f` → 0 failed
 - 97 public tables created
 - `drizzle.__drizzle_migrations` populated with 52 rows
@@ -359,6 +367,7 @@ Related wallet/ledger suites (5 files, 31 tests) all pass with no
 regressions.
 
 ### Skills Used
+
 plan-mode, test-driven-development, verification-before-completion.
 
 ---
@@ -385,7 +394,9 @@ migrations, and a duplicate platform-brand system.
 Verified: full `pnpm -r typecheck` GREEN (22/22); ported wiring/unit tests pass; a fresh
 phase-9 DB bootstrap carries the new financial guards. Full 2673-test suite re-run is
 pending a phase-9-state local DB. No push; phase-9 + old main preserved by tags.
+
 ---
+
 ## DECISION-0008: Pixel script injection uses a provider-allowlist + observability hook (2026-06-27)
 
 - **Status:** Accepted
@@ -404,17 +415,24 @@ pending a phase-9-state local DB. No push; phase-9 + old main preserved by tags.
   2. **Frontend allowlist** — `usePixels.ts` runs every fetched payload
      through `validatePixelScripts()` before `innerHTML`. The validator
      scans each `<script>` for a known provider signature
-     (`PIXEL_PROVIDER_SIGNATURES`, frozen object exported from
-     `packages/commerce-core/src/pixels.ts`) covering meta/fbq,
+     (`PIXEL_PROVIDER_SIGNATURES`, frozen object exported from the
+     browser-safe `@haa/commerce-core/pixel-validation` subpath) covering meta/fbq,
      tiktok/ttq, snapchat/snaptr, twitter/twq, ga4/gtag, gtm/dataLayer,
      pinterest/pintrk. src-loaded scripts (e.g. GA4 gtag/js loader) are
      exempt because their code is fetched from a known provider URL.
+  3. **Browser-safe packaging** — storefront code must import the validator
+     from `@haa/commerce-core/pixel-validation`, not the main
+     `@haa/commerce-core` export. The main export is allowed for Node/tests,
+     but browser bundles must avoid the commerce-core server index so Vite
+     does not pull DB clients or `postgres` into the storefront build.
 - **Consequences:**
   - **Pros:** defense-in-depth, no breaking change for legitimate pixels,
     fast rejection of tampered payloads (single regex scan per script).
   - **Cons:** A new provider requires (a) adding its signature to
     `PIXEL_PROVIDER_SIGNATURES`, (b) stamping the matching HAA-PIXEL-PROVIDER
-    marker in `buildScripts`, (c) re-running `pixel-provider-allowlist.test.ts`.
+    marker in `buildScripts`, (c) re-running `pixel-provider-allowlist.test.ts`,
+    and (d) running `pnpm --filter @haa/storefront build` to prove the browser
+    bundle stayed server-free.
   - **Out of scope (deferred):** CSP nonce migration (needs nginx + Express +
     storefront template coordination; tracked separately). Token-only-in-cookie
     migration. Legacy query-token removal in `support.ts`, `haa-marketplace.ts`,
