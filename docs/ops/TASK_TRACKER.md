@@ -4,6 +4,60 @@
 
 ---
 
+### TASK-0086: Close P1 dependency CVEs and harden storefront pixel script injection
+
+- **Type:** Security
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-27
+- **Updated:** 2026-06-27
+- **Branch:** `security/p1-cve-and-pixels` (forked from `codex/security-review-hardening`, no working-tree interference with the other agent's branch)
+- **Original Request:** After the read-only security audit, the user approved closing the two P1 items in one PR: (a) the 6 dev CVEs that broke `pnpm audit`, and (b) the pixel-script innerHTML XSS surface in the storefront.
+- **Expanded Requirement:** Upgrade vite to `6.4.3` across all 8 sites (root + 4 apps + 4 packages), add pnpm overrides for `esbuild` and `uuid`, add a defense-in-depth provider allowlist on the pixel injection path (backend marker + frontend signature check), and prove both with focused tests.
+- **Scope:** `package.json` (root overrides), 4 app `package.json` (vite), 4 package `package.json` (vite), `packages/commerce-core/src/pixels.ts` (signatures + markers), `packages/commerce-core/src/index.ts` (exports), `apps/storefront/src/hooks/usePixels.ts` (validator + observability), `apps/storefront/tsconfig.json` (root alias for `@haa/commerce-core`), and a new test file `tests/pixel-provider-allowlist.test.ts`.
+- **Out of Scope:** CSP nonce migration (requires nginx + Express + storefront template coordination — separate Phase 3 work); token-only-in-cookie migration (login flow refactor — Phase 2); legacy query-token removal in `support.ts`, `haa-marketplace.ts`, and WhatsApp SSE (Phase 2); pre-existing 14 TS unused-locals errors in `packages/commerce-core/src/{ai-agent,checkout,feeds,imports,marketing-action-engine,payment-webhook-service,wallet-posting-service}.ts` (next quality pass).
+- **Skills Used:** `acceptance-criteria-gate`, `branch-pr-hygiene-gate`, `regression-safety-gate`, `implementation-quality-gate`, `definition-of-done-gate`, `documentation-handoff-gate`.
+- **Acceptance Criteria:**
+  - [x] `pnpm audit` returns 0 vulnerabilities (was 6, including 2 high).
+  - [x] `pnpm deps:audit` (prod-only) returns 0 vulnerabilities.
+  - [x] Pixel payloads with `<script>alert(1)</script>` (no provider signature) are rejected by `validatePixelScripts` and never reach the DOM.
+  - [x] Allowlisted providers (meta/fbq, tiktok/ttq, snapchat/snaptr, twitter/twq, ga4/gtag, gtm/dataLayer, pinterest/pintrk) pass through unchanged.
+  - [x] src-loaded scripts (e.g. GA4 `gtag/js?id=...` loader) pass the signature check via the URL itself.
+  - [x] CSP nonce migration is explicitly deferred to Phase 3 (documented in CHANGELOG_INTERNAL).
+- **Test Plan:** `pnpm audit`; `pnpm deps:audit`; `pnpm exec vitest run tests/pixel-provider-allowlist.test.ts`; `pnpm exec vitest run tests/storefront-pixels-route.test.ts`; full `pnpm exec vitest run tests/`; `pnpm check:skills`.
+- **Files Changed:** 13 files (10 source/config, 1 new test, 1 tsconfig, 1 lockfile).
+- **Test Results:** `pnpm audit` → 0 vulnerabilities. `pnpm deps:audit` → 0 vulnerabilities. `tests/pixel-provider-allowlist.test.ts` → 13/13 passed. `tests/storefront-pixels-route.test.ts` → 5/5 passed (no regression). Full `tests/` run → 4543 passed / 0 failed / 3 skipped / 14 todo. `pnpm check:skills` → 43/43 passed.
+- **Residual Risks:** None on the P1 surface. Pre-existing TS unused-locals errors in commerce-core remain (14 errors, unchanged by this PR); they make `pnpm preflight` fail at the typecheck step but are unrelated to P1 and outside this PR's scope.
+- **Related Issues:** None.
+
+---
+
+### TASK-0085: Make CI E2E target local servers instead of staging
+
+- **Type:** Testing / Support-Ops
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-27
+- **Updated:** 2026-06-27
+- **Original Request:** "ليش كنسل ... كمل" after PR #308 was merged and its `main` CI run showed cancelled.
+- **Expanded Requirement:** Explain the cancelled #308 CI run, continue post-merge verification, diagnose the new `main` E2E failure, and fix the confirmed E2E environment mismatch without editing CI workflows or touching production.
+- **Problem:** CI starts local API/storefront/merchant/admin dev servers, but Playwright defaulted to `https://staging.haastores.com` and `merchant-login.spec.ts` hardcoded `https://merchant.staging.haastores.com/login`. When a newer `main` push triggered Deploy at the same time as CI E2E, all four E2E tests hit shared staging during deployment and failed with `page.goto: net::ERR_ABORTED`.
+- **Scope:** Playwright environment defaults, merchant-login E2E target selection, root-cause documentation, and regression checklist updates.
+- **Out of Scope:** `.github/workflows/*` edits, deploy reruns, production action, `db:migrate`, disabling/removing tests, and unrelated local dirty files.
+- **Skills Used:** `test-strategy-gate`, `regression-safety-gate`, `environment-safety-gate`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] CI Playwright defaults to local storefront `http://localhost:5174`.
+  - [x] Merchant-login E2E defaults to local merchant dashboard `http://localhost:5173/login` in CI.
+  - [x] Manual staging E2E remains possible through explicit environment variables.
+  - [x] No CI workflow YAML is edited without explicit owner approval.
+  - [x] Relevant checks and E2E verification are run or any limitation is documented.
+- **Test Plan:** `pnpm ops:monitor`; `pnpm typecheck`; `pnpm lint`; `pnpm test`; `pnpm test:e2e` with local servers if feasible; `pnpm check:skills`; `git diff --check`.
+- **Files Changed:** `playwright.config.ts`, `e2e/merchant-login.spec.ts`, required ops docs.
+- **Test Results:** PR #308 merged successfully at merge commit `3af46fd809a6ab669b4e42effa312cadd4307ac8`; its Deploy run passed staging smoke 5/5, while its CI run was cancelled by GitHub Actions concurrency after newer `main` commit `9348e03c510b80d3c3593f92ac34e5f411dbe14b`. The newer `main` CI failure was isolated to four E2E tests hitting shared staging during deploy. Local verification after the fix: `pnpm typecheck` passed; `pnpm lint` exited 0 with 514 pre-existing warnings and 0 errors; `pnpm test` passed 4530 active tests with 3 skipped and 14 todo; `CI=true pnpm test:e2e` passed 4/4 against local servers; `pnpm check:skills` passed 43/43; `git diff --check` clean; `pnpm preflight` passed; final `pnpm ops:monitor` passed runtime and synthetic checks with no recommended tasks/incidents.
+- **Related Issues:** ISSUE-0025.
+
+---
+
 ### TASK-0084: Harden gift-message sanitization and verify unpaid-shipping guard
 
 - **Type:** Security / Testing

@@ -5,6 +5,29 @@
 
 ---
 
+## 2026-06-27 — P1 CVE Cleanup + Pixel Script Hardening (TASK-0086)
+
+- Closed all 6 `pnpm audit` vulnerabilities by upgrading `vite` from `6.4.2` to `6.4.3` (closes GHSA-fx2h-pf6j-xcff high + GHSA-v6wh-96g9-6wx3 moderate) and adding pnpm overrides for `esbuild@0.25.12` (closes GHSA-67mh-4wv8-2f99 transitive from drizzle-kit) and `uuid@11.1.1` (closes GHSA-w5hq-g745-h8pq transitive from storybook).
+- Verified `pnpm audit` now reports **0 vulnerabilities** (was 6, including 2 high). Verified `pnpm deps:audit --prod` also clean (already was, but reconfirmed).
+- Hardened pixel-script injection in `apps/storefront/src/hooks/usePixels.ts`:
+  - Added a defense-in-depth provider allowlist (`PIXEL_PROVIDER_SIGNATURES` in `packages/commerce-core/src/pixels.ts`) covering meta (fbq), tiktok (ttq / TiktokAnalyticsObject), snapchat (snaptr), twitter (twq), ga4 (gtag / dataLayer), gtm (dataLayer / gtm.js), and pinterest (pintrk).
+  - Backend `PixelService.buildScripts` now stamps each script block with a `<!-- HAA-PIXEL-PROVIDER: <name> -->` marker so the frontend validator can pinpoint which signature to check.
+  - Frontend `usePixels` now runs every fetched payload through `validatePixelScripts()` before `innerHTML`. Payloads with any `<script>` whose body does not match a known provider signature are dropped silently with a console warning — including tampered responses and admin-configured payloads that bypass `buildScripts` entirely.
+  - Added `window.__haaPixelsLoaded` observability list of successfully loaded providers, so future CSP report-only collectors can audit pixel execution.
+- Added `tests/pixel-provider-allowlist.test.ts` (13 tests) covering: signature list completeness, buildScripts marker + signature embedding, ID sanitization defense, payload rejection of arbitrary `<script>alert(1)</script>`, mismatched-provider rejection, multi-provider acceptance, and src-loaded script exemption for the GA4 gtag/js loader.
+- Verified full regression: `pnpm exec vitest run tests/` → **4543 passed / 0 failed / 3 skipped / 14 todo**. Pixels-route regression tests still pass (5/5 in `tests/storefront-pixels-route.test.ts`).
+- Out of scope (deferred to P2/P3 follow-ups): CSP nonce migration (requires nginx + Express + template coordination); token-only-in-cookie migration (requires login flow refactor); legacy query-token removal in `support.ts`, `haa-marketplace.ts`, and WhatsApp SSE.
+- Residual known issue: 14 pre-existing TypeScript `noUnusedLocals` / `noUnusedParameters` errors in `packages/commerce-core/src/{ai-agent,checkout,feeds,imports,marketing-action-engine,payment-webhook-service,wallet-posting-service}.ts` are unchanged by this PR. None of them touch the P1 surface (`pixels.ts`, `usePixels.ts`, `package.json` overrides). Documented here so the next quality pass can clean them up without re-deriving the provenance.
+
+## 2026-06-27 — CI E2E Local Target Defaults (TASK-0085)
+
+- Diagnosed why PR #308's `main` CI run was cancelled: `.github/workflows/ci.yml` uses `concurrency.group: CI-${{ github.ref }}` with `cancel-in-progress: true`, and a newer `main` push superseded the run.
+- Confirmed PR #308's Deploy run succeeded with staging smoke 5/5 on merge commit `3af46fd809a6ab669b4e42effa312cadd4307ac8`.
+- Identified the newer `main` CI E2E failure as an environment-target mismatch: CI started local dev servers, but Playwright navigated to shared staging during a concurrent Deploy.
+- Changed Playwright defaults so `CI=true` targets local storefront `http://localhost:5174`, while explicit `E2E_BASE_URL` still supports manual staging checks.
+- Changed merchant-login E2E to use `E2E_MERCHANT_URL` or local merchant dashboard `http://localhost:5173/login` in CI, instead of hardcoding the staging merchant subdomain.
+- Verified with local E2E against local servers: `CI=true pnpm test:e2e` passed 4/4; supporting checks passed (`pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm check:skills`, `git diff --check`, `pnpm preflight`, and final `pnpm ops:monitor`).
+
 ## 2026-06-27 — Gift Message Sanitization + Shipping Guard Verification (TASK-0084)
 
 - Added a plain-text gift-message sanitizer for commerce-core write paths and shared storefront DTO output paths.

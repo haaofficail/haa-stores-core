@@ -18,6 +18,7 @@
 
 - [ ] CI Test job provisions PostgreSQL before DB-backed tests
 - [ ] CI Test/E2E jobs run `pnpm db:bootstrap` and seeds on clean databases
+- [ ] CI E2E Playwright defaults target local dev servers, not shared staging, unless explicit staging env vars are set
 - [ ] Numeric type-change migrations include an explicit PostgreSQL `USING` cast
 - [ ] Workspace packages build before individual app builds
 - [ ] Docker build stages compile workspace packages before apps
@@ -230,6 +231,14 @@
 - [ ] New error codes added to ERROR_CODE_TAXONOMY.md
 
 ## Security Baseline
+
+- [ ] `pnpm audit` returns 0 vulnerabilities on every PR (vite pinned to >= 6.4.3; esbuild pinned to >= 0.25.0; uuid pinned to >= 11.1.1 via pnpm overrides)
+- [ ] `pnpm deps:audit` (prod-only) returns 0 vulnerabilities on every PR
+- [ ] Storefront pixel payloads are validated against `PIXEL_PROVIDER_SIGNATURES` (meta/fbq, tiktok/ttq, snapchat/snaptr, twitter/twq, ga4/gtag, gtm/dataLayer, pinterest/pintrk) before DOM injection in `usePixels.ts`
+- [ ] `<!-- HAA-PIXEL-PROVIDER: <name> -->` markers are present on every script block emitted by `PixelService.buildScripts`
+- [ ] Tampered or arbitrary `<script>` payloads are dropped silently with `console.warn` and never reach `innerHTML`
+- [ ] `window.__haaPixelsLoaded` records matched providers after a successful injection (observability for future CSP report-only collectors)
+- [ ] `tests/pixel-provider-allowlist.test.ts` is run on every change to `pixels.ts` or `usePixels.ts`
 
 - [ ] `requireStoreAccess()` is applied on all merchant routes that use `:storeId`
 - [ ] `requirePermission()` uses correct permission string (not `read` for write operations)
