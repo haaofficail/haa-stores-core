@@ -248,7 +248,7 @@ export default function MarketplaceOrderTrack() {
                     {formatAmount(subOrder.total)} <SarIcon size="md" />
                   </p>
                   <p className="mt-3 text-xs leading-relaxed text-text-secondary">
-                    يكتمل هذا الطلب عند التاجر: الشحن والإرجاع والاستبدال والدعم تتم من صفحة طلب المتجر.
+                    يكتمل عند التاجر: الشحن والإرجاع والاستبدال والدعم تتم من صفحة طلب المتجر.
                   </p>
                   <StoreButton href={`/s/${subOrder.storeSlug}/order/${subOrder.orderNumber}`} variant="outline" className="mt-3">
                     متابعة إجراءات الطلب عند التاجر
