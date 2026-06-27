@@ -93,6 +93,11 @@ export { CustomerSegmentationService, runCustomerSegmentationSummary } from './c
 export { StoreBillingSettingsService } from './billing-settings-service.js';
 export { PixelService } from './pixels.js';
 export type { PixelConfig } from './pixels.js';
+export {
+  PIXEL_PROVIDER_SIGNATURES,
+  validatePixelScripts,
+} from './pixels.js';
+export type { PixelValidationResult } from './pixels.js';
 export { AbandonedCartCampaignService } from './abandoned-cart-campaigns.js';
 export type { CampaignInput, RecoveryStats } from './abandoned-cart-campaigns.js';
 export { WhatsAppCampaignService, classifyInboundMessage, significantDigits, mapDeliveryStatus } from './whatsapp-campaigns.js';

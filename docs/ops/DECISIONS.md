@@ -385,3 +385,40 @@ migrations, and a duplicate platform-brand system.
 Verified: full `pnpm -r typecheck` GREEN (22/22); ported wiring/unit tests pass; a fresh
 phase-9 DB bootstrap carries the new financial guards. Full 2673-test suite re-run is
 pending a phase-9-state local DB. No push; phase-9 + old main preserved by tags.
+---
+## DECISION-0008: Pixel script injection uses a provider-allowlist + observability hook (2026-06-27)
+
+- **Status:** Accepted
+- **Context:** `apps/storefront/src/hooks/usePixels.ts` injects pixel `<script>`
+  tags via `container.innerHTML = html` and then re-executes each `<script>`
+  by cloning it into the live DOM. `PixelService.buildScripts` already
+  sanitizes individual IDs (`a-zA-Z0-9_-` only), but the surrounding
+  `<script>...</script>` templates are hand-written. If a future edit
+  injects an unsanitized field, if an admin writes directly to `storePixels`,
+  or if the response is tampered with in transit, arbitrary JS could be
+  delivered to every storefront page.
+- **Decision:** Add a two-layer defense:
+  1. **Backend marker** — `PixelService.buildScripts` prepends a
+     `<!-- HAA-PIXEL-PROVIDER: <name> -->` comment to every script block
+     and embeds the provider signature inside the script body.
+  2. **Frontend allowlist** — `usePixels.ts` runs every fetched payload
+     through `validatePixelScripts()` before `innerHTML`. The validator
+     scans each `<script>` for a known provider signature
+     (`PIXEL_PROVIDER_SIGNATURES`, frozen object exported from
+     `packages/commerce-core/src/pixels.ts`) covering meta/fbq,
+     tiktok/ttq, snapchat/snaptr, twitter/twq, ga4/gtag, gtm/dataLayer,
+     pinterest/pintrk. src-loaded scripts (e.g. GA4 gtag/js loader) are
+     exempt because their code is fetched from a known provider URL.
+- **Consequences:**
+  - **Pros:** defense-in-depth, no breaking change for legitimate pixels,
+    fast rejection of tampered payloads (single regex scan per script).
+  - **Cons:** A new provider requires (a) adding its signature to
+    `PIXEL_PROVIDER_SIGNATURES`, (b) stamping the matching HAA-PIXEL-PROVIDER
+    marker in `buildScripts`, (c) re-running `pixel-provider-allowlist.test.ts`.
+  - **Out of scope (deferred):** CSP nonce migration (needs nginx + Express +
+    storefront template coordination; tracked separately). Token-only-in-cookie
+    migration. Legacy query-token removal in `support.ts`, `haa-marketplace.ts`,
+    WhatsApp SSE.
+- **Observability:** Successful injections record matched providers on
+  `window.__haaPixelsLoaded` so future CSP report-only collectors can audit
+  pixel execution without re-querying the DOM.

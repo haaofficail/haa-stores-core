@@ -4,6 +4,35 @@
 
 ---
 
+### TASK-0086: Close P1 dependency CVEs and harden storefront pixel script injection
+
+- **Type:** Security
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-27
+- **Updated:** 2026-06-28
+- **Branch:** `security/p1-cve-and-pixels` (rebased onto `main` HEAD `ad7d37a4`)
+- **Original Request:** After the read-only security audit, the user approved closing the two P1 items in one PR: (a) the 6 dev CVEs that broke `pnpm audit`, and (b) the pixel-script innerHTML XSS surface in the storefront.
+- **Expanded Requirement:** Upgrade vite to `6.4.3` across all 8 sites (root + 4 apps + 4 packages), add pnpm overrides for `esbuild` and `uuid`, add a defense-in-depth provider allowlist on the pixel injection path (backend marker + frontend signature check), and prove both with focused tests.
+- **Scope:** `package.json` (root overrides), 4 app `package.json` (vite), 4 package `package.json` (vite), `packages/commerce-core/src/pixels.ts` (signatures + markers), `packages/commerce-core/src/index.ts` (exports), `apps/storefront/src/hooks/usePixels.ts` (validator + observability), `apps/storefront/tsconfig.json` (root alias for `@haa/commerce-core`), and a new test file `tests/pixel-provider-allowlist.test.ts`.
+- **Out of Scope:** CSP nonce migration (requires nginx + Express + storefront template coordination — separate Phase 3 work); token-only-in-cookie migration (login flow refactor — Phase 2); legacy query-token removal in `support.ts`, `haa-marketplace.ts`, and WhatsApp SSE (Phase 2). **No separate preflight-fix PR is required** — the working-tree WIP that originally masked 14 errors was excluded; against the clean `main` HEAD, `pnpm preflight` is green.
+- **Skills Used:** `acceptance-criteria-gate`, `branch-pr-hygiene-gate`, `regression-safety-gate`, `implementation-quality-gate`, `definition-of-done-gate`, `documentation-handoff-gate`.
+- **Acceptance Criteria:**
+  - [x] `pnpm audit` returns 0 vulnerabilities (was 6, including 2 high).
+  - [x] `pnpm deps:audit` (prod-only) returns 0 vulnerabilities.
+  - [x] Pixel payloads with `<script>alert(1)</script>` (no provider signature) are rejected by `validatePixelScripts` and never reach the DOM.
+  - [x] Allowlisted providers (meta/fbq, tiktok/ttq, snapchat/snaptr, twitter/twq, ga4/gtag, gtm/dataLayer, pinterest/pintrk) pass through unchanged.
+  - [x] src-loaded scripts (e.g. GA4 `gtag/js?id=...` loader) pass the signature check via the URL itself.
+  - [x] CSP nonce migration is explicitly deferred to Phase 3 (documented in CHANGELOG_INTERNAL).
+  - [x] `pnpm preflight` is green on the rebased branch (against `main` HEAD `ad7d37a4`).
+- **Test Plan:** `pnpm audit`; `pnpm deps:audit`; `pnpm exec vitest run tests/pixel-provider-allowlist.test.ts`; `pnpm exec vitest run tests/storefront-pixels-route.test.ts`; full `pnpm exec vitest run tests/`; `pnpm check:skills`; `pnpm preflight`.
+- **Files Changed:** 20 files (18 source/config/docs, 2 new).
+- **Test Results:** `pnpm audit` → 0 vulnerabilities. `pnpm deps:audit` → 0 vulnerabilities. `tests/pixel-provider-allowlist.test.ts` → 13/13 passed. `tests/storefront-pixels-route.test.ts` → 5/5 passed (no regression). Full `tests/` run → 4543 passed / 0 failed / 3 skipped / 14 todo. `pnpm check:skills` → 43/43 passed. `pnpm preflight` → PASSED (against `main` HEAD `ad7d37a4`).
+- **Residual Risks:** None on the P1 surface. The earlier note about "14 pre-existing TS unused-locals errors in commerce-core" was based on a working tree that included the other agent's WIP — with that WIP excluded, `pnpm run -r typecheck` and `pnpm preflight` both pass with zero errors. No follow-up PR is required for the preflight blocker.
+- **Related Issues:** None.
+
+---
+
 ### TASK-0085: Make CI E2E target local servers instead of staging
 
 - **Type:** Testing / Support-Ops
