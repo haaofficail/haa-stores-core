@@ -47,7 +47,7 @@ import { SarIcon } from '@/components/ui/SarIcon';
 import { ApiClientError, ordersApi, shippingApi } from '@/lib/api';
 import { getOrderActions, type OrderAction } from '@/lib/order-actions';
 import { PermissionGate } from '@/lib/permissions';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getDefaultImage, handleImageError } from '@/lib/utils';
 import {
   arabicStatusLabels,
   DetailRow,
@@ -595,7 +595,21 @@ export function OrderDetailDialog(props: OrderDetailDialogProps) {
                               if (item.sendAsGift) itemBadges.push('💌');
                               return (
                               <TableRow key={item.id} className="border-neutral-100 hover:bg-transparent">
-                                <TableCell className="text-sm font-medium text-neutral-900 p-3">{item.name}</TableCell>
+                                <TableCell className="p-3">
+                                  <div className="flex items-center gap-3">
+                                    <img
+                                      src={item.productImageUrl || getDefaultImage()}
+                                      onError={handleImageError}
+                                      alt={item.name}
+                                      loading="lazy"
+                                      className="h-10 w-10 shrink-0 rounded-lg border border-neutral-100 object-cover"
+                                    />
+                                    <div className="min-w-0">
+                                      <p className="truncate text-sm font-medium text-neutral-900">{item.name}</p>
+                                      {item.sku && <p className="text-xs text-neutral-400 font-mono" dir="ltr">{item.sku}</p>}
+                                    </div>
+                                  </div>
+                                </TableCell>
                                 <TableCell className="text-sm text-center text-neutral-900 p-3">{item.quantity}</TableCell>
                                 <TableCell className="text-sm text-neutral-500 p-3">
                                   <div className="flex flex-wrap gap-1">
