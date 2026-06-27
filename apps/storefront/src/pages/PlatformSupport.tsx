@@ -16,10 +16,9 @@
 // Arabic, brand-blue accent, Apple ink, layered shadows, 24px radii).
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { Icon } from '@/components/ui/icon';
 import { useSEO } from '@/hooks/useSEO';
-import { PLATFORM_LEGAL_ENTITY } from '@haa/shared';
+import { PlatformShell } from '@/components/platform/PlatformShell';
 import './support.css';
 
 /* ─── primitives (mirrors PlatformAbout) ─────────────────── */
@@ -193,6 +192,7 @@ export default function PlatformSupport() {
     : FAQ;
 
   return (
+    <PlatformShell>
     <div ref={root} className="support-pg overflow-x-hidden" dir="rtl" lang="ar">
       <ScrollProgress />
 
@@ -321,14 +321,7 @@ export default function PlatformSupport() {
         </section>
       </main>
 
-      <footer className="support-pg__footer">
-        <div className="support-pg__footer-inner">
-          <span>
-            © {new Date().getFullYear()} {PLATFORM_LEGAL_ENTITY.legalNameAr}
-          </span>
-          <Link to="/">العودة للرئيسية</Link>
-        </div>
-      </footer>
     </div>
+    </PlatformShell>
   );
 }

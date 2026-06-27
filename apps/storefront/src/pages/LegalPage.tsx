@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports -- pre-existing lucide usages; PR #181 only adds legal-entity import. Lucide→<Icon> migration tracked separately.
 import { ArrowRight, FileText, Calendar, Clock } from 'lucide-react';
 import { PLATFORM_LEGAL_ENTITY } from '@haa/shared';
+import { PlatformShell } from '@/components/platform/PlatformShell';
 
 interface LegalDocumentSection {
   // Stable anchor id for deep-linking from TOC / external references.
@@ -589,5 +590,5 @@ export default function LegalPage() {
     );
   }
 
-  return <LegalPageContent doc={doc} />;
+  return <PlatformShell><LegalPageContent doc={doc} /></PlatformShell>;
 }

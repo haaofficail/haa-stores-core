@@ -17,7 +17,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSEO } from '@/hooks/useSEO';
-import { PLATFORM_LEGAL_ENTITY } from '@haa/shared';
+import { PlatformShell } from '@/components/platform/PlatformShell';
 import './pricing.css';
 
 /* ─── primitives (mirrors PlatformAbout) ─────────────────── */
@@ -200,6 +200,7 @@ export default function Pricing() {
   }, []);
 
   return (
+    <PlatformShell>
     <div ref={root} className="pricing-pg overflow-x-hidden" dir="rtl" lang="ar">
       <ScrollProgress />
 
@@ -385,14 +386,7 @@ export default function Pricing() {
         </section>
       </main>
 
-      <footer className="pricing-pg__footer">
-        <div className="pricing-pg__footer-inner">
-          <span>
-            © {new Date().getFullYear()} {PLATFORM_LEGAL_ENTITY.legalNameAr}
-          </span>
-          <Link to="/">العودة للرئيسية</Link>
-        </div>
-      </footer>
     </div>
+    </PlatformShell>
   );
 }

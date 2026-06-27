@@ -15,6 +15,7 @@ import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useSEO } from '@/hooks/useSEO';
 import { PLATFORM_LEGAL_ENTITY } from '@haa/shared';
+import { PlatformShell } from '@/components/platform/PlatformShell';
 import './settings-about-editorial.css';
 
 /* ─── primitives ─────────────────────────────────────────── */
@@ -85,6 +86,7 @@ export default function PlatformAbout() {
   }, []);
 
   return (
+    <PlatformShell>
     <div ref={root} className="about-ed overflow-x-hidden" dir="rtl" lang="ar">
       <ScrollProgress />
 
@@ -227,5 +229,6 @@ export default function PlatformAbout() {
       </main>
 
     </div>
+    </PlatformShell>
   );
 }
