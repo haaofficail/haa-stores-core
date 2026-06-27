@@ -110,7 +110,7 @@ export function PlatformShell({ children }: { children: ReactNode }) {
   return (
     <div className="lp-page" dir="rtl" lang="ar">
       <PlatformNav />
-      <main>{children}</main>
+      <div>{children}</div>
       <PlatformFooter />
     </div>
   );

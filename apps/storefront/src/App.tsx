@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Layout from '@/components/Layout';
-import { PlatformShell } from '@/components/platform/PlatformShell';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { CustomDomainGate } from '@/components/CustomDomainGate';
 
@@ -95,12 +94,12 @@ export default function App() {
           <Route path="/marketplace" element={<HaaMarketplace />} />
           {/* /about على مستوى المنصة (haastores.com/about): يقدّم متاجر هاء كمنتج من Haa Soft.
               منفصل عن /s/:slug/about المخصّص لمحتوى التاجر القابل للتحرير. */}
-          <Route path="/about" element={<PlatformShell><PlatformAbout /></PlatformShell>} />
+          <Route path="/about" element={<PlatformAbout />} />
           {/* /pricing — standalone platform pricing page (extracted from landing). */}
-          <Route path="/pricing" element={<PlatformShell><Pricing /></PlatformShell>} />
+          <Route path="/pricing" element={<Pricing />} />
           {/* /support — platform help-center.
               Distinct from /s/:slug/support (per-store, theme-controlled). */}
-          <Route path="/support" element={<PlatformShell><PlatformSupport /></PlatformShell>} />
+          <Route path="/support" element={<PlatformSupport />} />
           <Route path="/marketplace/cart" element={<MarketplaceCart />} />
           <Route path="/marketplace/checkout" element={<MarketplaceCheckout />} />
           <Route path="/marketplace/orders" element={<MarketplaceOrderTrack />} />
@@ -114,7 +113,7 @@ export default function App() {
           {import.meta.env.DEV && (
             <Route path="/fake-3ds-challenge" element={<Fake3DSChallenge />} />
           )}
-          <Route path="/legal/:legalSlug" element={<PlatformShell><LegalPage /></PlatformShell>} />
+          <Route path="/legal/:legalSlug" element={<LegalPage />} />
           <Route path="*" element={<StoreNotFound />} />
         </Routes>
         </Suspense>
