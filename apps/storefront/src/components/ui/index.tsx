@@ -507,11 +507,13 @@ const alertIcons: Record<AlertVariant, LucideIcon> = {
   danger: AlertTriangle,
 };
 
+// Foreground uses the -strong shade (WCAG AA on the -soft background). The
+// bright accent (text-info/warning/danger) on -soft measured 2.0–3.1:1.
 const alertVariantClasses: Record<AlertVariant, string> = {
-  info: 'bg-info-soft text-info',
-  success: 'bg-success-soft text-success',
-  warning: 'bg-warning-soft text-warning',
-  danger: 'bg-danger-soft text-danger',
+  info: 'bg-info-soft text-info-strong',
+  success: 'bg-success-soft text-success-strong',
+  warning: 'bg-warning-soft text-warning-strong',
+  danger: 'bg-danger-soft text-danger-strong',
 };
 
 export function StoreAlert({ variant = 'info', title, children, icon, dismissible, onDismiss, className = '' }: StoreAlertProps) {
