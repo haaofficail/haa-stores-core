@@ -39,7 +39,7 @@ interface QuickAction {
 
 export default function AiAssistant() {
   const { t } = useTranslation();
-  const { storeId } = useAuth();
+  const { storeId, user } = useAuth();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -124,15 +124,22 @@ export default function AiAssistant() {
     }
   }
 
+  // Clicking a suggested follow-up must actually send it (and get a reply),
+  // not just echo it into the thread. Both the form and the suggestion chips
+  // route through sendPrompt.
   function handleSuggestionClick(suggestion: string) {
-    addUserMessage(suggestion);
+    void sendPrompt(suggestion);
   }
 
-  async function handleChatSubmit(e?: React.FormEvent) {
+  function handleChatSubmit(e?: React.FormEvent) {
     if (e) e.preventDefault();
-    if (!inputText.trim() || !storeId || loading) return;
+    void sendPrompt(inputText);
+  }
 
-    const prompt = inputText.trim();
+  async function sendPrompt(rawPrompt: string) {
+    if (!rawPrompt.trim() || !storeId || loading) return;
+
+    const prompt = rawPrompt.trim();
     addUserMessage(prompt);
     setInputText('');
     setLoading(true);
@@ -249,7 +256,7 @@ export default function AiAssistant() {
             <div className="w-20 h-20 rounded-3xl bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center shadow-2xl shadow-primary-500/30 mb-6 ring-8 ring-primary-100/50">
               <BrainCircuit className="h-10 w-10 text-white" />
             </div>
-            <h2 className="text-2xl font-bold tracking-tight text-neutral-900 mb-2">مرحباً، أحمد 👋</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-neutral-900 mb-2">مرحباً{user?.name ? `، ${user.name}` : ''} 👋</h2>
             <p className="text-neutral-500 max-w-md leading-relaxed mb-8">
               أنا مساعدك الذكي في إدارة متجرك. يمكنني مساعدتك في تحليل المبيعات، 
               مراجعة المخزون، واقتراح أفضل الاستراتيجيات لنمو أرباحك.
