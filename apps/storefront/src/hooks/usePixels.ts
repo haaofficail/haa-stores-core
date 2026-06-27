@@ -41,7 +41,6 @@ async function fetchPixelScripts(slug: string): Promise<PixelScripts> {
 function validateOrWarn(html: string, context: string): PixelValidationResult {
   const result = validatePixelScripts(html);
   if (!result.safe) {
-     
     console.warn(
       `[usePixels] dropping unsafe pixel payload (${context}):`,
       result.reason,
