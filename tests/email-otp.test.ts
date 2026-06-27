@@ -164,12 +164,26 @@ describe('HAA-AUTH-OTP-001 — service (EmailOtpService)', () => {
     expect(SRC).toMatch(/RATE_LIMITED/);
   });
 
-  it('exposes verify that increments attempts BEFORE comparing (race-safe)', () => {
+  it('verify increments attempts atomically BEFORE comparing (race-safe, no lost update)', () => {
     const SRC = read(PATH);
     expect(SRC).toMatch(/async\s+verify\s*\(/);
     // Strip comment blocks so we compare positions in code, not docs.
     const codeOnly = SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-    const updateIdx = codeOnly.indexOf('attempts: row.attempts + 1');
+
+    // The increment must be a DB-side atomic `attempts + 1`, NOT a
+    // read-modify-write of the in-memory row value (which loses updates
+    // under concurrency and lets parallel requests exceed maxAttempts).
+    expect(codeOnly).not.toMatch(/attempts:\s*row\.attempts\s*\+\s*1/);
+    expect(codeOnly).toMatch(/attempts:\s*sql`\$\{s\.emailOtpCodes\.attempts\}\s*\+\s*1`/);
+
+    // The UPDATE must be guarded by `attempts < maxAttempts` so the row
+    // lock enforces the cap, and must read back a row (returning) so a
+    // no-match means TOO_MANY_ATTEMPTS.
+    expect(codeOnly).toMatch(/s\.emailOtpCodes\.attempts\}\s*<\s*\$\{s\.emailOtpCodes\.maxAttempts\}/);
+    expect(codeOnly).toMatch(/if\s*\(!bumped\)\s*return\s*\{\s*ok:\s*false,\s*reason:\s*['"]TOO_MANY_ATTEMPTS['"]/);
+
+    // Increment still precedes the bcrypt comparison.
+    const updateIdx = codeOnly.indexOf('.returning({ attempts');
     const compareIdx = codeOnly.indexOf('bcrypt.compare(');
     expect(updateIdx).toBeGreaterThan(-1);
     expect(compareIdx).toBeGreaterThan(-1);
