@@ -809,18 +809,24 @@ export default function CompliancePage() {
                   <div>
                     <p className="text-sm font-medium text-neutral-900">{bankAccount.bankName}</p>
                     <p className="text-xs text-neutral-400 font-mono" dir="ltr">
-                      {showFullIban ? bankAccount.iban : maskIban(bankAccount.iban)}
+                      {/* Full IBAN only when the role may reveal it; others always see masked. */}
+                      <PermissionGate permission="compliance:write" fallback={<>{maskIban(bankAccount.iban)}</>}>
+                        {showFullIban ? bankAccount.iban : maskIban(bankAccount.iban)}
+                      </PermissionGate>
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowFullIban(!showFullIban)}
-                  className="text-neutral-400"
-                >
-                  {showFullIban ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
+                <PermissionGate permission="compliance:write" fallback={null}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowFullIban(!showFullIban)}
+                    className="text-neutral-400"
+                    aria-label={showFullIban ? t('compliance.hideIban', 'إخفاء رقم الآيبان') : t('compliance.showIban', 'إظهار رقم الآيبان')}
+                  >
+                    {showFullIban ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </PermissionGate>
               </div>
             </div>
           )}
