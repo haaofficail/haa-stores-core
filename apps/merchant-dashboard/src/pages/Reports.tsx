@@ -23,6 +23,7 @@ import { messageFromError } from '@/lib/error-mapper';
 import { formatCurrency } from '@/lib/utils';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { toRiyadhDayStart, toRiyadhDayEnd } from '@/lib/date-range';
+import { getArabicPaymentMethod } from './orders/orderHelpers';
 
 // Convert a `YYYY-MM-DD` from a browser date input into an ISO
 // timestamp pinned to Asia/Riyadh — `dateFrom` gets the start of the
@@ -44,6 +45,50 @@ const statusColors: Record<string, string> = {
 };
 
 type ReportRow = Record<string, string | number | null>;
+
+// Column value formats for the deep-report tables. Without this, cells were
+// printed via `String(row[key])` — leaking raw enums (`confirmed`,
+// `cash_on_delivery`), unrounded decimals (`493.5000000000000000`) and ISO
+// timestamps into the Arabic UI. Each format maps a raw DB value to a
+// merchant-facing Arabic string. Audit P0 (2026-06-27).
+type CellFormat =
+  | 'currency'
+  | 'decimal2'
+  | 'date'
+  | 'datetime'
+  | 'orderStatus'
+  | 'paymentStatus'
+  | 'paymentMethod';
+
+type DeepColumn = { key: string; label: string; format?: CellFormat };
+
+function formatCell(
+  value: string | number | null,
+  format: CellFormat | undefined,
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): string {
+  if (value === null || value === undefined || value === '') return '—';
+  switch (format) {
+    case 'currency':
+      return `${formatCurrency(value)} ${t('common.sar')}`;
+    case 'decimal2':
+      return Number(value).toFixed(2);
+    case 'date':
+      return new Date(String(value)).toLocaleDateString('ar-SA');
+    case 'datetime':
+      return new Date(String(value)).toLocaleString('ar-SA', {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      });
+    case 'orderStatus':
+      return t(`orders.status_${value}`, { defaultValue: String(value) });
+    case 'paymentStatus':
+      return t(`orders.payment_${value}`, { defaultValue: String(value) });
+    case 'paymentMethod':
+      return getArabicPaymentMethod(String(value));
+    default:
+      return String(value);
+  }
+}
 
 function downloadCsv(filename: string, headers: string[], rows: string[][]) {
   const csv = [headers.join(','), ...rows.map(r => r.map(c => {
@@ -78,9 +123,10 @@ function DeepTable({
 }: {
   title: string;
   rows: ReportRow[];
-  columns: Array<{ key: string; label: string }>;
+  columns: DeepColumn[];
   onExport: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
       <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100">
@@ -114,7 +160,7 @@ function DeepTable({
                 <TableRow key={index} className="border-neutral-100 hover:bg-neutral-50">
                   {columns.map(column => (
                     <TableCell key={column.key} className="text-sm text-neutral-900 p-3 whitespace-nowrap">
-                      {String(row[column.key] ?? '-')}
+                      {formatCell(row[column.key], column.format, t)}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -653,17 +699,17 @@ export default function Reports() {
             rows={deepReport.orderDetails}
             columns={[
               { key: 'orderNumber', label: 'رقم الطلب' },
-              { key: 'createdAt', label: 'التاريخ' },
-              { key: 'status', label: 'الحالة' },
-              { key: 'paymentStatus', label: 'الدفع' },
-              { key: 'paymentMethod', label: 'طريقة الدفع' },
+              { key: 'createdAt', label: 'التاريخ', format: 'datetime' },
+              { key: 'status', label: 'الحالة', format: 'orderStatus' },
+              { key: 'paymentStatus', label: 'الدفع', format: 'paymentStatus' },
+              { key: 'paymentMethod', label: 'طريقة الدفع', format: 'paymentMethod' },
               { key: 'customerName', label: 'العميل' },
               { key: 'city', label: 'المدينة' },
-              { key: 'subtotal', label: 'الفرعي' },
-              { key: 'taxAmount', label: 'الضريبة' },
-              { key: 'shippingCost', label: 'الشحن' },
-              { key: 'couponDiscount', label: 'الخصم' },
-              { key: 'total', label: 'الإجمالي' },
+              { key: 'subtotal', label: 'الفرعي', format: 'currency' },
+              { key: 'taxAmount', label: 'الضريبة', format: 'currency' },
+              { key: 'shippingCost', label: 'الشحن', format: 'currency' },
+              { key: 'couponDiscount', label: 'الخصم', format: 'currency' },
+              { key: 'total', label: 'الإجمالي', format: 'currency' },
             ]}
             onExport={() => exportRecordRows('order-details', deepReport.orderDetails)}
           />
@@ -676,7 +722,7 @@ export default function Reports() {
               { key: 'sku', label: 'SKU' },
               { key: 'categoryName', label: 'التصنيف' },
               { key: 'quantitySold', label: 'الكمية' },
-              { key: 'revenue', label: 'الإيرادات' },
+              { key: 'revenue', label: 'الإيرادات', format: 'currency' },
               { key: 'orderCount', label: 'الطلبات' },
               { key: 'stockQuantity', label: 'المخزون' },
             ]}
@@ -691,10 +737,10 @@ export default function Reports() {
               { key: 'providerTransactionId', label: 'مرجع المزود' },
               { key: 'settlementBatchId', label: 'دفعة التسوية' },
               { key: 'orderNumber', label: 'الطلب' },
-              { key: 'amount', label: 'المبلغ' },
-              { key: 'gatewayFees', label: 'رسوم البوابة' },
-              { key: 'platformFees', label: 'رسوم المنصة' },
-              { key: 'merchantPayable', label: 'مستحق التاجر' },
+              { key: 'amount', label: 'المبلغ', format: 'currency' },
+              { key: 'gatewayFees', label: 'رسوم البوابة', format: 'currency' },
+              { key: 'platformFees', label: 'رسوم المنصة', format: 'currency' },
+              { key: 'merchantPayable', label: 'مستحق التاجر', format: 'currency' },
               { key: 'reconciliationStatus', label: 'المطابقة' },
             ]}
             onExport={() => exportRecordRows('settlement-reconciliation', deepReport.settlementReconciliation)}
@@ -707,9 +753,9 @@ export default function Reports() {
               columns={[
                 { key: 'name', label: 'العميل' },
                 { key: 'orderCount', label: 'الطلبات' },
-                { key: 'totalSpent', label: 'إجمالي الإنفاق' },
-                { key: 'averageOrderValue', label: 'متوسط الطلب' },
-                { key: 'lastOrderAt', label: 'آخر طلب' },
+                { key: 'totalSpent', label: 'إجمالي الإنفاق', format: 'currency' },
+                { key: 'averageOrderValue', label: 'متوسط الطلب', format: 'currency' },
+                { key: 'lastOrderAt', label: 'آخر طلب', format: 'datetime' },
               ]}
               onExport={() => exportRecordRows('customer-insights', deepReport.customerInsights)}
             />
@@ -718,11 +764,11 @@ export default function Reports() {
               rows={deepReport.refundsAndDisputes}
               columns={[
                 { key: 'type', label: 'النوع' },
-                { key: 'status', label: 'الحالة' },
-                { key: 'amount', label: 'المبلغ' },
+                { key: 'status', label: 'الحالة', format: 'paymentStatus' },
+                { key: 'amount', label: 'المبلغ', format: 'currency' },
                 { key: 'orderNumber', label: 'الطلب' },
                 { key: 'providerReference', label: 'المرجع' },
-                { key: 'createdAt', label: 'التاريخ' },
+                { key: 'createdAt', label: 'التاريخ', format: 'datetime' },
               ]}
               onExport={() => exportRecordRows('refunds-disputes', deepReport.refundsAndDisputes)}
             />

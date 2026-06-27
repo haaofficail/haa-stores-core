@@ -63,11 +63,36 @@ export default function FinanceHub() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Map raw backend compliance enums to Arabic. Before this, unmapped states
+  // (notably `not_started`) fell through to the raw English string in the UI.
   const complianceLabel = (status: string | null) => {
-    if (status === 'approved') return t('finance.hub.kpi.complianceApproved', 'مفعّل');
-    if (status === 'pending') return t('finance.hub.kpi.compliancePending', 'قيد المراجعة');
-    if (status === 'rejected') return t('finance.hub.kpi.complianceRejected', 'مرفوض');
-    return status;
+    if (!status) return '—';
+    switch (status) {
+      case 'approved': return t('finance.hub.kpi.complianceApproved', 'مفعّل');
+      case 'pending': return t('finance.hub.kpi.compliancePending', 'قيد المراجعة');
+      case 'rejected': return t('finance.hub.kpi.complianceRejected', 'مرفوض');
+      case 'not_started': return t('finance.hub.kpi.complianceNotStarted', 'لم يبدأ');
+      case 'in_review':
+      case 'under_review': return t('finance.hub.kpi.complianceUnderReview', 'قيد المراجعة');
+      case 'expired': return t('finance.hub.kpi.complianceExpired', 'منتهٍ');
+      default: return t('finance.hub.kpi.complianceUnknown', 'غير محدد');
+    }
+  };
+
+  // Subscription plan tiers arrive as raw English identifiers (`Starter`,
+  // `growth`, …). Localize to Arabic with a graceful fallback to the raw name.
+  const PLAN_LABELS: Record<string, string> = {
+    starter: 'الأساسية (مجانية)',
+    free: 'المجانية',
+    basic: 'الأساسية',
+    growth: 'النمو',
+    pro: 'الاحترافية',
+    business: 'الأعمال',
+    enterprise: 'المؤسسات',
+  };
+  const planLabel = (plan: string | null) => {
+    if (!plan) return null;
+    return PLAN_LABELS[plan.toLowerCase().trim()] ?? plan;
   };
 
   return (
@@ -93,7 +118,7 @@ export default function FinanceHub() {
         />
         <MetricTile
           label={t('finance.hub.kpi.currentPlan', 'الخطة الحالية')}
-          value={counts.planName}
+          value={planLabel(counts.planName)}
         />
         <MetricTile
           label={t('finance.hub.kpi.compliance', 'حالة التحقق')}
