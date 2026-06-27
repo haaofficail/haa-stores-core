@@ -2,6 +2,13 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "merchant-dashboard",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@haa/merchant-dashboard", "dev"],
+      "port": 5173,
+      "autoPort": false
+    },
+    {
       "name": "storefront",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@haa/storefront", "dev"],

@@ -57,15 +57,15 @@
   --color-neutral-950: #fafafa;
 
   --color-success: #30d158;
-  --color-success-text: #1d1d1f;
+  --color-success-text: #30d158;
   --color-success-subtle: rgb(48 209 88 / 0.15);
   --color-warning: #ff9f0a;
-  --color-warning-text: #1d1d1f;
+  --color-warning-text: #ff9f0a;
   --color-warning-subtle: rgb(255 159 10 / 0.15);
   --color-danger: #ff453a;
-  --color-danger-text: #1d1d1f;
+  --color-danger-text: #ff453a;
   --color-danger-subtle: rgb(255 69 58 / 0.15);
   --color-info: #7db4e0;
-  --color-info-text: #1d1d1f;
+  --color-info-text: #7db4e0;
   --color-info-subtle: rgb(124 180 224 / 0.16);
 }
