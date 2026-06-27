@@ -4,14 +4,22 @@
 // Purpose: Strip internal fields (cost, storeId, audit data) from DB rows
 // before returning to public storefront / public API consumers.
 
+import { sanitizeGiftMessage } from '../gift-message.js';
+
 type AnyRecord = Record<string, unknown>;
 
 export function toPublicProduct(product: AnyRecord): AnyRecord {
   const { cost: _cost, images, createdAt: _createdAt, updatedAt: _updatedAt, storeId: _storeId, seoTitle: _seoTitle, seoDescription: _seoDescription, barcode: _barcode, ...rest } = product;
   const imageUrls: string[] = Array.isArray(images)
-    ? images.map((img: any) => {
+    ? images.map((img: unknown) => {
         if (typeof img === 'string') return img;
-        return img.url ?? img.thumbUrl ?? '';
+        if (!img || typeof img !== 'object') return '';
+        const image = img as { url?: unknown; thumbUrl?: unknown };
+        return typeof image.url === 'string'
+          ? image.url
+          : typeof image.thumbUrl === 'string'
+            ? image.thumbUrl
+            : '';
       }).filter(Boolean)
     : [];
   return {
@@ -39,15 +47,21 @@ export function toPublicOrder(order: AnyRecord): AnyRecord {
       ...itemRest,
       giftWrapSelected: item.giftWrapSelected ?? false,
       sendAsGift: item.sendAsGift ?? false,
-      giftMessage: item.giftMessage ?? null,
+      giftMessage: sanitizeGiftMessage(item.giftMessage),
     };
   }) ?? rest.items;
-  const giftOpts = order.giftOptions ? (typeof order.giftOptions === 'string' ? JSON.parse(order.giftOptions) : order.giftOptions) : null;
+  const giftOpts = order.giftOptions ? (typeof order.giftOptions === 'string' ? JSON.parse(order.giftOptions) : order.giftOptions) as AnyRecord : null;
+  const publicGiftOptions = giftOpts
+    ? {
+        ...giftOpts,
+        message: sanitizeGiftMessage(giftOpts.message),
+      }
+    : null;
   return {
     ...rest, items,
     fulfillmentType: order.fulfillmentType ?? 'shipping',
     pickupLocationId: order.pickupLocationId ?? null,
-    giftOptions: giftOpts,
+    giftOptions: publicGiftOptions,
   };
 }
 
@@ -70,7 +84,7 @@ export function toPublicCart(cart: AnyRecord): AnyRecord {
       giftWrapSelected: cartItem.giftWrapSelected ?? false,
       giftWrapPrice: cartItem.giftWrapPrice ?? null,
       sendAsGift: cartItem.sendAsGift ?? false,
-      giftMessage: cartItem.giftMessage ?? null,
+      giftMessage: sanitizeGiftMessage(cartItem.giftMessage),
       source: cartItem.source ?? 'storefront',
       variant: item.variant ?? null,
       product,

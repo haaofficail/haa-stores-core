@@ -4,6 +4,68 @@
 
 ---
 
+### TASK-0084: Harden gift-message sanitization and verify unpaid-shipping guard
+
+- **Type:** Security / Testing
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-27
+- **Updated:** 2026-06-27
+- **Original Request:** "كملها كلها بالتوالي دون توقف" after remaining follow-ups were listed for gift-message sanitization, unpaid-shipping guard verification, lint warnings, runtime checks, and preparation for commit/PR.
+- **Expanded Requirement:** Finish the remaining deep-review follow-ups sequentially without mixing unsafe scopes: sanitize gift-message input and public output, verify the stricter unpaid-shipping guard is present and covered, rerun relevant checkout/payment/shipping tests, classify lint-warning cleanup scope, and update required ops/Agent OS documentation.
+- **Problem:** Gift messages were accepted as raw text into cart/session/order paths and later copied into notification/public order surfaces. React rendering was text-safe, but server-side storage/output lacked a central plain-text sanitizer and legacy stored values could still be returned by public DTOs. The unpaid-shipping concern needed fresh evidence that shipment creation blocks unpaid non-COD orders and unconfirmed COD orders.
+- **Scope:** Gift-message sanitizer, cart/checkout/order creation wiring, public storefront DTO output sanitation, focused regression tests, shipping-guard verification, and required documentation.
+- **Out of Scope:** Production deploy, `db:migrate`, dependency/package export changes, live payment/shipping-provider calls, broad lint-warning cleanup across unrelated files, and unrelated dirty worktree files.
+- **Skills Used:** `agent-permission-boundary`, `regression-safety-gate`, `test-strategy-gate`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] Gift messages are normalized to plain text before cart/session/order storage.
+  - [x] Public cart/order DTOs sanitize gift messages again before returning legacy stored data.
+  - [x] Gift-message rendering does not use `dangerouslySetInnerHTML`.
+  - [x] Shipment creation rejects unpaid non-COD and unconfirmed COD orders and only allows paid or COD-pending packed orders.
+  - [x] Relevant tests, typecheck, lint, preflight, skill checks, and diff checks pass.
+  - [x] Broad pre-existing lint warnings are classified instead of mixed into this security patch.
+- **Test Plan:** `pnpm ops:monitor`; `pnpm vitest run tests/gift-message-sanitization.test.ts tests/g10-storefront-dto-contract.test.ts`; shipping guard tests; checkout/payment/order-state/wallet adjacent tests; `pnpm typecheck`; `pnpm lint`; `pnpm preflight`; `pnpm check:skills`; `git diff --check`.
+- **Files Changed:** `packages/commerce-core/src/gift-message-sanitizer.ts`, `packages/commerce-core/src/cart.ts`, `packages/commerce-core/src/checkout.ts`, `packages/commerce-core/src/orders.ts`, `packages/shared/src/gift-message.ts`, `packages/shared/src/index.ts`, `packages/shared/src/dto/storefront-dto.ts`, `tests/gift-message-sanitization.test.ts`, required ops docs, and monitoring log output from `pnpm ops:monitor`.
+- **Test Results:** `pnpm ops:monitor` first reported no recommended tasks/incidents while API/storefront dev servers were not running; after starting API/storefront alongside the already-running merchant dashboard, `pnpm ops:monitor` passed API `/health`, storefront, merchant dashboard, and synthetic checks with no recommended tasks/incidents. `pnpm vitest run tests/gift-message-sanitization.test.ts tests/g10-storefront-dto-contract.test.ts` passed 36/36. `pnpm vitest run tests/haa-1004-shipping-guards.test.ts tests/haa-preparation-status.test.ts tests/route-migration-17-shipments.test.ts` passed 74/74. `pnpm vitest run tests/bnpl-callback-tenant-isolation.test.ts tests/low-stock-email.test.ts tests/order-state-machine.test.ts tests/order-state-hardening.test.ts` passed 119/119. Checkout/wallet adjacent tests passed with 30 active tests, 12 todo cases, and one skipped route file. `pnpm typecheck` passed after replacing an attempted package-export import with local commerce/shared sanitizer imports. `pnpm lint` exited 0 with 514 pre-existing warnings and 0 errors after removing the staged DTO `any` warning. `pnpm preflight` passed. `pnpm check:skills` passed 43/43. `gitleaks git --staged --redact --no-banner` found no leaks. `git diff --check` clean.
+- **Finding Classification:**
+  - Fixed: gift-message input/output is now plain-text sanitized at server write boundaries and public DTO output boundaries.
+  - Verified already mitigated: shipment creation already blocks unpaid non-COD orders, unconfirmed COD orders, unpacked orders, incomplete addresses, and duplicate active shipments through `ShipmentsService.createShipment`; this task re-ran the existing behavioral guard tests.
+  - Deferred as separate cleanup: repo-wide `pnpm lint` exits 0 but reports 514 pre-existing warnings across unrelated apps/packages. No broad warning cleanup was mixed into this security patch.
+- **Related Issues:** ISSUE-0024.
+
+---
+
+### TASK-0083: Fix BNPL callback cross-store payment ownership gap
+
+- **Type:** Security / Payments-Wallet / Testing
+- **Priority:** P0 Critical
+- **Status:** Done
+- **Created:** 2026-06-27
+- **Updated:** 2026-06-27
+- **Original Request:** Attached "CRITICAL Deep Security Code Review" asking Codex to act on reported checkout, wallet, order-status, and gift-message security findings.
+- **Expanded Requirement:** Validate the pasted review against current code, fix the confirmed BNPL callback payment-ownership defect, add a regression test proving cross-store callbacks cannot claim another store's payment, verify wallet idempotency DB constraints, and document which pasted findings are confirmed, mitigated, or follow-up scope.
+- **Problem:** `CheckoutService.handleBNPLCallback(storeId, providerPaymentId)` looked up payments only by `providerPaymentId` and then used caller-supplied `storeId` for order, wallet, and outbox side effects. A callback routed under the wrong store could therefore find another store's payment before downstream store-scoped updates.
+- **Scope:** Commerce-core BNPL callback lookup, focused security regression coverage, wallet-idempotency verification, and required ops/Agent OS documentation.
+- **Out of Scope:** Live payment-provider calls, deploy, `db:migrate`, dependency installation, broad checkout refactor, gift-message sanitization implementation, and order-status transition implementation unless they are needed to close the confirmed P0.
+- **Skills Used:** `agent-permission-boundary`, `regression-safety-gate`, `test-strategy-gate`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] BNPL callback payment lookup includes `storeId` ownership validation.
+  - [x] Cross-store callback with another store's `providerPaymentId` is rejected before provider confirmation or side effects.
+  - [x] Same-store BNPL callback behavior remains valid.
+  - [x] Wallet-entry DB-level idempotency indexes are verified from current migrations.
+  - [x] Pasted non-P0 findings are classified and documented as fixed, mitigated, or follow-up.
+- **Test Plan:** `pnpm ops:monitor`; targeted `pnpm vitest run ...` for BNPL callback isolation; wallet idempotency/source verification; `pnpm typecheck`; `pnpm lint`; `git diff --check`; `pnpm check:skills`.
+- **Files Changed:** `packages/commerce-core/src/checkout.ts`, `tests/bnpl-callback-tenant-isolation.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`.
+- **Test Results:** `pnpm ops:monitor` reports no recommended tasks/incidents; API/storefront dev servers were not running, merchant dashboard responded. `pnpm vitest run tests/bnpl-callback-tenant-isolation.test.ts` passed 2/2. `pnpm vitest run tests/wallet-idempotency-spec.test.ts tests/w16-wallet-idempotency-plan.test.ts` passed 12/12. `pnpm vitest run tests/wallet-posting-wiring.test.ts tests/order-state-machine.test.ts tests/order-state-hardening.test.ts` passed 98/98. `pnpm vitest run tests/low-stock-email.test.ts` passed 29/29. `pnpm typecheck` passed. `pnpm lint` exited 0 with 515 pre-existing warnings and 0 errors. `pnpm preflight` passed after the patch. `pnpm check:skills` passed 43/43. `git diff --check` clean.
+- **Finding Classification:**
+  - Confirmed/fixed P0: BNPL callback payment lookup lacked `storeId` ownership predicate.
+  - Mitigated/not a current bug: wallet balance concurrency uses transaction-scoped `FOR UPDATE`; wallet posting DB idempotency is represented by schema partial unique indexes plus migrations 0062/0073 and tested by `tests/wallet-idempotency-spec.test.ts`.
+  - Mitigated/not the direct pasted claim: `pending_payment -> shipped` is already rejected by `ORDER_STATUS_TRANSITIONS` and tested by `tests/order-state-machine.test.ts`; a stricter "do not ship unpaid non-COD orders through indirect status progression" rule remains a separate follow-up candidate.
+  - Follow-up candidate: gift-message input/output sanitization should be reviewed separately; this P0 fix did not implement it to avoid mixing scopes.
+- **Related Issues:** ISSUE-0023.
+
+---
+
 ### TASK-0082: Fix Saudi policy generator CJK contamination and compliance copy
 
 - **Type:** UX/UI Polish / Support/Ops

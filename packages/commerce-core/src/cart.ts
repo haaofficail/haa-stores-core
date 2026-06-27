@@ -1,6 +1,7 @@
 import { eq, and, inArray, isNull } from 'drizzle-orm';
 import { createDbClient, DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
+import { sanitizeGiftMessage } from './gift-message-sanitizer.js';
 
 export class CartService {
   constructor(private db: DbClient = createDbClient()) {}
@@ -48,6 +49,9 @@ export class CartService {
   }
 
   async addItem(storeId: number, cartId: string, productId: number, quantity: number, notes?: string, giftData?: { giftWrapSelected?: boolean; sendAsGift?: boolean; giftMessage?: string }, variantId?: number, source = 'storefront') {
+    const hasGiftMessageInput = Object.prototype.hasOwnProperty.call(giftData ?? {}, 'giftMessage');
+    const sanitizedGiftMessage = hasGiftMessageInput ? sanitizeGiftMessage(giftData?.giftMessage) : undefined;
+
     const [cart] = await this.db.select({ id: s.carts.id })
       .from(s.carts)
       .where(and(eq(s.carts.id, cartId), eq(s.carts.storeId, storeId)))
@@ -118,7 +122,7 @@ export class CartService {
         giftWrapSelected: giftData?.giftWrapSelected ?? existingItem[0].giftWrapSelected,
         giftWrapPrice: mergedGiftWrapPrice?.toString() ?? null,
         sendAsGift: giftData?.sendAsGift ?? existingItem[0].sendAsGift,
-        giftMessage: giftData?.giftMessage ?? existingItem[0].giftMessage,
+        giftMessage: hasGiftMessageInput ? sanitizedGiftMessage : existingItem[0].giftMessage,
         source: source === 'haa_marketplace' ? 'haa_marketplace' : existingItem[0].source,
         updatedAt: new Date(),
       }).where(eq(s.cartItems.id, existingItem[0].id));
@@ -131,7 +135,7 @@ export class CartService {
         giftWrapSelected: giftData?.giftWrapSelected ?? false,
         giftWrapPrice: giftWrapPrice?.toString() ?? null,
         sendAsGift: giftData?.sendAsGift ?? false,
-        giftMessage: giftData?.giftMessage ?? null,
+        giftMessage: sanitizedGiftMessage ?? null,
         source,
       });
     }

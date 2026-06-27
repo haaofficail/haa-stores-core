@@ -17,6 +17,7 @@ import { acquireLock, releaseLock } from './redis.js';
 import { isDemoStore, type ProviderCode } from '@haa/shared';
 import { WalletPostingService } from './wallet-posting-service.js';
 import { LowStockNotifier } from './low-stock-notifier.js';
+import { sanitizeGiftMessage } from './gift-message-sanitizer.js';
 
 // Shape of a single cart row as returned by CartService.getCart()
 // (one `item` row joined with its `product` + optional `variant`).
@@ -129,9 +130,11 @@ export class CheckoutService {
       return { idempotent: true, session: existingSession };
     }
 
+    const sanitizedOrderGiftMessage = sanitizeGiftMessage(input.gift?.message);
+
     if (input.gift?.sendAsGift) {
       if (!features.sendAsGift) throw new Error('Send-as-gift feature is not enabled for this store');
-      if (input.gift.message && input.gift.message.length > (storeSettings?.giftMessageMaxLength ?? 250)) {
+      if (sanitizedOrderGiftMessage && sanitizedOrderGiftMessage.length > (storeSettings?.giftMessageMaxLength ?? 250)) {
         throw new Error(`Gift message exceeds maximum length of ${storeSettings?.giftMessageMaxLength ?? 250} characters`);
       }
     }
@@ -143,7 +146,7 @@ export class CheckoutService {
       if (itemGiftWrap && !features.giftWrap) throw new Error('Gift wrap feature is not enabled for this store');
       if (itemGiftWrap && !item.product.giftWrapAvailable) throw new Error(`Product "${item.product.name}" does not support gift wrap`);
       if (itemSendAsGift && !features.sendAsGift) throw new Error('Send-as-gift feature is not enabled for this store');
-      const giftMsg = item.item.giftMessage;
+      const giftMsg = sanitizeGiftMessage(item.item.giftMessage);
       if (giftMsg && giftMsg.length > (storeSettings?.giftMessageMaxLength ?? 250)) {
         throw new Error(`Gift message for "${item.product.name}" exceeds maximum length`);
       }
@@ -151,7 +154,7 @@ export class CheckoutService {
 
     const giftOptions = input.gift?.sendAsGift ? {
       sendAsGift: true,
-      message: input.gift.message ?? null,
+      message: sanitizedOrderGiftMessage,
     } : null;
 
     const metadata: Record<string, unknown> = {};
@@ -258,7 +261,7 @@ export class CheckoutService {
             giftWrapSelected: i.item.giftWrapSelected ?? false,
             giftWrapPrice: i.item.giftWrapPrice ? Number(i.item.giftWrapPrice) : undefined,
             sendAsGift: i.item.sendAsGift ?? false,
-            giftMessage: i.item.giftMessage ?? undefined,
+            giftMessage: sanitizeGiftMessage(i.item.giftMessage) ?? undefined,
             source: i.item.source ?? 'storefront',
             platformCommissionRate: i.item.source === 'haa_marketplace' ? Number(i.product.haaMarketplaceCommissionRate ?? 0.05) : undefined,
             platformCommission: i.item.source === 'haa_marketplace'
@@ -653,7 +656,7 @@ export class CheckoutService {
               giftWrapSelected: i.item.giftWrapSelected ?? false,
               giftWrapPrice: i.item.giftWrapPrice ? Number(i.item.giftWrapPrice) : undefined,
               sendAsGift: i.item.sendAsGift ?? false,
-              giftMessage: i.item.giftMessage ?? undefined,
+              giftMessage: sanitizeGiftMessage(i.item.giftMessage) ?? undefined,
             })),
             notes: session.notes ?? undefined,
             metadata: { isDemoPayment: true },
@@ -742,7 +745,7 @@ export class CheckoutService {
             giftWrapSelected: i.item.giftWrapSelected ?? false,
             giftWrapPrice: i.item.giftWrapPrice ? Number(i.item.giftWrapPrice) : undefined,
             sendAsGift: i.item.sendAsGift ?? false,
-            giftMessage: i.item.giftMessage ?? undefined,
+            giftMessage: sanitizeGiftMessage(i.item.giftMessage) ?? undefined,
           })),
           notes: session.notes ?? undefined,
         });
@@ -801,8 +804,11 @@ export class CheckoutService {
     actorUserId?: number,
   ): Promise<{ redirectUrl: string; status: 'paid' | 'cancelled' | 'failed'; orderNumber: string }> {
     const [payment] = await this.db.select().from(s.payments)
-      .where(eq(s.payments.providerPaymentId, providerPaymentId)).limit(1);
-    if (!payment) throw new Error('Payment not found');
+      .where(and(
+        eq(s.payments.providerPaymentId, providerPaymentId),
+        eq(s.payments.storeId, storeId),
+      )).limit(1);
+    if (!payment) throw new Error('Payment not found or does not belong to this store');
 
     const isTabby = payment.provider === 'tabby';
     const isTamara = payment.provider === 'tamara';

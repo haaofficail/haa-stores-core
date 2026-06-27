@@ -5,6 +5,42 @@
 
 ---
 
+### ISSUE-0024: Gift Messages Lacked Central Plain-Text Sanitization
+
+- **ID:** ISSUE-0024
+- **Date:** 2026-06-27
+- **Severity:** Medium (stored-text XSS and notification-template hardening risk)
+- **Area:** Commerce Core / Shared DTO / Storefront gift messages
+- **Related Tasks:** TASK-0084
+- **Symptoms:** Deep security review follow-up flagged gift-message input/output sanitization as an unresolved risk. Gift messages were rendered by React as text in the main storefront screens, but server write boundaries accepted raw strings and public DTOs could return legacy stored values unchanged.
+- **Expected:** Gift messages should be treated as plain text. HTML/script/style/comment/control characters and dangerous protocol markers should be removed before storage, and public DTO output should sanitize again before sending data to storefront/public consumers.
+- **Actual:** `CartService.addItem`, `CheckoutService.createSession`, and `OrdersService.create` passed gift-message strings through mostly unchanged except for max-length checks. `toPublicCart` and `toPublicOrder` returned gift-message fields without output cleanup.
+- **Root Cause:** Gift-message handling grew across cart, checkout, order, and DTO layers without a shared plain-text normalization rule or a regression test that followed both input and output boundaries.
+- **Fix:** Added plain-text gift-message sanitizers for commerce-core write paths and shared DTO output paths. Wired cart item storage, checkout session metadata, order-level gift options, order item gift messages, public cart DTOs, and public order DTOs through sanitizer calls.
+- **Verification:** `tests/gift-message-sanitization.test.ts` covers HTML/script/control-character cleanup, normal Arabic preservation, empty/markup-only handling, cart/checkout/order wiring, public DTO output sanitation, and absence of `dangerouslySetInnerHTML` on public gift-message render surfaces.
+- **Prevention:** Keep the gift-message sanitizer regression whenever gift message fields or public storefront DTO serialization changes.
+- **Status:** Fixed.
+
+---
+
+### ISSUE-0023: BNPL Callback Payment Lookup Was Not Store-Scoped
+
+- **ID:** ISSUE-0023
+- **Date:** 2026-06-27
+- **Severity:** Critical (cross-tenant payment/wallet side-effect risk)
+- **Area:** Commerce Core / Checkout / BNPL callback / Tenant isolation
+- **Related Tasks:** TASK-0083
+- **Symptoms:** A deep security review reported that `CheckoutService.handleBNPLCallback(storeId, providerPaymentId)` accepted a store context from the storefront callback route but looked up the local payment row only by `providerPaymentId`.
+- **Expected:** A BNPL callback must resolve a payment only when the provider payment reference belongs to the active store. A callback for Store B must not find or act on Store A's payment.
+- **Actual:** The payment lookup used `eq(s.payments.providerPaymentId, providerPaymentId)` without `eq(s.payments.storeId, storeId)`. Downstream order updates were store-scoped, but wallet/outbox side effects still used the caller-supplied `storeId` after finding another store's payment.
+- **Root Cause:** The callback code trusted the resolved storefront slug/store context but did not bind it to the payment ownership lookup. Provider payment references were treated as globally sufficient identifiers instead of tenant-scoped references.
+- **Fix:** Added `and(eq(s.payments.providerPaymentId, providerPaymentId), eq(s.payments.storeId, storeId))` to the BNPL callback payment query and changed the missing-payment error to include ownership mismatch.
+- **Verification:** `tests/bnpl-callback-tenant-isolation.test.ts` asserts the store ownership predicate appears before provider confirmation. Adjacent checks passed: wallet idempotency specs, wallet posting wiring, order state machine/hardening, and low-stock BNPL callback source guards.
+- **Prevention:** Keep BNPL callback tenant-isolation regression coverage. Any future payment lookup by provider reference must include store ownership unless an explicit admin/reconciliation path documents why it is cross-store.
+- **Status:** Fixed.
+
+---
+
 ### ISSUE-0022: Saudi Policy Generator Templates Contained CJK Fragments
 
 - **ID:** ISSUE-0022
