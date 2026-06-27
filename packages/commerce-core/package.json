@@ -25,6 +25,10 @@
     "./vat": {
       "import": "./dist/vat.js",
       "types": "./dist/vat.d.ts"
+    },
+    "./pixel-validation": {
+      "import": "./dist/pixel-validation.js",
+      "types": "./dist/pixel-validation.d.ts"
     }
   },
   "scripts": {

@@ -94,13 +94,9 @@ function PlatformFooter() {
             </div>
           </div>
           <div className="lp-foot__copy">
-            © {new Date().getFullYear()} هاء متاجر · جميع الحقوق محفوظة
+            © {new Date().getFullYear()} هاء متاجر · جميع الحقوق محفوظة · {PLATFORM_LEGAL_ENTITY.displayLine}
           </div>
         </div>
-
-        <p className="lp-legal-entity" dir="rtl">
-          {PLATFORM_LEGAL_ENTITY.displayLine}
-        </p>
       </div>
     </footer>
   );
