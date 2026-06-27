@@ -11,6 +11,8 @@ import {
   ArrowRight, CheckCircle2, XCircle, RefreshCw, Clock, Filter,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { statusInfo, toneBadgeClass, SYNC_STATUS } from '@/lib/status-labels';
 
 const PROVIDERS = [
   { code: 'salla', name: 'سلة', color: 'from-green-400 via-green-600 to-green-800' },
@@ -19,7 +21,19 @@ const PROVIDERS = [
   { code: 'amazon', name: 'أمازون', color: 'from-orange-400 via-orange-600 to-gray-900' },
 ];
 
-function formatDate(d: string) {
+interface SyncLog {
+  id: number | string;
+  providerCode?: string | null;
+  providerName?: string | null;
+  syncType?: string | null;
+  status?: string | null;
+  itemsSynced?: number | null;
+  errorMessage?: string | null;
+  startedAt?: string | null;
+}
+
+function formatDate(d: string | null | undefined) {
+  if (!d) return '—';
   try {
     return new Date(d).toLocaleString('ar-SA', {
       hour: '2-digit', minute: '2-digit',
@@ -41,7 +55,7 @@ export default function SyncLogs() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
   const navigate = useNavigate();
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<SyncLog[]>([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('');
@@ -122,7 +136,7 @@ export default function SyncLogs() {
                 return (
                   <div key={log.id} className="flex items-center gap-4 p-4 rounded-xl bg-white/50 hover:bg-white transition-colors border border-neutral-100/50">
                     <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${provider?.color || 'from-neutral-400 to-neutral-600'} flex items-center justify-center text-white text-sm font-bold shrink-0`}>
-                      {log.providerName.charAt(0)}
+                      {(log.providerName ?? log.providerCode ?? "?").charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -137,7 +151,7 @@ export default function SyncLogs() {
                       <div className="flex items-center gap-2 mt-0.5">
                         <Clock className="h-3 w-3 text-neutral-400" />
                         <span className="text-xs text-neutral-400">{formatDate(log.startedAt)}</span>
-                        {log.itemsSynced > 0 && (
+                        {(log.itemsSynced ?? 0) > 0 && (
                           <Badge className="bg-neutral-100 text-neutral-600 border-neutral-200 text-xs">
                             {log.itemsSynced} {t('syncLogs.items', 'عنصر')}
                           </Badge>
@@ -148,22 +162,19 @@ export default function SyncLogs() {
                       )}
                     </div>
                     <div className="shrink-0">
-                      {log.status === 'completed' ? (
-                        <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-200">
-                          <CheckCircle2 className="h-3.5 w-3.5 ms-1" />
-                          {t('integrationSync.completed', 'تم')}
-                        </Badge>
-                      ) : log.status === 'failed' ? (
-                        <Badge className="bg-red-500/10 text-red-700 border-red-200">
-                          <XCircle className="h-3.5 w-3.5 ms-1" />
-                          {t('integrationSync.failed', 'فشل')}
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-amber-500/10 text-amber-700 border-amber-200">
-                          <RefreshCw className="h-3.5 w-3.5 ms-1 animate-spin" />
-                          {t('integrationSync.running', 'قيد التشغيل')}
-                        </Badge>
-                      )}
+                      {(() => {
+                        const info = statusInfo(SYNC_STATUS, log.status);
+                        const done = log.status === 'completed' || log.status === 'success';
+                        const failed = log.status === 'failed' || log.status === 'error';
+                        const active = log.status === 'running' || log.status === 'in_progress' || log.status === 'syncing';
+                        const Icon = done ? CheckCircle2 : failed ? XCircle : active ? RefreshCw : Clock;
+                        return (
+                          <Badge className={toneBadgeClass[info.tone]}>
+                            <Icon className={cn('h-3.5 w-3.5 ms-1', active && 'animate-spin')} />
+                            {info.label}
+                          </Badge>
+                        );
+                      })()}
                     </div>
                   </div>
                 );
