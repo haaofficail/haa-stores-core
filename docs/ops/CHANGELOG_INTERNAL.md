@@ -5,6 +5,15 @@
 
 ---
 
+## 2026-06-27 — CI E2E Local Target Defaults (TASK-0085)
+
+- Diagnosed why PR #308's `main` CI run was cancelled: `.github/workflows/ci.yml` uses `concurrency.group: CI-${{ github.ref }}` with `cancel-in-progress: true`, and a newer `main` push superseded the run.
+- Confirmed PR #308's Deploy run succeeded with staging smoke 5/5 on merge commit `3af46fd809a6ab669b4e42effa312cadd4307ac8`.
+- Identified the newer `main` CI E2E failure as an environment-target mismatch: CI started local dev servers, but Playwright navigated to shared staging during a concurrent Deploy.
+- Changed Playwright defaults so `CI=true` targets local storefront `http://localhost:5174`, while explicit `E2E_BASE_URL` still supports manual staging checks.
+- Changed merchant-login E2E to use `E2E_MERCHANT_URL` or local merchant dashboard `http://localhost:5173/login` in CI, instead of hardcoding the staging merchant subdomain.
+- Verified with local E2E against local servers: `CI=true pnpm test:e2e` passed 4/4; supporting checks passed (`pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm check:skills`, `git diff --check`, `pnpm preflight`, and final `pnpm ops:monitor`).
+
 ## 2026-06-27 — Gift Message Sanitization + Shipping Guard Verification (TASK-0084)
 
 - Added a plain-text gift-message sanitizer for commerce-core write paths and shared storefront DTO output paths.

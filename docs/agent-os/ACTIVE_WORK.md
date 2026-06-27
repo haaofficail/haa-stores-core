@@ -7,6 +7,8 @@
 
 ## Current task
 
+**TASK-0085 — CI E2E local target defaults (2026-06-27) is locally complete.** PR #308 merged, and its Deploy run passed staging smoke 5/5. Its CI run was cancelled by the workflow concurrency rule after a newer `main` push. The newer `main` CI run failed only in E2E because Playwright still targeted shared staging while Deploy was updating staging. The fix keeps `.github/workflows/*` untouched and changes Playwright/test defaults so CI uses local dev servers.
+
 **TASK-0084 — Gift-message sanitization + shipping guard verification (2026-06-27) is locally complete.** User asked to continue all remaining follow-ups. Gift messages now sanitize to plain text before cart/session/order storage and again at public cart/order DTO output boundaries. Existing shipment guards were re-verified with behavioral tests: unpaid non-COD and unconfirmed COD orders are blocked before shipment creation; packed paid/COD-pending orders remain valid.
 
 TASK-0083 remains in the same local worktree: `CheckoutService.handleBNPLCallback` scopes the payment lookup by both `providerPaymentId` and `storeId` before provider confirmation or wallet/order side effects. Wallet idempotency and the direct `pending_payment -> shipped` claim were verified as already mitigated by current tests/code.
@@ -34,6 +36,7 @@ See `EXECUTION_CHECKLIST.md` for the table. Summary:
 
 ## Verification
 
+- TASK-0085 verification: `CI=true pnpm test:e2e` passed 4/4 against local servers after bootstrapping a disposable E2E database; the temporary database was dropped afterward. Supporting checks passed: `pnpm typecheck`, `pnpm lint` (0 errors, 514 existing warnings), `pnpm test`, `pnpm check:skills`, `git diff --check`, `pnpm preflight`, and final `pnpm ops:monitor`.
 - `pnpm preflight`: green locally on 2026-06-27.
 - `pnpm ops:monitor`: first run had no recommended tasks/incidents while API/storefront dev servers were not running; second run with API, storefront, and merchant dashboard running passed runtime and synthetic checks with no recommended tasks/incidents.
 - `pnpm vitest run tests/gift-message-sanitization.test.ts tests/g10-storefront-dto-contract.test.ts`: 36/36 passing.

@@ -18,6 +18,7 @@
 
 - [ ] CI Test job provisions PostgreSQL before DB-backed tests
 - [ ] CI Test/E2E jobs run `pnpm db:bootstrap` and seeds on clean databases
+- [ ] CI E2E Playwright defaults target local dev servers, not shared staging, unless explicit staging env vars are set
 - [ ] Numeric type-change migrations include an explicit PostgreSQL `USING` cast
 - [ ] Workspace packages build before individual app builds
 - [ ] Docker build stages compile workspace packages before apps

@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0025: CI E2E Targeted Shared Staging During Deploy
+
+- **ID:** ISSUE-0025
+- **Date:** 2026-06-27
+- **Severity:** High (main CI can fail while deploy is healthy)
+- **Area:** Playwright / CI E2E / Deploy coordination
+- **Related Tasks:** TASK-0085
+- **Symptoms:** `main` CI run `28296586897` failed in E2E after a newer push cancelled the PR #308 CI run. All four Playwright tests timed out on `page.goto` with `net::ERR_ABORTED` while navigating to `https://staging.haastores.com`, `https://staging.haastores.com/about`, `https://staging.haastores.com/signup`, and `https://merchant.staging.haastores.com/login`.
+- **Expected:** CI E2E should test the local dev servers started inside the CI job: API `3000`, storefront `5174`, merchant dashboard `5173`, and admin dashboard `5175`. Shared staging should be tested by Deploy smoke gates or by explicit manual E2E environment variables.
+- **Actual:** `playwright.config.ts` defaulted `baseURL` to shared staging, and `e2e/merchant-login.spec.ts` hardcoded the merchant staging subdomain. The CI job started local dev servers, but the tests ignored them.
+- **Root Cause:** The E2E workflow evolved to start all local apps, but the Playwright defaults and merchant-login hardcoded URL still reflected an older staging-targeted execution model.
+- **Fix:** Playwright now defaults to `http://localhost:5174` when `CI=true`, keeps `E2E_BASE_URL` for explicit staging/manual overrides, and merchant-login now uses `E2E_MERCHANT_URL` or local `http://localhost:5173/login` in CI.
+- **Verification:** `CI=true pnpm test:e2e` passed 4/4 against local API/storefront/merchant/admin servers. Supporting checks passed: `pnpm typecheck`, `pnpm lint` (0 errors, 514 pre-existing warnings), `pnpm test`, `pnpm check:skills`, `git diff --check`, `pnpm preflight`, and final `pnpm ops:monitor`.
+- **Prevention:** Keep CI E2E target selection local by default. Shared staging checks belong in Deploy smoke gates unless the owner explicitly sets staging E2E environment variables.
+- **Status:** Fixed.
+
+---
+
 ### ISSUE-0024: Gift Messages Lacked Central Plain-Text Sanitization
 
 - **ID:** ISSUE-0024
