@@ -15,7 +15,7 @@ import { formatCurrency } from '@/lib/utils';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { PermissionGate, usePermissions } from '@/lib/permissions';
 import { escapeCsvCell } from '@/lib/csv';
-import { escapeHtmlText, type HtmlTextValue } from '@/lib/html';
+import { preparePrintDocument } from '@/lib/html';
 import {
   orderStatusColors,
   paymentStatusColors,
@@ -290,15 +290,21 @@ export default function Orders() {
               // on every cell so an Excel-opened printout cannot run a
               // formula injected via a malicious customer name.
               const canSeeSensitive = orderPerms.can('orders:view_sensitive');
-              const safeHtml = (v: HtmlTextValue) => escapeHtmlText(v);
               selectedOrders.forEach(id => {
                 const order = orders.find(o => o.id === id);
                 if (order) {
                   const win = window.open('', '_blank');
                   if (win) {
-                    const phoneLine = canSeeSensitive ? ` - ${safeHtml(order.customerPhone)}` : '';
-                    win.document.write(`<!DOCTYPE html><html dir="rtl"><head><title>${safeHtml(order.orderNumber)}</title><style>body{font-family:sans-serif;padding:40px;max-width:800px;margin:0 auto}</style></head><body><h2>${safeHtml(order.orderNumber)}</h2><p>${safeHtml(order.customerName)}${phoneLine}</p><p>${safeHtml(t(`orders.status_${order.status}`))}</p></body></html>`);
-                    win.document.close();
+                    const doc = preparePrintDocument(win, order.orderNumber, 'body{font-family:sans-serif;padding:40px;max-width:800px;margin:0 auto}');
+                    const title = doc.createElement('h2');
+                    title.textContent = String(order.orderNumber ?? '');
+                    const customer = doc.createElement('p');
+                    customer.textContent = canSeeSensitive
+                      ? `${order.customerName ?? ''} - ${order.customerPhone ?? ''}`
+                      : String(order.customerName ?? '');
+                    const status = doc.createElement('p');
+                    status.textContent = t(`orders.status_${order.status}`);
+                    doc.body.append(title, customer, status);
                     win.print();
                   }
                 }

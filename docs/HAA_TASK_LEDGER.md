@@ -257,7 +257,7 @@ Status: `Not Started` · `In Progress` · `Blocked` · `Needs Review` · `Done` 
 ### 2026-06-28 — Admin settlement handoff integrated
 
 - Completed: Took over the other agent's staged admin-dashboard handoff, repaired the invalid JSX comment that broke `SettlementBatches.tsx`, and addressed immediate SonarCloud PR blockers found after first push.
-- Changed: `SettlementReadiness.tsx`, `StorePaymentSettings.tsx`, merchant HTML escaping call sites/tests, `packages/wallet-core/src/ledger.ts`, `scripts/hooks/pre-edit-frontend.sh`, `sonar-project.properties`, and required ops/agent-os documentation. `LandingInbox.tsx` and `SettlementBatches.tsx` were inspected/reconciled but do not change from `HEAD` in the final publish scope.
+- Changed: `SettlementReadiness.tsx`, `StorePaymentSettings.tsx`, merchant print DOM/textContent call sites/tests, `packages/wallet-core/src/ledger.ts`, `scripts/hooks/pre-edit-frontend.sh`, `sonar-project.properties`, and required ops/agent-os documentation. `LandingInbox.tsx` and `SettlementBatches.tsx` were inspected/reconciled but do not change from `HEAD` in the final publish scope.
 - Tests run: admin-dashboard typecheck passed; merchant-dashboard typecheck passed; focused settlement/geidea tests passed 3 files / 24 tests; dashboard print HTML escape tests passed 3/3; admin-dashboard build passed; `bash -n scripts/hooks/pre-edit-frontend.sh` passed; `pnpm check:skills` passed 43/43; full `pnpm preflight` passed.
 - New blockers: none for the admin handoff. Full local smoke remains blocked by the previously recorded local DB migration drift in ISSUE-0027.
 - Updated completion: unchanged overall; this was integration and publication quality control, not a new commercial launch gate.

@@ -17,13 +17,15 @@ describe('merchant dashboard print HTML escaping', () => {
 
   it('uses HTML escaping, not CSV escaping, for order bulk print markup', () => {
     expect(ordersSource).toContain("from '@/lib/html'");
-    expect(ordersSource).toContain('const safeHtml = (v: HtmlTextValue) => escapeHtmlText(v)');
+    expect(ordersSource).toContain('preparePrintDocument(win, order.orderNumber');
     expect(ordersSource).not.toContain('const safe = (v: string) => escapeCsvCell(v)');
+    expect(ordersSource).not.toContain('document.write');
   });
 
-  it('escapes legacy gift messages before print document.write', () => {
+  it('uses textContent for legacy gift message print output', () => {
     expect(orderDetailSource).toContain("from '@/lib/html'");
-    expect(orderDetailSource).toContain('const safeMessage = escapeHtmlText(msg)');
+    expect(orderDetailSource).toContain('doc.body.textContent = `"${msg}"`');
+    expect(orderDetailSource).not.toContain('document.write');
     expect(orderDetailSource).not.toContain('<body>"${msg}"</body>');
   });
 });

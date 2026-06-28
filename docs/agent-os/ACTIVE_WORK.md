@@ -17,7 +17,7 @@ and the admin dashboard now passes typecheck, focused settlement tests, build,
 skills enforcement, and full preflight. The first PR push also exposed immediate
 SonarCloud blockers; TASK-0093 addressed them with Sonar CPD doc exclusions,
 shallower store-payment settings normalization, safer bash hook conditionals,
-and primitive-only merchant HTML escaping inputs.
+and DOM/textContent merchant print output.
 
 This does not authorize live beta, production launch, secret handling, live
 provider calls, deploys, SSH, DNS changes, or migrations.

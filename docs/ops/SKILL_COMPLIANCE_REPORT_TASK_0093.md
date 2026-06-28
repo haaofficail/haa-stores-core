@@ -35,7 +35,7 @@
   - Reconciled inherited staged JSX comments out of the final publish scope because they added no product value and broke TypeScript.
   - Kept the actual admin UI delta to settlement-readiness RTL alignment and token color consistency.
   - Kept `liveEnabled` behavior unchanged and only clarified that it remains false until all seven readiness gates pass.
-  - Addressed immediate SonarCloud quality-gate blockers after first push by excluding templated docs from CPD, flattening inherited admin settings normalization, using bash `[[ ]]`, and narrowing merchant HTML escaping inputs.
+  - Addressed immediate SonarCloud quality-gate blockers after first push by excluding templated docs from CPD, flattening inherited admin settings normalization, using bash `[[ ]]`, and replacing merchant print `document.write` strings with DOM/textContent output.
   - Published from the existing branch without merge, deploy, migration, secrets, or production actions.
 - **Safety constraints respected (per AGENTS.md §14.7):**
   - [x] No `db:migrate` execution
@@ -130,8 +130,8 @@
   ```text
   Initial PR gate failed: 5.8% duplication on new code, Reliability Rating B.
   Fixed locally by adding Sonar CPD doc exclusions, refactoring StorePaymentSettings
-  nested normalization, switching the hook test to [[ ]], and narrowing merchant
-  HTML escaping inputs.
+  nested normalization, switching the hook test to [[ ]], and replacing merchant
+  print document.write strings with DOM/textContent output.
   ```
 
 ## Deviations

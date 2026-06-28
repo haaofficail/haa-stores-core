@@ -10,7 +10,7 @@
 - Took over the other agent's staged admin-dashboard handoff and repaired the integration blocker in `apps/admin-dashboard/src/pages/SettlementBatches.tsx`.
 - Removed invalid JSX ternary-branch comments from the inherited staged admin work before publish so TypeScript can parse the settlement batch error state.
 - Kept the handoff scoped to admin settlement/readiness polish and the wallet settlement-readiness clarification; unrelated storefront, screenshot, and storage artifacts remain parked.
-- Addressed immediate SonarCloud PR blockers after first push: templated docs excluded from CPD, `StorePaymentSettings.tsx` nested settings normalization refactored, frontend hook file test switched to `[[ ]]`, and merchant HTML escaping narrowed to primitive values.
+- Addressed immediate SonarCloud PR blockers after first push: templated docs excluded from CPD, `StorePaymentSettings.tsx` nested settings normalization refactored, frontend hook file test switched to `[[ ]]`, and merchant print `document.write` strings replaced with DOM `textContent` construction.
 - Verification: `pnpm --filter @haa/admin-dashboard typecheck` passed; focused settlement/geidea tests passed 3 files / 24 tests; `pnpm --filter @haa/admin-dashboard build` passed; `pnpm --filter @haa/merchant-dashboard typecheck` passed; dashboard print HTML escape tests passed 3/3; `bash -n scripts/hooks/pre-edit-frontend.sh` passed; `pnpm check:skills` passed 43/43; `pnpm preflight` passed.
 
 ## 2026-06-28 — Mandatory Skill Gate Numeric Cap Removed (TASK-0092)
