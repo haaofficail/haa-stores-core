@@ -53,46 +53,40 @@ type NavItem = { path: string; label: string; icon: AdminIconName };
 
 type NavGroup = { label: string; items: NavItem[] };
 
-const navItem = (path: string, label: string, icon: AdminIconName): NavItem => ({ path, label, icon });
+const navItemFromEntry = (entry: string): NavItem => {
+  const [path, label, icon] = entry.split('|');
+  return { path, label, icon: icon as AdminIconName };
+};
+
+const navGroup = (label: string, entries: string[]): NavGroup => ({
+  label,
+  items: entries.map(navItemFromEntry),
+});
 
 const navGroups: NavGroup[] = [
-  {
-    label: 'عام',
-    items: [
-      navItem('/', 'الرئيسية', 'LayoutDashboard'),
-    ],
-  },
-  {
-    label: 'إدارة',
-    items: [
-      navItem('/tenants', 'التجار', 'Users'),
-      navItem('/stores', 'المتاجر', 'Store'),
-      navItem('/store-billing', 'رسوم المتاجر', 'CreditCard'),
-      navItem('/kyc', 'التحقق', 'ShieldCheck'),
-      navItem('/bank-accounts', 'الحسابات البنكية', 'Building2'),
-      navItem('/settlement-readiness', 'جاهزية التسوية', 'CheckSquare'),
-      navItem('/store-payment-settings', 'إعدادات الدفع', 'CreditCard'),
-    ],
-  },
-  {
-    label: 'مالية',
-    items: [
-      navItem('/payments', 'المدفوعات', 'BarChart2'),
-      navItem('/marketplace', 'سوق هاء', 'ShoppingBag'),
-      navItem('/payments/settlements', 'التسويات', 'Landmark'),
-    ],
-  },
-  {
-    label: 'نظام',
-    items: [
-      navItem('/admin-users', 'المستخدمون', 'UserCog'),
-      navItem('/audit', 'سجل التدقيق', 'ScrollText'),
-      navItem('/plans', 'الباقات', 'Package'),
-      navItem('/compliance', 'الامتثال', 'CheckSquare'),
-      navItem('/landing-inbox', 'صندوق الوارد', 'Inbox'),
-      navItem('/settings', 'الإعدادات', 'Settings'),
-    ],
-  },
+  navGroup('عام', ['/|الرئيسية|LayoutDashboard']),
+  navGroup('إدارة', [
+    '/tenants|التجار|Users',
+    '/stores|المتاجر|Store',
+    '/store-billing|رسوم المتاجر|CreditCard',
+    '/kyc|التحقق|ShieldCheck',
+    '/bank-accounts|الحسابات البنكية|Building2',
+    '/settlement-readiness|جاهزية التسوية|CheckSquare',
+    '/store-payment-settings|إعدادات الدفع|CreditCard',
+  ]),
+  navGroup('مالية', [
+    '/payments|المدفوعات|BarChart2',
+    '/marketplace|سوق هاء|ShoppingBag',
+    '/payments/settlements|التسويات|Landmark',
+  ]),
+  navGroup('نظام', [
+    '/admin-users|المستخدمون|UserCog',
+    '/audit|سجل التدقيق|ScrollText',
+    '/plans|الباقات|Package',
+    '/compliance|الامتثال|CheckSquare',
+    '/landing-inbox|صندوق الوارد|Inbox',
+    '/settings|الإعدادات|Settings',
+  ]),
 ];
 
 function SidebarLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {

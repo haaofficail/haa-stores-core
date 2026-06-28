@@ -209,7 +209,7 @@ describe('Admin dashboard page', () => {
   it('App.tsx mounts the new page and adds a nav entry', () => {
     const app = read('apps/admin-dashboard/src/App.tsx');
     expect(app).toContain('StoreBillingSettings');
-    expect(app).toContain("navItem('/store-billing', 'رسوم المتاجر'");
+    expect(app).toContain('/store-billing|رسوم المتاجر|CreditCard');
     expect(app).toContain('path="/store-billing"');
   });
 });

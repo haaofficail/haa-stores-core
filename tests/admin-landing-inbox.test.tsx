@@ -147,7 +147,7 @@ describe('Admin Landing Inbox — route and nav registration', () => {
     const src = read(APP_PATH);
     // Anchored to the navGroups entry so a future rename of the route without
     // a matching nav update fails this gate.
-    expect(src).toContain("navItem('/landing-inbox', 'صندوق الوارد'");
+    expect(src).toContain('/landing-inbox|صندوق الوارد|Inbox');
   });
 });
 
