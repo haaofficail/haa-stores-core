@@ -216,8 +216,8 @@ adminRouter.delete('/stores/:id', requireAdminAuth(), requireAdminPermission('st
 adminRouter.patch('/stores/:id/status', requireAdminAuth(), requireAdminPermission('stores.status.update'), zValidator('json', storeStatusSchema), storesRoutes.status);
 
 // /kyc/*
-adminRouter.get('/kyc', requireAdminAuth(), kycRoutes.list);
-adminRouter.patch('/kyc/:id/review', requireAdminAuth(), zValidator('json', kycReviewSchema), kycRoutes.review);
+adminRouter.get('/kyc', requireAdminAuth(), requireAdminPermission('kyc.read'), kycRoutes.list);
+adminRouter.patch('/kyc/:id/review', requireAdminAuth(), requireAdminPermission('kyc.review'), zValidator('json', kycReviewSchema), kycRoutes.review);
 
 // /payments
 adminRouter.get('/payments', requireAdminAuth(), paymentsRoute);

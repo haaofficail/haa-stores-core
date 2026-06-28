@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- admin API routes use legacy `any` for Hono context; proper typing tracked as P2-030. */
 // Tenant / store / KYC / payments / dashboard admin route handlers.
 // Extracted from admin.ts lines 65-259.
 //
@@ -204,11 +205,26 @@ export const kycRoutes = {
   list: async (c: any) => {
     const db = createDbClient();
     const profiles = await db.select().from(s.kycProfiles).orderBy(desc(s.kycProfiles.createdAt));
+    const allDocs = await db.select({
+      id: s.kycDocuments.id,
+      storeId: s.kycDocuments.storeId,
+      type: s.kycDocuments.type,
+      filename: s.kycDocuments.filename,
+      fileUrl: s.kycDocuments.fileUrl,
+      mimeType: s.kycDocuments.mimeType,
+      status: s.kycDocuments.status,
+      uploadedAt: s.kycDocuments.uploadedAt,
+    }).from(s.kycDocuments);
+    const docsByStore: Record<number, typeof allDocs> = {};
+    for (const doc of allDocs) {
+      if (!docsByStore[doc.storeId]) docsByStore[doc.storeId] = [];
+      docsByStore[doc.storeId].push(doc);
+    }
     return c.json({
       success: true,
       data: profiles.map(p => {
         const { nationalIdOrIqama: _nationalIdOrIqama, ...safe } = p as any;
-        return safe;
+        return { ...safe, documents: docsByStore[p.storeId] ?? [] };
       }),
     });
   },
@@ -249,10 +265,9 @@ export const kycRoutes = {
 // ── /payments ──────────────────────────────────────────────────────────────
 export async function paymentsRoute(c: any) {
   const storeId = c.req.query('storeId');
-  if (!storeId) {
-    return c.json({ success: true, data: [] });
-  }
   const db = createDbClient();
-  const payments = await db.select().from(s.payments).where(eq(s.payments.storeId, Number(storeId))).orderBy(desc(s.payments.createdAt)).limit(100);
+  const payments = storeId
+    ? await db.select().from(s.payments).where(eq(s.payments.storeId, Number(storeId))).orderBy(desc(s.payments.createdAt)).limit(100)
+    : await db.select().from(s.payments).orderBy(desc(s.payments.createdAt)).limit(200);
   return c.json({ success: true, data: payments });
 }
