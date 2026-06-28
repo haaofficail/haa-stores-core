@@ -20,7 +20,7 @@ echo ""
 
 # ── Gate 1: CSS variables ─────────────────────────────────────────────────────
 echo "▶ Gate 1 — CSS variables"
-if [ -f "$INDEX_CSS" ]; then
+if [[ -f "$INDEX_CSS" ]]; then
   if grep -q ":root" "$INDEX_CSS" 2>/dev/null; then
     echo "  ✅ :root{} found in $INDEX_CSS"
   else

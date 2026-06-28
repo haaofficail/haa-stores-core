@@ -23,6 +23,8 @@
 - [ ] CI E2E Playwright defaults target local dev servers, not shared staging, unless explicit staging env vars are set
 - [ ] GitHub Actions `run:` blocks pass `${{ inputs.* }}` through `env` variables instead of interpolating expressions directly into shell logic
 - [ ] SSH/remote workflow payloads that may contain newlines or shell metacharacters are transferred via quoted/base64-safe values
+- [ ] Sonar CPD excludes templated governance docs; Markdown compliance/runbook repetition should not fail code duplication gates
+- [ ] Bash hook scripts use `[[ ]]` conditionals instead of `[` where bash is available
 - [ ] Numeric type-change migrations include an explicit PostgreSQL `USING` cast
 - [ ] Workspace packages build before individual app builds
 - [ ] Docker build stages compile workspace packages before apps

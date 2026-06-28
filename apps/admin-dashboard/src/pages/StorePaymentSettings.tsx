@@ -37,6 +37,36 @@ type RowState = {
   saving: boolean;
 };
 
+function createInitialRows(): Record<ProviderCode, RowState> {
+  const init = {} as Record<ProviderCode, RowState>;
+  for (const p of PROVIDERS) {
+    init[p] = { enabled: false, mode: 'test', status: 'not_configured', saving: false };
+  }
+  return init;
+}
+
+function normalizeProviderSettings(data: unknown): ProviderSetting[] {
+  if (Array.isArray(data)) return data as ProviderSetting[];
+  if (data && typeof data === 'object' && Array.isArray((data as { data?: unknown }).data)) {
+    return (data as { data: ProviderSetting[] }).data;
+  }
+  return [];
+}
+
+function rowsFromSettings(prev: Record<ProviderCode, RowState>, settings: ProviderSetting[]) {
+  const next = { ...prev };
+  for (const p of PROVIDERS) {
+    const found = settings.find(s => s.providerCode === p);
+    next[p] = {
+      enabled: found?.enabled ?? false,
+      mode: (found?.mode ?? 'test') as 'test' | 'live',
+      status: found?.status ?? 'not_configured',
+      saving: false,
+    };
+  }
+  return next;
+}
+
 function statusBadge(status: string) {
   const map: Record<string, string> = {
     active: 'bg-green-100 text-green-800',
@@ -62,13 +92,7 @@ export default function StorePaymentSettings() {
   const [stores, setStores] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedId, setSelectedId] = useState<number | null>(initialStoreId);
   const [loading, setLoading] = useState(false);
-  const [rows, setRows] = useState<Record<ProviderCode, RowState>>(() => {
-    const init = {} as Record<ProviderCode, RowState>;
-    for (const p of PROVIDERS) {
-      init[p] = { enabled: false, mode: 'test', status: 'not_configured', saving: false };
-    }
-    return init;
-  });
+  const [rows, setRows] = useState<Record<ProviderCode, RowState>>(createInitialRows);
 
   useEffect(() => {
     adminApi.getStores().then(setStores).catch(() => toast.error('فشل تحميل المتاجر'));
@@ -78,21 +102,9 @@ export default function StorePaymentSettings() {
     if (selectedId == null) return;
     setLoading(true);
     paymentSettingsApi.getStorePaymentSettings(selectedId)
-      .then((data: any) => {
-        const settings: ProviderSetting[] = Array.isArray(data) ? data : (data?.data ?? []);
-        setRows(prev => {
-          const next = { ...prev };
-          for (const p of PROVIDERS) {
-            const found = settings.find((s: any) => s.providerCode === p);
-            next[p] = {
-              enabled: found?.enabled ?? false,
-              mode: (found?.mode ?? 'test') as 'test' | 'live',
-              status: found?.status ?? 'not_configured',
-              saving: false,
-            };
-          }
-          return next;
-        });
+      .then((data: unknown) => {
+        const settings = normalizeProviderSettings(data);
+        setRows(prev => rowsFromSettings(prev, settings));
       })
       .catch(() => toast.error('فشل تحميل إعدادات البوابات'))
       .finally(() => setLoading(false));

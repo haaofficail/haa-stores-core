@@ -14,7 +14,9 @@ The owner asked to take over the other agent's admin-dashboard work, verify it
 as an executive handoff, and publish it. The inherited staged blocker was an
 invalid JSX comment inside the `SettlementBatches.tsx` ternary branch. That is fixed,
 and the admin dashboard now passes typecheck, focused settlement tests, build,
-skills enforcement, and full preflight.
+skills enforcement, and full preflight. The first PR push also exposed immediate
+SonarCloud blockers; TASK-0093 addressed them with Sonar CPD doc exclusions,
+shallower store-payment settings normalization, and safer bash hook conditionals.
 
 This does not authorize live beta, production launch, secret handling, live
 provider calls, deploys, SSH, DNS changes, or migrations.
@@ -40,6 +42,7 @@ explicit owner approval.
 - **Pre-launch smoke:** GO; `pnpm test:smoke` passed 29/29.
 - **Full local smoke:** BLOCKED; `pnpm smoke` failed because `tests/smoke.test.ts` has stale response-shape assumptions and the local DB is missing `orders.preparation_status` from migration `0077_order_preparation_status.sql`.
 - **Admin settlement handoff:** GO; inherited `SettlementBatches.tsx` syntax blocker fixed and admin build/typecheck verified during TASK-0093.
+- **SonarCloud follow-up:** PATCHED; initial PR #320 Sonar gate failed on doc CPD duplication and two failure annotations, then TASK-0093 added local fixes and is awaiting refreshed remote results.
 - **Skill Gate policy:** UPDATED; no 1-4 cap, use all applicable skills.
 - **Staging sandbox rehearsal:** CONDITIONAL.
 - **Staging rehearsal:** CONDITIONAL.
@@ -112,6 +115,7 @@ Expected launch-readiness documentation files:
 - `pnpm --filter @haa/admin-dashboard typecheck`: passed during TASK-0093.
 - `pnpm --filter @haa/admin-dashboard build`: passed during TASK-0093.
 - `pnpm vitest run tests/settlement-order-linking.test.ts tests/settlement-order-drilldown-ui.test.ts tests/geidea-settlement-reconciliation.test.ts`: 3 files / 24 tests passed during TASK-0093.
+- `bash -n scripts/hooks/pre-edit-frontend.sh`: passed during TASK-0093 Sonar follow-up.
 - Focused local mock payment/shipping tests: 10 files / 151 tests passed.
 - `pnpm ops:monitor`: passed during TASK-0091 with 25/25 health checks and local synthetic checks green.
 - Browser-like local HTTP checks: storefront `/`, `/s/haa-demo`, cart, checkout, merchant login, and admin all returned 200.

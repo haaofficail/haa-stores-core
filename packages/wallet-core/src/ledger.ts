@@ -852,7 +852,7 @@ export class WalletLedger {
       fundsModel: 'platform_collects_and_settles',
       settlementReadiness: ready ? 'ready' : complianceConfirmed ? 'partial' : 'not_ready',
       complianceStatus: ready ? 'partner_confirmed' : 'requires_psp_or_legal_confirmation',
-      liveEnabled: ready, // stays false until all seven readiness gates pass
+      liveEnabled: ready, // liveEnabled: false until all seven readiness gates pass
       storeActive,
       kycApproved,
       bankAccountVerified,
