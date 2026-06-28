@@ -112,6 +112,11 @@ export default function Plans() {
     });
   };
 
+  const closeEdit = () => {
+    setEditId(null);
+    setEditForm(null);
+  };
+
   const saveEdit = async () => {
     if (!editId || !editForm) return;
     setSaving(true);
@@ -261,18 +266,18 @@ export default function Plans() {
 
       {/* Edit modal */}
       {editId && editForm && (
-        <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          onClick={() => { setEditId(null); setEditForm(null); }}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-scale-in"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <button
+            type="button"
+            aria-label="إغلاق"
+            className="absolute inset-0 cursor-default"
+            onClick={closeEdit}
+          />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-scale-in">
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <h3 className="text-headline font-semibold text-gray-900">تعديل الباقة</h3>
               <button
-                onClick={() => { setEditId(null); setEditForm(null); }}
+                onClick={closeEdit}
                 className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
                 aria-label="إغلاق"
               >
@@ -372,7 +377,7 @@ export default function Plans() {
                 {saving ? 'جاري الحفظ...' : 'حفظ التغييرات'}
               </button>
               <button
-                onClick={() => { setEditId(null); setEditForm(null); }}
+                onClick={closeEdit}
                 className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-footnote font-medium hover:bg-gray-200 transition-colors"
               >
                 إلغاء

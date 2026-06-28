@@ -49,6 +49,7 @@
 - [ ] Empty states present where needed
 - [ ] Error states present where needed
 - [ ] JSX ternary branches return one valid expression; comments inside branches are wrapped in a fragment or moved outside the ternary
+- [ ] Modal backdrops use native buttons or keyboard-accessible controls, not clickable plain `div` elements
 - [ ] No random colors — tokens used
 - [ ] No layout overflow or scroll issues
 - [ ] Touch targets ≥ 44px on mobile
