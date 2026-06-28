@@ -5,6 +5,42 @@
 
 ---
 
+### ISSUE-0032: Merchant Role Model Lacked Warehouse Staff Role
+
+- **ID:** ISSUE-0032
+- **Date:** 2026-06-28
+- **Severity:** Medium (merchant operations / permission UX)
+- **Area:** Merchant Dashboard / Employees / Shared RBAC
+- **Related Tasks:** TASK-0095
+- **Symptoms:** The employee role selector offered owner/admin/manager/products/orders/accountant/support/viewer roles, but no plain warehouse staff role for merchants who only need a worker to prepare orders, read products, update fulfillment status, and handle shipping.
+- **Expected:** A simple merchant should be able to choose a clear "موظف المستودع" role without granting finance, reports, settings, customer export, refund, or employee-management powers.
+- **Actual:** The closest available roles were broader than a warehouse worker's job, so merchants had to choose a less accurate role or manually reason through granular permissions.
+- **Root Cause:** `UserRole` / `ROLE_PERMISSIONS` had operational manager roles but no fulfillment-only warehouse worker preset, and the employee dialog hardcoded role labels rather than deriving the options from the shared role map.
+- **Fix:** Added `warehouse_staff` to the shared `UserRole`, `ROLE_PERMISSIONS`, and permission presets. Updated merchant employee role labels and permission presets to include "موظف المستودع"; role changes now seed the matching permissions automatically. Regression tests assert the role has fulfillment permissions and lacks finance/settings/employee-management powers.
+- **Verification:** Covered by focused employee/RBAC tests in TASK-0095; final verification is recorded in `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0095.md`.
+- **Prevention:** Keep role-option UI generated from `ROLE_PERMISSIONS`, and keep RBAC catalog tests asserting warehouse staff remains operational-only.
+- **Status:** Fixed locally in TASK-0095.
+
+---
+
+### ISSUE-0031: Merchant Membership Permission Routes Used Wrong Store and Client Prefix
+
+- **ID:** ISSUE-0031
+- **Date:** 2026-06-28
+- **Severity:** High (permission management / multi-store scoping)
+- **Area:** Merchant Dashboard / Employees / Permissions API / RBAC
+- **Related Tasks:** TASK-0095
+- **Symptoms:** The merchant employee dialog attempted to read and update membership permissions, but the client called `/merchant/:storeId/memberships/:membershipId/permissions` while the API router is mounted at `/merchant/:storeId/permissions`. Catalog and preset helpers also missed the mounted prefix. Separately, the permissions route passed `auth.activeStoreId` to membership permission operations, so a multi-store user could operate against the JWT active store instead of the `:storeId` in the URL after `requireStoreAccess()` had validated the URL store.
+- **Expected:** All membership permission reads/writes should use the mounted `/merchant/:storeId/permissions/...` URLs, and the route should pass the URL `storeId` into `PermissionService.findMembership()` / `upsertMembershipPermissions()` after access verification.
+- **Actual:** The UI permission endpoints could hit non-existent URLs, and the route-level store context could drift from the requested store to `auth.activeStoreId`.
+- **Root Cause:** The service-layer store isolation was fixed previously, but the transport/client layer was not synchronized: the route retained `auth.activeStoreId`, and the merchant-dashboard client did not include the permissions router mount prefix. The employee dialog also kept a stale direct localStorage `active_store_id` read.
+- **Fix:** Added `getRouteStoreId(c)` in `apps/api/src/routes/permissions.ts` and used it for membership permission GET/PATCH. Corrected merchant-dashboard permission client paths to `/merchant/:storeId/permissions/permissions`, `/permission-presets`, and `/memberships/:membershipId/permissions`. Switched `EmployeeFormDialog` to `useAuth().storeId`, fixed RTL logical positioning for the password visibility button, allowed empty custom permission updates, and corrected the matrix copy to describe store-scoped saving.
+- **Verification:** Focused employee/RBAC command passed 7 files / 129 tests. API typecheck passed. Merchant-dashboard typecheck passed. `pnpm preflight` passed.
+- **Prevention:** Keep permission-route transport tests asserting URL `storeId` instead of `auth.activeStoreId`; keep merchant API-client tests asserting the mounted `/permissions` prefix; keep employee-dialog tests forbidding direct `Number(localStorage.getItem('active_store_id'))` reads; test empty permission-set saves as a meaningful update.
+- **Status:** Fixed locally in TASK-0095.
+
+---
+
 ### ISSUE-0030: GitHub Test Source-Grep Contracts Drifted After Shared ErrorState and Print DOM Hardening
 
 - **ID:** ISSUE-0030

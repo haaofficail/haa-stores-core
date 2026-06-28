@@ -1,5 +1,20 @@
 # Internal Changelog
 
+## 2026-06-28 — Merchant/Employee Permissions UX Audit (TASK-0095)
+
+- Fixed merchant-dashboard permission API client paths so catalog, presets, and membership permission reads/writes use the mounted `/merchant/:storeId/permissions/...` route prefix.
+- Fixed `apps/api/src/routes/permissions.ts` so membership permission operations derive `storeId` from the URL path after `requireStoreAccess()` verifies access, rather than using `auth.activeStoreId`.
+- Fixed `EmployeeFormDialog` to use `useAuth().storeId` instead of direct `active_store_id` localStorage reads, preserving the existing source-of-truth pattern from `Employees.tsx`.
+- Fixed permission clearing behavior: editing a member with an empty custom permission set now sends the empty set instead of skipping the update and leaving stale permissions.
+- Fixed create-time custom permissions: after inviting a new employee, the dashboard now saves the selected permission set when the actor can manage permissions.
+- Added `warehouse_staff` as a shared merchant role and preset with fulfillment-oriented permissions only: dashboard view, product read, order read/status update, shipping manage, and storefront read.
+- Simplified employee role UX with Arabic role labels and automatic permission seeding from the selected role, including the new warehouse staff role.
+- Updated the permission matrix UX copy to state the real behavior: custom membership permissions save at store scope; branch/warehouse/channel scopes are catalog-visible but not active for saving yet.
+- Updated the employee-management API contract doc so it no longer claims custom permissions are 501/future-only; current custom permissions are store-scoped membership permissions.
+- Added regression tests for URL-store scoping, mounted permission client paths, auth-sourced dialog storeId, empty permission-set saves, create-time custom permission saves, and warehouse staff role restrictions.
+- Verification: focused employee/RBAC tests passed 7 files / 129 tests; `pnpm --filter @haa/api typecheck` passed; `pnpm --filter @haa/merchant-dashboard typecheck` passed; `pnpm preflight` passed.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls.
+
 ## 2026-06-28 — GitHub Integration Closure (TASK-0094)
 
 - Verified PR #320 and PR #321 are merged into `main`; latest merged commit is `73e0aea93777e8b1a667503368d990f0a436d917`.

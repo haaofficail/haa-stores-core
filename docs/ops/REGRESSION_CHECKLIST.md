@@ -79,7 +79,7 @@
 - [ ] No cross-store data leakage
 - [ ] Audit logged where relevant
 - [ ] Permission catalog (PERMISSION_CATALOG) contains all role permissions (no catalog drift)
-- [ ] ROLE_PERMISSIONS map covers all 8 roles (owner, admin, manager, products_manager, orders_manager, accountant, support, viewer)
+- [ ] ROLE_PERMISSIONS map covers all 9 roles (owner, admin, manager, products_manager, orders_manager, warehouse_staff, accountant, support, viewer)
 - [ ] Viewer role has no manage/create/update/delete permissions
 - [ ] Customer create/update operations use correct write permissions (not read)
 - [ ] Subscription routes protected by requirePermission()
@@ -111,18 +111,26 @@
 - [ ] Delete button guarded by employees:delete
 - [ ] PermissionCheckboxMatrix built from PERMISSION_CATALOG (no hardcoded strings)
 - [ ] Role presets fill checkboxes from ROLE_PERMISSIONS
+- [ ] Warehouse staff role exists as `warehouse_staff` with fulfillment permissions only and no finance/settings/employee-management powers
+- [ ] Employee role selector uses clear Arabic role labels and seeds permissions from the selected role
 - [ ] High-risk permissions marked with warning
 - [ ] Last owner protected — actions disabled
 - [ ] Save button enabled and wired to API via onSave callback
-- [ ] Custom permissions warning banner displayed
+- [ ] Custom permissions help copy matches current behavior
 - [ ] Employee management tests (tests/employee-management.test.ts) pass
 - [ ] API contract doc exists at docs/security/EMPLOYEE_MANAGEMENT_API_CONTRACT.md
 - [ ] API boundary tests (tests/employee-management-api.test.ts) pass
+- [ ] Merchant permission client endpoints include the mounted `/merchant/:storeId/permissions/...` prefix for catalog, presets, and membership permission reads/writes
+- [ ] Permission membership route operations derive `storeId` from `c.req.param('storeId')` after `requireStoreAccess()`, not directly from `auth.activeStoreId`
+- [ ] EmployeeFormDialog uses `useAuth().storeId` and does not read `Number(localStorage.getItem('active_store_id'))` directly
+- [ ] Clearing all custom membership permissions sends an empty array to the permissions API instead of skipping the update
+- [ ] Creating a new employee saves the selected custom permissions after invite when the actor has `employees:manage_permissions`
+- [ ] Permission matrix copy matches current behavior: custom permissions save at store scope; branch/warehouse/channel scopes are not active for saving yet
 - [ ] UI wire tests (tests/employee-ui-api-wire.test.ts) pass
-- [ ] API endpoints: GET list, POST invite, PATCH update, DELETE remove, PATCH permissions (501)
+- [ ] API endpoints: GET list, POST invite, PATCH update, DELETE remove, GET/PATCH membership permissions
 - [ ] API enforces employee:\* permissions on all endpoints
 - [ ] API safety rules: last owner, self-downgrade, duplicate email, invalid role, self-delete
-- [ ] API custom permissions returns 501 NOT_IMPLEMENTED
+- [ ] API custom permissions validates catalog keys and store-scoped membership permissions
 - [ ] Employees page fetches from API (no mock data)
 - [ ] Loading state shown while fetching
 - [ ] Empty state shown when no employees
@@ -147,7 +155,7 @@
 - [ ] Role change success logs employee_role_changed with oldValue/newValue
 - [ ] Status toggle logs employee_status_changed or employee_removed
 - [ ] Delete success logs employee_removed with oldValue
-- [ ] 501 permission attempt logs employee_permission_update_unsupported
+- [ ] Permission update success logs employee_permissions_updated with oldValue/newValue
 - [ ] All audit calls include storeId: auth.activeStoreId
 - [ ] All audit calls include entityType: 'employee'
 - [ ] Invite create dialog shows clarity banner: "تم إنشاء الموظف محليًا. إرسال الدعوات البريدية غير مفعّل بعد."

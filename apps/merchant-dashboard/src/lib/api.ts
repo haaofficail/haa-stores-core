@@ -837,27 +837,27 @@ export const employeesApi = {
     request<{ success: true }>(`/merchant/${storeId}/employees/${employeeId}`, { method: 'DELETE' }),
 
   // Permissions API
-  // GET /permissions - returns catalog grouped by category
+  // GET /permissions/permissions - returns catalog grouped by category
   getPermissions: (storeId: number) =>
     request<{ permissions: PermissionInfo[]; grouped: Record<string, PermissionInfo[]> }>(
-      `/merchant/${storeId}/permissions`
+      `/merchant/${storeId}/permissions/permissions`
     ),
-  // GET /permission-presets - returns presets
+  // GET /permissions/permission-presets - returns presets
   getPermissionPresets: (storeId: number) =>
-    request<PermissionPreset[]>(`/merchant/${storeId}/permission-presets`),
-  // GET /memberships/:membershipId/permissions - returns specific member's permissions
+    request<PermissionPreset[]>(`/merchant/${storeId}/permissions/permission-presets`),
+  // GET /permissions/memberships/:membershipId/permissions - returns specific member's permissions
   getMemberPermissions: (storeId: number, membershipId: number) =>
     request<{ membershipId: number; permissions: MembershipPermission[] }>(
-      `/merchant/${storeId}/memberships/${membershipId}/permissions`
+      `/merchant/${storeId}/permissions/memberships/${membershipId}/permissions`
     ),
-  // PATCH /memberships/:membershipId/permissions - updates member's permissions
+  // PATCH /permissions/memberships/:membershipId/permissions - updates member's permissions
   updateMemberPermissions: (storeId: number, membershipId: number, permissions: Array<{
     permissionKey: string;
     scopeType: 'store' | 'branch' | 'warehouse' | 'channel';
     scopeId?: number;
   }>) =>
     request<{ membershipId: number; permissions: MembershipPermission[] }>(
-      `/merchant/${storeId}/memberships/${membershipId}/permissions`,
+      `/merchant/${storeId}/permissions/memberships/${membershipId}/permissions`,
       { method: 'PATCH', body: JSON.stringify({ permissions }) }
     ),
 };

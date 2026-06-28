@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PERMISSION_CATALOG, type Permission } from '@haa/shared';
-import { PermissionGate } from '@/lib/permissions';
+import { PermissionGate, usePermissions } from '@/lib/permissions';
 import { EmployeeFormDialog } from '@/components/employees/EmployeeFormDialog';
 import {
   Plus, Pencil, UserX, Shield, ShieldAlert, Clock, Loader2, AlertTriangle, RefreshCw, Users,
@@ -17,6 +17,7 @@ const roleLabels: Record<string, string> = {
   manager: 'مشرف',
   products_manager: 'مدير منتجات',
   orders_manager: 'مدير طلبات',
+  warehouse_staff: 'موظف مستودع',
   accountant: 'محاسب',
   support: 'دعم',
   viewer: 'مشاهد',
@@ -70,6 +71,18 @@ function PermissionsPreview() {
   );
 }
 
+function toStorePermissionAssignments(permissionKeys: string[]) {
+  return permissionKeys.map(key => ({
+    permissionKey: key,
+    scopeType: 'store' as const,
+    scopeId: undefined,
+  }));
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,6 +91,7 @@ export default function EmployeesPage() {
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [editTarget, setEditTarget] = useState<Employee | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const { can } = usePermissions();
 
   // Source-of-truth: useAuth().storeId is the canonical accessor.
   // Reading the localStorage key directly used `Number(...)` on a value
@@ -95,8 +109,8 @@ export default function EmployeesPage() {
     try {
       const data = await employeesApi.list(storeId);
       setEmployees(data);
-    } catch (err: any) {
-      setError(err?.message || 'فشل تحميل قائمة الموظفين');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'فشل تحميل قائمة الموظفين'));
     } finally {
       setLoading(false);
     }
@@ -127,25 +141,32 @@ export default function EmployeesPage() {
   async function handleSave(data: { name: string; email: string; role: string; permissions: string[]; isActive: boolean; password?: string }) {
     if (!storeId) return;
     if (dialogMode === 'create') {
-      await employeesApi.invite(storeId, {
+      const created = await employeesApi.invite(storeId, {
         name: data.name,
         email: data.email,
         password: data.password ?? '',
         role: data.role,
       });
+      if (can('employees:manage_permissions')) {
+        await employeesApi.updateMemberPermissions(
+          storeId,
+          created.id,
+          toStorePermissionAssignments(data.permissions),
+        );
+      }
     } else if (editTarget) {
       await employeesApi.update(storeId, editTarget.id, {
         role: data.role,
         isActive: data.isActive,
       });
-      // Update permissions separately via permissions API
-      if (data.permissions.length > 0) {
-        const permissionData = data.permissions.map(key => ({
-          permissionKey: key,
-          scopeType: 'store' as const,
-          scopeId: undefined,
-        }));
-        await employeesApi.updateMemberPermissions(storeId, editTarget.id, permissionData);
+      // Update permissions separately via permissions API. Empty arrays are
+      // meaningful: they clear custom permissions for the membership.
+      if (can('employees:manage_permissions')) {
+        await employeesApi.updateMemberPermissions(
+          storeId,
+          editTarget.id,
+          toStorePermissionAssignments(data.permissions),
+        );
       }
     }
   }
@@ -158,8 +179,8 @@ export default function EmployeesPage() {
       await employeesApi.remove(storeId, emp.id);
       await fetchEmployees();
       toast.success('تم حذف الموظف بنجاح');
-    } catch (err: any) {
-      toast.error(err?.message || 'فشل حذف الموظف');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'فشل حذف الموظف'));
     } finally {
       setDeleting(null);
     }
@@ -308,7 +329,7 @@ export default function EmployeesPage() {
           <h3 className="text-sm font-semibold text-neutral-700 mb-3">معاينة مصفوفة الصلاحيات</h3>
           <p className="text-xs text-neutral-500 mb-4">
             هذه معاينة لمصفوفة الصلاحيات المبنية على {PERMISSION_CATALOG.length} صلاحية في الكتالوج.
-            الصلاحيات المخصصة لكل موظف مشتقة من دوره.
+            تبدأ الصلاحيات من دور الموظف ويمكن تخصيصها لمن يملك صلاحية إدارة الصلاحيات.
           </p>
           <PermissionsPreview />
         </div>

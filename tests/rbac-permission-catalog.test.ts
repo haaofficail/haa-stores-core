@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   PERMISSION_CATALOG,
+  PERMISSION_PRESETS,
   ROLE_PERMISSIONS,
   getPermissionsForRole,
 } from '@haa/shared';
@@ -89,6 +90,47 @@ describe('RBAC Permission Catalog Integrity', () => {
         .filter(e => isHighRisk(e.key) && viewerPerms.has(e.key))
         .map(e => e.key);
       expect(violations).toEqual([]);
+    });
+  });
+
+  describe('Warehouse staff role', () => {
+    const warehousePerms = new Set(ROLE_PERMISSIONS.warehouse_staff);
+
+    it('has only the operational permissions needed for warehouse fulfillment', () => {
+      expect([...warehousePerms]).toEqual(expect.arrayContaining([
+        'dashboard:view',
+        'products:read',
+        'orders:read',
+        'orders:update_status',
+        'shipping:manage',
+        'storefront:read',
+      ]));
+    });
+
+    it('does not include employee, finance, reporting, refund, or settings powers', () => {
+      const forbidden = [
+        'employees:view',
+        'employees:invite',
+        'employees:update',
+        'employees:delete',
+        'employees:manage_permissions',
+        'wallet:read',
+        'wallet:withdraw',
+        'reports:read',
+        'reports:export',
+        'orders:refund',
+        'settings:read',
+        'settings:update',
+      ];
+      for (const permission of forbidden) {
+        expect(warehousePerms.has(permission)).toBe(false);
+      }
+    });
+
+    it('has a matching Arabic permission preset', () => {
+      const preset = PERMISSION_PRESETS.find(p => p.key === 'warehouse_staff');
+      expect(preset?.labelAr).toBe('موظف مستودع');
+      expect(preset?.permissionKeys).toEqual(expect.arrayContaining([...warehousePerms]));
     });
   });
 

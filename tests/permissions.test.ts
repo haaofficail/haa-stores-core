@@ -37,6 +37,13 @@ describe('Permissions API — Route Structure', () => {
     expect(code).toContain('zValidator(\'json\', upsertPermissionsSchema)');
   });
 
+  it('membership permission endpoints use URL storeId after store access is verified', () => {
+    const code = permissionsApi();
+    expect(code).toContain("c.req.param('storeId')");
+    expect(code).toContain('Number.isFinite(storeId)');
+    expect(code).not.toContain('const storeId = auth.activeStoreId;');
+  });
+
   it('GET /memberships/:membershipId/permissions returns membership permissions', () => {
     const code = permissionsApi();
     expect(code).toContain("requirePermission('employees:update')");

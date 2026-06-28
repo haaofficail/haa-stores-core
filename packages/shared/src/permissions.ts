@@ -105,6 +105,17 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
     ],
   },
   {
+    key: 'warehouse_staff',
+    labelAr: 'موظف مستودع',
+    permissionKeys: [
+      'dashboard:view',
+      'products:read',
+      'orders:read', 'orders:update_status',
+      'shipping:manage',
+      'storefront:read',
+    ],
+  },
+  {
     key: 'product_manager',
     labelAr: 'مدير منتجات',
     permissionKeys: [
@@ -522,6 +533,14 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'orders:update_status',
     'customers:read',
     'shipping:manage',
+  ],
+  warehouse_staff: [
+    'dashboard:view',
+    'products:read',
+    'orders:read',
+    'orders:update_status',
+    'shipping:manage',
+    'storefront:read',
   ],
   accountant: [
     'orders:read',

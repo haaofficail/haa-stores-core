@@ -48,6 +48,12 @@ describe('RBAC Pass 3 — Employee Management UI', () => {
     it('protects delete button with employees:delete PermissionGate', () => {
       expect(employeesPage).toContain('employees:delete');
     });
+
+    it('sends membership permission updates even when the selected set is empty', () => {
+      expect(employeesPage).toContain("can('employees:manage_permissions')");
+      expect(employeesPage).not.toContain('data.permissions.length > 0');
+      expect(employeesPage).toContain('employeesApi.updateMemberPermissions');
+    });
   });
 
   describe('PermissionCheckboxMatrix', () => {
@@ -138,12 +144,50 @@ describe('RBAC Pass 3 — Employee Management UI', () => {
     });
 
     it('non-owner/admin roles have no employee permissions', () => {
-      const restricted: Array<keyof typeof ROLE_PERMISSIONS> = ['manager', 'products_manager', 'orders_manager', 'accountant', 'support', 'viewer'];
+      const restricted: Array<keyof typeof ROLE_PERMISSIONS> = [
+        'manager',
+        'products_manager',
+        'orders_manager',
+        'warehouse_staff',
+        'accountant',
+        'support',
+        'viewer',
+      ];
       const employeePerms = ['employees:view', 'employees:invite', 'employees:update', 'employees:delete', 'employees:manage_permissions'];
       for (const role of restricted) {
         for (const p of employeePerms) {
           expect(ROLE_PERMISSIONS[role]).not.toContain(p);
         }
+      }
+    });
+
+    it('warehouse role has fulfillment permissions without finance/admin powers', () => {
+      const warehousePerms = ROLE_PERMISSIONS.warehouse_staff;
+      expect(warehousePerms).toEqual(expect.arrayContaining([
+        'dashboard:view',
+        'products:read',
+        'orders:read',
+        'orders:update_status',
+        'shipping:manage',
+        'storefront:read',
+      ]));
+
+      const forbidden = [
+        'wallet:read',
+        'wallet:withdraw',
+        'settings:read',
+        'settings:update',
+        'employees:view',
+        'employees:invite',
+        'employees:update',
+        'employees:delete',
+        'employees:manage_permissions',
+        'reports:read',
+        'customers:export',
+        'orders:refund',
+      ];
+      for (const permission of forbidden) {
+        expect(warehousePerms).not.toContain(permission);
       }
     });
   });
@@ -159,6 +203,21 @@ describe('RBAC Pass 3 — Employee Management UI', () => {
     it('has onSave callback and save button', () => {
       expect(dialog).toContain('onSave');
       expect(dialog).toContain('handleSave');
+    });
+
+    it('uses auth storeId instead of direct active_store_id localStorage reads', () => {
+      expect(dialog).toContain('useAuth');
+      expect(dialog).not.toMatch(/Number\(\s*localStorage\.getItem\(\s*['"]active_store_id['"]\s*\)\s*\)/);
+    });
+
+    it('shows warehouse staff as a first-class role option', () => {
+      expect(dialog).toContain('warehouse_staff');
+      expect(dialog).toContain('موظف المستودع');
+    });
+
+    it('starts from role permissions instead of an empty custom-permission set', () => {
+      expect(dialog).toContain("permissions: getRolePermissions('viewer')");
+      expect(dialog).toContain('permissions: canManagePerms ? getRolePermissions(role) : f.permissions');
     });
   });
 

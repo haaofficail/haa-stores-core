@@ -8,19 +8,31 @@
 
 ## Current task
 
-**No active Codex-owned task after TASK-0094 closure (2026-06-28).**
+**No active Codex-owned task after TASK-0095 closure (2026-06-28).**
 
-TASK-0094 is complete. PR #319 was closed as superseded, PR #322 merged the
-always-on `Required Merge Gate`, branch protection now requires that gate with
-strict branch updates, and post-merge `main` verification passed: Required Merge
-Gate, CI, Deploy, and Deploy Watchdog are all green on merge commit
-`49601bea70d88de618fe5359955d18a7146237b4`. Staging deploy and smoke passed;
-production deploy was skipped.
+TASK-0095 is complete locally on `codex/merchant-employee-permissions-ux-audit`.
+The merchant employee-permissions audit fixed the permissions API client mount
+prefix, URL-store scoping in `apps/api/src/routes/permissions.ts`, stale
+EmployeeFormDialog localStorage store lookup, empty permission-set saves,
+create-time custom permission saves after invite, the missing warehouse staff
+role, Arabic role labels, role-based permission seeding, and permission matrix
+UX copy. Final verification is recorded in the TASK-0095 compliance report.
 
 This does not authorize live beta, production launch, secret handling, live
 provider calls, SSH, DNS changes, or migrations.
 
 ## Previous task
+
+**TASK-0094 — GitHub integration closure (2026-06-28).**
+
+PR #319 was closed as superseded, PR #322 merged the always-on `Required Merge
+Gate`, branch protection now requires that gate with strict branch updates, and
+post-merge `main` verification passed: Required Merge Gate, CI, Deploy, and
+Deploy Watchdog are all green on merge commit
+`49601bea70d88de618fe5359955d18a7146237b4`. Staging deploy and smoke passed;
+production deploy was skipped.
+
+## Previous admin task
 
 **TASK-0093 — Admin settlement handoff integration and publish (2026-06-28).**
 
@@ -45,9 +57,9 @@ provider calls, deploys, SSH, DNS changes, or migrations.
 
 ## Current branch
 
-`codex/task-0094-final-state` is only a final documentation truth-sync branch
-for the completed TASK-0094 evidence. Do not include unrelated local storefront,
-storage, or screenshot artifacts in this branch.
+`codex/merchant-employee-permissions-ux-audit` contains TASK-0095 code, tests,
+and documentation. Do not include unrelated local storefront, storage, or
+screenshot artifacts in this branch.
 
 ## Current verdict
 
@@ -62,6 +74,7 @@ storage, or screenshot artifacts in this branch.
 - **SonarCloud follow-up:** CLOSED for PR #320/#322 project-owned gates; SonarCloud passed on the relevant closure PRs.
 - **GitHub Test follow-up:** CLOSED for project-owned CI; `main` CI run `28329981652` passed after PR #322 merged.
 - **GitHub integration closure:** DONE; PR #322 merged, branch protection requires `Required Merge Gate`, `main` CI/deploy/watchdog passed, staging smoke passed, production skipped.
+- **Merchant/employee permissions audit:** DONE locally; URL-store permission route scoping, mounted permission client paths, employee-dialog store source, empty permission clears, create-time custom permission saves, warehouse staff role, role-based permission seeding, and UX copy fixed in TASK-0095.
 - **Skill Gate policy:** UPDATED; no 1-4 cap, use all applicable skills.
 - **Staging sandbox rehearsal:** CONDITIONAL.
 - **Staging rehearsal:** CONDITIONAL.
@@ -116,6 +129,8 @@ Expected launch-readiness documentation files:
 - `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0091.md`
 - `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0092.md`
 - `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0093.md`
+- `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0094.md`
+- `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0095.md`
 - `docs/ops/ISSUE_KNOWLEDGE_BASE.md`
 - `docs/ops/REGRESSION_CHECKLIST.md`
 - `AGENTS.md`

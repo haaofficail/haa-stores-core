@@ -4,6 +4,39 @@
 
 ---
 
+### TASK-0095: Audit merchant and employee permissions with UX fixes
+
+- **Type:** Security / UX/UI Polish / Testing
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** "طيب الان ابيك تدقق على صلاحيات التاجر و الموظفين مع تجربة المستخدم"
+- **Expanded Requirement:** Audit merchant/employee permissions end to end across API route guards, merchant-dashboard guards, employee permission editing UX, store scoping, and regression tests; fix high-confidence gaps without touching production, secrets, migrations, or unrelated storefront/admin artifacts.
+- **Scope:** Merchant employee management page, employee permission dialog, merchant-dashboard API client permission endpoints, permissions route store scoping, focused RBAC/source-grep regression tests, and ops documentation.
+- **Out of Scope:** Production deploy, staging deploy, `db:migrate`, secret handling, live payment/shipping-provider calls, DNS/server changes, broad UI redesign, unrelated storefront files, screenshots, and storage artifacts.
+- **Skills Used:** `environment-safety-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `verification-before-completion`, `design-ux-excellence-gate`, `test-strategy-gate`, `implementation-quality-gate`, `branch-pr-hygiene-gate`, `evidence-led-reporting`, `documentation-handoff-gate`.
+- **Acceptance Criteria:**
+  - [x] Merchant/employee permissions are audited across UI, API client, API routes, and service boundaries.
+  - [x] Permission membership reads/writes use the mounted `/merchant/:storeId/permissions/...` API prefix.
+  - [x] Membership permission route operations use the URL `storeId` after `requireStoreAccess()`, not the JWT active store.
+  - [x] Employee permission dialog uses `useAuth().storeId`, not direct `Number(localStorage.getItem('active_store_id'))`.
+  - [x] Clearing all custom permissions sends an empty permission set instead of skipping the update.
+  - [x] Merchant can choose friendly Arabic role labels; role choice seeds the matching permissions automatically.
+  - [x] Warehouse staff is available as a first-class role with fulfillment permissions only and no finance/settings/employee-management powers.
+  - [x] New-employee custom permissions save after invite when the actor can manage permissions.
+  - [x] Permission matrix copy matches actual save behavior and current store-only scope.
+  - [x] Focused RBAC/employee tests, API and merchant-dashboard typechecks, and `pnpm preflight` pass.
+- **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; read `SYSTEM_MAP.md`, `CURRENT_STATE.md`, `TASK_TRACKER.md`, `ISSUE_KNOWLEDGE_BASE.md`, `DECISIONS.md`, skill registry/mapping/test strategy docs; inspect merchant-dashboard permission guards, employee page/dialog/matrix/API client, permissions route, auth-core services, and RBAC tests; focused vitest for permissions/employees/RBAC; app typechecks; `pnpm check:skills`; `git diff --check`.
+- **Files Changed:** `apps/api/src/routes/permissions.ts`, `apps/merchant-dashboard/src/lib/api.ts`, `apps/merchant-dashboard/src/pages/Employees.tsx`, `apps/merchant-dashboard/src/components/employees/EmployeeFormDialog.tsx`, `apps/merchant-dashboard/src/components/employees/PermissionCheckboxMatrix.tsx`, `packages/shared/src/permissions.ts`, `packages/shared/src/types/orders.ts`, `tests/permissions.test.ts`, `tests/route-migration-5-permissions.test.ts`, `tests/employee-management.test.ts`, `tests/employee-ui-api-wire.test.ts`, `tests/rbac-permission-catalog.test.ts`, `docs/security/EMPLOYEE_MANAGEMENT_API_CONTRACT.md`, `docs/SAUDI_COMPLIANCE_CHECKLIST.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0095.md`.
+- **Test Results:** Startup verification passed before edits: `pnpm preflight` passed and `pnpm ops:monitor` exited 0 with no recommended incident/task, with local runtime/synthetic warnings only because dev servers were not running. Focused verification after fixes passed: `pnpm vitest run tests/permissions.test.ts tests/route-migration-5-permissions.test.ts tests/employee-management.test.ts tests/employee-ui-api-wire.test.ts tests/employee-management-api.test.ts tests/rbac-coverage.test.ts tests/dashboard-rbac-guards.test.ts` passed 7 files / 129 tests. `pnpm --filter @haa/api typecheck` passed. `pnpm --filter @haa/merchant-dashboard typecheck` passed. `pnpm preflight` passed with TypeScript clean.
+- **Root Cause:** The permissions service already enforced `(tenant, store)` membership scoping, but the permissions route passed `auth.activeStoreId` into membership permission operations instead of the URL `storeId`. The merchant-dashboard API client also called membership permission endpoints without the required `/permissions` mount prefix, so the employee dialog's permission reads/writes were pointed at non-existent URLs. The dialog had a stale localStorage `storeId` read and UX copy still claimed custom permissions were preview-only even though the API supports store-scoped membership permission updates. Product-wise, the shared role model also lacked a warehouse staff role, forcing a merchant to choose a less accurate role for fulfillment workers.
+- **Verdict:** Done locally. Merchant/employee permission editing now routes to the correct API endpoints, preserves URL-store scoping, supports clearing all custom permissions, saves create-time custom permission choices, includes a warehouse staff role, and presents simpler Arabic role/permission UX copy. No deploy, migration, secrets, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0031, ISSUE-0032.
+
+---
+
 ### TASK-0094: Close GitHub integration loop after PR #320/#321
 
 - **Type:** Support-Ops / CI-Deploy / Documentation

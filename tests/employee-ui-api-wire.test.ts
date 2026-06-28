@@ -27,6 +27,12 @@ describe('Employee UI → API Wire', () => {
       expect(employeesPage).toContain('employeesApi.invite');
     });
 
+    it('saves custom permissions after inviting a new employee when allowed', () => {
+      expect(employeesPage).toContain('const created = await employeesApi.invite');
+      expect(employeesPage).toContain('employeesApi.updateMemberPermissions');
+      expect(employeesPage).toContain('created.id');
+    });
+
     it('calls employeesApi.update', () => {
       expect(employeesPage).toContain('employeesApi.update');
     });
@@ -66,6 +72,11 @@ describe('Employee UI → API Wire', () => {
     it('handles error state', () => {
       expect(dialog).toContain('حدث خطأ أثناء الحفظ');
     });
+
+    it('offers the warehouse staff role in plain Arabic', () => {
+      expect(dialog).toContain('warehouse_staff');
+      expect(dialog).toContain('موظف المستودع');
+    });
   });
 
   describe('API Client', () => {
@@ -83,6 +94,17 @@ describe('Employee UI → API Wire', () => {
 
     it('has employeesApi.remove endpoint', () => {
       expect(api).toContain("request<{ success: true }>(`/merchant/${storeId}/employees/${employeeId}`");
+    });
+
+    it('uses the mounted permissions API prefix for catalog and preset endpoints', () => {
+      expect(api).toContain('`/merchant/${storeId}/permissions/permissions`');
+      expect(api).toContain('`/merchant/${storeId}/permissions/permission-presets`');
+      expect(api).not.toContain('`/merchant/${storeId}/permission-presets`');
+    });
+
+    it('uses the mounted permissions API prefix for membership permission reads and writes', () => {
+      expect(api).toContain('`/merchant/${storeId}/permissions/memberships/${membershipId}/permissions`');
+      expect(api).not.toContain('`/merchant/${storeId}/memberships/${membershipId}/permissions`');
     });
   });
 });
