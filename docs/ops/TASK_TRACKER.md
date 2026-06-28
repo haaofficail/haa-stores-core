@@ -11,7 +11,7 @@
 - **Status:** Done
 - **Created:** 2026-06-28
 - **Updated:** 2026-06-28
-- **Original Request:** "Implement the plan" for the generic task checklist template that covers request definition, scope, acceptance criteria, verification, docs sync, and final reporting.
+- **Original Request:** "Implement the plan:"
 - **Expanded Requirement:** Add one canonical reusable checklist template for executing scoped tasks in this repository, and sync the ops docs so future agents can find and trust it without creating a parallel checklist system.
 - **Scope:** `docs/agent-os/templates/TASK_EXECUTION_CHECKLIST.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`.
 - **Out of Scope:** Code changes, CI/workflow changes, converting existing historical task-specific checklists, and broader Agent OS process rewrites.

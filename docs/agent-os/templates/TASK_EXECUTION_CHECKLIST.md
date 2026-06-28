@@ -1,6 +1,6 @@
 # Task Execution Checklist
 
-> **Use:** copy this checklist at the start of a scoped task, then mark items as you complete them.
+> **Use:** copy this checklist into the current task brief or working notes at the start of a scoped task, then mark items as you complete them. Do not create a new markdown file just to hold the checklist unless the user explicitly asks for one.
 > **Purpose:** turn a short request into a controlled task with clear scope, verification, and handoff.
 
 ---
@@ -35,7 +35,7 @@
 - [ ] `docs/ops/TASK_TRACKER.md` updated
 - [ ] `docs/ops/CURRENT_STATE.md` updated when state changed
 - [ ] `docs/ops/ISSUE_KNOWLEDGE_BASE.md` updated if a root cause was found
-- [ ] `docs/ops/CHANGELOG_INTERNAL.md` updated if the change altered structure, behavior, or process
+- [ ] `docs/ops/CHANGELOG_INTERNAL.md` updated if the change introduced a new pattern, changed a workflow step, or changed structural/behavioral expectations
 - [ ] `docs/ops/DECISIONS.md` updated if a decision was made
 
 ## 6. Final report
