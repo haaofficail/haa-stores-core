@@ -22,6 +22,8 @@ const Compliance = lazy(() => import('./pages/Compliance'));
 const LandingInbox = lazy(() => import('./pages/LandingInbox'));
 const AdminUsers = lazy(() => import('./pages/AdminUsers'));
 const BankAccounts = lazy(() => import('./pages/BankAccounts'));
+const SettlementReadiness = lazy(() => import('./pages/SettlementReadiness'));
+const StorePaymentSettings = lazy(() => import('./pages/StorePaymentSettings'));
 
 function PageSkeleton() {
   return (
@@ -47,7 +49,7 @@ function AdminGuard() {
   return <Outlet />;
 }
 
-type NavItem = { path: string; label: string; icon: 'LayoutDashboard' | 'Users' | 'Store' | 'CreditCard' | 'ShieldCheck' | 'BarChart2' | 'ShoppingBag' | 'Landmark' | 'ScrollText' | 'Package' | 'CheckSquare' | 'Inbox' | 'Settings' | 'ReceiptText' | 'UserCog' | 'Building2' };
+type NavItem = { path: string; label: string; icon: 'LayoutDashboard' | 'Users' | 'Store' | 'CreditCard' | 'ShieldCheck' | 'BarChart2' | 'ShoppingBag' | 'Landmark' | 'ScrollText' | 'Package' | 'CheckSquare' | 'Inbox' | 'Settings' | 'ReceiptText' | 'UserCog' | 'Building2' | 'FileText' };
 
 type NavGroup = { label: string; items: NavItem[] };
 
@@ -66,6 +68,8 @@ const navGroups: NavGroup[] = [
       { path: '/store-billing', label: 'رسوم المتاجر', icon: 'CreditCard' },
       { path: '/kyc', label: 'التحقق', icon: 'ShieldCheck' },
       { path: '/bank-accounts', label: 'الحسابات البنكية', icon: 'Building2' },
+      { path: '/settlement-readiness', label: 'جاهزية التسوية', icon: 'CheckSquare' },
+      { path: '/store-payment-settings', label: 'إعدادات الدفع', icon: 'CreditCard' },
     ],
   },
   {
@@ -277,6 +281,8 @@ export default function App() {
                 <Route path="/landing-inbox" element={<LandingInbox />} />
                 <Route path="/admin-users" element={<AdminUsers />} />
                 <Route path="/bank-accounts" element={<BankAccounts />} />
+                <Route path="/settlement-readiness" element={<SettlementReadiness />} />
+                <Route path="/store-payment-settings" element={<StorePaymentSettings />} />
               </Route>
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -14,7 +14,7 @@ import { zValidator } from '@hono/zod-validator';
 import { type AdminAuthContext, requireAdminAuth } from '@haa/auth-core';
 
 import { loginRoute } from './auth.js';
-import { dashboardRoute, tenantsRoutes, storesRoutes, kycRoutes, kycBankRoutes, paymentsRoute } from './tenants-stores.js';
+import { dashboardRoute, tenantsRoutes, storesRoutes, kycRoutes, kycBankRoutes, settlementReadinessRoutes, paymentSettingsRoutes, paymentsRoute } from './tenants-stores.js';
 import {
   marketplaceSummaryRoute,
   marketplaceProductsRoute,
@@ -220,6 +220,28 @@ adminRouter.get('/kyc', requireAdminAuth(), requireAdminPermission('kyc.read'), 
 adminRouter.patch('/kyc/:id/review', requireAdminAuth(), requireAdminPermission('kyc.review'), zValidator('json', kycReviewSchema), kycRoutes.review);
 adminRouter.get('/kyc/bank-accounts', requireAdminAuth(), requireAdminPermission('kyc.read'), kycBankRoutes.list);
 adminRouter.patch('/kyc/bank-accounts/:id/review', requireAdminAuth(), requireAdminPermission('kyc.review'), zValidator('json', z.object({ status: z.enum(['verified', 'rejected']) })), kycBankRoutes.review);
+
+// /stores/:storeId/settlement-readiness
+const settlementReadinessUpdateSchema = z.object({
+  safeguardedAccountConfigured: z.boolean().optional(),
+  pspSettlementPartnerConfirmed: z.boolean().optional(),
+  merchantOfRecordConfirmed: z.boolean().optional(),
+  samaComplianceStatus: z.enum(['unconfirmed', 'in_progress', 'confirmed']).optional(),
+});
+
+adminRouter.get('/stores/:storeId/settlement-readiness', requireAdminAuth(), requireAdminPermission('wallet.payout.view_all'), settlementReadinessRoutes.get);
+adminRouter.patch('/stores/:storeId/settlement-readiness', requireAdminAuth(), requireAdminPermission('wallet.payout.approve'), zValidator('json', settlementReadinessUpdateSchema), settlementReadinessRoutes.update);
+
+// /stores/:storeId/payment-settings
+const paymentSettingsUpsertSchema = z.object({
+  providerCode: z.string().min(1).max(50),
+  isEnabled: z.boolean().optional(),
+  mode: z.enum(['test', 'live']).optional(),
+  status: z.enum(['active', 'inactive', 'pending_review']).optional(),
+});
+
+adminRouter.get('/stores/:storeId/payment-settings', requireAdminAuth(), requireAdminPermission('stores.read'), paymentSettingsRoutes.list);
+adminRouter.put('/stores/:storeId/payment-settings', requireAdminAuth(), requireAdminPermission('stores.update'), zValidator('json', paymentSettingsUpsertSchema), paymentSettingsRoutes.upsert);
 
 // /payments
 adminRouter.get('/payments', requireAdminAuth(), paymentsRoute);

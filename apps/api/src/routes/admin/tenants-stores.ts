@@ -5,7 +5,7 @@
 // Each export is a raw Hono handler. The aggregator in ./index.ts applies
 // `requireAdminAuth()` and any other middleware when mounting the route.
 
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, and } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { AuditLogService } from '@haa/integration-core';
@@ -304,6 +304,61 @@ export const kycBankRoutes = {
       }
     }
     return c.json({ success: true, data: { id, status } });
+  },
+};
+
+// ── /stores/:storeId/settlement-readiness ──────────────────────────────────
+export const settlementReadinessRoutes = {
+  get: async (c: any) => {
+    const storeId = Number(c.req.param('storeId'));
+    const db = createDbClient();
+    const [row] = await db.select().from(s.walletSettlementReadiness)
+      .where(eq(s.walletSettlementReadiness.storeId, storeId)).limit(1);
+    return c.json({ success: true, data: row ?? {
+      storeId, safeguardedAccountConfigured: false,
+      pspSettlementPartnerConfirmed: false, merchantOfRecordConfirmed: false,
+      samaComplianceStatus: 'unconfirmed',
+    }});
+  },
+
+  update: async (c: any) => {
+    const storeId = Number(c.req.param('storeId'));
+    const body = c.req.valid('json');
+    const db = createDbClient();
+    await db.insert(s.walletSettlementReadiness).values({ storeId, ...body })
+      .onConflictDoUpdate({ target: s.walletSettlementReadiness.storeId, set: { ...body } });
+    const [row] = await db.select().from(s.walletSettlementReadiness)
+      .where(eq(s.walletSettlementReadiness.storeId, storeId)).limit(1);
+    return c.json({ success: true, data: row });
+  },
+};
+
+// ── /stores/:storeId/payment-settings ──────────────────────────────────────
+export const paymentSettingsRoutes = {
+  list: async (c: any) => {
+    const storeId = Number(c.req.param('storeId'));
+    const db = createDbClient();
+    const settings = await db.select().from(s.merchantPaymentProviderSettings)
+      .where(eq(s.merchantPaymentProviderSettings.storeId, storeId));
+    return c.json({ success: true, data: settings });
+  },
+
+  upsert: async (c: any) => {
+    const storeId = Number(c.req.param('storeId'));
+    const body = c.req.valid('json');
+    const db = createDbClient();
+    await db.insert(s.merchantPaymentProviderSettings)
+      .values({ storeId, ...body })
+      .onConflictDoUpdate({
+        target: [s.merchantPaymentProviderSettings.storeId, s.merchantPaymentProviderSettings.providerCode],
+        set: { enabled: body.enabled, mode: body.mode, status: body.status, updatedAt: new Date() },
+      });
+    const [row] = await db.select().from(s.merchantPaymentProviderSettings)
+      .where(and(
+        eq(s.merchantPaymentProviderSettings.storeId, storeId),
+        eq(s.merchantPaymentProviderSettings.providerCode, body.providerCode),
+      )).limit(1);
+    return c.json({ success: true, data: row });
   },
 };
 
