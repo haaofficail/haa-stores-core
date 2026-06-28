@@ -5,6 +5,54 @@
 
 ---
 
+## 2026-06-28 — Admin Settlement Handoff Integrated (TASK-0093)
+
+- Took over the other agent's staged admin-dashboard handoff and repaired the integration blocker in `apps/admin-dashboard/src/pages/SettlementBatches.tsx`.
+- Removed invalid JSX ternary-branch comments from the inherited staged admin work before publish so TypeScript can parse the settlement batch error state.
+- Kept the handoff scoped to admin settlement/readiness polish and the wallet settlement-readiness clarification; unrelated storefront, screenshot, and storage artifacts remain parked.
+- Verification: `pnpm --filter @haa/admin-dashboard typecheck` passed; focused settlement/geidea tests passed 3 files / 24 tests; `pnpm --filter @haa/admin-dashboard build` passed; `pnpm check:skills` passed 43/43; `pnpm preflight` passed.
+
+## 2026-06-28 — Mandatory Skill Gate Numeric Cap Removed (TASK-0092)
+
+- Updated `AGENTS.md` §14.2 so `Skills selected` now means all applicable skills with no numeric cap.
+- Added a guardrail that agents must not pad gates with unrelated skills; every selected skill still needs a concrete one-line why.
+- Synced active process references: PR template, execution checklist, skills registry, skill file mapping, and agent handoff template.
+- Removed the outdated historical phrase in the TASK-0088 skill compliance report that said the constitution capped selected skills.
+- Verification: `pnpm check:skills` passed 43/43; `git diff --check` clean; whitespace scan clean. At TASK-0092 close time, `pnpm preflight` was blocked by unrelated admin-dashboard syntax errors in `SettlementBatches.tsx`; TASK-0093 fixed that blocker.
+
+## 2026-06-28 — Local App Smoke With Fake/Mock Providers (TASK-0091)
+
+- Started/checked local API, merchant dashboard, and storefront services; reused the existing local admin dashboard listener.
+- Verified local runtime surfaces without secrets or live provider calls: `pnpm ops:monitor` passed all 25 health checks and local synthetic checks; browser-like HTTP checks returned 200 for storefront home, `/s/haa-demo`, cart, checkout, merchant login, and admin.
+- Verified sanitized API probes: admin login 200, merchant owner login 200, storefront store info 200, cart create 201, merchant provider-status 200, and shipments provider-status 200 with live blocked/manual fallback indicators.
+- `pnpm test:smoke` passed 29/29.
+- `pnpm smoke` ran and failed 9/46. The run exposed stale smoke-test assumptions (`body.data.data` for products and old `/api/v1/products` expectation) plus a real local DB blocker: order/tracking routes query `orders.preparation_status`, but the current local DB has not applied `packages/db/src/migrations/0077_order_preparation_status.sql`.
+- Recorded ISSUE-0027 and regression guidance. Owner approval is required before any local `db:migrate` or DB rebuild.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, no live payment/shipping calls.
+
+## 2026-06-28 — Sandbox Rehearsal Checklist (TASK-0090)
+
+- Added `docs/ops/SANDBOX_REHEARSAL_CHECKLIST.md` for local mock and conditional staging sandbox payment/shipping rehearsal.
+- Defined local mock payment scenarios, local mock/manual shipping readiness checks, staging sandbox preconditions, redacted evidence rules, and GO/NO-GO triggers.
+- Verified the focused local mock test baseline: 10 files / 151 tests passed.
+- Updated launch-readiness source-of-truth docs so the next safe action is local mock rehearsal execution, not live beta or production launch.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, no live payment/shipping calls.
+
+## 2026-06-28 — Owner Gate Answers + Sandbox Path (TASK-0089)
+
+- Recorded owner answers for launch gates: VAT/ZATCA is not available, e-commerce license exists but proof/reference is pending, DPO is not available, and sandbox preparation is the immediate requested path.
+- Updated `LAUNCH_READINESS_GATE.md`, `PRODUCTION_LAUNCH_GATES.md`, `REMAINING_WORK.md`, and `HAA_TASK_LEDGER.md` so sandbox planning can proceed without live providers or production action.
+- Kept closed live beta and public launch as NO-GO because VAT/ZATCA, DPO, PCI/ASV, pen-test, DR/restore, DNS/secrets, live credentials, and beta merchants are not all closed.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, no live payment/shipping calls.
+
+## 2026-06-28 — Launch Readiness Gate v1 (TASK-0088)
+
+- Added `docs/ops/LAUNCH_READINESS_GATE.md` as the immediate owner/agent decision board for starting launch-readiness work.
+- Classified launch modes: readiness sprint is GO, staging rehearsal is CONDITIONAL, closed live beta is NO-GO, and public launch is NO-GO.
+- Consolidated blockers from the existing launch docs into a single domain gate: owner gates G2-G10, DNS/TLS, production secrets, Geidea/payment credentials, shipping credentials, wallet migration execution, Sentry/monitoring, backups/restore, pen-test, DR drill, and beta merchant cohort.
+- Updated `TASK_TRACKER.md`, `CURRENT_STATE.md`, `ACTIVE_WORK.md`, and the TASK-0088 skill compliance report.
+- Verification: `pnpm preflight` passed; `pnpm ops:monitor` exited 0 with no actionable events and no recommended incidents/tasks; `pnpm check:skills` passed 43/43; `git diff --check` was clean.
+
 ## 2026-06-28 — Apple-grade Defensive Audit P1 Hardening (TASK-0087)
 
 - Ran the repository safety gate and local defensive audit across dependency audit, secret scanning, Semgrep SAST, CI workflow review, Docker/deploy config review, crypto helpers, and dashboard print-output sinks. The uploaded screenshot was explicitly ignored per user instruction and did not influence findings.

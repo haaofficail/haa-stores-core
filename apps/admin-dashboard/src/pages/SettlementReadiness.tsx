@@ -156,11 +156,11 @@ export default function SettlementReadiness() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="text-right px-4 py-3 font-medium text-gray-600">المتجر</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-600">حساب أمان</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-600">شريك PSP</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-600">MoR</th>
-              <th className="text-right px-4 py-3 font-medium text-gray-600">امتثال ساما</th>
+              <th className="text-start px-4 py-3 font-medium text-gray-600">المتجر</th>
+              <th className="text-start px-4 py-3 font-medium text-gray-600">حساب أمان</th>
+              <th className="text-start px-4 py-3 font-medium text-gray-600">شريك PSP</th>
+              <th className="text-start px-4 py-3 font-medium text-gray-600">MoR</th>
+              <th className="text-start px-4 py-3 font-medium text-gray-600">امتثال ساما</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -176,7 +176,7 @@ export default function SettlementReadiness() {
                   <td className="px-4 py-3">
                     <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
                       r?.samaComplianceStatus === 'licensed' ? 'bg-green-100 text-green-700' :
-                      r?.samaComplianceStatus === 'registered' ? 'bg-blue-100 text-blue-700' :
+                      r?.samaComplianceStatus === 'registered' ? 'bg-primary-100 text-primary-700' :
                       r?.samaComplianceStatus === 'exempt' ? 'bg-gray-100 text-gray-700' :
                       'bg-yellow-100 text-yellow-700'
                     }`}>

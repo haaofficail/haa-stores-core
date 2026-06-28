@@ -11,8 +11,9 @@
 
 1. Take the file paths from your gate's `Files expected to change` line.
 2. For each path, find the glob it falls under.
-3. Add the listed skills to your `Skills selected` (1–4 cap still applies
-   — combine with judgement; pick the dominant 1–4).
+3. Add every listed skill that applies to your `Skills selected`. There is no
+   numeric cap; combine with judgement, but do not omit a relevant required
+   skill just to keep the list short.
 4. If a path doesn't match anything, classify by task type (AGENTS.md
    §14.4) and use `docs/agent-os/SKILLS_REGISTRY.md`.
 
@@ -69,7 +70,7 @@ If your file path matches no glob above:
 `Files expected to change: apps/api/src/routes/dashboard/products.ts,
 tests/dashboard-products.test.ts`
 
-Required skills (pick the dominant 1–4):
+Required skills (select all that apply):
 
 - `acceptance-criteria-gate` (route contract)
 - `regression-safety-gate` (existing dashboard tests)

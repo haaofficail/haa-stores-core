@@ -10,6 +10,8 @@
 - [ ] `pnpm preflight` passes
 - [ ] `pnpm typecheck` passes
 - [ ] Relevant tests pass (or reason documented)
+- [ ] Full local smoke that touches orders/tracking confirms local DB migrations are applied, especially `0077_order_preparation_status.sql`
+- [ ] Smoke-test response-shape assertions match the current API contract before treating failures as product defects
 - [ ] `git diff` reviewed — no unrelated changes
 - [ ] No files outside scope were modified
 - [ ] docs/ops/ files updated if needed
@@ -44,6 +46,7 @@
 - [ ] Loading states present where needed
 - [ ] Empty states present where needed
 - [ ] Error states present where needed
+- [ ] JSX ternary branches return one valid expression; comments inside branches are wrapped in a fragment or moved outside the ternary
 - [ ] No random colors — tokens used
 - [ ] No layout overflow or scroll issues
 - [ ] Touch targets ≥ 44px on mobile

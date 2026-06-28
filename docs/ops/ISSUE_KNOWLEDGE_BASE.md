@@ -5,6 +5,42 @@
 
 ---
 
+### ISSUE-0028: Admin Settlement Batches TSX Comment Broke Preflight
+
+- **ID:** ISSUE-0028
+- **Date:** 2026-06-28
+- **Severity:** Medium (admin-dashboard build/preflight blocker)
+- **Area:** Admin dashboard / Settlement batches / TSX parsing
+- **Related Tasks:** TASK-0093
+- **Symptoms:** `pnpm preflight` failed during the inherited admin handoff with TypeScript parser errors in `apps/admin-dashboard/src/pages/SettlementBatches.tsx`: `TS1005 ')' expected`, `TS1382 Unexpected token`, and `TS1381 Unexpected token`.
+- **Expected:** The settlement batches page should render its loading, error, empty, and table branches as valid TSX and should not block root preflight.
+- **Actual:** The error branch of the ternary expression contained a standalone JSX comment immediately before `<ErrorState />`, leaving the branch without a single valid returned expression.
+- **Root Cause:** A handoff edit inserted a JSX comment directly inside a ternary branch instead of wrapping the branch in a fragment or leaving the comment outside the expression.
+- **Fix:** Removed the invalid comment from the inherited staged handoff and kept the branch as a single `<ErrorState />` expression. Cleaned the matching no-value comment noise from the inherited landing inbox handoff before staging the final version; both reconciled files match valid `HEAD` source in the final publish scope.
+- **Verification:** `pnpm --filter @haa/admin-dashboard typecheck` passed; focused settlement/geidea tests passed 3 files / 24 tests; `pnpm --filter @haa/admin-dashboard build` passed; `pnpm check:skills` passed 43/43; `pnpm preflight` passed.
+- **Prevention:** In JSX ternary branches, return one valid expression; if a comment is needed, wrap the branch in a fragment or move the comment outside the ternary. Run app-level typecheck before staging handoff edits.
+- **Status:** Fixed locally in TASK-0093.
+
+---
+
+### ISSUE-0027: Local Full Smoke Blocked by Unapplied Order Preparation Migration
+
+- **ID:** ISSUE-0027
+- **Date:** 2026-06-28
+- **Severity:** Medium (local launch-readiness smoke blocker)
+- **Area:** Local DB / Orders / Smoke tests / Launch readiness
+- **Related Tasks:** TASK-0091
+- **Symptoms:** `pnpm smoke` failed 9/46 during local app smoke. Order-list and tracking checks returned `500` with `API-001`, and API logs showed PostgreSQL error `column "preparation_status" does not exist` while querying `orders`.
+- **Expected:** Local smoke should be able to query orders and public tracking after the repo schema and local DB are aligned. If migrations are missing, the smoke path should stop before mutating flows and report the required owner action.
+- **Actual:** The current code and schema reference `orders.preparation_status`, and migration `packages/db/src/migrations/0077_order_preparation_status.sql` exists, but the current local database has not applied that migration. Related smoke assertions also still expect older product response shapes such as `body.data.data`.
+- **Root Cause:** Local DB schema drift: the working code is ahead of the local database migration state. The full smoke suite also contains stale API-response assumptions from an earlier contract.
+- **Fix:** Not applied in TASK-0091 because `db:migrate` is owner-only under AGENTS.md §14.7. The safe follow-up is owner-approved local-only migration/rebuild, then a dedicated testing task to refresh stale `tests/smoke.test.ts` response-shape assertions if they still fail.
+- **Verification:** `pnpm ops:monitor` passed before the full smoke failure; sanitized local provider/status probes returned 200; `pnpm test:smoke` passed 29/29. `pnpm smoke` reproduced the blocker, and API logs confirmed the missing `preparation_status` column. `pnpm ops:errors` then reported 3 actionable P2 `API-001` events and no recommended incident/task.
+- **Prevention:** Before running full DB-backed local smoke after schema work, confirm the local DB has applied pending migrations or intentionally rebuild the local DB with owner approval. Keep smoke-test response-shape assertions aligned with the current public API contract.
+- **Status:** Open — owner action required before full local smoke can pass.
+
+---
+
 ### ISSUE-0026: Audit Hardening Gaps in Workflow Shell Inputs, Credential Cipher Validation, and Print HTML Encoding
 
 - **ID:** ISSUE-0026

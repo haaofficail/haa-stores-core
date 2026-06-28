@@ -51,18 +51,18 @@
 
 Source: `docs/HAA_TASK_LEDGER.md` § Owner Gates.
 
-| Gate   | Description                   | Status                                                             |
-| ------ | ----------------------------- | ------------------------------------------------------------------ |
-| **G1** | Commercial Registration (CR)  | ✅ provided 2026-06-24 — مؤسسة حرف الهاء التجارية, CR `7038798612` |
-| G2     | VAT / ZATCA enrollment        | ⏳ owner action                                                    |
-| G3     | E-commerce license (SBC)      | ⏳ owner action                                                    |
-| G4     | DPO (Data Protection Officer) | ⏳ owner action                                                    |
-| G5     | Trademark filing              | ⏳ owner action                                                    |
-| G6     | PCI-DSS ASV scan              | ⏳ depends on G1                                                   |
-| G7     | Pen-test                      | ⏳ owner action                                                    |
-| G8     | KSA hosting compliance        | ⏳ owner action                                                    |
-| G9     | Tabby/BNPL DPA                | ⏳ depends on G1                                                   |
-| G10    | DR tabletop                   | ⏳ owner action                                                    |
+| Gate   | Description                   | Status                                                                          |
+| ------ | ----------------------------- | ------------------------------------------------------------------------------- |
+| **G1** | Commercial Registration (CR)  | ✅ provided 2026-06-24 — مؤسسة حرف الهاء التجارية, CR `7038798612`              |
+| G2     | VAT / ZATCA enrollment        | ⏳ owner action                                                                 |
+| G3     | E-commerce license (SBC)      | 🟨 owner states license exists 2026-06-28; license number/copy pending evidence |
+| G4     | DPO (Data Protection Officer) | ⏳ owner action                                                                 |
+| G5     | Trademark filing              | ⏳ owner action                                                                 |
+| G6     | PCI-DSS ASV scan              | ⏳ depends on G1                                                                |
+| G7     | Pen-test                      | ⏳ owner action                                                                 |
+| G8     | KSA hosting compliance        | ⏳ owner action                                                                 |
+| G9     | Tabby/BNPL DPA                | ⏳ depends on G1                                                                |
+| G10    | DR tabletop                   | ⏳ owner action                                                                 |
 
 ## Engineering-side blockers (NONE are owner-gated)
 
@@ -80,6 +80,16 @@ Source: `docs/HAA_TASK_LEDGER.md` § Owner Gates.
 - **Target:** 3 named beta merchants confirmed by owner (G unrelated).
 - **Status:** 0 merchants identified.
 - **Owner action:** Identify + onboard.
+
+## Sandbox preparation
+
+- **Owner posture:** Sandbox preparation requested on 2026-06-28.
+- **Allowed now:** sandbox checklist, local/staging rehearsal design,
+  fake-provider and sandbox-provider test planning, and non-secret setup docs.
+- **Current checklist:** `docs/ops/SANDBOX_REHEARSAL_CHECKLIST.md`.
+- **Still forbidden:** live payment calls, live shipping calls, production
+  deploy, production `db:migrate`, secret printing, and production DNS/server
+  changes.
 
 ## Launch sequence (do NOT execute until every blocker above is ✅)
 

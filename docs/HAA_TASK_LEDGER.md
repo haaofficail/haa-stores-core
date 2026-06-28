@@ -21,10 +21,10 @@
 - **Engineering completion:** **87%**
 - **Commercial launch readiness:** **46%**
 - **Current phase:** Phase 3 — Launch-readiness execution after mainline CI recovery
-- **Last updated:** 2026-06-26
-- **Last completed task:** Mainline CI recovery truth-sync: run `28206650868` passed on `main` commit `6f3f95c1e8dc53949cb9d20c7397b8d7a7df6bf6`; historical TASK-0054 closed.
-- **Current blocker:** Geidea credentials + shipping-aggregator selection (owner gates G1–G10 only — engineering side is unblocked)
-- **Next recommended action:** Resolve or intentionally ignore the local Graphify artifacts, then continue owner-gated launch-readiness items from `docs/agent-os/REMAINING_WORK.md`.
+- **Last updated:** 2026-06-28
+- **Last completed task:** Admin settlement handoff integrated; inherited `SettlementBatches.tsx` syntax blocker fixed; admin typecheck/build, focused settlement tests, skills enforcement, and preflight passed.
+- **Current blocker:** Live beta remains blocked by G2 VAT/ZATCA, G4 DPO, G6 PCI/ASV, G7 pen-test, G10 DR/restore, production secrets/DNS, live provider credentials, and unnamed beta merchants. Sandbox preparation may proceed.
+- **Next recommended action:** Review the admin handoff PR, keep unrelated storefront/image/storage work separate, then collect license proof/reference, DPO plan, first 3 beta merchant candidates, and staging sandbox credential-path confirmation.
 
 ## 2. Progress Scale
 
@@ -75,18 +75,18 @@
 
 ### C. Payments
 
-| ID  | Task                            | Status  | Progress | Evidence                                                                                         | Blocker                                                | Next Action                                   |
-| --- | ------------------------------- | ------- | -------: | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------ | --------------------------------------------- |
-| C1  | Order state machine hardening   | Done    |     100% | PR #169 (`c17e9f71`) — `PAYMENT_STATUS_TRANSITIONS` + idempotency + TOCTOU fix                   | —                                                      | —                                             |
-| C2  | 3DS challenge flow              | Done    |     100% | `tests/3ds-flow.test.ts`, `Fake3DSChallenge.tsx` storefront page                                 | —                                                      | —                                             |
-| C3  | COD fee policy                  | Done    |      90% | `tests/cod-fees.test.ts`, `tests/platform-fees-wiring.test.ts`                                   | Owner: confirm production COD fee %                    | Confirm fee schedule with owner               |
-| C4  | Payment guards                  | Done    |     100% | `phase2-payments.test.ts`, `packages/payment-providers/`                                         | —                                                      | —                                             |
-| C5  | Sandbox payment / mock provider | Done    |      75% | `FakePaymentProvider` exists; partial scenario coverage                                          | Full 9-scenario simulator from Wave 3 not yet built    | Build mock-payment simulator (W3)             |
-| C6  | Geidea credentials              | Blocked |       0% | —                                                                                                | **Owner gate G1/G2** — Geidea CR + merchant onboarding | Owner: complete Geidea KYC, share credentials |
-| C7  | Geidea webhook secret           | Blocked |      25% | Webhook handler abstraction exists (`payment-webhook-service.ts`)                                | C6 must complete                                       | After C6: store webhook secret in `.env`      |
-| C8  | Geidea live payment             | Blocked |      25% | Provider contract drafted (`docs/ops/GEIDEA_PAYMENT_READINESS.md`)                               | C6 + C7                                                | After credentials: sandbox tests → live       |
-| C9  | Refund flow                     | Blocked |      50% | `OrdersService.updatePaymentStatus` handles `refunded/partially_refunded` (PR #167 emails wired) | C6 production provider                                 | After C6: end-to-end refund test              |
-| C10 | Prevent fake/live mix           | Done    |      90% | Provider selection gated by `PAYMENT_SANDBOX_*` vs `PAYMENT_LIVE_*` env vars                     | Live keys missing (C6)                                 | C6                                            |
+| ID  | Task                            | Status  | Progress | Evidence                                                                                         | Blocker                                                | Next Action                                           |
+| --- | ------------------------------- | ------- | -------: | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------ | ----------------------------------------------------- |
+| C1  | Order state machine hardening   | Done    |     100% | PR #169 (`c17e9f71`) — `PAYMENT_STATUS_TRANSITIONS` + idempotency + TOCTOU fix                   | —                                                      | —                                                     |
+| C2  | 3DS challenge flow              | Done    |     100% | `tests/3ds-flow.test.ts`, `Fake3DSChallenge.tsx` storefront page                                 | —                                                      | —                                                     |
+| C3  | COD fee policy                  | Done    |      90% | `tests/cod-fees.test.ts`, `tests/platform-fees-wiring.test.ts`                                   | Owner: confirm production COD fee %                    | Confirm fee schedule with owner                       |
+| C4  | Payment guards                  | Done    |     100% | `phase2-payments.test.ts`, `packages/payment-providers/`                                         | —                                                      | —                                                     |
+| C5  | Sandbox payment / mock provider | Done    |      75% | `FakePaymentProvider` exists; partial scenario coverage                                          | Full 9-scenario simulator from Wave 3 not yet built    | Build mock-payment simulator (W3)                     |
+| C6  | Geidea credentials              | Blocked |       0% | Owner selected sandbox preparation on 2026-06-28                                                 | **Owner gate G1/G2** — Geidea CR + merchant onboarding | Build sandbox checklist first; live credentials later |
+| C7  | Geidea webhook secret           | Blocked |      25% | Webhook handler abstraction exists (`payment-webhook-service.ts`)                                | C6 must complete                                       | After C6: store webhook secret in `.env`              |
+| C8  | Geidea live payment             | Blocked |      25% | Provider contract drafted (`docs/ops/GEIDEA_PAYMENT_READINESS.md`)                               | C6 + C7                                                | Sandbox rehearsal first; live later                   |
+| C9  | Refund flow                     | Blocked |      50% | `OrdersService.updatePaymentStatus` handles `refunded/partially_refunded` (PR #167 emails wired) | C6 production provider                                 | After C6: end-to-end refund test                      |
+| C10 | Prevent fake/live mix           | Done    |      90% | Provider selection gated by `PAYMENT_SANDBOX_*` vs `PAYMENT_LIVE_*` env vars                     | Live keys missing (C6)                                 | C6                                                    |
 
 ### D. Shipping
 
@@ -238,9 +238,9 @@
 | Gate | Description                   | Status                                                        | Evidence                                                                  |
 | ---- | ----------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | G1   | CR (Commercial Registration)  | Provided 2026-06-24 — CR 7038798612, مؤسسة حرف الهاء التجارية | Memory `legal-entity-info.md`                                             |
-| G2   | VAT / ZATCA enrollment        | Blocked                                                       | `docs/ops/OWNER_ACTION_G2_VAT.md`                                         |
-| G3   | E-commerce license (SBC)      | Blocked                                                       | `docs/ops/OWNER_ACTION_G3_ECOMMERCE_LICENSE.md`                           |
-| G4   | DPO (Data Protection Officer) | Blocked                                                       | `docs/ops/OWNER_ACTION_G4_DPO.md`                                         |
+| G2   | VAT / ZATCA enrollment        | Blocked — owner says not available as of 2026-06-28           | `docs/ops/OWNER_ACTION_G2_VAT.md`                                         |
+| G3   | E-commerce license (SBC)      | Owner-stated available 2026-06-28; proof/reference pending    | `docs/ops/OWNER_ACTION_G3_ECOMMERCE_LICENSE.md`                           |
+| G4   | DPO (Data Protection Officer) | Blocked — owner says not available as of 2026-06-28           | `docs/ops/OWNER_ACTION_G4_DPO.md`                                         |
 | G5   | Trademark filing              | Blocked                                                       | `docs/ops/OWNER_ACTION_G5_TRADEMARK.md` + `TRADEMARK_FILING_MATERIALS.md` |
 | G6   | PCI-DSS ASV scan              | Blocked                                                       | `docs/ops/OWNER_ACTION_G6_PCI_ASV.md`                                     |
 | G7   | Pen-test                      | Blocked                                                       | `docs/ops/OWNER_ACTION_G7_PENTEST.md`                                     |
@@ -253,6 +253,15 @@
 Status: `Not Started` · `In Progress` · `Blocked` · `Needs Review` · `Done` · `Deferred`
 
 ## 5. Update Log
+
+### 2026-06-28 — Admin settlement handoff integrated
+
+- Completed: Took over the other agent's staged admin-dashboard handoff, repaired the invalid JSX comment that broke `SettlementBatches.tsx`, and kept publication scope limited to admin/wallet/docs files.
+- Changed: `SettlementReadiness.tsx`, `packages/wallet-core/src/ledger.ts`, and required ops/agent-os documentation. `LandingInbox.tsx` and `SettlementBatches.tsx` were inspected/reconciled but do not change from `HEAD` in the final publish scope.
+- Tests run: admin-dashboard typecheck passed; focused settlement/geidea tests passed 3 files / 24 tests; admin-dashboard build passed; `pnpm check:skills` passed 43/43; full `pnpm preflight` passed.
+- New blockers: none for the admin handoff. Full local smoke remains blocked by the previously recorded local DB migration drift in ISSUE-0027.
+- Updated completion: unchanged overall; this was integration and publication quality control, not a new commercial launch gate.
+- Recommendation: review the draft PR, then keep launch/live beta work gated behind VAT/ZATCA, DPO, PCI/ASV, pen-test, DR/restore, credentials/DNS, and beta merchant readiness.
 
 ### 2026-06-26 — Mainline CI recovery truth-sync
 

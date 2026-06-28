@@ -4,6 +4,24 @@
 
 ---
 
+## DECISION-0028: Mandatory Skill Gate has no numeric skill cap
+
+- **Date:** 2026-06-28
+- **Status:** Accepted
+- **Decision:** The Mandatory Skill Gate no longer limits agents to 1-4 selected skills. Agents must select every skill that materially applies to the task type and touched files, using `docs/agent-os/SKILLS_REGISTRY.md` and `docs/agent-os/SKILL_FILE_MAPPING.md`.
+- **Context:** The previous 1-4 cap forced agents to drop relevant skills when a task crossed multiple governance surfaces, especially constitution/process edits that affect future agents. The owner explicitly requested using the largest applicable number of skills.
+- **Options Considered:**
+  1. Keep 1-4 cap (rejected — owner asked to remove it; can omit relevant safeguards)
+  2. Require all applicable skills with no cap (selected)
+  3. Require every skill in the repository for every task (rejected — creates noise and weakens evidence)
+- **Reason:** The useful constraint is relevance, not count. A no-cap rule keeps strict governance while preserving signal by requiring a one-line why for each skill.
+- **Consequences:**
+  - Positive: More complete skill coverage for cross-cutting work.
+  - Negative: Gates may become longer; agents must avoid unrelated padding.
+- **Related Tasks:** TASK-0092
+
+---
+
 ## DECISION-0001: Short requests must be expanded before execution
 
 - **Date:** 2026-06-13
