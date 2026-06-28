@@ -1,0 +1,24 @@
+name: Required Merge Gate
+
+# Always-on lightweight gate for branch protection.
+# It intentionally has no paths-ignore so docs-only PRs still produce the
+# required status check instead of deadlocking protected branches.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  required-merge-gate:
+    name: Required Merge Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm gate execution
+        run: |
+          echo "Required Merge Gate ran for ${GITHUB_EVENT_NAME} on ${GITHUB_REF}."
+          echo "This check is intentionally lightweight and always-on."
