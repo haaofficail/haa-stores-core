@@ -24,6 +24,7 @@
 - [ ] GitHub Actions `run:` blocks pass `${{ inputs.* }}` through `env` variables instead of interpolating expressions directly into shell logic
 - [ ] SSH/remote workflow payloads that may contain newlines or shell metacharacters are transferred via quoted/base64-safe values
 - [ ] Sonar CPD excludes templated governance docs; Markdown compliance/runbook repetition should not fail code duplication gates
+- [ ] Repeated admin-dashboard nav/list/loading/export UI patterns are extracted to shared helpers before relying on Sonar exclusions
 - [ ] Bash hook scripts use `[[ ]]` conditionals instead of `[` where bash is available
 - [ ] Numeric type-change migrations include an explicit PostgreSQL `USING` cast
 - [ ] Workspace packages build before individual app builds
@@ -50,6 +51,7 @@
 - [ ] Error states present where needed
 - [ ] JSX ternary branches return one valid expression; comments inside branches are wrapped in a fragment or moved outside the ternary
 - [ ] Source-grep UI tests assert shared `ErrorState` wiring when retry copy lives in the shared component
+- [ ] Source-grep nav tests assert the current nav helper contract, not an obsolete object-literal shape
 - [ ] Modal backdrops use native buttons or keyboard-accessible controls, not clickable plain `div` elements
 - [ ] No random colors — tokens used
 - [ ] No layout overflow or scroll issues

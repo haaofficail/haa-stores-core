@@ -3,17 +3,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
+import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
-
-function exportCsv(rows: any[], filename: string) {
-  if (!rows.length) return;
-  const keys = Object.keys(rows[0]);
-  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-  a.download = filename;
-  a.click();
-}
+import { downloadRowsAsCsv } from '../lib/downloadRowsAsCsv';
 
 export default function AuditLogs() {
   const { t } = useTranslation();
@@ -38,7 +30,7 @@ export default function AuditLogs() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-title2 font-bold text-gray-900 tracking-tight">{t('auditLogs.pageTitle', 'سجل التدقيق')}</h2>
         <button
-          onClick={() => exportCsv(logs, 'audit-logs.csv')}
+          onClick={() => downloadRowsAsCsv(logs, 'audit-logs.csv')}
           className="px-3 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         >
           تصدير CSV
@@ -55,17 +47,7 @@ export default function AuditLogs() {
       </div>
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-8 space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex gap-4">
-                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-              </div>
-            ))}
-          </div>
+          <AdminTableSkeleton columns={['w-24', 'w-32', 'w-28', 'w-20', 'w-24']} />
         ) : error ? (
           <ErrorState message={t('auditLogs.loadError', 'فشل تحميل سجل التدقيق')} onRetry={load} />
         ) : logs.length === 0 ? (

@@ -20,7 +20,11 @@ shallower store-payment settings normalization, safer bash hook conditionals,
 DOM/textContent merchant print output, and native Plans modal backdrop controls.
 The later GitHub Test failure was traced to stale source-grep contracts; those
 tests now assert shared `ErrorState` retry wiring and DOM/textContent print
-construction, and full `pnpm test` passes locally.
+construction, and full `pnpm test` passes locally. A refreshed SonarCloud gate
+then narrowed the remaining blocker to admin-dashboard code duplication, so
+TASK-0093 extracted the repeated nav item shape, table loading skeleton, CSV
+export helper, and store selector into shared admin helpers. Admin-dashboard
+typecheck and focused admin wiring/source-grep tests pass after that refactor.
 
 This does not authorize live beta, production launch, secret handling, live
 provider calls, deploys, SSH, DNS changes, or migrations.
@@ -46,7 +50,7 @@ explicit owner approval.
 - **Pre-launch smoke:** GO; `pnpm test:smoke` passed 29/29.
 - **Full local smoke:** BLOCKED; `pnpm smoke` failed because `tests/smoke.test.ts` has stale response-shape assumptions and the local DB is missing `orders.preparation_status` from migration `0077_order_preparation_status.sql`.
 - **Admin settlement handoff:** GO; inherited `SettlementBatches.tsx` syntax blocker fixed and admin build/typecheck verified during TASK-0093.
-- **SonarCloud follow-up:** PATCHED; initial PR #320 Sonar gate failed on doc CPD duplication and Reliability B, then TASK-0093 added local fixes and is awaiting refreshed remote results.
+- **SonarCloud follow-up:** PATCHED; initial PR #320 Sonar gate failed on doc CPD duplication and Reliability B, and the refreshed gate later narrowed to 5.7% admin UI duplication. TASK-0093 added the local code refactor and is awaiting refreshed remote results.
 - **GitHub Test follow-up:** PATCHED locally; stale source-grep contracts were updated and full `pnpm test` now passes.
 - **Skill Gate policy:** UPDATED; no 1-4 cap, use all applicable skills.
 - **Staging sandbox rehearsal:** CONDITIONAL.
@@ -59,15 +63,14 @@ See `docs/ops/SANDBOX_REHEARSAL_CHECKLIST.md` for the sandbox baseline and
 
 ## Working tree notes
 
-Existing dirty files that are separate from launch-readiness docs work:
+Existing dirty files that are separate from TASK-0093 publication:
 
-- `apps/admin-dashboard/src/App.tsx`
-- `apps/admin-dashboard/src/components/ui/icon-registry.ts`
-- `apps/admin-dashboard/src/pages/Dashboard.tsx`
-- `apps/admin-dashboard/src/pages/Login.tsx`
-- `apps/admin-dashboard/src/pages/Plans.tsx`
 - `apps/storefront/src/components/platform/PlatformShell.tsx`
 - `apps/storefront/src/landing/landing.css`
+- `docs/ops/LATEST_MONITORING_REPORT.md`
+- `storage/monitoring-events.ndjson`
+- `storage/support-error-events.ndjson`
+- local screenshot files in the repository root
 - `admin-dashboard.png`
 - `admin-login.png`
 - `new-dashboard.png`

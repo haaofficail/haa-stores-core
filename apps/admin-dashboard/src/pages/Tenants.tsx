@@ -4,17 +4,9 @@ import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 import { useTranslation } from 'react-i18next';
+import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
-
-function exportCsv(rows: any[], filename: string) {
-  if (!rows.length) return;
-  const keys = Object.keys(rows[0]);
-  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-  a.download = filename;
-  a.click();
-}
+import { downloadRowsAsCsv } from '../lib/downloadRowsAsCsv';
 
 export default function Tenants() {
   const { t } = useTranslation();
@@ -113,7 +105,7 @@ export default function Tenants() {
         <h2 className="text-title2 font-bold text-gray-900 tracking-tight">{t('tenants.title', 'التجار')}</h2>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => exportCsv(tenants, 'tenants.csv')}
+            onClick={() => downloadRowsAsCsv(tenants, 'tenants.csv')}
             className="px-3 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             تصدير CSV
@@ -137,16 +129,7 @@ export default function Tenants() {
       </div>
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-8 space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex gap-4">
-                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-40 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" />
-              </div>
-            ))}
-          </div>
+          <AdminTableSkeleton />
         ) : error ? (
           <ErrorState message={t('tenants.loadError', 'فشل تحميل التجار')} onRetry={load} />
         ) : tenants.length === 0 ? (

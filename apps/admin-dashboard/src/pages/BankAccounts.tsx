@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
+import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
@@ -83,15 +84,7 @@ export default function BankAccounts() {
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-8 space-y-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="flex gap-4">
-                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-40 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-              </div>
-            ))}
-          </div>
+          <AdminTableSkeleton columns={['w-32', 'w-40', 'w-24']} rows={3} />
         ) : error ? (
           <ErrorState message="فشل تحميل الحسابات البنكية" onRetry={load} />
         ) : visible.length === 0 ? (

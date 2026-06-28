@@ -145,9 +145,9 @@ describe('Admin Landing Inbox — route and nav registration', () => {
 
   it('Admin sidebar/nav exposes the صندوق الوارد entry', () => {
     const src = read(APP_PATH);
-    // Anchored to the navItems array entry so a future rename of the route
-    // without a matching nav update fails this gate.
-    expect(src).toMatch(/path:\s*'\/landing-inbox',\s*label:\s*'صندوق الوارد'/);
+    // Anchored to the navGroups entry so a future rename of the route without
+    // a matching nav update fails this gate.
+    expect(src).toContain("navItem('/landing-inbox', 'صندوق الوارد'");
   });
 });
 

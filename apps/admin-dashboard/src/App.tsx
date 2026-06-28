@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet, Link, useLocation } fro
 import { Toaster, toast } from 'sonner';
 import { adminApi } from './lib/api';
 import { ErrorBoundary } from './ErrorBoundary';
-import { Icon } from './components/ui/icon';
+import { Icon, type AdminIconName } from './components/ui/icon';
 
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -49,46 +49,48 @@ function AdminGuard() {
   return <Outlet />;
 }
 
-type NavItem = { path: string; label: string; icon: 'LayoutDashboard' | 'Users' | 'Store' | 'CreditCard' | 'ShieldCheck' | 'BarChart2' | 'ShoppingBag' | 'Landmark' | 'ScrollText' | 'Package' | 'CheckSquare' | 'Inbox' | 'Settings' | 'ReceiptText' | 'UserCog' | 'Building2' | 'FileText' };
+type NavItem = { path: string; label: string; icon: AdminIconName };
 
 type NavGroup = { label: string; items: NavItem[] };
+
+const navItem = (path: string, label: string, icon: AdminIconName): NavItem => ({ path, label, icon });
 
 const navGroups: NavGroup[] = [
   {
     label: 'عام',
     items: [
-      { path: '/', label: 'الرئيسية', icon: 'LayoutDashboard' },
+      navItem('/', 'الرئيسية', 'LayoutDashboard'),
     ],
   },
   {
     label: 'إدارة',
     items: [
-      { path: '/tenants', label: 'التجار', icon: 'Users' },
-      { path: '/stores', label: 'المتاجر', icon: 'Store' },
-      { path: '/store-billing', label: 'رسوم المتاجر', icon: 'CreditCard' },
-      { path: '/kyc', label: 'التحقق', icon: 'ShieldCheck' },
-      { path: '/bank-accounts', label: 'الحسابات البنكية', icon: 'Building2' },
-      { path: '/settlement-readiness', label: 'جاهزية التسوية', icon: 'CheckSquare' },
-      { path: '/store-payment-settings', label: 'إعدادات الدفع', icon: 'CreditCard' },
+      navItem('/tenants', 'التجار', 'Users'),
+      navItem('/stores', 'المتاجر', 'Store'),
+      navItem('/store-billing', 'رسوم المتاجر', 'CreditCard'),
+      navItem('/kyc', 'التحقق', 'ShieldCheck'),
+      navItem('/bank-accounts', 'الحسابات البنكية', 'Building2'),
+      navItem('/settlement-readiness', 'جاهزية التسوية', 'CheckSquare'),
+      navItem('/store-payment-settings', 'إعدادات الدفع', 'CreditCard'),
     ],
   },
   {
     label: 'مالية',
     items: [
-      { path: '/payments', label: 'المدفوعات', icon: 'BarChart2' },
-      { path: '/marketplace', label: 'سوق هاء', icon: 'ShoppingBag' },
-      { path: '/payments/settlements', label: 'التسويات', icon: 'Landmark' },
+      navItem('/payments', 'المدفوعات', 'BarChart2'),
+      navItem('/marketplace', 'سوق هاء', 'ShoppingBag'),
+      navItem('/payments/settlements', 'التسويات', 'Landmark'),
     ],
   },
   {
     label: 'نظام',
     items: [
-      { path: '/admin-users', label: 'المستخدمون', icon: 'UserCog' },
-      { path: '/audit', label: 'سجل التدقيق', icon: 'ScrollText' },
-      { path: '/plans', label: 'الباقات', icon: 'Package' },
-      { path: '/compliance', label: 'الامتثال', icon: 'CheckSquare' },
-      { path: '/landing-inbox', label: 'صندوق الوارد', icon: 'Inbox' },
-      { path: '/settings', label: 'الإعدادات', icon: 'Settings' },
+      navItem('/admin-users', 'المستخدمون', 'UserCog'),
+      navItem('/audit', 'سجل التدقيق', 'ScrollText'),
+      navItem('/plans', 'الباقات', 'Package'),
+      navItem('/compliance', 'الامتثال', 'CheckSquare'),
+      navItem('/landing-inbox', 'صندوق الوارد', 'Inbox'),
+      navItem('/settings', 'الإعدادات', 'Settings'),
     ],
   },
 ];

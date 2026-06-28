@@ -27,7 +27,7 @@
 
 ## Execution Evidence
 
-- **Files actually changed in TASK-0093 scope:** `apps/admin-dashboard/src/pages/SettlementReadiness.tsx`, `apps/admin-dashboard/src/pages/StorePaymentSettings.tsx`, `apps/admin-dashboard/src/pages/Plans.tsx`, `apps/merchant-dashboard/src/lib/html.ts`, `apps/merchant-dashboard/src/pages/Orders.tsx`, `apps/merchant-dashboard/src/pages/orders/OrderDetailDialog.tsx`, `packages/wallet-core/src/ledger.ts`, `scripts/hooks/pre-edit-frontend.sh`, `.sonarcloud.properties`, `sonar-project.properties`, `tests/dashboard-print-html-escape.test.ts`, `tests/admin-landing-inbox.test.tsx`, `tests/pii-gating-orders-contract.test.ts`, `tests/scheduled-settlement-admin-batches-ui.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/HAA_TASK_LEDGER.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0093.md`.
+- **Files actually changed in TASK-0093 scope:** `apps/admin-dashboard/src/App.tsx`, `apps/admin-dashboard/src/components/ui/AdminTableSkeleton.tsx`, `apps/admin-dashboard/src/components/ui/StoreSelectorPanel.tsx`, `apps/admin-dashboard/src/lib/downloadRowsAsCsv.ts`, `apps/admin-dashboard/src/pages/AdminUsers.tsx`, `apps/admin-dashboard/src/pages/AuditLogs.tsx`, `apps/admin-dashboard/src/pages/BankAccounts.tsx`, `apps/admin-dashboard/src/pages/KycReview.tsx`, `apps/admin-dashboard/src/pages/Payments.tsx`, `apps/admin-dashboard/src/pages/Stores.tsx`, `apps/admin-dashboard/src/pages/Tenants.tsx`, `apps/admin-dashboard/src/pages/SettlementReadiness.tsx`, `apps/admin-dashboard/src/pages/StoreBillingSettings.tsx`, `apps/admin-dashboard/src/pages/StorePaymentSettings.tsx`, `apps/admin-dashboard/src/pages/Plans.tsx`, `apps/merchant-dashboard/src/lib/html.ts`, `apps/merchant-dashboard/src/pages/Orders.tsx`, `apps/merchant-dashboard/src/pages/orders/OrderDetailDialog.tsx`, `packages/wallet-core/src/ledger.ts`, `scripts/hooks/pre-edit-frontend.sh`, `.sonarcloud.properties`, `sonar-project.properties`, `tests/dashboard-print-html-escape.test.ts`, `tests/admin-landing-inbox.test.tsx`, `tests/pii-gating-orders-contract.test.ts`, `tests/scheduled-settlement-admin-batches-ui.test.ts`, `tests/platform-fees-wiring.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/HAA_TASK_LEDGER.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0093.md`.
 - **Files inspected/reconciled:** `apps/admin-dashboard/src/pages/LandingInbox.tsx`, `apps/admin-dashboard/src/pages/SettlementBatches.tsx`.
 - **Publication bundle note:** The final draft PR also includes prior owner-approved launch/governance docs from TASK-0088 through TASK-0092 because current handoff docs reference them. Unrelated storefront files, screenshots, and local storage artifacts remain excluded.
 - **Files added / removed:** added this TASK-0093 compliance report; no files removed.
@@ -37,6 +37,7 @@
   - Kept `liveEnabled` behavior unchanged and only clarified that it remains false until all seven readiness gates pass.
   - Addressed immediate SonarCloud quality-gate blockers after first push by excluding templated docs from CPD through SonarCloud/scanner config, flattening inherited admin settings normalization, using bash `[[ ]]`, replacing merchant print `document.write` strings with DOM/textContent output, and fixing Plans modal backdrop semantics.
   - Addressed the later GitHub Test failure by updating stale source-grep contracts to assert shared `ErrorState` retry wiring and DOM/textContent print construction.
+  - Addressed the refreshed SonarCloud duplication-only failure by extracting repeated admin nav item shape, table loading skeletons, CSV export logic, and store selector markup into shared admin helpers.
   - Published from the existing branch without merge, deploy, migration, secrets, or production actions.
 - **Safety constraints respected (per AGENTS.md §14.7):**
   - [x] No `db:migrate` execution
@@ -113,6 +114,14 @@
   Tests  46 passed | 1 skipped
   ```
 
+- Focused admin UI dedup/source-grep follow-up:
+
+  ```text
+  pnpm vitest run tests/admin-landing-inbox.test.tsx tests/scheduled-settlement-admin-batches-ui.test.ts tests/platform-fees-wiring.test.ts tests/admin-dashboard-css-contract.test.ts
+  Test Files  3 passed (3)
+  Tests  60 passed | 1 skipped
+  ```
+
 - `pnpm test`:
 
   ```text
@@ -148,6 +157,9 @@
   Fixed locally by adding Sonar CPD doc exclusions, refactoring StorePaymentSettings
   nested normalization, switching the hook test to [[ ]], and replacing merchant
   print document.write strings with DOM/textContent output.
+  Refreshed gate then reported 5.7% duplication on new code, narrowed to
+  repeated admin UI blocks. Fixed locally by extracting AdminTableSkeleton,
+  StoreSelectorPanel, downloadRowsAsCsv, and a typed nav helper.
   ```
 
 - GitHub Test follow-up after Sonar fixes:

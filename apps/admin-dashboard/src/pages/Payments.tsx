@@ -3,17 +3,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
+import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
-
-function exportCsv(rows: any[], filename: string) {
-  if (!rows.length) return;
-  const keys = Object.keys(rows[0]);
-  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-  a.download = filename;
-  a.click();
-}
+import { downloadRowsAsCsv } from '../lib/downloadRowsAsCsv';
 
 export default function Payments() {
   const { t } = useTranslation();
@@ -38,7 +30,7 @@ export default function Payments() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-title2 font-bold text-gray-900 tracking-tight">{t('payments.pageTitle', 'المدفوعات')}</h2>
         <button
-          onClick={() => exportCsv(payments, 'payments.csv')}
+          onClick={() => downloadRowsAsCsv(payments, 'payments.csv')}
           className="px-3 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         >
           تصدير CSV
@@ -55,17 +47,7 @@ export default function Payments() {
       </div>
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-8 space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex gap-4">
-                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-              </div>
-            ))}
-          </div>
+          <AdminTableSkeleton columns={['w-16', 'w-24', 'w-20', 'w-16', 'w-24']} />
         ) : error ? (
           <ErrorState message={t('payments.loadError', 'فشل تحميل المدفوعات')} onRetry={load} />
         ) : payments.length === 0 ? (

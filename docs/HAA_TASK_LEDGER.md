@@ -22,7 +22,7 @@
 - **Commercial launch readiness:** **46%**
 - **Current phase:** Phase 3 — Launch-readiness execution after mainline CI recovery
 - **Last updated:** 2026-06-28
-- **Last completed task:** Admin settlement handoff integrated; inherited `SettlementBatches.tsx` syntax blocker fixed; immediate SonarCloud PR blockers addressed; stale GitHub Test source-grep contracts fixed locally; admin typecheck/build, full `pnpm test`, skills enforcement, and preflight passed.
+- **Last completed task:** Admin settlement handoff integrated; inherited `SettlementBatches.tsx` syntax blocker fixed; immediate SonarCloud PR blockers addressed; stale GitHub Test source-grep contracts fixed locally; repeated admin UI blocks extracted for the remaining Sonar duplication gate; admin typecheck/build, full `pnpm test`, skills enforcement, and preflight passed.
 - **Current blocker:** Live beta remains blocked by G2 VAT/ZATCA, G4 DPO, G6 PCI/ASV, G7 pen-test, G10 DR/restore, production secrets/DNS, live provider credentials, and unnamed beta merchants. Sandbox preparation may proceed.
 - **Next recommended action:** Review the admin handoff PR, keep unrelated storefront/image/storage work separate, then collect license proof/reference, DPO plan, first 3 beta merchant candidates, and staging sandbox credential-path confirmation.
 

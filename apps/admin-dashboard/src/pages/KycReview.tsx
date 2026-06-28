@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
+import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 
 export default function KycReview() {
@@ -73,17 +74,7 @@ export default function KycReview() {
       </div>
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-8 space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex gap-4">
-                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-              </div>
-            ))}
-          </div>
+          <AdminTableSkeleton columns={['w-16', 'w-24', 'w-32', 'w-20', 'w-24']} />
         ) : error ? (
           <ErrorState message={t('kyc.loadError', 'فشل تحميل ملفات التحقق')} onRetry={load} />
         ) : profiles.length === 0 ? (
