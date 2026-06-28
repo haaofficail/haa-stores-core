@@ -286,9 +286,8 @@ export default function Orders() {
             <Button size="sm" className="h-8 text-xs bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50" onClick={() => {
               // PII guard: print echoes customerPhone, which is masked
               // in the table for users without orders:view_sensitive.
-              // Mirror that guard here — and apply CSV-injection escape
-              // on every cell so an Excel-opened printout cannot run a
-              // formula injected via a malicious customer name.
+              // Mirror that guard here. Build the printout with DOM
+              // textContent so customer data cannot become executable HTML.
               const canSeeSensitive = orderPerms.can('orders:view_sensitive');
               selectedOrders.forEach(id => {
                 const order = orders.find(o => o.id === id);

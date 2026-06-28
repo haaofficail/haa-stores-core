@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0030: GitHub Test Source-Grep Contracts Drifted After Shared ErrorState and Print DOM Hardening
+
+- **ID:** ISSUE-0030
+- **Date:** 2026-06-28
+- **Severity:** Medium (PR CI Test blocker)
+- **Area:** CI / Tests / Admin dashboard / Merchant dashboard print flows
+- **Related Tasks:** TASK-0093
+- **Symptoms:** After TASK-0093 Sonar follow-up commits, the GitHub CI `Test` job failed even though typecheck, lint, and builds passed. Failing assertions expected `LandingInbox.tsx` and `SettlementBatches.tsx` to contain the Arabic retry copy directly, and expected `Orders.tsx` to import `escapeHtmlText` plus build print HTML through the old `document.write` contract.
+- **Expected:** Source-grep tests should lock the current product contract: admin pages wire shared `ErrorState` with `onRetry`, shared `ErrorState` owns the retry copy, and merchant print windows build DOM nodes with `textContent`.
+- **Actual:** The tests still encoded older implementation details: page-local retry text and string-based print HTML escaping.
+- **Root Cause:** The tests were implementation-coupled source-grep contracts. After TASK-0093 improved the runtime code by centralizing retry UI and replacing `document.write` with DOM/textContent output, the tests were not updated in the same commit.
+- **Fix:** Updated `tests/admin-landing-inbox.test.tsx` and `tests/scheduled-settlement-admin-batches-ui.test.ts` to assert `ErrorState` wiring plus shared retry copy. Updated `tests/pii-gating-orders-contract.test.ts` to assert `preparePrintDocument`, `customer.textContent`, sensitive-phone gating, and absence of `document.write` / `innerHTML`. Corrected the `Orders.tsx` print comment so it no longer claims CSV escaping is used in the print path.
+- **Verification:** Focused CI contract command passed 4 files / 46 tests with 1 skipped. Full `pnpm test` passed 354 files / 4618 tests with 3 skipped and 14 todo. `pnpm --filter @haa/admin-dashboard typecheck`, `pnpm --filter @haa/merchant-dashboard typecheck`, `pnpm preflight`, `pnpm check:skills`, and `git diff --check` passed.
+- **Prevention:** When source-grep tests assert UI implementation details, update the test in the same commit as the implementation change. Prefer asserting stable contracts such as shared component wiring, permission gates, and dangerous sink absence over matching old local copy or helper names.
+- **Status:** Fixed locally in TASK-0093; awaiting refreshed GitHub CI after push.
+
+---
+
 ### ISSUE-0029: SonarCloud PR Gate Counted Templated Docs and Inherited Admin Code Smells
 
 - **ID:** ISSUE-0029

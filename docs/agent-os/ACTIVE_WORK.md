@@ -18,6 +18,9 @@ skills enforcement, and full preflight. The first PR push also exposed immediate
 SonarCloud blockers; TASK-0093 addressed them with SonarCloud/scanner CPD doc exclusions,
 shallower store-payment settings normalization, safer bash hook conditionals,
 DOM/textContent merchant print output, and native Plans modal backdrop controls.
+The later GitHub Test failure was traced to stale source-grep contracts; those
+tests now assert shared `ErrorState` retry wiring and DOM/textContent print
+construction, and full `pnpm test` passes locally.
 
 This does not authorize live beta, production launch, secret handling, live
 provider calls, deploys, SSH, DNS changes, or migrations.
@@ -44,6 +47,7 @@ explicit owner approval.
 - **Full local smoke:** BLOCKED; `pnpm smoke` failed because `tests/smoke.test.ts` has stale response-shape assumptions and the local DB is missing `orders.preparation_status` from migration `0077_order_preparation_status.sql`.
 - **Admin settlement handoff:** GO; inherited `SettlementBatches.tsx` syntax blocker fixed and admin build/typecheck verified during TASK-0093.
 - **SonarCloud follow-up:** PATCHED; initial PR #320 Sonar gate failed on doc CPD duplication and Reliability B, then TASK-0093 added local fixes and is awaiting refreshed remote results.
+- **GitHub Test follow-up:** PATCHED locally; stale source-grep contracts were updated and full `pnpm test` now passes.
 - **Skill Gate policy:** UPDATED; no 1-4 cap, use all applicable skills.
 - **Staging sandbox rehearsal:** CONDITIONAL.
 - **Staging rehearsal:** CONDITIONAL.
@@ -119,6 +123,8 @@ Expected launch-readiness documentation files:
 - `bash -n scripts/hooks/pre-edit-frontend.sh`: passed during TASK-0093 Sonar follow-up.
 - `pnpm --filter @haa/merchant-dashboard typecheck`: passed during TASK-0093 Sonar follow-up.
 - `pnpm vitest run tests/dashboard-print-html-escape.test.ts`: 1 file / 3 tests passed during TASK-0093 Sonar follow-up.
+- `pnpm vitest run tests/pii-gating-orders-contract.test.ts tests/admin-landing-inbox.test.tsx tests/scheduled-settlement-admin-batches-ui.test.ts tests/dashboard-print-html-escape.test.ts`: 4 files / 46 tests passed / 1 skipped during TASK-0093 GitHub Test follow-up.
+- `pnpm test`: 354 files / 4618 tests passed / 3 skipped / 14 todo during TASK-0093 GitHub Test follow-up.
 - Focused local mock payment/shipping tests: 10 files / 151 tests passed.
 - `pnpm ops:monitor`: passed during TASK-0091 with 25/25 health checks and local synthetic checks green.
 - Browser-like local HTTP checks: storefront `/`, `/s/haa-demo`, cart, checkout, merchant login, and admin all returned 200.
@@ -126,8 +132,8 @@ Expected launch-readiness documentation files:
 - `pnpm test:smoke`: 29/29 passed.
 - `pnpm smoke`: 37/46 passed and 9 failed; full smoke blocked by stale test contract plus missing local DB column `orders.preparation_status`.
 - `pnpm ops:errors`: 3 actionable P2 API-001 events after the failing smoke, no recommended tasks/incidents.
-- `pnpm check:skills`: 43/43 passed after TASK-0093 handoff integration.
-- `git diff --check`: clean after TASK-0093 handoff integration.
+- `pnpm check:skills`: 43/43 passed after TASK-0093 handoff integration and GitHub Test follow-up.
+- `git diff --check`: clean after TASK-0093 handoff integration and GitHub Test follow-up.
 
 Final verification is recorded in
 `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0093.md`.

@@ -3,10 +3,10 @@
 ## Task
 
 - **Title:** Take over admin settlement handoff and publish
-- **Task type:** frontend/design
+- **Task type:** testing/e2e
 - **Risk level:** high
 - **Branch:** `security-quality/apple-grade-audit`
-- **PR:** pending draft PR creation after commit/push
+- **PR:** #320 — `https://github.com/haaofficail/haa-stores-core/pull/320`
 
 ## Mandatory Skill Gate (recap)
 
@@ -27,7 +27,7 @@
 
 ## Execution Evidence
 
-- **Files actually changed in TASK-0093 scope:** `apps/admin-dashboard/src/pages/SettlementReadiness.tsx`, `apps/admin-dashboard/src/pages/StorePaymentSettings.tsx`, `apps/admin-dashboard/src/pages/Plans.tsx`, `apps/merchant-dashboard/src/lib/html.ts`, `apps/merchant-dashboard/src/pages/Orders.tsx`, `apps/merchant-dashboard/src/pages/orders/OrderDetailDialog.tsx`, `packages/wallet-core/src/ledger.ts`, `scripts/hooks/pre-edit-frontend.sh`, `.sonarcloud.properties`, `sonar-project.properties`, `tests/dashboard-print-html-escape.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/HAA_TASK_LEDGER.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0093.md`.
+- **Files actually changed in TASK-0093 scope:** `apps/admin-dashboard/src/pages/SettlementReadiness.tsx`, `apps/admin-dashboard/src/pages/StorePaymentSettings.tsx`, `apps/admin-dashboard/src/pages/Plans.tsx`, `apps/merchant-dashboard/src/lib/html.ts`, `apps/merchant-dashboard/src/pages/Orders.tsx`, `apps/merchant-dashboard/src/pages/orders/OrderDetailDialog.tsx`, `packages/wallet-core/src/ledger.ts`, `scripts/hooks/pre-edit-frontend.sh`, `.sonarcloud.properties`, `sonar-project.properties`, `tests/dashboard-print-html-escape.test.ts`, `tests/admin-landing-inbox.test.tsx`, `tests/pii-gating-orders-contract.test.ts`, `tests/scheduled-settlement-admin-batches-ui.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/HAA_TASK_LEDGER.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0093.md`.
 - **Files inspected/reconciled:** `apps/admin-dashboard/src/pages/LandingInbox.tsx`, `apps/admin-dashboard/src/pages/SettlementBatches.tsx`.
 - **Publication bundle note:** The final draft PR also includes prior owner-approved launch/governance docs from TASK-0088 through TASK-0092 because current handoff docs reference them. Unrelated storefront files, screenshots, and local storage artifacts remain excluded.
 - **Files added / removed:** added this TASK-0093 compliance report; no files removed.
@@ -36,6 +36,7 @@
   - Kept the actual admin UI delta to settlement-readiness RTL alignment and token color consistency.
   - Kept `liveEnabled` behavior unchanged and only clarified that it remains false until all seven readiness gates pass.
   - Addressed immediate SonarCloud quality-gate blockers after first push by excluding templated docs from CPD through SonarCloud/scanner config, flattening inherited admin settings normalization, using bash `[[ ]]`, replacing merchant print `document.write` strings with DOM/textContent output, and fixing Plans modal backdrop semantics.
+  - Addressed the later GitHub Test failure by updating stale source-grep contracts to assert shared `ErrorState` retry wiring and DOM/textContent print construction.
   - Published from the existing branch without merge, deploy, migration, secrets, or production actions.
 - **Safety constraints respected (per AGENTS.md §14.7):**
   - [x] No `db:migrate` execution
@@ -104,6 +105,21 @@
   Tests  3 passed (3)
   ```
 
+- Focused GitHub Test contract follow-up:
+
+  ```text
+  pnpm vitest run tests/pii-gating-orders-contract.test.ts tests/admin-landing-inbox.test.tsx tests/scheduled-settlement-admin-batches-ui.test.ts tests/dashboard-print-html-escape.test.ts
+  Test Files  4 passed (4)
+  Tests  46 passed | 1 skipped
+  ```
+
+- `pnpm test`:
+
+  ```text
+  Test Files  354 passed | 1 skipped (355)
+  Tests  4618 passed | 3 skipped | 14 todo (4635)
+  ```
+
 - `pnpm check:skills`:
 
   ```text
@@ -134,11 +150,19 @@
   print document.write strings with DOM/textContent output.
   ```
 
+- GitHub Test follow-up after Sonar fixes:
+
+  ```text
+  GitHub Test failed because source-grep tests expected page-local retry copy and
+  the old escapeHtmlText/document.write print path. Fixed locally by updating
+  tests to assert ErrorState wiring and DOM/textContent print output.
+  ```
+
 ## Deviations
 
 - **Deviations from selected skills:** no functional deviation.
 - **Reason:** not applicable.
-- **Follow-up:** The final PR is intentionally draft because the branch contains multiple approved launch/governance docs plus the admin handoff; owner review should confirm the publication bundle before merge.
+- **Follow-up:** The final PR remains under review because the branch contains multiple approved launch/governance docs plus the admin handoff; owner review should confirm the publication bundle before merge.
 
 ## Completion
 
