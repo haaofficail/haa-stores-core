@@ -15,7 +15,7 @@ as an executive handoff, and publish it. The inherited staged blocker was an
 invalid JSX comment inside the `SettlementBatches.tsx` ternary branch. That is fixed,
 and the admin dashboard now passes typecheck, focused settlement tests, build,
 skills enforcement, and full preflight. The first PR push also exposed immediate
-SonarCloud blockers; TASK-0093 addressed them with Sonar CPD doc exclusions,
+SonarCloud blockers; TASK-0093 addressed them with SonarCloud/scanner CPD doc exclusions,
 shallower store-payment settings normalization, safer bash hook conditionals,
 DOM/textContent merchant print output, and native Plans modal backdrop controls.
 
