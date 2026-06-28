@@ -8,6 +8,24 @@
 
 ## Current task
 
+**TASK-0094 — GitHub integration closure after PR #320/#321 (2026-06-28).**
+
+The owner asked Codex to take over the remaining work completely and not hand
+back an incomplete task. PR #320 and PR #321 are merged into `main`; production
+remained skipped. PR #319 was inspected and closed as superseded because a
+non-mutating merge simulation produced the same tree as `origin/main`, and its
+footer patch-id matched the patch already merged through PR #321.
+
+This task is adding a lightweight always-on `Required Merge Gate` workflow so
+branch protection can require a stable check without blocking docs-only PRs.
+The task is not complete until that workflow is merged, GitHub verifies it, and
+`main` protection requires the new check.
+
+This does not authorize live beta, production launch, secret handling, live
+provider calls, SSH, DNS changes, or migrations.
+
+## Previous task
+
 **TASK-0093 — Admin settlement handoff integration and publish (2026-06-28).**
 
 The owner asked to take over the other agent's admin-dashboard work, verify it

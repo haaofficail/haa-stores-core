@@ -1,5 +1,12 @@
 # Internal Changelog
 
+## 2026-06-28 — GitHub Integration Closure (TASK-0094)
+
+- Verified PR #320 and PR #321 are merged into `main`; latest merged commit is `73e0aea93777e8b1a667503368d990f0a436d917`.
+- Closed PR #319 as superseded by PR #321 after non-mutating merge simulation proved the merge result would be identical to current `main`, and patch-id comparison proved the footer patch already landed.
+- Added `.github/workflows/required-merge-gate.yml`, a lightweight always-on check with no `paths-ignore`, so branch protection can require one stable status check even for docs-only PRs.
+- Kept safety boundaries intact: no production deploy, no `db:migrate`, no secrets, no SSH/DNS/firewall changes, and no live payment/shipping-provider calls.
+
 > Human-readable log of structural, behavioral, or operational changes.
 > This is NOT a replacement for git. It captures context that git cannot.
 
