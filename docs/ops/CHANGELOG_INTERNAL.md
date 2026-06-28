@@ -5,6 +5,8 @@
 - Verified PR #320 and PR #321 are merged into `main`; latest merged commit is `73e0aea93777e8b1a667503368d990f0a436d917`.
 - Closed PR #319 as superseded by PR #321 after non-mutating merge simulation proved the merge result would be identical to current `main`, and patch-id comparison proved the footer patch already landed.
 - Added `.github/workflows/required-merge-gate.yml`, a lightweight always-on check with no `paths-ignore`, so branch protection can require one stable status check even for docs-only PRs.
+- Merged PR #322 to `main` as `49601bea70d88de618fe5359955d18a7146237b4`, then updated branch protection to require `Required Merge Gate` with strict branch updates while force-push/delete protection and conversation resolution stayed enabled.
+- Verified post-merge `main`: Required Merge Gate run `28329981653`, CI run `28329981652`, Deploy run `28329981663`, and Deploy Watchdog run `28330180539` all passed. Staging deploy and smoke gate passed; production deploy was skipped.
 - Kept safety boundaries intact: no production deploy, no `db:migrate`, no secrets, no SSH/DNS/firewall changes, and no live payment/shipping-provider calls.
 
 > Human-readable log of structural, behavioral, or operational changes.

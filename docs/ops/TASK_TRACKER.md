@@ -8,10 +8,10 @@
 
 - **Type:** Support-Ops / CI-Deploy / Documentation
 - **Priority:** P1 High
-- **Status:** In Progress
+- **Status:** Done
 - **Created:** 2026-06-28
 - **Updated:** 2026-06-28
-- **Branch:** `chore/github-integration-closure`
+- **Branch:** `chore/github-integration-closure` + final docs sync on `codex/task-0094-final-state`
 - **Original Request:** "تولى الموضوع كامل ولا تسلمني مهمه ناقصه او غير مكتملة"
 - **Expanded Requirement:** Finish the GitHub integration loop after the executive merge decision: verify merged PRs, close stale overlapping PRs, add a stable branch-protection status check that works for docs-only PRs, sync operational truth docs, and publish the closure without production action.
 - **Scope:** PR #319 triage/closure, GitHub branch protection readiness, always-on lightweight merge-gate workflow, operations/current-state/changelog/active-work/compliance documentation, and GitHub verification.
@@ -19,15 +19,15 @@
 - **Skills Used:** `github:github`, `environment-safety-gate`, `acceptance-criteria-gate`, `branch-pr-hygiene-gate`, `evidence-led-reporting`, `verification-before-completion`, `regression-safety-gate`, `design-ux-excellence-gate`.
 - **Acceptance Criteria:**
   - [x] PR #319 has a documented decision and is not left as an open duplicate.
-  - [ ] `main` has an always-on required check that can run on docs-only PRs.
-  - [ ] Branch protection requires the always-on check without enabling force-pushes or deletions.
-  - [ ] Local and GitHub verification evidence is recorded.
-  - [ ] Safety boundary remains explicit: no production deploy, no `db:migrate`, no secrets, no live provider calls.
+  - [x] `main` has an always-on required check that can run on docs-only PRs.
+  - [x] Branch protection requires the always-on check without enabling force-pushes or deletions.
+  - [x] Local and GitHub verification evidence is recorded.
+  - [x] Safety boundary remains explicit: no production deploy, no `db:migrate`, no secrets, no live provider calls.
 - **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; inspect `SYSTEM_MAP.md`, `CURRENT_STATE.md`, `TASK_TRACKER.md`, `ISSUE_KNOWLEDGE_BASE.md`, and `DECISIONS.md`; `gh pr view/checks/diff`; `git merge-tree`; `git patch-id`; `git diff --check`; `pnpm check:skills`; GitHub PR checks; branch protection verification.
 - **Files Changed:** `.github/workflows/required-merge-gate.yml`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0094.md`.
-- **Test Results:** In progress. Initial local verification before edits: `pnpm preflight` passed; `pnpm ops:monitor` exited 0 with no recommended incidents/tasks; PR #319 project-owned checks were already green while Snyk/TestSprite remained external tooling blockers. PR #319 was closed as superseded because `git merge-tree --write-tree origin/main origin/fix/storefront-footer-mobile-stacking` matched `origin/main^{tree}` and the PR #319 storefront patch-id matched the PR #321 patch already merged on `main`.
-- **Verdict:** In progress until the merge gate PR is merged, branch protection requires the new check, and final verification is recorded.
-- **Related PRs:** #319, #320, #321.
+- **Test Results:** Complete. Initial local verification before edits: `pnpm preflight` passed; `pnpm ops:monitor` exited 0 with no recommended incidents/tasks; PR #319 project-owned checks were already green while Snyk/TestSprite remained external tooling blockers. PR #319 was closed as superseded because `git merge-tree --write-tree origin/main origin/fix/storefront-footer-mobile-stacking` matched `origin/main^{tree}` and the PR #319 storefront patch-id matched the PR #321 patch already merged on `main`. PR #322 checks passed for project-owned gates: Required Merge Gate, CI, Security Scan, and SonarCloud; external TestSprite/Snyk failures were third-party/account-state noise already documented. PR #322 merged to `main` as merge commit `49601bea70d88de618fe5359955d18a7146237b4`. Branch protection now requires `Required Merge Gate` with strict branch updates enabled while force-pushes/deletions remain disabled and conversation resolution remains required. On `main`, Required Merge Gate run `28329981653`, CI run `28329981652`, Deploy run `28329981663`, and Deploy Watchdog run `28330180539` all passed. Deploy to Staging passed with smoke gate; Deploy to Production was skipped.
+- **Verdict:** Done. The duplicate PR is closed, the merge gate is on `main`, branch protection requires it, `main` CI/deploy/watchdog are green, staging is verified, and production remained skipped.
+- **Related PRs:** #319, #320, #321, #322.
 
 ---
 

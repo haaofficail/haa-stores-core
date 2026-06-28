@@ -8,18 +8,14 @@
 
 ## Current task
 
-**TASK-0094 — GitHub integration closure after PR #320/#321 (2026-06-28).**
+**No active Codex-owned task after TASK-0094 closure (2026-06-28).**
 
-The owner asked Codex to take over the remaining work completely and not hand
-back an incomplete task. PR #320 and PR #321 are merged into `main`; production
-remained skipped. PR #319 was inspected and closed as superseded because a
-non-mutating merge simulation produced the same tree as `origin/main`, and its
-footer patch-id matched the patch already merged through PR #321.
-
-This task is adding a lightweight always-on `Required Merge Gate` workflow so
-branch protection can require a stable check without blocking docs-only PRs.
-The task is not complete until that workflow is merged, GitHub verifies it, and
-`main` protection requires the new check.
+TASK-0094 is complete. PR #319 was closed as superseded, PR #322 merged the
+always-on `Required Merge Gate`, branch protection now requires that gate with
+strict branch updates, and post-merge `main` verification passed: Required Merge
+Gate, CI, Deploy, and Deploy Watchdog are all green on merge commit
+`49601bea70d88de618fe5359955d18a7146237b4`. Staging deploy and smoke passed;
+production deploy was skipped.
 
 This does not authorize live beta, production launch, secret handling, live
 provider calls, SSH, DNS changes, or migrations.
@@ -49,14 +45,9 @@ provider calls, deploys, SSH, DNS changes, or migrations.
 
 ## Current branch
 
-`security-quality/apple-grade-audit`.
-
-This branch already contains the prior audit commit:
-
-- `6ba8b23a fix(security): harden audit findings`
-
-Do not merge, deploy, or run production actions from this branch without
-explicit owner approval.
+`codex/task-0094-final-state` is only a final documentation truth-sync branch
+for the completed TASK-0094 evidence. Do not include unrelated local storefront,
+storage, or screenshot artifacts in this branch.
 
 ## Current verdict
 
@@ -68,8 +59,9 @@ explicit owner approval.
 - **Pre-launch smoke:** GO; `pnpm test:smoke` passed 29/29.
 - **Full local smoke:** BLOCKED; `pnpm smoke` failed because `tests/smoke.test.ts` has stale response-shape assumptions and the local DB is missing `orders.preparation_status` from migration `0077_order_preparation_status.sql`.
 - **Admin settlement handoff:** GO; inherited `SettlementBatches.tsx` syntax blocker fixed and admin build/typecheck verified during TASK-0093.
-- **SonarCloud follow-up:** PATCHED; initial PR #320 Sonar gate failed on doc CPD duplication and Reliability B, and the refreshed gate later narrowed to 5.7% admin UI duplication. TASK-0093 added the local code refactor and is awaiting refreshed remote results.
-- **GitHub Test follow-up:** PATCHED locally; stale source-grep contracts were updated and full `pnpm test` now passes.
+- **SonarCloud follow-up:** CLOSED for PR #320/#322 project-owned gates; SonarCloud passed on the relevant closure PRs.
+- **GitHub Test follow-up:** CLOSED for project-owned CI; `main` CI run `28329981652` passed after PR #322 merged.
+- **GitHub integration closure:** DONE; PR #322 merged, branch protection requires `Required Merge Gate`, `main` CI/deploy/watchdog passed, staging smoke passed, production skipped.
 - **Skill Gate policy:** UPDATED; no 1-4 cap, use all applicable skills.
 - **Staging sandbox rehearsal:** CONDITIONAL.
 - **Staging rehearsal:** CONDITIONAL.
