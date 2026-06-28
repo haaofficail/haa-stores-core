@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0026: Audit Hardening Gaps in Workflow Shell Inputs, Credential Cipher Validation, and Print HTML Encoding
+
+- **ID:** ISSUE-0026
+- **Date:** 2026-06-28
+- **Severity:** High (defense-in-depth / CI static-analysis failure risk)
+- **Area:** GitHub Actions / Credential encryption helpers / Merchant dashboard print flows
+- **Related Tasks:** TASK-0087
+- **Symptoms:** Defensive audit found three confirmed P1-quality hardening gaps: staging ops workflows interpolated GitHub Actions expressions directly inside shell `run:` blocks; AES-GCM helpers did not explicitly pin the authentication-tag length and accepted weakly validated encrypted payload shapes; merchant dashboard print windows wrote order/customer/gift-message text into HTML with raw or CSV-oriented escaping.
+- **Expected:** Workflow inputs should be passed through shell environment variables and quoted safely; encrypted credential helpers should validate key/IV/tag/ciphertext shape before crypto operations and pin the GCM tag length; `document.write` print markup should HTML-escape all user-controlled text.
+- **Actual:** The workflows mixed `${{ inputs.* }}` expressions into shell conditionals/remote-command arguments, Semgrep flagged AES-GCM calls without explicit `authTagLength`, and dashboard print markup treated HTML output as plain text or CSV context.
+- **Root Cause:** These surfaces lacked context-specific regression contracts: workflow input handling was not tested as shell data, crypto helpers relied on implicit Node defaults and loose parse checks, and print-window code conflated CSV-injection escaping with HTML-output encoding.
+- **Fix:** Moved workflow inputs into `env`, used shell variables for conditionals, and base64-encoded remote env payloads before SSH transfer. Added strict 64-hex key validation, IV/tag/ciphertext length/hex checks, malformed encrypted-looking payload rejection, and explicit 16-byte GCM auth tags in both credential helpers. Added `escapeHtmlText` and wired order bulk print plus gift-message print through HTML escaping.
+- **Verification:** Focused tests passed for crypto format rejection, workflow shell-injection contracts, PII/CSV/HTML print contracts, and HTML escaping. Post-fix Semgrep no longer reports the workflow shell-injection or AES-GCM findings. Full local verification passed: `pnpm typecheck`, `pnpm test`, and `pnpm build`; `pnpm lint` exited 0 with pre-existing warnings only.
+- **Prevention:** Keep regression tests for workflow shell input handling, AES-GCM encrypted payload shape, and dashboard print HTML escaping. Any new `document.write`/print window must use HTML-context escaping, not CSV escaping or raw interpolation.
+- **Status:** Fixed locally.
+
+---
+
 ### ISSUE-0025: CI E2E Targeted Shared Staging During Deploy
 
 - **ID:** ISSUE-0025

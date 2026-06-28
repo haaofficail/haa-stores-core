@@ -4,6 +4,36 @@
 
 ---
 
+### TASK-0087: Apple-grade defensive audit and P0/P1 hardening pass
+
+- **Type:** Security / CI-Deploy / Testing
+- **Priority:** P1 High
+- **Status:** Done (local verification passed; not committed/pushed)
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `security-quality/apple-grade-audit` at local base `33425d86`
+- **Original Request:** The user asked for a comprehensive Apple-grade defensive audit across security, code/product/UX, architecture, Docker, CI/CD, dependencies, secrets, deploy, performance, and stability; then to fix only P0/P1 issues and CI failures. The user later said to ignore the uploaded screenshot, so it was excluded from findings.
+- **Expanded Requirement:** Run the repository's mandatory preflight/ops gate, perform a defensive local audit without production actions or secret disclosure, classify findings by risk, patch only confirmed P0/P1-quality issues and CI/static-analysis failures, and verify with targeted and full checks.
+- **Scope:** GitHub Actions shell-injection hardening, AES-GCM credential helper validation, merchant-dashboard print-window HTML output encoding, focused regression tests, and required ops documentation.
+- **Out of Scope:** Production deploys, `db:migrate`, SSH, live payment/shipping-provider calls, secret rotation, major dependency upgrades, broad UX redesign, broad lint cleanup, Docker image build/scan while Docker daemon is unavailable, and unrelated storefront worktree changes.
+- **Skills Used:** `priority-triage-gate`, `agent-permission-boundary`, `environment-safety-gate`, `regression-safety-gate`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] `pnpm preflight` passes before work.
+  - [x] `pnpm ops:monitor` runs before significant development and reports no P0 incident requirement; local dev-server warnings were noted because servers were not running.
+  - [x] Confirmed P1/CI-static-analysis findings are fixed without production actions.
+  - [x] Workflow shell scripts do not interpolate GitHub inputs directly inside `run:` shell logic.
+  - [x] AES-GCM helpers validate 64-hex keys, IV/tag/ciphertext shape, and explicit 16-byte auth tags.
+  - [x] Merchant dashboard print-window HTML sinks escape user-controlled text for HTML context.
+  - [x] Focused and full regression tests pass.
+  - [x] `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build` complete locally.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; `pnpm audit`; `pnpm deps:audit`; `gitleaks detect --source . --redact`; Semgrep OWASP/JS/TS scan; targeted vitest for crypto/workflow/HTML escaping; `pnpm typecheck`; `pnpm lint`; `pnpm test`; `pnpm build`; `git diff --check`; `pnpm check:skills`.
+- **Files Changed:** `.github/workflows/ops-staging-bullmq-check.yml`, `.github/workflows/ops-staging-env.yml`, `.github/workflows/ops-staging-migrate.yml`, `packages/commerce-core/src/encryption.ts`, `packages/marketplace-core/src/credential-cipher.ts`, `apps/merchant-dashboard/src/lib/html.ts`, `apps/merchant-dashboard/src/pages/Orders.tsx`, `apps/merchant-dashboard/src/pages/orders/OrderDetailDialog.tsx`, `tests/payment-settings.test.ts`, `tests/credential-cipher.test.ts`, `tests/pii-gating-orders-contract.test.ts`, `tests/dashboard-print-html-escape.test.ts`, `tests/ops-workflow-shell-injection.test.ts`, and required ops docs.
+- **Test Results:** `pnpm preflight` passed before edits. `pnpm audit` and `pnpm deps:audit` reported 0 vulnerabilities. Initial Semgrep found workflow shell-injection patterns, AES-GCM missing explicit auth-tag length, and dashboard print HTML-output risks; post-fix Semgrep dropped to 8 residual warnings limited to reviewed JSON-LD `dangerouslySetInnerHTML` warnings and legacy `nginx/haastores.nginx.conf` `$host` warnings. Focused tests passed 42/42. `pnpm typecheck` passed. `pnpm lint` exited 0 with 499 pre-existing warnings. `pnpm test` passed 4618 active tests with 3 skipped and 14 todo. `pnpm build` passed; storefront build still emits an existing Rollup circular chunk warning for `MarketplaceProductCard` re-exports.
+- **Audit Notes / Residual Risks:** `gitleaks detect --source . --redact` reports historical redacted findings in old commits/test docs and current ignored local files (`.env`, `.hostinger-mcp.env`, and generated `.next` output); no secret values were printed. Docker CLI is installed but the Docker daemon was unavailable, so Docker review was manual only. Trivy/ZAP/Lighthouse CLI/Sonar were not installed. Snyk root scan passed once, then the account hit the monthly private-test limit. Repo-wide lint warnings and storefront Rollup warnings remain separate quality debt.
+- **Related Issues:** ISSUE-0026.
+
+---
+
 ### TASK-0086: Close P1 dependency CVEs and harden storefront pixel script injection
 
 - **Type:** Security

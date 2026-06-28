@@ -44,6 +44,9 @@ jobs:
       DEPLOY_PATH: ${{ inputs.target == 'production' && secrets.PRODUCTION_DEPLOY_PATH || secrets.STAGING_DEPLOY_PATH }}
       PROJECT_NAME: ${{ inputs.target == 'production' && 'haa-production' || 'haa-staging' }}
       SSH_KEY: ${{ inputs.target == 'production' && secrets.PRODUCTION_SSH_KEY || secrets.STAGING_SSH_KEY }}
+      DRY_RUN: ${{ inputs.dry_run }}
+      RUN_ID: ${{ github.run_id }}
+      TARGET: ${{ inputs.target }}
 
     steps:
       - name: Setup SSH
@@ -62,7 +65,7 @@ jobs:
           # Prefer the pre-baked KNOWN_HOSTS secret so ssh-keyscan never
           # runs (ssh-keyscan probing is what triggers staging's fail2ban
           # and turns every retried deploy into a 90 s wait).
-          if [ "${{ inputs.target }}" = "production" ]; then
+          if [ "$TARGET" = "production" ]; then
             HOSTS="${PRODUCTION_KNOWN_HOSTS:-}"
           else
             HOSTS="${STAGING_KNOWN_HOSTS:-}"
@@ -80,7 +83,7 @@ jobs:
       - name: Snapshot DB before migrate
         run: |
           ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" \
-            "PROJECT='$PROJECT_NAME' RUN_ID='${{ github.run_id }}' bash -s" <<'SNAP'
+            "PROJECT='$PROJECT_NAME' RUN_ID='$RUN_ID' bash -s" <<'SNAP'
             set -euo pipefail
             cd "/srv/haa-stores"  # canonical staging deploy path
             BACKUP="/var/lib/postgresql/data/backup-pre-${RUN_ID}.sql"
@@ -99,10 +102,10 @@ jobs:
             echo "    docker compose -p $PROJECT exec -T postgres psql -U \$POSTGRES_USER \$POSTGRES_DB < $BACKUP"
           SNAP
 
-      - name: Run migration ${{ inputs.dry_run && '(dry-run)' || '' }}
+      - name: Run migration
         run: |
           ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" \
-            "PROJECT='$PROJECT_NAME' DRY_RUN='${{ inputs.dry_run }}' bash -s" <<'MIGRATE'
+            "PROJECT='$PROJECT_NAME' DRY_RUN='$DRY_RUN' bash -s" <<'MIGRATE'
             set -euo pipefail
             cd "/srv/haa-stores"
             set -a; . ./.env; set +a

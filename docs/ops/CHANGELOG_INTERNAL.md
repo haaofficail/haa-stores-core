@@ -5,6 +5,16 @@
 
 ---
 
+## 2026-06-28 — Apple-grade Defensive Audit P1 Hardening (TASK-0087)
+
+- Ran the repository safety gate and local defensive audit across dependency audit, secret scanning, Semgrep SAST, CI workflow review, Docker/deploy config review, crypto helpers, and dashboard print-output sinks. The uploaded screenshot was explicitly ignored per user instruction and did not influence findings.
+- Hardened staging ops workflows (`ops-staging-bullmq-check`, `ops-staging-env`, `ops-staging-migrate`) by moving workflow inputs through shell `env`, replacing direct `${{ inputs.* }}` interpolation inside `run:` blocks, and base64-encoding remote env payload transfer before SSH execution.
+- Hardened credential encryption helpers in `packages/commerce-core` and `packages/marketplace-core`: strict 64-hex key validation, explicit AES-GCM `authTagLength: 16`, IV/tag/ciphertext format checks, and malformed encrypted-looking payload rejection before decrypt.
+- Added `apps/merchant-dashboard/src/lib/html.ts` and wired order bulk print plus gift-message print windows through HTML-context escaping so user-controlled order/customer/gift text cannot break out of print markup.
+- Added focused regression tests for workflow shell input handling, encrypted credential formats, malformed payload rejection, and dashboard print HTML escaping. Updated the existing PII/CSV contract test so print HTML and CSV export use the correct escaping contexts.
+- Verification: focused tests passed 42/42; `pnpm typecheck` passed; `pnpm lint` exited 0 with 499 pre-existing warnings; `pnpm test` passed 4618 active tests with 3 skipped and 14 todo; `pnpm build` passed with the existing storefront Rollup chunk warning for `MarketplaceProductCard` re-exports.
+- Residual audit items not changed in this P1-only patch: gitleaks historical redacted findings and ignored local env/generated files require owner-led rotation/hygiene decisions; Docker image scanning could not run because the Docker daemon was unavailable; Semgrep residual warnings are reviewed JSON-LD and legacy Nginx `$host` items; repo-wide lint warnings remain separate quality debt.
+
 ## 2026-06-27 — P1 CVE Cleanup + Pixel Script Hardening (TASK-0086)
 
 - Closed all 6 `pnpm audit` vulnerabilities by upgrading `vite` from `6.4.2` to `6.4.3` (closes GHSA-fx2h-pf6j-xcff high + GHSA-v6wh-96g9-6wx3 moderate) and adding pnpm overrides for `esbuild@0.25.12` (closes GHSA-67mh-4wv8-2f99 transitive from drizzle-kit) and `uuid@11.1.1` (closes GHSA-w5hq-g745-h8pq transitive from storybook).

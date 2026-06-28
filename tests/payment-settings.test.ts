@@ -21,6 +21,10 @@ describe('Encryption Utility', () => {
     const encrypted = encrypt(original);
     expect(encrypted).not.toBe(original);
     expect(encrypted).toContain(':');
+    const [iv, tag, ciphertext] = encrypted.split(':');
+    expect(iv).toHaveLength(32);
+    expect(tag).toHaveLength(32);
+    expect(ciphertext.length % 2).toBe(0);
     const decrypted = decrypt(encrypted);
     expect(decrypted).toBe(original);
   });
@@ -37,6 +41,15 @@ describe('Encryption Utility', () => {
     process.env.PAYMENT_CREDENTIALS_ENCRYPTION_KEY = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
     expect(() => decrypt(encrypted)).toThrow();
     process.env.PAYMENT_CREDENTIALS_ENCRYPTION_KEY = TEST_SLICE;
+  });
+
+  it('rejects malformed GCM payload parts before decrypting', () => {
+    const encrypted = encrypt('test');
+    const [iv, _tag, ciphertext] = encrypted.split(':');
+
+    expect(() => decrypt(`${iv}:abcd:${ciphertext}`)).toThrow(/auth tag/);
+    expect(() => decrypt(`${iv.slice(2)}:${'0'.repeat(32)}:${ciphertext}`)).toThrow(/iv/);
+    expect(() => decrypt(`${iv}:${'0'.repeat(32)}:not-hex`)).toThrow(/ciphertext/);
   });
 
   it('isEncryptionKeySet returns true when key is set', () => {

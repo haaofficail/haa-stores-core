@@ -19,6 +19,8 @@
 - [ ] CI Test job provisions PostgreSQL before DB-backed tests
 - [ ] CI Test/E2E jobs run `pnpm db:bootstrap` and seeds on clean databases
 - [ ] CI E2E Playwright defaults target local dev servers, not shared staging, unless explicit staging env vars are set
+- [ ] GitHub Actions `run:` blocks pass `${{ inputs.* }}` through `env` variables instead of interpolating expressions directly into shell logic
+- [ ] SSH/remote workflow payloads that may contain newlines or shell metacharacters are transferred via quoted/base64-safe values
 - [ ] Numeric type-change migrations include an explicit PostgreSQL `USING` cast
 - [ ] Workspace packages build before individual app builds
 - [ ] Docker build stages compile workspace packages before apps
@@ -240,6 +242,8 @@
 - [x] Tampered or arbitrary `<script>` payloads are dropped silently with `console.warn` and never reach `innerHTML`
 - [x] `window.__haaPixelsLoaded` records matched providers after a successful injection (observability for future CSP report-only collectors)
 - [x] `tests/pixel-provider-allowlist.test.ts` and `pnpm --filter @haa/storefront build` are run on every change to `pixels.ts`, `pixel-validation.ts`, or `usePixels.ts`
+- [x] AES-GCM credential helpers validate `PAYMENT_CREDENTIALS_ENCRYPTION_KEY` as exactly 64 hex chars, pin `authTagLength: 16`, and reject malformed IV/tag/ciphertext segments before decrypting
+- [x] Merchant-dashboard print windows and any `document.write` HTML sinks escape user/customer text with HTML-context escaping, not CSV escaping
 
 - [ ] `requireStoreAccess()` is applied on all merchant routes that use `:storeId`
 - [ ] `requirePermission()` uses correct permission string (not `read` for write operations)

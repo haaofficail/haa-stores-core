@@ -49,10 +49,11 @@ describe('CSV cell escape helper', () => {
   });
 });
 
-describe('Orders bulk actions — PII gating + CSV escape', () => {
-  it('imports usePermissions and escapeCsvCell', () => {
+describe('Orders bulk actions — PII gating + output escaping', () => {
+  it('imports usePermissions and output escaping helpers', () => {
     expect(ORDERS_SRC).toMatch(/import\s*\{[^}]*usePermissions[^}]*\}\s*from\s*['"]@\/lib\/permissions['"]/);
     expect(ORDERS_SRC).toMatch(/import\s*\{\s*escapeCsvCell\s*\}\s*from\s*['"]@\/lib\/csv['"]/);
+    expect(ORDERS_SRC).toMatch(/import\s*\{\s*escapeHtmlText\s*\}\s*from\s*['"]@\/lib\/html['"]/);
   });
 
   it('bulk print gates customerPhone behind orders:view_sensitive', () => {
@@ -62,9 +63,10 @@ describe('Orders bulk actions — PII gating + CSV escape', () => {
     const onClickIdx = ORDERS_SRC.lastIndexOf('onClick={() => {', printIdx);
     const block = ORDERS_SRC.slice(onClickIdx, printIdx);
     // The block must check the sensitive permission before echoing
-    // the phone, and must use escapeCsvCell (aliased as `safe`).
+    // the phone, and must HTML-escape data written into document.write.
     expect(block).toMatch(/canSeeSensitive\s*=\s*orderPerms\.can\(['"]orders:view_sensitive['"]\)/);
-    expect(block).toMatch(/canSeeSensitive\s*\?\s*`?\s*-\s*\$\{safe\(order\.customerPhone\)\}/);
+    expect(block).toMatch(/const\s+safeHtml\s*=\s*\(v:\s*unknown\)\s*=>\s*escapeHtmlText\(v\)/);
+    expect(block).toMatch(/canSeeSensitive\s*\?\s*`?\s*-\s*\$\{safeHtml\(order\.customerPhone\)\}/);
   });
 
   it('bulk CSV gates customerPhone behind orders:view_sensitive', () => {
