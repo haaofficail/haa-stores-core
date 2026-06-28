@@ -62,6 +62,11 @@ async function seed() {
       { code: 'abandoned_cart', name: 'سلة متروكة', channel: 'email', subjectTemplate: 'سلتك في انتظارك', bodyTemplate: 'لاحظنا أن لديك سلعة في سلتك. أكمل طلبك الآن!' },
       { code: 'order_ready_for_pickup', name: 'الطلب جاهز للاستلام', channel: 'email', subjectTemplate: 'طلبك جاهز للاستلام #{{orderNumber}}', bodyTemplate: 'طلبك رقم {{orderNumber}} جاهز للاستلام من فرع {{branchName}} 🎉\n\nيرجى التوجه إلى الفرع لاستلام طلبك.' },
       { code: 'order_picked_up', name: 'تم استلام الطلب', channel: 'email', subjectTemplate: 'تم استلام الطلب #{{orderNumber}}', bodyTemplate: 'تم استلام طلبك رقم {{orderNumber}} من فرع {{branchName}}.\n\nشكرًا لتسوقك معنا!' },
+      { code: 'kyc_approved', name: 'الموافقة على التوثيق', channel: 'email', subjectTemplate: 'تم قبول ملف توثيق متجرك', bodyTemplate: 'مرحباً {{legalName}}،\n\nيسعدنا إخبارك بأنه تم مراجعة ملف توثيق متجرك والموافقة عليه.\n\nيمكنك الآن الاستفادة من جميع ميزات المنصة.\n\nشكراً لثقتك بنا.' },
+      { code: 'kyc_rejected', name: 'رفض التوثيق', channel: 'email', subjectTemplate: 'بخصوص ملف توثيق متجرك', bodyTemplate: 'مرحباً {{legalName}}،\n\nنأسف لإعلامك بأنه تعذّر قبول ملف توثيق متجرك.\n\nالسبب: {{rejectionReason}}\n\nيمكنك تحديث بياناتك والمستندات المطلوبة وإعادة التقديم.' },
+      { code: 'kyc_needs_more_info', name: 'طلب معلومات إضافية للتوثيق', channel: 'email', subjectTemplate: 'مطلوب معلومات إضافية لإتمام التوثيق', bodyTemplate: 'مرحباً {{legalName}}،\n\nنحتاج إلى معلومات أو مستندات إضافية لإتمام مراجعة ملف توثيق متجرك.\n\nالملاحظات: {{rejectionReason}}\n\nيرجى تحديث ملفك والتقديم مجدداً.' },
+      { code: 'bank_account_verified', name: 'تأكيد الحساب البنكي', channel: 'email', subjectTemplate: 'تم التحقق من حسابك البنكي', bodyTemplate: 'مرحباً،\n\nتم التحقق من حسابك البنكي في {{bankName}} (IBAN ****{{ibanLast4}}) بنجاح.\n\nيمكنك الآن استلام المدفوعات.' },
+      { code: 'bank_account_rejected', name: 'رفض الحساب البنكي', channel: 'email', subjectTemplate: 'بخصوص حسابك البنكي', bodyTemplate: 'مرحباً،\n\nتعذّر التحقق من حسابك البنكي في {{bankName}} (IBAN ****{{ibanLast4}}).\n\nيرجى مراجعة البيانات وإعادة الإضافة.' },
     ];
     for (const tpl of templates) {
       await db.insert(s.notificationTemplates).values(tpl).onConflictDoNothing();

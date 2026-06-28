@@ -21,6 +21,7 @@ const StoreBillingSettings = lazy(() => import('./pages/StoreBillingSettings'));
 const Compliance = lazy(() => import('./pages/Compliance'));
 const LandingInbox = lazy(() => import('./pages/LandingInbox'));
 const AdminUsers = lazy(() => import('./pages/AdminUsers'));
+const BankAccounts = lazy(() => import('./pages/BankAccounts'));
 
 function PageSkeleton() {
   return (
@@ -46,7 +47,7 @@ function AdminGuard() {
   return <Outlet />;
 }
 
-type NavItem = { path: string; label: string; icon: 'LayoutDashboard' | 'Users' | 'Store' | 'CreditCard' | 'ShieldCheck' | 'BarChart2' | 'ShoppingBag' | 'Landmark' | 'ScrollText' | 'Package' | 'CheckSquare' | 'Inbox' | 'Settings' | 'ReceiptText' | 'UserCog' };
+type NavItem = { path: string; label: string; icon: 'LayoutDashboard' | 'Users' | 'Store' | 'CreditCard' | 'ShieldCheck' | 'BarChart2' | 'ShoppingBag' | 'Landmark' | 'ScrollText' | 'Package' | 'CheckSquare' | 'Inbox' | 'Settings' | 'ReceiptText' | 'UserCog' | 'Building2' };
 
 type NavGroup = { label: string; items: NavItem[] };
 
@@ -64,6 +65,7 @@ const navGroups: NavGroup[] = [
       { path: '/stores', label: 'المتاجر', icon: 'Store' },
       { path: '/store-billing', label: 'رسوم المتاجر', icon: 'CreditCard' },
       { path: '/kyc', label: 'التحقق', icon: 'ShieldCheck' },
+      { path: '/bank-accounts', label: 'الحسابات البنكية', icon: 'Building2' },
     ],
   },
   {
@@ -274,6 +276,7 @@ export default function App() {
                 <Route path="/compliance" element={<Compliance />} />
                 <Route path="/landing-inbox" element={<LandingInbox />} />
                 <Route path="/admin-users" element={<AdminUsers />} />
+                <Route path="/bank-accounts" element={<BankAccounts />} />
               </Route>
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

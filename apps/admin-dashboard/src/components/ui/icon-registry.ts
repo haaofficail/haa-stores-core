@@ -14,7 +14,7 @@
 // automatically, so TypeScript fails on unregistered names.
 
 import {
-  AlertCircle, AlertTriangle, BarChart2, CheckSquare, CreditCard,
+  AlertCircle, AlertTriangle, BarChart2, Building2, CheckSquare, CreditCard,
   Eye, FileText, Inbox, LayoutDashboard, Landmark, LogOut, Mail,
   Menu, Package, Plus, ReceiptText, ScrollText, Settings,
   ShieldCheck, ShoppingBag, Store, Users, UserCog, X,
@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 
 export const ADMIN_ICON_REGISTRY = {
-  AlertCircle, AlertTriangle, BarChart2, CheckSquare, CreditCard,
+  AlertCircle, AlertTriangle, BarChart2, Building2, CheckSquare, CreditCard,
   Eye, FileText, Inbox, LayoutDashboard, Landmark, LogOut, Mail,
   Menu, Package, Plus, ReceiptText, ScrollText, Settings,
   ShieldCheck, ShoppingBag, Store, Users, UserCog, X,

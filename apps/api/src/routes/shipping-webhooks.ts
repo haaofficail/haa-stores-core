@@ -54,7 +54,7 @@ shippingWebhooksRouter.post('/:provider', async (c) => {
         errorCode: 'INVALID_SIGNATURE',
         errorMessage: 'Invalid webhook signature',
       });
-    } catch { /* ignore */ }
+    } catch (logErr) { console.error('[shipping-webhook] error-log write failed:', logErr); }
     return c.json({ success: false, error: { code: 'INVALID_SIGNATURE', message: 'Invalid webhook signature' } }, 401);
   }
 

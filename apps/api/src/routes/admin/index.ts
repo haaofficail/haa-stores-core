@@ -14,7 +14,7 @@ import { zValidator } from '@hono/zod-validator';
 import { type AdminAuthContext, requireAdminAuth } from '@haa/auth-core';
 
 import { loginRoute } from './auth.js';
-import { dashboardRoute, tenantsRoutes, storesRoutes, kycRoutes, paymentsRoute } from './tenants-stores.js';
+import { dashboardRoute, tenantsRoutes, storesRoutes, kycRoutes, kycBankRoutes, paymentsRoute } from './tenants-stores.js';
 import {
   marketplaceSummaryRoute,
   marketplaceProductsRoute,
@@ -218,6 +218,8 @@ adminRouter.patch('/stores/:id/status', requireAdminAuth(), requireAdminPermissi
 // /kyc/*
 adminRouter.get('/kyc', requireAdminAuth(), requireAdminPermission('kyc.read'), kycRoutes.list);
 adminRouter.patch('/kyc/:id/review', requireAdminAuth(), requireAdminPermission('kyc.review'), zValidator('json', kycReviewSchema), kycRoutes.review);
+adminRouter.get('/kyc/bank-accounts', requireAdminAuth(), requireAdminPermission('kyc.read'), kycBankRoutes.list);
+adminRouter.patch('/kyc/bank-accounts/:id/review', requireAdminAuth(), requireAdminPermission('kyc.review'), zValidator('json', z.object({ status: z.enum(['verified', 'rejected']) })), kycBankRoutes.review);
 
 // /payments
 adminRouter.get('/payments', requireAdminAuth(), paymentsRoute);
