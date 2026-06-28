@@ -10,7 +10,8 @@
 
 **No active Codex-owned task after TASK-0095 closure (2026-06-28).**
 
-TASK-0095 is complete locally on `codex/merchant-employee-permissions-ux-audit`.
+TASK-0095 is complete locally and published as draft PR #324 on
+`codex/merchant-employee-permissions-ux-audit`.
 The merchant employee-permissions audit fixed the permissions API client mount
 prefix, URL-store scoping in `apps/api/src/routes/permissions.ts`, stale
 EmployeeFormDialog localStorage store lookup, empty permission-set saves,
@@ -74,7 +75,7 @@ screenshot artifacts in this branch.
 - **SonarCloud follow-up:** CLOSED for PR #320/#322 project-owned gates; SonarCloud passed on the relevant closure PRs.
 - **GitHub Test follow-up:** CLOSED for project-owned CI; `main` CI run `28329981652` passed after PR #322 merged.
 - **GitHub integration closure:** DONE; PR #322 merged, branch protection requires `Required Merge Gate`, `main` CI/deploy/watchdog passed, staging smoke passed, production skipped.
-- **Merchant/employee permissions audit:** DONE locally; URL-store permission route scoping, mounted permission client paths, employee-dialog store source, empty permission clears, create-time custom permission saves, warehouse staff role, role-based permission seeding, and UX copy fixed in TASK-0095.
+- **Merchant/employee permissions audit:** DONE locally and published as draft PR #324; URL-store permission route scoping, mounted permission client paths, employee-dialog store source, empty permission clears, create-time custom permission saves, warehouse staff role, role-based permission seeding, and UX copy fixed in TASK-0095.
 - **Skill Gate policy:** UPDATED; no 1-4 cap, use all applicable skills.
 - **Staging sandbox rehearsal:** CONDITIONAL.
 - **Staging rehearsal:** CONDITIONAL.

@@ -8,7 +8,7 @@
 - **Task type:** frontend/design
 - **Risk level:** high
 - **Branch:** `codex/merchant-employee-permissions-ux-audit`
-- **PR:** Not opened in this local audit turn
+- **PR:** #324 — https://github.com/haaofficail/haa-stores-core/pull/324
 
 ## Mandatory Skill Gate (recap)
 
@@ -110,7 +110,7 @@
 - For UI: code-level UX audit covered route denial state, sidebar/action gates, employee loading/error/empty states, role labels, warehouse staff role choice, permission dialog copy, RTL logical positioning, permission seeding, and permission-clear/create-time save behavior. A browser/session check was not run because no authenticated merchant app session was available in the current verification window.
 - For backend: no live route calls were made; backend verification was by route/source audit, service inspection, focused contract tests, API typecheck, and full preflight.
 - For DB schema: no DB schema change and no fresh-DB replay required.
-- For CI: no GitHub CI was watched because no PR was opened in this local audit turn.
+- For CI: PR #324 was opened as a draft after local verification; remote checks are pending/handled by GitHub after push.
 
 ## Deviations
 
@@ -131,7 +131,7 @@
 
 ## Next step
 
-- Stage only TASK-0095 files and publish a scoped PR, leaving unrelated storefront, screenshot, monitoring report, and storage event artifacts out.
+- Monitor PR #324 checks, then merge only after project-owned gates are green and owner approves the merge.
 
 ---
 

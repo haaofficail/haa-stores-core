@@ -12,7 +12,8 @@
 - Updated the permission matrix UX copy to state the real behavior: custom membership permissions save at store scope; branch/warehouse/channel scopes are catalog-visible but not active for saving yet.
 - Updated the employee-management API contract doc so it no longer claims custom permissions are 501/future-only; current custom permissions are store-scoped membership permissions.
 - Added regression tests for URL-store scoping, mounted permission client paths, auth-sourced dialog storeId, empty permission-set saves, create-time custom permission saves, and warehouse staff role restrictions.
-- Verification: focused employee/RBAC tests passed 7 files / 129 tests; `pnpm --filter @haa/api typecheck` passed; `pnpm --filter @haa/merchant-dashboard typecheck` passed; `pnpm preflight` passed.
+- Verification: focused employee/RBAC tests passed 8 files / 147 tests; `pnpm --filter @haa/shared typecheck`, `pnpm --filter @haa/shared build`, `pnpm --filter @haa/api typecheck`, and `pnpm --filter @haa/merchant-dashboard typecheck` passed; pre-commit lint-staged + repo-wide typecheck passed; final `pnpm preflight` passed.
+- Published the scoped work as draft PR #324 after focused employee/RBAC verification passed 8 files / 147 tests, pre-commit lint-staged + repo-wide typecheck passed, and final `pnpm preflight` passed.
 - Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls.
 
 ## 2026-06-28 — GitHub Integration Closure (TASK-0094)
