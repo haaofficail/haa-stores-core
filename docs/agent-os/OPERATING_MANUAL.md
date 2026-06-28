@@ -4,7 +4,7 @@
 > **Status:** active and binding.
 > **Read with:** `AGENTS.md` (constitution), `OWNER_DECISIONS.md`, `PROJECT_MEMORY.md`, `RISK_AND_PERMISSION_POLICY.md`.
 
-This manual describes **how to do work**, not what the work is. Pair it with `ACTIVE_WORK.md` for current state.
+This manual describes **how to do work**, not what the work is. Pair it with `ACTIVE_WORK.md` for current session state.
 
 ---
 
@@ -14,6 +14,7 @@ Every task — large or small — follows this sequence. Do not skip steps; do n
 
 ```
 Start
+  → read ACTIVE_WORK session packet
   → verify official root
   → read AGENTS.md
   → read docs/agent-os/
@@ -35,6 +36,15 @@ Each step is a gate. If a gate cannot be cleared, **stop and report**.
 
 ## 2. Step-by-step
 
+### 2.0 Read `ACTIVE_WORK.md` first
+
+- Read the **Session Start Packet** at the top of `ACTIVE_WORK.md` before any state-changing action.
+- Treat `ACTIVE_WORK.md` as the **single source of truth for in-flight session state**:
+  - `ACTIVE_WORK.md` = what is happening now
+  - `docs/ops/CURRENT_STATE.md` = historical milestones / current broad platform state
+  - `docs/ops/TASK_TRACKER.md` = per-task record
+- If `ACTIVE_WORK.md` disagrees with the actual branch, working tree, or current task ledger, **stop and truth-sync the docs first**. Do not "just continue and remember it manually".
+
 ### 2.1 Verify official root
 
 - `pwd` must equal `/Users/thwany/Desktop/haa-stores-core` (per `AGENTS.md §2 #1`, `CLAUDE.md`, `scripts/preflight.mjs:5`).
@@ -48,7 +58,7 @@ Each step is a gate. If a gate cannot be cleared, **stop and report**.
 ### 2.3 Read `docs/agent-os/`
 
 - `OWNER_DECISIONS.md` first (binding rulings).
-- `ACTIVE_WORK.md` (what's in progress now).
+- `ACTIVE_WORK.md` (authoritative current-session packet).
 - `PROJECT_MEMORY.md` (identity, infra, providers).
 - This manual.
 - `RISK_AND_PERMISSION_POLICY.md`.
@@ -124,6 +134,7 @@ Classification drives which gates fire (see `COMMAND_ROUTING_MATRIX.md`).
 - Update `docs/ops/TASK_TRACKER.md` and `docs/ops/CURRENT_STATE.md` per `AGENTS.md §10`.
 - Add to `DECISIONS.md` if an architectural choice was made.
 - Use `TASK_HANDOFF_TEMPLATE.md` if another agent will continue.
+- Any session that did real work — investigation, edits, verification, or user-facing reporting of execution results — must leave an updated `ACTIVE_WORK.md` packet before stopping.
 
 ---
 
@@ -183,6 +194,7 @@ If a side road is needed, **open a new branch** and a new brief.
 - If you cannot finish a task in the current session, leave it in a **resumable** state. Use `task-pause-and-resume-protocol` (future skill in Batch C).
 - Possible states: `PAUSED_CLEAN`, `PAUSED_DIRTY`, `BLOCKED`, `PARKED_PATCH`, `PARKED_BRANCH`, `READY_TO_RESUME`, `ABANDON_CANDIDATE`.
 - Always update `ACTIVE_WORK.md` with the state and the **resume prompt** for the next agent.
+- Even if the task is complete, update `ACTIVE_WORK.md` so the next agent starts from the latest known truth instead of stale session notes.
 
 ---
 

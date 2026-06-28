@@ -5,6 +5,17 @@
 
 ---
 
+## 2026-06-28 — Agent Coordination Truth-Sync (TASK-0088)
+
+- Replaced the stale `docs/agent-os/ACTIVE_WORK.md` session notes with a current **Session Start Packet** that is now explicitly the authoritative source of in-flight session state.
+- Clarified the state split across the coordination docs:
+  - `ACTIVE_WORK.md` = current in-flight session truth
+  - `docs/ops/CURRENT_STATE.md` = broad platform state and milestone history
+  - `docs/ops/TASK_TRACKER.md` = per-task ledger and acceptance evidence
+- Tightened `docs/agent-os/OPERATING_MANUAL.md` so every task starts from the `ACTIVE_WORK.md` packet and stops for truth-sync if packet, branch, and task ledger disagree.
+- Tightened `docs/agent-os/PROVIDER_HANDOFF.md` and `docs/agent-os/TASK_HANDOFF_TEMPLATE.md` so every working session must leave an updated packet + handoff before stopping, not only interrupted tasks.
+- Documented but intentionally did **not** change the still-open foundational canonical-path mismatch between `/Users/thwany/Desktop/haa-stores-core` and hosted task clones under `/home/runner/work/haa-stores-core/haa-stores-core`.
+
 ## 2026-06-28 — Reusable Task Execution Checklist Template (TASK-0087)
 
 - Added `docs/agent-os/templates/TASK_EXECUTION_CHECKLIST.md` as the canonical reusable checklist for scoped task execution.

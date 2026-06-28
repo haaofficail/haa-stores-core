@@ -8,6 +8,10 @@
 ## Handoff fields
 
 ```
+ACTIVE_WORK packet updated?:
+Repo path used:
+Path guard status:
+
 Current agent:
 Next agent:
 Date/time of handoff (Asia/Riyadh):
@@ -19,6 +23,7 @@ Smart Execution Brief (link or pasted):
 Current branch:
 Last commit on this branch (sha + subject):
 HEAD vs origin/<base-branch> (ahead/behind):
+Does branch/status match ACTIVE_WORK packet?:
 
 Git status summary (output of `git status --short`):
 Changed files (staged + unstaged, by path):
@@ -58,12 +63,17 @@ First safe command for the next agent (single line; non-destructive):
 - **Pre-existing failures stay flagged.** Do not silently inherit them.
 - **No secrets.** Redact tokens; reference filenames, not values.
 - **One handoff per task.** Do not bundle multiple tasks.
+- **Always update `ACTIVE_WORK.md` first.** The handoff must match the current packet, not the other way around.
 
 ---
 
 ## Example (minimal)
 
 ```
+ACTIVE_WORK packet updated?: yes
+Repo path used: /Users/thwany/Desktop/haa-stores-core
+Path guard status: pass
+
 Current agent:        Claude Code (session 2026-06-21 evening)
 Next agent:           MiniMax
 Date/time of handoff: 2026-06-21 22:40 Asia/Riyadh
@@ -76,6 +86,7 @@ Current branch:       chore/agent-os-skills-v2
 Last commit on this branch: c90761be chore(security): clean current gitleaks snapshot findings (#36)
                             (no commits made in Batch B per constraint)
 HEAD vs origin/main:  0 ahead / 0 behind (this branch); local main 2 behind origin/main (PRs #32, #35)
+Does branch/status match ACTIVE_WORK packet?: yes
 
 Git status summary:
   ?? .claude/skills/

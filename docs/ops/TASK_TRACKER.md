@@ -4,6 +4,30 @@
 
 ---
 
+### TASK-0088: Agent coordination truth-sync and mandatory handoff tightening
+
+- **Type:** Documentation / Support-Ops
+- **Priority:** P2 Medium
+- **Status:** Done
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Original Request:** "Implement the plan:" for the coordination analysis about new agents losing prior context and starting work without synchronization.
+- **Expanded Requirement:** Truth-sync the current-agent docs so `ACTIVE_WORK.md` becomes the authoritative current-session packet, require a handoff/update at every working-session boundary, shorten startup around the current packet first, and sync the ops truth files without touching foundational files such as `AGENTS.md`, `CLAUDE.md`, or `scripts/preflight.mjs`.
+- **Scope:** `docs/agent-os/ACTIVE_WORK.md`, `docs/agent-os/OPERATING_MANUAL.md`, `docs/agent-os/PROVIDER_HANDOFF.md`, `docs/agent-os/TASK_HANDOFF_TEMPLATE.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`.
+- **Out of Scope:** Code changes, CI/workflow changes, dependency changes, foundational-path rule changes in `AGENTS.md` / `CLAUDE.md` / `scripts/preflight.mjs`, and broader docs cleanup outside the coordination packet/handoff flow.
+- **Skills Used:** `documentation-handoff-gate`, `single-source-of-truth-gate`, `verification-before-completion`, `evidence-led-reporting`.
+- **Acceptance Criteria:**
+  - [x] `ACTIVE_WORK.md` clearly defines itself as the authoritative in-flight session packet.
+  - [x] The handoff/manual docs require a packet + handoff update at every working-session boundary.
+  - [x] `CURRENT_STATE.md` and `TASK_TRACKER.md` record the new coordination model and the remaining foundational path mismatch risk.
+- **Test Plan:** `pwd`; `git status --short --branch`; `rg -n "TASK-0088|Session Start Packet|ACTIVE_WORK.md|authoritative current-session" docs/agent-os docs/ops`; `git diff --check`.
+- **Files Changed:** `docs/agent-os/ACTIVE_WORK.md`, `docs/agent-os/OPERATING_MANUAL.md`, `docs/agent-os/PROVIDER_HANDOFF.md`, `docs/agent-os/TASK_HANDOFF_TEMPLATE.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`.
+- **Test Results:** Read-only verification confirmed the hosted clone path is `/home/runner/work/haa-stores-core/haa-stores-core`, the actual branch is `copilot/research-pre-launch-readiness-assessment`, and the pre-task `ACTIVE_WORK.md` packet was stale against both branch reality and the latest ops docs. Post-change verification is `rg -n "TASK-0088|Session Start Packet|ACTIVE_WORK.md|authoritative current-session" docs/agent-os docs/ops` plus `git diff --check`.
+- **Residual Risks:** The canonical-root mismatch is still unresolved because touching `AGENTS.md`, `CLAUDE.md`, or `scripts/preflight.mjs` is foundational and remained out of scope for this task. Additional historical handoff docs may need a later rationalization pass, but they were not expanded into this truth-sync.
+- **Related Issues:** None.
+
+---
+
 ### TASK-0087: Add reusable task execution checklist template
 
 - **Type:** Documentation

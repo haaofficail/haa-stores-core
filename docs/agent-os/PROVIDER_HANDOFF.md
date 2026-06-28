@@ -15,6 +15,12 @@
   - `docs/agent-os/` — operating system for agents.
   - `.claude/skills/` — Claude-specific tactical skills (not portable verbatim to other providers, but reflectable into MiniMax/other prompts).
 
+Within that docs layer, the current-state split is:
+
+- `ACTIVE_WORK.md` — **authoritative current-session packet**
+- `docs/ops/CURRENT_STATE.md` — broad platform state / milestone history
+- `docs/ops/TASK_TRACKER.md` — per-task ledger and acceptance evidence
+
 `.claude/skills/` alone is **not** sufficient — it is provider-specific, optional, and (per `OWNER_DECISIONS.md` DECISION-OS-005) the current contents are legacy local input pending evaluation in Batch C.
 
 ---
@@ -30,7 +36,7 @@
 
 ## 3. Claude → MiniMax (or any other provider) — exit checklist
 
-The Claude session must, before ending work:
+The Claude session must, before ending any working session:
 
 1. **Pause cleanly.** Choose a `Parking method` from `TASK_HANDOFF_TEMPLATE.md` (`PAUSED_CLEAN`, `READY_TO_RESUME`, etc.).
 2. **Update `ACTIVE_WORK.md`** with: current task, branch, last commit, changed files, untracked files, completed/incomplete, residual risks, next safe action.
@@ -46,21 +52,27 @@ The Claude session must, before ending work:
 
 A new agent starting work must, before any edit:
 
-1. `pwd` → must equal `/Users/thwany/Desktop/haa-stores-core` (DECISION-OS-006).
-2. `git branch --show-current` → confirm with owner if unexpected.
-3. `git status --short` → expect what `ACTIVE_WORK.md` says; investigate any diff.
-4. Read the following, in order:
+1. Read the **Session Start Packet** in `ACTIVE_WORK.md` first.
+2. `pwd` → must equal `/Users/thwany/Desktop/haa-stores-core` (DECISION-OS-006).
+3. `git branch --show-current` → confirm with owner if unexpected.
+4. `git status --short` → expect what `ACTIVE_WORK.md` says; investigate any diff.
+5. Run the sync guard before implementation:
+   - `ACTIVE_WORK.md` names the same branch.
+   - `ACTIVE_WORK.md` describes the same dirty/clean expectation.
+   - The latest relevant task in `docs/ops/TASK_TRACKER.md` matches the current scope.
+   - If any check fails, stop and truth-sync before editing.
+6. Read the following, in order:
    1. `AGENTS.md`
    2. `CLAUDE.md`
    3. `docs/agent-os/OWNER_DECISIONS.md`
    4. `docs/agent-os/OPERATING_MANUAL.md`
    5. `docs/agent-os/PROJECT_MEMORY.md`
-   6. `docs/agent-os/ACTIVE_WORK.md`
+   6. `docs/agent-os/ACTIVE_WORK.md` (full file after the packet)
    7. `docs/agent-os/RISK_AND_PERMISSION_POLICY.md`
    8. `docs/agent-os/COMMAND_ROUTING_MATRIX.md`
    9. Task-relevant section of `docs/agent-os/TEST_STRATEGY.md` and `DEFINITION_OF_DONE.md`.
-5. Run the **First safe command** from the previous handoff.
-6. State the Smart Execution Brief (per `OPERATING_MANUAL.md §3`) before any tool call that mutates the repo.
+7. Run the **First safe command** from the previous handoff.
+8. State the Smart Execution Brief (per `OPERATING_MANUAL.md §3`) before any tool call that mutates the repo.
 
 ---
 
@@ -82,14 +94,15 @@ A new agent starting work must, before any edit:
 You are now working on Haa Stores (متاجر هاء), a multi-tenant Saudi e-commerce SaaS monorepo.
 
 Strict bootstrap:
-1) cd /Users/thwany/Desktop/haa-stores-core   (the only allowed working directory)
-2) Read in this order:
+1) Open docs/agent-os/ACTIVE_WORK.md and read the Session Start Packet first.
+2) cd /Users/thwany/Desktop/haa-stores-core   (the only allowed working directory)
+3) Read in this order:
    - AGENTS.md
    - CLAUDE.md
    - docs/agent-os/OWNER_DECISIONS.md
    - docs/agent-os/OPERATING_MANUAL.md
    - docs/agent-os/PROJECT_MEMORY.md
-   - docs/agent-os/ACTIVE_WORK.md
+   - docs/agent-os/ACTIVE_WORK.md (full file)
    - docs/agent-os/RISK_AND_PERMISSION_POLICY.md
 
 Rules until told otherwise:
@@ -98,6 +111,11 @@ Rules until told otherwise:
 - Do not open or modify .claude/skills/ (legacy local input, DECISION-OS-005).
 - Do not treat MASTER_PLAN_2026-06-18.md or the existing marketplace audits as current truth.
 - Do not create a new theme system; build on @haa/storefront-themes.
+
+Before editing, verify:
+  - branch/status match ACTIVE_WORK.md
+  - current task scope matches TASK_TRACKER
+  - if not, stop and truth-sync first
 
 After reading, restate in one paragraph:
   (a) what you understand to be in progress (from ACTIVE_WORK.md),
@@ -130,12 +148,13 @@ Pause this session cleanly:
 
 | Order | File                                                                      | Why                                                                           |
 | ----: | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+|     0 | `ACTIVE_WORK.md` (Session Start Packet)                                   | Immediate current-session truth before any assumption.                        |
 |     1 | `AGENTS.md`                                                               | Constitution; mandatory start rule.                                           |
 |     2 | `CLAUDE.md`                                                               | Infrastructure rules, canonical path, forbidden servers/domains.              |
 |     3 | `OWNER_DECISIONS.md`                                                      | Binding rulings (theme, worktree, marketplace, skills, master plan, archive). |
 |     4 | `OPERATING_MANUAL.md`                                                     | How to do work.                                                               |
 |     5 | `PROJECT_MEMORY.md`                                                       | Identity, providers, infra, launch status.                                    |
-|     6 | `ACTIVE_WORK.md`                                                          | What is in flight now.                                                        |
+|     6 | `ACTIVE_WORK.md` (full file)                                              | Current task packet + what remains.                                           |
 |     7 | `RISK_AND_PERMISSION_POLICY.md`                                           | What is forbidden.                                                            |
 |     8 | `COMMAND_ROUTING_MATRIX.md`                                               | Which gates fire for this task type.                                          |
 |     9 | `TEST_STRATEGY.md` + `DEFINITION_OF_DONE.md` (task-relevant section only) | The bar to clear.                                                             |
