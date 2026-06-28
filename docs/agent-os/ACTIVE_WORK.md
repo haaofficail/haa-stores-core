@@ -1,78 +1,166 @@
 # Active Work — Haa Stores Agent OS
 
 > **Audience:** the next agent picking up where the previous one left off.
-> **Update rule:** the current agent updates this file before pausing or finishing a session.
+> **Update rule:** the current agent updates this file before pausing or
+> finishing a session.
 
 ---
 
 ## Current task
 
-**TASK-0085 — CI E2E local target defaults (2026-06-27) is locally complete.** PR #308 merged, and its Deploy run passed staging smoke 5/5. Its CI run was cancelled by the workflow concurrency rule after a newer `main` push. The newer `main` CI run failed only in E2E because Playwright still targeted shared staging while Deploy was updating staging. The fix keeps `.github/workflows/*` untouched and changes Playwright/test defaults so CI uses local dev servers.
+**TASK-0093 — Admin settlement handoff integration and publish (2026-06-28).**
 
-**TASK-0084 — Gift-message sanitization + shipping guard verification (2026-06-27) is locally complete.** User asked to continue all remaining follow-ups. Gift messages now sanitize to plain text before cart/session/order storage and again at public cart/order DTO output boundaries. Existing shipment guards were re-verified with behavioral tests: unpaid non-COD and unconfirmed COD orders are blocked before shipment creation; packed paid/COD-pending orders remain valid.
+The owner asked to take over the other agent's admin-dashboard work, verify it
+as an executive handoff, and publish it. The inherited staged blocker was an
+invalid JSX comment inside the `SettlementBatches.tsx` ternary branch. That is fixed,
+and the admin dashboard now passes typecheck, focused settlement tests, build,
+skills enforcement, and full preflight. The first PR push also exposed immediate
+SonarCloud blockers; TASK-0093 addressed them with SonarCloud/scanner CPD doc exclusions,
+shallower store-payment settings normalization, safer bash hook conditionals,
+DOM/textContent merchant print output, and native Plans modal backdrop controls.
+The later GitHub Test failure was traced to stale source-grep contracts; those
+tests now assert shared `ErrorState` retry wiring and DOM/textContent print
+construction, and full `pnpm test` passes locally. A refreshed SonarCloud gate
+then narrowed the remaining blocker to admin-dashboard code duplication, so
+TASK-0093 extracted the repeated nav item shape, table loading skeleton, CSV
+export helper, and store selector into shared admin helpers. Admin-dashboard
+typecheck and focused admin wiring/source-grep tests pass after that refactor.
 
-TASK-0083 remains in the same local worktree: `CheckoutService.handleBNPLCallback` scopes the payment lookup by both `providerPaymentId` and `storeId` before provider confirmation or wallet/order side effects. Wallet idempotency and the direct `pending_payment -> shipped` claim were verified as already mitigated by current tests/code.
+This does not authorize live beta, production launch, secret handling, live
+provider calls, deploys, SSH, DNS changes, or migrations.
 
 ## Current branch
 
-`codex/security-review-hardening` (created from local `main`; do not merge/deploy without explicit owner approval).
+`security-quality/apple-grade-audit`.
 
-## Last known commit
+This branch already contains the prior audit commit:
 
-`6f3f95c1e8dc53949cb9d20c7397b8d7a7df6bf6` — `chore(ops): ignore local workspace artifacts`.
+- `6ba8b23a fix(security): harden audit findings`
 
-## Branch state vs main
+Do not merge, deploy, or run production actions from this branch without
+explicit owner approval.
 
-Working tree is dirty with TASK-0083/TASK-0084 scoped files plus unrelated pre-existing local edits. Expected task files now include `packages/commerce-core/src/checkout.ts`, `packages/commerce-core/src/cart.ts`, `packages/commerce-core/src/orders.ts`, `packages/commerce-core/src/gift-message-sanitizer.ts`, `packages/shared/src/gift-message.ts`, `packages/shared/src/index.ts`, `packages/shared/src/dto/storefront-dto.ts`, `tests/bnpl-callback-tenant-isolation.test.ts`, `tests/gift-message-sanitization.test.ts`, required ops docs, and monitoring log output from `pnpm ops:monitor`.
+## Current verdict
 
-## Wave-by-wave outcomes
+- **Readiness sprint:** GO.
+- **Sandbox preparation:** GO.
+- **Local mock test baseline:** GO; 10 files / 151 tests passed during TASK-0090.
+- **Local app runtime:** GO; API/storefront/merchant/admin local HTTP checks passed.
+- **Fake/mock provider status:** GO; provider-status and shipment provider-status returned 200 with live blocked/manual fallback indicators.
+- **Pre-launch smoke:** GO; `pnpm test:smoke` passed 29/29.
+- **Full local smoke:** BLOCKED; `pnpm smoke` failed because `tests/smoke.test.ts` has stale response-shape assumptions and the local DB is missing `orders.preparation_status` from migration `0077_order_preparation_status.sql`.
+- **Admin settlement handoff:** GO; inherited `SettlementBatches.tsx` syntax blocker fixed and admin build/typecheck verified during TASK-0093.
+- **SonarCloud follow-up:** PATCHED; initial PR #320 Sonar gate failed on doc CPD duplication and Reliability B, and the refreshed gate later narrowed to 5.7% admin UI duplication. TASK-0093 added the local code refactor and is awaiting refreshed remote results.
+- **GitHub Test follow-up:** PATCHED locally; stale source-grep contracts were updated and full `pnpm test` now passes.
+- **Skill Gate policy:** UPDATED; no 1-4 cap, use all applicable skills.
+- **Staging sandbox rehearsal:** CONDITIONAL.
+- **Staging rehearsal:** CONDITIONAL.
+- **Closed live beta:** NO-GO.
+- **Public launch:** NO-GO.
 
-See `EXECUTION_CHECKLIST.md` for the table. Summary:
+See `docs/ops/SANDBOX_REHEARSAL_CHECKLIST.md` for the sandbox baseline and
+`docs/ops/ISSUE_KNOWLEDGE_BASE.md` ISSUE-0027 for the local smoke blocker.
 
-- 14 waves Done with code + tests + commits.
-- 6 waves Deferred (tracker-only) with reasoning in `REMAINING_WORK.md`.
-- 1 wave Done (planning only) — wallet idempotency.
-- 1 wave Done (marker only) — stale docs.
+## Working tree notes
 
-## Verification
+Existing dirty files that are separate from TASK-0093 publication:
 
-- TASK-0085 verification: `CI=true pnpm test:e2e` passed 4/4 against local servers after bootstrapping a disposable E2E database; the temporary database was dropped afterward. Supporting checks passed: `pnpm typecheck`, `pnpm lint` (0 errors, 514 existing warnings), `pnpm test`, `pnpm check:skills`, `git diff --check`, `pnpm preflight`, and final `pnpm ops:monitor`.
-- `pnpm preflight`: green locally on 2026-06-27.
-- `pnpm ops:monitor`: first run had no recommended tasks/incidents while API/storefront dev servers were not running; second run with API, storefront, and merchant dashboard running passed runtime and synthetic checks with no recommended tasks/incidents.
-- `pnpm vitest run tests/gift-message-sanitization.test.ts tests/g10-storefront-dto-contract.test.ts`: 36/36 passing.
-- `pnpm vitest run tests/haa-1004-shipping-guards.test.ts tests/haa-preparation-status.test.ts tests/route-migration-17-shipments.test.ts`: 74/74 passing.
-- `pnpm vitest run tests/bnpl-callback-tenant-isolation.test.ts`: 2/2 passing.
-- `pnpm vitest run tests/wallet-idempotency-spec.test.ts tests/w16-wallet-idempotency-plan.test.ts`: 12/12 passing.
-- `pnpm vitest run tests/wallet-posting-wiring.test.ts tests/order-state-machine.test.ts tests/order-state-hardening.test.ts`: 98/98 passing.
-- `pnpm vitest run tests/low-stock-email.test.ts`: 29/29 passing.
-- `pnpm typecheck`: passing.
-- `pnpm lint`: exit 0, 514 warnings, 0 errors. Warnings are existing `no-explicit-any` / restricted-import cleanup debt outside this scoped patch.
-- `pnpm preflight`: passed after the patch.
-- `pnpm check:skills`: 43/43 checks passing.
-- `gitleaks git --staged --redact --no-banner`: no leaks found.
-- `git diff --check`: clean.
+- `apps/storefront/src/components/platform/PlatformShell.tsx`
+- `apps/storefront/src/landing/landing.css`
+- `docs/ops/LATEST_MONITORING_REPORT.md`
+- `storage/monitoring-events.ndjson`
+- `storage/support-error-events.ndjson`
+- local screenshot files in the repository root
+- `admin-dashboard.png`
+- `admin-login.png`
+- `new-dashboard.png`
+- `new-login.png`
 
-## Untracked files
+The storefront files were present before TASK-0088/TASK-0089 and look like a
+footer/legal-entity layout task. The admin-dashboard files/images were observed
+during TASK-0090 final status and are unrelated to the sandbox checklist. Do
+not revert or mix them into launch-gate work without an explicit owner
+instruction.
 
-Expected new task files:
+Generated by required monitoring during TASK-0088:
 
-- `tests/bnpl-callback-tenant-isolation.test.ts`
-- `packages/commerce-core/src/gift-message-sanitizer.ts`
-- `packages/shared/src/gift-message.ts`
-- `tests/gift-message-sanitization.test.ts`
+- `storage/monitoring-events.ndjson`
 
-Other untracked deep-review/report markdown files are present locally and were not edited as part of this task. Keep them out of any scoped TASK-0083 commit unless the owner explicitly asks to archive or publish them.
+Generated/updated by TASK-0091 local smoke and error analysis:
+
+- `storage/monitoring-events.ndjson`
+- `storage/support-error-events.ndjson`
+
+Expected launch-readiness documentation files:
+
+- `docs/ops/SANDBOX_REHEARSAL_CHECKLIST.md`
+- `docs/ops/LAUNCH_READINESS_GATE.md`
+- `docs/agent-os/PRODUCTION_LAUNCH_GATES.md`
+- `docs/agent-os/REMAINING_WORK.md`
+- `docs/HAA_TASK_LEDGER.md`
+- `docs/ops/TASK_TRACKER.md`
+- `docs/ops/CURRENT_STATE.md`
+- `docs/ops/CHANGELOG_INTERNAL.md`
+- `docs/agent-os/ACTIVE_WORK.md`
+- `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0090.md`
+- `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0091.md`
+- `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0092.md`
+- `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0093.md`
+- `docs/ops/ISSUE_KNOWLEDGE_BASE.md`
+- `docs/ops/REGRESSION_CHECKLIST.md`
+- `AGENTS.md`
+- `.github/pull_request_template.md`
+- `docs/agent-os/EXECUTION_CHECKLIST.md`
+- `docs/agent-os/SKILLS_REGISTRY.md`
+- `docs/agent-os/SKILL_FILE_MAPPING.md`
+- `docs/agent-os/AGENT_HANDOFF.md`
+- `docs/ops/DECISIONS.md`
+
+## Verification so far
+
+- `pwd`: `/Users/thwany/Desktop/haa-stores-core`.
+- `pnpm preflight`: passed during TASK-0093 after fixing the inherited admin-dashboard syntax error in `apps/admin-dashboard/src/pages/SettlementBatches.tsx`.
+- `pnpm --filter @haa/admin-dashboard typecheck`: passed during TASK-0093.
+- `pnpm --filter @haa/admin-dashboard build`: passed during TASK-0093.
+- `pnpm vitest run tests/settlement-order-linking.test.ts tests/settlement-order-drilldown-ui.test.ts tests/geidea-settlement-reconciliation.test.ts`: 3 files / 24 tests passed during TASK-0093.
+- `bash -n scripts/hooks/pre-edit-frontend.sh`: passed during TASK-0093 Sonar follow-up.
+- `pnpm --filter @haa/merchant-dashboard typecheck`: passed during TASK-0093 Sonar follow-up.
+- `pnpm vitest run tests/dashboard-print-html-escape.test.ts`: 1 file / 3 tests passed during TASK-0093 Sonar follow-up.
+- `pnpm vitest run tests/pii-gating-orders-contract.test.ts tests/admin-landing-inbox.test.tsx tests/scheduled-settlement-admin-batches-ui.test.ts tests/dashboard-print-html-escape.test.ts`: 4 files / 46 tests passed / 1 skipped during TASK-0093 GitHub Test follow-up.
+- `pnpm test`: 354 files / 4618 tests passed / 3 skipped / 14 todo during TASK-0093 GitHub Test follow-up.
+- Focused local mock payment/shipping tests: 10 files / 151 tests passed.
+- `pnpm ops:monitor`: passed during TASK-0091 with 25/25 health checks and local synthetic checks green.
+- Browser-like local HTTP checks: storefront `/`, `/s/haa-demo`, cart, checkout, merchant login, and admin all returned 200.
+- Sanitized API probes: admin login 200, merchant owner login 200, provider-status 200, shipment provider-status 200, cart create 201.
+- `pnpm test:smoke`: 29/29 passed.
+- `pnpm smoke`: 37/46 passed and 9 failed; full smoke blocked by stale test contract plus missing local DB column `orders.preparation_status`.
+- `pnpm ops:errors`: 3 actionable P2 API-001 events after the failing smoke, no recommended tasks/incidents.
+- `pnpm check:skills`: 43/43 passed after TASK-0093 handoff integration and GitHub Test follow-up.
+- `git diff --check`: clean after TASK-0093 handoff integration and GitHub Test follow-up.
+
+Final verification is recorded in
+`docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0093.md`.
 
 ## Next safe action
 
-Commit and push only the staged TASK-0083/TASK-0084 scope, then open a draft PR. Do not include unrelated dirty files in the task diff.
+Pick one focused follow-up:
 
-## Resume instructions
+1. Owner approves local-only DB migration/rebuild, then rerun `pnpm smoke`.
+2. Update `tests/smoke.test.ts` product response-shape expectations as a
+   separate testing task after the DB blocker is cleared.
+3. Review the TASK-0093 draft PR and keep unrelated storefront/screenshot/storage
+   work out of the admin handoff unless explicitly approved.
+4. Close or park the storefront footer/legal-entity work as a separate
+   frontend/design task.
+5. Ask the owner for the e-commerce license number/reference, DPO plan, and
+   first 3 beta merchant candidates before moving toward live beta.
 
-For any agent picking this up:
+## Hard boundaries
 
-1. `cd /Users/thwany/Desktop/haa-stores-core` (canonical; DECISION-OS-006).
-2. `git branch --show-current` → expect `codex/security-review-hardening` for this scoped publish flow.
-3. `git status --short --branch` → distinguish TASK-0083 edits from unrelated local artifacts above.
-4. Read `docs/agent-os/REMAINING_WORK.md` for owner-gated launch blockers.
-5. Never deploy, SSH, touch secrets, call live providers, or run `db:migrate` without explicit owner approval.
+- No production deploy.
+- No `db:migrate`.
+- No SSH to production.
+- No secrets or `.env*` reads/prints.
+- No live payment-provider calls.
+- No live shipping-provider calls.
+- Do not use server `187.124.41.239`.

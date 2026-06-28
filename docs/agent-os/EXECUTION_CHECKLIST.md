@@ -13,7 +13,7 @@
 > tokens, or visual UI work.
 
 - [ ] Task classified into one of the 13 task types (AGENTS.md §14.4)
-- [ ] 1–4 skills selected from `docs/agent-os/SKILLS_REGISTRY.md`
+- [ ] All applicable skills selected from `docs/agent-os/SKILLS_REGISTRY.md` and `docs/agent-os/SKILL_FILE_MAPPING.md` (no numeric cap)
 - [ ] Each skill has a one-line "why it fits" justification
 - [ ] Expected files listed (paths or globs)
 - [ ] Verification commands mapped per selected skill

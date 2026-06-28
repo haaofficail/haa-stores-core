@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link } from 'react-router-dom';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   Wallet, DollarSign, CreditCard, ArrowUpCircle, ArrowDownCircle,
   TrendingUp, Clock, CheckCircle2, AlertTriangle,
@@ -558,24 +558,39 @@ export default function WalletPage() {
           </div>
         )}
 
-        <div className="bg-amber-50 border border-amber-200/50 rounded-3xl p-4">
-          <div className="flex items-center gap-3">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="p-2 rounded-2xl bg-amber-100 text-amber-600 cursor-default">
-                  <AlertTriangle className="h-4 w-4" />
+        {summary ? (
+          <div className="bg-primary-50 border border-primary-200/50 rounded-3xl p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-2xl bg-primary-100 text-primary-600">
+                  <Landmark className="h-4 w-4" />
                 </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{t('wallet.withdrawDisabled')}</p>
-              </TooltipContent>
-            </Tooltip>
-            <div className="text-sm text-amber-800">
-              <p className="font-medium">{t('wallet.withdrawDisabled')}</p>
-              <p className="text-xs mt-0.5">{t('wallet.withdrawDisabledDetail')}</p>
+                <div className="text-sm text-primary-800">
+                  <p className="font-medium">{t('wallet.requestPayout', 'طلب تسوية')}</p>
+                  <p className="text-xs mt-0.5">{t('wallet.requestPayoutDetail', 'يمكنك طلب تحويل رصيدك إلى حسابك البنكي')}</p>
+                </div>
+              </div>
+              <Link
+                to="/settlement"
+                className="shrink-0 px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition-colors"
+              >
+                {t('wallet.goToSettlement', 'طلب تسوية')}
+              </Link>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-amber-50 border border-amber-200/50 rounded-3xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-2xl bg-amber-100 text-amber-600">
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+              <div className="text-sm text-amber-800">
+                <p className="font-medium">{t('wallet.withdrawDisabled')}</p>
+                <p className="text-xs mt-0.5">{t('wallet.withdrawDisabledDetail')}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </TooltipProvider>
   );

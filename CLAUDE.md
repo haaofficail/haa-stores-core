@@ -23,6 +23,54 @@ infrastructure), you MUST publish a written **Mandatory Skill Gate**.
   the PR body, plus the four safety confirmations in §14.6.
 - The enforcement script is `pnpm check:skills`; CI uses it.
 
+## Frontend Apps — Pre-flight (MANDATORY before first Edit/Write in any app)
+
+**You MUST run these steps in order before touching any file under `apps/`:**
+
+### Step 1 — Read the file→skill map
+
+```
+Read: docs/agent-os/SKILL_FILE_MAPPING.md
+```
+
+Find every skill required for the files you plan to change. No exceptions.
+
+### Step 2 — Verify CSS variables actually exist
+
+```bash
+grep -c ":root" apps/<app>/src/index.css
+# Must return ≥ 1. If 0 → STOP. Add variables before writing any Tailwind class.
+```
+
+### Step 3 — Cross-app pattern check
+
+If you are copying a class, token, or pattern from another app:
+
+```bash
+grep "var(--<token-name>)" apps/<target-app>/src/index.css
+# If not found → STOP. Do not use that class. Add the variable or use a native Tailwind value.
+```
+
+Skill required: `single-source-of-truth-gate`
+
+### Step 4 — Verify before claiming Done
+
+Before writing any "done" message or Final Compliance Report:
+
+```bash
+# 1. TypeScript clean?
+pnpm --filter <app> typecheck
+
+# 2. Dev server responds?
+curl -s -o /dev/null -w "%{http_code}" http://localhost:<port>
+
+# 3. Take a screenshot and confirm the page is NOT empty/blank
+```
+
+Skills required: `verification-before-completion`, `definition-of-done-gate`, `implementation-quality-gate`
+
+**A page that passes TypeScript but renders blank is NOT done.**
+
 ## Canonical project path
 
 `~/Desktop/haa-stores-core`

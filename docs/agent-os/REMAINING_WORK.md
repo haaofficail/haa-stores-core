@@ -44,7 +44,7 @@ These cannot be progressed by engineering code; they need owner action (legal, c
 
 - [x] **G1** — Commercial Registration ✅ provided 2026-06-24: مؤسسة حرف الهاء التجارية, CR `7038798612`, issued 2024-04-08, status نشط. Wired into the platform via PR #181. Unblocks G6 + G9.
 - [ ] **G2** — VAT / ZATCA registration.
-- [ ] **G3** — E-commerce license.
+- [ ] **G3** — E-commerce license. Owner states the license exists as of 2026-06-28; license number/copy or approved reference is still pending before this can be marked closed.
 - [ ] **G4** — DPO (Data Protection Officer) appointed.
 - [ ] **G5** — Trademark / علامة تجارية registered.
 - [ ] **G6** — PCI-DSS ASV scan (depends on G1).
@@ -69,6 +69,13 @@ These cannot be progressed by engineering code; they need owner action (legal, c
 - [ ] **Transactional email** — pick provider (Postmark / SES / SendGrid), configure SPF / DKIM / DMARC for the sending domain, wire credentials.
 - [ ] **2FA + self-serve password reset** — design + implement TOTP enrollment + verify on `/login` and on sensitive admin operations; add the actual reset-token flow behind the `/forgot-password` page (currently a mailto landing).
 - [ ] **Deployment smoke + rollback** — add post-deploy smoke tests (curl `/api/health` + a fixed login flow) plus a one-command rollback script that re-deploys the previous image tag.
+
+### Sandbox preparation track
+
+- [x] **Sandbox rehearsal checklist** — owner selected sandbox preparation on 2026-06-28. `docs/ops/SANDBOX_REHEARSAL_CHECKLIST.md` defines local mock and conditional staging sandbox paths for fake/sandbox payment and mock/sandbox shipping without live calls, secrets, production deploy, or `db:migrate`.
+- [x] **Local mock rehearsal test baseline** — TASK-0090 ran the focused payment/shipping mock command from `docs/ops/SANDBOX_REHEARSAL_CHECKLIST.md`; 10 files / 151 tests passed.
+- [ ] **Local app smoke rehearsal** — start local dev services intentionally and exercise fake payment + manual/haa_mock shipping through browser/API smoke without live providers.
+- [ ] **Staging sandbox approval packet** — collect owner approval plus approved secret-path confirmation for Geidea and OTO sandbox credentials before any staging sandbox run.
 
 ## Forbidden / Owner-only — unchanged
 

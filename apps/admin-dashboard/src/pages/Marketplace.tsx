@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { adminApi } from '../lib/api';
@@ -28,6 +29,8 @@ export default function Marketplace() {
   const [deepReport, setDeepReport] = useState<any>(null);
   const [status, setStatus] = useState('pending');
   const [loading, setLoading] = useState(true);
+  const [rejectModal, setRejectModal] = useState<{ id: number; name: string } | null>(null);
+  const [rejectNote, setRejectNote] = useState('');
 
   const load = async (nextStatus = status) => {
     setLoading(true);
@@ -60,11 +63,12 @@ export default function Marketplace() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
-  const review = async (id: number, nextStatus: 'approved' | 'rejected' | 'suspended' | 'pending') => {
+  const review = async (id: number, nextStatus: 'approved' | 'rejected' | 'suspended' | 'pending', note?: string) => {
     try {
-      const note = nextStatus === 'rejected' ? window.prompt('سبب الرفض') || undefined : undefined;
       await adminApi.reviewMarketplaceProduct(id, nextStatus, note);
       toast.success('تم تحديث حالة المنتج');
+      setRejectModal(null);
+      setRejectNote('');
       load();
     } catch (error: any) {
       toast.error(error?.message || 'فشل تحديث المنتج');
@@ -96,7 +100,7 @@ export default function Marketplace() {
     <div className="space-y-6" dir="rtl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold">إدارة سوق هاء</h2>
+          <h2 className="text-title2 font-bold text-gray-900 tracking-tight">إدارة سوق هاء</h2>
           <p className="mt-1 text-sm text-gray-500">قناة تسويق ورقابة على المنتجات والطلبات القادمة من السوق.</p>
         </div>
         <a href="/marketplace" target="_blank" rel="noreferrer" className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50">فتح السوق</a>
@@ -106,7 +110,7 @@ export default function Marketplace() {
         {cards.map(([label, value]) => (
           <div key={label} className="rounded-xl bg-white p-4 shadow-sm">
             <p className="text-xs text-gray-500">{label}</p>
-            <p className="mt-2 text-xl font-bold">{value}</p>
+            <p className="mt-2 text-title2 font-bold text-gray-900 tabular-nums tracking-tight">{value}</p>
           </div>
         ))}
       </div>
@@ -149,7 +153,7 @@ export default function Marketplace() {
                   <td className="p-3">
                     <div className="flex flex-wrap gap-2">
                       <button onClick={() => review(product.id, 'approved')} className="rounded bg-green-600 px-2 py-1 text-xs text-white">اعتماد</button>
-                      <button onClick={() => review(product.id, 'rejected')} className="rounded bg-red-600 px-2 py-1 text-xs text-white">رفض</button>
+                      <button onClick={() => { setRejectNote(''); setRejectModal({ id: product.id, name: product.name }); }} className="rounded bg-red-600 px-2 py-1 text-xs text-white">رفض</button>
                       <button onClick={() => review(product.id, 'suspended')} className="rounded bg-gray-700 px-2 py-1 text-xs text-white">إيقاف</button>
                       <button onClick={() => toggleFeature(product)} className="rounded bg-primary-600 px-2 py-1 text-xs text-white">{product.haaMarketplaceFeatured ? 'إلغاء التمييز' : 'تمييز'}</button>
                     </div>
@@ -250,6 +254,37 @@ export default function Marketplace() {
           </table>
         </div>
       </section>
+      {rejectModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4">
+            <h3 className="text-lg font-bold text-gray-900">رفض المنتج</h3>
+            <p className="text-sm text-gray-600">المنتج: <span className="font-medium">{rejectModal.name}</span></p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">سبب الرفض</label>
+              <textarea
+                value={rejectNote}
+                onChange={e => setRejectNote(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 h-28"
+                placeholder="مثال: الصورة غير واضحة، الوصف ناقص..."
+              />
+            </div>
+            <div className="flex gap-3 pt-4 border-t">
+              <button
+                onClick={() => review(rejectModal.id, 'rejected', rejectNote || undefined)}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+              >
+                تأكيد الرفض
+              </button>
+              <button
+                onClick={() => { setRejectModal(null); setRejectNote(''); }}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

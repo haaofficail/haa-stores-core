@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const settlementBatches = readFileSync(new URL('../apps/admin-dashboard/src/pages/SettlementBatches.tsx', import.meta.url), 'utf-8');
 const settlementBatchDetail = readFileSync(new URL('../apps/admin-dashboard/src/pages/SettlementBatchDetail.tsx', import.meta.url), 'utf-8');
+const errorState = readFileSync(new URL('../apps/admin-dashboard/src/components/ui/ErrorState.tsx', import.meta.url), 'utf-8');
 const adminApp = readFileSync(new URL('../apps/admin-dashboard/src/App.tsx', import.meta.url), 'utf-8');
 const adminApi = readFileSync(new URL('../apps/admin-dashboard/src/lib/api.ts', import.meta.url), 'utf-8');
 
@@ -28,7 +29,9 @@ describe('Admin Settlement Batches UI', () => {
   });
 
   it('batches page has error state with retry', () => {
-    expect(settlementBatches).toContain('إعادة المحاولة');
+    expect(settlementBatches).toContain('ErrorState');
+    expect(settlementBatches).toContain('<ErrorState message="فشل تحميل دفعات التسوية" onRetry={load} />');
+    expect(errorState).toContain('إعادة المحاولة');
     expect(settlementBatches).toContain('error');
   });
 

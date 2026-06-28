@@ -5,6 +5,96 @@
 
 ---
 
+### ISSUE-0030: GitHub Test Source-Grep Contracts Drifted After Shared ErrorState and Print DOM Hardening
+
+- **ID:** ISSUE-0030
+- **Date:** 2026-06-28
+- **Severity:** Medium (PR CI Test blocker)
+- **Area:** CI / Tests / Admin dashboard / Merchant dashboard print flows
+- **Related Tasks:** TASK-0093
+- **Symptoms:** After TASK-0093 Sonar follow-up commits, the GitHub CI `Test` job failed even though typecheck, lint, and builds passed. Failing assertions expected `LandingInbox.tsx` and `SettlementBatches.tsx` to contain the Arabic retry copy directly, and expected `Orders.tsx` to import `escapeHtmlText` plus build print HTML through the old `document.write` contract.
+- **Expected:** Source-grep tests should lock the current product contract: admin pages wire shared `ErrorState` with `onRetry`, shared `ErrorState` owns the retry copy, and merchant print windows build DOM nodes with `textContent`.
+- **Actual:** The tests still encoded older implementation details: page-local retry text and string-based print HTML escaping.
+- **Root Cause:** The tests were implementation-coupled source-grep contracts. After TASK-0093 improved the runtime code by centralizing retry UI and replacing `document.write` with DOM/textContent output, the tests were not updated in the same commit.
+- **Fix:** Updated `tests/admin-landing-inbox.test.tsx` and `tests/scheduled-settlement-admin-batches-ui.test.ts` to assert `ErrorState` wiring plus shared retry copy. Updated `tests/pii-gating-orders-contract.test.ts` to assert `preparePrintDocument`, `customer.textContent`, sensitive-phone gating, and absence of `document.write` / `innerHTML`. Corrected the `Orders.tsx` print comment so it no longer claims CSV escaping is used in the print path.
+- **Verification:** Focused CI contract command passed 4 files / 46 tests with 1 skipped. Full `pnpm test` passed 354 files / 4618 tests with 3 skipped and 14 todo. `pnpm --filter @haa/admin-dashboard typecheck`, `pnpm --filter @haa/merchant-dashboard typecheck`, `pnpm preflight`, `pnpm check:skills`, and `git diff --check` passed.
+- **Prevention:** When source-grep tests assert UI implementation details, update the test in the same commit as the implementation change. Prefer asserting stable contracts such as shared component wiring, permission gates, and dangerous sink absence over matching old local copy or helper names.
+- **Status:** Fixed locally in TASK-0093; awaiting refreshed GitHub CI after push.
+
+---
+
+### ISSUE-0029: SonarCloud PR Gate Counted Templated Docs and Inherited Admin Code Smells
+
+- **ID:** ISSUE-0029
+- **Date:** 2026-06-28
+- **Severity:** Medium (PR quality-gate blocker)
+- **Area:** CI / SonarCloud / Admin dashboard / Hook scripts / Documentation
+- **Related Tasks:** TASK-0093
+- **Symptoms:** After TASK-0093 was pushed to PR #320, GitHub reported SonarCloud Quality Gate failure with `5.8% Duplication on New Code` (required <= 3%) and `B Reliability Rating on New Code` (required A). Sonar annotations highlighted `StorePaymentSettings.tsx` nested functions and `scripts/hooks/pre-edit-frontend.sh` using `[` instead of `[[`. After the first reliability fixes, the refreshed gate narrowed to `5.7% Duplication on New Code` from repeated admin-dashboard UI blocks.
+- **Expected:** Templated compliance/runbook docs should not count against code duplication, inherited admin payment settings should keep async mapping logic shallow enough for static analysis, and shell hooks should use safer bash conditionals.
+- **Actual:** The PR introduced several similarly structured compliance reports and runbooks, while the inherited admin page nested response normalization inside a hook callback. The frontend hook used POSIX `[` in a bash script even though the rest of the hook uses `[[`. Sonar also flagged merchant HTML escaping because `escapeHtmlText(unknown)` could stringify objects as `[object Object]`. The remaining duplication came from repeated admin nav item object shapes, repeated loading skeletons, repeated CSV export functions, and duplicated store selector markup.
+- **Root Cause:** Sonar's new-code quality gate was treating governance docs as CPD input, and inherited admin code kept repeated UI scaffolding inline instead of centralizing it behind small shared helpers.
+- **Fix:** Added `.sonarcloud.properties` for SonarCloud Automatic Analysis plus `sonar-project.properties` for scanner-based runs, both with `docs/**` / Markdown CPD exclusions. Extracted provider-settings normalization helpers outside `StorePaymentSettings`, changed the hook file-existence test to `[[ -f "$INDEX_CSS" ]]`, replaced merchant print `document.write` HTML strings with DOM/textContent construction, and changed the Plans modal backdrop from clickable `div` elements to a native backdrop button. Follow-up Sonar CPD reduction extracted `AdminTableSkeleton`, `StoreSelectorPanel`, `downloadRowsAsCsv`, and a typed admin nav helper.
+- **Verification:** `pnpm --filter @haa/admin-dashboard typecheck` passed; `pnpm --filter @haa/admin-dashboard build` passed; `pnpm --filter @haa/merchant-dashboard typecheck` passed; focused settlement/geidea tests passed 3 files / 24 tests; focused admin wiring/source-grep tests passed 3 files / 60 tests with 1 skipped; dashboard print HTML escape tests passed 3/3; `bash -n scripts/hooks/pre-edit-frontend.sh` passed; `pnpm check:skills` passed 43/43; `pnpm preflight` passed; `git diff --check` passed.
+- **Prevention:** Keep generated/templated docs out of Sonar CPD scope, keep admin API response normalization in top-level helpers, extract repeated admin UI scaffolding into shared helpers, use bash `[[ ]]` conditionals in repo hook scripts, build print views with DOM/textContent instead of `document.write`, and use native controls for modal backdrops.
+- **Status:** Fixed locally in TASK-0093; awaiting refreshed SonarCloud result after the admin UI duplication refactor push.
+
+---
+
+### ISSUE-0028: Admin Settlement Batches TSX Comment Broke Preflight
+
+- **ID:** ISSUE-0028
+- **Date:** 2026-06-28
+- **Severity:** Medium (admin-dashboard build/preflight blocker)
+- **Area:** Admin dashboard / Settlement batches / TSX parsing
+- **Related Tasks:** TASK-0093
+- **Symptoms:** `pnpm preflight` failed during the inherited admin handoff with TypeScript parser errors in `apps/admin-dashboard/src/pages/SettlementBatches.tsx`: `TS1005 ')' expected`, `TS1382 Unexpected token`, and `TS1381 Unexpected token`.
+- **Expected:** The settlement batches page should render its loading, error, empty, and table branches as valid TSX and should not block root preflight.
+- **Actual:** The error branch of the ternary expression contained a standalone JSX comment immediately before `<ErrorState />`, leaving the branch without a single valid returned expression.
+- **Root Cause:** A handoff edit inserted a JSX comment directly inside a ternary branch instead of wrapping the branch in a fragment or leaving the comment outside the expression.
+- **Fix:** Removed the invalid comment from the inherited staged handoff and kept the branch as a single `<ErrorState />` expression. Cleaned the matching no-value comment noise from the inherited landing inbox handoff before staging the final version; both reconciled files match valid `HEAD` source in the final publish scope.
+- **Verification:** `pnpm --filter @haa/admin-dashboard typecheck` passed; focused settlement/geidea tests passed 3 files / 24 tests; `pnpm --filter @haa/admin-dashboard build` passed; `pnpm check:skills` passed 43/43; `pnpm preflight` passed.
+- **Prevention:** In JSX ternary branches, return one valid expression; if a comment is needed, wrap the branch in a fragment or move the comment outside the ternary. Run app-level typecheck before staging handoff edits.
+- **Status:** Fixed locally in TASK-0093.
+
+---
+
+### ISSUE-0027: Local Full Smoke Blocked by Unapplied Order Preparation Migration
+
+- **ID:** ISSUE-0027
+- **Date:** 2026-06-28
+- **Severity:** Medium (local launch-readiness smoke blocker)
+- **Area:** Local DB / Orders / Smoke tests / Launch readiness
+- **Related Tasks:** TASK-0091
+- **Symptoms:** `pnpm smoke` failed 9/46 during local app smoke. Order-list and tracking checks returned `500` with `API-001`, and API logs showed PostgreSQL error `column "preparation_status" does not exist` while querying `orders`.
+- **Expected:** Local smoke should be able to query orders and public tracking after the repo schema and local DB are aligned. If migrations are missing, the smoke path should stop before mutating flows and report the required owner action.
+- **Actual:** The current code and schema reference `orders.preparation_status`, and migration `packages/db/src/migrations/0077_order_preparation_status.sql` exists, but the current local database has not applied that migration. Related smoke assertions also still expect older product response shapes such as `body.data.data`.
+- **Root Cause:** Local DB schema drift: the working code is ahead of the local database migration state. The full smoke suite also contains stale API-response assumptions from an earlier contract.
+- **Fix:** Not applied in TASK-0091 because `db:migrate` is owner-only under AGENTS.md §14.7. The safe follow-up is owner-approved local-only migration/rebuild, then a dedicated testing task to refresh stale `tests/smoke.test.ts` response-shape assertions if they still fail.
+- **Verification:** `pnpm ops:monitor` passed before the full smoke failure; sanitized local provider/status probes returned 200; `pnpm test:smoke` passed 29/29. `pnpm smoke` reproduced the blocker, and API logs confirmed the missing `preparation_status` column. `pnpm ops:errors` then reported 3 actionable P2 `API-001` events and no recommended incident/task.
+- **Prevention:** Before running full DB-backed local smoke after schema work, confirm the local DB has applied pending migrations or intentionally rebuild the local DB with owner approval. Keep smoke-test response-shape assertions aligned with the current public API contract.
+- **Status:** Open — owner action required before full local smoke can pass.
+
+---
+
+### ISSUE-0026: Audit Hardening Gaps in Workflow Shell Inputs, Credential Cipher Validation, and Print HTML Encoding
+
+- **ID:** ISSUE-0026
+- **Date:** 2026-06-28
+- **Severity:** High (defense-in-depth / CI static-analysis failure risk)
+- **Area:** GitHub Actions / Credential encryption helpers / Merchant dashboard print flows
+- **Related Tasks:** TASK-0087
+- **Symptoms:** Defensive audit found three confirmed P1-quality hardening gaps: staging ops workflows interpolated GitHub Actions expressions directly inside shell `run:` blocks; AES-GCM helpers did not explicitly pin the authentication-tag length and accepted weakly validated encrypted payload shapes; merchant dashboard print windows wrote order/customer/gift-message text into HTML with raw or CSV-oriented escaping.
+- **Expected:** Workflow inputs should be passed through shell environment variables and quoted safely; encrypted credential helpers should validate key/IV/tag/ciphertext shape before crypto operations and pin the GCM tag length; `document.write` print markup should HTML-escape all user-controlled text.
+- **Actual:** The workflows mixed `${{ inputs.* }}` expressions into shell conditionals/remote-command arguments, Semgrep flagged AES-GCM calls without explicit `authTagLength`, and dashboard print markup treated HTML output as plain text or CSV context.
+- **Root Cause:** These surfaces lacked context-specific regression contracts: workflow input handling was not tested as shell data, crypto helpers relied on implicit Node defaults and loose parse checks, and print-window code conflated CSV-injection escaping with HTML-output encoding.
+- **Fix:** Moved workflow inputs into `env`, used shell variables for conditionals, and base64-encoded remote env payloads before SSH transfer. Added strict 64-hex key validation, IV/tag/ciphertext length/hex checks, malformed encrypted-looking payload rejection, and explicit 16-byte GCM auth tags in both credential helpers. Added `escapeHtmlText` and wired order bulk print plus gift-message print through HTML escaping.
+- **Verification:** Focused tests passed for crypto format rejection, workflow shell-injection contracts, PII/CSV/HTML print contracts, and HTML escaping. Post-fix Semgrep no longer reports the workflow shell-injection or AES-GCM findings. Full local verification passed: `pnpm typecheck`, `pnpm test`, and `pnpm build`; `pnpm lint` exited 0 with pre-existing warnings only.
+- **Prevention:** Keep regression tests for workflow shell input handling, AES-GCM encrypted payload shape, and dashboard print HTML escaping. Any new `document.write`/print window must use HTML-context escaping, not CSV escaping or raw interpolation.
+- **Status:** Fixed locally.
+
+---
+
 ### ISSUE-0025: CI E2E Targeted Shared Staging During Deploy
 
 - **ID:** ISSUE-0025

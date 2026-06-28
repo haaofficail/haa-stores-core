@@ -10,6 +10,8 @@
 - [ ] `pnpm preflight` passes
 - [ ] `pnpm typecheck` passes
 - [ ] Relevant tests pass (or reason documented)
+- [ ] Full local smoke that touches orders/tracking confirms local DB migrations are applied, especially `0077_order_preparation_status.sql`
+- [ ] Smoke-test response-shape assertions match the current API contract before treating failures as product defects
 - [ ] `git diff` reviewed — no unrelated changes
 - [ ] No files outside scope were modified
 - [ ] docs/ops/ files updated if needed
@@ -19,6 +21,11 @@
 - [ ] CI Test job provisions PostgreSQL before DB-backed tests
 - [ ] CI Test/E2E jobs run `pnpm db:bootstrap` and seeds on clean databases
 - [ ] CI E2E Playwright defaults target local dev servers, not shared staging, unless explicit staging env vars are set
+- [ ] GitHub Actions `run:` blocks pass `${{ inputs.* }}` through `env` variables instead of interpolating expressions directly into shell logic
+- [ ] SSH/remote workflow payloads that may contain newlines or shell metacharacters are transferred via quoted/base64-safe values
+- [ ] Sonar CPD excludes templated governance docs; Markdown compliance/runbook repetition should not fail code duplication gates
+- [ ] Repeated admin-dashboard nav/list/loading/export UI patterns are extracted to shared helpers before relying on Sonar exclusions
+- [ ] Bash hook scripts use `[[ ]]` conditionals instead of `[` where bash is available
 - [ ] Numeric type-change migrations include an explicit PostgreSQL `USING` cast
 - [ ] Workspace packages build before individual app builds
 - [ ] Docker build stages compile workspace packages before apps
@@ -42,11 +49,16 @@
 - [ ] Loading states present where needed
 - [ ] Empty states present where needed
 - [ ] Error states present where needed
+- [ ] JSX ternary branches return one valid expression; comments inside branches are wrapped in a fragment or moved outside the ternary
+- [ ] Source-grep UI tests assert shared `ErrorState` wiring when retry copy lives in the shared component
+- [ ] Source-grep nav tests assert the current nav helper contract, not an obsolete object-literal shape
+- [ ] Modal backdrops use native buttons or keyboard-accessible controls, not clickable plain `div` elements
 - [ ] No random colors — tokens used
 - [ ] No layout overflow or scroll issues
 - [ ] Touch targets ≥ 44px on mobile
 - [ ] Generated merchant policy drafts contain no CJK characters or unintended mixed-language fragments
 - [ ] Saudi policy generator keeps privacy legal-basis/rights/retention clauses and delayed-delivery cancellation language covered by tests
+- [ ] Print-window flows build DOM/textContent output instead of `document.write` HTML strings
 
 ## Theme
 
@@ -240,6 +252,8 @@
 - [x] Tampered or arbitrary `<script>` payloads are dropped silently with `console.warn` and never reach `innerHTML`
 - [x] `window.__haaPixelsLoaded` records matched providers after a successful injection (observability for future CSP report-only collectors)
 - [x] `tests/pixel-provider-allowlist.test.ts` and `pnpm --filter @haa/storefront build` are run on every change to `pixels.ts`, `pixel-validation.ts`, or `usePixels.ts`
+- [x] AES-GCM credential helpers validate `PAYMENT_CREDENTIALS_ENCRYPTION_KEY` as exactly 64 hex chars, pin `authTagLength: 16`, and reject malformed IV/tag/ciphertext segments before decrypting
+- [x] Merchant-dashboard print windows and any `document.write` HTML sinks escape user/customer text with HTML-context escaping, not CSV escaping
 
 - [ ] `requireStoreAccess()` is applied on all merchant routes that use `:storeId`
 - [ ] `requirePermission()` uses correct permission string (not `read` for write operations)

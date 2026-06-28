@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
 import { useCallback, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '../lib/api';
@@ -80,7 +81,7 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      <h1 className="text-2xl font-bold">{t('settings.pageTitle', 'إعدادات المنصة')}</h1>
+      <h1 className="text-title2 font-bold text-gray-900 tracking-tight">{t('settings.pageTitle', 'إعدادات المنصة')}</h1>
 
       <div className="bg-white rounded-xl border p-6 space-y-6">
         <div className="space-y-1">

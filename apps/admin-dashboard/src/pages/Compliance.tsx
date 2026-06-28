@@ -1,47 +1,37 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { adminApi } from '../lib/api';
-import './Compliance.css';
+import { ErrorState } from '../components/ui/ErrorState';
 
 type TenantCompliance = {
   id: number;
   name: string;
   slug: string;
-  // G1 — Commercial Registration
   commercialRegistrationNumber: string | null;
   commercialRegistrationIssuedAt: string | null;
-  // G2 — VAT
   vatNumber: string | null;
   vatRegisteredAt: string | null;
-  // G3 — E-commerce License
   ecommerceLicenseNumber: string | null;
   ecommerceLicenseIssuedAt: string | null;
   ecommerceLicenseExpiresAt: string | null;
-  // G4 — DPO
   dpoEmail: string | null;
   dpoPhone: string | null;
   dpoAppointedAt: string | null;
-  // G5 — Trademark
   trademarkNumber: string | null;
   trademarkRegisteredAt: string | null;
   trademarkExpiresAt: string | null;
-  // G6 — PCI-DSS ASV
   asvLastScanAt: string | null;
   asvVendor: string | null;
   asvCertificateUrl: string | null;
-  // G7 — Pen-test
   pentestLastScanAt: string | null;
   pentestVendor: string | null;
   pentestReportUrl: string | null;
   pentestPass: boolean | null;
-  // G8 — Hosting
   hostingRegion: string | null;
   hostingProvider: string | null;
   hostingKsaResidency: boolean;
-  // G9 — Tabby DPA
   tabbyDpaSignedAt: string | null;
   tabbyDpaUrl: string | null;
-  // G10 — DR Plan
   drPlanDocumentedAt: string | null;
   drLastTabletopAt: string | null;
   drNextTabletopAt: string | null;
@@ -52,28 +42,23 @@ type ItemKey = keyof TenantCompliance;
 interface ComplianceItem {
   key: ItemKey;
   code: string;
-  title: string;
   titleAr: string;
+  titleEn: string;
   group: 'registrations' | 'people' | 'security' | 'infrastructure';
   description: string;
-  brief: string;
 }
 
 const ITEMS: ComplianceItem[] = [
-  // Registrations
-  { key: 'commercialRegistrationNumber', code: 'G1', title: 'Commercial Registration (CR)', titleAr: 'السجل التجاري', group: 'registrations', description: 'MoCI registration certificate', brief: 'docs/ops/OWNER_ACTION_G1_CR.md' },
-  { key: 'vatNumber', code: 'G2', title: 'VAT Registration', titleAr: 'التسجيل في ضريبة القيمة المضافة', group: 'registrations', description: 'ZATCA VAT certificate', brief: 'docs/ops/OWNER_ACTION_G2_VAT.md' },
-  { key: 'ecommerceLicenseNumber', code: 'G3', title: 'E-Commerce License', titleAr: 'رخصة التجارة الإلكترونية', group: 'registrations', description: 'MoCI e-commerce license', brief: 'docs/ops/OWNER_ACTION_G3_ECOMMERCE_LICENSE.md' },
-  { key: 'trademarkNumber', code: 'G5', title: 'Trademark Registration', titleAr: 'تسجيل العلامة التجارية', group: 'registrations', description: 'SAIP trademark certificate', brief: 'docs/ops/OWNER_ACTION_G5_TRADEMARK.md' },
-  // People
-  { key: 'dpoEmail', code: 'G4', title: 'Data Protection Officer (DPO)', titleAr: 'مسؤول حماية البيانات', group: 'people', description: 'PDPL Article 22 — appointed DPO', brief: 'docs/ops/OWNER_ACTION_G4_DPO.md' },
-  // Security
-  { key: 'asvCertificateUrl', code: 'G6', title: 'PCI-DSS ASV Scan', titleAr: 'فحص PCI-DSS الربع سنوي', group: 'security', description: 'Approved Scanning Vendor quarterly scan', brief: 'docs/ops/OWNER_ACTION_G6_PCI_ASV.md' },
-  { key: 'pentestReportUrl', code: 'G7', title: 'Penetration Test', titleAr: 'اختبار الاختراق', group: 'security', description: 'CREST-certified pen-test (annual)', brief: 'docs/ops/OWNER_ACTION_G7_PENTEST.md' },
-  { key: 'tabbyDpaUrl', code: 'G9', title: 'Tabby Data Processing Agreement', titleAr: 'اتفاقية معالجة بيانات تابي', group: 'security', description: 'UAE cross-border data processing contract', brief: 'docs/ops/OWNER_ACTION_G9_TABBY_DPA.md' },
-  // Infrastructure
-  { key: 'hostingRegion', code: 'G8', title: 'KSA Hosting Decision', titleAr: 'قرار الاستضافة داخل السعودية', group: 'infrastructure', description: 'Region residency for data sovereignty', brief: 'docs/ops/OWNER_ACTION_G8_KSA_HOSTING.md' },
-  { key: 'drPlanDocumentedAt', code: 'G10', title: 'Disaster Recovery Plan', titleAr: 'خطة التعافي من الكوارث', group: 'infrastructure', description: 'NCA-required DR plan + annual tabletop', brief: 'docs/ops/OWNER_ACTION_G10_DR_PLAN.md' },
+  { key: 'commercialRegistrationNumber', code: 'G1', titleAr: 'السجل التجاري', titleEn: 'Commercial Registration', group: 'registrations', description: 'شهادة تسجيل وزارة التجارة' },
+  { key: 'vatNumber', code: 'G2', titleAr: 'ضريبة القيمة المضافة', titleEn: 'VAT Registration', group: 'registrations', description: 'شهادة تسجيل ضريبي من زاتكا' },
+  { key: 'ecommerceLicenseNumber', code: 'G3', titleAr: 'رخصة التجارة الإلكترونية', titleEn: 'E-Commerce License', group: 'registrations', description: 'رخصة MoCI للتجارة الإلكترونية' },
+  { key: 'trademarkNumber', code: 'G5', titleAr: 'العلامة التجارية', titleEn: 'Trademark Registration', group: 'registrations', description: 'شهادة SAIP لتسجيل العلامة' },
+  { key: 'dpoEmail', code: 'G4', titleAr: 'مسؤول حماية البيانات', titleEn: 'Data Protection Officer', group: 'people', description: 'المادة 22 من نظام حماية البيانات الشخصية' },
+  { key: 'asvCertificateUrl', code: 'G6', titleAr: 'فحص PCI-DSS الربع سنوي', titleEn: 'PCI-DSS ASV Scan', group: 'security', description: 'فحص ASV ربع سنوي معتمد' },
+  { key: 'pentestReportUrl', code: 'G7', titleAr: 'اختبار الاختراق', titleEn: 'Penetration Test', group: 'security', description: 'اختبار CREST سنوي' },
+  { key: 'tabbyDpaUrl', code: 'G9', titleAr: 'اتفاقية بيانات تابي', titleEn: 'Tabby DPA', group: 'security', description: 'عقد معالجة بيانات عابر للحدود' },
+  { key: 'hostingRegion', code: 'G8', titleAr: 'قرار الاستضافة السعودية', titleEn: 'KSA Hosting Decision', group: 'infrastructure', description: 'سيادة البيانات واستضافتها' },
+  { key: 'drPlanDocumentedAt', code: 'G10', titleAr: 'خطة التعافي من الكوارث', titleEn: 'Disaster Recovery Plan', group: 'infrastructure', description: 'خطة DR المطلوبة من NCA' },
 ];
 
 const GROUP_LABELS: Record<ComplianceItem['group'], string> = {
@@ -107,7 +92,39 @@ function isExpiringSoon(dateStr: string | null, daysAhead = 30): boolean {
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' });
+  return new Date(dateStr).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: '2-digit' });
+}
+
+type Status = 'done' | 'pending' | 'expired' | 'expiring';
+
+const STATUS_CARD: Record<Status, string> = {
+  done: 'bg-emerald-50 border border-emerald-100',
+  pending: 'bg-gray-50 border border-gray-100',
+  expired: 'bg-red-50 border border-red-100',
+  expiring: 'bg-amber-50 border border-amber-100',
+};
+
+const STATUS_PILL: Record<Status, string> = {
+  done: 'bg-emerald-600 text-white',
+  pending: 'bg-gray-100 text-gray-500',
+  expired: 'bg-red-600 text-white',
+  expiring: 'bg-amber-500 text-white',
+};
+
+const STATUS_LABEL: Record<Status, string> = {
+  done: '✓ مكتمل',
+  pending: '○ معلق',
+  expired: '⚠ منتهي',
+  expiring: '⏰ ينتهي قريباً',
+};
+
+function getStatus(item: ComplianceItem, value: unknown): Status {
+  const filled = isFilled(value);
+  if (!filled) return 'pending';
+  const isExpiry = item.key === 'ecommerceLicenseExpiresAt' || item.key === 'trademarkExpiresAt';
+  if (isExpiry && isExpired(value as string | null)) return 'expired';
+  if (isExpiry && isExpiringSoon(value as string | null)) return 'expiring';
+  return 'done';
 }
 
 export default function Compliance() {
@@ -115,41 +132,18 @@ export default function Compliance() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
+    setError(null);
     adminApi.getTenants()
-      .then((data: unknown) => {
-        setTenants(data as TenantCompliance[]);
-        setLoading(false);
-      })
-      .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Failed to load tenants');
-        setLoading(false);
-      });
-  }, []);
+      .then((data: unknown) => { setTenants(data as TenantCompliance[]); })
+      .catch((err: unknown) => { setError(err instanceof Error ? err.message : 'فشل تحميل البيانات'); })
+      .finally(() => setLoading(false));
+  };
 
-  if (loading) {
-    return (
-      <div className="page">
-        <div className="page-header">
-          <h1>الامتثال — Compliance</h1>
-          <p className="page-sub">جاري التحميل…</p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => { load(); }, []);
 
-  if (error) {
-    return (
-      <div className="page">
-        <div className="page-header">
-          <h1>الامتثال — Compliance</h1>
-          <p className="page-sub" style={{ color: 'var(--danger)' }}>{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Compute aggregate stats across all tenants
+  // Aggregate stats
   const totalSlots = tenants.length * ITEMS.length;
   let filledSlots = 0;
   let expiredCount = 0;
@@ -158,149 +152,145 @@ export default function Compliance() {
     for (const item of ITEMS) {
       const v = t[item.key];
       if (isFilled(v)) filledSlots++;
-      // Check expiry on date-stamped items
-      if (item.key === 'ecommerceLicenseExpiresAt' || item.key === 'trademarkExpiresAt') {
+      const isExpiry = item.key === 'ecommerceLicenseExpiresAt' || item.key === 'trademarkExpiresAt';
+      if (isExpiry) {
         if (isExpired(v as string | null)) expiredCount++;
         else if (isExpiringSoon(v as string | null)) expiringSoonCount++;
       }
     }
   }
-
   const overallPct = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
+  const pctColor = overallPct >= 80 ? 'text-emerald-600' : overallPct >= 50 ? 'text-amber-600' : 'text-red-600';
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1>الامتثال — Compliance</h1>
-        <p className="page-sub">
-          G1-G10 owner action items (TASK-0038). Data sourced from the <code>tenants</code> table (migration 0061).
-        </p>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-title2 font-bold text-gray-900 tracking-tight">الامتثال</h1>
+        <p className="text-footnote text-gray-400 mt-1">بنود G1-G10 — مصدر البيانات: جدول التجار (migration 0061)</p>
       </div>
 
-      {/* Summary banner */}
-      <div className="compliance-summary">
-        <div className="summary-stat">
-          <div className="summary-value">{tenants.length}</div>
-          <div className="summary-label">المتاجر</div>
-        </div>
-        <div className="summary-stat">
-          <div className="summary-value" style={{ color: 'var(--primary)' }}>{filledSlots}</div>
-          <div className="summary-label">من {totalSlots} بند مكتمل</div>
-        </div>
-        <div className="summary-stat">
-          <div className="summary-value" style={{ color: overallPct >= 80 ? 'var(--primary)' : overallPct >= 50 ? 'var(--warn)' : 'var(--danger)' }}>
-            {overallPct}%
+      {/* Summary bar */}
+      {!loading && !error && tenants.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-5 mb-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-900 tabular-nums tracking-tight">{tenants.length}</div>
+            <div className="text-footnote text-gray-400 mt-1">تاجر</div>
           </div>
-          <div className="summary-label">مستوى الامتثال الكلي</div>
+          <div className="text-center">
+            <div className={`text-2xl font-bold tabular-nums tracking-tight ${pctColor}`}>{overallPct}%</div>
+            <div className="text-footnote text-gray-400 mt-1">مستوى الامتثال</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-900 tabular-nums tracking-tight">{filledSlots}<span className="text-sm font-normal text-gray-400">/{totalSlots}</span></div>
+            <div className="text-footnote text-gray-400 mt-1">بند مكتمل</div>
+          </div>
+          <div className="text-center">
+            {expiredCount > 0 ? (
+              <>
+                <div className="text-2xl font-bold text-red-600 tabular-nums tracking-tight">{expiredCount}</div>
+                <div className="text-footnote text-red-400 mt-1">شهادات منتهية</div>
+              </>
+            ) : expiringSoonCount > 0 ? (
+              <>
+                <div className="text-2xl font-bold text-amber-600 tabular-nums tracking-tight">{expiringSoonCount}</div>
+                <div className="text-footnote text-amber-400 mt-1">تنتهي خلال 30 يوم</div>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-emerald-600 tabular-nums tracking-tight">✓</div>
+                <div className="text-footnote text-emerald-500 mt-1">لا تنبيهات</div>
+              </>
+            )}
+          </div>
         </div>
-        {expiredCount > 0 && (
-          <div className="summary-stat alert">
-            <div className="summary-value" style={{ color: 'var(--danger)' }}>{expiredCount}</div>
-            <div className="summary-label">شهادات منتهية!</div>
-          </div>
-        )}
-        {expiringSoonCount > 0 && (
-          <div className="summary-stat warn">
-            <div className="summary-value" style={{ color: 'var(--warn)' }}>{expiringSoonCount}</div>
-            <div className="summary-label">تنتهي خلال 30 يوم</div>
-          </div>
-        )}
-      </div>
+      )}
 
-      {tenants.length === 0 ? (
-        <div className="empty-state">
-          <p>لا توجد متاجر. أضف متجر أولاً من <Link to="/tenants">صفحة المتاجر</Link>.</p>
+      {loading ? (
+        <div className="bg-white rounded-xl shadow-sm p-8 space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-6 w-full bg-gray-200 rounded animate-pulse" />
+          ))}
+        </div>
+      ) : error ? (
+        <ErrorState message={error} onRetry={load} />
+      ) : tenants.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-dashed border-gray-200">
+          <p className="text-callout text-gray-500">
+            لا توجد بيانات. أضف تاجراً أولاً من{' '}
+            <Link to="/tenants" className="text-primary-600 hover:underline">صفحة التجار</Link>.
+          </p>
         </div>
       ) : (
-        tenants.map((tenant) => {
-          // Compute per-tenant stats
-          let tenantFilled = 0;
-          for (const item of ITEMS) {
-            if (isFilled(tenant[item.key])) tenantFilled++;
-          }
-          const tenantPct = Math.round((tenantFilled / ITEMS.length) * 100);
+        <div className="space-y-5">
+          {tenants.map((tenant) => {
+            let tenantFilled = 0;
+            for (const item of ITEMS) {
+              if (isFilled(tenant[item.key])) tenantFilled++;
+            }
+            const tenantPct = Math.round((tenantFilled / ITEMS.length) * 100);
+            const tenantPctColor = tenantPct >= 80 ? 'text-emerald-600' : tenantPct >= 50 ? 'text-amber-600' : 'text-red-600';
 
-          return (
-            <div key={tenant.id} className="tenant-compliance">
-              <div className="tenant-compliance-header">
-                <div>
-                  <h2>{tenant.name}</h2>
-                  <p className="tenant-slug mono">/{tenant.slug}</p>
+            return (
+              <div key={tenant.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+                {/* Tenant header */}
+                <div className="flex items-start justify-between px-5 py-4 border-b border-gray-100">
+                  <div>
+                    <h2 className="text-callout font-semibold text-gray-900">{tenant.name}</h2>
+                    <p className="text-footnote text-gray-400 font-mono mt-0.5">/{tenant.slug}</p>
+                  </div>
+                  <div className="text-end">
+                    <div className={`text-xl font-bold tabular-nums tracking-tight ${tenantPctColor}`}>{tenantPct}%</div>
+                    <div className="text-caption1 text-gray-400">{tenantFilled} من {ITEMS.length} بند</div>
+                  </div>
                 </div>
-                <div className="tenant-compliance-stat">
-                  <div className="tenant-compliance-pct" style={{
-                    color: tenantPct >= 80 ? 'var(--primary)' : tenantPct >= 50 ? 'var(--warn)' : 'var(--danger)',
-                  }}>
-                    {tenantPct}%
-                  </div>
-                  <div className="tenant-compliance-count">
-                    {tenantFilled} من {ITEMS.length} بند
-                  </div>
+
+                {/* Groups */}
+                <div className="px-5 py-4 space-y-5">
+                  {GROUP_ORDER.map((group) => {
+                    const groupItems = ITEMS.filter(i => i.group === group);
+                    return (
+                      <div key={group}>
+                        <p className="text-caption1 font-semibold text-gray-400 uppercase tracking-wider mb-3">{GROUP_LABELS[group]}</p>
+                        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+                          {groupItems.map((item) => {
+                            const value = tenant[item.key];
+                            const status = getStatus(item, value);
+                            return (
+                              <div key={item.key} className={`rounded-xl p-3.5 flex flex-col gap-2 ${STATUS_CARD[status]}`}>
+                                <div className="flex items-start gap-2 flex-wrap">
+                                  <span className="inline-flex items-center justify-center h-5 px-1.5 bg-gray-900 text-white rounded text-xs font-mono font-semibold flex-shrink-0">
+                                    {item.code}
+                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-semibold text-gray-900 leading-tight">{item.titleAr}</div>
+                                    <div className="text-xs text-gray-400">{item.titleEn}</div>
+                                  </div>
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${STATUS_PILL[status]}`}>
+                                    {STATUS_LABEL[status]}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {status !== 'pending' ? (
+                                    typeof value === 'boolean'
+                                      ? (value ? 'نعم' : 'لا')
+                                      : <span className="font-mono">{formatDate(value as string | null)}</span>
+                                  ) : (
+                                    <span className="text-gray-400">غير مكتمل</span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-gray-400 border-t border-black/5 pt-1.5">{item.description}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-
-              {GROUP_ORDER.map((group) => {
-                const groupItems = ITEMS.filter((i) => i.group === group);
-                return (
-                  <div key={group} className="compliance-group">
-                    <h3 className="compliance-group-title">{GROUP_LABELS[group]}</h3>
-                    <div className="compliance-items">
-                      {groupItems.map((item) => {
-                        const value = tenant[item.key];
-                        const filled = isFilled(value);
-                        const expired = item.key === 'ecommerceLicenseExpiresAt' || item.key === 'trademarkExpiresAt'
-                          ? isExpired(value as string | null)
-                          : false;
-                        const expiringSoon = item.key === 'ecommerceLicenseExpiresAt' || item.key === 'trademarkExpiresAt'
-                          ? isExpiringSoon(value as string | null)
-                          : false;
-
-                        let status: 'done' | 'pending' | 'expired' | 'expiring' = filled ? 'done' : 'pending';
-                        if (filled && expired) status = 'expired';
-                        else if (filled && expiringSoon) status = 'expiring';
-
-                        return (
-                          <div key={item.key} className={`compliance-item status-${status}`}>
-                            <div className="compliance-item-header">
-                              <span className="compliance-code">{item.code}</span>
-                              <span className="compliance-title">
-                                <span className="compliance-title-ar">{item.titleAr}</span>
-                                <span className="compliance-title-en">{item.title}</span>
-                              </span>
-                              <span className={`compliance-pill pill-${status}`}>
-                                {status === 'done' && '✓ مكتمل'}
-                                {status === 'pending' && '○ معلق'}
-                                {status === 'expired' && '⚠ منتهي'}
-                                {status === 'expiring' && '⏰ ينتهي قريباً'}
-                              </span>
-                            </div>
-                            <div className="compliance-item-value">
-                              {status === 'done' ? (
-                                <>
-                                  {typeof value === 'boolean' ? (
-                                    <span>{value ? 'نعم' : 'لا'}</span>
-                                  ) : (
-                                    <span className="mono">{formatDate(value as string | null)}</span>
-                                  )}
-                                </>
-                              ) : (
-                                <span className="muted">غير مكتمل</span>
-                              )}
-                            </div>
-                            <div className="compliance-item-footer">
-                              <span className="muted">{item.description}</span>
-                              <span className="mono muted">{item.brief}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })
+            );
+          })}
+        </div>
       )}
     </div>
   );

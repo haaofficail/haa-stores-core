@@ -18,7 +18,7 @@ NOT CSS classes, design tokens, or visual UI changes.
 ## Mandatory Skill Gate
 
 - [ ] Task type classified (one of the 13 in AGENTS.md §14.4)
-- [ ] 1–4 skills selected before any edit
+- [ ] All applicable skills selected before any edit (no numeric cap)
 - [ ] Why these skills was stated up front
 - [ ] Files expected to change were listed up front
 - [ ] Verification commands were mapped to selected skills
@@ -30,7 +30,7 @@ NOT CSS classes, design tokens, or visual UI changes.
 
 ## Skills Selected
 
-<!-- 1 to 4. Slug from .claude/skills/. One line per skill explaining why it fits. -->
+<!-- Select every applicable slug from .claude/skills/. No numeric cap. One line per skill explaining why it fits; do not add unrelated skills. -->
 
 -
 -
@@ -65,31 +65,37 @@ NOT acceptable as "skills applied" evidence:
 - `git diff --check`:
 
   ```
+
   ```
 
 - `pnpm typecheck`:
 
   ```
+
   ```
 
 - `pnpm test` (or targeted vitest for the affected area):
 
   ```
+
   ```
 
 - `pnpm lint`:
 
   ```
+
   ```
 
 - `pnpm check:skills`:
 
   ```
+
   ```
 
 - `git status --short`:
 
   ```
+
   ```
 
 ## Final Skill Compliance Report

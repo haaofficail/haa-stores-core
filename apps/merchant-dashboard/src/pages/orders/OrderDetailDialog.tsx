@@ -45,6 +45,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { ApiClientError, ordersApi, shippingApi } from '@/lib/api';
+import { preparePrintDocument } from '@/lib/html';
 import { getOrderActions, type OrderAction } from '@/lib/order-actions';
 import { PermissionGate } from '@/lib/permissions';
 import { formatCurrency, getDefaultImage, handleImageError } from '@/lib/utils';
@@ -422,8 +423,12 @@ export function OrderDetailDialog(props: OrderDetailDialogProps) {
                     if (msg) {
                       const win = window.open('', '_blank');
                       if (win) {
-                        win.document.write(`<!DOCTYPE html><html dir="rtl"><head><title>${t('orders.giftMessage', 'رسالة الهدية')}</title><style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fdf2f8;color:#9d174d;font-size:24px;padding:40px;text-align:center}</style></head><body>"${msg}"</body></html>`);
-                        win.document.close();
+                        const doc = preparePrintDocument(
+                          win,
+                          t('orders.giftMessage', 'رسالة الهدية'),
+                          'body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fdf2f8;color:#9d174d;font-size:24px;padding:40px;text-align:center}',
+                        );
+                        doc.body.textContent = `"${msg}"`;
                         win.print();
                       }
                     }

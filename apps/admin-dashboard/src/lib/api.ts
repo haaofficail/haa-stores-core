@@ -262,6 +262,12 @@ export const adminApi = {
   updateStoreStatus: (id: number, isActive: boolean) => request<Record<string, unknown>>('PATCH', `/admin/stores/${id}/status`, { isActive }),
   getKycProfiles: () => request<AdminKycProfile[]>('GET', '/admin/kyc'),
   reviewKyc: (id: number, status: string, rejectionReason?: string) => request<AdminKycProfile>('PATCH', `/admin/kyc/${id}/review`, { status, rejectionReason }),
+  getBankAccounts: () => request<Record<string, unknown>[]>('GET', '/admin/kyc/bank-accounts'),
+  reviewBankAccount: (id: number, status: 'verified' | 'rejected') => request<Record<string, unknown>>('PATCH', `/admin/kyc/bank-accounts/${id}/review`, { status }),
+  getSettlementReadiness: (storeId: number) => request<Record<string, unknown>>('GET', `/admin/stores/${storeId}/settlement-readiness`),
+  updateSettlementReadiness: (storeId: number, data: Record<string, unknown>) => request<Record<string, unknown>>('PATCH', `/admin/stores/${storeId}/settlement-readiness`, data),
+  getStorePaymentSettings: (storeId: number) => request<Record<string, unknown>[]>('GET', `/admin/stores/${storeId}/payment-settings`),
+  upsertStorePaymentSettings: (storeId: number, data: Record<string, unknown>) => request<Record<string, unknown>>('PUT', `/admin/stores/${storeId}/payment-settings`, data),
   getPayments: () => request<Record<string, unknown>[]>('GET', '/admin/payments'),
   getMarketplaceSummary: () => request<Record<string, unknown>>('GET', '/admin/marketplace/summary'),
   getMarketplaceProducts: (status?: string) => {
@@ -326,6 +332,7 @@ export const adminApi = {
   updatePlan: (id: number, data: Record<string, unknown>) => request<Record<string, unknown>>('PATCH', `/admin/plans/${id}`, data),
   getSettings: () => request<{ name: string; slug: string; logoUrl: string | null; faviconUrl: string | null }>('GET', '/admin/settings'),
   updateSettings: (data: { name: string; logoUrl?: string | null; faviconUrl?: string | null }) => request<Record<string, unknown>>('PUT', '/admin/settings', data),
+  getAdminUsers: () => request<Record<string, unknown>[]>('GET', '/admin/users'),
   getStoreBillingSettings: (storeId: number) =>
     request<{
       storeId: number; storeName: string;

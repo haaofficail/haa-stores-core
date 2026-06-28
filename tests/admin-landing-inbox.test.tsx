@@ -17,6 +17,7 @@ const read = (rel: string): string => readFileSync(resolve(ROOT, rel), 'utf-8');
 const PAGE_PATH = 'apps/admin-dashboard/src/pages/LandingInbox.tsx';
 const APP_PATH = 'apps/admin-dashboard/src/App.tsx';
 const API_PATH = 'apps/admin-dashboard/src/lib/api.ts';
+const ERROR_STATE_PATH = 'apps/admin-dashboard/src/components/ui/ErrorState.tsx';
 
 describe('Admin Landing Inbox page', () => {
   it('LandingInbox.tsx exists at the expected path', () => {
@@ -31,7 +32,7 @@ describe('Admin Landing Inbox page', () => {
   it('renders the Arabic page header', () => {
     const src = read(PAGE_PATH);
     expect(src).toContain('صندوق الوارد');
-    expect(src).toContain('Landing Contact');
+    expect(src).toContain('interface LandingContact');
   });
 
   it('has filter chips for all 5 statuses (in Arabic)', () => {
@@ -74,8 +75,11 @@ describe('Admin Landing Inbox page', () => {
 
   it('has loading, error-with-retry, and empty states', () => {
     const src = read(PAGE_PATH);
+    const errorStateSrc = read(ERROR_STATE_PATH);
     expect(src).toContain('animate-pulse');
-    expect(src).toContain('إعادة المحاولة');
+    expect(src).toContain('ErrorState');
+    expect(src).toContain('<ErrorState message="فشل تحميل صندوق الوارد" onRetry={load} />');
+    expect(errorStateSrc).toContain('إعادة المحاولة');
     expect(src).toContain('لا توجد رسائل بعد');
   });
 
@@ -141,9 +145,9 @@ describe('Admin Landing Inbox — route and nav registration', () => {
 
   it('Admin sidebar/nav exposes the صندوق الوارد entry', () => {
     const src = read(APP_PATH);
-    // Anchored to the navItems array entry so a future rename of the route
-    // without a matching nav update fails this gate.
-    expect(src).toMatch(/path:\s*'\/landing-inbox',\s*label:\s*'صندوق الوارد'/);
+    // Anchored to the navGroups entry so a future rename of the route without
+    // a matching nav update fails this gate.
+    expect(src).toContain('/landing-inbox|صندوق الوارد|Inbox');
   });
 });
 
