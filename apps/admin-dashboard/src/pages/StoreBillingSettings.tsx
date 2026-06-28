@@ -120,7 +120,7 @@ export default function StoreBillingSettings() {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">إعدادات رسوم المتاجر</h1>
+          <h1 className="text-title2 font-bold text-gray-900 tracking-tight">إعدادات رسوم المتاجر</h1>
           <p className="text-sm text-gray-500 mt-1">
             اضبط سياسة رسوم المنصة لكل متجر. يتم تطبيقها على الطلبات الجديدة فقط — الطلبات القديمة تحتفظ بالرسوم المسجّلة وقت إنشائها.
           </p>

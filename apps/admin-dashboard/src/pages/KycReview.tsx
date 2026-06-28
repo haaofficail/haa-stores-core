@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
+import { ErrorState } from '../components/ui/ErrorState';
 
 export default function KycReview() {
   const { t } = useTranslation();
@@ -14,6 +15,7 @@ export default function KycReview() {
   const [rejectReason, setRejectReason] = useState('');
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
+  const [query, setQuery] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
@@ -59,7 +61,16 @@ export default function KycReview() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">{t('kyc.pageTitle', 'مراجعة التحقق')}</h2>
+      <h2 className="text-title2 font-bold text-gray-900 tracking-tight mb-4">{t('kyc.pageTitle', 'مراجعة التحقق')}</h2>
+      <div className="mb-4">
+        <input
+          type="search"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder={t('kyc.search', 'بحث باسم الشركة أو رقم المتجر...')}
+          className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+        />
+      </div>
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-8 space-y-4">
@@ -74,13 +85,10 @@ export default function KycReview() {
             ))}
           </div>
         ) : error ? (
-          <div className="p-12 text-center">
-            <p className="text-sm text-gray-500 mb-3">{t('kyc.loadError', 'فشل تحميل ملفات التحقق')}</p>
-            <button onClick={() => load()} className="text-sm text-primary-600 hover:text-primary-700 font-medium">{t('common.retry', 'إعادة المحاولة')}</button>
-          </div>
+          <ErrorState message={t('kyc.loadError', 'فشل تحميل ملفات التحقق')} onRetry={load} />
         ) : profiles.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-sm text-gray-500">{t('kyc.noProfiles', 'لا توجد ملفات تحقق للمراجعة')}</p>
+            <p className="text-footnote text-gray-400">{t('kyc.noProfiles', 'لا توجد ملفات تحقق للمراجعة')}</p>
           </div>
         ) : (
           <table className="w-full text-sm">
@@ -94,7 +102,11 @@ export default function KycReview() {
               </tr>
             </thead>
             <tbody>
-              {profiles.map(p => (
+              {profiles.filter(p => {
+                if (!query) return true;
+                const q = query.toLowerCase();
+                return String(p.storeId || '').includes(q) || (p.legalName || p.commercialName || '').toLowerCase().includes(q);
+              }).map(p => (
                 <tr key={p.id} className="border-t hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 font-mono text-gray-900">#{p.storeId}</td>
                   <td className="px-4 py-3 text-gray-500">{p.businessType}</td>

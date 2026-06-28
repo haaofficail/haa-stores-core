@@ -326,6 +326,7 @@ export const adminApi = {
   updatePlan: (id: number, data: Record<string, unknown>) => request<Record<string, unknown>>('PATCH', `/admin/plans/${id}`, data),
   getSettings: () => request<{ name: string; slug: string; logoUrl: string | null; faviconUrl: string | null }>('GET', '/admin/settings'),
   updateSettings: (data: { name: string; logoUrl?: string | null; faviconUrl?: string | null }) => request<Record<string, unknown>>('PUT', '/admin/settings', data),
+  getAdminUsers: () => request<Record<string, unknown>[]>('GET', '/admin/users'),
   getStoreBillingSettings: (storeId: number) =>
     request<{
       storeId: number; storeName: string;

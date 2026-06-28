@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { adminApi } from '../lib/api';
 import type { Payout, SettlementBatch } from '../lib/api';
 import { toast } from 'sonner';
+import { ErrorState } from '../components/ui/ErrorState';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-700',
@@ -93,7 +94,7 @@ export default function SettlementBatches() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-6">دفعات التسوية</h2>
+      <h2 className="text-title2 font-bold text-gray-900 tracking-tight mb-6">دفعات التسوية</h2>
 
       <div className="bg-white rounded-xl shadow-sm p-4 mb-6 flex flex-wrap gap-3 items-end">
         <div>
@@ -240,18 +241,10 @@ export default function SettlementBatches() {
             ))}
           </div>
         ) : error ? (
-          <div className="p-12 text-center">
-            <p className="text-sm text-gray-500 mb-3">فشل تحميل دفعات التسوية</p>
-            <button
-              onClick={() => load()}
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-            >
-              إعادة المحاولة
-            </button>
-          </div>
+          <ErrorState message="فشل تحميل دفعات التسوية" onRetry={load} />
         ) : batches.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-sm text-gray-500">لا توجد دفعات تسوية</p>
+            <p className="text-footnote text-gray-400">لا توجد دفعات تسوية</p>
           </div>
         ) : (
           <table className="w-full text-sm">
