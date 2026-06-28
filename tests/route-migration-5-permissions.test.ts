@@ -66,6 +66,13 @@ describe('Quality Pass 5 — Route Migration 5/24: permissions.ts', () => {
     expect(content).toMatch(/permissionsRouter\.use\(['"]\*['"],\s*requireAuth\(\),\s*requireStoreAccess\(\)\)/);
   });
 
+  it('permissions.ts membership operations must derive storeId from the URL path', () => {
+    const content = read(permissionsRouteFile);
+    expect(content).toMatch(/c\.req\.param\(['"]storeId['"]\)/);
+    expect(content).toMatch(/Number\.isFinite\(storeId\)/);
+    expect(content).not.toMatch(/const\s+storeId\s*=\s*auth\.activeStoreId\s*;/);
+  });
+
   it('permissions.ts must preserve 404 + NOT_FOUND for missing membership', () => {
     // The route maps the service's `not_found` error to 404 + NOT_FOUND.
     // The Arabic message lives in the service.

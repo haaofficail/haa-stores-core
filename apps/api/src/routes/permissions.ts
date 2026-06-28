@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@haa/auth-core';
@@ -8,6 +8,15 @@ import { PermissionService } from '@haa/auth-core';
 const permissionsRouter = new Hono();
 
 permissionsRouter.use('*', requireAuth(), requireStoreAccess());
+
+function getRouteStoreId(c: Context): number {
+  const auth = getAuth(c)!;
+  const storeIdRaw = c.req.param('storeId');
+  const storeId = storeIdRaw ? Number(storeIdRaw) : NaN;
+  // The URL storeId is authoritative after requireStoreAccess() verifies
+  // membership. Falling back keeps this helper safe for direct unit callers.
+  return Number.isFinite(storeId) ? storeId : auth.activeStoreId;
+}
 
 const upsertPermissionsSchema = z.object({
   permissions: z.array(z.object({
@@ -51,7 +60,7 @@ permissionsRouter.get('/permission-presets', requirePermission('employees:update
 
 permissionsRouter.get('/memberships/:membershipId/permissions', requirePermission('employees:update'), async (c) => {
   const auth = getAuth(c)!;
-  const storeId = auth.activeStoreId;
+  const storeId = getRouteStoreId(c);
   const membershipId = Number(c.req.param('membershipId'));
   const service = new PermissionService();
 
@@ -81,7 +90,7 @@ permissionsRouter.get('/memberships/:membershipId/permissions', requirePermissio
 
 permissionsRouter.patch('/memberships/:membershipId/permissions', requirePermission('employees:manage_permissions'), zValidator('json', upsertPermissionsSchema), async (c) => {
   const auth = getAuth(c)!;
-  const storeId = auth.activeStoreId;
+  const storeId = getRouteStoreId(c);
   const membershipId = Number(c.req.param('membershipId'));
   const { permissions: requestedPermissions } = c.req.valid('json');
   const service = new PermissionService();

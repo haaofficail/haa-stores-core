@@ -1,11 +1,32 @@
 import { useState, useEffect } from 'react';
-import type { Permission } from '@haa/shared';
+import { ROLE_PERMISSIONS, type Permission, type UserRole } from '@haa/shared';
 import { X, AlertTriangle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { PermissionCheckboxMatrix } from './PermissionCheckboxMatrix';
 import { usePermissions } from '@/lib/permissions';
 import { employeesApi } from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
 
 type EmployeeFormMode = 'create' | 'edit';
+
+const roleLabels: Record<UserRole, string> = {
+  owner: 'مالك المتجر',
+  admin: 'مدير عام',
+  manager: 'مشرف تشغيل',
+  products_manager: 'مسؤول المنتجات',
+  orders_manager: 'مسؤول الطلبات',
+  warehouse_staff: 'موظف المستودع',
+  accountant: 'محاسب',
+  support: 'دعم العملاء',
+  viewer: 'مشاهد فقط',
+};
+
+function getRolePermissions(role: string): string[] {
+  return [...(ROLE_PERMISSIONS[role as UserRole] ?? [])];
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
 
 interface EmployeeFormData {
   id?: number;
@@ -32,16 +53,18 @@ export function EmployeeFormDialog({
   initialData,
   onSave,
 }: EmployeeFormDialogProps) {
+  const { storeId } = useAuth();
   const { can, permissions: userPerms } = usePermissions();
   const isOwner = can('employees:delete') && can('employees:manage_permissions');
   const canManagePerms = can('employees:manage_permissions');
+  const roleOptions = Object.keys(ROLE_PERMISSIONS) as UserRole[];
 
   const [form, setForm] = useState<EmployeeFormData>(
     initialData ?? {
       name: '',
       email: '',
       role: 'viewer',
-      permissions: [],
+      permissions: getRolePermissions('viewer'),
       isActive: true,
       password: '',
     }
@@ -63,7 +86,6 @@ export function EmployeeFormDialog({
         isActive: initialData.isActive,
       });
       // Load member's specific permissions
-      const storeId = Number(localStorage.getItem('active_store_id'));
       if (storeId) {
         setLoading(true);
         employeesApi.getMemberPermissions(storeId, initialData.id!)
@@ -85,13 +107,13 @@ export function EmployeeFormDialog({
         name: '',
         email: '',
         role: 'viewer',
-        permissions: [],
+        permissions: getRolePermissions('viewer'),
         isActive: true,
         password: '',
       });
       setConfirmPassword('');
     }
-  }, [mode, initialData]);
+  }, [mode, initialData, storeId]);
 
   if (!open) return null;
 
@@ -112,8 +134,8 @@ export function EmployeeFormDialog({
     try {
       await onSave({ ...form });
       onClose();
-    } catch (err: any) {
-      setError(err?.message || 'حدث خطأ أثناء الحفظ');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'حدث خطأ أثناء الحفظ'));
     } finally {
       setSaving(false);
     }
@@ -197,7 +219,7 @@ export function EmployeeFormDialog({
                   <button
                     type="button"
                     onClick={() => setShowPassword(v => !v)}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                    className="absolute start-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -222,18 +244,23 @@ export function EmployeeFormDialog({
             <label className="text-sm font-medium text-neutral-700">الدور</label>
             <select
               value={form.role}
-              onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+              onChange={e => {
+                const role = e.target.value;
+                setForm(f => ({
+                  ...f,
+                  role,
+                  permissions: canManagePerms ? getRolePermissions(role) : f.permissions,
+                }));
+              }}
               className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm"
             >
-              <option value="owner">مالك</option>
-              <option value="admin">مدير</option>
-              <option value="manager">مشرف</option>
-              <option value="products_manager">مدير منتجات</option>
-              <option value="orders_manager">مدير طلبات</option>
-              <option value="accountant">محاسب</option>
-              <option value="support">دعم</option>
-              <option value="viewer">مشاهد</option>
+              {roleOptions.map(role => (
+                <option key={role} value={role}>{roleLabels[role]}</option>
+              ))}
             </select>
+            <p className="text-xs text-neutral-500">
+              اختر وظيفة الموظف، وسنجهز له الصلاحيات المناسبة تلقائيًا. يمكنك تعديل التفاصيل من الأسفل إذا احتجت.
+            </p>
           </div>
 
           <div className="flex items-center gap-2">

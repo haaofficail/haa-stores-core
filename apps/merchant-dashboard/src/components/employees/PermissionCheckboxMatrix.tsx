@@ -60,6 +60,18 @@ const categoryLabels: Record<string, string> = {
   support: 'الدعم',
 };
 
+const roleLabels: Record<UserRole, string> = {
+  owner: 'مالك المتجر',
+  admin: 'مدير عام',
+  manager: 'مشرف تشغيل',
+  products_manager: 'مسؤول المنتجات',
+  orders_manager: 'مسؤول الطلبات',
+  warehouse_staff: 'موظف المستودع',
+  accountant: 'محاسب',
+  support: 'دعم العملاء',
+  viewer: 'مشاهد فقط',
+};
+
 export function PermissionCheckboxMatrix({
   selectedPermissions,
   onChange,
@@ -109,7 +121,7 @@ export function PermissionCheckboxMatrix({
   return (
     <div className="space-y-4" dir="rtl">
       <div className="flex items-center gap-3">
-        <label className="text-sm font-semibold text-neutral-700">الدور الأساسي</label>
+        <label className="text-sm font-semibold text-neutral-700">نسخ صلاحيات من دور</label>
         <select
           className="border border-neutral-300 rounded-lg px-3 py-2 text-sm"
           disabled={readOnly || !canManage}
@@ -119,9 +131,9 @@ export function PermissionCheckboxMatrix({
           }}
           value=""
         >
-          <option value="">-- اختر دوراً لملء الصلاحيات --</option>
+          <option value="">اختر قالب صلاحيات</option>
           {roles.map(role => (
-            <option key={role} value={role}>{role}</option>
+            <option key={role} value={role}>{roleLabels[role]}</option>
           ))}
         </select>
         {!canManage && (
@@ -134,8 +146,7 @@ export function PermissionCheckboxMatrix({
 
       <div className="text-xs text-neutral-500 bg-neutral-50 rounded-lg p-3">
         <Info className="h-3.5 w-3.5 inline ms-1" />
-        ملاحظة: الصلاحيات المخصصة (تعديل الصلاحيات بشكل فردي) غير مدعومة حاليًا في النظام.
-        يتم تحديد الصلاحيات بناءً على الدور فقط. التعديلات أدناه هي معاينة فقط ولا يتم حفظها حاليًا.
+        يمكنك ترك القالب كما هو أو تخصيص الصلاحيات. الحفظ الحالي يطبق الصلاحيات على المتجر كاملًا.
       </div>
 
       {Array.from(grouped.entries()).map(([category, perms]: [string, PermissionInfo[]]) => {
@@ -185,7 +196,7 @@ export function PermissionCheckboxMatrix({
                         {isHighRisk && (
                           <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-red-50 text-red-600 border border-red-200">
                             <ShieldAlert className="h-3 w-3" />
-                            حساسة
+                            عالية الحساسية
                           </span>
                         )}
                       </div>
@@ -193,9 +204,6 @@ export function PermissionCheckboxMatrix({
                         {perm.descriptionAr}
                       </span>
                     </div>
-                    <span className="text-xs uppercase text-neutral-300 font-mono shrink-0">
-                      {perm.key}
-                    </span>
                     {(!canGrant && !isOwner) && (
                       <span className="text-xs text-amber-500 shrink-0">لا يمكنك منحها</span>
                     )}

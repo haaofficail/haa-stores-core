@@ -230,7 +230,16 @@ export type AuditAction =
   // user's password_hash is rotated and token_version is bumped.
   | 'password_reset_completed';
 
-export type UserRole = 'owner' | 'admin' | 'manager' | 'products_manager' | 'orders_manager' | 'accountant' | 'support' | 'viewer';
+export type UserRole =
+  | 'owner'
+  | 'admin'
+  | 'manager'
+  | 'products_manager'
+  | 'orders_manager'
+  | 'warehouse_staff'
+  | 'accountant'
+  | 'support'
+  | 'viewer';
 
 export type Permission =
   | 'stores:read'
