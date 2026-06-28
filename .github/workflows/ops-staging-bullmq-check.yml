@@ -33,6 +33,7 @@ jobs:
       DEPLOY_USER: ${{ inputs.target == 'production' && secrets.PRODUCTION_USER || secrets.STAGING_USER }}
       SSH_KEY: ${{ inputs.target == 'production' && secrets.PRODUCTION_SSH_KEY || secrets.STAGING_SSH_KEY }}
       PROJECT_NAME: ${{ inputs.target == 'production' && 'haa-production' || 'haa-staging' }}
+      TARGET: ${{ inputs.target }}
 
     steps:
       - name: Setup SSH
@@ -48,7 +49,7 @@ jobs:
           set -euo pipefail
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          if [ "${{ inputs.target }}" = "production" ]; then
+          if [ "$TARGET" = "production" ]; then
             HOSTS="${PRODUCTION_KNOWN_HOSTS:-}"
           else
             HOSTS="${STAGING_KNOWN_HOSTS:-}"

@@ -4,6 +4,8 @@ import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 import { useTranslation } from 'react-i18next';
+import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
+import { ErrorState } from '../components/ui/ErrorState';
 
 export default function Stores() {
   const { t } = useTranslation();
@@ -14,6 +16,7 @@ export default function Stores() {
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', domain: '', tenantId: '', isActive: 'true' });
   const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,14 +74,18 @@ export default function Stores() {
     }
   };
 
-  const deleteStore = async (id: number) => {
-    if (!window.confirm(t('stores.confirmDelete', 'هل أنت متأكد من حذف هذا المتجر؟'))) return;
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+
+  const deleteStore = async () => {
+    if (confirmDeleteId === null) return;
     try {
-      await adminApi.deleteStore(id);
+      await adminApi.deleteStore(confirmDeleteId);
       toast.success(t('stores.deleted', 'تم حذف المتجر بنجاح'));
       load();
     } catch (err: any) {
       toast.error(err.message || t('stores.deleteError', 'فشل حذف المتجر'));
+    } finally {
+      setConfirmDeleteId(null);
     }
   };
 
@@ -94,8 +101,8 @@ export default function Stores() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">{t('stores.title', 'المتاجر')}</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-title2 font-bold text-gray-900 tracking-tight">{t('stores.title', 'المتاجر')}</h2>
         <button
           onClick={() => handleOpenDialog()}
           className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
@@ -103,27 +110,23 @@ export default function Stores() {
           <Icon name="Plus" size="xs" /> {t('stores.addStore', 'إضافة متجر')}
         </button>
       </div>
+      <div className="mb-4">
+        <input
+          type="search"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder={t('stores.search', 'بحث باسم المتجر أو النطاق...')}
+          className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+        />
+      </div>
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-8 space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex gap-4">
-                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" />
-              </div>
-            ))}
-          </div>
+          <AdminTableSkeleton columns={['w-32', 'w-24', 'w-20', 'w-16', 'w-12']} />
         ) : error ? (
-          <div className="p-12 text-center">
-            <p className="text-sm text-gray-500 mb-3">{t('stores.loadError', 'فشل تحميل المتاجر')}</p>
-            <button onClick={() => load()} className="text-sm text-primary-600 hover:text-primary-700 font-medium">{t('stores.retry', 'إعادة المحاولة')}</button>
-          </div>
+          <ErrorState message={t('stores.loadError', 'فشل تحميل المتاجر')} onRetry={load} />
         ) : stores.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-sm text-gray-500">{t('stores.empty', 'لا توجد متاجر')}</p>
+            <p className="text-footnote text-gray-400">{t('stores.empty', 'لا توجد متاجر')}</p>
           </div>
         ) : (
           <table className="w-full text-sm">
@@ -137,7 +140,11 @@ export default function Stores() {
               </tr>
             </thead>
             <tbody>
-              {stores.map(s => (
+              {stores.filter(s => {
+                if (!query) return true;
+                const q = query.toLowerCase();
+                return (s.name || '').toLowerCase().includes(q) || (s.domain || '').toLowerCase().includes(q) || (s.tenantName || '').toLowerCase().includes(q);
+              }).map(s => (
                 <tr key={s.id} className="border-t hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
                   <td className="px-4 py-3 text-gray-500">{s.domain || '-'}</td>
@@ -153,7 +160,7 @@ export default function Stores() {
                         {s.isActive ? t('stores.deactivate', 'تعطيل') : t('stores.activate', 'تفعيل')}
                       </button>
                       <button onClick={() => handleOpenDialog(s)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors px-2 py-1">{t('stores.edit', 'تعديل')}</button>
-                      <button onClick={() => deleteStore(s.id)} className="text-sm text-red-600 hover:text-red-800 transition-colors px-2 py-1">{t('stores.delete', 'حذف')}</button>
+                      <button onClick={() => setConfirmDeleteId(s.id)} className="text-sm text-red-600 hover:text-red-800 transition-colors px-2 py-1">{t('stores.delete', 'حذف')}</button>
                     </div>
                   </td>
                 </tr>
@@ -162,6 +169,19 @@ export default function Stores() {
           </table>
         )}
       </div>
+
+      {confirmDeleteId !== null && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
+            <h3 className="text-lg font-bold text-gray-900">{t('stores.confirmDeleteTitle', 'تأكيد الحذف')}</h3>
+            <p className="text-sm text-gray-600">{t('stores.confirmDeleteMessage', 'هل أنت متأكد من حذف هذا المتجر؟ لا يمكن التراجع عن هذا الإجراء.')}</p>
+            <div className="flex gap-3 pt-4 border-t">
+              <button onClick={deleteStore} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">{t('stores.delete', 'حذف')}</button>
+              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">{t('stores.cancel', 'إلغاء')}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {dialogOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

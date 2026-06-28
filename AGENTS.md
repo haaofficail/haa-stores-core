@@ -329,7 +329,7 @@ exact template:
 **Task type:** <one of the 13 task types in §14.4>
 **Task title:** <one sentence>
 **Risk level:** <low | medium | high>
-**Skills selected (1–4):**
+**Skills selected (all applicable; no numeric cap):**
 
 - `<skill-slug>` — <one-line why it fits>
 - `<skill-slug>` — <one-line why it fits>
@@ -341,6 +341,12 @@ exact template:
 
 The gate is required for: any code change, any test, any commit, any push,
 any new task entry, and any "done" claim.
+
+Skill selection rule: select the maximum applicable set of skills from
+`docs/agent-os/SKILLS_REGISTRY.md` and `docs/agent-os/SKILL_FILE_MAPPING.md`
+for the task type and touched files. There is no 1–4 cap. Do not pad the gate
+with unrelated skills; every selected skill must have a concrete one-line
+reason tied to the current task.
 
 ### 14.3 If no skill fits
 
@@ -375,50 +381,56 @@ crosses categories:
 13. `testing/e2e` — vitest, playwright, smoke, regression, contracts
 
 If a task is genuinely multi-category, pick the dominant type and call out
-the secondary type in the gate's *why* lines.
+the secondary type in the gate's _why_ lines.
 
 ### 14.5 Common gate examples (mirroring real repo skills)
 
 ```markdown
 ## Mandatory Skill Gate
+
 **Task type:** backend/api
 **Task title:** Add `requirePermission` to dashboard routes
 **Risk level:** medium
 **Skills selected:**
+
 - `acceptance-criteria-gate` — endpoint contract must be defined first
 - `regression-safety-gate` — RBAC change can silently break existing clients
 - `verification-before-completion` — git diff + boundary tests are mandatory
-**Files expected to change:** apps/api/src/routes/dashboard/*.ts, tests/rbac-*.test.ts
-**Verification planned:** pnpm typecheck && pnpm vitest run tests/rbac
-**Safety constraints respected:** no deploy · no db:migrate · no secrets · no production action
+  **Files expected to change:** apps/api/src/routes/dashboard/_.ts, tests/rbac-_.test.ts
+  **Verification planned:** pnpm typecheck && pnpm vitest run tests/rbac
+  **Safety constraints respected:** no deploy · no db:migrate · no secrets · no production action
 ```
 
 ```markdown
 ## Mandatory Skill Gate
+
 **Task type:** database/migration
 **Task title:** Add wallet-entries idempotency unique index
 **Risk level:** high
 **Skills selected:**
+
 - `environment-safety-gate` — no auto-migrate; owner runs db:migrate
 - `regression-safety-gate` — existing wallet flows must keep passing
 - `evidence-led-reporting` — final report must show fresh-DB replay output
-**Files expected to change:** packages/db/src/schema/*.ts, packages/db/migrations/*.sql
-**Verification planned:** pnpm db:generate; tests against staging snapshot only
-**Safety constraints respected:** no deploy · no db:migrate · no secrets · no production action
+  **Files expected to change:** packages/db/src/schema/_.ts, packages/db/migrations/_.sql
+  **Verification planned:** pnpm db:generate; tests against staging snapshot only
+  **Safety constraints respected:** no deploy · no db:migrate · no secrets · no production action
 ```
 
 ```markdown
 ## Mandatory Skill Gate
+
 **Task type:** ci/deploy
 **Task title:** Fix Caddyfile syntax that blocks reload
 **Risk level:** medium
 **Skills selected:**
+
 - `environment-safety-gate` — staging-only file, must not touch production
 - `evidence-led-reporting` — paste actual failure line from Deploy logs
 - `verification-before-completion` — PR CI must pass before commit-to-done claim
-**Files expected to change:** deploy/staging/Caddyfile
-**Verification planned:** gh run watch + smoke gate on staging URL
-**Safety constraints respected:** no deploy · no db:migrate · no secrets · no production action
+  **Files expected to change:** deploy/staging/Caddyfile
+  **Verification planned:** gh run watch + smoke gate on staging URL
+  **Safety constraints respected:** no deploy · no db:migrate · no secrets · no production action
 ```
 
 ### 14.6 Final Skill Compliance Report (required at "done")

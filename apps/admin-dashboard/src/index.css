@@ -1,3 +1,194 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  /* ── Surfaces ── */
+  --haa-surface-1: #ffffff;
+  --haa-surface-2: #f8f9fc;
+  --haa-surface-3: #f0f2f5;
+  --haa-surface-inverse: #0f172a;
+
+  /* ── Text ── */
+  --haa-text-primary: #1d1d1f;
+  --haa-text-secondary: #475569;
+  --haa-text-tertiary: #94a3b8;
+  --haa-text-disabled: #cbd5e1;
+  --haa-text-inverse: #ffffff;
+  --haa-text-link: #5c9cd5;
+
+  /* ── Borders ── */
+  --haa-border: #e2e8f0;
+  --haa-border-strong: #cbd5e1;
+  --haa-border-focus: #5c9cd5;
+  --haa-border-disabled: #e2e8f0;
+  --haa-divider: #f1f5f9;
+
+  /* ── Primary — Brand Blue ── */
+  --haa-primary-50: #eff5fb;
+  --haa-primary-100: #deebf7;
+  --haa-primary-200: #bed7ee;
+  --haa-primary-300: #9dc4e6;
+  --haa-primary-400: #7db0dd;
+  --haa-primary-500: #5c9cd5;
+  --haa-primary-600: #5189bb;
+  --haa-primary-700: #44739e;
+  --haa-primary-800: #2d5a8a;
+
+  /* ── Neutral ── */
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #1d1d1f;
+  --color-neutral-950: #0a0a0a;
+
+  /* ── Semantic ── */
+  --haa-success: #16a34a;
+  --haa-success-subtle: #f0fdf4;
+  --haa-warning: #d97706;
+  --haa-warning-subtle: #fffbeb;
+  --haa-danger: #dc2626;
+  --haa-danger-subtle: #fef2f2;
+  --haa-info: #5c9cd5;
+
+  /* ── Shadows ── */
+  --haa-shadow-color: rgba(15, 23, 42, 0.04);
+  --haa-shadow-color-strong: rgba(15, 23, 42, 0.08);
+  --shadow-sm: 0 1px 2px var(--haa-shadow-color);
+  --shadow-md:
+    0 4px 12px var(--haa-shadow-color), 0 1px 3px var(--haa-shadow-color-strong);
+  --shadow-lg:
+    0 12px 40px var(--haa-shadow-color),
+    0 4px 12px var(--haa-shadow-color-strong);
+  --shadow-xl:
+    0 20px 60px var(--haa-shadow-color),
+    0 8px 20px var(--haa-shadow-color-strong);
+
+  /* ── Typography Scale ── */
+  --typography-caption2-size: 0.625rem;
+  --typography-caption2-line-height: 0.875rem;
+  --typography-caption2-letter-spacing: 0;
+  --typography-caption1-size: 0.6875rem;
+  --typography-caption1-line-height: 0.875rem;
+  --typography-caption1-letter-spacing: 0;
+  --typography-footnote-size: 0.75rem;
+  --typography-footnote-line-height: 1rem;
+  --typography-footnote-letter-spacing: 0;
+  --typography-subhead-size: 0.8125rem;
+  --typography-subhead-line-height: 1.125rem;
+  --typography-subhead-letter-spacing: 0;
+  --typography-callout-size: 0.875rem;
+  --typography-callout-line-height: 1.25rem;
+  --typography-callout-letter-spacing: 0;
+  --typography-body-size: 0.875rem;
+  --typography-body-line-height: 1.25rem;
+  --typography-body-letter-spacing: 0;
+  --typography-headline-size: 1rem;
+  --typography-headline-line-height: 1.25rem;
+  --typography-headline-letter-spacing: 0;
+  --typography-title3-size: 1.125rem;
+  --typography-title3-line-height: 1.375rem;
+  --typography-title3-letter-spacing: 0;
+  --typography-title2-size: 1.25rem;
+  --typography-title2-line-height: 1.5rem;
+  --typography-title2-letter-spacing: 0;
+  --typography-title1-size: 1.5rem;
+  --typography-title1-line-height: 1.75rem;
+  --typography-title1-letter-spacing: 0;
+  --typography-large-title-size: 1.75rem;
+  --typography-large-title-line-height: 2rem;
+  --typography-large-title-letter-spacing: 0;
+
+  /* ── Font Weights ── */
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* ── Border Widths ── */
+  --border-0: 0px;
+  --border-1: 1px;
+  --border-2: 2px;
+  --border-4: 4px;
+
+  /* ── Opacity ── */
+  --opacity-0: 0;
+  --opacity-5: 0.05;
+  --opacity-10: 0.1;
+  --opacity-20: 0.2;
+  --opacity-30: 0.3;
+  --opacity-50: 0.5;
+  --opacity-70: 0.7;
+  --opacity-100: 1;
+
+  /* ── Border Radius ── */
+  --radius-micro: 4px;
+  --radius-mac-btn: 8px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-ios-btn: 12px;
+  --radius-lg: 14px;
+  --radius-ios-icon: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 9999px;
+  --radius-vision-os: 24px;
+}
+
+@layer base {
+  button {
+    outline: none;
+  }
+  button:focus-visible {
+    outline: 2px solid var(--haa-border-focus);
+    outline-offset: 2px;
+  }
+
+  body {
+    background: var(--haa-surface-2);
+    color: var(--haa-text-primary);
+    font-family:
+      "IBM Plex Sans Arabic",
+      -apple-system,
+      BlinkMacSystemFont,
+      "SF Pro Display",
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  html,
+  body,
+  #root {
+    direction: rtl;
+  }
+
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-neutral-300) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-neutral-300);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-neutral-400);
+  }
+}

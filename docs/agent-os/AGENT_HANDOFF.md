@@ -40,7 +40,7 @@ session. Keep it in the PR body too:
 - **Base branch:** <usually `main`>
 - **Task type:** <one of the 13 in AGENTS.md §14.4>
 - **Task title:** <one sentence>
-- **Skills selected (1–4):**
+- **Skills selected (all applicable; no numeric cap):**
   - `<skill-slug>` — <why>
   - `<skill-slug>` — <why>
 - **Open PRs relevant to this work:** <list of PR#s>

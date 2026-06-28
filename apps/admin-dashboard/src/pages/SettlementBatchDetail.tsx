@@ -206,7 +206,7 @@ export default function SettlementBatchDetailPage() {
   if (loading) {
     return (
       <div>
-        <h2 className="text-2xl font-bold mb-6">تفاصيل دفعة التسوية</h2>
+        <h2 className="text-title2 font-bold text-gray-900 tracking-tight mb-6">تفاصيل دفعة التسوية</h2>
         <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-6 w-full bg-gray-200 rounded animate-pulse" />
@@ -219,7 +219,7 @@ export default function SettlementBatchDetailPage() {
   if (!detail) {
     return (
       <div>
-        <h2 className="text-2xl font-bold mb-6">تفاصيل دفعة التسوية</h2>
+        <h2 className="text-title2 font-bold text-gray-900 tracking-tight mb-6">تفاصيل دفعة التسوية</h2>
         <div className="bg-white rounded-xl shadow-sm p-12 text-center">
           <p className="text-sm text-gray-500">لم يتم العثور على التسوية</p>
           <Link to="/payments" className="text-sm text-primary-600 hover:text-primary-700 font-medium mt-2 inline-block">
@@ -407,7 +407,7 @@ export default function SettlementBatchDetailPage() {
     <div>
       <div className="flex items-center gap-3 mb-6 flex-wrap">
         <Link to="/payments" className="text-sm text-primary-600 hover:text-primary-700">← العودة للمدفوعات</Link>
-        <h2 className="text-2xl font-bold">تفاصيل دفعة التسوية</h2>
+        <h2 className="text-title2 font-bold text-gray-900 tracking-tight">تفاصيل دفعة التسوية</h2>
         <span className="font-mono text-sm text-gray-500">{settlementRef}</span>
         <span className={`px-2 py-1 rounded text-xs font-medium ${settlementStatusColors[detail.status] || 'bg-gray-100 text-gray-700'}`}>
           {settlementStatusLabels[detail.status] || detail.status}

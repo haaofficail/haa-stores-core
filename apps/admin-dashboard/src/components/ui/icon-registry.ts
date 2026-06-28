@@ -14,12 +14,18 @@
 // automatically, so TypeScript fails on unregistered names.
 
 import {
-  Eye, FileText, Inbox, Mail, Plus, X,
+  AlertCircle, AlertTriangle, BarChart2, Building2, CheckSquare, CreditCard,
+  Eye, FileText, Inbox, LayoutDashboard, Landmark, LogOut, Mail,
+  Menu, Package, Plus, ReceiptText, ScrollText, Settings,
+  ShieldCheck, ShoppingBag, Store, Users, UserCog, X,
   type LucideIcon,
 } from 'lucide-react';
 
 export const ADMIN_ICON_REGISTRY = {
-  Eye, FileText, Inbox, Mail, Plus, X,
+  AlertCircle, AlertTriangle, BarChart2, Building2, CheckSquare, CreditCard,
+  Eye, FileText, Inbox, LayoutDashboard, Landmark, LogOut, Mail,
+  Menu, Package, Plus, ReceiptText, ScrollText, Settings,
+  ShieldCheck, ShoppingBag, Store, Users, UserCog, X,
 } as const satisfies Record<string, LucideIcon>;
 
 export type AdminIconName = keyof typeof ADMIN_ICON_REGISTRY;

@@ -1,13 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- admin API routes use legacy `any` for Hono context; proper typing tracked as P2-030. */
 // Tenant / store / KYC / payments / dashboard admin route handlers.
 // Extracted from admin.ts lines 65-259.
 //
 // Each export is a raw Hono handler. The aggregator in ./index.ts applies
 // `requireAdminAuth()` and any other middleware when mounting the route.
 
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, and } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { AuditLogService } from '@haa/integration-core';
+import { NotificationService } from '@haa/notification-core';
 import { invalidateStoreTenantCache } from '../../middleware/store-tenant-cache.js';
 
 // ── /dashboard ─────────────────────────────────────────────────────────────
@@ -204,11 +206,26 @@ export const kycRoutes = {
   list: async (c: any) => {
     const db = createDbClient();
     const profiles = await db.select().from(s.kycProfiles).orderBy(desc(s.kycProfiles.createdAt));
+    const allDocs = await db.select({
+      id: s.kycDocuments.id,
+      storeId: s.kycDocuments.storeId,
+      type: s.kycDocuments.type,
+      filename: s.kycDocuments.filename,
+      fileUrl: s.kycDocuments.fileUrl,
+      mimeType: s.kycDocuments.mimeType,
+      status: s.kycDocuments.status,
+      uploadedAt: s.kycDocuments.uploadedAt,
+    }).from(s.kycDocuments);
+    const docsByStore: Record<number, typeof allDocs> = {};
+    for (const doc of allDocs) {
+      if (!docsByStore[doc.storeId]) docsByStore[doc.storeId] = [];
+      docsByStore[doc.storeId].push(doc);
+    }
     return c.json({
       success: true,
       data: profiles.map(p => {
         const { nationalIdOrIqama: _nationalIdOrIqama, ...safe } = p as any;
-        return safe;
+        return { ...safe, documents: docsByStore[p.storeId] ?? [] };
       }),
     });
   },
@@ -242,17 +259,115 @@ export const kycRoutes = {
       ipAddress,
       userAgent: c.req.header('user-agent'),
     });
+    // Notify merchant of KYC decision (best-effort — do not fail request on notification error)
+    if (status === 'approved' || status === 'rejected' || status === 'needs_more_info') {
+      try {
+        const templateCode = status === 'approved' ? 'kyc_approved'
+          : status === 'rejected' ? 'kyc_rejected'
+          : 'kyc_needs_more_info';
+        const notif = new NotificationService(db);
+        await notif.send(profile.storeId, templateCode, {
+          legalName: profile.legalName ?? '',
+          rejectionReason: rejectionReason ?? '',
+        });
+      } catch (err) {
+        console.error('[kyc-review] notification send failed:', err);
+      }
+    }
     return c.json({ success: true, data: { id, status } });
+  },
+};
+
+// ── /kyc/bank-accounts ─────────────────────────────────────────────────────
+export const kycBankRoutes = {
+  list: async (c: any) => {
+    const db = createDbClient();
+    const accounts = await db.select().from(s.merchantBankAccounts).orderBy(desc(s.merchantBankAccounts.createdAt));
+    return c.json({ success: true, data: accounts });
+  },
+
+  review: async (c: any) => {
+    const id = Number(c.req.param('id'));
+    const { status } = c.req.valid('json');
+    const db = createDbClient();
+    const [existing] = await db.select().from(s.merchantBankAccounts).where(eq(s.merchantBankAccounts.id, id)).limit(1);
+    if (!existing) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Bank account not found' } }, 404);
+    await db.update(s.merchantBankAccounts).set({ status, updatedAt: new Date() }).where(eq(s.merchantBankAccounts.id, id));
+    // Notify merchant of bank account decision
+    if (status === 'verified' || status === 'rejected') {
+      try {
+        const templateCode = status === 'verified' ? 'bank_account_verified' : 'bank_account_rejected';
+        const notif = new NotificationService(db);
+        await notif.send(existing.storeId, templateCode, { bankName: existing.bankName, ibanLast4: existing.ibanLast4 ?? '' });
+      } catch (err) {
+        console.error('[bank-review] notification send failed:', err);
+      }
+    }
+    return c.json({ success: true, data: { id, status } });
+  },
+};
+
+// ── /stores/:storeId/settlement-readiness ──────────────────────────────────
+export const settlementReadinessRoutes = {
+  get: async (c: any) => {
+    const storeId = Number(c.req.param('storeId'));
+    const db = createDbClient();
+    const [row] = await db.select().from(s.walletSettlementReadiness)
+      .where(eq(s.walletSettlementReadiness.storeId, storeId)).limit(1);
+    return c.json({ success: true, data: row ?? {
+      storeId, safeguardedAccountConfigured: false,
+      pspSettlementPartnerConfirmed: false, merchantOfRecordConfirmed: false,
+      samaComplianceStatus: 'unconfirmed',
+    }});
+  },
+
+  update: async (c: any) => {
+    const storeId = Number(c.req.param('storeId'));
+    const body = c.req.valid('json');
+    const db = createDbClient();
+    await db.insert(s.walletSettlementReadiness).values({ storeId, ...body })
+      .onConflictDoUpdate({ target: s.walletSettlementReadiness.storeId, set: { ...body } });
+    const [row] = await db.select().from(s.walletSettlementReadiness)
+      .where(eq(s.walletSettlementReadiness.storeId, storeId)).limit(1);
+    return c.json({ success: true, data: row });
+  },
+};
+
+// ── /stores/:storeId/payment-settings ──────────────────────────────────────
+export const paymentSettingsRoutes = {
+  list: async (c: any) => {
+    const storeId = Number(c.req.param('storeId'));
+    const db = createDbClient();
+    const settings = await db.select().from(s.merchantPaymentProviderSettings)
+      .where(eq(s.merchantPaymentProviderSettings.storeId, storeId));
+    return c.json({ success: true, data: settings });
+  },
+
+  upsert: async (c: any) => {
+    const storeId = Number(c.req.param('storeId'));
+    const body = c.req.valid('json');
+    const db = createDbClient();
+    await db.insert(s.merchantPaymentProviderSettings)
+      .values({ storeId, ...body })
+      .onConflictDoUpdate({
+        target: [s.merchantPaymentProviderSettings.storeId, s.merchantPaymentProviderSettings.providerCode],
+        set: { enabled: body.enabled, mode: body.mode, status: body.status, updatedAt: new Date() },
+      });
+    const [row] = await db.select().from(s.merchantPaymentProviderSettings)
+      .where(and(
+        eq(s.merchantPaymentProviderSettings.storeId, storeId),
+        eq(s.merchantPaymentProviderSettings.providerCode, body.providerCode),
+      )).limit(1);
+    return c.json({ success: true, data: row });
   },
 };
 
 // ── /payments ──────────────────────────────────────────────────────────────
 export async function paymentsRoute(c: any) {
   const storeId = c.req.query('storeId');
-  if (!storeId) {
-    return c.json({ success: true, data: [] });
-  }
   const db = createDbClient();
-  const payments = await db.select().from(s.payments).where(eq(s.payments.storeId, Number(storeId))).orderBy(desc(s.payments.createdAt)).limit(100);
+  const payments = storeId
+    ? await db.select().from(s.payments).where(eq(s.payments.storeId, Number(storeId))).orderBy(desc(s.payments.createdAt)).limit(100)
+    : await db.select().from(s.payments).orderBy(desc(s.payments.createdAt)).limit(200);
   return c.json({ success: true, data: payments });
 }

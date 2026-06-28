@@ -4,6 +4,202 @@
 
 ---
 
+### TASK-0093: Take over admin settlement handoff and publish
+
+- **Type:** UX/UI Polish / Testing / Support-Ops
+- **Priority:** P1 High
+- **Status:** Done (local integration verified; branch publication in PR #320)
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `security-quality/apple-grade-audit`
+- **Original Request:** "الحين استلم مهمه الوكيل الثاني كمدير تنفيذي و ارفعها وتاكد من تكاملها"
+- **Expanded Requirement:** Take over the other agent's staged admin-dashboard work, inspect it as an executive handoff, repair integration blockers, verify that the admin/payment-settlement surfaces still build and pass focused tests, then publish the scoped work to GitHub without mixing unrelated local artifacts.
+- **Scope:** Admin settlement and landing-inbox handoff reconciliation, wallet settlement-readiness clarification, SonarCloud admin UI duplication reduction, required task/state/changelog/compliance documentation, and draft PR publication.
+- **Out of Scope:** Production or staging deploys, `db:migrate`, secret handling, live payment/shipping calls, DNS/server changes, merging to `main`, unrelated storefront footer/legal-entity edits, screenshots, and local storage event artifacts.
+- **Skills Used:** `github:yeet`, `environment-safety-gate`, `acceptance-criteria-gate`, `design-ux-excellence-gate`, `regression-safety-gate`, `test-strategy-gate`, `implementation-quality-gate`, `branch-pr-hygiene-gate`, `documentation-handoff-gate`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] The second-agent admin handoff is inspected before staging/publish.
+  - [x] The `SettlementBatches.tsx` TSX syntax blocker is fixed.
+  - [x] Admin dashboard typecheck and production build pass.
+  - [x] Focused settlement/linking tests pass.
+  - [x] Full `pnpm preflight` passes after the fix.
+  - [x] GitHub Test source-grep contract drift is fixed locally after the Sonar follow-up.
+  - [x] Repeated admin-dashboard nav, loading, CSV export, and store-selector UI blocks are extracted after the refreshed SonarCloud gate reported 5.7% new-code duplication.
+  - [x] Unrelated storefront files, screenshots, and storage artifacts are left out of the publish scope.
+- **Test Plan:** `pwd`; `pnpm preflight`; inspect staged/unstaged diffs; `pnpm --filter @haa/admin-dashboard typecheck`; `pnpm --filter @haa/admin-dashboard build`; `pnpm --filter @haa/merchant-dashboard typecheck`; `pnpm vitest run tests/settlement-order-linking.test.ts tests/settlement-order-drilldown-ui.test.ts tests/geidea-settlement-reconciliation.test.ts`; focused CI contract tests; full `pnpm test`; focused admin wiring/source-grep tests after UI dedup refactor; `pnpm check:skills`; `git diff --check`; explicit path staging; commit; push; draft PR.
+- **Files Changed:** `apps/admin-dashboard/src/App.tsx`, `apps/admin-dashboard/src/components/ui/AdminTableSkeleton.tsx`, `apps/admin-dashboard/src/components/ui/StoreSelectorPanel.tsx`, `apps/admin-dashboard/src/lib/downloadRowsAsCsv.ts`, `apps/admin-dashboard/src/pages/AdminUsers.tsx`, `apps/admin-dashboard/src/pages/AuditLogs.tsx`, `apps/admin-dashboard/src/pages/BankAccounts.tsx`, `apps/admin-dashboard/src/pages/KycReview.tsx`, `apps/admin-dashboard/src/pages/Payments.tsx`, `apps/admin-dashboard/src/pages/Stores.tsx`, `apps/admin-dashboard/src/pages/Tenants.tsx`, `apps/admin-dashboard/src/pages/SettlementReadiness.tsx`, `apps/admin-dashboard/src/pages/StoreBillingSettings.tsx`, `apps/admin-dashboard/src/pages/StorePaymentSettings.tsx`, `apps/admin-dashboard/src/pages/Plans.tsx`, `apps/merchant-dashboard/src/lib/html.ts`, `apps/merchant-dashboard/src/pages/Orders.tsx`, `apps/merchant-dashboard/src/pages/orders/OrderDetailDialog.tsx`, `packages/wallet-core/src/ledger.ts`, `scripts/hooks/pre-edit-frontend.sh`, `.sonarcloud.properties`, `sonar-project.properties`, `tests/dashboard-print-html-escape.test.ts`, `tests/admin-landing-inbox.test.tsx`, `tests/pii-gating-orders-contract.test.ts`, `tests/scheduled-settlement-admin-batches-ui.test.ts`, `tests/platform-fees-wiring.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/HAA_TASK_LEDGER.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0093.md`.
+- **Files Inspected/Reconciled:** `apps/admin-dashboard/src/pages/LandingInbox.tsx`, `apps/admin-dashboard/src/pages/SettlementBatches.tsx`.
+- **Test Results:** Initial `pnpm preflight` failed on the inherited admin syntax error in `apps/admin-dashboard/src/pages/SettlementBatches.tsx`. After removing the invalid JSX comment from the staged handoff and reconciling those files back to their valid source state, `pnpm --filter @haa/admin-dashboard typecheck` passed, the focused settlement/geidea test command passed 3 files / 24 tests, `pnpm --filter @haa/admin-dashboard build` passed, `pnpm check:skills` passed 43/43, and `pnpm preflight` passed with TypeScript clean. After the first push, SonarCloud failed on new-code duplication plus Reliability B; TASK-0093 added Sonar CPD doc exclusions in both `.sonarcloud.properties` and `sonar-project.properties`, refactored `StorePaymentSettings.tsx` nested settings normalization, changed the frontend hook test from `[` to `[[`, replaced merchant print `document.write` strings with DOM `textContent` construction, and fixed the admin Plans modal backdrop semantics. GitHub Test then failed because source-grep tests still expected page-local retry copy and the old `escapeHtmlText`/`document.write` print implementation; TASK-0093 updated those tests to assert shared `ErrorState` wiring and DOM/textContent print construction. The refreshed SonarCloud gate still reported 5.7% new-code duplication from repeated admin UI blocks, so TASK-0093 extracted shared admin table skeleton, store selector, CSV export helper, and typed nav item helper, then updated the affected source-grep tests. Follow-up verification passed: focused CI contract tests 4 files / 46 tests passed / 1 skipped, full `pnpm test` passed 354 files / 4618 tests passed / 3 skipped / 14 todo, focused admin wiring/source-grep tests passed 3 files / 60 tests / 1 skipped, admin-dashboard typecheck, merchant-dashboard typecheck, focused settlement/geidea tests 24/24, dashboard print HTML escape tests 3/3, `bash -n scripts/hooks/pre-edit-frontend.sh`, `pnpm check:skills`, `pnpm preflight`, and `git diff --check`.
+- **Root Cause:** The inherited handoff had a JSX comment directly inside a ternary branch before `<ErrorState />`, which is not a valid standalone branch expression and blocked TypeScript parsing.
+- **Verdict:** The admin handoff is locally integrated and no longer blocks preflight. PR #320 should publish only the scoped admin/wallet/docs/test files; unrelated storefront/image/storage changes remain parked.
+- **Related Issues:** ISSUE-0028, ISSUE-0029, ISSUE-0030.
+
+---
+
+### TASK-0092: Remove Mandatory Skill Gate numeric cap
+
+- **Type:** Documentation / Product Planning / Support-Ops
+- **Priority:** P1 High
+- **Status:** Done (governance docs updated; the then-active admin preflight blocker was fixed later in TASK-0093)
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `security-quality/apple-grade-audit`
+- **Original Request:** "في الدستور حد المهارات من ١-٤ ، ابيك تعدله وتخليه يستخدم اكبر عدد من السكيلز"
+- **Expanded Requirement:** Remove the old 1-4 skill-selection cap from the project constitution and related agent process docs, replacing it with a rule to select every applicable skill from the registry and file mapping without padding the gate with unrelated skills.
+- **Scope:** AGENTS constitution, PR template, execution checklist, skills registry, skill file mapping, handoff template, and the historical TASK-0088 report phrase that referenced the old cap.
+- **Out of Scope:** Code changes, admin-dashboard fixes, migrations, deploys, staging/production actions, GitHub push/PR, secrets, and live provider calls.
+- **Skills Used:** `environment-safety-gate`, `acceptance-criteria-gate`, `documentation-handoff-gate`, `single-source-of-truth-gate`, `cross-agent-continuity-protocol`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] AGENTS.md no longer uses the old numeric skill cap.
+  - [x] Process docs/templates no longer instruct agents to select only a capped subset of skills.
+  - [x] New rule requires all applicable skills while forbidding unrelated padding.
+  - [x] Skill enforcement check still passes.
+- **Test Plan:** `pnpm preflight`; search for old cap references; `pnpm check:skills`; `git diff --check`; trailing whitespace scan; `git status --short --branch`.
+- **Files Changed:** `AGENTS.md`, `.github/pull_request_template.md`, `docs/agent-os/EXECUTION_CHECKLIST.md`, `docs/agent-os/SKILLS_REGISTRY.md`, `docs/agent-os/SKILL_FILE_MAPPING.md`, `docs/agent-os/AGENT_HANDOFF.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0088.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0092.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/DECISIONS.md`, `docs/agent-os/ACTIVE_WORK.md`.
+- **Test Results:** `pnpm preflight` failed before this docs edit because unrelated admin-dashboard work has syntax errors in `apps/admin-dashboard/src/pages/SettlementBatches.tsx` at lines 245 and 298. `pnpm check:skills` passed 43/43 after the governance edit. `git diff --check` and trailing whitespace scan were clean for the touched governance docs.
+- **Verdict:** The skill cap is removed from active governance sources. Future gates should select the maximum applicable skill set, not a 1-4 subset.
+- **Related Decisions:** DECISION-0028.
+
+---
+
+### TASK-0091: Run local app smoke with fake/mock providers only
+
+- **Type:** Launch Readiness / Support-Ops / Testing
+- **Priority:** P1 High
+- **Status:** Done (execution complete; full local smoke is BLOCKED on unapplied local DB migration)
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `security-quality/apple-grade-audit`
+- **Original Request:** "نعم" after the suggested next step was local app smoke with fake/mock providers only.
+- **Expanded Requirement:** Start/check local services, run local app smoke without live provider calls or secrets, confirm fake payment/manual shipping readiness surfaces, and document any blocker without running `db:migrate`.
+- **Scope:** Local API/storefront/merchant/admin runtime checks, local fake/mock provider status checks, smoke commands, and launch-readiness documentation.
+- **Out of Scope:** Production deploy, staging deploy, `db:migrate`, SSH, DNS/server changes, `.env` or secret inspection, live Geidea/OTO calls, GitHub push/PR, and unrelated admin/storefront design worktree changes.
+- **Skills Used:** `environment-safety-gate`, `acceptance-criteria-gate`, `test-strategy-gate`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] Local services are confirmed reachable on their canonical ports.
+  - [x] Fake/mock-only payment and shipping surfaces are checked without live calls.
+  - [x] `pnpm preflight`, `pnpm ops:monitor`, and `pnpm test:smoke` are run and recorded.
+  - [x] `pnpm smoke` is run and any blocker is documented with root cause.
+  - [x] No deploy, migration, secret handling, production action, or live provider call occurs.
+- **Test Plan:** `pnpm preflight`; start local dev services; `pnpm ops:monitor`; browser-like local HTTP checks; sanitized admin/merchant login and provider-status probes; `pnpm test:smoke`; `pnpm smoke`; `pnpm ops:errors`; `pnpm check:skills`; `git diff --check`; trailing whitespace scan; `git status --short --branch`.
+- **Files Changed:** `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SANDBOX_REHEARSAL_CHECKLIST.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0091.md`, `storage/monitoring-events.ndjson`, `storage/support-error-events.ndjson`.
+- **Test Results:** `pnpm preflight` passed. `pnpm ops:monitor` exited 0 with 25/25 health checks passing, API/storefront/merchant synthetic checks returning 200, 0 actionable events at that time, and no recommended tasks/incidents. Browser-like local checks returned 200 for storefront `/`, `/s/haa-demo`, `/s/haa-demo/cart`, `/s/haa-demo/checkout`, merchant `/login`, and admin `/`. Sanitized API probes returned admin login 200, merchant owner login 200, storefront store info 200, local cart create 201, merchant provider-status 200, and shipment provider-status 200 with live blocked/manual fallback indicators. `pnpm test:smoke` passed 29/29. `pnpm smoke` ran and failed 9/46: several assertions use an old product response shape, while the confirmed runtime blocker is local DB schema drift because `orders.preparation_status` is missing although migration `0077_order_preparation_status.sql` exists. The smoke run also performed local-only DB writes before stopping (product-feature/gift-option settings, one pickup-location create, and gift-wrap product update). `pnpm ops:errors` then reported 3 actionable P2 `API-001` events and no incidents/tasks.
+- **Verdict:** Local app runtime and fake/mock provider readiness are partially green, but the full local smoke rehearsal is BLOCKED until the owner approves applying pending local DB migrations or rebuilds the local DB. Live beta and public launch remain NO-GO.
+- **Related Issues:** ISSUE-0027.
+
+---
+
+### TASK-0090: Create sandbox payment and shipping rehearsal checklist
+
+- **Type:** Product Planning / Documentation / Support-Ops
+- **Priority:** P1 High
+- **Status:** Done (checklist created; focused local mock test baseline passed)
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `security-quality/apple-grade-audit`
+- **Original Request:** "نفذ" after the next step was identified as creating the sandbox rehearsal checklist.
+- **Expanded Requirement:** Create a concrete local/mock and conditional staging/sandbox checklist for payment and shipping rehearsal, without authorizing production, live providers, secrets, deploys, SSH, DNS changes, or `db:migrate`.
+- **Scope:** Add the sandbox rehearsal checklist, update launch-readiness source-of-truth docs, and publish a skill compliance report.
+- **Out of Scope:** Running the full rehearsal, staging deploy, staging env mutation, production deploy, live payment/shipping-provider calls, secret handling, DNS changes, database migration, code changes, and unrelated admin/storefront/image worktree changes.
+- **Skills Used:** `environment-safety-gate`, `acceptance-criteria-gate`, `documentation-handoff-gate`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] Local mock payment scenarios and mock shipping readiness are listed with concrete commands and pass/fail expectations.
+  - [x] Staging sandbox path is conditional on owner approval and approved secret storage without printing credentials.
+  - [x] Live beta and production remain explicitly NO-GO.
+  - [x] Required launch-readiness docs point to the new checklist.
+- **Test Plan:** `pnpm preflight`; focused local mock rehearsal tests; `pnpm check:skills`; `git diff` review; `git diff --check`; trailing whitespace scan; `git status --short --branch`.
+- **Files Changed:** `docs/ops/SANDBOX_REHEARSAL_CHECKLIST.md`, `docs/ops/LAUNCH_READINESS_GATE.md`, `docs/agent-os/PRODUCTION_LAUNCH_GATES.md`, `docs/agent-os/REMAINING_WORK.md`, `docs/HAA_TASK_LEDGER.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0090.md`.
+- **Test Results:** Focused local mock rehearsal command passed 10 test files / 151 tests. `pnpm preflight` passed. `pnpm check:skills` passed 43/43. Final diff/whitespace/status verification is recorded in `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0090.md`.
+- **Verdict:** Sandbox checklist is ready and the local mock test baseline is green. The next safe execution task is local app smoke with fake/mock providers only, or owner-approved staging sandbox preparation.
+- **Related Issues:** None. No root cause was investigated.
+
+---
+
+### TASK-0089: Record owner launch-gate answers and set sandbox path
+
+- **Type:** Product Planning / Documentation / Support-Ops
+- **Priority:** P1 High
+- **Status:** Done (docs-only owner-gate sync; sandbox prep path set)
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `security-quality/apple-grade-audit` at `6ba8b23a`
+- **Original Request:** The owner answered the launch-gate questions: VAT/ZATCA is not available, e-commerce license exists, DPO is not available, and the desired next path is sandbox preparation.
+- **Expanded Requirement:** Record these answers in the launch-readiness sources of truth, keep live beta/public launch blocked, and set the next Codex-safe task to sandbox rehearsal checklist preparation without production action, live providers, secrets, or migrations.
+- **Scope:** Update launch gate, production launch gates, remaining work, owner-facing ledger, tracker/current-state/changelog/active-work, and publish the skill compliance report.
+- **Out of Scope:** Verifying the actual license document/number, appointing a DPO, ZATCA/VAT enrollment, live provider onboarding, production deploy, `db:migrate`, DNS, secrets, and any code changes.
+- **Skills Used:** `definition-of-done-gate`, `priority-triage-gate`, `documentation-handoff-gate`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] G2 VAT/ZATCA remains open and blocking live beta/public launch.
+  - [x] G3 e-commerce license is recorded as owner-stated available, with proof/reference pending before closure.
+  - [x] G4 DPO remains open and blocking live beta/public launch.
+  - [x] Sandbox preparation is recorded as the next allowed path.
+  - [x] Live payment/shipping calls, production deploy, secrets, and `db:migrate` remain explicitly forbidden.
+- **Test Plan:** `pnpm preflight`; `pnpm check:skills`; `git diff` review; `git diff --check`; trailing whitespace scan; `git status --short --branch`.
+- **Files Changed:** `docs/ops/LAUNCH_READINESS_GATE.md`, `docs/agent-os/PRODUCTION_LAUNCH_GATES.md`, `docs/agent-os/REMAINING_WORK.md`, `docs/HAA_TASK_LEDGER.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0089.md`.
+- **Test Results:** `pnpm preflight` passed before edits. Final verification is recorded in `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0089.md`.
+- **Verdict:** Sandbox preparation may proceed. Closed live beta and public launch remain NO-GO.
+- **Related Issues:** None. No root cause was investigated.
+
+---
+
+### TASK-0088: Launch Readiness Gate v1 for closed-beta start
+
+- **Type:** Product Planning / Documentation / Support-Ops
+- **Priority:** P1 High
+- **Status:** Done (docs-only gate created; no deploy or production action)
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `security-quality/apple-grade-audit` at `6ba8b23a`
+- **Original Request:** The user asked what to do now to start, then confirmed starting the recommended Launch Readiness Gate v1.
+- **Expanded Requirement:** Create a single owner-facing and agent-facing launch gate that separates immediate readiness-sprint work from staging rehearsal, closed live beta, and public launch. The gate must classify blockers, preserve owner-only boundaries, and point Codex to the first safe next action without touching production, secrets, live providers, or migrations.
+- **Scope:** Add `docs/ops/LAUNCH_READINESS_GATE.md`, update operations/current-state handoff docs, record the task, and publish a skill compliance report.
+- **Out of Scope:** Production deploy, `db:migrate`, DNS changes, SSH, secrets, `.env` inspection, live payment/shipping-provider calls, code changes, broad launch-doc rewrites, and the unrelated storefront footer/legal-entity worktree edits.
+- **Skills Used:** `definition-of-done-gate`, `priority-triage-gate`, `documentation-handoff-gate`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] Mandatory Skill Gate was published before edits.
+  - [x] Launch Readiness Gate v1 states GO/CONDITIONAL/NO-GO for readiness sprint, staging rehearsal, closed live beta, and public launch.
+  - [x] Gate rows classify legal, privacy, payments, shipping, security, operations, UX, DNS/secrets, wallet migration, monitoring, backup/restore, and beta cohort blockers.
+  - [x] Owner-only items are separated from Codex/engineering preparation work.
+  - [x] First 48-hour start plan is documented without authorizing deploy, migration, live providers, or secret handling.
+  - [x] Required docs are updated.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; read current launch docs; `pnpm check:skills`; `git diff` review; `git diff --check`; `git status --short --branch`.
+- **Files Changed:** `docs/ops/LAUNCH_READINESS_GATE.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0088.md`, and `storage/monitoring-events.ndjson` generated by `pnpm ops:monitor`.
+- **Test Results:** `pnpm preflight` passed. `pnpm ops:monitor` exited 0 with 0 failures, dev-server warnings because API/storefront/merchant dashboard were not running, 0 actionable events in the active 24-hour window, and no recommended tasks/incidents. Final verification is recorded in `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0088.md`.
+- **Verdict:** Readiness sprint is GO; staging rehearsal is CONDITIONAL; closed live beta and public launch are NO-GO until owner gates, credentials, pen-test, DR/restore, DNS/secrets, provider checks, monitoring, and beta cohort are closed.
+- **Related Issues:** None. No root cause was investigated.
+
+---
+
+### TASK-0087: Apple-grade defensive audit and P0/P1 hardening pass
+
+- **Type:** Security / CI-Deploy / Testing
+- **Priority:** P1 High
+- **Status:** Done (local verification passed; not committed/pushed)
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `security-quality/apple-grade-audit` at local base `33425d86`
+- **Original Request:** The user asked for a comprehensive Apple-grade defensive audit across security, code/product/UX, architecture, Docker, CI/CD, dependencies, secrets, deploy, performance, and stability; then to fix only P0/P1 issues and CI failures. The user later said to ignore the uploaded screenshot, so it was excluded from findings.
+- **Expanded Requirement:** Run the repository's mandatory preflight/ops gate, perform a defensive local audit without production actions or secret disclosure, classify findings by risk, patch only confirmed P0/P1-quality issues and CI/static-analysis failures, and verify with targeted and full checks.
+- **Scope:** GitHub Actions shell-injection hardening, AES-GCM credential helper validation, merchant-dashboard print-window HTML output encoding, focused regression tests, and required ops documentation.
+- **Out of Scope:** Production deploys, `db:migrate`, SSH, live payment/shipping-provider calls, secret rotation, major dependency upgrades, broad UX redesign, broad lint cleanup, Docker image build/scan while Docker daemon is unavailable, and unrelated storefront worktree changes.
+- **Skills Used:** `priority-triage-gate`, `agent-permission-boundary`, `environment-safety-gate`, `regression-safety-gate`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] `pnpm preflight` passes before work.
+  - [x] `pnpm ops:monitor` runs before significant development and reports no P0 incident requirement; local dev-server warnings were noted because servers were not running.
+  - [x] Confirmed P1/CI-static-analysis findings are fixed without production actions.
+  - [x] Workflow shell scripts do not interpolate GitHub inputs directly inside `run:` shell logic.
+  - [x] AES-GCM helpers validate 64-hex keys, IV/tag/ciphertext shape, and explicit 16-byte auth tags.
+  - [x] Merchant dashboard print-window HTML sinks escape user-controlled text for HTML context.
+  - [x] Focused and full regression tests pass.
+  - [x] `pnpm typecheck`, `pnpm lint`, `pnpm test`, and `pnpm build` complete locally.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; `pnpm audit`; `pnpm deps:audit`; `gitleaks detect --source . --redact`; Semgrep OWASP/JS/TS scan; targeted vitest for crypto/workflow/HTML escaping; `pnpm typecheck`; `pnpm lint`; `pnpm test`; `pnpm build`; `git diff --check`; `pnpm check:skills`.
+- **Files Changed:** `.github/workflows/ops-staging-bullmq-check.yml`, `.github/workflows/ops-staging-env.yml`, `.github/workflows/ops-staging-migrate.yml`, `packages/commerce-core/src/encryption.ts`, `packages/marketplace-core/src/credential-cipher.ts`, `apps/merchant-dashboard/src/lib/html.ts`, `apps/merchant-dashboard/src/pages/Orders.tsx`, `apps/merchant-dashboard/src/pages/orders/OrderDetailDialog.tsx`, `tests/payment-settings.test.ts`, `tests/credential-cipher.test.ts`, `tests/pii-gating-orders-contract.test.ts`, `tests/dashboard-print-html-escape.test.ts`, `tests/ops-workflow-shell-injection.test.ts`, and required ops docs.
+- **Test Results:** `pnpm preflight` passed before edits. `pnpm audit` and `pnpm deps:audit` reported 0 vulnerabilities. Initial Semgrep found workflow shell-injection patterns, AES-GCM missing explicit auth-tag length, and dashboard print HTML-output risks; post-fix Semgrep dropped to 8 residual warnings limited to reviewed JSON-LD `dangerouslySetInnerHTML` warnings and legacy `nginx/haastores.nginx.conf` `$host` warnings. Focused tests passed 42/42. `pnpm typecheck` passed. `pnpm lint` exited 0 with 499 pre-existing warnings. `pnpm test` passed 4618 active tests with 3 skipped and 14 todo. `pnpm build` passed; storefront build still emits an existing Rollup circular chunk warning for `MarketplaceProductCard` re-exports.
+- **Audit Notes / Residual Risks:** `gitleaks detect --source . --redact` reports historical redacted findings in old commits/test docs and current ignored local files (`.env`, `.hostinger-mcp.env`, and generated `.next` output); no secret values were printed. Docker CLI is installed but the Docker daemon was unavailable, so Docker review was manual only. Trivy/ZAP/Lighthouse CLI/Sonar were not installed. Snyk root scan passed once, then the account hit the monthly private-test limit. Repo-wide lint warnings and storefront Rollup warnings remain separate quality debt.
+- **Related Issues:** ISSUE-0026.
+
+---
+
 ### TASK-0086: Close P1 dependency CVEs and harden storefront pixel script injection
 
 - **Type:** Security

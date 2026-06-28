@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 import { landingContactsApi } from '../lib/api';
+import { ErrorState } from '../components/ui/ErrorState';
 
 // ─── Domain types (narrowed locally from `unknown` per post-P2-030 pattern) ──
 // Mirrors `packages/db/src/schema/landing-contacts.ts`. Dates come over the
@@ -202,7 +203,7 @@ export default function LandingInbox() {
   return (
     <div dir="rtl">
       <div className="flex items-center gap-3 mb-6">
-        <h2 className="text-2xl font-bold">صندوق الوارد — Landing Contact</h2>
+        <h2 className="text-title2 font-bold text-gray-900 tracking-tight">صندوق الوارد</h2>
         {newCount > 0 && (
           <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-700">
             {newCount} جديدة
@@ -248,15 +249,7 @@ export default function LandingInbox() {
             ))}
           </div>
         ) : error ? (
-          <div className="p-12 text-center">
-            <p className="text-sm text-gray-500 mb-3">فشل تحميل صندوق الوارد</p>
-            <button
-              onClick={load}
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-            >
-              إعادة المحاولة
-            </button>
-          </div>
+          <ErrorState message="فشل تحميل صندوق الوارد" onRetry={load} />
         ) : contacts.length === 0 ? (
           <div className="p-12 text-center">
             <Icon name="Inbox" size="lg" className="text-gray-300 mx-auto mb-3" aria-hidden="true" />

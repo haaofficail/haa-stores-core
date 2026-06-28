@@ -4,6 +4,9 @@ import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 import { useTranslation } from 'react-i18next';
+import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
+import { ErrorState } from '../components/ui/ErrorState';
+import { downloadRowsAsCsv } from '../lib/downloadRowsAsCsv';
 
 export default function Tenants() {
   const { t } = useTranslation();
@@ -15,6 +18,7 @@ export default function Tenants() {
   const [form, setForm] = useState({ name: '', email: '', status: 'active' });
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [query, setQuery] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -97,35 +101,40 @@ export default function Tenants() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">{t('tenants.title', 'التجار')}</h2>
-        <button
-          onClick={() => handleOpenDialog()}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
-        >
-          <Icon name="Plus" size="xs" /> {t('tenants.addTenant', 'إضافة تاجر')}
-        </button>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-title2 font-bold text-gray-900 tracking-tight">{t('tenants.title', 'التجار')}</h2>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => downloadRowsAsCsv(tenants, 'tenants.csv')}
+            className="px-3 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            تصدير CSV
+          </button>
+          <button
+            onClick={() => handleOpenDialog()}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
+          >
+            <Icon name="Plus" size="xs" /> {t('tenants.addTenant', 'إضافة تاجر')}
+          </button>
+        </div>
+      </div>
+      <div className="mb-4">
+        <input
+          type="search"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder={t('tenants.search', 'بحث باسم التاجر أو البريد...')}
+          className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+        />
       </div>
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-8 space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="flex gap-4">
-                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-40 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" />
-              </div>
-            ))}
-          </div>
+          <AdminTableSkeleton />
         ) : error ? (
-          <div className="p-12 text-center">
-            <p className="text-sm text-gray-500 mb-3">{t('tenants.loadError', 'فشل تحميل التجار')}</p>
-            <button onClick={() => load()} className="text-sm text-primary-600 hover:text-primary-700 font-medium">{t('tenants.retry', 'إعادة المحاولة')}</button>
-          </div>
+          <ErrorState message={t('tenants.loadError', 'فشل تحميل التجار')} onRetry={load} />
         ) : tenants.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-sm text-gray-500">{t('tenants.empty', 'لا يوجد تجار')}</p>
+            <p className="text-footnote text-gray-400">{t('tenants.empty', 'لا يوجد تجار')}</p>
           </div>
         ) : (
           <table className="w-full text-sm">
@@ -138,7 +147,11 @@ export default function Tenants() {
               </tr>
             </thead>
             <tbody>
-              {tenants.map(tenant => (
+              {tenants.filter(tenant => {
+                if (!query) return true;
+                const q = query.toLowerCase();
+                return (tenant.name || '').toLowerCase().includes(q) || (tenant.email || '').toLowerCase().includes(q);
+              }).map(tenant => (
                 <tr key={tenant.id} className="border-t hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 font-medium text-gray-900">{tenant.name}</td>
                   <td className="px-4 py-3 text-gray-500">{tenant.email || '-'}</td>

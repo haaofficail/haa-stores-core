@@ -15,6 +15,7 @@ import { formatCurrency } from '@/lib/utils';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { PermissionGate, usePermissions } from '@/lib/permissions';
 import { escapeCsvCell } from '@/lib/csv';
+import { preparePrintDocument } from '@/lib/html';
 import {
   orderStatusColors,
   paymentStatusColors,
@@ -285,19 +286,24 @@ export default function Orders() {
             <Button size="sm" className="h-8 text-xs bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50" onClick={() => {
               // PII guard: print echoes customerPhone, which is masked
               // in the table for users without orders:view_sensitive.
-              // Mirror that guard here — and apply CSV-injection escape
-              // on every cell so an Excel-opened printout cannot run a
-              // formula injected via a malicious customer name.
+              // Mirror that guard here. Build the printout with DOM
+              // textContent so customer data cannot become executable HTML.
               const canSeeSensitive = orderPerms.can('orders:view_sensitive');
-              const safe = (v: string) => escapeCsvCell(v);
               selectedOrders.forEach(id => {
                 const order = orders.find(o => o.id === id);
                 if (order) {
                   const win = window.open('', '_blank');
                   if (win) {
-                    const phoneLine = canSeeSensitive ? ` - ${safe(order.customerPhone)}` : '';
-                    win.document.write(`<!DOCTYPE html><html dir="rtl"><head><title>${safe(order.orderNumber)}</title><style>body{font-family:sans-serif;padding:40px;max-width:800px;margin:0 auto}</style></head><body><h2>${safe(order.orderNumber)}</h2><p>${safe(order.customerName)}${phoneLine}</p><p>${safe(t(`orders.status_${order.status}`))}</p></body></html>`);
-                    win.document.close();
+                    const doc = preparePrintDocument(win, order.orderNumber, 'body{font-family:sans-serif;padding:40px;max-width:800px;margin:0 auto}');
+                    const title = doc.createElement('h2');
+                    title.textContent = String(order.orderNumber ?? '');
+                    const customer = doc.createElement('p');
+                    customer.textContent = canSeeSensitive
+                      ? `${order.customerName ?? ''} - ${order.customerPhone ?? ''}`
+                      : String(order.customerName ?? '');
+                    const status = doc.createElement('p');
+                    status.textContent = t(`orders.status_${order.status}`);
+                    doc.body.append(title, customer, status);
                     win.print();
                   }
                 }

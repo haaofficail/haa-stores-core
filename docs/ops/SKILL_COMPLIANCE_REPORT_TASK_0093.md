@@ -1,0 +1,192 @@
+# Final Skill Compliance Report — TASK-0093
+
+## Task
+
+- **Title:** Take over admin settlement handoff and publish
+- **Task type:** testing/e2e
+- **Risk level:** high
+- **Branch:** `security-quality/apple-grade-audit`
+- **PR:** #320 — `https://github.com/haaofficail/haa-stores-core/pull/320`
+
+## Mandatory Skill Gate (recap)
+
+- **Skills selected:**
+  - `github:yeet` — publish requires explicit staging, commit, push, and draft PR hygiene.
+  - `environment-safety-gate` — no deploy, migration, secrets, production, or live provider calls.
+  - `acceptance-criteria-gate` — inherited admin handoff must be inspected and verified before publish.
+  - `design-ux-excellence-gate` — admin RTL/table polish must stay aligned with dashboard UI standards.
+  - `regression-safety-gate` — settlement/payment readiness changes can break launch-readiness flows.
+  - `test-strategy-gate` — admin typecheck/build plus focused settlement tests are required.
+  - `implementation-quality-gate` — inherited staged edits must be cleaned before commit.
+  - `branch-pr-hygiene-gate` — mixed worktree requires explicit path staging only.
+  - `documentation-handoff-gate` — tracker/current-state/changelog/RCA/compliance docs must be updated.
+  - `verification-before-completion` — no done claim without fresh command evidence.
+- **Why these skills:** The task combined an inherited admin-dashboard handoff with GitHub publication from a mixed worktree, so all applicable safety, verification, documentation, implementation, design, regression, and branch hygiene skills were selected.
+- **Files expected to change:** `apps/admin-dashboard/**`, possibly `packages/wallet-core/src/ledger.ts`, required `docs/ops/**`, and `docs/agent-os/ACTIVE_WORK.md`.
+- **Verification planned:** `pwd`; `pnpm preflight`; inspect staged/unstaged diffs; admin typecheck/build; focused settlement tests; `pnpm check:skills`; `git diff --check`; explicit path staging; commit; push; draft PR.
+
+## Execution Evidence
+
+- **Files actually changed in TASK-0093 scope:** `apps/admin-dashboard/src/App.tsx`, `apps/admin-dashboard/src/components/ui/AdminTableSkeleton.tsx`, `apps/admin-dashboard/src/components/ui/StoreSelectorPanel.tsx`, `apps/admin-dashboard/src/lib/downloadRowsAsCsv.ts`, `apps/admin-dashboard/src/pages/AdminUsers.tsx`, `apps/admin-dashboard/src/pages/AuditLogs.tsx`, `apps/admin-dashboard/src/pages/BankAccounts.tsx`, `apps/admin-dashboard/src/pages/KycReview.tsx`, `apps/admin-dashboard/src/pages/Payments.tsx`, `apps/admin-dashboard/src/pages/Stores.tsx`, `apps/admin-dashboard/src/pages/Tenants.tsx`, `apps/admin-dashboard/src/pages/SettlementReadiness.tsx`, `apps/admin-dashboard/src/pages/StoreBillingSettings.tsx`, `apps/admin-dashboard/src/pages/StorePaymentSettings.tsx`, `apps/admin-dashboard/src/pages/Plans.tsx`, `apps/merchant-dashboard/src/lib/html.ts`, `apps/merchant-dashboard/src/pages/Orders.tsx`, `apps/merchant-dashboard/src/pages/orders/OrderDetailDialog.tsx`, `packages/wallet-core/src/ledger.ts`, `scripts/hooks/pre-edit-frontend.sh`, `.sonarcloud.properties`, `sonar-project.properties`, `tests/dashboard-print-html-escape.test.ts`, `tests/admin-landing-inbox.test.tsx`, `tests/pii-gating-orders-contract.test.ts`, `tests/scheduled-settlement-admin-batches-ui.test.ts`, `tests/platform-fees-wiring.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/HAA_TASK_LEDGER.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0093.md`.
+- **Files inspected/reconciled:** `apps/admin-dashboard/src/pages/LandingInbox.tsx`, `apps/admin-dashboard/src/pages/SettlementBatches.tsx`.
+- **Publication bundle note:** The final draft PR also includes prior owner-approved launch/governance docs from TASK-0088 through TASK-0092 because current handoff docs reference them. Unrelated storefront files, screenshots, and local storage artifacts remain excluded.
+- **Files added / removed:** added this TASK-0093 compliance report; no files removed.
+- **Key decisions taken during execution:**
+  - Reconciled inherited staged JSX comments out of the final publish scope because they added no product value and broke TypeScript.
+  - Kept the actual admin UI delta to settlement-readiness RTL alignment and token color consistency.
+  - Kept `liveEnabled` behavior unchanged and only clarified that it remains false until all seven readiness gates pass.
+  - Addressed immediate SonarCloud quality-gate blockers after first push by excluding templated docs from CPD through SonarCloud/scanner config, flattening inherited admin settings normalization, using bash `[[ ]]`, replacing merchant print `document.write` strings with DOM/textContent output, and fixing Plans modal backdrop semantics.
+  - Addressed the later GitHub Test failure by updating stale source-grep contracts to assert shared `ErrorState` retry wiring and DOM/textContent print construction.
+  - Addressed the refreshed SonarCloud duplication-only failure by extracting repeated admin nav item shape, table loading skeletons, CSV export logic, and store selector markup into shared admin helpers.
+  - Published from the existing branch without merge, deploy, migration, secrets, or production actions.
+- **Safety constraints respected (per AGENTS.md §14.7):**
+  - [x] No `db:migrate` execution
+  - [x] No production deploy
+  - [x] No SSH to production
+  - [x] No secrets printed or `.env` echoed
+  - [x] No live payment-provider calls
+  - [x] No live shipping-provider calls
+  - [x] No direct edit to `main` or force-push
+  - [x] No use of forbidden server `187.124.41.239`
+
+## Verification
+
+- `git diff` review — source and docs reviewed; unrelated storefront/image/storage artifacts excluded from staging.
+
+- Initial `pnpm preflight`:
+
+  ```text
+  FAILED before the fix:
+  apps/admin-dashboard/src/pages/SettlementBatches.tsx(245,23): error TS1005: ')' expected.
+  apps/admin-dashboard/src/pages/SettlementBatches.tsx(245,73): error TS1382: Unexpected token.
+  apps/admin-dashboard/src/pages/SettlementBatches.tsx(298,10): error TS1381: Unexpected token.
+  ```
+
+- `pnpm --filter @haa/admin-dashboard typecheck`:
+
+  ```text
+  > @haa/admin-dashboard@0.1.0 typecheck /Users/thwany/Desktop/haa-stores-core/apps/admin-dashboard
+  > tsc --noEmit
+  ```
+
+- Focused settlement tests:
+
+  ```text
+  pnpm vitest run tests/settlement-order-linking.test.ts tests/settlement-order-drilldown-ui.test.ts tests/geidea-settlement-reconciliation.test.ts
+  Test Files  3 passed (3)
+  Tests  24 passed (24)
+  ```
+
+- `pnpm --filter @haa/admin-dashboard build`:
+
+  ```text
+  > @haa/admin-dashboard@0.1.0 build /Users/thwany/Desktop/haa-stores-core/apps/admin-dashboard
+  > tsc -b && vite build
+  ✓ 1964 modules transformed.
+  ✓ built in 1.88s
+  ```
+
+- `bash -n scripts/hooks/pre-edit-frontend.sh`:
+
+  ```text
+  passed
+  ```
+
+- `pnpm --filter @haa/merchant-dashboard typecheck`:
+
+  ```text
+  > @haa/merchant-dashboard@0.1.0 typecheck /Users/thwany/Desktop/haa-stores-core/apps/merchant-dashboard
+  > tsc --noEmit
+  ```
+
+- `pnpm vitest run tests/dashboard-print-html-escape.test.ts`:
+
+  ```text
+  Test Files  1 passed (1)
+  Tests  3 passed (3)
+  ```
+
+- Focused GitHub Test contract follow-up:
+
+  ```text
+  pnpm vitest run tests/pii-gating-orders-contract.test.ts tests/admin-landing-inbox.test.tsx tests/scheduled-settlement-admin-batches-ui.test.ts tests/dashboard-print-html-escape.test.ts
+  Test Files  4 passed (4)
+  Tests  46 passed | 1 skipped
+  ```
+
+- Focused admin UI dedup/source-grep follow-up:
+
+  ```text
+  pnpm vitest run tests/admin-landing-inbox.test.tsx tests/scheduled-settlement-admin-batches-ui.test.ts tests/platform-fees-wiring.test.ts tests/admin-dashboard-css-contract.test.ts
+  Test Files  3 passed (3)
+  Tests  60 passed | 1 skipped
+  ```
+
+- `pnpm test`:
+
+  ```text
+  Test Files  354 passed | 1 skipped (355)
+  Tests  4618 passed | 3 skipped | 14 todo (4635)
+  ```
+
+- `pnpm check:skills`:
+
+  ```text
+  All 43 checks passed.
+  ```
+
+- `pnpm preflight`:
+
+  ```text
+  === TypeScript TypeCheck ===
+    ✅ TypeCheck passed
+
+  ✅ Preflight PASSED — project is healthy
+  ```
+
+- `git diff --check`:
+
+  ```text
+  clean
+  ```
+
+- SonarCloud follow-up after first push:
+
+  ```text
+  Initial PR gate failed: 5.8% duplication on new code, Reliability Rating B.
+  Fixed locally by adding Sonar CPD doc exclusions, refactoring StorePaymentSettings
+  nested normalization, switching the hook test to [[ ]], and replacing merchant
+  print document.write strings with DOM/textContent output.
+  Refreshed gate then reported 5.7% duplication on new code, narrowed to
+  repeated admin UI blocks. Fixed locally by extracting AdminTableSkeleton,
+  StoreSelectorPanel, downloadRowsAsCsv, and a typed nav helper.
+  ```
+
+- GitHub Test follow-up after Sonar fixes:
+
+  ```text
+  GitHub Test failed because source-grep tests expected page-local retry copy and
+  the old escapeHtmlText/document.write print path. Fixed locally by updating
+  tests to assert ErrorState wiring and DOM/textContent print output.
+  ```
+
+## Deviations
+
+- **Deviations from selected skills:** no functional deviation.
+- **Reason:** not applicable.
+- **Follow-up:** The final PR remains under review because the branch contains multiple approved launch/governance docs plus the admin handoff; owner review should confirm the publication bundle before merge.
+
+## Completion
+
+- **Did the task follow the selected skills end-to-end?** yes
+- **Is further owner approval required before merge/deploy?** yes for merge/deploy; no deploy is included.
+- **Owner approvals received (cite source):** owner requested taking over the other agent's task and publishing it: "الحين استلم مهمه الوكيل الثاني كمدير تنفيذي و ارفعها وتاكد من تكاملها".
+- **Safety confirmations (re-affirmed at done):**
+  - [x] No `db:migrate` was run during this task
+  - [x] No production action was performed
+  - [x] No secrets were printed
+  - [x] No live payment / shipping calls were made
+
+## Next step
+
+Review the draft PR, then keep storefront/footer screenshots, local storage artifacts, and the full-smoke DB migration blocker as separate tasks.

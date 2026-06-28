@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Marketplace moderation + settlements + manual payouts.
 // Extracted from admin.ts lines 261-556.
 //
@@ -13,6 +14,7 @@ import * as s from '@haa/db/schema';
 import { type AdminAuthContext } from '@haa/auth-core';
 import { WalletLedger } from '@haa/wallet-core';
 import { AuditLogService } from '@haa/integration-core';
+import { NotificationService } from '@haa/notification-core';
 
 // ── /marketplace/summary ───────────────────────────────────────────────────
 export async function marketplaceSummaryRoute(c: any) {
@@ -314,6 +316,9 @@ export const manualPayoutsRoutes = {
     const payoutId = Number(c.req.param('payoutId'));
     try {
       const payout = await new WalletLedger().approvePayout(payoutId, payoutActionContext(c, 'approver'));
+      new NotificationService().send(payout.storeId, 'payout_approved', {
+        reference: payout.reference, amount: payout.amount, currency: payout.currency ?? 'SAR',
+      }).catch((e: unknown) => console.error('[payout notify] approve:', e));
       return c.json({ success: true, data: payout });
     } catch (e) {
       return c.json({ success: false, error: { code: 'PAYOUT_WORKFLOW_ERROR', message: e instanceof Error ? e.message : 'Approve failed' } }, 400);
@@ -325,6 +330,9 @@ export const manualPayoutsRoutes = {
     const ctx = { ...payoutActionContext(c, 'approver'), reason: c.req.valid('json').reason };
     try {
       const payout = await new WalletLedger().rejectPayout(payoutId, ctx);
+      new NotificationService().send(payout.storeId, 'payout_rejected', {
+        reference: payout.reference, amount: payout.amount, currency: payout.currency ?? 'SAR', reason: ctx.reason,
+      }).catch((e: unknown) => console.error('[payout notify] reject:', e));
       return c.json({ success: true, data: payout });
     } catch (e) {
       return c.json({ success: false, error: { code: 'PAYOUT_WORKFLOW_ERROR', message: e instanceof Error ? e.message : 'Reject failed' } }, 400);
@@ -345,6 +353,10 @@ export const manualPayoutsRoutes = {
     const payoutId = Number(c.req.param('payoutId'));
     try {
       const payout = await new WalletLedger().markTransferred(payoutId, payoutActionContext(c, 'finance'));
+      new NotificationService().send(payout.storeId, 'payout_transferred', {
+        reference: payout.reference, amount: payout.amount, currency: payout.currency ?? 'SAR',
+        transferredAt: new Date().toLocaleDateString('ar-SA'),
+      }).catch((e: unknown) => console.error('[payout notify] transferred:', e));
       return c.json({ success: true, data: payout });
     } catch (e) {
       return c.json({ success: false, error: { code: 'PAYOUT_WORKFLOW_ERROR', message: e instanceof Error ? e.message : 'Mark transferred failed' } }, 400);

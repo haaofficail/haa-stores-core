@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { adminApi } from '../lib/api';
@@ -34,7 +35,7 @@ export default function SettlementDetail() {
   if (loading) {
     return (
       <div>
-        <h2 className="text-2xl font-bold mb-6">تفاصيل التسوية</h2>
+        <h2 className="text-title2 font-bold text-gray-900 tracking-tight mb-6">تفاصيل التسوية</h2>
         <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
           {[1, 2, 3, 4].map(i => (
             <div key={i} className="h-6 w-full bg-gray-200 rounded animate-pulse" />
@@ -47,7 +48,7 @@ export default function SettlementDetail() {
   if (!detail) {
     return (
       <div>
-        <h2 className="text-2xl font-bold mb-6">تفاصيل التسوية</h2>
+        <h2 className="text-title2 font-bold text-gray-900 tracking-tight mb-6">تفاصيل التسوية</h2>
         <div className="bg-white rounded-xl shadow-sm p-12 text-center">
           <p className="text-sm text-gray-500">لم يتم العثور على التسوية</p>
           <Link to="/payments" className="text-sm text-primary-600 hover:text-primary-700 font-medium mt-2 inline-block">العودة للمدفوعات</Link>
@@ -62,7 +63,7 @@ export default function SettlementDetail() {
     <div>
       <div className="flex items-center gap-3 mb-6">
         <Link to="/payments" className="text-sm text-primary-600 hover:text-primary-700">← العودة للمدفوعات</Link>
-        <h2 className="text-2xl font-bold">تفاصيل التسوية</h2>
+        <h2 className="text-title2 font-bold text-gray-900 tracking-tight">تفاصيل التسوية</h2>
         <span className="font-mono text-sm text-gray-500">{settlementRef}</span>
         <span className={`px-2 py-1 rounded text-xs font-medium ${settlementStatusColors[detail.status] || 'bg-gray-100 text-gray-700'}`}>
           {detail.status}
