@@ -54,6 +54,7 @@
 - [ ] Touch targets ≥ 44px on mobile
 - [ ] Generated merchant policy drafts contain no CJK characters or unintended mixed-language fragments
 - [ ] Saudi policy generator keeps privacy legal-basis/rights/retention clauses and delayed-delivery cancellation language covered by tests
+- [ ] HTML escaping helpers accept only primitive text values; avoid `String(unknown)` paths that can emit `[object Object]`
 
 ## Theme
 

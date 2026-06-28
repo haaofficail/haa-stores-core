@@ -15,7 +15,7 @@ import { formatCurrency } from '@/lib/utils';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { PermissionGate, usePermissions } from '@/lib/permissions';
 import { escapeCsvCell } from '@/lib/csv';
-import { escapeHtmlText } from '@/lib/html';
+import { escapeHtmlText, type HtmlTextValue } from '@/lib/html';
 import {
   orderStatusColors,
   paymentStatusColors,
@@ -290,7 +290,7 @@ export default function Orders() {
               // on every cell so an Excel-opened printout cannot run a
               // formula injected via a malicious customer name.
               const canSeeSensitive = orderPerms.can('orders:view_sensitive');
-              const safeHtml = (v: unknown) => escapeHtmlText(v);
+              const safeHtml = (v: HtmlTextValue) => escapeHtmlText(v);
               selectedOrders.forEach(id => {
                 const order = orders.find(o => o.id === id);
                 if (order) {

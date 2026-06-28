@@ -17,7 +17,7 @@ describe('merchant dashboard print HTML escaping', () => {
 
   it('uses HTML escaping, not CSV escaping, for order bulk print markup', () => {
     expect(ordersSource).toContain("from '@/lib/html'");
-    expect(ordersSource).toContain('const safeHtml = (v: unknown) => escapeHtmlText(v)');
+    expect(ordersSource).toContain('const safeHtml = (v: HtmlTextValue) => escapeHtmlText(v)');
     expect(ordersSource).not.toContain('const safe = (v: string) => escapeCsvCell(v)');
   });
 

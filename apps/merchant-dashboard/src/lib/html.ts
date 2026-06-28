@@ -6,6 +6,8 @@ const HTML_TEXT_ESCAPES: Record<string, string> = {
   "'": '&#39;',
 };
 
-export function escapeHtmlText(value: unknown): string {
+export type HtmlTextValue = string | number | boolean | null | undefined;
+
+export function escapeHtmlText(value: HtmlTextValue): string {
   return String(value ?? '').replace(/[&<>"']/g, (char) => HTML_TEXT_ESCAPES[char] ?? char);
 }

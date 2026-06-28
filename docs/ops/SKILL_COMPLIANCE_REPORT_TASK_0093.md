@@ -27,7 +27,7 @@
 
 ## Execution Evidence
 
-- **Files actually changed in TASK-0093 scope:** `apps/admin-dashboard/src/pages/SettlementReadiness.tsx`, `apps/admin-dashboard/src/pages/StorePaymentSettings.tsx`, `packages/wallet-core/src/ledger.ts`, `scripts/hooks/pre-edit-frontend.sh`, `sonar-project.properties`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/HAA_TASK_LEDGER.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0093.md`.
+- **Files actually changed in TASK-0093 scope:** `apps/admin-dashboard/src/pages/SettlementReadiness.tsx`, `apps/admin-dashboard/src/pages/StorePaymentSettings.tsx`, `apps/merchant-dashboard/src/lib/html.ts`, `apps/merchant-dashboard/src/pages/Orders.tsx`, `packages/wallet-core/src/ledger.ts`, `scripts/hooks/pre-edit-frontend.sh`, `sonar-project.properties`, `tests/dashboard-print-html-escape.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/HAA_TASK_LEDGER.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0093.md`.
 - **Files inspected/reconciled:** `apps/admin-dashboard/src/pages/LandingInbox.tsx`, `apps/admin-dashboard/src/pages/SettlementBatches.tsx`.
 - **Publication bundle note:** The final draft PR also includes prior owner-approved launch/governance docs from TASK-0088 through TASK-0092 because current handoff docs reference them. Unrelated storefront files, screenshots, and local storage artifacts remain excluded.
 - **Files added / removed:** added this TASK-0093 compliance report; no files removed.
@@ -35,7 +35,7 @@
   - Reconciled inherited staged JSX comments out of the final publish scope because they added no product value and broke TypeScript.
   - Kept the actual admin UI delta to settlement-readiness RTL alignment and token color consistency.
   - Kept `liveEnabled` behavior unchanged and only clarified that it remains false until all seven readiness gates pass.
-  - Addressed immediate SonarCloud quality-gate blockers after first push by excluding templated docs from CPD, flattening inherited admin settings normalization, and using bash `[[ ]]`.
+  - Addressed immediate SonarCloud quality-gate blockers after first push by excluding templated docs from CPD, flattening inherited admin settings normalization, using bash `[[ ]]`, and narrowing merchant HTML escaping inputs.
   - Published from the existing branch without merge, deploy, migration, secrets, or production actions.
 - **Safety constraints respected (per AGENTS.md §14.7):**
   - [x] No `db:migrate` execution
@@ -90,6 +90,20 @@
   passed
   ```
 
+- `pnpm --filter @haa/merchant-dashboard typecheck`:
+
+  ```text
+  > @haa/merchant-dashboard@0.1.0 typecheck /Users/thwany/Desktop/haa-stores-core/apps/merchant-dashboard
+  > tsc --noEmit
+  ```
+
+- `pnpm vitest run tests/dashboard-print-html-escape.test.ts`:
+
+  ```text
+  Test Files  1 passed (1)
+  Tests  3 passed (3)
+  ```
+
 - `pnpm check:skills`:
 
   ```text
@@ -116,7 +130,8 @@
   ```text
   Initial PR gate failed: 5.8% duplication on new code, Reliability Rating B.
   Fixed locally by adding Sonar CPD doc exclusions, refactoring StorePaymentSettings
-  nested normalization, and switching the hook test to [[ ]].
+  nested normalization, switching the hook test to [[ ]], and narrowing merchant
+  HTML escaping inputs.
   ```
 
 ## Deviations
