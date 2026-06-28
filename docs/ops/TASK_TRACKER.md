@@ -4,6 +4,29 @@
 
 ---
 
+### TASK-0087: Add reusable task execution checklist template
+
+- **Type:** Documentation
+- **Priority:** P3 Low
+- **Status:** Done
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Original Request:** "Implement the plan" for the generic task checklist template that covers request definition, scope, acceptance criteria, verification, docs sync, and final reporting.
+- **Expanded Requirement:** Add one canonical reusable checklist template for executing scoped tasks in this repository, and sync the ops docs so future agents can find and trust it without creating a parallel checklist system.
+- **Scope:** `docs/agent-os/templates/TASK_EXECUTION_CHECKLIST.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`.
+- **Out of Scope:** Code changes, CI/workflow changes, converting existing historical task-specific checklists, and broader Agent OS process rewrites.
+- **Skills Used:** `documentation-handoff-gate`, `single-source-of-truth-gate`, `verification-before-completion`, `evidence-led-reporting`.
+- **Acceptance Criteria:**
+  - [x] A reusable task execution checklist exists in a canonical template location.
+  - [x] The checklist covers request capture, scope, acceptance criteria, risks, verification, docs sync, and final report items.
+  - [x] TASK_TRACKER, CURRENT_STATE, and CHANGELOG_INTERNAL mention the addition consistently.
+- **Test Plan:** `rg -n "TASK-0087|Task Execution Checklist|التشيك ليست" docs`; `git diff --check`.
+- **Files Changed:** `docs/agent-os/templates/TASK_EXECUTION_CHECKLIST.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`.
+- **Test Results:** Pending final verification in-session.
+- **Related Issues:** None.
+
+---
+
 ### TASK-0086: Close P1 dependency CVEs and harden storefront pixel script injection
 
 - **Type:** Security

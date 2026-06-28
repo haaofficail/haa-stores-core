@@ -5,6 +5,12 @@
 
 ---
 
+## 2026-06-28 — Reusable Task Execution Checklist Template (TASK-0087)
+
+- Added `docs/agent-os/templates/TASK_EXECUTION_CHECKLIST.md` as the canonical reusable checklist for scoped task execution.
+- The template covers request capture, task interpretation, scope, out-of-scope, affected files, acceptance criteria, risks, verification planning, scoped execution, required ops doc updates, and final reporting.
+- This keeps generic task execution guidance in one reusable template instead of reusing historical task-specific checklist files for new work.
+
 ## 2026-06-27 — P1 CVE Cleanup + Pixel Script Hardening (TASK-0086)
 
 - Closed all 6 `pnpm audit` vulnerabilities by upgrading `vite` from `6.4.2` to `6.4.3` (closes GHSA-fx2h-pf6j-xcff high + GHSA-v6wh-96g9-6wx3 moderate) and adding pnpm overrides for `esbuild@0.25.12` (closes GHSA-67mh-4wv8-2f99 transitive from drizzle-kit) and `uuid@11.1.1` (closes GHSA-w5hq-g745-h8pq transitive from storybook).
