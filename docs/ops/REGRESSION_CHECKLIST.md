@@ -23,7 +23,9 @@
 - [ ] CI Test/E2E jobs run `pnpm db:bootstrap` and seeds on clean databases
 - [ ] CI E2E Playwright defaults target local dev servers, not shared staging, unless explicit staging env vars are set
 - [ ] GitHub Actions `run:` blocks pass `${{ inputs.* }}` through `env` variables instead of interpolating expressions directly into shell logic
+- [ ] Secret-like workflow-dispatch inputs are not stored in job-level env; mask them by reading `GITHUB_EVENT_PATH` before later step env use, or generate new operational secrets inside the runner with a non-secret sentinel
 - [ ] SSH/remote workflow payloads that may contain newlines or shell metacharacters are transferred via quoted/base64-safe values
+- [ ] Staging ops workflows avoid `ssh-keyscan` probing fallback when known-host secrets are missing; use pre-baked known-host secrets or `StrictHostKeyChecking=accept-new` for first-connect fallback
 - [ ] Sonar CPD excludes templated governance docs; Markdown compliance/runbook repetition should not fail code duplication gates
 - [ ] Repeated admin-dashboard nav/list/loading/export UI patterns are extracted to shared helpers before relying on Sonar exclusions
 - [ ] Bash hook scripts use `[[ ]]` conditionals instead of `[` where bash is available

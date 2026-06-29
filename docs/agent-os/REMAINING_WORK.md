@@ -68,7 +68,8 @@ These cannot be progressed by engineering code; they need owner action (legal, c
 - [ ] **Backups + restore drill** — automate DB backups (cron + retention policy), document a restore runbook, schedule the first restore drill. Required input for G10.
 - [ ] **Transactional email** — pick provider (Postmark / SES / SendGrid), configure SPF / DKIM / DMARC for the sending domain, wire credentials.
 - [x] **2FA + self-serve password reset engineering** — TASK-0125 added TOTP enrollment + verify on `/admin/login` and sensitive admin operations, plus admin-owned password reset request/confirm. Owner-only rollout remains below.
-- [ ] **Admin auth rollout prerequisites** — apply migration `0090_admin_totp.sql`, set `ADMIN_TOTP_ENCRYPTION_KEY`, and configure transactional email before relying on password reset/TOTP in staging or production.
+- [x] **Admin auth staging rollout prerequisites** — TASK-0129 applied `0090_admin_totp.sql` on staging, set/rotated `ADMIN_TOTP_ENCRYPTION_KEY` through the official staging env workflow, restarted API, and verified admin staging + `/health`. Staging health reports SMTP email configured.
+- [ ] **Admin auth production rollout prerequisites** — production migration/key rollout remains owner-gated and was not touched by TASK-0129.
 - [x] **Admin Webhooks/Idempotency operational UI** — TASK-0127 added `/operations/webhooks` for `webhooks.read` admins, consuming existing webhook event, dedup-stats, and idempotency-key stats routes.
 - [ ] **Deployment smoke + rollback** — add post-deploy smoke tests (curl `/api/health` + a fixed login flow) plus a one-command rollback script that re-deploys the previous image tag.
 
