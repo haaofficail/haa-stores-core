@@ -5,11 +5,13 @@ import { getAdminPermissionsForRole } from '@haa/shared';
 import { hashPassword, verifyPassword } from './password.js';
 import { signAdminToken } from './admin.js';
 import {
+  ADMIN_TOTP_READINESS_MESSAGE,
   buildAdminTotpOtpAuthUrl,
   decryptAdminTotpSecret,
   encryptAdminTotpSecret,
   generateAdminTotpSecret,
   isAdminTotpEncryptionConfigured,
+  isAdminTotpSchemaReadinessError,
   verifyAdminTotpCode,
 } from './admin-totp.js';
 import { EmailOtpService, type VerifyOtpResult } from './email-otp-service.js';
@@ -66,15 +68,17 @@ export interface AdminTotpStatus {
   pending: boolean;
   enabledAt: string | null;
   pendingExpiresAt: string | null;
+  ready: boolean;
+  readinessMessage: string | null;
 }
 
 export type AdminTotpEnrollmentStartResult =
   | { ok: true; secret: string; otpauthUrl: string; expiresAt: string }
-  | { ok: false; reason: 'NOT_FOUND' | 'ENCRYPTION_NOT_CONFIGURED'; message: string };
+  | { ok: false; reason: 'NOT_FOUND' | 'ENCRYPTION_NOT_CONFIGURED' | 'READINESS_UNAVAILABLE'; message: string };
 
 export type AdminTotpMutationResult =
   | { ok: true }
-  | { ok: false; reason: 'NOT_FOUND' | 'NOT_ENABLED' | 'NO_PENDING_ENROLLMENT' | 'EXPIRED' | 'INVALID_CODE'; message: string };
+  | { ok: false; reason: 'NOT_FOUND' | 'NOT_ENABLED' | 'NO_PENDING_ENROLLMENT' | 'EXPIRED' | 'INVALID_CODE' | 'READINESS_UNAVAILABLE'; message: string };
 
 export type AdminPasswordResetRequestResult =
   | { ok: true }
@@ -88,6 +92,31 @@ export type AdminPasswordResetConfirmResult =
 
 const TOTP_ENROLLMENT_EXPIRY_MS = 15 * 60 * 1000;
 const RESET_REQUEST_UNIFORM_OK: AdminPasswordResetRequestResult = { ok: true };
+const ADMIN_BASE_USER_SELECT = {
+  id: s.users.id,
+  name: s.users.name,
+  email: s.users.email,
+  passwordHash: s.users.passwordHash,
+  isAdmin: s.users.isAdmin,
+  isActive: s.users.isActive,
+  adminRole: s.users.adminRole,
+};
+const ADMIN_TOTP_LOGIN_SELECT = {
+  adminTotpSecretEncrypted: s.users.adminTotpSecretEncrypted,
+  adminTotpEnabledAt: s.users.adminTotpEnabledAt,
+};
+const ADMIN_TOTP_STATE_SELECT = {
+  ...ADMIN_BASE_USER_SELECT,
+  adminTotpSecretEncrypted: s.users.adminTotpSecretEncrypted,
+  adminTotpPendingSecretEncrypted: s.users.adminTotpPendingSecretEncrypted,
+  adminTotpPendingCreatedAt: s.users.adminTotpPendingCreatedAt,
+  adminTotpEnabledAt: s.users.adminTotpEnabledAt,
+};
+const ADMIN_TOTP_READINESS_RESULT = {
+  ok: false,
+  reason: 'READINESS_UNAVAILABLE',
+  message: ADMIN_TOTP_READINESS_MESSAGE,
+} as const;
 
 export class AdminAuthService {
   constructor(
@@ -113,7 +142,7 @@ export class AdminAuthService {
     const { email, password, totpCode, ipAddress, userAgent } = input;
 
     const [user] = await this.db
-      .select()
+      .select(ADMIN_BASE_USER_SELECT)
       .from(s.users)
       .where(eq(s.users.email, email.trim().toLowerCase()))
       .limit(1);
@@ -142,8 +171,10 @@ export class AdminAuthService {
       return { kind: 'unauthorized', message: 'Invalid admin credentials' };
     }
 
-    const twoFactorEnabled = Boolean(user.adminTotpEnabledAt && user.adminTotpSecretEncrypted);
-    if (twoFactorEnabled) {
+    const totpState = await this.getLoginTotpState(user.id);
+    const encryptedTotpSecret = totpState?.adminTotpEnabledAt ? totpState.adminTotpSecretEncrypted : null;
+    const twoFactorEnabled = Boolean(encryptedTotpSecret);
+    if (encryptedTotpSecret) {
       if (!totpCode?.trim()) {
         return {
           kind: 'two_factor_required',
@@ -154,7 +185,7 @@ export class AdminAuthService {
 
       let totpSecret: string;
       try {
-        totpSecret = decryptAdminTotpSecret(user.adminTotpSecretEncrypted as string);
+        totpSecret = decryptAdminTotpSecret(encryptedTotpSecret);
       } catch {
         await this.audit.record({
           actorUserId: user.id,
@@ -206,15 +237,32 @@ export class AdminAuthService {
   }
 
   async getTotpStatus(userId: number): Promise<AdminTotpStatus> {
-    const [user] = await this.db
-      .select({
-        adminTotpEnabledAt: s.users.adminTotpEnabledAt,
-        adminTotpPendingCreatedAt: s.users.adminTotpPendingCreatedAt,
-        adminTotpPendingSecretEncrypted: s.users.adminTotpPendingSecretEncrypted,
-      })
-      .from(s.users)
-      .where(eq(s.users.id, userId))
-      .limit(1);
+    let user: {
+      adminTotpEnabledAt: Date | null;
+      adminTotpPendingCreatedAt: Date | null;
+      adminTotpPendingSecretEncrypted: string | null;
+    } | undefined;
+    try {
+      [user] = await this.db
+        .select({
+          adminTotpEnabledAt: s.users.adminTotpEnabledAt,
+          adminTotpPendingCreatedAt: s.users.adminTotpPendingCreatedAt,
+          adminTotpPendingSecretEncrypted: s.users.adminTotpPendingSecretEncrypted,
+        })
+        .from(s.users)
+        .where(eq(s.users.id, userId))
+        .limit(1);
+    } catch (error) {
+      if (!isAdminTotpSchemaReadinessError(error)) throw error;
+      return {
+        enabled: false,
+        pending: false,
+        enabledAt: null,
+        pendingExpiresAt: null,
+        ready: false,
+        readinessMessage: ADMIN_TOTP_READINESS_MESSAGE,
+      };
+    }
 
     const pendingExpiresAt = user?.adminTotpPendingCreatedAt
       ? new Date(user.adminTotpPendingCreatedAt.getTime() + TOTP_ENROLLMENT_EXPIRY_MS).toISOString()
@@ -225,6 +273,8 @@ export class AdminAuthService {
       pending: Boolean(user?.adminTotpPendingSecretEncrypted && pendingExpiresAt && new Date(pendingExpiresAt) > new Date()),
       enabledAt: user?.adminTotpEnabledAt?.toISOString() ?? null,
       pendingExpiresAt,
+      ready: true,
+      readinessMessage: null,
     };
   }
 
@@ -249,14 +299,19 @@ export class AdminAuthService {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + TOTP_ENROLLMENT_EXPIRY_MS);
 
-    await this.db
-      .update(s.users)
-      .set({
-        adminTotpPendingSecretEncrypted: encryptAdminTotpSecret(secret),
-        adminTotpPendingCreatedAt: now,
-        updatedAt: now,
-      })
-      .where(eq(s.users.id, user.id));
+    try {
+      await this.db
+        .update(s.users)
+        .set({
+          adminTotpPendingSecretEncrypted: encryptAdminTotpSecret(secret),
+          adminTotpPendingCreatedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(s.users.id, user.id));
+    } catch (error) {
+      if (isAdminTotpSchemaReadinessError(error)) return ADMIN_TOTP_READINESS_RESULT;
+      throw error;
+    }
 
     await this.audit.record({
       actorUserId: user.id,
@@ -281,7 +336,13 @@ export class AdminAuthService {
     ipAddress?: string | null;
     userAgent?: string | null;
   }): Promise<AdminTotpMutationResult> {
-    const user = await this.getActiveAdminUser(input.userId);
+    let user: Awaited<ReturnType<AdminAuthService['getActiveAdminUserWithTotp']>>;
+    try {
+      user = await this.getActiveAdminUserWithTotp(input.userId);
+    } catch (error) {
+      if (isAdminTotpSchemaReadinessError(error)) return ADMIN_TOTP_READINESS_RESULT;
+      throw error;
+    }
     if (!user) return { ok: false, reason: 'NOT_FOUND', message: 'Admin user not found' };
     if (!user.adminTotpPendingSecretEncrypted || !user.adminTotpPendingCreatedAt) {
       return { ok: false, reason: 'NO_PENDING_ENROLLMENT', message: 'No pending TOTP enrollment' };
@@ -296,16 +357,21 @@ export class AdminAuthService {
     }
 
     const now = new Date();
-    await this.db
-      .update(s.users)
-      .set({
-        adminTotpSecretEncrypted: user.adminTotpPendingSecretEncrypted,
-        adminTotpPendingSecretEncrypted: null,
-        adminTotpPendingCreatedAt: null,
-        adminTotpEnabledAt: now,
-        updatedAt: now,
-      })
-      .where(eq(s.users.id, user.id));
+    try {
+      await this.db
+        .update(s.users)
+        .set({
+          adminTotpSecretEncrypted: user.adminTotpPendingSecretEncrypted,
+          adminTotpPendingSecretEncrypted: null,
+          adminTotpPendingCreatedAt: null,
+          adminTotpEnabledAt: now,
+          updatedAt: now,
+        })
+        .where(eq(s.users.id, user.id));
+    } catch (error) {
+      if (isAdminTotpSchemaReadinessError(error)) return ADMIN_TOTP_READINESS_RESULT;
+      throw error;
+    }
 
     await this.audit.record({
       actorUserId: user.id,
@@ -325,7 +391,13 @@ export class AdminAuthService {
     ipAddress?: string | null;
     userAgent?: string | null;
   }): Promise<AdminTotpMutationResult> {
-    const user = await this.getActiveAdminUser(input.userId);
+    let user: Awaited<ReturnType<AdminAuthService['getActiveAdminUserWithTotp']>>;
+    try {
+      user = await this.getActiveAdminUserWithTotp(input.userId);
+    } catch (error) {
+      if (isAdminTotpSchemaReadinessError(error)) return ADMIN_TOTP_READINESS_RESULT;
+      throw error;
+    }
     if (!user) return { ok: false, reason: 'NOT_FOUND', message: 'Admin user not found' };
     if (!user.adminTotpSecretEncrypted || !user.adminTotpEnabledAt) {
       return { ok: false, reason: 'NOT_ENABLED', message: 'Two-factor authentication is not enabled' };
@@ -337,16 +409,21 @@ export class AdminAuthService {
     }
 
     const now = new Date();
-    await this.db
-      .update(s.users)
-      .set({
-        adminTotpSecretEncrypted: null,
-        adminTotpPendingSecretEncrypted: null,
-        adminTotpPendingCreatedAt: null,
-        adminTotpEnabledAt: null,
-        updatedAt: now,
-      })
-      .where(eq(s.users.id, user.id));
+    try {
+      await this.db
+        .update(s.users)
+        .set({
+          adminTotpSecretEncrypted: null,
+          adminTotpPendingSecretEncrypted: null,
+          adminTotpPendingCreatedAt: null,
+          adminTotpEnabledAt: null,
+          updatedAt: now,
+        })
+        .where(eq(s.users.id, user.id));
+    } catch (error) {
+      if (isAdminTotpSchemaReadinessError(error)) return ADMIN_TOTP_READINESS_RESULT;
+      throw error;
+    }
 
     await this.audit.record({
       actorUserId: user.id,
@@ -367,7 +444,7 @@ export class AdminAuthService {
   }): Promise<AdminPasswordResetRequestResult> {
     const email = input.email.trim().toLowerCase();
     const [user] = await this.db
-      .select()
+      .select(ADMIN_BASE_USER_SELECT)
       .from(s.users)
       .where(eq(s.users.email, email))
       .limit(1);
@@ -410,7 +487,7 @@ export class AdminAuthService {
   }): Promise<AdminPasswordResetConfirmResult> {
     const email = input.email.trim().toLowerCase();
     const [user] = await this.db
-      .select()
+      .select(ADMIN_BASE_USER_SELECT)
       .from(s.users)
       .where(eq(s.users.email, email))
       .limit(1);
@@ -453,11 +530,34 @@ export class AdminAuthService {
 
   private async getActiveAdminUser(userId: number) {
     const [user] = await this.db
-      .select()
+      .select(ADMIN_BASE_USER_SELECT)
       .from(s.users)
       .where(eq(s.users.id, userId))
       .limit(1);
     return user?.isAdmin && user.isActive ? user : null;
+  }
+
+  private async getActiveAdminUserWithTotp(userId: number) {
+    const [user] = await this.db
+      .select(ADMIN_TOTP_STATE_SELECT)
+      .from(s.users)
+      .where(eq(s.users.id, userId))
+      .limit(1);
+    return user?.isAdmin && user.isActive ? user : null;
+  }
+
+  private async getLoginTotpState(userId: number) {
+    try {
+      const [state] = await this.db
+        .select(ADMIN_TOTP_LOGIN_SELECT)
+        .from(s.users)
+        .where(eq(s.users.id, userId))
+        .limit(1);
+      return state ?? null;
+    } catch (error) {
+      if (isAdminTotpSchemaReadinessError(error)) return null;
+      throw error;
+    }
   }
 }
 

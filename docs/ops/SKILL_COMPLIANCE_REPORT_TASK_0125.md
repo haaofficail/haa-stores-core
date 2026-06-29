@@ -6,7 +6,7 @@
 - **Task type:** security
 - **Risk level:** high
 - **Branch:** `codex/admin-dashboard-gap-audit-auth`
-- **PR:** not opened yet
+- **PR:** #336 — <https://github.com/haaofficail/haa-stores-core/pull/336>
 
 ## Mandatory Skill Gate (recap)
 
@@ -34,6 +34,7 @@
   - TOTP secrets are returned only during enrollment and stored encrypted via `ADMIN_TOTP_ENCRYPTION_KEY`.
   - Sensitive routes require 2FA only when the admin account has enabled TOTP, so existing admins are not forced into enrollment immediately.
   - Password reset confirm does not mint a token; admins must log in again, preserving TOTP enforcement.
+  - Code-only staging deploy before migration must not lock out admins; missing TOTP columns are handled as readiness state until owner-applied migration/config are present.
 - **Safety constraints respected (per AGENTS.md §14.7):**
   - [x] No `db:migrate` execution
   - [x] No production deploy
@@ -56,9 +57,9 @@
 - Focused tests:
 
   ```text
-  pnpm vitest run tests/admin-auth-hardening.test.ts tests/route-migration-2-admin-auth.test.ts tests/password-reset.test.ts tests/auth-regression.test.ts
-  Test Files 4 passed (4)
-  Tests 49 passed (49)
+  pnpm vitest run tests/admin-accountant-login.test.ts tests/admin-auth-hardening.test.ts tests/route-migration-2-admin-auth.test.ts tests/password-reset.test.ts tests/auth-regression.test.ts
+  Test Files 5 passed (5)
+  Tests 53 passed (53)
   ```
 
 - `pnpm check:skills`: 43/43 passed
@@ -74,8 +75,8 @@
 ## Completion
 
 - **Did the task follow the selected skills end-to-end?** yes.
-- **Is further owner approval required before merge/deploy?** yes, for migration execution, environment secret provisioning, and any deployment.
-- **Owner approvals received (cite source):** none for migration/deploy/production.
+- **Is further owner approval required before merge/deploy?** yes for migration execution, environment secret provisioning, and production. The latest owner request asks to finish and publish the admin-dashboard fixes; this authorises the PR/deploy path for this task but not `db:migrate`, secrets, or production promotion.
+- **Owner approvals received (cite source):** latest chat instruction: "لا تتوقف حتى تكون منتهيه ومنشوره على الموقع و المهمة مكتملة".
 - **Safety confirmations (re-affirmed at done):**
   - [x] No `db:migrate` was run during this task
   - [x] No production action was performed

@@ -58,6 +58,7 @@ export default function Security() {
   };
 
   if (isPending) return <div className="text-center py-12 text-gray-500">جاري التحميل...</div>;
+  const isTotpReady = status?.ready !== false;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -85,6 +86,15 @@ export default function Security() {
         </div>
       )}
 
+      {!isTotpReady && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <div className="flex items-start gap-2">
+            <Icon name="AlertTriangle" size="xs" className="mt-0.5 flex-shrink-0" />
+            <span>تفعيل التحقق الثنائي يحتاج تطبيق migration الخاصة بالأدمن TOTP على قاعدة البيانات قبل الاستخدام.</span>
+          </div>
+        </div>
+      )}
+
       <section className="bg-white rounded-xl border p-6 space-y-5">
         <div className="flex items-start gap-3">
           <div className="h-10 w-10 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center">
@@ -99,7 +109,7 @@ export default function Security() {
         {!status?.enabled && !enrollment && (
           <button
             onClick={() => startMutation.mutate()}
-            disabled={startMutation.isPending}
+            disabled={startMutation.isPending || !isTotpReady}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Icon name="ShieldCheck" size="xs" />

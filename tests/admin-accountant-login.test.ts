@@ -3,7 +3,7 @@ import { AdminAuthService, hashPassword } from '@haa/auth-core';
 import { getAdminPermissionsForRole } from '@haa/shared';
 
 /** Decode a JWT payload without verifying — we only assert the claims. */
-function decodeJwtPayload(token: string): { permissions: string[] } {
+function decodeJwtPayload(token: string): { permissions: string[]; twoFactorEnabled?: boolean } {
   const part = token.split('.')[1];
   return JSON.parse(Buffer.from(part, 'base64url').toString('utf8'));
 }
@@ -27,6 +27,23 @@ function fakeDbReturning(user: Record<string, unknown>) {
       from: () => ({
         where: () => ({
           limit: async () => [user],
+        }),
+      }),
+    }),
+  } as never;
+}
+
+function fakeDbSelectSequence(sequence: Array<Record<string, unknown>[] | Error>) {
+  let calls = 0;
+  return {
+    select: () => ({
+      from: () => ({
+        where: () => ({
+          limit: async () => {
+            const result = sequence[calls++];
+            if (result instanceof Error) throw result;
+            return result;
+          },
         }),
       }),
     }),
@@ -67,5 +84,28 @@ describe('admin login mints role-scoped permissions', () => {
   it('legacy admin row with no role falls back to admin:* (no lockout)', async () => {
     const perms = await loginWith(null);
     expect(perms).toEqual(['admin:*']);
+  });
+
+  it('does not lock out admins when TOTP migration columns are not applied yet', async () => {
+    const password = 'correct-horse-battery';
+    const user = {
+      id: 43,
+      name: 'Ops Admin',
+      email: 'ops@haa.test',
+      isAdmin: true,
+      isActive: true,
+      passwordHash: await hashPassword(password),
+      adminRole: 'super_admin',
+    };
+    const missingColumn = Object.assign(new Error('column "admin_totp_enabled_at" does not exist'), {
+      code: '42703',
+    });
+    const svc = new AdminAuthService(fakeDbSelectSequence([[user], missingColumn]), noopAudit);
+    const result = await svc.login({ email: user.email, password });
+    if (!('token' in result)) throw new Error('expected successful login');
+
+    const payload = decodeJwtPayload(result.token);
+    expect(payload.permissions).toEqual(['admin:*']);
+    expect(payload.twoFactorEnabled).toBe(false);
   });
 });

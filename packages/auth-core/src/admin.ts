@@ -4,6 +4,7 @@ import type { SignOptions } from 'jsonwebtoken';
 import { eq } from 'drizzle-orm';
 import { createDbClient, type DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
+import { isAdminTotpSchemaReadinessError } from './admin-totp.js';
 
 function getSecret(): string {
   const secret = process.env.ADMIN_JWT_SECRET;
@@ -66,7 +67,11 @@ export function requireAdminTwoFactorIfEnabled(db?: DbClient) {
         .where(eq(s.users.id, adminAuth.userId))
         .limit(1);
       enabled = Boolean(user?.adminTotpEnabledAt);
-    } catch {
+    } catch (error) {
+      if (isAdminTotpSchemaReadinessError(error)) {
+        await next();
+        return;
+      }
       return c.json(
         {
           success: false,

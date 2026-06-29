@@ -40,6 +40,7 @@ describe('TASK-0125 admin auth hardening', () => {
     expect(content).toMatch(/timingSafeEqual/);
     expect(content).toMatch(/aes-256-gcm/);
     expect(content).toMatch(/ADMIN_TOTP_ENCRYPTION_KEY/);
+    expect(content).toMatch(/isAdminTotpSchemaReadinessError/);
     expect(content).not.toMatch(/Math\.random/);
 
     process.env.ADMIN_TOTP_ENCRYPTION_KEY = '0'.repeat(64);
@@ -75,11 +76,14 @@ describe('TASK-0125 admin auth hardening', () => {
     expect(route).toMatch(/confirmAdminPasswordResetRoute/);
     expect(route).toMatch(/adminTotpStatusRoute/);
     expect(route).toMatch(/startAdminTotpEnrollmentRoute/);
+    expect(route).toMatch(/READINESS_UNAVAILABLE/);
     expect(route).toMatch(/twoFactorRequired/);
     expect(route).not.toMatch(/AuthFlowService/);
     expect(route).not.toMatch(/@haa\/commerce-core/);
 
     const service = read(files.adminAuthService);
+    expect(service).toMatch(/ADMIN_BASE_USER_SELECT/);
+    expect(service).toMatch(/getLoginTotpState/);
     expect(service).toMatch(/requestPasswordReset/);
     expect(service).toMatch(/confirmPasswordReset/);
     expect(service).toMatch(/admin_password_reset_requested/);
@@ -92,6 +96,7 @@ describe('TASK-0125 admin auth hardening', () => {
     expect(middleware).toMatch(/requireAdminTwoFactorIfEnabled/);
     expect(middleware).toMatch(/ADMIN_2FA_REQUIRED/);
     expect(middleware).toMatch(/ADMIN_2FA_READINESS_UNAVAILABLE/);
+    expect(middleware).toMatch(/isAdminTotpSchemaReadinessError/);
 
     const index = read(files.apiAdminIndex);
     expect(index).toMatch(/login\/password-reset\/request/);
@@ -114,6 +119,7 @@ describe('TASK-0125 admin auth hardening', () => {
     expect(read(files.loginPage)).toMatch(/one-time-code/);
 
     expect(read(files.securityPage)).toMatch(/getAdminTotpStatus/);
+    expect(read(files.securityPage)).toMatch(/isTotpReady/);
     expect(read(files.securityPage)).toMatch(/startAdminTotpEnrollment/);
     expect(read(files.securityPage)).toMatch(/confirmAdminTotpEnrollment/);
     expect(read(files.securityPage)).toMatch(/disableAdminTotp/);

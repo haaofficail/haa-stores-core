@@ -61,10 +61,11 @@
 - Extended admin JWTs with `twoFactorEnabled` and `twoFactorVerified` claims and added `requireAdminTwoFactorIfEnabled()` middleware.
 - Added TOTP checks to sensitive admin mutations across tenant/store changes, KYC review, payment settings, marketplace moderation, full-IBAN reveal, payout state changes, upload/settings/plans, billing, and landing-contact updates.
 - Added admin password reset and TOTP routes under `/admin/login/password-reset/*` and `/admin/security/totp/*`, with route-level rate limiting for reset request/confirm.
+- Added staging-safe TOTP readiness handling: admin login/reset use base-user selects before reading TOTP columns, missing TOTP columns are treated as no enabled TOTP for login/guards, and enrollment returns `READINESS_UNAVAILABLE` until migration/config are applied.
 - Updated admin login UI to support TOTP challenge and self-serve password reset request/confirm.
 - Added `/security` in the admin dashboard for account-level TOTP enrollment, confirmation, and disable.
-- Added `tests/admin-auth-hardening.test.ts` to guard crypto, encrypted storage, migration/snapshot coverage, admin route separation, sensitive route guards, and UI wiring.
-- Verification passed: branch-start `pnpm preflight`; db/shared/auth-core builds; auth-core/API typechecks; admin-dashboard build; and focused auth regression suite 4 files / 49 tests.
+- Added `tests/admin-auth-hardening.test.ts` and extended `tests/admin-accountant-login.test.ts` to guard crypto, encrypted storage, migration/snapshot coverage, admin route separation, sensitive route guards, UI wiring, and pre-migration login compatibility.
+- Verification passed: branch-start `pnpm preflight`; db/shared/auth-core builds; auth-core/API typechecks; admin-dashboard build; and focused auth regression suite 5 files / 53 tests.
 - Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live provider calls. Runtime rollout requires owner-only migration execution plus `ADMIN_TOTP_ENCRYPTION_KEY` and transactional email configuration.
 
 ## 2026-06-29 — Post-financial Handoff Takeover Sync (TASK-0123)

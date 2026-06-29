@@ -127,7 +127,7 @@ export async function startAdminTotpEnrollmentRoute(c: AdminContext) {
   });
 
   if (!result.ok) {
-    const status = result.reason === 'ENCRYPTION_NOT_CONFIGURED' ? 503 : 404;
+    const status = result.reason === 'ENCRYPTION_NOT_CONFIGURED' || result.reason === 'READINESS_UNAVAILABLE' ? 503 : 404;
     return c.json(
       { success: false, error: { code: result.reason, message: result.message } },
       status,
@@ -149,6 +149,12 @@ export async function confirmAdminTotpEnrollmentRoute(c: AdminContext) {
   });
 
   if (!result.ok) {
+    if (result.reason === 'READINESS_UNAVAILABLE') {
+      return c.json(
+        { success: false, error: { code: result.reason, message: result.message } },
+        503,
+      );
+    }
     return c.json(
       { success: false, error: { code: result.reason, message: result.message } },
       result.reason === 'NOT_FOUND' ? 404 : 400,
@@ -170,6 +176,12 @@ export async function disableAdminTotpRoute(c: AdminContext) {
   });
 
   if (!result.ok) {
+    if (result.reason === 'READINESS_UNAVAILABLE') {
+      return c.json(
+        { success: false, error: { code: result.reason, message: result.message } },
+        503,
+      );
+    }
     return c.json(
       { success: false, error: { code: result.reason, message: result.message } },
       result.reason === 'NOT_FOUND' ? 404 : 400,

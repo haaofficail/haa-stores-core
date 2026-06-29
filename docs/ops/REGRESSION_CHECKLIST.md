@@ -94,6 +94,7 @@
 - [ ] Product/media uploads stay image-only by default; PDF is allowed only through explicit financial-document upload paths that pass an opt-in option
 - [ ] Admin Marketplace products pagination must preserve `/admin/marketplace/products` top-level `page`/`limit`/`total`/`totalPages` metadata in the API client and drive `TablePager` from server totals, not only local fetched rows
 - [ ] Admin password reset must stay owned by `AdminAuthService`; do not import merchant `AuthFlowService` or `@haa/commerce-core` into admin auth routes
+- [ ] Admin login/password reset must not use broad `users` selects that require unapplied TOTP columns; pre-migration staging must not lock out admins
 - [ ] Admin TOTP secrets must be generated with `node:crypto`, verified with timing-safe comparison, and stored only in encrypted `admin_totp_*_encrypted` columns
 - [ ] Sensitive admin mutations must keep `requireAdminTwoFactorIfEnabled()` after `requireAdminAuth()` and permission guards when the route mutates tenants, stores, KYC/bank accounts, payment settings, marketplace moderation, full IBAN reveal, payouts, billing, settings, upload, or plans
 - [ ] New admin TOTP migrations must include matching Drizzle snapshots from `scripts/build-snapshots.cjs`; agents must not run `db:migrate`

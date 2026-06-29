@@ -261,6 +261,8 @@ export interface AdminTotpStatus {
   pending: boolean;
   enabledAt: string | null;
   pendingExpiresAt: string | null;
+  ready: boolean;
+  readinessMessage: string | null;
 }
 
 export interface AdminTotpEnrollment {

@@ -5,6 +5,30 @@ const TOTP_STEP_SECONDS = 30;
 const DEFAULT_DIGITS = 6;
 const DEFAULT_WINDOW = 1;
 const ENCRYPTION_KEY_BYTES = 32;
+export const ADMIN_TOTP_READINESS_MESSAGE =
+  'Admin TOTP requires applying migration 0090_admin_totp.sql before enrollment can be used.';
+const ADMIN_TOTP_COLUMN_NAMES = [
+  'admin_totp_secret_encrypted',
+  'admin_totp_pending_secret_encrypted',
+  'admin_totp_pending_created_at',
+  'admin_totp_enabled_at',
+];
+
+export function isAdminTotpSchemaReadinessError(error: unknown): boolean {
+  const parts: string[] = [];
+  let current: unknown = error;
+  for (let depth = 0; depth < 3 && current && typeof current === 'object'; depth += 1) {
+    const value = current as { code?: unknown; message?: unknown; cause?: unknown };
+    if (typeof value.code === 'string') parts.push(value.code);
+    if (typeof value.message === 'string') parts.push(value.message);
+    current = value.cause;
+  }
+
+  const text = parts.join(' ').toLowerCase();
+  const referencesTotpColumn = ADMIN_TOTP_COLUMN_NAMES.some(column => text.includes(column));
+  const isMissingColumn = text.includes('42703') || text.includes('does not exist') || text.includes('no such column');
+  return referencesTotpColumn && isMissingColumn;
+}
 
 export function generateAdminTotpSecret(bytes = 20): string {
   return base32Encode(randomBytes(bytes));
