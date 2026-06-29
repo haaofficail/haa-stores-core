@@ -48,8 +48,14 @@ export default function AccountantSettlementDetail() {
     enabled: !!payoutIdParam,
   });
 
-  const invalidate = () =>
+  // A payout action changes this payout's detail AND the accountant inbox queue
+  // and finance reports, so invalidate all three — otherwise navigating back can
+  // show pre-action status/counts until the 30s stale window expires.
+  const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: [...queryKeys.accountantSettlementDetail, payoutId] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.accountantInbox });
+    queryClient.invalidateQueries({ queryKey: queryKeys.financeReports });
+  };
 
   // A FORBIDDEN load error renders the unauthorized state rather than the generic error one.
   const unauthorized = error && /FORBIDDEN|صلاحية/i.test(loadError instanceof Error ? loadError.message : '');
@@ -107,8 +113,22 @@ export default function AccountantSettlementDetail() {
     transferMutation.mutate(detail.status);
   }, [detail, transferMutation]);
 
+  // The file upload runs INSIDE the mutation so `isPending` (and thus the
+  // disabled Save button + the re-entrancy guard) covers the whole upload →
+  // uploadProof flow. Otherwise a slow upload leaves Save enabled and a
+  // double-click starts two uploads + two uploadProof calls.
   const receiptMutation = useMutation({
-    mutationFn: (payload: UploadProofData) => adminApi.uploadProof(payoutId, payload, newIdempotencyKey()),
+    mutationFn: async (vars: { file: File; base: Omit<UploadProofData, 'proofFileKey' | 'fileMimeType' | 'sha256' | 'uploadIntegritySignature'> }) => {
+      const uploaded = await adminApi.uploadFile(vars.file);
+      const payload: UploadProofData = {
+        proofFileKey: uploaded.key,
+        fileMimeType: vars.file.type,
+        sha256: uploaded.sha256,
+        uploadIntegritySignature: uploaded.uploadIntegritySignature,
+        ...vars.base,
+      };
+      return adminApi.uploadProof(payoutId, payload, newIdempotencyKey());
+    },
     onSuccess: () => {
       toast.success('تم حفظ الإيصال بنجاح');
       invalidate();
@@ -124,7 +144,7 @@ export default function AccountantSettlementDetail() {
     },
   });
 
-  const submitReceipt = useCallback(async () => {
+  const submitReceipt = useCallback(() => {
     if (!detail || receiptMutation.isPending) return;
     setMismatch(null);
     if (!file) { toast.error('ملف الإيصال مطلوب'); return; }
@@ -133,28 +153,19 @@ export default function AccountantSettlementDetail() {
     if (!bankReference.trim()) { toast.error('مرجع العملية البنكية مطلوب'); return; }
     if (!transferDate) { toast.error('تاريخ التحويل مطلوب'); return; }
 
-    let uploaded: Awaited<ReturnType<typeof adminApi.uploadFile>>;
-    try {
-      uploaded = await adminApi.uploadFile(file);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'تعذّر رفع الإيصال');
-      return;
-    }
-    const payload: UploadProofData = {
-      proofFileKey: uploaded.key,
-      fileMimeType: file.type,
-      sha256: uploaded.sha256,
-      uploadIntegritySignature: uploaded.uploadIntegritySignature,
-      bankReference: bankReference.trim(),
-      bankName: bankName.trim() || detail.bankAccount?.bankName || '',
-      transferredAt: transferDate,
-      transferredAmount,
-      currency,
-      beneficiaryName: detail.bankAccount?.accountHolderName || detail.merchantName,
-      beneficiaryIbanMasked: detail.bankAccount?.maskedIban || `****${detail.bankAccount?.ibanLast4 ?? ''}`,
-      notes: note.trim() || undefined,
-    };
-    receiptMutation.mutate(payload);
+    receiptMutation.mutate({
+      file,
+      base: {
+        bankReference: bankReference.trim(),
+        bankName: bankName.trim() || detail.bankAccount?.bankName || '',
+        transferredAt: transferDate,
+        transferredAmount,
+        currency,
+        beneficiaryName: detail.bankAccount?.accountHolderName || detail.merchantName,
+        beneficiaryIbanMasked: detail.bankAccount?.maskedIban || `****${detail.bankAccount?.ibanLast4 ?? ''}`,
+        notes: note.trim() || undefined,
+      },
+    });
   }, [detail, receiptMutation, file, bankReference, bankName, transferDate, transferredAmount, currency, note]);
 
   const secondApproveMutation = useMutation({

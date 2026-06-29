@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { adminApi } from '../lib/api';
 import { queryKeys } from '../lib/queryClient';
 import { StoreSelectorPanel } from '../components/ui/StoreSelectorPanel';
@@ -88,7 +88,6 @@ export default function StorePaymentSettings() {
   const [params, setParams] = useSearchParams();
   const initialStoreId = params.get('storeId') ? Number(params.get('storeId')) : null;
 
-  const queryClient = useQueryClient();
   const [stores, setStores] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedId, setSelectedId] = useState<number | null>(initialStoreId);
   const [rows, setRows] = useState<Record<ProviderCode, RowState>>(createInitialRows);
@@ -103,9 +102,6 @@ export default function StorePaymentSettings() {
     queryFn: () => adminApi.getStorePaymentSettings(selectedId as number),
     enabled: !!selectedId,
   });
-
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: [...queryKeys.storePaymentSettings, selectedId ?? null] });
 
   useEffect(() => {
     adminApi.getStores().then(setStores).catch(() => toast.error('فشل تحميل المتاجر'));
@@ -136,6 +132,10 @@ export default function StorePaymentSettings() {
     },
     onSuccess: (result: any, providerCode) => {
       const updated = result?.data ?? result;
+      // Patch ONLY the saved provider's row from the server response. We do NOT
+      // refetch/invalidate here: the seeding effect rebuilds every row from the
+      // server, which would silently discard unsaved edits the admin staged in
+      // other provider rows. Rows are seeded once on load and locally owned.
       setRows(prev => ({
         ...prev,
         [providerCode]: {
@@ -146,7 +146,6 @@ export default function StorePaymentSettings() {
         },
       }));
       toast.success(`تم حفظ إعدادات ${PROVIDER_LABELS[providerCode]}`);
-      invalidate();
     },
     onError: (e: any, providerCode) => {
       toast.error(`فشل الحفظ: ${e?.message ?? 'خطأ غير معروف'}`);
