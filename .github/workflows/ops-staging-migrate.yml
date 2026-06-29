@@ -128,9 +128,11 @@ jobs:
 
             echo "==> Migrating (dry_run=$DRY_RUN)"
             if [ "$DRY_RUN" = "true" ]; then
-              # drizzle-kit doesn't ship a true dry-run; the next-best
-              # thing is listing the migration files that have no matching
-              # hash in drizzle.__drizzle_migrations. This is read-only.
+              # drizzle-kit doesn't ship a true dry-run. Mirror
+              # drizzle-orm's migrator semantics: it selects the latest
+              # created_at row and applies journal entries with larger
+              # folderMillis values. Older hash mismatches are reported as
+              # drift because apply would skip them too.
               docker compose -p "$PROJECT" exec -T -w /app/packages/db api \
                 node --input-type=module -e "
                   import { createHash } from 'node:crypto';
@@ -157,7 +159,12 @@ jobs:
                     }
 
                     const appliedHashes = new Set(applied.map((row) => row.hash));
+                    const latestAppliedCreatedAt = applied.reduce(
+                      (latest, row) => Math.max(latest, Number(row.created_at || 0)),
+                      0,
+                    );
                     const pending = [];
+                    const hashDrift = [];
                     const missingFiles = [];
                     for (const entry of journal.entries) {
                       const sqlPath = migrationsFolder + '/' + entry.tag + '.sql';
@@ -166,16 +173,27 @@ jobs:
                         continue;
                       }
                       const hash = createHash('sha256').update(readFileSync(sqlPath, 'utf8')).digest('hex');
-                      if (!appliedHashes.has(hash)) {
+                      const folderMillis = Number(entry.when || 0);
+                      if (folderMillis > latestAppliedCreatedAt) {
                         pending.push(entry);
+                      } else if (!appliedHashes.has(hash)) {
+                        hashDrift.push(entry);
                       }
                     }
 
                     console.log('Journal entries:', journal.entries.length);
                     console.log('Applied migrations:', applied.length);
+                    console.log('Latest applied created_at:', latestAppliedCreatedAt || 'none');
                     console.log('Pending migrations:', pending.length);
                     if (missingFiles.length > 0) {
                       console.log('Missing migration files:', missingFiles.join(', '));
+                    }
+                    if (hashDrift.length > 0) {
+                      console.error('Journal hash drift detected for applied-time migrations:');
+                      hashDrift.slice(-20).forEach((entry) => {
+                        console.error(' !', entry.tag, '(', new Date(entry.when).toISOString(), ')');
+                      });
+                      process.exitCode = 1;
                     }
                     pending.slice(-20).forEach((entry) => {
                       console.log(' -', entry.tag, '(', new Date(entry.when).toISOString(), ')');

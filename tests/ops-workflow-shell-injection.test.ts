@@ -29,4 +29,13 @@ describe('owner-triggered ops workflows avoid shell interpolation of inputs', ()
     expect(source).toContain('ENV_VALUE="$(printf');
     expect(source).not.toContain("ENV_VALUE='$ENV_VALUE'");
   });
+
+  it('staging migration dry-run mirrors Drizzle created_at semantics and flags hash drift', () => {
+    const source = read('.github/workflows/ops-staging-migrate.yml');
+
+    expect(source).toContain('latestAppliedCreatedAt');
+    expect(source).toContain('folderMillis > latestAppliedCreatedAt');
+    expect(source).toContain('Journal hash drift detected for applied-time migrations');
+    expect(source).toContain('process.exitCode = 1');
+  });
 });

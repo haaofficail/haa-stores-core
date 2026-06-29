@@ -24,10 +24,11 @@
 
 ## Execution Evidence
 
-- **Files actually changed:** `.github/workflows/ops-staging-env.yml`, `.github/workflows/ops-staging-migrate.yml`, `docs/agent-os/REMAINING_WORK.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/INCIDENTS.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0129.md`
+- **Files actually changed:** `.github/workflows/ops-staging-env.yml`, `.github/workflows/ops-staging-migrate.yml`, `tests/ops-workflow-shell-injection.test.ts`, `tests/legacy-email-verified-backfill.test.ts`, `docs/agent-os/REMAINING_WORK.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/INCIDENTS.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0129.md`
 - **Files added / removed:** Added `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0129.md`; no tracked files removed.
 - **Key decisions taken during execution:**
   - Run staging migration only after dry-run showed exactly one pending migration: `0090_admin_totp`.
+  - Align the staging migration dry-run with Drizzle's `created_at` apply semantics and fail on older journal hash drift after PR review found the old hash-only pending check could disagree with apply behavior.
   - Fix env workflow masking and rotate the first generated staging key after finding the old workflow exposed it before masking.
   - Delete the exposed run after rotation; `gh run view 28405660775` returned 404.
 - **Safety constraints respected (per AGENTS.md §14.7):**
@@ -46,9 +47,9 @@
 - **Tests:**
 
   ```text
-  pnpm vitest run tests/ops-workflow-shell-injection.test.ts
-  Test Files 1 passed (1)
-  Tests 4 passed (4)
+  pnpm vitest run tests/ops-workflow-shell-injection.test.ts tests/legacy-email-verified-backfill.test.ts
+  Test Files 2 passed (2)
+  Tests 11 passed (11)
   ```
 
 - **`pnpm check:skills`:**
@@ -76,6 +77,7 @@
   - Dry-run `28405297315`: 86 applied, 1 pending, `0090_admin_totp`; no TOTP columns before apply.
   - Apply `28405329216`: backup `/var/lib/postgresql/data/backup-pre-28405329216.sql`; migrations applied OK; 4 `admin_totp_*` columns confirmed; API restarted healthy.
   - Final env rotation `28405802128`: generated `ADMIN_TOTP_ENCRYPTION_KEY` in runner; updated key; verified key present; API restarted healthy.
+  - PR #338 checks after the source-grep allow-list fix passed all project-owned checks before the review-thread fix: Required Merge Gate, Preflight, Lint, Typecheck, Test, E2E, all four app builds, internal security scans, and SonarCloud. Remaining TestSprite/Snyk failures were external provider/account issues.
 
 - **Staging public checks:**
 
