@@ -262,13 +262,37 @@
 
 - **DB schema:** No fresh DB replay and no `db:migrate` were run. Migrations 0088/0089 and their snapshot files are committed for owner/staging execution later.
 
-- **CI:** GitHub CI was not run before this local report; it will run after the branch is pushed and the draft PR is opened.
+- **PR #325 GitHub checks after commit `f2e03a51`:**
+
+  ```text
+  Required Merge Gate        pass
+  Preflight                  pass
+  Lint                       pass
+  Typecheck                  pass
+  Test                       pass
+  E2E Tests                  pass
+  Build — api                pass
+  Build — admin-dashboard    pass
+  Build — merchant-dashboard pass
+  Build — storefront         pass
+  SonarCloud Code Analysis   pass
+  Secret Scan (G4)           pass
+  Secrets Scan               pass
+  Dependency Audit           pass
+  License Check              pass
+  Outdated Dependencies      pass
+
+  TestSprite Pre-Check       fail — No tests detected
+  security/snyk              fail — You have used your limit of private tests
+  ```
+
+- **CI:** Project-owned GitHub checks are green on draft PR #325 after the second Sonar cleanup. The remaining red checks are external/account-state tooling blockers, not code/test failures in this PR.
 
 ## Deviations
 
 - **Deviations from selected skills:** none for the scoped integration and hook-cleanup work. Repo-wide lint warnings remain as existing debt outside TASK-0123's staged hook-cleanup scope; they were not widened into this PR to preserve branch hygiene.
 - **Reason:** The branch already integrates a large cross-agent feature handoff. Widening to every repository lint warning would mix unrelated legacy cleanup into the accountant/RBAC integration PR.
-- **Follow-up:** Push the second Sonar cleanup and watch PR CI after publish. Owner must apply migrations 0088/0089 in the target environment; agents must not run `db:migrate` without explicit owner approval. Open a separate lint-debt task if the owner wants repo-wide `--max-warnings 0`.
+- **Follow-up:** Owner must apply migrations 0088/0089 in the target environment; agents must not run `db:migrate` without explicit owner approval. External TestSprite/Snyk account/tooling blockers need owner/tooling action outside this code PR. Open a separate lint-debt task if the owner wants repo-wide `--max-warnings 0`.
 
 ## Completion
 
@@ -283,4 +307,4 @@
 
 ## Next step
 
-Commit and push the second SonarCloud cleanup on draft PR #325; then monitor GitHub checks and keep migrations 0088/0089 as owner-only apply steps.
+Proceed with owner review/merge decision for draft PR #325 after external TestSprite/Snyk account/tooling blockers are accepted or resolved; keep migrations 0088/0089 as owner-only apply steps.
