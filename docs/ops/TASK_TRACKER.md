@@ -4,6 +4,35 @@
 
 ---
 
+### TASK-0129: Activate admin TOTP runtime on staging
+
+- **Type:** Security / CI/Deploy / Data/DB / Documentation
+- **Priority:** P1 High
+- **Status:** In Progress; owner-approved for staging-only activation
+- **Created:** 2026-06-30
+- **Updated:** 2026-06-30
+- **Branch:** `codex/admin-totp-staging-activation`
+- **Original Request:** "لا تتوقف حتى تكون منتهيه ومنشوره على الموقع و المهمة مكتملة" followed by owner approval: "اوافق".
+- **Expanded Requirement:** Complete the remaining staging runtime rollout for admin 2FA after PR #336: use official staging workflows to apply the `0090_admin_totp.sql` migration, set `ADMIN_TOTP_ENCRYPTION_KEY`, restart the API, and verify the deployed admin site without touching production or printing secrets.
+- **Scope:** Harden the staging migration dry-run evidence, allow-list only `ADMIN_TOTP_ENCRYPTION_KEY` in the staging env workflow, run owner-approved staging-only workflows, update ops state, and publish evidence.
+- **Out of Scope:** Production deploy/action, production `db:migrate`, live email-provider setup, payment/shipping provider calls, broad admin UI changes, direct `.env` inspection, and arbitrary workflow redesign.
+- **Skills Used:** `environment-safety-gate`, `agent-permission-boundary`, `regression-safety-gate`, `evidence-led-reporting`, `verification-before-completion`, `documentation-handoff-gate`, `acceptance-criteria-gate`.
+- **Acceptance Criteria:**
+  - [ ] Staging migration workflow dry-run reads `drizzle.__drizzle_migrations` and reports pending migrations without DB writes.
+  - [ ] Staging env workflow can set only the dedicated `ADMIN_TOTP_ENCRYPTION_KEY` secret key in addition to the existing allow-list.
+  - [ ] `0090_admin_totp.sql` is applied to staging through the owner-approved workflow after a backup is captured.
+  - [ ] `ADMIN_TOTP_ENCRYPTION_KEY` is generated securely, never printed, written through the official workflow, and the API is restarted.
+  - [ ] `https://admin.staging.haastores.com` and `https://staging.haastores.com/health` pass after activation.
+  - [ ] Ops docs and final skill compliance report record exact evidence, run IDs, and safety boundaries.
+- **Test Plan:** `pnpm ops:monitor`; `pnpm preflight`; `pnpm check:skills`; `git diff --check`; GitHub PR checks; `gh workflow run ops-staging-migrate.yml -f target=staging -f dry_run=true`; if safe, `gh workflow run ops-staging-migrate.yml -f target=staging -f dry_run=false`; `gh workflow run ops-staging-env.yml -f target=staging -f key=ADMIN_TOTP_ENCRYPTION_KEY -f restart_container=api`; staging health/admin curl checks.
+- **Files Changed:** Pending.
+- **Test Results:** Pending.
+- **Root Cause:** TASK-0125 shipped TOTP code safely before migration, but the runtime rollout remained owner-gated. The staging migration workflow's dry-run evidence queried the wrong migrations table name, and the env workflow did not yet allow the dedicated admin TOTP encryption key.
+- **Verdict:** Pending.
+- **Related Issues:** ISSUE-0062.
+
+---
+
 ### TASK-0128: Admin finance CSV export permission enforcement
 
 - **Type:** Payments/Wallet / Backend API / UX/UI Polish / Testing / Documentation
