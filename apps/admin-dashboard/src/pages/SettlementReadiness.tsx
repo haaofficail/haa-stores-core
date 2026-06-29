@@ -6,6 +6,9 @@
 import { useEffect, useState } from 'react';
 import { adminApi, type AdminStore } from '../lib/api';
 import { toast } from 'sonner';
+import { SortableTh } from '../components/ui/SortableTh';
+import { TablePager } from '../components/ui/TablePager';
+import { useTableControls } from '../lib/useTableControls';
 
 type SamaStatus = 'unconfirmed' | 'registered' | 'licensed' | 'exempt';
 
@@ -143,6 +146,14 @@ export default function SettlementReadiness() {
     );
   }
 
+  const controls = useTableControls<any>({
+    rows: stores,
+    searchFields: ['name', 'id'],
+    initialSort: { key: 'name', dir: 'asc' },
+    storageKey: 'settlementReadiness',
+  });
+  const { query, setQuery } = controls;
+
   if (error) return <ErrorState message={error} />;
 
   return (
@@ -152,11 +163,27 @@ export default function SettlementReadiness() {
         <p className="text-sm text-gray-500 mt-1">إدارة حالة جاهزية التسوية المالية لكل متجر</p>
       </div>
 
+      <div>
+        <input
+          type="search"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="بحث باسم المتجر..."
+          className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+        />
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        {stores.length === 0 ? (
+          <div className="p-12 text-center text-gray-400">لا توجد متاجر</div>
+        ) : controls.filteredCount === 0 ? (
+          <div className="p-12 text-center text-gray-400">لا توجد نتائج مطابقة</div>
+        ) : (
+          <>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="text-start px-4 py-3 font-medium text-gray-600">المتجر</th>
+              <SortableTh sortKey="name" label="المتجر" sort={controls.sort} onToggle={controls.toggleSort} />
               <th className="text-start px-4 py-3 font-medium text-gray-600">حساب أمان</th>
               <th className="text-start px-4 py-3 font-medium text-gray-600">شريك PSP</th>
               <th className="text-start px-4 py-3 font-medium text-gray-600">MoR</th>
@@ -165,7 +192,7 @@ export default function SettlementReadiness() {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {stores.map(store => {
+            {controls.rows.map(store => {
               const r = readinessMap[store.id];
               return (
                 <tr key={store.id} className="hover:bg-gray-50 transition-colors">
@@ -194,13 +221,19 @@ export default function SettlementReadiness() {
                 </tr>
               );
             })}
-            {stores.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">لا توجد متاجر</td>
-              </tr>
-            )}
           </tbody>
         </table>
+            <TablePager
+              page={controls.page}
+              totalPages={controls.totalPages}
+              startIndex={controls.startIndex}
+              endIndex={controls.endIndex}
+              filteredCount={controls.filteredCount}
+              onPageChange={controls.setPage}
+              itemLabel="متجر"
+            />
+          </>
+        )}
       </div>
 
       {/* Modal */}
