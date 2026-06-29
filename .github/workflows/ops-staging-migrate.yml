@@ -73,16 +73,17 @@ jobs:
           if [ -n "$HOSTS" ]; then
             printf '%s\n' "$HOSTS" >> ~/.ssh/known_hosts
             chmod 644 ~/.ssh/known_hosts
+            echo "SSH_EXTRA_OPTS=-o StrictHostKeyChecking=yes" >> "$GITHUB_ENV"
           else
-            # Fallback only if the secret isn't set yet. Use accept-new
-            # so first connect is non-fatal, but warn loudly.
-            ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-            echo "⚠ STAGING_KNOWN_HOSTS not set — used ssh-keyscan fallback. Risk: fail2ban window."
+            # Fallback only if the secret isn't set yet. Avoid ssh-keyscan
+            # probing because staging may rate-limit repeated probes.
+            echo "SSH_EXTRA_OPTS=-o StrictHostKeyChecking=accept-new" >> "$GITHUB_ENV"
+            echo "⚠ STAGING_KNOWN_HOSTS not set — using accept-new SSH fallback."
           fi
 
       - name: Snapshot DB before migrate
         run: |
-          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+          ssh -o BatchMode=yes ${SSH_EXTRA_OPTS:-} "$DEPLOY_USER@$DEPLOY_HOST" \
             "PROJECT='$PROJECT_NAME' RUN_ID='$RUN_ID' bash -s" <<'SNAP'
             set -euo pipefail
             cd "/srv/haa-stores"  # canonical staging deploy path
@@ -104,7 +105,7 @@ jobs:
 
       - name: Run migration
         run: |
-          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+          ssh -o BatchMode=yes ${SSH_EXTRA_OPTS:-} "$DEPLOY_USER@$DEPLOY_HOST" \
             "PROJECT='$PROJECT_NAME' DRY_RUN='$DRY_RUN' bash -s" <<'MIGRATE'
             set -euo pipefail
             cd "/srv/haa-stores"
@@ -227,7 +228,7 @@ jobs:
       - name: Restart api so it picks up any schema-aware caches
         if: ${{ !inputs.dry_run }}
         run: |
-          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+          ssh -o BatchMode=yes ${SSH_EXTRA_OPTS:-} "$DEPLOY_USER@$DEPLOY_HOST" \
             "PROJECT='$PROJECT_NAME' bash -s" <<'RESTART'
             set -euo pipefail
             cd "/srv/haa-stores"

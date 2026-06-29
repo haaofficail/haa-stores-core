@@ -96,15 +96,16 @@ jobs:
           if [ -n "$HOSTS" ]; then
             printf '%s\n' "$HOSTS" >> ~/.ssh/known_hosts
             chmod 644 ~/.ssh/known_hosts
+            echo "SSH_EXTRA_OPTS=-o StrictHostKeyChecking=yes" >> "$GITHUB_ENV"
           else
-            ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-            echo "⚠ STAGING_KNOWN_HOSTS not set — used ssh-keyscan fallback."
+            echo "SSH_EXTRA_OPTS=-o StrictHostKeyChecking=accept-new" >> "$GITHUB_ENV"
+            echo "⚠ STAGING_KNOWN_HOSTS not set — using accept-new SSH fallback."
           fi
 
       - name: Apply ENV change + restart
         run: |
           ENV_VALUE_B64="$(printf '%s' "$ENV_VALUE" | base64 -w 0 2>/dev/null || printf '%s' "$ENV_VALUE" | base64 | tr -d '\n')"
-          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+          ssh -o BatchMode=yes ${SSH_EXTRA_OPTS:-} "$DEPLOY_USER@$DEPLOY_HOST" \
             "PROJECT='$PROJECT_NAME' ENV_KEY='$ENV_KEY' ENV_VALUE_B64='$ENV_VALUE_B64' RESTART='$RESTART' RUN_ID='$RUN_ID' bash -s" <<'EOSSH'
             set -euo pipefail
             cd "/srv/haa-stores"
