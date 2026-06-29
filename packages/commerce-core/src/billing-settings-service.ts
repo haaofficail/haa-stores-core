@@ -109,12 +109,13 @@ export class StoreBillingSettingsService {
   async updateSettings(input: {
     storeId: number;
     policy: PlatformFeePolicy;
+    codPolicy?: CodFeePolicy;
     changeReason?: string | null;
     updatedBy: number | null;
     ipAddress?: string | null;
     userAgent?: string | null;
   }) {
-    const { storeId, policy, changeReason, updatedBy, ipAddress, userAgent } = input;
+    const { storeId, policy, codPolicy, changeReason, updatedBy, ipAddress, userAgent } = input;
     const existing = await this.getRawSettings(storeId);
 
     const patch = {
@@ -122,6 +123,14 @@ export class StoreBillingSettingsService {
       platformFeePct: policy.pct != null ? policy.pct.toString() : null,
       platformFeeFixed: policy.fixed != null ? policy.fixed.toString() : null,
       isPlatformFeeEnabled: policy.enabled,
+      codFeeMode: codPolicy?.mode ?? existing?.codFeeMode ?? DEFAULT_COD_FEE_POLICY.mode,
+      codFeePct: codPolicy
+        ? (codPolicy.pct != null ? codPolicy.pct.toString() : null)
+        : (existing?.codFeePct ?? (DEFAULT_COD_FEE_POLICY.pct != null ? DEFAULT_COD_FEE_POLICY.pct.toString() : null)),
+      codFeeFixed: codPolicy
+        ? (codPolicy.fixed != null ? codPolicy.fixed.toString() : null)
+        : (existing?.codFeeFixed ?? (DEFAULT_COD_FEE_POLICY.fixed != null ? DEFAULT_COD_FEE_POLICY.fixed.toString() : null)),
+      isCodFeeEnabled: codPolicy?.enabled ?? existing?.isCodFeeEnabled ?? DEFAULT_COD_FEE_POLICY.enabled,
       effectiveFrom: new Date(),
       updatedAt: new Date(),
       updatedBy: updatedBy ?? null,
@@ -143,11 +152,10 @@ export class StoreBillingSettingsService {
     }
 
     // Atomicity: write audit in the same logical operation. We do this
-    // by re-using the same `db` client. If the caller wraps this
-    // method in a transaction (which the admin route does NOT currently
-    // do — see the route's `patchBillingSettings` handler), the audit
-    // write participates in that transaction. We do NOT swallow
-    // audit failures here: re-throw so the caller can fail-fast.
+    // by re-using the same `db` client. The admin route wraps this method
+    // in a transaction, so the audit write participates in that transaction.
+    // We do NOT swallow audit failures here: re-throw so the caller can
+    // fail-fast.
     const audit = new AuditLogService(this.db);
     await audit.record({
       actorUserId: updatedBy ?? null,
@@ -160,12 +168,20 @@ export class StoreBillingSettingsService {
         platformFeePct: existing.platformFeePct,
         platformFeeFixed: existing.platformFeeFixed,
         isPlatformFeeEnabled: existing.isPlatformFeeEnabled,
+        codFeeMode: existing.codFeeMode,
+        codFeePct: existing.codFeePct,
+        codFeeFixed: existing.codFeeFixed,
+        isCodFeeEnabled: existing.isCodFeeEnabled,
       } : null,
       newValue: {
         platformFeeMode: policy.mode,
         platformFeePct: policy.pct,
         platformFeeFixed: policy.fixed,
         isPlatformFeeEnabled: policy.enabled,
+        codFeeMode: patch.codFeeMode,
+        codFeePct: codPolicy?.pct ?? (patch.codFeePct != null ? Number(patch.codFeePct) : null),
+        codFeeFixed: codPolicy?.fixed ?? (patch.codFeeFixed != null ? Number(patch.codFeeFixed) : null),
+        isCodFeeEnabled: patch.isCodFeeEnabled,
         changeReason: changeReason ?? null,
       },
       ipAddress: ipAddress ?? null,

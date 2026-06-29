@@ -9,6 +9,7 @@ const read = (p: string) => (existsSync(resolve(root, p)) ? readFileSync(resolve
 
 const app = read('apps/admin-dashboard/src/App.tsx');
 const page = read('apps/admin-dashboard/src/pages/AccountantInbox.tsx');
+const adminApi = read('apps/admin-dashboard/src/lib/api.ts');
 
 /**
  * Batch 3 — Accountant inbox UI contract.
@@ -58,5 +59,14 @@ describe('accountant inbox page has required UI states and is read-only-safe', (
     expect(page).toMatch(/ibanLast4/);
     // no full-IBAN field access and no raw `iban` property usage
     expect(page).not.toMatch(/\.iban\b/);
+  });
+
+  it('exports CSV only through the wallet.payout.export-gated admin API route', () => {
+    expect(page).toMatch(/hasAdminPermission\('wallet\.payout\.export'\)/);
+    expect(page).toMatch(/exportAccountantInboxCsv/);
+    expect(page).toMatch(/downloadBlob/);
+    expect(page).not.toMatch(/downloadRowsAsCsv\(/);
+    expect(adminApi).toMatch(/exportAccountantInboxCsv/);
+    expect(adminApi).toMatch(/requestBlob\(`\/admin\/settlements\/accountant-inbox\/export\?\$\{qs\.toString\(\)\}`\)/);
   });
 });

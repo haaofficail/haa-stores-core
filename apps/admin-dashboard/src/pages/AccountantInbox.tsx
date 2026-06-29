@@ -3,14 +3,14 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { adminApi, type AccountantInboxItem } from '../lib/api';
+import { adminApi, hasAdminPermission, type AccountantInboxItem } from '../lib/api';
 import { queryKeys } from '../lib/queryClient';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
-import { downloadRowsAsCsv } from '../lib/downloadRowsAsCsv';
+import { downloadBlob } from '../lib/downloadRowsAsCsv';
 
 type Segment = 'ready' | 'exceptions';
 
@@ -30,6 +30,8 @@ function statusLabel(s: string) {
 }
 
 export default function AccountantInbox() {
+  const [exporting, setExporting] = useState(false);
+  const canExportFinanceReports = hasAdminPermission('wallet.payout.export');
   const {
     data,
     isPending: loading,
@@ -92,6 +94,27 @@ export default function AccountantInbox() {
   const emptyMessage = segment === 'ready'
     ? 'لا توجد تسويات جاهزة للتحويل'
     : 'لا توجد استثناءات';
+
+  const exportCsv = async () => {
+    if (!canExportFinanceReports) {
+      toast.error('لا تملك صلاحية تصدير تقارير التسويات');
+      return;
+    }
+    if (scopedRows.length === 0 || exporting) return;
+    setExporting(true);
+    try {
+      const blob = await adminApi.exportAccountantInboxCsv({
+        segment,
+        status: statusFilter || undefined,
+        period: periodFilter || undefined,
+      });
+      downloadBlob(blob, `settlement-${segment}.csv`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'تعذّر تصدير تقارير التسويات');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   let inboxContent: ReactNode;
   if (loading) {
@@ -183,11 +206,12 @@ export default function AccountantInbox() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-title2 font-bold text-gray-900 tracking-tight">صندوق التسويات</h2>
         <button
-          onClick={() => downloadRowsAsCsv(scopedRows as unknown as Record<string, unknown>[], `settlement-${segment}.csv`)}
-          disabled={scopedRows.length === 0}
+          onClick={exportCsv}
+          disabled={!canExportFinanceReports || scopedRows.length === 0 || exporting}
+          title={canExportFinanceReports ? undefined : 'لا تملك صلاحية تصدير تقارير التسويات'}
           className="px-3 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-40"
         >
-          تصدير CSV
+          {exporting ? 'جاري التصدير...' : 'تصدير CSV'}
         </button>
       </div>
 

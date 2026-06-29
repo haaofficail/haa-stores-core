@@ -11,11 +11,20 @@
 import { Hono, type Context, type Next } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { type AdminAuthContext, requireAdminAuth } from '@haa/auth-core';
+import { type AdminAuthContext, requireAdminAuth, requireAdminTwoFactorIfEnabled } from '@haa/auth-core';
 import type { AdminPermission } from '@haa/shared';
 import { idempotencyKey } from '../../middleware/idempotency-key.js';
+import { rateLimiter } from '../../middleware/rate-limiter.js';
 
-import { loginRoute } from './auth.js';
+import {
+  adminTotpStatusRoute,
+  confirmAdminPasswordResetRoute,
+  confirmAdminTotpEnrollmentRoute,
+  disableAdminTotpRoute,
+  loginRoute,
+  requestAdminPasswordResetRoute,
+  startAdminTotpEnrollmentRoute,
+} from './auth.js';
 import { dashboardRoute, tenantsRoutes, storesRoutes, kycRoutes, kycBankRoutes, settlementReadinessRoutes, paymentSettingsRoutes, paymentsRoute } from './tenants-stores.js';
 import {
   marketplaceSummaryRoute,
@@ -29,10 +38,10 @@ import {
   settlementBatchesRoutes,
   manualPayoutsRoutes,
 } from './marketplace.js';
-import { accountantInboxRoutes } from './accountant-inbox.js';
+import { accountantInboxExportQuerySchema, accountantInboxRoutes } from './accountant-inbox.js';
 import { ibanRevealRoutes } from './iban-reveal.js';
 import { accountantDetailRoutes } from './accountant-detail.js';
-import { financeReportsRoutes } from './finance-reports.js';
+import { financeReportsExportQuerySchema, financeReportsRoutes } from './finance-reports.js';
 import {
   auditRoute,
   webhooksRoute,
@@ -89,6 +98,21 @@ export function requireAnyAdminPermission(...permissions: AdminPermission[]) {
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
+  totpCode: z.string().regex(/^\d{6}$/).optional(),
+});
+
+const adminPasswordResetRequestSchema = z.object({
+  email: z.string().email(),
+});
+
+const adminPasswordResetConfirmSchema = z.object({
+  email: z.string().email(),
+  code: z.string().regex(/^\d{6}$/),
+  newPassword: z.string().min(8).max(200),
+});
+
+const adminTotpCodeSchema = z.object({
+  code: z.string().regex(/^\d{6}$/),
 });
 
 const tenantCreateSchema = z.object({
@@ -243,6 +267,32 @@ const adminRouter = new Hono<{ Variables: { adminAuth: AdminAuthContext } }>();
 
 // /login (no auth required)
 adminRouter.post('/login', zValidator('json', loginSchema), loginRoute);
+adminRouter.post(
+  '/login/password-reset/request',
+  rateLimiter({
+    windowMs: 60 * 60 * 1000,
+    maxRequests: 5,
+    message: 'تم تجاوز الحد المسموح من المحاولات',
+  }),
+  zValidator('json', adminPasswordResetRequestSchema),
+  requestAdminPasswordResetRoute,
+);
+adminRouter.post(
+  '/login/password-reset/confirm',
+  rateLimiter({
+    windowMs: 10 * 60 * 1000,
+    maxRequests: 10,
+    message: 'تم تجاوز الحد المسموح من المحاولات',
+  }),
+  zValidator('json', adminPasswordResetConfirmSchema),
+  confirmAdminPasswordResetRoute,
+);
+
+// /security/totp — personal admin 2FA management.
+adminRouter.get('/security/totp/status', requireAdminAuth(), adminTotpStatusRoute);
+adminRouter.post('/security/totp/enroll', requireAdminAuth(), startAdminTotpEnrollmentRoute);
+adminRouter.post('/security/totp/confirm', requireAdminAuth(), zValidator('json', adminTotpCodeSchema), confirmAdminTotpEnrollmentRoute);
+adminRouter.delete('/security/totp', requireAdminAuth(), zValidator('json', adminTotpCodeSchema), disableAdminTotpRoute);
 
 // /dashboard
 adminRouter.get('/dashboard', requireAdminAuth(), requireAdminPermission('dashboard:view'), dashboardRoute);
@@ -251,25 +301,25 @@ adminRouter.get('/dashboard', requireAdminAuth(), requireAdminPermission('dashbo
 // on a distinct fine-grained admin permission so an authenticated
 // admin with a limited role cannot accidentally mutate tenants.
 adminRouter.get('/tenants', requireAdminAuth(), requireAdminPermission('tenants.read'), tenantsRoutes.list);
-adminRouter.post('/tenants', requireAdminAuth(), requireAdminPermission('tenants.create'), zValidator('json', tenantCreateSchema), tenantsRoutes.create);
-adminRouter.patch('/tenants/:id', requireAdminAuth(), requireAdminPermission('tenants.update'), zValidator('json', tenantUpdateSchema), tenantsRoutes.update);
-adminRouter.delete('/tenants/:id', requireAdminAuth(), requireAdminPermission('tenants.delete'), tenantsRoutes.remove);
-adminRouter.patch('/tenants/:id/status', requireAdminAuth(), requireAdminPermission('tenants.status.update'), zValidator('json', tenantStatusSchema), tenantsRoutes.status);
+adminRouter.post('/tenants', requireAdminAuth(), requireAdminPermission('tenants.create'), requireAdminTwoFactorIfEnabled(), zValidator('json', tenantCreateSchema), tenantsRoutes.create);
+adminRouter.patch('/tenants/:id', requireAdminAuth(), requireAdminPermission('tenants.update'), requireAdminTwoFactorIfEnabled(), zValidator('json', tenantUpdateSchema), tenantsRoutes.update);
+adminRouter.delete('/tenants/:id', requireAdminAuth(), requireAdminPermission('tenants.delete'), requireAdminTwoFactorIfEnabled(), tenantsRoutes.remove);
+adminRouter.patch('/tenants/:id/status', requireAdminAuth(), requireAdminPermission('tenants.status.update'), requireAdminTwoFactorIfEnabled(), zValidator('json', tenantStatusSchema), tenantsRoutes.status);
 
 // /stores/* — same hardening as tenants. Destructive ops (delete,
 // status changes) are particularly dangerous because they affect a
 // merchant's live business.
 adminRouter.get('/stores', requireAdminAuth(), requireAdminPermission('stores.read'), storesRoutes.list);
-adminRouter.post('/stores', requireAdminAuth(), requireAdminPermission('stores.create'), zValidator('json', storeCreateSchema), storesRoutes.create);
-adminRouter.patch('/stores/:id', requireAdminAuth(), requireAdminPermission('stores.update'), zValidator('json', storeUpdateSchema), storesRoutes.update);
-adminRouter.delete('/stores/:id', requireAdminAuth(), requireAdminPermission('stores.delete'), storesRoutes.remove);
-adminRouter.patch('/stores/:id/status', requireAdminAuth(), requireAdminPermission('stores.status.update'), zValidator('json', storeStatusSchema), storesRoutes.status);
+adminRouter.post('/stores', requireAdminAuth(), requireAdminPermission('stores.create'), requireAdminTwoFactorIfEnabled(), zValidator('json', storeCreateSchema), storesRoutes.create);
+adminRouter.patch('/stores/:id', requireAdminAuth(), requireAdminPermission('stores.update'), requireAdminTwoFactorIfEnabled(), zValidator('json', storeUpdateSchema), storesRoutes.update);
+adminRouter.delete('/stores/:id', requireAdminAuth(), requireAdminPermission('stores.delete'), requireAdminTwoFactorIfEnabled(), storesRoutes.remove);
+adminRouter.patch('/stores/:id/status', requireAdminAuth(), requireAdminPermission('stores.status.update'), requireAdminTwoFactorIfEnabled(), zValidator('json', storeStatusSchema), storesRoutes.status);
 
 // /kyc/*
 adminRouter.get('/kyc', requireAdminAuth(), requireAdminPermission('kyc.read'), kycRoutes.list);
-adminRouter.patch('/kyc/:id/review', requireAdminAuth(), requireAdminPermission('kyc.review'), zValidator('json', kycReviewSchema), kycRoutes.review);
+adminRouter.patch('/kyc/:id/review', requireAdminAuth(), requireAdminPermission('kyc.review'), requireAdminTwoFactorIfEnabled(), zValidator('json', kycReviewSchema), kycRoutes.review);
 adminRouter.get('/kyc/bank-accounts', requireAdminAuth(), requireAnyAdminPermission('kyc.read', 'merchant.bank_accounts.view'), kycBankRoutes.list);
-adminRouter.patch('/kyc/bank-accounts/:id/review', requireAdminAuth(), requireAnyAdminPermission('kyc.review', 'merchant.bank_accounts.verify_for_payout'), zValidator('json', z.object({
+adminRouter.patch('/kyc/bank-accounts/:id/review', requireAdminAuth(), requireAnyAdminPermission('kyc.review', 'merchant.bank_accounts.verify_for_payout'), requireAdminTwoFactorIfEnabled(), zValidator('json', z.object({
   status: z.enum(['verified', 'rejected']),
   reviewReason: z.string().trim().min(3).max(500),
 })), kycBankRoutes.review);
@@ -283,7 +333,7 @@ const settlementReadinessUpdateSchema = z.object({
 });
 
 adminRouter.get('/stores/:storeId/settlement-readiness', requireAdminAuth(), requireAdminPermission('wallet.payout.view_all'), settlementReadinessRoutes.get);
-adminRouter.patch('/stores/:storeId/settlement-readiness', requireAdminAuth(), requireAdminPermission('wallet.payout.approve'), zValidator('json', settlementReadinessUpdateSchema), settlementReadinessRoutes.update);
+adminRouter.patch('/stores/:storeId/settlement-readiness', requireAdminAuth(), requireAdminPermission('wallet.payout.approve'), requireAdminTwoFactorIfEnabled(), zValidator('json', settlementReadinessUpdateSchema), settlementReadinessRoutes.update);
 
 // /stores/:storeId/payment-settings
 const paymentSettingsUpsertSchema = z.object({
@@ -294,7 +344,7 @@ const paymentSettingsUpsertSchema = z.object({
 });
 
 adminRouter.get('/stores/:storeId/payment-settings', requireAdminAuth(), requireAdminPermission('stores.read'), paymentSettingsRoutes.list);
-adminRouter.put('/stores/:storeId/payment-settings', requireAdminAuth(), requireAdminPermission('stores.update'), zValidator('json', paymentSettingsUpsertSchema), paymentSettingsRoutes.upsert);
+adminRouter.put('/stores/:storeId/payment-settings', requireAdminAuth(), requireAdminPermission('stores.update'), requireAdminTwoFactorIfEnabled(), zValidator('json', paymentSettingsUpsertSchema), paymentSettingsRoutes.upsert);
 
 // /payments
 adminRouter.get('/payments', requireAdminAuth(), requireAdminPermission('payments.read'), paymentsRoute);
@@ -302,8 +352,8 @@ adminRouter.get('/payments', requireAdminAuth(), requireAdminPermission('payment
 // /marketplace/*
 adminRouter.get('/marketplace/summary', requireAdminAuth(), requireAdminPermission('marketplace.read'), marketplaceSummaryRoute);
 adminRouter.get('/marketplace/products', requireAdminAuth(), requireAdminPermission('marketplace.read'), marketplaceProductsRoute);
-adminRouter.patch('/marketplace/products/:id/review', requireAdminAuth(), requireAdminPermission('marketplace.review'), zValidator('json', productReviewSchema), marketplaceProductReviewRoute);
-adminRouter.patch('/marketplace/products/:id/feature', requireAdminAuth(), requireAdminPermission('marketplace.feature'), zValidator('json', productFeatureSchema), marketplaceProductFeatureRoute);
+adminRouter.patch('/marketplace/products/:id/review', requireAdminAuth(), requireAdminPermission('marketplace.review'), requireAdminTwoFactorIfEnabled(), zValidator('json', productReviewSchema), marketplaceProductReviewRoute);
+adminRouter.patch('/marketplace/products/:id/feature', requireAdminAuth(), requireAdminPermission('marketplace.feature'), requireAdminTwoFactorIfEnabled(), zValidator('json', productFeatureSchema), marketplaceProductFeatureRoute);
 adminRouter.get('/marketplace/sellers', requireAdminAuth(), requireAdminPermission('marketplace.read'), marketplaceSellersRoute);
 adminRouter.get('/marketplace/orders', requireAdminAuth(), requireAdminPermission('marketplace.read'), marketplaceOrdersRoute);
 adminRouter.get('/marketplace/settlements', requireAdminAuth(), requireAdminPermission('marketplace.read'), marketplaceSettlementsRoute);
@@ -317,34 +367,36 @@ adminRouter.get('/settlements/batches/:batchId', requireAdminAuth(), requireAdmi
 // Accountant Settlement Inbox — READ-ONLY (ready queue + exceptions). No
 // transfer/ledger mutation here; guarded by the finance view permission.
 adminRouter.get('/settlements/accountant-inbox', requireAdminAuth(), requireAdminPermission('wallet.payout.view_all'), accountantInboxRoutes.list);
+adminRouter.get('/settlements/accountant-inbox/export', requireAdminAuth(), requireAdminPermission('wallet.payout.export'), zValidator('query', accountantInboxExportQuerySchema), accountantInboxRoutes.exportCsv);
 // Batch 4D: full-IBAN reveal for payout execution — the ONLY route returning a
 // full IBAN; guarded by the dedicated reveal permission and fully audited.
-adminRouter.post('/settlements/:payoutId/reveal-iban', requireAdminAuth(), requireAdminPermission('merchant.bank_accounts.reveal_iban_for_payout'), zValidator('json', ibanRevealSchema), ibanRevealRoutes.reveal);
+adminRouter.post('/settlements/:payoutId/reveal-iban', requireAdminAuth(), requireAdminPermission('merchant.bank_accounts.reveal_iban_for_payout'), requireAdminTwoFactorIfEnabled(), zValidator('json', ibanRevealSchema), ibanRevealRoutes.reveal);
 // Batch 4E: accountant settlement detail (masked — no full IBAN, no receipt URL).
 adminRouter.get('/settlements/:payoutId/accountant-detail', requireAdminAuth(), requireAdminPermission('wallet.payout.view_all'), accountantDetailRoutes.detail);
 // Batch 5: second approval for large settlements — guarded by the dedicated
 // permission (accountant does NOT have it) + Idempotency-Key.
-adminRouter.post('/settlements/:payoutId/second-approve', requireAdminAuth(), requireAdminPermission('wallet.payout.second_approve'), idempotencyKey({ required: true }), manualPayoutsRoutes.secondApprove);
+adminRouter.post('/settlements/:payoutId/second-approve', requireAdminAuth(), requireAdminPermission('wallet.payout.second_approve'), requireAdminTwoFactorIfEnabled(), idempotencyKey({ required: true }), manualPayoutsRoutes.secondApprove);
 // Batch 6: reject a second approval back to manual_review (reason required).
-adminRouter.post('/settlements/:payoutId/second-reject', requireAdminAuth(), requireAdminPermission('wallet.payout.second_approve'), idempotencyKey({ required: true }), zValidator('json', payoutReasonSchema), manualPayoutsRoutes.secondReject);
+adminRouter.post('/settlements/:payoutId/second-reject', requireAdminAuth(), requireAdminPermission('wallet.payout.second_approve'), requireAdminTwoFactorIfEnabled(), idempotencyKey({ required: true }), zValidator('json', payoutReasonSchema), manualPayoutsRoutes.secondReject);
 // Batch 6: accountant finance reports (archive + reconciliation + stuck) —
 // masked, no full IBAN / receipt URL. Guarded by the finance view permission.
 adminRouter.get('/settlements/finance-reports', requireAdminAuth(), requireAdminPermission('wallet.payout.view_all'), financeReportsRoutes.list);
+adminRouter.get('/settlements/finance-reports/export', requireAdminAuth(), requireAdminPermission('wallet.payout.export'), zValidator('query', financeReportsExportQuerySchema), financeReportsRoutes.exportCsv);
 adminRouter.get('/settlements/manual-payouts', requireAdminAuth(), requireAdminPermission('wallet.payout.view_all'), manualPayoutsRoutes.list);
 adminRouter.get('/settlements/manual-payouts/:payoutId', requireAdminAuth(), requireAdminPermission('wallet.payout.view_all'), manualPayoutsRoutes.detail);
 // Batch 4A: every state-changing payout action requires an Idempotency-Key so
 // a double-click or a retried/concurrent request cannot run the same financial
 // transition twice. Combined with the optimistic-lock guard in WalletLedger
 // (conditional UPDATE on the expected fromStatus) this prevents double-spend.
-adminRouter.post('/settlements/manual-payouts/:payoutId/review', requireAdminAuth(), requireAdminPermission('wallet.payout.review'), idempotencyKey({ required: true }), manualPayoutsRoutes.review);
-adminRouter.post('/settlements/manual-payouts/:payoutId/approve', requireAdminAuth(), requireAdminPermission('wallet.payout.approve'), idempotencyKey({ required: true }), manualPayoutsRoutes.approve);
-adminRouter.post('/settlements/manual-payouts/:payoutId/reject', requireAdminAuth(), requireAdminPermission('wallet.payout.reject'), idempotencyKey({ required: true }), zValidator('json', payoutReasonSchema), manualPayoutsRoutes.reject);
-adminRouter.post('/settlements/manual-payouts/:payoutId/mark-transfer-pending', requireAdminAuth(), requireAdminPermission('wallet.payout.mark_transferred'), idempotencyKey({ required: true }), manualPayoutsRoutes.markTransferPending);
-adminRouter.post('/settlements/manual-payouts/:payoutId/mark-transferred', requireAdminAuth(), requireAdminPermission('wallet.payout.mark_transferred'), idempotencyKey({ required: true }), manualPayoutsRoutes.markTransferred);
-adminRouter.post('/settlements/manual-payouts/:payoutId/upload-proof', requireAdminAuth(), requireAdminPermission('wallet.payout.upload_proof'), idempotencyKey({ required: true }), zValidator('json', payoutUploadProofSchema), manualPayoutsRoutes.uploadProof);
-adminRouter.post('/settlements/manual-payouts/:payoutId/verify-transfer', requireAdminAuth(), requireAdminPermission('wallet.payout.verify_transfer'), idempotencyKey({ required: true }), manualPayoutsRoutes.verifyTransfer);
-adminRouter.post('/settlements/manual-payouts/:payoutId/cancel', requireAdminAuth(), requireAdminPermission('wallet.payout.cancel'), idempotencyKey({ required: true }), zValidator('json', payoutReasonSchema), manualPayoutsRoutes.cancel);
-adminRouter.post('/settlements/manual-payouts/:payoutId/reverse', requireAdminAuth(), requireAdminPermission('wallet.payout.reverse'), idempotencyKey({ required: true }), zValidator('json', payoutReasonSchema), manualPayoutsRoutes.reverse);
+adminRouter.post('/settlements/manual-payouts/:payoutId/review', requireAdminAuth(), requireAdminPermission('wallet.payout.review'), requireAdminTwoFactorIfEnabled(), idempotencyKey({ required: true }), manualPayoutsRoutes.review);
+adminRouter.post('/settlements/manual-payouts/:payoutId/approve', requireAdminAuth(), requireAdminPermission('wallet.payout.approve'), requireAdminTwoFactorIfEnabled(), idempotencyKey({ required: true }), manualPayoutsRoutes.approve);
+adminRouter.post('/settlements/manual-payouts/:payoutId/reject', requireAdminAuth(), requireAdminPermission('wallet.payout.reject'), requireAdminTwoFactorIfEnabled(), idempotencyKey({ required: true }), zValidator('json', payoutReasonSchema), manualPayoutsRoutes.reject);
+adminRouter.post('/settlements/manual-payouts/:payoutId/mark-transfer-pending', requireAdminAuth(), requireAdminPermission('wallet.payout.mark_transferred'), requireAdminTwoFactorIfEnabled(), idempotencyKey({ required: true }), manualPayoutsRoutes.markTransferPending);
+adminRouter.post('/settlements/manual-payouts/:payoutId/mark-transferred', requireAdminAuth(), requireAdminPermission('wallet.payout.mark_transferred'), requireAdminTwoFactorIfEnabled(), idempotencyKey({ required: true }), manualPayoutsRoutes.markTransferred);
+adminRouter.post('/settlements/manual-payouts/:payoutId/upload-proof', requireAdminAuth(), requireAdminPermission('wallet.payout.upload_proof'), requireAdminTwoFactorIfEnabled(), idempotencyKey({ required: true }), zValidator('json', payoutUploadProofSchema), manualPayoutsRoutes.uploadProof);
+adminRouter.post('/settlements/manual-payouts/:payoutId/verify-transfer', requireAdminAuth(), requireAdminPermission('wallet.payout.verify_transfer'), requireAdminTwoFactorIfEnabled(), idempotencyKey({ required: true }), manualPayoutsRoutes.verifyTransfer);
+adminRouter.post('/settlements/manual-payouts/:payoutId/cancel', requireAdminAuth(), requireAdminPermission('wallet.payout.cancel'), requireAdminTwoFactorIfEnabled(), idempotencyKey({ required: true }), zValidator('json', payoutReasonSchema), manualPayoutsRoutes.cancel);
+adminRouter.post('/settlements/manual-payouts/:payoutId/reverse', requireAdminAuth(), requireAdminPermission('wallet.payout.reverse'), requireAdminTwoFactorIfEnabled(), idempotencyKey({ required: true }), zValidator('json', payoutReasonSchema), manualPayoutsRoutes.reverse);
 
 // /audit
 adminRouter.get('/audit', requireAdminAuth(), requireAdminPermission('audit.read'), auditRoute);
@@ -356,14 +408,14 @@ adminRouter.get('/idempotency-key/stats', requireAdminAuth(), requireAdminPermis
 
 // /plans
 adminRouter.get('/plans', requireAdminAuth(), requireAdminPermission('plans.read'), plansRoutes.list);
-adminRouter.patch('/plans/:id', requireAdminAuth(), requireAdminPermission('plans.update'), zValidator('json', planUpdateSchema), plansRoutes.update);
+adminRouter.patch('/plans/:id', requireAdminAuth(), requireAdminPermission('plans.update'), requireAdminTwoFactorIfEnabled(), zValidator('json', planUpdateSchema), plansRoutes.update);
 
 // /upload
-adminRouter.post('/upload', requireAdminAuth(), requireAdminPermission('platform.media.upload'), uploadRoute);
+adminRouter.post('/upload', requireAdminAuth(), requireAdminPermission('platform.media.upload'), requireAdminTwoFactorIfEnabled(), uploadRoute);
 
 // /settings
 adminRouter.get('/settings', requireAdminAuth(), requireAdminPermission('platform.settings.read'), settingsRoutes.get);
-adminRouter.put('/settings', requireAdminAuth(), requireAdminPermission('platform.settings.update'), zValidator('json', settingsUpdateSchema), settingsRoutes.update);
+adminRouter.put('/settings', requireAdminAuth(), requireAdminPermission('platform.settings.update'), requireAdminTwoFactorIfEnabled(), zValidator('json', settingsUpdateSchema), settingsRoutes.update);
 
 // /users
 // /users — listing platform users. Audit P1-8: needs explicit
@@ -381,6 +433,7 @@ adminRouter.patch(
   '/stores/:storeId/billing-settings',
   requireAdminAuth(),
   requireAdminPermission('billing.platform_fee.update'),
+  requireAdminTwoFactorIfEnabled(),
   patchBillingSettings,
 );
 
@@ -403,6 +456,7 @@ adminRouter.patch(
   '/landing-contacts/:id',
   requireAdminAuth(),
   requireAdminPermission('landing_contacts.update'),
+  requireAdminTwoFactorIfEnabled(),
   zValidator('json', patchLandingContactBodySchema),
   patchLandingContact,
 );

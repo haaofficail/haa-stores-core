@@ -3,14 +3,14 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { adminApi, type FinanceReports as FinanceReportsData, type FinanceReportRow } from '../lib/api';
+import { adminApi, hasAdminPermission, type FinanceReports as FinanceReportsData, type FinanceReportRow } from '../lib/api';
 import { queryKeys } from '../lib/queryClient';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
-import { downloadRowsAsCsv } from '../lib/downloadRowsAsCsv';
+import { downloadBlob } from '../lib/downloadRowsAsCsv';
 
 type Tab = 'archive' | 'reconciliation' | 'stuck';
 
@@ -27,6 +27,8 @@ const RECON_LABELS: Record<string, string> = {
 
 export default function FinanceReports() {
   const [tab, setTab] = useState<Tab>('archive');
+  const [exporting, setExporting] = useState(false);
+  const canExportFinanceReports = hasAdminPermission('wallet.payout.export');
 
   const { data, isPending: loading, isError: error, refetch } = useQuery<FinanceReportsData>({
     queryKey: queryKeys.financeReports,
@@ -57,16 +59,21 @@ export default function FinanceReports() {
     controls.setPage(1);
   };
 
-  const exportCsv = () => {
-    // Masked rows only — never contain a full IBAN or a receipt URL.
-    const out = rows.map((r) => ({
-      settlementId: r.settlementId, storeName: r.storeName, amount: r.amount, currency: r.currency,
-      status: r.status, bankReference: r.bankReference ?? '', bankName: r.bankName ?? '',
-      transferDate: r.transferDate ?? '', receiptId: r.receiptId ?? '', sha256: r.sha256 ?? '',
-      accountantId: r.accountantId ?? '', secondApproverId: r.secondApproverId ?? '',
-      reconciliationStatus: r.reconciliationStatus,
-    }));
-    downloadRowsAsCsv(out as unknown as Record<string, unknown>[], `settlement-${tab}.csv`);
+  const exportCsv = async () => {
+    if (!canExportFinanceReports) {
+      toast.error('لا تملك صلاحية تصدير التقارير المالية');
+      return;
+    }
+    if (rows.length === 0 || exporting) return;
+    setExporting(true);
+    try {
+      const blob = await adminApi.exportFinanceReportsCsv(tab);
+      downloadBlob(blob, `settlement-${tab}.csv`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'تعذّر تصدير التقارير المالية');
+    } finally {
+      setExporting(false);
+    }
   };
 
   const tabBtn = (key: Tab, label: string, count: number) => (
@@ -137,9 +144,12 @@ export default function FinanceReports() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-title2 font-bold text-gray-900">التقارير المالية</h2>
-        <button onClick={exportCsv} disabled={rows.length === 0}
+        <button
+          onClick={exportCsv}
+          disabled={!canExportFinanceReports || rows.length === 0 || exporting}
+          title={canExportFinanceReports ? undefined : 'لا تملك صلاحية تصدير التقارير المالية'}
           className="px-3 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40">
-          تصدير CSV
+          {exporting ? 'جاري التصدير...' : 'تصدير CSV'}
         </button>
       </div>
 

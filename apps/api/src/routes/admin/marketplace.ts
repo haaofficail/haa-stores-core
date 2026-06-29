@@ -208,9 +208,29 @@ export async function marketplaceSellersRoute(c: any) {
 
 // ── /marketplace/orders ───────────────────────────────────────────────────
 export async function marketplaceOrdersRoute(c: any) {
+  // TASK-0124 follow-up — complete P1-3 pagination for marketplace orders.
+  // The admin dashboard needs the same metadata contract used by products:
+  // { data, page, limit, total, totalPages }.
+  const page = Math.max(1, Number(c.req.query('page')) || 1);
+  const limit = Math.min(200, Math.max(1, Number(c.req.query('limit')) || 50));
+  const offset = (page - 1) * limit;
   const db = createDbClient();
-  const orders = await db.select().from(s.marketplaceOrders).orderBy(desc(s.marketplaceOrders.createdAt)).limit(200);
-  return c.json({ success: true, data: orders });
+  const [{ total }] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(s.marketplaceOrders);
+  const orders = await db.select()
+    .from(s.marketplaceOrders)
+    .orderBy(desc(s.marketplaceOrders.createdAt))
+    .limit(limit)
+    .offset(offset);
+  return c.json({
+    success: true,
+    data: orders,
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit),
+  });
 }
 
 // ── /marketplace/settlements ──────────────────────────────────────────────

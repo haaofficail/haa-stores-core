@@ -5,6 +5,96 @@
 
 ---
 
+### ISSUE-0065: Admin Finance CSV Export Was Not API-enforced by Export Permission
+
+- **ID:** ISSUE-0065
+- **Date:** 2026-06-29
+- **Severity:** High (finance data export / RBAC boundary)
+- **Area:** Admin Dashboard / Admin API / Finance Reports / Accountant Inbox
+- **Related Tasks:** TASK-0128
+- **Symptoms:** Finance Reports and Accountant Inbox could be read with `wallet.payout.view_all`, and their CSV buttons generated local files from already-fetched data. The accountant role had `wallet.payout.export`, but the official export action was not enforced by an API route requiring that permission.
+- **Expected:** Reading finance reports and exporting official CSV files should be separate permission boundaries: `wallet.payout.view_all` for read pages and `wallet.payout.export` for CSV export routes and UI actions.
+- **Actual:** Export was only a frontend button over the read model, so a future role with read-only finance access but no export permission would still see an active export affordance and no server-side export permission check.
+- **Root Cause:** The earlier finance-report slice added masked read models and safe CSV generation in the dashboard, but did not convert CSV export into a server route with its own permission guard. Tests asserted the accountant role included `wallet.payout.export`, not that the export path used it.
+- **Fix:** Added finance-report and accountant-inbox export endpoints guarded by `wallet.payout.export`, using masked read models and CSV formula-safe cells. Added admin API Blob download helpers and changed Finance Reports / Accountant Inbox buttons to call those guarded routes only when `hasAdminPermission('wallet.payout.export')` is true.
+- **Verification:** `pnpm ops:monitor` passed with 0 failures and no recommended tasks/incidents. `pnpm vitest run tests/finance-reports-contract.test.ts tests/admin-accountant-role.test.ts tests/accountant-inbox-route.test.ts tests/accountant-inbox-page.test.ts` passed 4 files / 55 tests. `pnpm --filter @haa/api typecheck` and `pnpm --filter @haa/admin-dashboard build` passed.
+- **Prevention:** Keep focused finance export tests asserting `wallet.payout.export` API guards, Blob client usage, and disabled UI export state. Do not add finance CSV exports as client-only transformations of read data.
+- **Status:** Fixed locally in TASK-0128. No DB migration, deploy, secrets, production action, or live provider call occurred.
+
+---
+
+### ISSUE-0064: Admin Had Webhook/Idempotency Routes Without an Operational UI
+
+- **ID:** ISSUE-0064
+- **Date:** 2026-06-29
+- **Severity:** High (admin observability / duplicate-delivery triage)
+- **Area:** Admin Dashboard / Webhooks / Idempotency / Operations
+- **Related Tasks:** TASK-0127, TASK-0104
+- **Symptoms:** `/admin/webhooks`, `/admin/webhooks/dedup-stats`, and `/admin/idempotency-key/stats` existed and were gated by `webhooks.read`, but the admin dashboard had no route, navigation entry, API-client helpers, or page for operators to inspect the data.
+- **Expected:** Admin users with `webhooks.read` should have a protected operational page that surfaces webhook delivery events, duplicate rates, provider breakdown, and idempotency-key cache health without leaving the admin dashboard.
+- **Actual:** The API routes were available only as raw endpoints. Admin route/sidebar permission reflection covered the server gates, but there was no UI consuming the routes.
+- **Root Cause:** TASK-0104 focused on RBAC correctness for previously auth-only operational routes. It did not add dashboard screens for every operational endpoint, so the webhooks/idempotency diagnostics remained backend-only.
+- **Fix:** Added typed admin API helpers for webhook events, webhook dedup stats, and idempotency-key stats; added a dedicated `operationalWebhooks` query key; added a protected `/operations/webhooks` page and sidebar item gated by `webhooks.read`; and built the page with tenant/store filters, current-page search, sortable table columns, loading/error/empty states, provider metrics, stats cards, and `TablePager`.
+- **Verification:** `pnpm ops:monitor` passed with 0 failures and no recommended tasks/incidents. `pnpm vitest run tests/admin-api-rbac-alignment.test.ts tests/admin-permission-reflection.test.ts` passed 2 files / 12 tests. `pnpm --filter @haa/admin-dashboard build` passed.
+- **Prevention:** Keep `tests/admin-api-rbac-alignment.test.ts` and `tests/admin-permission-reflection.test.ts` asserting that admin operational API client/page wiring and route/sidebar permission keys stay aligned with server `requireAdminPermission(...)` gates.
+- **Status:** Fixed locally in TASK-0127. No DB migration, deploy, secrets, production action, or live provider call occurred.
+
+---
+
+### ISSUE-0063: Admin Could Not Configure Policy-driven COD Fees
+
+- **ID:** ISSUE-0063
+- **Date:** 2026-06-29
+- **Severity:** High (financial admin configuration / COD wallet fees)
+- **Area:** Admin Dashboard / Admin API / Commerce Core / Wallet Policy
+- **Related Tasks:** TASK-0126, TASK-0032
+- **Symptoms:** COD fee calculation was policy-driven in the backend, but platform admins could not view or update COD fee policy from Store Billing Settings. The route, API client, and page exposed platform fee fields only.
+- **Expected:** Admin Store Billing Settings should expose platform fee and COD fee as separate per-store policies. COD changes should use the existing wallet-core validation/cap rules and be audited with the same required change reason as platform fee changes.
+- **Actual:** TASK-0032 added COD schema, wallet-core policy helpers, and collectCOD integration, but explicitly deferred the admin dashboard UI. Later billing settings work continued to read/write only platform fee fields, leaving COD policy configurable only by direct DB state.
+- **Root Cause:** The original COD task intentionally scoped backend correctness first and did not add the admin write/read surface. No follow-up test asserted that `billing-settings.ts`, `StoreBillingSettingsService.updateSettings`, `adminApi.updateStoreBillingSettings`, or `StoreBillingSettings.tsx` included COD policy fields.
+- **Fix:** Added COD policy response fields (`effectiveCodPolicy`, `effectiveCodPolicyLabel`) to the admin billing settings GET/PATCH responses. PATCH now validates `codFeeMode`, `codFeePct`, `codFeeFixed`, and `isCodFeeEnabled` through `validateCodFeePolicyInput` and `MAX_COD_FEE_PCT`. `StoreBillingSettingsService.updateSettings` writes COD fields and includes COD old/new values in the audit diff. The admin API client and Store Billing Settings page now expose separate platform-fee and COD-fee sections and submit both policies with one required change reason.
+- **Verification:** `pnpm ops:monitor` passed with 0 failures and no recommended tasks/incidents. `pnpm vitest run tests/cod-fees.test.ts tests/cod-fees-wiring.test.ts tests/platform-fees-wiring.test.ts` passed 3 files / 76 tests. `pnpm --filter @haa/commerce-core build`, `pnpm --filter @haa/commerce-core typecheck`, `pnpm --filter @haa/api typecheck`, and `pnpm --filter @haa/admin-dashboard build` passed.
+- **Prevention:** Keep `tests/cod-fees-wiring.test.ts` asserting COD route/service/client/UI wiring in addition to the existing wallet-core COD behavior tests. Any future fee policy added to `store_billing_settings` must have admin read/write/audit coverage before the task is closed.
+- **Status:** Fixed locally in TASK-0126. Merchant wallet COD display remains optional follow-up; no DB migration, deploy, secrets, production action, or live provider call occurred.
+
+---
+
+### ISSUE-0061: Admin Marketplace Pagination Metadata Was Dropped by the Client
+
+- **ID:** ISSUE-0061
+- **Date:** 2026-06-29
+- **Severity:** High (admin marketplace operations / large catalog review)
+- **Area:** Admin Dashboard / Marketplace / API Client / Pagination
+- **Related Tasks:** TASK-0124
+- **Symptoms:** `/admin/marketplace/products` supported `page`, `limit`, `total`, and `totalPages`, but the admin Marketplace page still behaved like a local-only paginated table. `/admin/marketplace/orders` had a separate hardcoded `.limit(200)` and no pagination metadata. Admins could not reliably navigate full product or unified-order result sets from the UI.
+- **Expected:** The admin Marketplace products and unified orders tables should request explicit `page` and `limit`, preserve server pagination metadata, and drive visible pagers from server `total`/`totalPages`.
+- **Actual:** `adminApi.getMarketplaceProducts` called the generic `request<T>()` helper, which strips the API envelope to `data`. That discarded top-level pagination metadata. `Marketplace.tsx` then fed only the returned product rows into `useTableControls`, so `TablePager` reflected local row counts rather than the server dataset. Orders were fetched through the read-only auxiliary query as a plain array, and the backend route returned at most 200 rows.
+- **Root Cause:** The backend product pagination fix was only verified at route/source level. The admin API client contract was not updated to expose the route's metadata, the UI regression test did not assert that the page used server metadata, and the sibling orders route/table kept the earlier static-list pattern.
+- **Fix:** Added `requestResponse<T>()` and `normalizeMarketplacePage()` so Marketplace products and orders can preserve response-envelope metadata while keeping the existing `request<T>()` behavior for ordinary data-only calls. `getMarketplaceProducts` now accepts `{ status, page, limit }`; `getMarketplaceOrders` accepts `{ page, limit }`; both return `data`, `page`, `limit`, `total`, and `totalPages`. `Marketplace.tsx` now keeps independent server page state/query keys for products and orders, displays full fetched server pages, clamps stale pages, and feeds `TablePager` from server metadata.
+- **Verification:** `pnpm vitest run tests/marketplace-p1-2-p1-3.test.ts tests/admin-query-cache-review.test.ts` passed 2 files / 24 tests. `pnpm --filter @haa/api typecheck` passed. `pnpm --filter @haa/admin-dashboard build` passed.
+- **Prevention:** Keep `tests/marketplace-p1-2-p1-3.test.ts` asserting backend pagination contracts and admin client/page wiring for both products and orders. When an API route returns top-level metadata outside `data`, do not consume it through `request<T>()` unless the metadata is intentionally irrelevant.
+- **Status:** Fixed locally in TASK-0124. Product search/sort remain local to the current fetched page; global server-side search/sort is a separate future enhancement.
+
+---
+
+### ISSUE-0062: Admin Auth Lacked Second Factor and Self-serve Recovery
+
+- **ID:** ISSUE-0062
+- **Date:** 2026-06-29
+- **Severity:** High (platform-admin account takeover / sensitive admin mutations)
+- **Area:** Admin Auth / Admin API / Admin Dashboard / DB Schema
+- **Related Tasks:** TASK-0125
+- **Symptoms:** Platform admins had password-only `/admin/login`, no admin-owned self-serve reset flow, no account-level TOTP enrollment, and no second-factor checkpoint for high-impact admin mutations after a user opted into 2FA.
+- **Expected:** Admin auth should remain separate from merchant auth, support recovery without owner intervention, store TOTP secrets encrypted only, require a TOTP code at login for enrolled accounts, and block sensitive mutations unless the admin JWT came from a 2FA-verified login.
+- **Actual:** The merchant password-reset OTP flow existed in `AuthFlowService`, but admin auth was intentionally isolated in `AdminAuthService`. Reusing the merchant service would cross the admin/merchant boundary. Sensitive admin mutations were guarded by auth and permissions but not by a second-factor state.
+- **Root Cause:** Admin auth had been split into its own service for route hygiene, but the operational hardening backlog item for TOTP enrollment and reset recovery had not been implemented in the admin-owned path. The generic admin API client and login page also had only a single password-submit state.
+- **Fix:** Added `packages/auth-core/src/admin-totp.ts` with crypto-strong Base32 secret generation, TOTP verification, and AES-256-GCM encrypted secret envelopes. Added TOTP columns and unapplied migration/snapshot `0090_admin_totp`. Extended `AdminAuthService` with login TOTP challenge, TOTP enrollment/confirm/disable, and admin password reset request/confirm using `EmailOtpService`. Added `requireAdminTwoFactorIfEnabled()` and wired it to sensitive admin mutations including tenant/store mutations, KYC review, payment settings, marketplace moderation, IBAN reveal, payout state changes, settings/upload/plans, billing updates, and landing-contact updates. Updated admin login UI for TOTP/reset and added `/security` for account TOTP management.
+- **Verification:** `pnpm preflight` passed at branch start. `pnpm --filter @haa/db build`, `pnpm --filter @haa/shared build`, `pnpm --filter @haa/auth-core build`, `pnpm --filter @haa/auth-core typecheck`, `pnpm --filter @haa/api typecheck`, `pnpm --filter @haa/admin-dashboard build`, and `pnpm vitest run tests/admin-auth-hardening.test.ts tests/route-migration-2-admin-auth.test.ts tests/password-reset.test.ts tests/auth-regression.test.ts` passed 4 files / 49 tests.
+- **Prevention:** Keep `tests/admin-auth-hardening.test.ts` and `tests/route-migration-2-admin-auth.test.ts` guarding the admin/merchant auth boundary, TOTP crypto requirements, encrypted DB columns, migration snapshot coverage, sensitive route guards, and admin UI wiring. Do not add admin reset or TOTP logic to merchant `AuthFlowService`.
+- **Status:** Fixed locally in TASK-0125. Environment rollout remains owner-only: apply `0090_admin_totp.sql`, set `ADMIN_TOTP_ENCRYPTION_KEY`, and configure email delivery. No `db:migrate`, deploy, secrets, production action, or live provider call occurred.
+
+---
+
 ### ISSUE-0060: Post-financial Handoff Worktree Requires Sequenced Integration
 
 - **ID:** ISSUE-0060

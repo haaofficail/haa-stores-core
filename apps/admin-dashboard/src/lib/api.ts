@@ -224,6 +224,10 @@ export interface BillingSettingsRaw {
   platformFeePct: string | null;
   platformFeeFixed: string | null;
   isPlatformFeeEnabled: boolean;
+  codFeeMode: string;
+  codFeePct: string | null;
+  codFeeFixed: string | null;
+  isCodFeeEnabled: boolean;
   effectiveFrom: string | null;
   updatedAt: string;
   updatedBy: number | null;
@@ -231,11 +235,91 @@ export interface BillingSettingsRaw {
   createdAt: string;
 }
 
+export interface BillingFeePolicy {
+  mode: string;
+  pct: number | null;
+  fixed: number | null;
+  enabled: boolean;
+}
+
 // Inner result returned by PATCH /admin/stores/:storeId/billing-settings
 // (after `request<T>` strips the { success, data, error } wrapper).
 export interface BillingSettingsUpdateResult {
   settings: BillingSettingsRaw | null;
+  effectivePolicy: BillingFeePolicy;
   effectivePolicyLabel: string;
+  effectiveCodPolicy: BillingFeePolicy;
+  effectiveCodPolicyLabel: string;
+}
+
+export type AdminLoginResult =
+  | { token: string; user: { id: number; name: string; email: string } }
+  | { twoFactorRequired: true; message: string; user: { email: string } };
+
+export interface AdminTotpStatus {
+  enabled: boolean;
+  pending: boolean;
+  enabledAt: string | null;
+  pendingExpiresAt: string | null;
+}
+
+export interface AdminTotpEnrollment {
+  secret: string;
+  otpauthUrl: string;
+  expiresAt: string;
+}
+
+export interface MarketplacePageParams {
+  page?: number;
+  limit?: number;
+}
+
+export interface MarketplaceProductsParams extends MarketplacePageParams {
+  status?: string;
+}
+
+export interface MarketplacePage {
+  data: Record<string, unknown>[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export type MarketplaceProductsPage = MarketplacePage;
+export type MarketplaceOrdersPage = MarketplacePage;
+
+export interface AdminWebhookEvent {
+  id: number;
+  eventType: string;
+  storeId: number | null;
+  tenantId: number | null;
+  status: string;
+  attempts: number;
+  maxAttempts: number;
+  lastError: string | null;
+  deliveredAt: string | null;
+  createdAt: string;
+}
+
+export interface WebhookDedupStats {
+  total: number;
+  duplicates: number;
+  fresh: number;
+  errors: number;
+  raceRecovered: number;
+  duplicateRate: number;
+  byProvider: Record<string, { total: number; duplicates: number; duplicateRate: number }>;
+}
+
+export interface IdempotencyKeyStats {
+  total: number;
+  hits: number;
+  misses: number;
+  conflicts: number;
+  invalidKey: number;
+  hitRate: number;
+  size: number;
 }
 
 const BASE = import.meta.env.VITE_API_URL || '/api';
@@ -282,6 +366,11 @@ export function newIdempotencyKey(): string {
 }
 
 async function request<T>(method: string, path: string, body?: unknown, idempotencyKey?: string): Promise<T> {
+  const data = await requestResponse<T>(method, path, body, idempotencyKey);
+  return data.data as T;
+}
+
+async function requestResponse<T>(method: string, path: string, body?: unknown, idempotencyKey?: string): Promise<ApiResponse<T>> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const token = getToken();
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -315,7 +404,58 @@ async function request<T>(method: string, path: string, body?: unknown, idempote
     const msg = data.error?.message || data.error?.issues?.map((i: ApiIssue) => i.message).join('؛ ') || 'Request failed';
     throw new Error(msg);
   }
-  return data.data as T;
+  return data;
+}
+
+async function requestBlob(path: string): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, { method: 'GET', headers });
+  } catch {
+    throw new Error('تعذر الاتصال بالخادم. تأكد من تشغيل الخادم.');
+  }
+
+  if (res.status === 401) {
+    localStorage.removeItem('admin_token');
+    window.location.href = '/login';
+    throw new Error('انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.');
+  }
+
+  if (!res.ok) {
+    try {
+      const data = (await res.json()) as ApiResponse<unknown>;
+      const msg = data.error?.message || data.error?.issues?.map((i: ApiIssue) => i.message).join('؛ ') || 'Request failed';
+      throw new Error(msg);
+    } catch (err) {
+      if (err instanceof Error) throw err;
+      throw new Error('استجابة غير متوقعة من الخادم');
+    }
+  }
+
+  return res.blob();
+}
+
+function normalizeMarketplacePage(
+  response: ApiResponse<Record<string, unknown>[]> & Partial<Omit<MarketplacePage, 'data'>>,
+  fallback: Required<MarketplacePageParams>,
+): MarketplacePage {
+  const data = response.data ?? [];
+  const resolvedPage = Number(response.page ?? fallback.page);
+  const resolvedLimit = Number(response.limit ?? fallback.limit);
+  const total = Number(response.total ?? data.length);
+  const totalPages = Number(response.totalPages ?? Math.ceil(total / Math.max(1, resolvedLimit)));
+
+  return {
+    data,
+    page: Number.isFinite(resolvedPage) && resolvedPage > 0 ? resolvedPage : fallback.page,
+    limit: Number.isFinite(resolvedLimit) && resolvedLimit > 0 ? resolvedLimit : fallback.limit,
+    total: Number.isFinite(total) && total >= 0 ? total : data.length,
+    totalPages: Number.isFinite(totalPages) && totalPages >= 0 ? totalPages : 0,
+  };
 }
 
 export interface AccountantInboxItem {
@@ -367,7 +507,18 @@ export interface FinanceReports {
 }
 
 export const adminApi = {
-  login: (email: string, password: string) => request<{ token: string; user: { id: number; name: string; email: string } }>('POST', '/admin/login', { email, password }),
+  login: (email: string, password: string, totpCode?: string) =>
+    request<AdminLoginResult>('POST', '/admin/login', { email, password, ...(totpCode ? { totpCode } : {}) }),
+  requestAdminPasswordReset: (email: string) =>
+    request<{ message: string }>('POST', '/admin/login/password-reset/request', { email }),
+  confirmAdminPasswordReset: (email: string, code: string, newPassword: string) =>
+    request<{ message: string }>('POST', '/admin/login/password-reset/confirm', { email, code, newPassword }),
+  getAdminTotpStatus: () => request<AdminTotpStatus>('GET', '/admin/security/totp/status'),
+  startAdminTotpEnrollment: () => request<AdminTotpEnrollment>('POST', '/admin/security/totp/enroll'),
+  confirmAdminTotpEnrollment: (code: string) =>
+    request<{ message: string }>('POST', '/admin/security/totp/confirm', { code }),
+  disableAdminTotp: (code: string) =>
+    request<{ message: string }>('DELETE', '/admin/security/totp', { code }),
   dashboard: () => request<{ tenants: number; stores: number; users: number; orders: number; pendingKyc: number }>('GET', '/admin/dashboard'),
   getTenants: () => request<AdminTenant[]>('GET', '/admin/tenants'),
   createTenant: (data: Record<string, unknown>) => request<AdminTenant>('POST', '/admin/tenants', data),
@@ -391,17 +542,46 @@ export const adminApi = {
   getStorePaymentSettings: (storeId: number) => request<Record<string, unknown>[]>('GET', `/admin/stores/${storeId}/payment-settings`),
   upsertStorePaymentSettings: (storeId: number, data: Record<string, unknown>) => request<Record<string, unknown>>('PUT', `/admin/stores/${storeId}/payment-settings`, data),
   getPayments: () => request<Record<string, unknown>[]>('GET', '/admin/payments'),
+  getWebhooks: (params: { tenantId?: string; storeId?: string } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.tenantId) qs.set('tenantId', params.tenantId);
+    if (params.storeId) qs.set('storeId', params.storeId);
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return request<AdminWebhookEvent[]>('GET', `/admin/webhooks${suffix}`);
+  },
+  getWebhookDedupStats: () => request<WebhookDedupStats>('GET', '/admin/webhooks/dedup-stats'),
+  getIdempotencyKeyStats: () => request<IdempotencyKeyStats>('GET', '/admin/idempotency-key/stats'),
   getMarketplaceSummary: () => request<Record<string, unknown>>('GET', '/admin/marketplace/summary'),
-  getMarketplaceProducts: (status?: string) => {
-    const qs = status ? `?status=${encodeURIComponent(status)}` : '';
-    return request<Record<string, unknown>[]>('GET', `/admin/marketplace/products${qs}`);
+  getMarketplaceProducts: async (params: MarketplaceProductsParams = {}): Promise<MarketplaceProductsPage> => {
+    const { status, page = 1, limit = 50 } = params;
+    const qs = new URLSearchParams();
+    if (status) qs.set('status', status);
+    qs.set('page', String(page));
+    qs.set('limit', String(limit));
+
+    const response = await requestResponse<Record<string, unknown>[]>(
+      'GET',
+      `/admin/marketplace/products?${qs.toString()}`,
+    ) as ApiResponse<Record<string, unknown>[]> & Partial<Omit<MarketplaceProductsPage, 'data'>>;
+    return normalizeMarketplacePage(response, { page, limit });
   },
   reviewMarketplaceProduct: (id: number, status: 'pending' | 'approved' | 'rejected' | 'suspended', note?: string) =>
     request<Record<string, unknown>>('PATCH', `/admin/marketplace/products/${id}/review`, { status, note }),
   featureMarketplaceProduct: (id: number, data: { featured: boolean; featuredUntil?: string | null; sortOrder?: number }) =>
     request<Record<string, unknown>>('PATCH', `/admin/marketplace/products/${id}/feature`, data),
   getMarketplaceSellers: () => request<Record<string, unknown>[]>('GET', '/admin/marketplace/sellers'),
-  getMarketplaceOrders: () => request<Record<string, unknown>[]>('GET', '/admin/marketplace/orders'),
+  getMarketplaceOrders: async (params: MarketplacePageParams = {}): Promise<MarketplaceOrdersPage> => {
+    const { page = 1, limit = 50 } = params;
+    const qs = new URLSearchParams();
+    qs.set('page', String(page));
+    qs.set('limit', String(limit));
+
+    const response = await requestResponse<Record<string, unknown>[]>(
+      'GET',
+      `/admin/marketplace/orders?${qs.toString()}`,
+    ) as ApiResponse<Record<string, unknown>[]> & Partial<Omit<MarketplaceOrdersPage, 'data'>>;
+    return normalizeMarketplacePage(response, { page, limit });
+  },
   getMarketplaceSettlements: () => request<Record<string, unknown>[]>('GET', '/admin/marketplace/settlements'),
   getMarketplaceDeepReport: () => request<Record<string, unknown>>('GET', '/admin/marketplace/deep-report'),
   getSettlementBatches: (storeId?: number) => {
@@ -417,6 +597,13 @@ export const adminApi = {
   // Accountant Settlement Inbox (READ-ONLY): ready queue + exceptions.
   getAccountantInbox: () =>
     request<AccountantInbox>('GET', '/admin/settlements/accountant-inbox'),
+  exportAccountantInboxCsv: (params: { segment: 'ready' | 'exceptions'; status?: string; period?: string }) => {
+    const qs = new URLSearchParams();
+    qs.set('segment', params.segment);
+    if (params.status) qs.set('status', params.status);
+    if (params.period) qs.set('period', params.period);
+    return requestBlob(`/admin/settlements/accountant-inbox/export?${qs.toString()}`);
+  },
   getPayout: (payoutId: number) =>
     request<PayoutDetail>('GET', `/admin/settlements/manual-payouts/${payoutId}`),
   reviewPayout: (payoutId: number, key = newIdempotencyKey()) =>
@@ -440,6 +627,10 @@ export const adminApi = {
     request<Payout>('POST', `/admin/settlements/${payoutId}/second-reject`, { reason }, key),
   getFinanceReports: () =>
     request<FinanceReports>('GET', '/admin/settlements/finance-reports'),
+  exportFinanceReportsCsv: (tab: 'archive' | 'reconciliation' | 'stuck') => {
+    const qs = new URLSearchParams({ tab });
+    return requestBlob(`/admin/settlements/finance-reports/export?${qs.toString()}`);
+  },
   revealIban: (payoutId: number, action: 'view' | 'copy') =>
     request<{ payoutId: number; storeId: number; bankName: string; accountHolderName: string; ibanLast4: string | null; iban: string }>(
       'POST', `/admin/settlements/${payoutId}/reveal-iban`, { action }),
@@ -474,14 +665,20 @@ export const adminApi = {
     request<{
       storeId: number; storeName: string;
       settings: BillingSettingsRaw | null;
-      effectivePolicy: { mode: string; pct: number | null; fixed: number | null; enabled: boolean };
+      effectivePolicy: BillingFeePolicy;
       effectivePolicyLabel: string;
+      effectiveCodPolicy: BillingFeePolicy;
+      effectiveCodPolicyLabel: string;
     }>('GET', `/admin/stores/${storeId}/billing-settings`),
   updateStoreBillingSettings: (storeId: number, data: {
     platformFeeMode?: string;
     platformFeePct?: number | null;
     platformFeeFixed?: number | null;
     isPlatformFeeEnabled?: boolean | null;
+    codFeeMode?: string;
+    codFeePct?: number | null;
+    codFeeFixed?: number | null;
+    isCodFeeEnabled?: boolean | null;
     changeReason?: string | null;
   }) => request<BillingSettingsUpdateResult>('PATCH', `/admin/stores/${storeId}/billing-settings`, data),
 };

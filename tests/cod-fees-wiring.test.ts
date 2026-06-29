@@ -91,4 +91,59 @@ describe('COD fee — billing service surface', () => {
     const service = read('packages/commerce-core/src/billing-settings-service.ts');
     expect(service).toMatch(/async\s+getCodFeePolicy/);
   });
+
+  it('StoreBillingSettingsService updateSettings writes COD policy fields', () => {
+    const service = read('packages/commerce-core/src/billing-settings-service.ts');
+    expect(service).toMatch(/codPolicy\?:\s*CodFeePolicy/);
+    expect(service).toMatch(/codFeeMode:\s*codPolicy\?\.mode/);
+    expect(service).toMatch(/codFeePct:\s*codPolicy/);
+    expect(service).toMatch(/codFeeFixed:\s*codPolicy/);
+    expect(service).toMatch(/isCodFeeEnabled:\s*codPolicy\?\.enabled/);
+  });
+
+  it('StoreBillingSettingsService audit diff includes COD policy fields', () => {
+    const service = read('packages/commerce-core/src/billing-settings-service.ts');
+    expect(service).toMatch(/oldValue:[\s\S]{0,450}codFeeMode/);
+    expect(service).toMatch(/oldValue:[\s\S]{0,450}isCodFeeEnabled/);
+    expect(service).toMatch(/newValue:[\s\S]{0,500}codFeeMode/);
+    expect(service).toMatch(/newValue:[\s\S]{0,500}isCodFeeEnabled/);
+  });
+});
+
+describe('COD fee — admin billing API surface', () => {
+  it('GET /admin/stores/:storeId/billing-settings returns effective COD policy and label', () => {
+    const route = read('apps/api/src/routes/admin/billing-settings.ts');
+    expect(route).toMatch(/getCodFeePolicy/);
+    expect(route).toMatch(/effectiveCodPolicy/);
+    expect(route).toMatch(/effectiveCodPolicyLabel/);
+    expect(route).toMatch(/describeCodFeePolicy/);
+  });
+
+  it('PATCH /admin/stores/:storeId/billing-settings validates and writes COD fields', () => {
+    const route = read('apps/api/src/routes/admin/billing-settings.ts');
+    expect(route).toMatch(/codFeeMode:\s*z\.enum/);
+    expect(route).toMatch(/codFeePct:\s*z\.coerce\.number\(\)\.min\(0\)\.max\(MAX_COD_FEE_PCT\)/);
+    expect(route).toMatch(/validateCodFeePolicyInput/);
+    expect(route).toMatch(/codPolicy:\s*codValidation\.policy/);
+  });
+});
+
+describe('COD fee — admin dashboard UI surface', () => {
+  it('admin API client exposes COD fields in billing settings read/update contracts', () => {
+    const api = read('apps/admin-dashboard/src/lib/api.ts');
+    expect(api).toMatch(/codFeeMode:\s*string/);
+    expect(api).toMatch(/effectiveCodPolicy:\s*BillingFeePolicy/);
+    expect(api).toMatch(/effectiveCodPolicyLabel:\s*string/);
+    expect(api).toMatch(/codFeePct\?:\s*number \| null/);
+  });
+
+  it('StoreBillingSettings page renders and submits COD policy separately from platform fee', () => {
+    const page = read('apps/admin-dashboard/src/pages/StoreBillingSettings.tsx');
+    expect(page).toContain('رسوم الدفع عند الاستلام');
+    expect(page).toMatch(/const \[codMode,\s*setCodMode\]/);
+    expect(page).toMatch(/settings\.effectiveCodPolicy/);
+    expect(page).toMatch(/codFeeMode:\s*codMode/);
+    expect(page).toMatch(/codFeePct:\s*codMode ===/);
+    expect(page).toMatch(/isCodFeeEnabled:\s*codEnabled/);
+  });
 });

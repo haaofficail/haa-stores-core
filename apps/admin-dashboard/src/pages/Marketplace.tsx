@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { AdminDialog } from '../components/ui/AdminDialog';
@@ -22,6 +22,9 @@ const statusLabels: Record<string, string> = {
   mixed: 'متعدد',
 };
 
+const MARKETPLACE_PRODUCTS_PAGE_SIZE = 50;
+const MARKETPLACE_ORDERS_PAGE_SIZE = 50;
+
 function money(value: unknown) {
   return `${Number(value ?? 0).toFixed(2)} ر.س`;
 }
@@ -35,6 +38,8 @@ type MarketplaceDecisionModal = {
 export default function Marketplace() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState('pending');
+  const [serverPage, setServerPage] = useState(1);
+  const [ordersServerPage, setOrdersServerPage] = useState(1);
   const [decisionModal, setDecisionModal] = useState<MarketplaceDecisionModal | null>(null);
   const [rejectNote, setRejectNote] = useState('');
   const canReviewMarketplaceProduct = hasAdminPermission('marketplace.review');
@@ -42,32 +47,62 @@ export default function Marketplace() {
 
   // Primary products table — status is part of the query key so changing the
   // filter triggers a server refetch automatically.
-  const { data: products = [], isPending: loading, isError: error, refetch } = useQuery<any[]>({
-    queryKey: [...queryKeys.marketplaceProducts, status],
-    queryFn: () => adminApi.getMarketplaceProducts(status || undefined),
+  const { data: productsPage, isPending: loading, isError: error, refetch } = useQuery({
+    queryKey: [...queryKeys.marketplaceProducts, status, serverPage, MARKETPLACE_PRODUCTS_PAGE_SIZE],
+    queryFn: () => adminApi.getMarketplaceProducts({
+      status: status || undefined,
+      page: serverPage,
+      limit: MARKETPLACE_PRODUCTS_PAGE_SIZE,
+    }),
   });
+  const products = productsPage?.data ?? [];
 
-  // Secondary, read-only panels (summary, sellers, orders, settlements, deep
+  // Secondary, read-only panels (summary, sellers, settlements, deep
   // report). These have no status dependency and are not part of this table's
   // data layer; they share one query so the dashboard renders unchanged.
   const { data: aux } = useQuery<any>({
     queryKey: [...queryKeys.marketplaceProducts, 'aux'],
     queryFn: async () => {
-      const [summary, sellers, orders, settlements, deepReport] = await Promise.all([
+      const [summary, sellers, settlements, deepReport] = await Promise.all([
         adminApi.getMarketplaceSummary(),
         adminApi.getMarketplaceSellers(),
-        adminApi.getMarketplaceOrders(),
         adminApi.getMarketplaceSettlements(),
         adminApi.getMarketplaceDeepReport(),
       ]);
-      return { summary, sellers, orders, settlements, deepReport };
+      return { summary, sellers, settlements, deepReport };
     },
   });
+
+  const {
+    data: ordersPage,
+    isPending: ordersLoading,
+    isError: ordersError,
+    refetch: refetchOrders,
+  } = useQuery({
+    queryKey: [...queryKeys.marketplaceOrders, ordersServerPage, MARKETPLACE_ORDERS_PAGE_SIZE],
+    queryFn: () => adminApi.getMarketplaceOrders({
+      page: ordersServerPage,
+      limit: MARKETPLACE_ORDERS_PAGE_SIZE,
+    }),
+  });
+
   const summary = aux?.summary ?? null;
   const sellers: any[] = aux?.sellers ?? [];
-  const orders: any[] = aux?.orders ?? [];
+  const orders: any[] = ordersPage?.data ?? [];
   const settlements: any[] = aux?.settlements ?? [];
   const deepReport = aux?.deepReport ?? null;
+
+  useEffect(() => {
+    if (productsPage && productsPage.totalPages > 0 && serverPage > productsPage.totalPages) {
+      setServerPage(productsPage.totalPages);
+    }
+  }, [productsPage, serverPage]);
+
+  useEffect(() => {
+    if (ordersPage && ordersPage.totalPages > 0 && ordersServerPage > ordersPage.totalPages) {
+      setOrdersServerPage(ordersPage.totalPages);
+    }
+  }, [ordersPage, ordersServerPage]);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.marketplaceProducts });
 
@@ -124,9 +159,18 @@ export default function Marketplace() {
     rows: products,
     searchFields: ['name', 'storeName', 'haaMarketplaceReviewStatus'],
     initialSort: { key: 'name', dir: 'desc' },
-    storageKey: 'marketplaceProducts',
+    pageSize: MARKETPLACE_PRODUCTS_PAGE_SIZE,
+    storageKey: 'marketplaceProductsServerPaged',
   });
   const { query, setQuery } = controls;
+  const totalProducts = productsPage?.total ?? 0;
+  const totalPages = productsPage?.totalPages ?? 0;
+  const pageStartIndex = totalProducts === 0 ? 0 : (serverPage - 1) * MARKETPLACE_PRODUCTS_PAGE_SIZE + 1;
+  const pageEndIndex = Math.min(serverPage * MARKETPLACE_PRODUCTS_PAGE_SIZE, totalProducts);
+  const totalOrders = ordersPage?.total ?? 0;
+  const orderTotalPages = ordersPage?.totalPages ?? 0;
+  const orderStartIndex = totalOrders === 0 ? 0 : (ordersServerPage - 1) * MARKETPLACE_ORDERS_PAGE_SIZE + 1;
+  const orderEndIndex = Math.min(ordersServerPage * MARKETPLACE_ORDERS_PAGE_SIZE, totalOrders);
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -160,7 +204,10 @@ export default function Marketplace() {
             />
             <select
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setServerPage(1);
+              }}
               className="rounded-lg border px-3 py-2 text-sm"
             >
               <option value="">كل الحالات</option>
@@ -221,14 +268,14 @@ export default function Marketplace() {
             </tbody>
           </table>
         </div>
-        {controls.filteredCount > 0 && (
+        {totalProducts > 0 && (
           <TablePager
-            page={controls.page}
-            totalPages={controls.totalPages}
-            startIndex={controls.startIndex}
-            endIndex={controls.endIndex}
-            filteredCount={controls.filteredCount}
-            onPageChange={controls.setPage}
+            page={serverPage}
+            totalPages={totalPages}
+            startIndex={pageStartIndex}
+            endIndex={pageEndIndex}
+            filteredCount={totalProducts}
+            onPageChange={setServerPage}
             itemLabel="منتج"
           />
         )}
@@ -316,9 +363,34 @@ export default function Marketplace() {
                   <td className="p-3">{money(order.platformCommission)}</td>
                 </tr>
               ))}
+              {ordersLoading && (
+                <tr><td className="p-6 text-center text-gray-500" colSpan={5}>جارٍ تحميل طلبات السوق...</td></tr>
+              )}
+              {!ordersLoading && ordersError && (
+                <tr>
+                  <td className="p-6 text-center text-gray-500" colSpan={5}>
+                    <span className="me-3">فشل تحميل طلبات السوق</span>
+                    <button onClick={() => refetchOrders()} className="rounded border px-3 py-1 text-xs font-medium hover:bg-gray-50">إعادة المحاولة</button>
+                  </td>
+                </tr>
+              )}
+              {!ordersLoading && !ordersError && orders.length === 0 && (
+                <tr><td className="p-6 text-center text-gray-500" colSpan={5}>لا توجد طلبات سوق في هذا العرض.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
+        {totalOrders > 0 && (
+          <TablePager
+            page={ordersServerPage}
+            totalPages={orderTotalPages}
+            startIndex={orderStartIndex}
+            endIndex={orderEndIndex}
+            filteredCount={totalOrders}
+            onPageChange={setOrdersServerPage}
+            itemLabel="طلب"
+          />
+        )}
       </section>
       {decisionModal && (
         <AdminDialog

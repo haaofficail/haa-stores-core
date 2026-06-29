@@ -1,5 +1,9 @@
 import jwt from 'jsonwebtoken';
 import type { Context, Next } from 'hono';
+import type { SignOptions } from 'jsonwebtoken';
+import { eq } from 'drizzle-orm';
+import { createDbClient, type DbClient } from '@haa/db';
+import * as s from '@haa/db/schema';
 
 function getSecret(): string {
   const secret = process.env.ADMIN_JWT_SECRET;
@@ -7,15 +11,23 @@ function getSecret(): string {
   return secret;
 }
 
-export function signAdminToken(payload: { userId: number; isAdmin: boolean; permissions: string[] }): string {
-  const expiresIn = process.env.ADMIN_JWT_EXPIRES_IN ?? '24h';
-  return jwt.sign(payload, getSecret(), { expiresIn } as any);
+export function signAdminToken(payload: {
+  userId: number;
+  isAdmin: boolean;
+  permissions: string[];
+  twoFactorEnabled?: boolean;
+  twoFactorVerified?: boolean;
+}): string {
+  const expiresIn = (process.env.ADMIN_JWT_EXPIRES_IN ?? '24h') as SignOptions['expiresIn'];
+  return jwt.sign(payload, getSecret(), { expiresIn });
 }
 
 export interface AdminAuthContext {
   userId: number;
   isAdmin: boolean;
   permissions: string[];
+  twoFactorEnabled?: boolean;
+  twoFactorVerified?: boolean;
 }
 
 export function requireAdminAuth() {
@@ -35,5 +47,51 @@ export function requireAdminAuth() {
     } catch {
       return c.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid or expired token' } }, 401);
     }
+  };
+}
+
+export function requireAdminTwoFactorIfEnabled(db?: DbClient) {
+  return async (c: Context, next: Next) => {
+    const adminAuth = c.get('adminAuth') as AdminAuthContext | undefined;
+    if (!adminAuth) {
+      return c.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Admin authentication required' } }, 401);
+    }
+
+    let enabled = false;
+    try {
+      const client = db ?? createDbClient();
+      const [user] = await client
+        .select({ adminTotpEnabledAt: s.users.adminTotpEnabledAt })
+        .from(s.users)
+        .where(eq(s.users.id, adminAuth.userId))
+        .limit(1);
+      enabled = Boolean(user?.adminTotpEnabledAt);
+    } catch {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'ADMIN_2FA_READINESS_UNAVAILABLE',
+            message: 'تعذر التحقق من حالة التحقق الثنائي. تأكد من تطبيق migration الخاص بالأدمن TOTP.',
+          },
+        },
+        503,
+      );
+    }
+
+    if (enabled && !adminAuth.twoFactorVerified) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: 'ADMIN_2FA_REQUIRED',
+            message: 'يلزم تسجيل الدخول برمز التحقق الثنائي قبل تنفيذ هذا الإجراء.',
+          },
+        },
+        403,
+      );
+    }
+
+    await next();
   };
 }

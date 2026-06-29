@@ -4,6 +4,160 @@
 
 ---
 
+### TASK-0128: Admin finance CSV export permission enforcement
+
+- **Type:** Payments/Wallet / Backend API / UX/UI Polish / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** Done locally
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/admin-dashboard-gap-audit-auth`
+- **Original Request:** "لا تتوقف حتى تنتهي وتنتشر جميع الاصلاحات"
+- **Expanded Requirement:** Close the finance export permission split gap: admin finance pages may remain readable with `wallet.payout.view_all`, but official CSV export must be enforced by `wallet.payout.export` at the API and reflected in the UI.
+- **Scope:** Admin finance export API routes, admin API client Blob downloads, Finance Reports export button, Accountant Inbox export button, focused regression tests, and ops documentation.
+- **Out of Scope:** Changing settlement read models, adding full-IBAN/proof export data, DB migrations, audit-action taxonomy expansion, deploy, production action, secrets, and live provider calls.
+- **Skills Used:** `acceptance-criteria-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `design-ux-excellence-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] Finance report CSV export is served by an API route guarded with `wallet.payout.export`.
+  - [x] Accountant inbox CSV export is served by an API route guarded with `wallet.payout.export`.
+  - [x] Finance read routes remain guarded by `wallet.payout.view_all`.
+  - [x] Admin dashboard finance export buttons check `hasAdminPermission('wallet.payout.export')` and disable/export-fail safely for non-export admins.
+  - [x] CSV exports use the same masked read models and do not include full IBAN, proof file key, receipt URL, or raw bank-account table selections.
+  - [x] Admin API client downloads finance CSV files as Blob responses from the permission-gated routes.
+  - [x] Focused source-regression tests cover API route guards, API client wiring, and page export wiring.
+- **Test Plan:** `pnpm ops:monitor`; `pnpm vitest run tests/finance-reports-contract.test.ts tests/admin-accountant-role.test.ts tests/accountant-inbox-route.test.ts tests/accountant-inbox-page.test.ts`; `pnpm --filter @haa/api typecheck`; `pnpm --filter @haa/admin-dashboard build`; final `pnpm check:skills`; `git diff --check`; `pnpm preflight`; final `git status --short --branch`.
+- **Files Changed:** `apps/api/src/routes/admin/index.ts`, `apps/api/src/routes/admin/csv-response.ts`, `apps/api/src/routes/admin/finance-reports.ts`, `apps/api/src/routes/admin/accountant-inbox.ts`, `apps/admin-dashboard/src/lib/api.ts`, `apps/admin-dashboard/src/lib/downloadRowsAsCsv.ts`, `apps/admin-dashboard/src/pages/FinanceReports.tsx`, `apps/admin-dashboard/src/pages/AccountantInbox.tsx`, `tests/finance-reports-contract.test.ts`, `tests/accountant-inbox-route.test.ts`, `tests/accountant-inbox-page.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0128.md`.
+- **Test Results:** Passed locally: `pnpm ops:monitor` exited 0 with no failures/tasks/incidents and only expected dev-server warnings; focused finance export tests passed 4 files / 55 tests; API typecheck passed; admin-dashboard build passed.
+- **Root Cause:** The accountant role already included `wallet.payout.export`, but finance pages generated CSV files client-side from data loaded by `wallet.payout.view_all`. That made export a UI affordance instead of an API-enforced permission boundary.
+- **Verdict:** Done locally for official admin finance CSV export enforcement. No DB migration, `db:migrate`, deploy, secret, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0065.
+
+---
+
+### TASK-0127: Admin Webhooks and Idempotency operational page
+
+- **Type:** Observability / UX/UI Polish / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** Done locally
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/admin-dashboard-gap-audit-auth`
+- **Original Request:** "لا تتوقف حتى تنتهي وتنتشر جميع الاصلاحات"
+- **Expanded Requirement:** Close the admin observability surface gap: platform admins with `webhooks.read` need a first-class dashboard page for webhook delivery events, webhook deduplication metrics, and HTTP idempotency-key statistics instead of relying on raw API routes.
+- **Scope:** Admin dashboard API client/query keys, protected route/sidebar entry, operational page UI with filters/search/sort/pagination, focused source-regression tests, and ops documentation.
+- **Out of Scope:** Changing webhook middleware, changing idempotency-key middleware, adding new DB schema, live provider calls, deploy, production action, secrets, and `db:migrate`.
+- **Skills Used:** `acceptance-criteria-gate`, `regression-safety-gate`, `implementation-quality-gate`, `design-ux-excellence-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] Admin API client exposes typed `getWebhooks`, `getWebhookDedupStats`, and `getIdempotencyKeyStats` helpers.
+  - [x] Admin query keys include a dedicated `operationalWebhooks` key.
+  - [x] Admin shell exposes `/operations/webhooks` only to users with `webhooks.read`.
+  - [x] Direct navigation to `/operations/webhooks` is wrapped by `AdminPermissionRoute`.
+  - [x] Page renders webhook dedup totals, duplicate rate, race-recovered count, idempotency-key totals, hits, conflicts, hit rate, and cache size.
+  - [x] Page supports tenant/store filters, current-page search, sortable table columns, loading/error/empty states, and `TablePager`.
+  - [x] Focused tests guard route permission reflection and admin API/page wiring.
+- **Test Plan:** `pnpm ops:monitor`; `pnpm vitest run tests/admin-api-rbac-alignment.test.ts tests/admin-permission-reflection.test.ts`; `pnpm --filter @haa/admin-dashboard build`; final `pnpm check:skills`; `git diff --check`; `pnpm preflight`; final `git status --short --branch`.
+- **Files Changed:** `apps/admin-dashboard/src/App.tsx`, `apps/admin-dashboard/src/lib/api.ts`, `apps/admin-dashboard/src/lib/queryClient.ts`, `apps/admin-dashboard/src/pages/OperationalWebhooks.tsx`, `tests/admin-api-rbac-alignment.test.ts`, `tests/admin-permission-reflection.test.ts`, `docs/agent-os/REMAINING_WORK.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0127.md`.
+- **Test Results:** Passed locally: `pnpm ops:monitor` exited 0 with no failures/tasks/incidents and only expected dev-server warnings; focused admin RBAC/permission reflection tests passed 2 files / 12 tests; admin-dashboard build passed.
+- **Root Cause:** The backend already exposed `/admin/webhooks`, `/admin/webhooks/dedup-stats`, and `/admin/idempotency-key/stats`, and TASK-0104 correctly gated them with `webhooks.read`, but no admin-dashboard page consumed those routes. Operators had route-level capability without a discoverable UI for delivery triage, duplicate-rate monitoring, or idempotency-cache health.
+- **Verdict:** Done locally for the admin Webhooks/Idempotency observability page. No DB migration, `db:migrate`, deploy, secret, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0064.
+
+---
+
+### TASK-0126: Admin COD fee policy UI and API wiring
+
+- **Type:** Payments/Wallet / Backend API / UX/UI Polish / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** Done locally
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/admin-dashboard-gap-audit-auth`
+- **Original Request:** "لا تتوقف حتى تنتهي وتنتشر جميع الاصلاحات"
+- **Expanded Requirement:** Close the deferred TASK-0032 follow-up: admin Store Billing Settings must expose and update per-store COD fee policy independently from platform fee policy, using the existing wallet-core COD validators and without changing schema or running migrations.
+- **Scope:** Admin billing-settings GET/PATCH contract, commerce-core billing settings write/audit surface, admin API client types, admin Store Billing Settings UI, focused source-regression tests, and ops documentation.
+- **Out of Scope:** New DB migrations, changing `collectCOD` calculation/posting behavior, merchant wallet COD display, live provider calls, deploy, production action, secrets, and `db:migrate`.
+- **Skills Used:** `acceptance-criteria-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `design-ux-excellence-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `hono-typescript`, `postgres-drizzle`, and `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] `GET /admin/stores/:storeId/billing-settings` returns `effectiveCodPolicy` and `effectiveCodPolicyLabel`.
+  - [x] `PATCH /admin/stores/:storeId/billing-settings` accepts `codFeeMode`, `codFeePct`, `codFeeFixed`, and `isCodFeeEnabled`.
+  - [x] COD fee PATCH validation uses `validateCodFeePolicyInput`, `COD_FEE_MODES`, and `MAX_COD_FEE_PCT`; no duplicate fee rules are invented in the route.
+  - [x] `StoreBillingSettingsService.updateSettings` writes COD policy fields and records COD before/after values in the audit diff while preserving existing platform fee behavior.
+  - [x] Admin API client exposes typed COD fields in read/update contracts.
+  - [x] `StoreBillingSettings.tsx` renders separate sections for platform fees and COD fees and submits both policies with one required change reason.
+  - [x] Focused COD/platform regression tests guard the service, route, client, and UI wiring.
+- **Test Plan:** `pnpm ops:monitor`; `pnpm vitest run tests/cod-fees.test.ts tests/cod-fees-wiring.test.ts tests/platform-fees-wiring.test.ts`; `pnpm --filter @haa/commerce-core build`; `pnpm --filter @haa/commerce-core typecheck`; `pnpm --filter @haa/api typecheck`; `pnpm --filter @haa/admin-dashboard build`; final `pnpm check:skills`; `git diff --check`; `pnpm preflight`; final `git status --short --branch`.
+- **Files Changed:** `packages/commerce-core/src/index.ts`, `packages/commerce-core/src/billing-settings-service.ts`, `apps/api/src/routes/admin/billing-settings.ts`, `apps/admin-dashboard/src/lib/api.ts`, `apps/admin-dashboard/src/pages/StoreBillingSettings.tsx`, `tests/cod-fees-wiring.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0126.md`.
+- **Test Results:** Passed locally: `pnpm ops:monitor` exited 0 with no failures/tasks/incidents and only expected dev-server warnings; COD/platform focused tests passed 3 files / 76 tests; commerce-core build passed; commerce-core typecheck passed; API typecheck passed; admin-dashboard build passed.
+- **Root Cause:** TASK-0032 correctly added COD fee schema, wallet-core policy validation/calculation, and collectCOD integration, but intentionally deferred admin-dashboard UI and admin write/read surface. The billing settings route/service continued to expose only platform fee fields, so admins could not configure COD policy from the dashboard despite the backend calculation being policy-driven.
+- **Verdict:** Done locally for admin COD fee policy configuration. No DB migration, `db:migrate`, deploy, secret, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0063.
+
+---
+
+### TASK-0124: Admin Marketplace server pagination wiring
+
+- **Type:** UX/UI Polish / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** Done locally
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/admin-dashboard-gap-audit-auth`
+- **Original Request:** "لا تتوقف حتى تنتهي وتنتشر جميع الاصلاحات"
+- **Expanded Requirement:** Close the scoped Marketplace pagination gap: the admin Marketplace products and unified orders tables must request server-side `page`/`limit`, preserve `total`/`totalPages` metadata from the API response, and drive visible pagers from server metadata instead of only paginating locally fetched rows or a hardcoded 200-row order slice.
+- **Scope:** Admin Marketplace products API-client/page pagination, admin Marketplace orders route/API-client/page pagination, focused source-regression coverage, and ops documentation for this single gap.
+- **Out of Scope:** 2FA/password reset already handled by TASK-0125; COD fee UI later handled by TASK-0126; webhooks/idempotency admin page later handled by TASK-0127; finance export permission split later handled by TASK-0128; ZATCA invoice oversight, database migrations, deploy, production action, secrets, and live provider calls.
+- **Skills Used:** `design-ux-excellence-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] `adminApi.getMarketplaceProducts` accepts `status`, `page`, and `limit`.
+  - [x] The admin API client preserves `data`, `page`, `limit`, `total`, and `totalPages` from `/admin/marketplace/products`.
+  - [x] `Marketplace.tsx` includes the server page and page size in the TanStack query key and query function.
+  - [x] The products table shows the full fetched server page instead of slicing it again to the old local 20-row default.
+  - [x] `TablePager` is driven by server `total`/`totalPages`, while search/sort remain local to the current fetched page.
+  - [x] `/admin/marketplace/orders` accepts `page` and `limit`, returns `data`, `page`, `limit`, `total`, and `totalPages`, and no longer uses a hardcoded `.limit(200)`.
+  - [x] `adminApi.getMarketplaceOrders` preserves order pagination metadata from the response envelope.
+  - [x] The Marketplace unified orders table has its own TanStack query key, server page state, loading/error/empty states, and server-total `TablePager`.
+  - [x] Focused regression tests guard the route, API-client, and page wiring.
+- **Test Plan:** `pnpm ops:monitor`; `pnpm vitest run tests/marketplace-p1-2-p1-3.test.ts tests/admin-query-cache-review.test.ts`; `pnpm --filter @haa/admin-dashboard build`; final `pnpm preflight`; `pnpm check:skills`; `git diff --check`; final `git status --short --branch`.
+- **Files Changed:** `apps/api/src/routes/admin/marketplace.ts`, `apps/admin-dashboard/src/lib/api.ts`, `apps/admin-dashboard/src/lib/queryClient.ts`, `apps/admin-dashboard/src/pages/Marketplace.tsx`, `tests/marketplace-p1-2-p1-3.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0124.md`.
+- **Test Results:** Passed locally: `pnpm ops:monitor` exited 0 with no failures/tasks/incidents and only expected dev-server warnings; focused Marketplace/admin query tests passed 2 files / 24 tests; API typecheck passed; admin-dashboard build passed.
+- **Root Cause:** The backend Marketplace products route already returned pagination metadata, but the admin API helper used `request<T>()`, which strips the `{ success, data, ...metadata }` envelope down to `data`. The Marketplace page then used `useTableControls` and `TablePager` against locally fetched products, so the UI could not navigate beyond the first server result set. The unified orders route still had an independent hardcoded `.limit(200)` and no metadata contract, so large marketplace-order sets had the same operational ceiling.
+- **Verdict:** Done locally for the scoped Marketplace pagination gap across products and unified orders. No DB migration, deploy, secret, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0061.
+
+---
+
+### TASK-0125: Admin auth 2FA and self-serve password reset
+
+- **Type:** Security / Backend API / UX/UI Polish / Data/DB / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** Done locally; environment rollout pending owner-only migration/config
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/admin-dashboard-gap-audit-auth`
+- **Original Request:** "لا تتوقف حتى تنتهي وتنتشر جميع الاصلاحات"
+- **Expanded Requirement:** Close the admin authentication hardening gap: platform admins need self-serve password reset and optional TOTP enrollment. If an admin has enabled TOTP, `/admin/login` must verify the code and sensitive admin mutations must require a JWT from a 2FA-verified login session. Keep admin auth separate from merchant `AuthFlowService`.
+- **Scope:** Admin auth service, admin API auth routes, sensitive admin route middleware, encrypted TOTP DB columns and unapplied migration/snapshot, admin login/reset UI, account-security UI, focused regression tests, and ops documentation.
+- **Out of Scope:** Running `db:migrate`, production/staging deploy, SSH, secrets, live email-provider setup, live payment/shipping calls, forcing all admins to enroll, merchant-dashboard auth changes, and unrelated admin gaps.
+- **Skills Used:** `agent-permission-boundary`, `environment-safety-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `implementation-quality-gate`, `design-ux-excellence-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `hono-typescript`, `postgres-drizzle`, and `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Admin login accepts optional 6-digit TOTP and returns a `twoFactorRequired` step when the password is correct but TOTP is enabled.
+  - [x] Admin JWT includes `twoFactorEnabled` and `twoFactorVerified` claims for admin sessions.
+  - [x] Sensitive admin mutations use `requireAdminTwoFactorIfEnabled()` so enabled accounts must use a 2FA-verified session before high-impact actions.
+  - [x] Admin TOTP secrets are generated with `node:crypto`, verified with timing-safe comparison, and stored only in AES-256-GCM encrypted envelopes.
+  - [x] DB schema and migration `0090_admin_totp.sql` add encrypted/pending/enabled TOTP columns; matching Drizzle snapshot exists.
+  - [x] Admin password-reset request/confirm routes use admin-owned service logic and Email OTP, not merchant `AuthFlowService`.
+  - [x] Admin dashboard login supports TOTP challenge and password reset request/confirm.
+  - [x] Admin dashboard exposes `/security` for account-level TOTP enrollment/confirm/disable to every authenticated admin.
+  - [x] Focused regression tests guard TOTP crypto, migration/snapshot, API route separation, sensitive route guards, and UI wiring.
+- **Test Plan:** `pnpm --filter @haa/db build`; `pnpm --filter @haa/shared build`; `pnpm --filter @haa/auth-core build`; `pnpm --filter @haa/auth-core typecheck`; `pnpm --filter @haa/api typecheck`; `pnpm --filter @haa/admin-dashboard build`; `pnpm vitest run tests/admin-auth-hardening.test.ts tests/route-migration-2-admin-auth.test.ts tests/password-reset.test.ts tests/auth-regression.test.ts`; final `pnpm preflight`; `pnpm check:skills`; `git diff --check`; final `git status --short --branch`.
+- **Files Changed:** `packages/auth-core/src/admin-totp.ts`, `packages/auth-core/src/admin-auth-service.ts`, `packages/auth-core/src/admin.ts`, `packages/auth-core/src/index.ts`, `packages/db/src/schema/users.ts`, `packages/db/src/migrations/0090_admin_totp.sql`, `packages/db/src/migrations/meta/_journal.json`, `packages/db/src/migrations/meta/0090_snapshot.json`, `scripts/build-snapshots.cjs`, `packages/shared/src/types/orders.ts`, `packages/shared/src/types/audit.ts`, `apps/api/src/routes/admin/auth.ts`, `apps/api/src/routes/admin/index.ts`, `apps/admin-dashboard/src/lib/api.ts`, `apps/admin-dashboard/src/lib/queryClient.ts`, `apps/admin-dashboard/src/pages/Login.tsx`, `apps/admin-dashboard/src/pages/Security.tsx`, `apps/admin-dashboard/src/App.tsx`, `tests/admin-auth-hardening.test.ts`, docs/ops updates.
+- **Test Results:** Passed locally on branch `codex/admin-dashboard-gap-audit-auth`: branch-start `pnpm preflight`; `pnpm --filter @haa/db build`; `pnpm --filter @haa/shared build`; `pnpm --filter @haa/auth-core build`; `pnpm --filter @haa/auth-core typecheck`; `pnpm --filter @haa/api typecheck`; `pnpm --filter @haa/admin-dashboard build`; focused auth regression suite 4 files / 49 tests; `pnpm check:skills` 43/43; `git diff --check`; and final `pnpm preflight`.
+- **Root Cause:** The admin authentication surface still had password-only login and no admin-owned recovery path. The merchant reset OTP flow existed, but admin auth intentionally lives in `AdminAuthService`; reusing merchant `AuthFlowService` would violate the admin/merchant boundary. Sensitive admin mutations also had no second-factor step after an account opted into 2FA.
+- **Verdict:** Implemented locally. Runtime rollout requires owner-only application of `0090_admin_totp.sql`, `ADMIN_TOTP_ENCRYPTION_KEY` provisioning, and transactional email provider configuration for reset-code delivery. No migration was applied and no production action occurred.
+- **Related Issues:** ISSUE-0062.
+
+---
+
 ### TASK-0123: Post-financial handoff integration and GitHub readiness
 
 - **Type:** Documentation / Support-Ops / Testing / Product Planning
@@ -3006,7 +3160,7 @@
 
 - **Type:** Feature / Data/DB / API / Testing
 - **Priority:** P1 High
-- **Status:** Done (Session #1 scope complete; admin/merchant UI for COD fee field deferred to a follow-up task)
+- **Status:** Done (Session #1 scope complete; admin COD fee UI/write surface closed by TASK-0126 on 2026-06-29; merchant wallet UI for COD fee display remains a separate optional follow-up)
 - **Created:** 2026-06-16
 - **Updated:** 2026-06-16
 - **Original Request:** Replace the hardcoded `* 0.02` COD fee in `packages/commerce-core/src/orders.ts:321` with a per-store policy-driven value. Decouple COD fee from the platform fee so merchants can set them independently. See FINANCIAL_WALLET_AUDIT_PHASE_1.md Section 1 finding #5 and Phase 9 of the 14-phase remediation plan.
@@ -3022,7 +3176,7 @@
   - **Call site:** Update `packages/commerce-core/src/orders.ts:321` (the `collectCOD` method) — replace `* 0.02` with a policy-driven calculation. Snapshot the policy onto the `cod_fee` wallet entry for historical immutability.
   - **Tests:** New `tests/cod-fees.test.ts` (unit tests for `calcCodFee` + validation, mirrors `tests/platform-fees.test.ts` structure). New `tests/cod-fees-wiring.test.ts` (source-grep wiring tests, mirrors `tests/platform-fees-wiring.test.ts` structure).
 - **Out of Scope (deferred to future tasks):**
-  - Admin dashboard UI for COD fee field (follow-up commit; not needed for backend correctness)
+  - Admin dashboard UI for COD fee field (closed by TASK-0126; not needed for original backend correctness)
   - Merchant wallet UI for COD fee display (follow-up commit; not needed for backend correctness)
   - Phase 6-7 (gateway fee UX)
   - Phase 8 (refund policy per provider)

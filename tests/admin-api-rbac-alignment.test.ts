@@ -22,6 +22,10 @@ const settingsPage = readFileSync(
   new URL('../apps/admin-dashboard/src/pages/Settings.tsx', import.meta.url),
   'utf-8',
 );
+const operationalWebhooksPage = readFileSync(
+  new URL('../apps/admin-dashboard/src/pages/OperationalWebhooks.tsx', import.meta.url),
+  'utf-8',
+);
 
 describe('Admin API RBAC alignment', () => {
   it('types admin route permissions against the shared AdminPermission source', () => {
@@ -70,10 +74,10 @@ describe('Admin API RBAC alignment', () => {
       "adminRouter.get('/webhooks/dedup-stats', requireAdminAuth(), requireAdminPermission('webhooks.read'), webhookDedupStatsRoute)",
       "adminRouter.get('/idempotency-key/stats', requireAdminAuth(), requireAdminPermission('webhooks.read'), idempotencyKeyStatsRoute)",
       "adminRouter.get('/plans', requireAdminAuth(), requireAdminPermission('plans.read'), plansRoutes.list)",
-      "adminRouter.patch('/plans/:id', requireAdminAuth(), requireAdminPermission('plans.update'), zValidator('json', planUpdateSchema), plansRoutes.update)",
-      "adminRouter.post('/upload', requireAdminAuth(), requireAdminPermission('platform.media.upload'), uploadRoute)",
+      "adminRouter.patch('/plans/:id', requireAdminAuth(), requireAdminPermission('plans.update'), requireAdminTwoFactorIfEnabled(), zValidator('json', planUpdateSchema), plansRoutes.update)",
+      "adminRouter.post('/upload', requireAdminAuth(), requireAdminPermission('platform.media.upload'), requireAdminTwoFactorIfEnabled(), uploadRoute)",
       "adminRouter.get('/settings', requireAdminAuth(), requireAdminPermission('platform.settings.read'), settingsRoutes.get)",
-      "adminRouter.put('/settings', requireAdminAuth(), requireAdminPermission('platform.settings.update'), zValidator('json', settingsUpdateSchema), settingsRoutes.update)",
+      "adminRouter.put('/settings', requireAdminAuth(), requireAdminPermission('platform.settings.update'), requireAdminTwoFactorIfEnabled(), zValidator('json', settingsUpdateSchema), settingsRoutes.update)",
     ];
 
     for (const route of guardedRoutes) {
@@ -120,5 +124,14 @@ describe('Admin API RBAC alignment', () => {
     expect(settingsPage).toContain("hasAdminPermission('platform.media.upload')");
     expect(settingsPage).toContain('disabled={!canUpdateSettings}');
     expect(settingsPage).toContain('disabled={!canUploadPlatformMedia}');
+  });
+
+  it('exposes the webhooks/idempotency operational API surface in the admin dashboard', () => {
+    expect(operationalWebhooksPage).toContain('adminApi.getWebhookDedupStats');
+    expect(operationalWebhooksPage).toContain('adminApi.getIdempotencyKeyStats');
+    expect(operationalWebhooksPage).toContain('adminApi.getWebhooks');
+    expect(operationalWebhooksPage).toContain('queryKeys.operationalWebhooks');
+    expect(operationalWebhooksPage).toContain('Store ID');
+    expect(operationalWebhooksPage).toContain('Tenant ID');
   });
 });

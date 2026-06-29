@@ -6,7 +6,7 @@
 // Mounted under /admin/stores — see aggregator in ./index.ts.
 //
 // - GET  /admin/stores/:storeId/billing-settings — read the current policy
-// - PATCH /admin/stores/:storeId/billing-settings — update mode / pct / fixed
+// - PATCH /admin/stores/:storeId/billing-settings — update platform + COD fee policies
 //
 // All mutations:
 //   - are gated behind `requireAdminAuth()` and `requireAdminPermission('billing.platform_fee.update')`
@@ -25,9 +25,13 @@ import { createDbClient } from '@haa/db';
 import {
   StoreBillingSettingsService,
   validatePlatformFeePolicyInput,
+  validateCodFeePolicyInput,
   describePlatformFeePolicy,
+  describeCodFeePolicy,
   PLATFORM_FEE_MODES,
+  COD_FEE_MODES,
   MAX_PLATFORM_FEE_PCT,
+  MAX_COD_FEE_PCT,
 } from '@haa/commerce-core';
 
 // Hard cap (50%) is the source of truth in @haa/wallet-core. The Zod
@@ -39,6 +43,10 @@ const updateSchema = z.object({
   platformFeePct: z.coerce.number().min(0).max(MAX_PLATFORM_FEE_PCT).optional().nullable(),
   platformFeeFixed: z.coerce.number().min(0).optional().nullable(),
   isPlatformFeeEnabled: z.boolean().optional().nullable(),
+  codFeeMode: z.enum(COD_FEE_MODES as [string, ...string[]]).optional(),
+  codFeePct: z.coerce.number().min(0).max(MAX_COD_FEE_PCT).optional().nullable(),
+  codFeeFixed: z.coerce.number().min(0).optional().nullable(),
+  isCodFeeEnabled: z.boolean().optional().nullable(),
   effectiveFrom: z.coerce.date().optional().nullable(),
   changeReason: z.string().max(500).optional().nullable(),
 });
@@ -56,6 +64,7 @@ export async function getBillingSettings(c: Context) {
   }
   const row = await service.getRawSettings(storeId);
   const effective = await service.getPlatformFeePolicy(storeId);
+  const effectiveCod = await service.getCodFeePolicy(storeId);
   return c.json({
     success: true,
     data: {
@@ -64,6 +73,8 @@ export async function getBillingSettings(c: Context) {
       settings: row ?? null,
       effectivePolicy: effective,
       effectivePolicyLabel: describePlatformFeePolicy(effective),
+      effectiveCodPolicy: effectiveCod,
+      effectiveCodPolicyLabel: describeCodFeePolicy(effectiveCod),
     },
   });
 }
@@ -105,21 +116,33 @@ export async function patchBillingSettings(c: PatchContext) {
       }
 
       const current = await service.getPlatformFeePolicy(storeId);
-      const merged = {
+      const currentCod = await service.getCodFeePolicy(storeId);
+      const mergedPlatform = {
         platformFeeMode: body.platformFeeMode ?? current.mode,
         platformFeePct: body.platformFeePct !== undefined ? body.platformFeePct : current.pct,
         platformFeeFixed: body.platformFeeFixed !== undefined ? body.platformFeeFixed : current.fixed,
         isPlatformFeeEnabled: body.isPlatformFeeEnabled !== undefined ? body.isPlatformFeeEnabled : current.enabled,
       };
-      const validation = validatePlatformFeePolicyInput(merged);
+      const validation = validatePlatformFeePolicyInput(mergedPlatform);
       if (!validation.ok) {
         // Throwing rolls back the (still-empty) transaction.
         throw new ValidationError(validation.error);
+      }
+      const mergedCod = {
+        codFeeMode: body.codFeeMode ?? currentCod.mode,
+        codFeePct: body.codFeePct !== undefined ? body.codFeePct : currentCod.pct,
+        codFeeFixed: body.codFeeFixed !== undefined ? body.codFeeFixed : currentCod.fixed,
+        isCodFeeEnabled: body.isCodFeeEnabled !== undefined ? body.isCodFeeEnabled : currentCod.enabled,
+      };
+      const codValidation = validateCodFeePolicyInput(mergedCod);
+      if (!codValidation.ok) {
+        throw new ValidationError(codValidation.error);
       }
 
       return service.updateSettings({
         storeId,
         policy: validation.policy,
+        codPolicy: codValidation.policy,
         changeReason: body.changeReason ?? null,
         updatedBy: adminAuth?.userId ?? null,
         ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip') ?? null,
@@ -145,6 +168,7 @@ export async function patchBillingSettings(c: PatchContext) {
   // Fetch the effective policy post-write for the response.
   const effectiveService = new StoreBillingSettingsService(db);
   const effectivePolicy = await effectiveService.getPlatformFeePolicy(storeId);
+  const effectiveCodPolicy = await effectiveService.getCodFeePolicy(storeId);
   return c.json({
     success: true,
     data: {
@@ -153,6 +177,8 @@ export async function patchBillingSettings(c: PatchContext) {
       settings: updated,
       effectivePolicy,
       effectivePolicyLabel: describePlatformFeePolicy(effectivePolicy),
+      effectiveCodPolicy,
+      effectiveCodPolicyLabel: describeCodFeePolicy(effectiveCodPolicy),
     },
   });
 }
