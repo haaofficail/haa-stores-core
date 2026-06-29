@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; the table-controls hook is intentionally generic over them (P2-030 follow-up). */
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { adminApi, type FinanceReports as FinanceReportsData, type FinanceReportRow } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 import { SortableTh } from '../components/ui/SortableTh';
@@ -24,21 +26,16 @@ const RECON_LABELS: Record<string, string> = {
 };
 
 export default function FinanceReports() {
-  const [data, setData] = useState<FinanceReportsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
   const [tab, setTab] = useState<Tab>('archive');
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    adminApi.getFinanceReports()
-      .then(setData)
-      .catch(() => { setError(true); toast.error('تعذّر تحميل التقارير المالية'); })
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, isPending: loading, isError: error, refetch } = useQuery<FinanceReportsData>({
+    queryKey: queryKeys.financeReports,
+    queryFn: () => adminApi.getFinanceReports(),
+  });
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (error) toast.error('تعذّر تحميل التقارير المالية');
+  }, [error]);
 
   const rows = useMemo<FinanceReportRow[]>(() => (data ? data[tab] : []), [data, tab]);
 
@@ -83,7 +80,7 @@ export default function FinanceReports() {
   if (loading) {
     reportContent = <AdminTableSkeleton columns={['w-24', 'w-28', 'w-20', 'w-20', 'w-20', 'w-24', 'w-16']} />;
   } else if (error) {
-    reportContent = <ErrorState message="تعذّر تحميل التقارير المالية" onRetry={load} />;
+    reportContent = <ErrorState message="تعذّر تحميل التقارير المالية" onRetry={() => refetch()} />;
   } else if (rows.length === 0) {
     reportContent = <div className="p-12 text-center text-gray-400 text-footnote">لا توجد سجلات</div>;
   } else if (controls.filteredCount === 0) {

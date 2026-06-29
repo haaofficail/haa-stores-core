@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
@@ -12,20 +14,14 @@ import { downloadRowsAsCsv } from '../lib/downloadRowsAsCsv';
 
 export default function Payments() {
   const { t } = useTranslation();
-  const [payments, setPayments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const { data: payments = [], isPending: loading, isError: error, refetch } = useQuery<any[]>({
+    queryKey: queryKeys.payments,
+    queryFn: () => adminApi.getPayments(),
+  });
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    adminApi.getPayments()
-      .then(setPayments)
-      .catch(() => { setError(true); toast.error(t('payments.loadError', 'فشل تحميل المدفوعات')); })
-      .finally(() => setLoading(false));
-  }, [t]);
-
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (error) toast.error(t('payments.loadError', 'فشل تحميل المدفوعات'));
+  }, [error, t]);
 
   const controls = useTableControls<any>({
     rows: payments,
@@ -59,7 +55,7 @@ export default function Payments() {
         {loading ? (
           <AdminTableSkeleton columns={['w-16', 'w-24', 'w-20', 'w-16', 'w-24']} />
         ) : error ? (
-          <ErrorState message={t('payments.loadError', 'فشل تحميل المدفوعات')} onRetry={load} />
+          <ErrorState message={t('payments.loadError', 'فشل تحميل المدفوعات')} onRetry={() => refetch()} />
         ) : payments.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-footnote text-gray-400">{t('payments.empty', 'لا توجد مدفوعات')}</p>

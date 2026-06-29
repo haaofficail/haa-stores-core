@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; the table-controls hook is intentionally generic over them (P2-030 follow-up). */
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { adminApi, type AccountantInboxItem } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 import { SortableTh } from '../components/ui/SortableTh';
@@ -28,34 +30,25 @@ function statusLabel(s: string) {
 }
 
 export default function AccountantInbox() {
-  const [ready, setReady] = useState<AccountantInboxItem[]>([]);
-  const [exceptions, setExceptions] = useState<AccountantInboxItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const {
+    data,
+    isPending: loading,
+    isError: error,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.accountantInbox,
+    queryFn: () => adminApi.getAccountantInbox(),
+  });
+  const ready: AccountantInboxItem[] = data?.ready ?? [];
+  const exceptions: AccountantInboxItem[] = data?.exceptions ?? [];
+
+  useEffect(() => {
+    if (error) toast.error('فشل تحميل صندوق التسويات');
+  }, [error]);
 
   const [segment, setSegment] = useState<Segment>('ready');
   const [statusFilter, setStatusFilter] = useState('');
   const [periodFilter, setPeriodFilter] = useState('');
-
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    adminApi
-      .getAccountantInbox()
-      .then((data) => {
-        setReady(data.ready ?? []);
-        setExceptions(data.exceptions ?? []);
-      })
-      .catch(() => {
-        setError(true);
-        toast.error('فشل تحميل صندوق التسويات');
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
 
   const rows = segment === 'ready' ? ready : exceptions;
 
@@ -104,7 +97,7 @@ export default function AccountantInbox() {
   if (loading) {
     inboxContent = <AdminTableSkeleton columns={['w-20', 'w-28', 'w-20', 'w-16', 'w-16', 'w-20', 'w-20', 'w-16', 'w-20']} />;
   } else if (error) {
-    inboxContent = <ErrorState message="فشل تحميل صندوق التسويات" onRetry={load} />;
+    inboxContent = <ErrorState message="فشل تحميل صندوق التسويات" onRetry={() => refetch()} />;
   } else if (scopedRows.length === 0) {
     inboxContent = (
       <div className="p-12 text-center">

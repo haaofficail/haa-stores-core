@@ -11,8 +11,10 @@
 // All updates record an `store_billing_settings_updated` audit entry.
 
 import { useEffect, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { adminApi } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { StoreSelectorPanel } from '../components/ui/StoreSelectorPanel';
 
@@ -52,13 +54,10 @@ function pctFromDisplay(value: string): number {
 export default function StoreBillingSettings() {
   const [params, setParams] = useSearchParams();
   const initialStoreId = params.get('storeId') ? Number(params.get('storeId')) : null;
+  const queryClient = useQueryClient();
 
   const [stores, setStores] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedId, setSelectedId] = useState<number | null>(initialStoreId);
-  const [raw, setRaw] = useState<RawSettings>(null);
-  const [effectiveLabel, setEffectiveLabel] = useState<string>('');
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   // Editable form state
   const [mode, setMode] = useState<Mode>('percentage');
@@ -76,50 +75,62 @@ export default function StoreBillingSettings() {
     adminApi.getStores().then(setStores).catch(() => toast.error('فشل تحميل المتاجر'));
   }, []);
 
-  useEffect(() => {
-    if (selectedId == null) {
-      setRaw(null); setEffectiveLabel('');
-      return;
-    }
-    setLoading(true);
-    adminApi.getStoreBillingSettings(selectedId).then(res => {
-      const r = res.settings;
-      setRaw(r);
-      setEffectiveLabel(res.effectivePolicyLabel);
-      const m = (res.effectivePolicy.mode as Mode) ?? 'percentage';
-      setMode(m);
-      setPctDisplay(pctToDisplay(res.effectivePolicy.pct));
-      setFixed(String(res.effectivePolicy.fixed ?? 0));
-      setEnabled(res.effectivePolicy.enabled);
-      setChangeReason('');
-    }).catch((e) => toast.error(`فشل تحميل الإعدادات: ${e?.message ?? 'خطأ'}`))
-      .finally(() => setLoading(false));
-  }, [selectedId]);
+  const { data: settings, isPending: loading, isError: error, refetch } = useQuery({
+    queryKey: [...queryKeys.storeBillingSettings, selectedId ?? null],
+    queryFn: () => adminApi.getStoreBillingSettings(selectedId as number),
+    enabled: !!selectedId,
+  });
 
-  const handleSave = async () => {
-    if (selectedId == null) return;
-    if (!changeReason.trim()) {
-      toast.error('سبب التعديل مطلوب للسجل');
-      return;
-    }
-    setSaving(true);
-    try {
-      const res = await adminApi.updateStoreBillingSettings(selectedId, {
+  const raw: RawSettings = settings?.settings ?? null;
+  const effectiveLabel: string = settings?.effectivePolicyLabel ?? '';
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: [...queryKeys.storeBillingSettings, selectedId ?? null] });
+
+  // Seed the editable form whenever fresh settings arrive.
+  useEffect(() => {
+    if (!settings) return;
+    const m = (settings.effectivePolicy.mode as Mode) ?? 'percentage';
+    setMode(m);
+    setPctDisplay(pctToDisplay(settings.effectivePolicy.pct));
+    setFixed(String(settings.effectivePolicy.fixed ?? 0));
+    setEnabled(settings.effectivePolicy.enabled);
+    setChangeReason('');
+  }, [settings]);
+
+  // Surface load failures as a toast (parity with the previous manual fetch).
+  useEffect(() => {
+    if (error) toast.error('فشل تحميل الإعدادات');
+  }, [error]);
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      adminApi.updateStoreBillingSettings(selectedId as number, {
         platformFeeMode: mode,
         platformFeePct: mode === 'percentage' || mode === 'percentage_plus_fixed' ? pctFromDisplay(pctDisplay) : null,
         platformFeeFixed: mode === 'fixed' || mode === 'percentage_plus_fixed' ? Number(fixed) : null,
         isPlatformFeeEnabled: enabled,
         changeReason: changeReason.trim(),
-      });
-      setRaw(res.settings);
-      setEffectiveLabel(res.effectivePolicyLabel);
+      }),
+    onSuccess: () => {
       toast.success('تم تحديث إعدادات الرسوم');
-    } catch (e) {
+      invalidate();
+    },
+    onError: (e) => {
       const message = e instanceof Error ? e.message : 'فشل التحديث';
       toast.error(message);
-    } finally {
-      setSaving(false);
+    },
+  });
+
+  const saving = saveMutation.isPending;
+
+  const handleSave = () => {
+    if (selectedId == null) return;
+    if (!changeReason.trim()) {
+      toast.error('سبب التعديل مطلوب للسجل');
+      return;
     }
+    saveMutation.mutate();
   };
 
   return (
@@ -142,6 +153,16 @@ export default function StoreBillingSettings() {
             <p className="text-sm text-gray-500 text-center py-12">اختر متجرًا من القائمة لعرض وتعديل إعدادات الرسوم.</p>
           ) : loading ? (
             <p className="text-sm text-gray-400 text-center py-12">...جاري التحميل</p>
+          ) : error ? (
+            <div className="text-center py-12 space-y-3">
+              <p className="text-sm text-gray-500">فشل تحميل الإعدادات</p>
+              <button
+                onClick={() => refetch()}
+                className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700"
+              >
+                إعادة المحاولة
+              </button>
+            </div>
           ) : (
             <div className="space-y-5">
               {/* Read-only summary */}

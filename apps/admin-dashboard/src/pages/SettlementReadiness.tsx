@@ -3,8 +3,10 @@
 // Lists all stores with their wallet_settlement_readiness status.
 // Admin can open a modal to update the 4 readiness fields per store.
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi, type AdminStore } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
@@ -35,58 +37,76 @@ function StatusBadge({ ok }: { ok: boolean }) {
   );
 }
 
-function ErrorState({ message }: { message: string }) {
+function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
     <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-red-700 text-sm">
-      {message}
+      <p>{message}</p>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="mt-3 px-3 py-1.5 text-xs font-medium text-red-700 border border-red-300 rounded-lg hover:bg-red-100 transition-colors"
+        >
+          إعادة المحاولة
+        </button>
+      )}
     </div>
   );
 }
 
 export default function SettlementReadiness() {
-  const [stores, setStores] = useState<AdminStore[]>([]);
-  const [readinessMap, setReadinessMap] = useState<Record<number, ReadinessData>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   // Modal state
   const [selectedStore, setSelectedStore] = useState<AdminStore | null>(null);
   const [form, setForm] = useState<ReadinessData | null>(null);
-  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const storeList = await adminApi.getStores();
-        setStores(storeList);
-        // Fetch readiness for all stores in parallel
-        const results = await Promise.allSettled(
-          storeList.map(s => adminApi.getSettlementReadiness(s.id))
-        );
-        const map: Record<number, ReadinessData> = {};
-        storeList.forEach((s, i) => {
-          const r = results[i];
-          if (r.status === 'fulfilled') {
-            map[s.id] = r.value as unknown as ReadinessData;
-          } else {
-            map[s.id] = {
-              storeId: s.id,
-              safeguardedAccountConfigured: false,
-              pspSettlementPartnerConfirmed: false,
-              merchantOfRecordConfirmed: false,
-              samaComplianceStatus: 'unconfirmed',
-            };
-          }
-        });
-        setReadinessMap(map);
-      } catch (err: any) {
-        setError(err?.message || 'فشل تحميل البيانات');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+  const {
+    data,
+    isPending: loading,
+    isError: error,
+    refetch,
+  } = useQuery<{ stores: AdminStore[]; readinessMap: Record<number, ReadinessData> }>({
+    queryKey: queryKeys.settlementReadiness,
+    queryFn: async () => {
+      const storeList = await adminApi.getStores();
+      // Fetch readiness for all stores in parallel
+      const results = await Promise.allSettled(
+        storeList.map(s => adminApi.getSettlementReadiness(s.id))
+      );
+      const map: Record<number, ReadinessData> = {};
+      storeList.forEach((s, i) => {
+        const r = results[i];
+        if (r.status === 'fulfilled') {
+          map[s.id] = r.value as unknown as ReadinessData;
+        } else {
+          map[s.id] = {
+            storeId: s.id,
+            safeguardedAccountConfigured: false,
+            pspSettlementPartnerConfirmed: false,
+            merchantOfRecordConfirmed: false,
+            samaComplianceStatus: 'unconfirmed',
+          };
+        }
+      });
+      return { stores: storeList, readinessMap: map };
+    },
+  });
+
+  const stores = data?.stores ?? [];
+  const readinessMap = data?.readinessMap ?? {};
+
+  const saveMutation = useMutation({
+    mutationFn: (vars: { storeId: number; payload: Omit<ReadinessData, 'storeId'> }) =>
+      adminApi.updateSettlementReadiness(vars.storeId, vars.payload),
+    onSuccess: () => {
+      toast.success('تم حفظ جاهزية التسوية');
+      closeModal();
+      queryClient.invalidateQueries({ queryKey: queryKeys.settlementReadiness });
+    },
+    onError: (err: any) => toast.error(err?.message || 'فشل الحفظ'),
+  });
+
+  const saving = saveMutation.isPending;
 
   const openModal = (store: AdminStore) => {
     const current = readinessMap[store.id] ?? {
@@ -105,27 +125,17 @@ export default function SettlementReadiness() {
     setForm(null);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!selectedStore || !form) return;
-    setSaving(true);
-    try {
-      const result = await adminApi.updateSettlementReadiness(selectedStore.id, {
+    saveMutation.mutate({
+      storeId: selectedStore.id,
+      payload: {
         safeguardedAccountConfigured: form.safeguardedAccountConfigured,
         pspSettlementPartnerConfirmed: form.pspSettlementPartnerConfirmed,
         merchantOfRecordConfirmed: form.merchantOfRecordConfirmed,
         samaComplianceStatus: form.samaComplianceStatus,
-      });
-      setReadinessMap(prev => ({
-        ...prev,
-        [selectedStore.id]: result as unknown as ReadinessData,
-      }));
-      toast.success('تم حفظ جاهزية التسوية');
-      closeModal();
-    } catch (err: any) {
-      toast.error(err?.message || 'فشل الحفظ');
-    } finally {
-      setSaving(false);
-    }
+      },
+    });
   };
 
   // Hooks must run on every render (Rules of Hooks): keep useTableControls
@@ -156,7 +166,7 @@ export default function SettlementReadiness() {
     );
   }
 
-  if (error) return <ErrorState message={error} />;
+  if (error) return <ErrorState message="فشل تحميل البيانات" onRetry={() => refetch()} />;
 
   return (
     <div className="space-y-6">

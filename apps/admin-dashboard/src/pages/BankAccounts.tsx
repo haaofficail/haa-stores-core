@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
@@ -25,32 +27,30 @@ type BankAccountReviewDialog = {
 };
 
 export default function BankAccounts() {
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState(false);
-  const [busy, setBusy]         = useState<number | null>(null);
+  const queryClient = useQueryClient();
   const [filter, setFilter]     = useState<'all' | 'submitted' | 'verified' | 'rejected'>('all');
   const [reviewDialog, setReviewDialog] = useState<BankAccountReviewDialog | null>(null);
   const [reviewReason, setReviewReason] = useState('');
 
-  const load = useCallback(async () => {
-    setLoading(true); setError(false);
-    try { setAccounts(await adminApi.getBankAccounts()); }
-    catch { setError(true); toast.error('فشل تحميل الحسابات البنكية'); }
-    finally { setLoading(false); }
-  }, []);
+  const { data: accounts = [], isPending: loading, isError: error, refetch } = useQuery<any[]>({
+    queryKey: queryKeys.bankAccounts,
+    queryFn: () => adminApi.getBankAccounts(),
+  });
 
-  useEffect(() => { load(); }, [load]);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.bankAccounts });
 
-  const decide = async (id: number, status: BankAccountReviewStatus, reason: string) => {
-    setBusy(id);
-    try {
-      await adminApi.reviewBankAccount(id, status, reason);
-      setAccounts(prev => prev.map(a => a.id === id ? { ...a, status } : a));
-      toast.success(status === 'verified' ? 'تم التحقق من الحساب' : 'تم رفض الحساب');
-    } catch { toast.error('فشل تحديث الحساب البنكي'); }
-    finally { setBusy(null); }
-  };
+  const reviewMutation = useMutation({
+    mutationFn: (vars: { id: number; status: BankAccountReviewStatus; reason: string }) =>
+      adminApi.reviewBankAccount(vars.id, vars.status, vars.reason),
+    onSuccess: (_data, vars) => {
+      toast.success(vars.status === 'verified' ? 'تم التحقق من الحساب' : 'تم رفض الحساب');
+      closeReviewDialog();
+      invalidate();
+    },
+    onError: () => toast.error('فشل تحديث الحساب البنكي'),
+  });
+
+  const busy = reviewMutation.isPending ? reviewMutation.variables?.id ?? null : null;
 
   const openReviewDialog = (account: any, status: BankAccountReviewStatus) => {
     setReviewDialog({
@@ -72,8 +72,7 @@ export default function BankAccounts() {
 
   const submitReviewDecision = () => {
     if (!reviewDialog || !reviewReason.trim()) return;
-    void decide(reviewDialog.id, reviewDialog.status, reviewReason.trim());
-    closeReviewDialog();
+    reviewMutation.mutate({ id: reviewDialog.id, status: reviewDialog.status, reason: reviewReason.trim() });
   };
 
   const statusFiltered = accounts.filter(a => filter === 'all' || a.status === filter);
@@ -125,7 +124,7 @@ export default function BankAccounts() {
         {loading ? (
           <AdminTableSkeleton columns={['w-32', 'w-40', 'w-24']} rows={3} />
         ) : error ? (
-          <ErrorState message="فشل تحميل الحسابات البنكية" onRetry={load} />
+          <ErrorState message="فشل تحميل الحسابات البنكية" onRetry={() => refetch()} />
         ) : accounts.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-footnote text-gray-400">لا توجد حسابات بنكية</p>

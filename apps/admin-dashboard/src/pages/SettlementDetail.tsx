@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
 import { adminApi } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
@@ -23,17 +25,15 @@ const settlementStatusColors: Record<string, string> = {
 
 export default function SettlementDetail() {
   const { batchId } = useParams<{ batchId: string }>();
-  const [detail, setDetail] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: detail, isPending: loading, isError: error } = useQuery<any>({
+    queryKey: [...queryKeys.settlementDetail, batchId],
+    queryFn: () => adminApi.getSettlementBatchDetail(Number(batchId)),
+    enabled: !!batchId,
+  });
 
   useEffect(() => {
-    if (!batchId) return;
-    setLoading(true);
-    adminApi.getSettlementBatchDetail(Number(batchId))
-      .then(setDetail)
-      .catch(() => toast.error('فشل تحميل تفاصيل التسوية'))
-      .finally(() => setLoading(false));
-  }, [batchId]);
+    if (error) toast.error('فشل تحميل تفاصيل التسوية');
+  }, [error]);
 
   // Called unconditionally before any early return to honour the Rules of Hooks;
   // `detail` may be null while loading, so default the rows to an empty array.

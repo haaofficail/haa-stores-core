@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 import { landingContactsApi } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { ErrorState } from '../components/ui/ErrorState';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
@@ -92,15 +94,11 @@ function narrowContact(value: unknown): LandingContact | null {
 }
 
 export default function LandingInbox() {
-  const [contacts, setContacts] = useState<LandingContact[]>([]);
-  const [newCount, setNewCount] = useState(0);
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<'' | LandingContactStatus>('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
   const [selected, setSelected] = useState<LandingContact | null>(null);
   const [draftStatus, setDraftStatus] = useState<LandingContactStatus>('new');
   const [draftNotes, setDraftNotes] = useState('');
-  const [saving, setSaving] = useState(false);
   // The admin landing-contacts API caps `limit` at 100 (see the zod schema in
   // apps/api/src/routes/admin/landing-contacts.ts). To let the client-side
   // table controls own search/sort/pagination over the full status-filtered
@@ -108,49 +106,38 @@ export default function LandingInbox() {
   const PAGE_SIZE = 100;
   const MAX_PAGES = 20; // up to 2000 contacts loaded client-side
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    (async () => {
-      try {
-        const first = await landingContactsApi.list({ status: status || undefined, page: 1, limit: PAGE_SIZE });
-        const collected = [...first.data];
-        const totalPages = Math.min(first.totalPages || 1, MAX_PAGES);
-        for (let p = 2; p <= totalPages; p++) {
-          const res = await landingContactsApi.list({ status: status || undefined, page: p, limit: PAGE_SIZE });
-          collected.push(...res.data);
-        }
-        const rows = collected
-          .map(narrowContact)
-          .filter((row): row is LandingContact => row !== null);
-        setContacts(rows);
-      } catch {
-        setError(true);
-        toast.error('فشل تحميل صندوق الوارد');
-      } finally {
-        setLoading(false);
+  // status is part of the query key, so changing the filter refetches.
+  const {
+    data: contacts = [],
+    isPending: loading,
+    isError: error,
+    refetch,
+  } = useQuery<LandingContact[]>({
+    queryKey: [...queryKeys.landingContacts, status],
+    queryFn: async () => {
+      const first = await landingContactsApi.list({ status: status || undefined, page: 1, limit: PAGE_SIZE });
+      const collected = [...first.data];
+      const totalPages = Math.min(first.totalPages || 1, MAX_PAGES);
+      for (let p = 2; p <= totalPages; p++) {
+        const res = await landingContactsApi.list({ status: status || undefined, page: p, limit: PAGE_SIZE });
+        collected.push(...res.data);
       }
-    })();
-  }, [status]);
+      return collected
+        .map(narrowContact)
+        .filter((row): row is LandingContact => row !== null);
+    },
+  });
 
   // Separate "new count" lookup — uses status=new so it's accurate even
   // when the user is viewing another filter. Cheap: one tiny page query.
-  const loadNewCount = useCallback(() => {
-    landingContactsApi
-      .list({ status: 'new', page: 1, limit: 1 })
-      .then((res) => setNewCount(res.total))
-      .catch(() => {
-        /* badge is best-effort; failure already surfaced by main load */
-      });
-  }, []);
+  // Shares the `landingContacts` base key so list mutations invalidate it too.
+  const { data: newCount = 0 } = useQuery<number>({
+    queryKey: [...queryKeys.landingContacts, 'newCount'],
+    queryFn: () => landingContactsApi.list({ status: 'new', page: 1, limit: 1 }).then((res) => res.total),
+  });
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  useEffect(() => {
-    loadNewCount();
-  }, [loadNewCount, contacts]);
+  const invalidateLandingContacts = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.landingContacts });
 
   const openDetail = (c: LandingContact) => {
     setSelected(c);
@@ -160,47 +147,43 @@ export default function LandingInbox() {
 
   const closeDetail = () => {
     setSelected(null);
-    setSaving(false);
   };
 
-  const save = async () => {
-    if (!selected) return;
-    setSaving(true);
-    try {
-      await landingContactsApi.update(selected.id, {
-        status: draftStatus,
-        adminNotes: draftNotes.trim() ? draftNotes.trim() : null,
-      });
+  const saveMutation = useMutation({
+    mutationFn: (vars: { id: number; status: LandingContactStatus; adminNotes: string | null }) =>
+      landingContactsApi.update(vars.id, { status: vars.status, adminNotes: vars.adminNotes }),
+    onSuccess: () => {
       toast.success('تم حفظ التغييرات');
-      // Optimistic local update so the table reflects new status without a refetch flash.
-      setContacts((prev) =>
-        prev.map((c) =>
-          c.id === selected.id
-            ? { ...c, status: draftStatus, adminNotes: draftNotes.trim() ? draftNotes.trim() : null }
-            : c,
-        ),
-      );
       closeDetail();
-      loadNewCount();
-    } catch {
-      toast.error('فشل حفظ التغييرات');
-      setSaving(false);
-    }
+      invalidateLandingContacts();
+    },
+    onError: () => toast.error('فشل حفظ التغييرات'),
+  });
+
+  const spamMutation = useMutation({
+    mutationFn: (id: number) => landingContactsApi.update(id, { status: 'spam' }),
+    onSuccess: () => {
+      toast.success('تم تعليم الرسالة كمزعجة');
+      closeDetail();
+      invalidateLandingContacts();
+    },
+    onError: () => toast.error('فشل تحديث الحالة'),
+  });
+
+  const saving = saveMutation.isPending || spamMutation.isPending;
+
+  const save = () => {
+    if (!selected) return;
+    saveMutation.mutate({
+      id: selected.id,
+      status: draftStatus,
+      adminNotes: draftNotes.trim() ? draftNotes.trim() : null,
+    });
   };
 
-  const markAsSpam = async () => {
+  const markAsSpam = () => {
     if (!selected) return;
-    setSaving(true);
-    try {
-      await landingContactsApi.update(selected.id, { status: 'spam' });
-      toast.success('تم تعليم الرسالة كمزعجة');
-      setContacts((prev) => prev.map((c) => (c.id === selected.id ? { ...c, status: 'spam' } : c)));
-      closeDetail();
-      loadNewCount();
-    } catch {
-      toast.error('فشل تحديث الحالة');
-      setSaving(false);
-    }
+    spamMutation.mutate(selected.id);
   };
 
   const mailtoHref = useMemo(() => {
@@ -283,7 +266,7 @@ export default function LandingInbox() {
             ))}
           </div>
         ) : error ? (
-          <ErrorState message="فشل تحميل صندوق الوارد" onRetry={load} />
+          <ErrorState message="فشل تحميل صندوق الوارد" onRetry={() => refetch()} />
         ) : contacts.length === 0 ? (
           <div className="p-12 text-center">
             <Icon name="Inbox" size="lg" className="text-gray-300 mx-auto mb-3" aria-hidden="true" />
