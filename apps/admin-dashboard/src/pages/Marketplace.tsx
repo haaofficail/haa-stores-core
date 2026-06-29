@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { AdminDialog } from '../components/ui/AdminDialog';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
 import { adminApi, hasAdminPermission } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 
 const statusLabels: Record<string, string> = {
   pending: 'بانتظار المراجعة',
@@ -31,81 +33,83 @@ type MarketplaceDecisionModal = {
 };
 
 export default function Marketplace() {
-  const [summary, setSummary] = useState<any>(null);
-  const [products, setProducts] = useState<any[]>([]);
-  const [sellers, setSellers] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [settlements, setSettlements] = useState<any[]>([]);
-  const [deepReport, setDeepReport] = useState<any>(null);
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState('pending');
-  const [loading, setLoading] = useState(true);
   const [decisionModal, setDecisionModal] = useState<MarketplaceDecisionModal | null>(null);
   const [rejectNote, setRejectNote] = useState('');
   const canReviewMarketplaceProduct = hasAdminPermission('marketplace.review');
   const canFeatureMarketplaceProduct = hasAdminPermission('marketplace.feature');
 
-  const load = async (nextStatus = status) => {
-    setLoading(true);
-    try {
-      const [summaryResult, productsResult, sellersResult, ordersResult, settlementsResult, deepReportResult] = await Promise.all([
+  // Primary products table — status is part of the query key so changing the
+  // filter triggers a server refetch automatically.
+  const { data: products = [], isPending: loading, isError: error, refetch } = useQuery<any[]>({
+    queryKey: [...queryKeys.marketplaceProducts, status],
+    queryFn: () => adminApi.getMarketplaceProducts(status || undefined),
+  });
+
+  // Secondary, read-only panels (summary, sellers, orders, settlements, deep
+  // report). These have no status dependency and are not part of this table's
+  // data layer; they share one query so the dashboard renders unchanged.
+  const { data: aux } = useQuery<any>({
+    queryKey: [...queryKeys.marketplaceProducts, 'aux'],
+    queryFn: async () => {
+      const [summary, sellers, orders, settlements, deepReport] = await Promise.all([
         adminApi.getMarketplaceSummary(),
-        adminApi.getMarketplaceProducts(nextStatus || undefined),
         adminApi.getMarketplaceSellers(),
         adminApi.getMarketplaceOrders(),
         adminApi.getMarketplaceSettlements(),
         adminApi.getMarketplaceDeepReport(),
       ]);
-      setSummary(summaryResult);
-      setProducts(productsResult);
-      setSellers(sellersResult);
-      setOrders(ordersResult);
-      setSettlements(settlementsResult);
-      setDeepReport(deepReportResult);
-    } catch (error: any) {
-      toast.error(error?.message || 'فشل تحميل سوق هاء');
-    } finally {
-      setLoading(false);
-    }
-  };
+      return { summary, sellers, orders, settlements, deepReport };
+    },
+  });
+  const summary = aux?.summary ?? null;
+  const sellers: any[] = aux?.sellers ?? [];
+  const orders: any[] = aux?.orders ?? [];
+  const settlements: any[] = aux?.settlements ?? [];
+  const deepReport = aux?.deepReport ?? null;
 
-  // Mount-only initial load. Subsequent reloads are triggered explicitly:
-  // the status filter's onChange calls load(nextStatus), and mutation
-  // handlers call load() after success. Adding `load` to the deps would
-  // double-fetch on every filter change, so the empty array is intentional.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, []);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.marketplaceProducts });
 
-  const review = async (id: number, nextStatus: 'approved' | 'rejected' | 'suspended' | 'pending', note?: string) => {
+  const reviewMutation = useMutation({
+    mutationFn: (vars: { id: number; nextStatus: 'approved' | 'rejected' | 'suspended' | 'pending'; note?: string }) =>
+      adminApi.reviewMarketplaceProduct(vars.id, vars.nextStatus, vars.note),
+    onSuccess: () => {
+      toast.success('تم تحديث حالة المنتج');
+      setDecisionModal(null);
+      setRejectNote('');
+      invalidate();
+    },
+    onError: (err: any) => toast.error(err?.message || 'فشل تحديث المنتج'),
+  });
+
+  const featureMutation = useMutation({
+    mutationFn: (product: any) =>
+      adminApi.featureMarketplaceProduct(product.id, {
+        featured: !product.haaMarketplaceFeatured,
+        sortOrder: product.haaMarketplaceFeatured ? 0 : 10,
+      }),
+    onSuccess: (_data, product) => {
+      toast.success(product.haaMarketplaceFeatured ? 'تم إلغاء التمييز' : 'تم تمييز المنتج');
+      invalidate();
+    },
+    onError: (err: any) => toast.error(err?.message || 'فشل تمييز المنتج'),
+  });
+
+  const review = (id: number, nextStatus: 'approved' | 'rejected' | 'suspended' | 'pending', note?: string) => {
     if (!canReviewMarketplaceProduct) {
       toast.error('لا تملك صلاحية مراجعة منتجات السوق');
       return;
     }
-    try {
-      await adminApi.reviewMarketplaceProduct(id, nextStatus, note);
-      toast.success('تم تحديث حالة المنتج');
-      setDecisionModal(null);
-      setRejectNote('');
-      load();
-    } catch (error: any) {
-      toast.error(error?.message || 'فشل تحديث المنتج');
-    }
+    reviewMutation.mutate({ id, nextStatus, note });
   };
 
-  const toggleFeature = async (product: any) => {
+  const toggleFeature = (product: any) => {
     if (!canFeatureMarketplaceProduct) {
       toast.error('لا تملك صلاحية تمييز منتجات السوق');
       return;
     }
-    try {
-      await adminApi.featureMarketplaceProduct(product.id, {
-        featured: !product.haaMarketplaceFeatured,
-        sortOrder: product.haaMarketplaceFeatured ? 0 : 10,
-      });
-      toast.success(product.haaMarketplaceFeatured ? 'تم إلغاء التمييز' : 'تم تمييز المنتج');
-      load();
-    } catch (error: any) {
-      toast.error(error?.message || 'فشل تمييز المنتج');
-    }
+    featureMutation.mutate(product);
   };
 
   const cards = [
@@ -156,7 +160,7 @@ export default function Marketplace() {
             />
             <select
               value={status}
-              onChange={(e) => { setStatus(e.target.value); load(e.target.value); }}
+              onChange={(e) => setStatus(e.target.value)}
               className="rounded-lg border px-3 py-2 text-sm"
             >
               <option value="">كل الحالات</option>
@@ -189,18 +193,29 @@ export default function Marketplace() {
                   <td className="p-3">{product.haaMarketplaceFeatured ? 'مميز' : 'عادي'}</td>
                   <td className="p-3">
                     <div className="flex flex-wrap gap-2">
-                      <button disabled={!canReviewMarketplaceProduct} onClick={() => review(product.id, 'approved')} className="rounded bg-green-600 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">اعتماد</button>
-                      <button disabled={!canReviewMarketplaceProduct} onClick={() => { setRejectNote(''); setDecisionModal({ id: product.id, name: product.name, status: 'rejected' }); }} className="rounded bg-red-600 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">رفض</button>
-                      <button disabled={!canReviewMarketplaceProduct} onClick={() => { setRejectNote(''); setDecisionModal({ id: product.id, name: product.name, status: 'suspended' }); }} className="rounded bg-gray-700 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">إيقاف</button>
-                      <button disabled={!canFeatureMarketplaceProduct} onClick={() => toggleFeature(product)} className="rounded bg-primary-600 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">{product.haaMarketplaceFeatured ? 'إلغاء التمييز' : 'تمييز'}</button>
+                      <button disabled={!canReviewMarketplaceProduct || reviewMutation.isPending} onClick={() => review(product.id, 'approved')} className="rounded bg-green-600 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">اعتماد</button>
+                      <button disabled={!canReviewMarketplaceProduct || reviewMutation.isPending} onClick={() => { setRejectNote(''); setDecisionModal({ id: product.id, name: product.name, status: 'rejected' }); }} className="rounded bg-red-600 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">رفض</button>
+                      <button disabled={!canReviewMarketplaceProduct || reviewMutation.isPending} onClick={() => { setRejectNote(''); setDecisionModal({ id: product.id, name: product.name, status: 'suspended' }); }} className="rounded bg-gray-700 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">إيقاف</button>
+                      <button disabled={!canFeatureMarketplaceProduct || featureMutation.isPending} onClick={() => toggleFeature(product)} className="rounded bg-primary-600 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">{product.haaMarketplaceFeatured ? 'إلغاء التمييز' : 'تمييز'}</button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {!loading && products.length === 0 && (
+              {loading && (
+                <tr><td className="p-6 text-center text-gray-500" colSpan={6}>جارٍ التحميل...</td></tr>
+              )}
+              {!loading && error && (
+                <tr>
+                  <td className="p-6 text-center text-gray-500" colSpan={6}>
+                    <span className="me-3">فشل تحميل منتجات السوق</span>
+                    <button onClick={() => refetch()} className="rounded border px-3 py-1 text-xs font-medium hover:bg-gray-50">إعادة المحاولة</button>
+                  </td>
+                </tr>
+              )}
+              {!loading && !error && products.length === 0 && (
                 <tr><td className="p-6 text-center text-gray-500" colSpan={6}>لا توجد منتجات في هذا العرض.</td></tr>
               )}
-              {!loading && products.length > 0 && controls.filteredCount === 0 && (
+              {!loading && !error && products.length > 0 && controls.filteredCount === 0 && (
                 <tr><td className="p-6 text-center text-gray-500" colSpan={6}>لا توجد نتائج مطابقة</td></tr>
               )}
             </tbody>
@@ -329,7 +344,7 @@ export default function Marketplace() {
           <div className="flex gap-3 pt-4 border-t">
             <button
               onClick={() => review(decisionModal.id, decisionModal.status, rejectNote.trim())}
-              disabled={!rejectNote.trim()}
+              disabled={!rejectNote.trim() || reviewMutation.isPending}
               className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
             >
               {decisionModal.status === 'rejected' ? 'تأكيد الرفض' : 'تأكيد الإيقاف'}

@@ -39,4 +39,8 @@ export const queryKeys = {
   stores: ['admin', 'stores'] as const,
   bankAccounts: ['admin', 'bankAccounts'] as const,
   kycProfiles: ['admin', 'kyc'] as const,
+  plans: ['admin', 'plans'] as const,
+  marketplaceProducts: ['admin', 'marketplaceProducts'] as const,
+  financeReports: ['admin', 'financeReports'] as const,
+  accountantInbox: ['admin', 'accountantInbox'] as const,
 };
