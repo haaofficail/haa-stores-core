@@ -74,7 +74,7 @@ export default function Login() {
       } catch {
         // localStorage may throw in privacy modes; the login still works.
       }
-      await login(email, password);
+      await login(email, password, rememberMe);
     } catch (err) {
       if (err instanceof ApiClientError) {
         switch (err.code) {
@@ -241,13 +241,13 @@ export default function Login() {
                       onChange={(e) => setRememberMe(e.target.checked)}
                       className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-2 focus:ring-primary-400"
                     />
-                    تذكّر بريدي
+                    تذكّرني
                   </label>
 
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="h-11 w-full rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-sm font-bold text-white shadow-lg shadow-primary-500/25 transition-all hover:from-primary-600 hover:to-primary-700 hover:shadow-xl hover:shadow-primary-500/30 hover:scale-[1.01] active:scale-[0.99]"
+                    className="h-11 w-full rounded-xl bg-primary-600 text-sm font-bold text-white transition-colors hover:bg-primary-700 focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2"
                   >
                     {loading ? 'جاري الدخول...' : 'دخول'}
                   </Button>
