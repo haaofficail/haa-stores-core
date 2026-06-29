@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy `any` typing on drag-and-drop list rows/props, tree nodes, and form state; pre-existing, not introduced by the TanStack Query migration. */
+import { useState, useEffect, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/queryClient';
 import { categoriesApi, uploadFile, ApiClientError } from '@/lib/api';
 import { handleImageError } from '@/lib/utils';
 import { PermissionGate } from '@/lib/permissions';
@@ -98,9 +101,9 @@ function TreeView({ nodes, depth = 0, onEdit, onDelete }: {
 export default function Categories() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
+  const queryClient = useQueryClient();
   const [tree, setTree] = useState<any[]>([]);
   const [flatList, setFlatList] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
@@ -109,29 +112,40 @@ export default function Categories() {
     name: '', slug: '', description: '', imageUrl: '', parentId: null as number | null,
     sortOrder: 0, isActive: true, showInHome: false, showInMenu: true,
   });
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [fetchError, setFetchError] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
 
-  const load = useCallback(() => {
-    if (!storeId) { setLoading(false); return; }
-    setLoading(true);
-    setFetchError(false);
-    Promise.all([
-      categoriesApi.getTree(storeId),
-      categoriesApi.list(storeId),
-    ]).then(([treeData, flatData]) => {
-      setTree(treeData);
-      setFlatList(flatData);
-    }).catch(() => { setFetchError(true); toast.error(t('common.error')); }).finally(() => setLoading(false));
-  }, [storeId, t]);
+  // Categories are hierarchical: the tree (server-built) drives the nested view
+  // while the flat list backs parent options and drag reorder. Both come from
+  // one query under the categories key so a single invalidate refreshes both.
+  const categoriesQuery = useQuery({
+    queryKey: queryKeys.categories(storeId),
+    queryFn: async () => {
+      const [treeData, flatData] = await Promise.all([
+        categoriesApi.getTree(storeId as number),
+        categoriesApi.list(storeId as number),
+      ]);
+      return { tree: treeData, flat: flatData };
+    },
+    enabled: !!storeId,
+  });
+  const loading = categoriesQuery.isLoading;
+  const fetchError = categoriesQuery.isError;
+  const invalidateCategories = () => queryClient.invalidateQueries({ queryKey: queryKeys.categories(storeId) });
 
-  useEffect(() => { load(); }, [load]);
+  // Seed local tree/flat state from query data; drag-end mutates the flat list
+  // locally for instant feedback before persisting the new order to the server.
+  useEffect(() => {
+    if (categoriesQuery.data) {
+      setTree(categoriesQuery.data.tree);
+      setFlatList(categoriesQuery.data.flat);
+    }
+  }, [categoriesQuery.data]);
+
+  useEffect(() => { if (categoriesQuery.isError) toast.error(t('common.error')); }, [categoriesQuery.isError, t]);
 
   const openCreate = () => {
     setEditId(null);
@@ -160,42 +174,56 @@ export default function Categories() {
     setDeleteDialogOpen(true);
   };
 
-  const save = async () => {
+  const saveMutation = useMutation({
+    mutationFn: (data: typeof form) =>
+      editId ? categoriesApi.update(storeId as number, editId, data) : categoriesApi.create(storeId as number, data),
+    onSuccess: () => {
+      toast.success(editId ? t('categories.updated') : t('categories.created'));
+      setDialogOpen(false);
+      invalidateCategories();
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : t('common.error')),
+  });
+  const saving = saveMutation.isPending;
+
+  const save = () => {
     if (!storeId) return;
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = t('categories.nameRequired', 'اسم التصنيف مطلوب');
     if (!form.slug.trim()) errs.slug = 'الرابط المختصر مطلوب';
     setFormErrors(errs);
     if (Object.keys(errs).length > 0) return;
-    setSaving(true);
-    try {
-      if (editId) {
-        await categoriesApi.update(storeId, editId, form);
-        toast.success(t('categories.updated'));
-      } else {
-        await categoriesApi.create(storeId, form);
-        toast.success(t('categories.created'));
-      }
-      setDialogOpen(false);
-      load();
-    } catch (err) { toast.error(err instanceof ApiClientError ? err.message : t('common.error')); } finally { setSaving(false); }
+    saveMutation.mutate(form);
   };
 
-  const confirmDelete = async () => {
-    if (!storeId || !deleteTarget) return;
-    setDeleting(true);
-    try {
-      await categoriesApi.delete(storeId, deleteTarget.id);
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => categoriesApi.delete(storeId as number, id),
+    onSuccess: () => {
       toast.success(t('categories.deleted'));
       setDeleteDialogOpen(false);
       setDeleteTarget(null);
-      load();
-    } catch (err: any) {
-      toast.error(err.message || t('common.error'));
-    } finally { setDeleting(false); }
+      invalidateCategories();
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : t('common.error')),
+  });
+  const deleting = deleteMutation.isPending;
+
+  const confirmDelete = () => {
+    if (!storeId || !deleteTarget) return;
+    deleteMutation.mutate(deleteTarget.id);
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const reorderMutation = useMutation({
+    mutationFn: (items: { id: number; parentId: number | null; sortOrder: number }[]) =>
+      categoriesApi.reorder(storeId as number, items),
+    onSuccess: () => invalidateCategories(),
+    onError: (err) => {
+      toast.error(err instanceof ApiClientError ? err.message : t('common.error'));
+      invalidateCategories();
+    },
+  });
+
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -206,6 +234,7 @@ export default function Categories() {
     const reordered = [...flatList];
     const [moved] = reordered.splice(oldIndex, 1);
     reordered.splice(newIndex, 0, moved);
+    setFlatList(reordered);
 
     const currentParentId = moved.parentId;
     const surroundingItems = reordered.filter(c => c.parentId === currentParentId);
@@ -216,10 +245,7 @@ export default function Categories() {
 
     if (updateItems.length === 0) return;
     if (!storeId) return;
-    try {
-      await categoriesApi.reorder(storeId, updateItems);
-      load();
-    } catch (err) { toast.error(err instanceof ApiClientError ? err.message : t('common.error')); }
+    reorderMutation.mutate(updateItems);
   };
 
   const parentOptions = useMemo(() => {
@@ -251,7 +277,7 @@ export default function Categories() {
             <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4"><AlertTriangle className="h-8 w-8 text-red-400" /></div>
             <p className="text-sm font-medium text-neutral-700 mb-1">فشل تحميل التصنيفات</p>
             <p className="text-sm text-neutral-500 mb-4">حدث خطأ أثناء الاتصال بالخادم.</p>
-            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={load}>
+            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={() => categoriesQuery.refetch()}>
               <RotateCcw className="h-4 w-4" /> إعادة المحاولة
             </Button>
           </div>

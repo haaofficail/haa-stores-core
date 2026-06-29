@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback, Fragment } from 'react';
+import { useState, useEffect, Fragment } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -8,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShoppingBag, AlertTriangle, Users, DollarSign, Clock, Search, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ChevronsUpDown } from 'lucide-react';
 import { toast } from 'sonner';
-import { abandonedCartsApi, ApiClientError } from '@/lib/api';
+import { abandonedCartsApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { PermissionGate } from '@/lib/permissions';
 import { useTableControls, type SortState } from '@/lib/useTableControls';
@@ -66,10 +68,6 @@ function SortHead({ sortKey, label, sort, onToggle }: { sortKey: string; label: 
 export default function AbandonedCarts() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
-  const [carts, setCarts] = useState<AbandonedCartRow[]>([]);
-  const [stats, setStats] = useState<{ count: number; recoverableTotal: string } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(false);
   const [hours, setHours] = useState(24);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -81,30 +79,25 @@ export default function AbandonedCarts() {
     });
   };
 
-  const loadData = useCallback(() => {
-    if (!storeId) { setLoading(false); return; }
-    setLoading(true);
-    setFetchError(false);
-    Promise.all([
-      abandonedCartsApi.list(storeId, hours),
-      abandonedCartsApi.stats(storeId, hours),
-    ])
-      .then(([cartsData, statsData]) => {
-        setCarts(cartsData as AbandonedCartRow[]);
-        setStats(statsData);
-      })
-      .catch((err) => {
-        if (err instanceof ApiClientError) {
-          toast.error(err.message);
-        } else {
-          toast.error(t('common.error'));
-        }
-        setFetchError(true);
-      })
-      .finally(() => setLoading(false));
-  }, [storeId, hours, t]);
+  // `hours` is a server-side param, so it lives in the query key: changing it
+  // refetches automatically and each window is cached independently.
+  const cartsQuery = useQuery({
+    queryKey: [...queryKeys.abandonedCarts(storeId), hours],
+    queryFn: async () => {
+      const [cartsData, statsData] = await Promise.all([
+        abandonedCartsApi.list(storeId as number, hours),
+        abandonedCartsApi.stats(storeId as number, hours),
+      ]);
+      return { carts: cartsData as AbandonedCartRow[], stats: statsData };
+    },
+    enabled: !!storeId,
+  });
+  const carts = cartsQuery.data?.carts ?? [];
+  const stats = cartsQuery.data?.stats ?? null;
+  const loading = cartsQuery.isLoading;
+  const fetchError = cartsQuery.isError;
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { if (cartsQuery.isError) toast.error(t('common.error')); }, [cartsQuery.isError, t]);
 
   // Client-side search + column sort + pagination over the loaded carts.
   // Composite columns (customer, items, total) resolve via getValue so sorting
@@ -193,7 +186,7 @@ export default function AbandonedCarts() {
               <AlertTriangle className="h-8 w-8 text-red-500" />
             </div>
             <p className="text-sm text-neutral-500 mb-3">{t('abandonedCarts.loadError')}</p>
-            <Button variant="outline" className="h-9 text-sm" onClick={loadData}>{t('common.retry')}</Button>
+            <Button variant="outline" className="h-9 text-sm" onClick={() => cartsQuery.refetch()}>{t('common.retry')}</Button>
           </div>
         ) : carts.length === 0 ? (
           <div className="p-12 text-center">

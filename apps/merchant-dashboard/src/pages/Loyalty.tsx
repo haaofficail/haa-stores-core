@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/queryClient';
 import { toast } from 'sonner';
 import { Coins, Loader2, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,38 +21,42 @@ import { messageFromError } from '@/lib/error-mapper';
 export default function LoyaltyPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const storeId = user?.activeStoreId ?? 0;
   const [rules, setRules] = useState<LoyaltyRules | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [previewAmount, setPreviewAmount] = useState(100);
 
-  useEffect(() => {
-    if (!storeId) return;
-    loyaltyApi
-      .getSettings(storeId)
-      .then((r) => {
-        setRules(r);
-        setLoading(false);
-      })
-      .catch((err) => {
-        toast.error(messageFromError(err, t));
-        setLoading(false);
-      });
-  }, [storeId, t]);
+  const loyaltyQuery = useQuery({
+    queryKey: queryKeys.loyalty(storeId),
+    queryFn: () => loyaltyApi.getSettings(storeId as number),
+    enabled: !!storeId,
+  });
+  const loading = loyaltyQuery.isLoading;
+  const invalidateLoyalty = () => queryClient.invalidateQueries({ queryKey: queryKeys.loyalty(storeId) });
 
-  async function handleSave() {
-    if (!rules) return;
-    setSaving(true);
-    try {
-      const updated = await loyaltyApi.updateSettings(storeId, rules);
+  useEffect(() => { if (loyaltyQuery.isError) toast.error(messageFromError(loyaltyQuery.error, t)); }, [loyaltyQuery.isError, loyaltyQuery.error, t]);
+
+  // Seed the editable form state from the loaded config whenever the query data
+  // arrives (or refetches). The query cache stays read-only; `rules` is the
+  // local working copy mutated by the form fields below.
+  useEffect(() => {
+    if (loyaltyQuery.data) setRules(loyaltyQuery.data);
+  }, [loyaltyQuery.data]);
+
+  const saveMutation = useMutation({
+    mutationFn: (patch: LoyaltyRules) => loyaltyApi.updateSettings(storeId as number, patch),
+    onSuccess: (updated) => {
       setRules(updated);
       toast.success(t('loyalty.saved', 'تم حفظ إعدادات الولاء'));
-    } catch (err) {
-      toast.error(messageFromError(err, t));
-    } finally {
-      setSaving(false);
-    }
+      invalidateLoyalty();
+    },
+    onError: (err) => toast.error(messageFromError(err, t)),
+  });
+  const saving = saveMutation.isPending;
+
+  function handleSave() {
+    if (!rules) return;
+    saveMutation.mutate(rules);
   }
 
   function update<K extends keyof LoyaltyRules>(key: K, value: LoyaltyRules[K]) {

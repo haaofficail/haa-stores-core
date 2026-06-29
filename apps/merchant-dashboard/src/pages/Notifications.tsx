@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/queryClient';
 import { notificationApi, providerStatusApi, type ProviderStatus } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,10 +54,7 @@ interface NotificationLog {
 export default function Notifications() {
   const { storeId } = useAuth();
   const { t, i18n } = useTranslation();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [logs, setLogs] = useState<NotificationLog[]>([]);
-  const [providerStatus, setProviderStatus] = useState<ProviderStatus | null>(null);
+  const queryClient = useQueryClient();
   const [prefs, setPrefs] = useState<NotificationPreferences>({
     id: 0,
     storeId: storeId || 0,
@@ -73,42 +72,58 @@ export default function Notifications() {
     abandonedCart: false,
   });
 
-  const loadData = useCallback(async () => {
-    if (!storeId) { setLoading(false); return; }
-    try {
-      const [prefsData, logsData, providerData] = await Promise.all([
-        notificationApi.getPreferences(storeId),
-        notificationApi.getLogs(storeId),
-        providerStatusApi.get(storeId),
+  // Preferences + provider status share one panel and are both single
+  // per-store fetches, so they live in one query keyed `'prefs'`. The form
+  // (`prefs` state above) is seeded from this query's data via the effect
+  // below — editing stays local until the save mutation persists it.
+  const prefsQuery = useQuery({
+    queryKey: [...queryKeys.notifications(storeId), 'prefs'],
+    queryFn: async () => {
+      const [prefsData, providerData] = await Promise.all([
+        notificationApi.getPreferences(storeId as number),
+        providerStatusApi.get(storeId as number),
       ]);
-      if (prefsData) {
-        const typedPrefs = prefsData as Partial<NotificationPreferences> & { emailAddress?: string; smsPhone?: string; whatsappPhone?: string };
-        setPrefs(prev => ({
-          ...prev,
-          ...typedPrefs,
-          emailAddress: typedPrefs.emailAddress || '',
-          smsPhone: typedPrefs.smsPhone || '',
-          whatsappPhone: typedPrefs.whatsappPhone || '',
-        }));
-      }
-      if (logsData) setLogs(logsData as NotificationLog[]);
-      setProviderStatus(providerData);
-    } catch (e) {
-      toast.error(messageFromError(e, t));
-    } finally {
-      setLoading(false);
-    }
-  }, [storeId, t]);
+      return { prefs: prefsData, providerStatus: providerData };
+    },
+    enabled: !!storeId,
+  });
 
+  const logsQuery = useQuery({
+    queryKey: [...queryKeys.notifications(storeId), 'logs'],
+    queryFn: () => notificationApi.getLogs(storeId as number),
+    enabled: !!storeId,
+  });
+
+  const providerStatus = (prefsQuery.data?.providerStatus ?? null) as ProviderStatus | null;
+  const logs = (logsQuery.data ?? []) as NotificationLog[];
+  const loading = prefsQuery.isLoading || logsQuery.isLoading;
+
+  // Seed the editable form from the loaded preferences. Depends on the
+  // query data so a refetch (or store switch) re-seeds the form.
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    const prefsData = prefsQuery.data?.prefs;
+    if (!prefsData) return;
+    const typedPrefs = prefsData as Partial<NotificationPreferences> & { emailAddress?: string; smsPhone?: string; whatsappPhone?: string };
+    setPrefs(prev => ({
+      ...prev,
+      ...typedPrefs,
+      emailAddress: typedPrefs.emailAddress || '',
+      smsPhone: typedPrefs.smsPhone || '',
+      whatsappPhone: typedPrefs.whatsappPhone || '',
+    }));
+  }, [prefsQuery.data]);
 
-  const handleSave = async () => {
-    if (!storeId) return;
-    setSaving(true);
-    try {
-      const updated = await notificationApi.updatePreferences(storeId, {
+  // Surface load errors as toasts (matches the previous try/catch behavior).
+  useEffect(() => {
+    if (prefsQuery.isError) toast.error(messageFromError(prefsQuery.error, t));
+  }, [prefsQuery.isError, prefsQuery.error, t]);
+  useEffect(() => {
+    if (logsQuery.isError) toast.error(messageFromError(logsQuery.error, t));
+  }, [logsQuery.isError, logsQuery.error, t]);
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      notificationApi.updatePreferences(storeId as number, {
         emailEnabled: prefs.emailEnabled,
         emailAddress: prefs.emailAddress || undefined,
         smsEnabled: prefs.smsEnabled,
@@ -121,16 +136,18 @@ export default function Notifications() {
         shippingUpdate: prefs.shippingUpdate,
         lowStock: prefs.lowStock,
         abandonedCart: prefs.abandonedCart,
-      });
-      if (updated) {
-        setPrefs(prev => ({ ...prev, ...updated }));
-      }
+      }),
+    onSuccess: () => {
       toast.success(t('notifications.saved'));
-    } catch (e) {
-      toast.error(messageFromError(e, t));
-    } finally {
-      setSaving(false);
-    }
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications(storeId) });
+    },
+    onError: (e) => toast.error(messageFromError(e, t)),
+  });
+  const saving = saveMutation.isPending;
+
+  const handleSave = () => {
+    if (!storeId) return;
+    saveMutation.mutate();
   };
 
   // Audit Part 5 P0 #2 — gate channel switches on provider configuration.
