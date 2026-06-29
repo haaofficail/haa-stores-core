@@ -35,4 +35,6 @@ export const queryClient = new QueryClient({
 export const queryKeys = {
   customers: (storeId: number | null | undefined) => ['merchant', storeId, 'customers'] as const,
   coupons: (storeId: number | null | undefined) => ['merchant', storeId, 'coupons'] as const,
+  promotions: (storeId: number | null | undefined) => ['merchant', storeId, 'promotions'] as const,
+  abandonedCarts: (storeId: number | null | undefined) => ['merchant', storeId, 'abandonedCarts'] as const,
 };

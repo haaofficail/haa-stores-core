@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,30 +33,29 @@ const emptyForm = {
 export default function Promotions() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
-  const [promotions, setPromotions] = useState<Array<{ id: number; name: string; type: string; value: string; appliesTo: string; isActive: boolean; endsAt: string }>>([]);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(false);
+  const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
-  const loadPromotions = useCallback(() => {
-    if (!storeId) { setLoading(false); return; }
-    setLoading(true);
-    setFetchError(false);
-    promotionsApi.list(storeId, { search: search || undefined, status: statusFilter || undefined })
-      .then((data) => setPromotions(data as Array<{ id: number; name: string; type: string; value: string; appliesTo: string; isActive: boolean; endsAt: string }>))
-      .catch(() => { setFetchError(true); toast.error(t('common.error')); })
-      .finally(() => setLoading(false));
-  }, [storeId, search, statusFilter, t]);
+  // Search + status are server-side params, so they live in the query key:
+  // changing either refetches automatically and each combination is cached.
+  const promotionsQuery = useQuery({
+    queryKey: [...queryKeys.promotions(storeId), { search, status: statusFilter }],
+    queryFn: () => promotionsApi.list(storeId as number, { search: search || undefined, status: statusFilter || undefined }),
+    enabled: !!storeId,
+  });
+  const promotions = (promotionsQuery.data ?? []) as Array<{ id: number; name: string; type: string; value: string; appliesTo: string; isActive: boolean; endsAt: string }>;
+  const loading = promotionsQuery.isLoading;
+  const fetchError = promotionsQuery.isError;
+  const invalidatePromotions = () => queryClient.invalidateQueries({ queryKey: queryKeys.promotions(storeId) });
 
-  useEffect(() => { loadPromotions(); }, [loadPromotions]);
+  useEffect(() => { if (promotionsQuery.isError) toast.error(t('common.error')); }, [promotionsQuery.isError, t]);
 
   // Debounce search input by 350ms
   useEffect(() => {
@@ -116,49 +117,47 @@ export default function Promotions() {
     return errs;
   };
 
-  const save = async () => {
+  const saveMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) =>
+      editId ? promotionsApi.update(storeId as number, editId, data) : promotionsApi.create(storeId as number, data),
+    onSuccess: () => {
+      toast.success(editId ? t('promotions.updated') : t('promotions.created'));
+      setDialogOpen(false);
+      invalidatePromotions();
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : t('common.error')),
+  });
+  const saving = saveMutation.isPending;
+
+  const save = () => {
     if (!storeId) return;
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
-
-    setSaving(true);
-    try {
-      const data = {
-        ...form,
-        value: Number(form.value),
-        minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : undefined,
-        maxDiscountAmount: form.maxDiscountAmount ? Number(form.maxDiscountAmount) : undefined,
-        appliesToId: form.appliesToId ? Number(form.appliesToId) : undefined,
-        startsAt: form.startsAt,
-        endsAt: form.endsAt,
-      };
-      if (editId) {
-        await promotionsApi.update(storeId, editId, data);
-        toast.success(t('promotions.updated'));
-      } else {
-        await promotionsApi.create(storeId, data);
-        toast.success(t('promotions.created'));
-      }
-      setDialogOpen(false);
-      loadPromotions();
-    } catch (err) {
-      if (err instanceof ApiClientError) {
-        toast.error(err.message);
-      } else {
-        toast.error(t('common.error'));
-      }
-    } finally { setSaving(false); }
+    const data = {
+      ...form,
+      value: Number(form.value),
+      minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : undefined,
+      maxDiscountAmount: form.maxDiscountAmount ? Number(form.maxDiscountAmount) : undefined,
+      appliesToId: form.appliesToId ? Number(form.appliesToId) : undefined,
+      startsAt: form.startsAt,
+      endsAt: form.endsAt,
+    };
+    saveMutation.mutate(data);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!storeId) return;
-    try {
-      await promotionsApi.delete(storeId, id);
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => promotionsApi.delete(storeId as number, id),
+    onSuccess: () => {
       toast.success(t('promotions.deleted'));
       setDeleteConfirm(null);
-      loadPromotions();
-    } catch (err) { toast.error(err instanceof ApiClientError ? err.message : t('common.error')); }
+      invalidatePromotions();
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : t('common.error')),
+  });
+  const handleDelete = (id: number) => {
+    if (!storeId) return;
+    deleteMutation.mutate(id);
   };
 
   const now = new Date();
@@ -201,7 +200,7 @@ export default function Promotions() {
               <AlertTriangle className="h-8 w-8 text-red-500" />
             </div>
             <p className="text-sm text-neutral-500 mb-3">{t('promotions.loadError')}</p>
-            <Button variant="outline" className="h-9 text-sm" onClick={loadPromotions}>{t('common.retry')}</Button>
+            <Button variant="outline" className="h-9 text-sm" onClick={() => promotionsQuery.refetch()}>{t('common.retry')}</Button>
           </div>
         ) : promotions.length === 0 ? (
           <div className="p-12 text-center">
