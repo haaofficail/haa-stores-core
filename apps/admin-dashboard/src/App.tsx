@@ -19,8 +19,10 @@ const AccountantInbox = lazy(() => import('./pages/AccountantInbox'));
 const AccountantSettlementDetail = lazy(() => import('./pages/AccountantSettlementDetail'));
 const FinanceReports = lazy(() => import('./pages/FinanceReports'));
 const AuditLogs = lazy(() => import('./pages/AuditLogs'));
+const OperationalWebhooks = lazy(() => import('./pages/OperationalWebhooks'));
 const Plans = lazy(() => import('./pages/Plans'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Security = lazy(() => import('./pages/Security'));
 const StoreBillingSettings = lazy(() => import('./pages/StoreBillingSettings'));
 const Compliance = lazy(() => import('./pages/Compliance'));
 const LandingInbox = lazy(() => import('./pages/LandingInbox'));
@@ -62,6 +64,7 @@ type AdminRoutePermission =
   | 'marketplace.read'
   | 'wallet.payout.view_all'
   | 'audit.read'
+  | 'webhooks.read'
   | 'plans.read'
   | 'platform.settings.read'
   | 'billing.platform_fee.read'
@@ -106,8 +109,10 @@ const navGroups: NavGroup[] = [
     '/payments/settlements|التسويات|Landmark|wallet.payout.view_all',
   ]),
   navGroup('نظام', [
+    '/security|أمان الحساب|ShieldCheck',
     '/admin-users|المستخدمون|UserCog|users.read',
     '/audit|سجل التدقيق|ScrollText|audit.read',
+    '/operations/webhooks|عمليات Webhooks|FileText|webhooks.read',
     '/plans|الباقات|Package|plans.read',
     '/compliance|الامتثال|CheckSquare|tenants.read',
     '/landing-inbox|صندوق الوارد|Inbox|landing_contacts.read',
@@ -340,8 +345,10 @@ export default function App() {
                 <Route path="/payments/settlements" element={<AdminPermissionRoute permission="wallet.payout.view_all"><SettlementBatches /></AdminPermissionRoute>} />
                 <Route path="/payments/settlements/:batchId" element={<AdminPermissionRoute permission="wallet.payout.view_all"><SettlementBatchDetail /></AdminPermissionRoute>} />
                 <Route path="/audit" element={<AdminPermissionRoute permission="audit.read"><AuditLogs /></AdminPermissionRoute>} />
+                <Route path="/operations/webhooks" element={<AdminPermissionRoute permission="webhooks.read"><OperationalWebhooks /></AdminPermissionRoute>} />
                 <Route path="/plans" element={<AdminPermissionRoute permission="plans.read"><Plans /></AdminPermissionRoute>} />
                 <Route path="/settings" element={<AdminPermissionRoute permission="platform.settings.read"><Settings /></AdminPermissionRoute>} />
+                <Route path="/security" element={<Security />} />
                 <Route path="/store-billing" element={<AdminPermissionRoute permission="billing.platform_fee.read"><StoreBillingSettings /></AdminPermissionRoute>} />
                 <Route path="/compliance" element={<AdminPermissionRoute permission="tenants.read"><Compliance /></AdminPermissionRoute>} />
                 <Route path="/landing-inbox" element={<AdminPermissionRoute permission="landing_contacts.read"><LandingInbox /></AdminPermissionRoute>} />

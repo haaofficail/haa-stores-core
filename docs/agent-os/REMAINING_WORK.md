@@ -67,7 +67,9 @@ These cannot be progressed by engineering code; they need owner action (legal, c
 - [ ] **Monitoring / Sentry** — observability shim is wired (`apps/api/src/services/observability.ts`); owner provides `SENTRY_DSN` for the staging + production environments and installs `@sentry/node` so the shim swaps from no-op to real.
 - [ ] **Backups + restore drill** — automate DB backups (cron + retention policy), document a restore runbook, schedule the first restore drill. Required input for G10.
 - [ ] **Transactional email** — pick provider (Postmark / SES / SendGrid), configure SPF / DKIM / DMARC for the sending domain, wire credentials.
-- [ ] **2FA + self-serve password reset** — design + implement TOTP enrollment + verify on `/login` and on sensitive admin operations; add the actual reset-token flow behind the `/forgot-password` page (currently a mailto landing).
+- [x] **2FA + self-serve password reset engineering** — TASK-0125 added TOTP enrollment + verify on `/admin/login` and sensitive admin operations, plus admin-owned password reset request/confirm. Owner-only rollout remains below.
+- [ ] **Admin auth rollout prerequisites** — apply migration `0090_admin_totp.sql`, set `ADMIN_TOTP_ENCRYPTION_KEY`, and configure transactional email before relying on password reset/TOTP in staging or production.
+- [x] **Admin Webhooks/Idempotency operational UI** — TASK-0127 added `/operations/webhooks` for `webhooks.read` admins, consuming existing webhook event, dedup-stats, and idempotency-key stats routes.
 - [ ] **Deployment smoke + rollback** — add post-deploy smoke tests (curl `/api/health` + a fixed login flow) plus a one-command rollback script that re-deploys the previous image tag.
 
 ### Sandbox preparation track

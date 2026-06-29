@@ -1,5 +1,73 @@
 # Internal Changelog
 
+## 2026-06-29 — Admin Finance CSV Export Permission Enforcement (TASK-0128)
+
+- Added admin Finance Reports CSV export route guarded by `wallet.payout.export`.
+- Added admin Accountant Inbox CSV export route guarded by `wallet.payout.export`.
+- Preserved existing read route guards on `wallet.payout.view_all`.
+- Added a small admin CSV response helper with UTF-8 BOM, quoted cells, and formula-prefix neutralization for exported finance cells.
+- Updated admin API client with Blob download helpers for finance reports and accountant inbox exports.
+- Updated Finance Reports and Accountant Inbox buttons to check `hasAdminPermission('wallet.payout.export')`, disable for non-export admins, and call the guarded API routes rather than generating finance CSV locally from read data.
+- Kept exported data masked: no full IBAN, no proof file key, no receipt URL, and no merchant bank-account IBAN selection added.
+- Extended focused finance/accountant tests for API route guards, query schema wiring, client Blob export, and page export wiring.
+- Verification passed: `pnpm ops:monitor` with 0 failures and no recommended tasks/incidents; finance export focused tests 4 files / 55 tests; API typecheck; admin-dashboard build.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live provider calls.
+
+## 2026-06-29 — Admin Webhooks/Idempotency Operational Page (TASK-0127)
+
+- Added typed admin API client helpers for webhook events, webhook deduplication stats, and HTTP idempotency-key stats.
+- Added `queryKeys.operationalWebhooks` for the admin dashboard operational surface.
+- Added `/operations/webhooks` to the admin dashboard route tree behind `AdminPermissionRoute permission="webhooks.read"`.
+- Added a sidebar entry under the system section so admins with `webhooks.read` can discover the page.
+- Built `OperationalWebhooks.tsx` with webhook totals, fresh/duplicate counts, duplicate rate, race-recovered count, provider breakdown, idempotency-key totals, hits, conflicts, hit rate, and cache size.
+- Added tenant/store filters, current-page search, sortable table columns, loading/error/empty states, and `TablePager` to keep the operational table usable with larger local result sets.
+- Extended focused admin RBAC/permission tests to guard the API-client/page wiring and route/sidebar permission reflection.
+- Verification passed: `pnpm ops:monitor` with 0 failures and no recommended tasks/incidents; focused admin RBAC/permission reflection tests 2 files / 12 tests; admin-dashboard build.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live provider calls.
+
+## 2026-06-29 — Admin COD Fee Policy UI/API Wiring (TASK-0126)
+
+- Closed the deferred TASK-0032 admin-dashboard follow-up for COD fee policy configuration.
+- Re-exported COD fee policy descriptors/validators from commerce-core alongside the existing platform fee surface so admin routes consume one package boundary.
+- Extended admin billing settings GET/PATCH to return `effectiveCodPolicy` / `effectiveCodPolicyLabel` and accept `codFeeMode`, `codFeePct`, `codFeeFixed`, and `isCodFeeEnabled`.
+- Kept COD validation on the existing wallet-core source of truth: `validateCodFeePolicyInput`, `COD_FEE_MODES`, and `MAX_COD_FEE_PCT`.
+- Extended `StoreBillingSettingsService.updateSettings` to write COD policy fields and include COD before/after values in the billing audit diff while preserving platform fee behavior.
+- Updated the admin API client billing settings contracts for COD policy fields.
+- Updated Store Billing Settings UI with separate RTL sections for platform fee and COD fee, both saved under one required change reason.
+- Extended `tests/cod-fees-wiring.test.ts` to guard service write/audit, route validation/response, API-client typing, and admin UI wiring.
+- Verification passed: `pnpm ops:monitor` with 0 failures and no recommended tasks/incidents; COD/platform focused tests 3 files / 76 tests; commerce-core build/typecheck; API typecheck; admin-dashboard build.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live provider calls.
+
+## 2026-06-29 — Admin Marketplace Server Pagination Wiring (TASK-0124)
+
+- Updated `adminApi.getMarketplaceProducts` to accept `status`, `page`, and `limit`.
+- Added a response-envelope helper for admin API calls that need top-level metadata while preserving the existing `request<T>()` behavior for ordinary data-only endpoints.
+- Added shared Marketplace pagination normalization so products and orders use one envelope-metadata path in the admin API client.
+- Updated admin Marketplace products query keys and fetches to include server page and page size.
+- Drove the Marketplace products `TablePager` from server `total`/`totalPages` metadata instead of local filtered row counts.
+- Updated `/admin/marketplace/orders` to accept `page`/`limit`, return `total`/`totalPages`, and remove the hardcoded `.limit(200)` ceiling.
+- Added a separate admin Marketplace orders query key, server page state, loading/error/empty states, and `TablePager` driven by order server totals.
+- Kept search/sort local to the currently fetched page; global server-side search/sort remains a separate enhancement.
+- Added focused regression coverage in `tests/marketplace-p1-2-p1-3.test.ts` for backend pagination, API-client metadata preservation, and page-level server pager wiring across products and orders.
+- Verification passed: `pnpm ops:monitor` with 0 failures and no recommended tasks/incidents; focused Marketplace/admin query tests 2 files / 24 tests; API typecheck; admin-dashboard build.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live provider calls.
+
+## 2026-06-29 — Admin Auth 2FA and Password Reset (TASK-0125)
+
+- Added admin TOTP helpers in `@haa/auth-core`: Base32 secret generation, HMAC-based code verification, `otpauth://` URL generation, AES-256-GCM encrypted secret envelopes, and `ADMIN_TOTP_ENCRYPTION_KEY` readiness checks.
+- Added encrypted admin TOTP state to the `users` schema plus unapplied migration `0090_admin_totp.sql`, journal entry, snapshot synthesis delta, and generated `0090_snapshot.json`.
+- Extended `AdminAuthService` with TOTP-aware login, enrollment start/confirm, disable, admin password-reset request, and password-reset confirm.
+- Kept admin reset logic out of merchant `AuthFlowService`; admin routes still delegate to `AdminAuthService`.
+- Extended admin JWTs with `twoFactorEnabled` and `twoFactorVerified` claims and added `requireAdminTwoFactorIfEnabled()` middleware.
+- Added TOTP checks to sensitive admin mutations across tenant/store changes, KYC review, payment settings, marketplace moderation, full-IBAN reveal, payout state changes, upload/settings/plans, billing, and landing-contact updates.
+- Added admin password reset and TOTP routes under `/admin/login/password-reset/*` and `/admin/security/totp/*`, with route-level rate limiting for reset request/confirm.
+- Added staging-safe TOTP readiness handling: admin login/reset use base-user selects before reading TOTP columns, missing TOTP columns are treated as no enabled TOTP for login/guards, and enrollment returns `READINESS_UNAVAILABLE` until migration/config are applied.
+- Updated admin login UI to support TOTP challenge and self-serve password reset request/confirm.
+- Added `/security` in the admin dashboard for account-level TOTP enrollment, confirmation, and disable.
+- Added `tests/admin-auth-hardening.test.ts` and extended `tests/admin-accountant-login.test.ts` to guard crypto, encrypted storage, migration/snapshot coverage, admin route separation, sensitive route guards, UI wiring, and pre-migration login compatibility.
+- Verification passed: branch-start `pnpm preflight`; db/shared/auth-core builds; auth-core/API typechecks; admin-dashboard build; and focused auth regression suite 5 files / 53 tests.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live provider calls. Runtime rollout requires owner-only migration execution plus `ADMIN_TOTP_ENCRYPTION_KEY` and transactional email configuration.
+
 ## 2026-06-29 — Post-financial Handoff Takeover Sync (TASK-0123)
 
 - Read the financial agent's accountant-settlement handoff and recorded the integration state in `docs/ops/ACCOUNTANT_FINANCE_HANDOFF_INTEGRATION_PLAN_2026-06-29.md`.
@@ -610,7 +678,7 @@ The wallet entry creation was dispersed across 6 call sites in 3 files with no c
 - 🟡 **5 stub methods in WalletPostingService** — `postPlatformFee`, `postPayoutDebit`, `postPayoutReversal`, `postGatewayFee`, `postSettlementDifference` are declared but not implemented. Session #2 = TASK-0034.
 - 🟡 **4 raw call sites** — `apps/api/src/routes/orders.ts:131` refund + `checkout.ts` + `payment-webhook-service.ts` still use raw `WalletLedger.recordEntry(...)`. Session #2 = TASK-0034 sub-items 5+6.
 - 🟡 **drizzle-kit migrate gotcha** — `drizzle-kit migrate` fails silently on stale journal (root cause: 0050/0051 applied via psql, journal not synced). Documented in MEMORY.md (`drizzle-migration-snapshots` topic). Affects fresh-DB verification only; existing-DB unaffected.
-- 🟡 **Admin/merchant UI for COD fee field** — backend ready, UI deferred. Not blocking backend correctness.
+- 🟢 **Admin UI/write surface for COD fee field** — closed by TASK-0126 on 2026-06-29. Merchant wallet COD display remains optional. Not blocking backend correctness.
 - 🟡 **Q4 (Tabby/Tamara fee data source) and Q5 (payout pending reservation policy)** — owner decisions deferred to Session #2 (TASK-0034).
 - 🟡 **3 of 4 owner gates still required** — deployment, live API keys (Moyasar/Tabby/Tamara/Sentry), legal docs finalization. Owner-only.
 

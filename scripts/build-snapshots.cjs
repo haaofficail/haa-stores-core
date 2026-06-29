@@ -972,6 +972,53 @@ const SCHEMA_DELTAS = {
       };
     }
   },
+
+  // ── 0090: users — encrypted admin TOTP enrollment state.
+  '0090': (snap) => {
+    const users = snap.tables['public.users'];
+    if (users) {
+      users.columns['admin_totp_secret_encrypted'] = {
+        name: 'admin_totp_secret_encrypted',
+        type: 'text',
+        primaryKey: false,
+        notNull: false,
+      };
+      users.columns['admin_totp_pending_secret_encrypted'] = {
+        name: 'admin_totp_pending_secret_encrypted',
+        type: 'text',
+        primaryKey: false,
+        notNull: false,
+      };
+      users.columns['admin_totp_pending_created_at'] = {
+        name: 'admin_totp_pending_created_at',
+        type: 'timestamp',
+        primaryKey: false,
+        notNull: false,
+      };
+      users.columns['admin_totp_enabled_at'] = {
+        name: 'admin_totp_enabled_at',
+        type: 'timestamp',
+        primaryKey: false,
+        notNull: false,
+      };
+      users.indexes['users_admin_totp_enabled_idx'] = {
+        name: 'users_admin_totp_enabled_idx',
+        columns: [
+          {
+            expression: 'id',
+            isExpression: false,
+            asc: true,
+            nulls: 'last',
+          },
+        ],
+        isUnique: false,
+        concurrently: false,
+        method: 'btree',
+        where: 'admin_totp_enabled_at IS NOT NULL',
+        with: {},
+      };
+    }
+  },
 };
 
 function main() {

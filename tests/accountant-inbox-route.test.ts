@@ -25,9 +25,19 @@ describe('accountant inbox route is permission-guarded', () => {
   it('guards the inbox route with requireAdminAuth + wallet.payout.view_all', () => {
     const line = adminIndex
       .split('\n')
-      .find((l) => l.includes('/settlements/accountant-inbox')) ?? '';
+      .find((l) => l.includes("'/settlements/accountant-inbox'")) ?? '';
     expect(line).toContain('requireAdminAuth()');
     expect(line).toContain("requireAdminPermission('wallet.payout.view_all')");
+  });
+
+  it('guards CSV export with requireAdminAuth + wallet.payout.export', () => {
+    const line = adminIndex
+      .split('\n')
+      .find((l) => l.includes('/settlements/accountant-inbox/export')) ?? '';
+    expect(line).toContain('requireAdminAuth()');
+    expect(line).toContain("requireAdminPermission('wallet.payout.export')");
+    expect(line).toMatch(/accountantInboxExportQuerySchema/);
+    expect(line).toMatch(/accountantInboxRoutes\.exportCsv/);
   });
 });
 

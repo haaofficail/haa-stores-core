@@ -5,8 +5,8 @@
  *   - P1-2: admin marketplace actions use specific permissions
  *     (marketplace.review + marketplace.feature) instead of the
  *     broad marketplace:moderate
- *   - P1-3: admin marketplace/products supports ?page + ?limit
- *     pagination and returns metadata (total, totalPages)
+ *   - P1-3: admin marketplace/products + orders support ?page + ?limit
+ *     pagination and return metadata (total, totalPages)
  */
 
 import { readFileSync } from 'node:fs';
@@ -16,10 +16,14 @@ import { describe, expect, it } from 'vitest';
 const projectRoot = resolve(new URL('..', import.meta.url).pathname);
 const ADMIN_ROUTES = resolve(projectRoot, 'apps/api/src/routes/admin/index.ts');
 const ADMIN_MP = resolve(projectRoot, 'apps/api/src/routes/admin/marketplace.ts');
+const ADMIN_API_CLIENT = resolve(projectRoot, 'apps/admin-dashboard/src/lib/api.ts');
+const ADMIN_MARKETPLACE_PAGE = resolve(projectRoot, 'apps/admin-dashboard/src/pages/Marketplace.tsx');
 const PERMISSIONS = resolve(projectRoot, 'packages/shared/src/permissions.ts');
 
 const adminRoutesSrc = readFileSync(ADMIN_ROUTES, 'utf-8');
 const adminMpSrc = readFileSync(ADMIN_MP, 'utf-8');
+const adminApiClientSrc = readFileSync(ADMIN_API_CLIENT, 'utf-8');
+const adminMarketplacePageSrc = readFileSync(ADMIN_MARKETPLACE_PAGE, 'utf-8');
 const permissionsSrc = readFileSync(PERMISSIONS, 'utf-8');
 
 describe('TASK-0043 Track 4B — P1-2 marketplace permissions', () => {
@@ -142,5 +146,75 @@ describe('TASK-0043 Track 4B — P1-3 admin marketplace pagination', () => {
     // The default fallback expression uses `|| 1` and `|| 50`.
     expect(block![0]).toMatch(/\|\|\s*1/);
     expect(block![0]).toMatch(/\|\|\s*50/);
+  });
+
+  it('admin API client preserves marketplace pagination metadata from the response envelope', () => {
+    const block = adminApiClientSrc.match(/getMarketplaceProducts:[\s\S]{0,1800}?reviewMarketplaceProduct/);
+    expect(block).not.toBeNull();
+    expect(block![0]).toMatch(/MarketplaceProductsParams/);
+    expect(block![0]).toMatch(/requestResponse<Record<string, unknown>\[\]>/);
+    expect(block![0]).toMatch(/normalizeMarketplacePage\(response,\s*\{\s*page,\s*limit\s*\}\)/);
+
+    const helperBlock = adminApiClientSrc.match(/function normalizeMarketplacePage[\s\S]{0,1200}?\n\}/);
+    expect(helperBlock).not.toBeNull();
+    expect(helperBlock![0]).toMatch(/page:\s*Number\.isFinite\(resolvedPage\)/);
+    expect(helperBlock![0]).toMatch(/limit:\s*Number\.isFinite\(resolvedLimit\)/);
+    expect(helperBlock![0]).toMatch(/total:\s*Number\.isFinite\(total\)/);
+    expect(helperBlock![0]).toMatch(/totalPages:\s*Number\.isFinite\(totalPages\)/);
+  });
+
+  it('marketplaceOrdersRoute uses the same page/limit pagination metadata contract', () => {
+    const block = adminMpSrc.match(/export async function marketplaceOrdersRoute[\s\S]{0,1800}?\n\}/);
+    expect(block).not.toBeNull();
+    expect(block![0]).toMatch(/c\.req\.query\(['"]page['"]\)/);
+    expect(block![0]).toMatch(/c\.req\.query\(['"]limit['"]\)/);
+    expect(block![0]).toMatch(/offset\s*=\s*\(\s*page\s*-\s*1\s*\)\s*\*\s*limit/);
+    expect(block![0]).toMatch(/count\(\*\)/);
+    expect(block![0]).toMatch(/\.limit\(limit\)/);
+    expect(block![0]).toMatch(/\.offset\(offset\)/);
+    expect(block![0]).toMatch(/totalPages/);
+    expect(block![0]).not.toMatch(/\.limit\(200\)/);
+  });
+
+  it('admin API client preserves marketplace order pagination metadata', () => {
+    const block = adminApiClientSrc.match(/getMarketplaceOrders:[\s\S]{0,1000}?getMarketplaceSettlements/);
+    expect(block).not.toBeNull();
+    expect(block![0]).toMatch(/MarketplacePageParams/);
+    expect(block![0]).toMatch(/requestResponse<Record<string, unknown>\[\]>/);
+    expect(block![0]).toMatch(/\/admin\/marketplace\/orders\?\$\{qs\.toString\(\)\}/);
+    expect(block![0]).toMatch(/normalizeMarketplacePage\(response,\s*\{\s*page,\s*limit\s*\}\)/);
+  });
+
+  it('Marketplace page requests server page/limit and keys the query by server page', () => {
+    expect(adminMarketplacePageSrc).toMatch(/MARKETPLACE_PRODUCTS_PAGE_SIZE\s*=\s*50/);
+    expect(adminMarketplacePageSrc).toMatch(/const \[serverPage,\s*setServerPage\]\s*=\s*useState\(1\)/);
+    expect(adminMarketplacePageSrc).toMatch(/queryKey:\s*\[\.\.\.queryKeys\.marketplaceProducts,\s*status,\s*serverPage,\s*MARKETPLACE_PRODUCTS_PAGE_SIZE\]/);
+    expect(adminMarketplacePageSrc).toMatch(/adminApi\.getMarketplaceProducts\(\{\s*[\s\S]*page:\s*serverPage,\s*[\s\S]*limit:\s*MARKETPLACE_PRODUCTS_PAGE_SIZE/);
+  });
+
+  it('Marketplace page requests marketplace orders as a separately paged query', () => {
+    expect(adminMarketplacePageSrc).toMatch(/MARKETPLACE_ORDERS_PAGE_SIZE\s*=\s*50/);
+    expect(adminMarketplacePageSrc).toMatch(/const \[ordersServerPage,\s*setOrdersServerPage\]\s*=\s*useState\(1\)/);
+    expect(adminMarketplacePageSrc).toMatch(/queryKey:\s*\[\.\.\.queryKeys\.marketplaceOrders,\s*ordersServerPage,\s*MARKETPLACE_ORDERS_PAGE_SIZE\]/);
+    expect(adminMarketplacePageSrc).toMatch(/adminApi\.getMarketplaceOrders\(\{\s*[\s\S]*page:\s*ordersServerPage,\s*[\s\S]*limit:\s*MARKETPLACE_ORDERS_PAGE_SIZE/);
+  });
+
+  it('Marketplace page drives TablePager from server totals instead of local filtered counts', () => {
+    const pagerBlock = adminMarketplacePageSrc.match(/<TablePager[\s\S]{0,700}?\/>/);
+    expect(pagerBlock).not.toBeNull();
+    expect(pagerBlock![0]).toMatch(/page=\{serverPage\}/);
+    expect(pagerBlock![0]).toMatch(/totalPages=\{totalPages\}/);
+    expect(pagerBlock![0]).toMatch(/filteredCount=\{totalProducts\}/);
+    expect(pagerBlock![0]).toMatch(/onPageChange=\{setServerPage\}/);
+    expect(pagerBlock![0]).not.toMatch(/controls\.totalPages|controls\.setPage|controls\.filteredCount/);
+  });
+
+  it('Marketplace order table drives TablePager from server totals', () => {
+    const pagerBlock = adminMarketplacePageSrc.match(/<TablePager[\s\S]{0,900}?itemLabel="طلب"[\s\S]{0,100}?\/>/);
+    expect(pagerBlock).not.toBeNull();
+    expect(pagerBlock![0]).toMatch(/page=\{ordersServerPage\}/);
+    expect(pagerBlock![0]).toMatch(/totalPages=\{orderTotalPages\}/);
+    expect(pagerBlock![0]).toMatch(/filteredCount=\{totalOrders\}/);
+    expect(pagerBlock![0]).toMatch(/onPageChange=\{setOrdersServerPage\}/);
   });
 });

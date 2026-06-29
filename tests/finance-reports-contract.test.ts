@@ -14,12 +14,19 @@ const reportService = read('apps/api/src/services/settlement-reports.ts');
 const marketplace = read('apps/api/src/routes/admin/marketplace.ts');
 const ledger = read('packages/wallet-core/src/ledger.ts');
 const page = read('apps/admin-dashboard/src/pages/FinanceReports.tsx');
+const adminApi = read('apps/admin-dashboard/src/lib/api.ts');
 const app = read('apps/admin-dashboard/src/App.tsx');
 
 describe('finance reports route is finance-guarded and IBAN/URL-safe', () => {
   it('registers GET /settlements/finance-reports guarded by wallet.payout.view_all', () => {
     const line = adminIndex.split('\n').find((l) => l.includes('/settlements/finance-reports')) ?? '';
     expect(line).toContain("requireAdminPermission('wallet.payout.view_all')");
+  });
+  it('registers CSV export under the dedicated wallet.payout.export permission', () => {
+    const line = adminIndex.split('\n').find((l) => l.includes('/settlements/finance-reports/export')) ?? '';
+    expect(line).toContain("requireAdminPermission('wallet.payout.export')");
+    expect(line).toMatch(/financeReportsExportQuerySchema/);
+    expect(line).toMatch(/financeReportsRoutes\.exportCsv/);
   });
   it('the handler never selects a full IBAN nor a proof file key/URL', () => {
     expect(reportRoute).not.toMatch(/merchantBankAccounts/); // reports use the receipt's bank ref, not the IBAN table
@@ -76,7 +83,14 @@ describe('finance reports UI', () => {
     expect(page).toMatch(/أرشيف التسويات/);
     expect(page).toMatch(/مطابقة التسويات/);
     expect(page).toMatch(/التسويات العالقة/);
-    expect(page).toMatch(/downloadRowsAsCsv/);
+    expect(page).toMatch(/hasAdminPermission\('wallet\.payout\.export'\)/);
+    expect(page).toMatch(/exportFinanceReportsCsv\(tab\)/);
+    expect(page).toMatch(/downloadBlob/);
+    expect(page).not.toMatch(/downloadRowsAsCsv\(/);
+  });
+  it('admin API client exports finance reports as a Blob from the permission-gated API route', () => {
+    expect(adminApi).toMatch(/exportFinanceReportsCsv/);
+    expect(adminApi).toMatch(/requestBlob\(`\/admin\/settlements\/finance-reports\/export\?\$\{qs\.toString\(\)\}`\)/);
   });
   it('the CSV / table never renders a full IBAN or a receipt URL', () => {
     // no full-IBAN pattern and no access to an `.iban` field (comments may

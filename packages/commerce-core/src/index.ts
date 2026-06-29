@@ -91,6 +91,13 @@ export { MarketingActionService, runMarketingActionGeneration } from './marketin
 export type { GeneratedAction, ActionListOptions, ActionListResult } from './marketing-action-engine.js';
 export { CustomerSegmentationService, runCustomerSegmentationSummary } from './customer-segmentation.js';
 export { StoreBillingSettingsService } from './billing-settings-service.js';
+export {
+  describeCodFeePolicy,
+  validateCodFeePolicyInput,
+  COD_FEE_MODES,
+  MAX_COD_FEE_PCT,
+} from '@haa/wallet-core';
+export type { CodFeePolicy } from '@haa/wallet-core';
 export { PixelService } from './pixels.js';
 export type { PixelConfig } from './pixels.js';
 export {
