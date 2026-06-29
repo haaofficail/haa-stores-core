@@ -50,15 +50,32 @@ const PARTIAL_MASK_KEYS = new Set([
 
 const EMAIL_KEY_PATTERN = /email/i;
 const PHONE_KEY_PATTERN = /(phone|mobile|msisdn|telephone)/i;
-const PARTIAL_MASK_KEY_PATTERN = /(iban|bank_?account|account_?number|vat_?number|tax_?number|commercial_?registration|cr_?number|national_?id|identity_?number)/i;
-const FULL_MASK_KEY_PATTERN = /(password|passcode|token|secret|api_?key|access_?key|private_?key|authorization|cookie|session|credential|oauth|otp|cvv|cvc|pin|card_?number|credit_?card|address|customer_?name|beneficiary_?name|account_?holder)/i;
+const PARTIAL_MASK_KEY_TOKENS = [
+  'iban', 'bankaccount', 'accountnumber', 'vatnumber', 'taxnumber',
+  'commercialregistration', 'crnumber', 'nationalid', 'identitynumber',
+];
+const FULL_MASK_KEY_TOKENS = [
+  'password', 'passcode', 'token', 'secret', 'apikey', 'accesskey',
+  'privatekey', 'authorization', 'cookie', 'session', 'credential', 'oauth',
+  'otp', 'cvv', 'cvc', 'pin', 'cardnumber', 'creditcard', 'address',
+  'customername', 'beneficiaryname', 'accountholder',
+];
+
+function normalizeMaskKey(key: string): string {
+  return key.replace(/[_\-\s.]/g, '').toLowerCase();
+}
+
+function includesMaskToken(key: string, tokens: string[]): boolean {
+  const normalized = normalizeMaskKey(key);
+  return tokens.some((token) => normalized.includes(token));
+}
 
 function isFullMaskKey(key: string): boolean {
   const lower = key.toLowerCase();
   for (const k of FULL_MASK_KEYS) {
     if (k.toLowerCase() === lower) return true;
   }
-  return FULL_MASK_KEY_PATTERN.test(key);
+  return includesMaskToken(key, FULL_MASK_KEY_TOKENS);
 }
 
 function isPartialMaskKey(key: string): boolean {
@@ -66,7 +83,26 @@ function isPartialMaskKey(key: string): boolean {
   for (const k of PARTIAL_MASK_KEYS) {
     if (k.toLowerCase() === lower) return true;
   }
-  return PARTIAL_MASK_KEY_PATTERN.test(key);
+  return includesMaskToken(key, PARTIAL_MASK_KEY_TOKENS);
+}
+
+function maskObjectValue(key: string, value: unknown): unknown {
+  if (EMAIL_KEY_PATTERN.test(key)) {
+    return typeof value === 'string' ? maskEmail(value) : '***MASKED***';
+  }
+  if (PHONE_KEY_PATTERN.test(key)) {
+    return typeof value === 'string' ? maskPhone(value) : '***MASKED***';
+  }
+  if (isPartialMaskKey(key)) {
+    return typeof value === 'string' ? maskPartial(value) : '***MASKED***';
+  }
+  if (isFullMaskKey(key)) {
+    return '***MASKED***';
+  }
+  if (value && typeof value === 'object') {
+    return maskObject(value);
+  }
+  return value;
 }
 
 export function maskObject(obj: unknown): unknown {
@@ -75,23 +111,7 @@ export function maskObject(obj: unknown): unknown {
 
   const masked: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
-    if (EMAIL_KEY_PATTERN.test(key)) {
-      if (typeof value === 'string') {
-        masked[key] = maskEmail(value);
-      } else {
-        masked[key] = '***MASKED***';
-      }
-    } else if (PHONE_KEY_PATTERN.test(key)) {
-      masked[key] = typeof value === 'string' ? maskPhone(value) : '***MASKED***';
-    } else if (isPartialMaskKey(key)) {
-      masked[key] = typeof value === 'string' ? maskPartial(value) : '***MASKED***';
-    } else if (isFullMaskKey(key)) {
-      masked[key] = '***MASKED***';
-    } else if (typeof value === 'object') {
-      masked[key] = maskObject(value);
-    } else {
-      masked[key] = value;
-    }
+    masked[key] = maskObjectValue(key, value);
   }
   return masked;
 }

@@ -228,8 +228,9 @@ export default function Tenants() {
             تغيير حالة التاجر يؤثر على كل متاجره وعملياته. اكتب سببًا واضحًا قبل المتابعة.
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">سبب القرار *</label>
+            <label htmlFor="tenant-status-reason" className="block text-sm font-medium text-gray-700 mb-1">سبب القرار *</label>
             <textarea
+              id="tenant-status-reason"
               value={statusReason}
               onChange={e => setStatusReason(e.target.value)}
               aria-label="سبب القرار *"

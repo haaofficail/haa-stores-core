@@ -10,6 +10,8 @@
 - Verification is green locally: targeted integration suite 27 files / 214 tests, full `pnpm test` 400 files / 4940 tests, shared build, wallet-core/API/admin typechecks, admin build, lint 0 errors / 431 existing warnings, `pnpm check:skills` 43/43, diff checks, `pnpm ops:monitor`, and final `pnpm preflight`.
 - Follow-up publish-readiness cleanup removed the staged-file pre-commit hook debt without using `--no-verify`: targeted `eslint --max-warnings 0 --no-warn-ignored` passed on the 16 touched hook files with zero output, package typechecks/builds passed for the affected API/merchant/storefront/shared/admin surfaces, focused affected vitest passed 9 files / 50 tests with 1 skipped, full `pnpm test` passed again, final `pnpm preflight` passed, `pnpm check:skills` passed, and `git diff --check` was clean.
 - Repo-wide `pnpm lint` still exits 0 with 331 pre-existing warnings outside the staged hook-cleanup scope; those files were not widened into TASK-0123 to preserve branch hygiene.
+- Opened draft PR #325 and addressed the SonarCloud quality-gate blockers locally: removed the insecure `Math.random()` fallback from admin financial idempotency keys, reduced complexity in shared PII masking, wallet ledger posting, and base-elegant homepage rendering, narrowed merchant theme-editor props, moved `AdminDialog` to native `<dialog>` semantics, fixed labelled admin transfer/status inputs, switched the Fake3DS DEV badge to `<output>`, and updated the monitoring-alert imports to `node:` builtins.
+- Sonar remediation verification passed: targeted ESLint with `--max-warnings 0`, affected package typechecks, shared/admin/merchant/storefront builds, focused Sonar regression tests 11 files / 88 tests, finance/wallet/settlement suite 42 files / 376 tests with 1 todo, full `pnpm test` 400 files / 4940 tests, `pnpm preflight`, `pnpm check:skills`, `pnpm ops:monitor`, `git diff --check`, and repo-wide `pnpm lint` exit 0 with the same 331 legacy warnings.
 - No `db:migrate`, deploy, secrets, production action, SSH, live payment-provider call, or live shipping-provider call occurred. The financial migrations 0088/0089 remain owner-only to apply.
 
 ## 2026-06-29 — Non-financial Admin Dangerous-action Dialog Accessibility (TASK-0122)
@@ -67,7 +69,7 @@
 
 - Added a visible `DEV TEST` badge to the Fake 3DS challenge page.
 - Badge copy states the page is a local simulation only and not a real bank/payment challenge.
-- Added `data-testid="fake-3ds-dev-badge"` and `role="status"` for stable regression coverage.
+- Added `data-testid="fake-3ds-dev-badge"` for stable regression coverage; TASK-0123 later changed the badge wrapper to semantic `<output>` to satisfy SonarCloud without changing the visible DEV warning.
 - Added `tests/fake-3ds-dev-badge.test.ts` to lock the badge and the existing `import.meta.env.DEV` route guard.
 - Verification passed: focused Fake3DS/3DS regression 2 files / 13 tests; storefront typecheck; storefront build with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning.
 - Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, no live provider calls, and no payment logic changes.

@@ -17,7 +17,7 @@ export function AdminDialog({
 }: AdminDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -36,19 +36,26 @@ export function AdminDialog({
   }, [onClose]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={onClose}
+    <dialog
+      ref={dialogRef}
+      className="fixed inset-0 z-50 m-0 flex h-full max-h-none w-full max-w-none items-center justify-center border-0 bg-black/50 p-4 text-start"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      aria-describedby={description ? descriptionId : undefined}
+      tabIndex={-1}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+      open
     >
       <div
-        ref={dialogRef}
         className={`w-full ${maxWidthClassName} rounded-2xl bg-white p-6 shadow-xl`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={description ? descriptionId : undefined}
-        tabIndex={-1}
-        onClick={(event) => event.stopPropagation()}
+        onMouseDown={(event) => event.stopPropagation()}
       >
         <h3 id={titleId} className="text-lg font-bold text-gray-900">
           {title}
@@ -60,6 +67,6 @@ export function AdminDialog({
         )}
         <div className="mt-4 space-y-4">{children}</div>
       </div>
-    </div>
+    </dialog>
   );
 }

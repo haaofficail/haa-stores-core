@@ -92,6 +92,8 @@
 - [ ] Source-grep UI tests assert shared `ErrorState` wiring when retry copy lives in the shared component
 - [ ] Source-grep nav tests assert the current nav helper contract, not an obsolete object-literal shape
 - [ ] Modal backdrops use native buttons or keyboard-accessible controls, not clickable plain `div` elements
+- [ ] Sonar complexity refactors preserve runtime behavior with focused tests before changing source-grep contracts
+- [ ] Wallet ledger complexity refactors preserve idempotency, balance-selection, and available/total balance semantics
 - [ ] No random colors — tokens used
 - [ ] No layout overflow or scroll issues
 - [ ] Touch targets ≥ 44px on mobile
@@ -327,6 +329,8 @@
 - [ ] Storefront does not create support ticket links containing `?accessToken=`
 - [ ] Temporary legacy support-ticket query token compatibility is not used by new UI links
 - [ ] Error capture sanitization covers all sensitive field patterns
+- [ ] `maskObject()` keeps key-token masking coverage for PII/secrets after regex or complexity refactors
+- [ ] Admin financial idempotency keys use Web Crypto (`randomUUID`/`getRandomValues`) and never fall back to `Math.random()`
 - [ ] `.env` is gitignored
 - [ ] Stack traces are stripped in production responses
 - [ ] `POST /internal/support-errors/report` is 404 in production

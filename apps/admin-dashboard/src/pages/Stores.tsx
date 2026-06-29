@@ -222,8 +222,9 @@ export default function Stores() {
             تغيير حالة المتجر يؤثر مباشرة على وصول العملاء والطلبات. اكتب سببًا واضحًا قبل المتابعة.
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">سبب القرار *</label>
+            <label htmlFor="store-status-reason" className="block text-sm font-medium text-gray-700 mb-1">سبب القرار *</label>
             <textarea
+              id="store-status-reason"
               value={statusReason}
               onChange={e => setStatusReason(e.target.value)}
               aria-label="سبب القرار *"

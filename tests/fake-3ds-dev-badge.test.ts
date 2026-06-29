@@ -9,7 +9,8 @@ const appRoutes = readFileSync(resolve(projectRoot, 'apps/storefront/src/App.tsx
 describe('Fake 3DS dev badge', () => {
   it('renders a stable visible DEV/test badge on the fake challenge page', () => {
     expect(fake3dsPage).toContain('data-testid="fake-3ds-dev-badge"');
-    expect(fake3dsPage).toContain('role="status"');
+    expect(fake3dsPage).toContain('<output');
+    expect(fake3dsPage).toContain('aria-label="DEV only fake 3DS challenge"');
     expect(fake3dsPage).toContain('DEV TEST');
     expect(fake3dsPage).toContain('محاكاة محلية فقط');
     expect(fake3dsPage).toContain('ليست تحدي بنك أو دفع حقيقي');

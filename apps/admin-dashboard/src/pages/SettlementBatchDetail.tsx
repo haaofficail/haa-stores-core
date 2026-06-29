@@ -755,8 +755,9 @@ export default function SettlementBatchDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">تاريخ التحويل *</label>
+                <label htmlFor="transfer-proof-date" className="block text-xs text-gray-500 mb-1">تاريخ التحويل *</label>
                 <input
+                  id="transfer-proof-date"
                   type="date"
                   value={proofForm.transferredAt}
                   onChange={(e) => setProofForm({ ...proofForm, transferredAt: e.target.value })}
@@ -765,8 +766,9 @@ export default function SettlementBatchDetailPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">المبلغ المحوّل *</label>
+                  <label htmlFor="transfer-proof-amount" className="block text-xs text-gray-500 mb-1">المبلغ المحوّل *</label>
                   <input
+                    id="transfer-proof-amount"
                     type="text"
                     value={proofForm.transferredAmount ?? ''}
                     onChange={(e) => setProofForm({ ...proofForm, transferredAmount: e.target.value })}
@@ -775,8 +777,9 @@ export default function SettlementBatchDetailPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">العملة *</label>
+                  <label htmlFor="transfer-proof-currency" className="block text-xs text-gray-500 mb-1">العملة *</label>
                   <input
+                    id="transfer-proof-currency"
                     type="text"
                     value={proofForm.currency ?? ''}
                     onChange={(e) => setProofForm({ ...proofForm, currency: e.target.value })}

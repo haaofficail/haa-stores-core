@@ -13,6 +13,15 @@ import Decimal from 'decimal.js';
 // payout_reversal, settlement_difference. The shape matches the index
 // `where` clause so `onConflictDoNothing` lands on the right index.
 type IdempotentSpec = { type: string; referenceType: string; where: string };
+type WalletAccountRow = typeof s.walletAccounts.$inferSelect;
+type BalanceSnapshot = {
+  balanceBefore: Decimal;
+  balanceAfter: Decimal;
+  pendingBefore: Decimal;
+  pendingAfter: Decimal;
+  availableBefore: Decimal;
+  availableAfter: Decimal;
+};
 
 function resolveIdempotentSpec(input: { type: string; referenceType?: string; referenceId?: number }): IdempotentSpec | null {
   if (input.referenceId == null) return null;
@@ -27,6 +36,73 @@ function resolveIdempotentSpec(input: { type: string; referenceType?: string; re
   if (t === 'payout_reversal' && rt === 'payout') return { type: t, referenceType: rt, where: `type = 'payout_reversal' AND reference_type = 'payout'` };
   if (t === 'settlement_difference' && rt === 'adjustment') return { type: t, referenceType: rt, where: `type = 'settlement_difference' AND reference_type = 'adjustment'` };
   return null;
+}
+
+function shouldUseAvailableBalance(input: LedgerEntryInput, status: WalletEntryStatus): boolean {
+  return status === 'available' || input.type === 'payout' || input.type === 'payout_debit';
+}
+
+function calculateBalances(account: WalletAccountRow, input: LedgerEntryInput, status: WalletEntryStatus): BalanceSnapshot {
+  const balanceBefore = new Decimal(account.balance);
+  const pendingBefore = new Decimal(account.pendingBalance);
+  const availableBefore = new Decimal(account.availableBalance);
+  const balanceAfter = input.direction === 'credit'
+    ? balanceBefore.plus(input.amount)
+    : balanceBefore.minus(input.amount);
+  let pendingAfter = pendingBefore;
+  let availableAfter = availableBefore;
+
+  if (input.direction === 'credit') {
+    if (status === 'available') {
+      availableAfter = availableBefore.plus(input.amount);
+    } else {
+      pendingAfter = pendingBefore.plus(input.amount);
+    }
+  } else if (shouldUseAvailableBalance(input, status)) {
+    availableAfter = availableBefore.minus(input.amount);
+  } else {
+    pendingAfter = pendingBefore.minus(input.amount);
+  }
+
+  return { balanceBefore, balanceAfter, pendingBefore, pendingAfter, availableBefore, availableAfter };
+}
+
+function buildWalletEntryValues(input: LedgerEntryInput, account: WalletAccountRow, status: WalletEntryStatus, balances: BalanceSnapshot) {
+  return {
+    storeId: input.storeId,
+    walletAccountId: account.id,
+    type: input.type,
+    direction: input.direction,
+    amount: input.amount.toString(),
+    balanceBefore: balances.balanceBefore.toString(),
+    balanceAfter: balances.balanceAfter.toString(),
+    status,
+    referenceType: input.referenceType ?? null,
+    referenceId: input.referenceId ?? null,
+    description: input.description ?? null,
+    feeRatePct: input.feeRatePct != null ? input.feeRatePct.toString() : null,
+    feeFixed: input.feeFixed != null ? input.feeFixed.toString() : null,
+    feeSource: input.feeSource ?? null,
+    metadata: input.metadata ?? null,
+  };
+}
+
+function buildWalletAccountUpdate(input: LedgerEntryInput, account: WalletAccountRow, balances: BalanceSnapshot) {
+  return {
+    balance: balances.balanceAfter.toString(),
+    pendingBalance: balances.pendingAfter.toString(),
+    availableBalance: balances.availableAfter.toString(),
+    totalSales: input.type === 'sale' && input.direction === 'credit'
+      ? new Decimal(account.totalSales).plus(input.amount).toString()
+      : account.totalSales,
+    totalFees: (input.type === 'platform_fee' || input.type === 'payment_fee')
+      ? new Decimal(account.totalFees).plus(input.amount).toString()
+      : account.totalFees,
+    totalPayouts: (input.type === 'payout' || input.type === 'payout_debit') && input.direction === 'debit'
+      ? new Decimal(account.totalPayouts ?? 0).plus(input.amount).toString()
+      : account.totalPayouts,
+    updatedAt: new Date(),
+  };
 }
 
 interface LedgerEntryInput {
@@ -208,49 +284,9 @@ export class WalletLedger {
       // concurrent recordEntry calls can't both compute newBalance from
       // the same stale starting value.
       const account = await this.ensureAccountForUpdate(tx, input.storeId);
-
-      const balanceBefore = new Decimal(account.balance);
-      let balanceAfter = balanceBefore;
-      const pendingBefore = new Decimal(account.pendingBalance);
-      let pendingAfter = pendingBefore;
-      const availableBefore = new Decimal(account.availableBalance);
-      let availableAfter = availableBefore;
-
       const status = input.status ?? 'pending';
-
-      if (input.direction === 'credit') {
-        balanceAfter = balanceBefore.plus(input.amount);
-        if (status === 'available') {
-          availableAfter = availableBefore.plus(input.amount);
-        } else {
-          pendingAfter = pendingBefore.plus(input.amount);
-        }
-      } else {
-        balanceAfter = balanceBefore.minus(input.amount);
-        if (status === 'available' || input.type === 'payout' || input.type === 'payout_debit') {
-          availableAfter = availableBefore.minus(input.amount);
-        } else {
-          pendingAfter = pendingBefore.minus(input.amount);
-        }
-      }
-
-      const values = {
-        storeId: input.storeId,
-        walletAccountId: account.id,
-        type: input.type,
-        direction: input.direction,
-        amount: input.amount.toString(),
-        balanceBefore: balanceBefore.toString(),
-        balanceAfter: balanceAfter.toString(),
-        status,
-        referenceType: input.referenceType ?? null,
-        referenceId: input.referenceId ?? null,
-        description: input.description ?? null,
-        feeRatePct: input.feeRatePct != null ? input.feeRatePct.toString() : null,
-        feeFixed: input.feeFixed != null ? input.feeFixed.toString() : null,
-        feeSource: input.feeSource ?? null,
-        metadata: input.metadata ?? null,
-      };
+      const balances = calculateBalances(account, input, status);
+      const values = buildWalletEntryValues(input, account, status, balances);
 
       // DB-level idempotency for wallet entries that are bound to a unique
       // reference (DECISION-OS-018 / migrations 0062 + 0073). The partial
@@ -277,21 +313,9 @@ export class WalletLedger {
         return existing;
       }
 
-      await tx.update(s.walletAccounts).set({
-        balance: balanceAfter.toString(),
-        pendingBalance: pendingAfter.toString(),
-        availableBalance: availableAfter.toString(),
-        totalSales: input.type === 'sale' && input.direction === 'credit'
-          ? new Decimal(account.totalSales).plus(input.amount).toString()
-          : account.totalSales,
-        totalFees: (input.type === 'platform_fee' || input.type === 'payment_fee')
-          ? new Decimal(account.totalFees).plus(input.amount).toString()
-          : account.totalFees,
-        totalPayouts: (input.type === 'payout' || input.type === 'payout_debit') && input.direction === 'debit'
-          ? new Decimal(account.totalPayouts ?? 0).plus(input.amount).toString()
-          : account.totalPayouts,
-        updatedAt: new Date(),
-      }).where(eq(s.walletAccounts.id, account.id));
+      await tx.update(s.walletAccounts)
+        .set(buildWalletAccountUpdate(input, account, balances))
+        .where(eq(s.walletAccounts.id, account.id));
 
       return entry;
   }

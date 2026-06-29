@@ -526,6 +526,181 @@ function getProductsForSource(products: HomeProduct[], source: string | undefine
   return active.slice(0, limit);
 }
 
+const sectionContainerClass = 'max-w-[var(--container-max-width,1280px)] mx-auto px-4 sm:px-6 lg:px-8';
+const productSectionTypes = new Set(['products', 'bestSellers', 'newest', 'offers', 'discounted', 'featured']);
+
+function getTextAlignmentClass(alignment: string | undefined): string {
+  if (alignment === 'center') return 'text-center';
+  if (alignment === 'left') return 'text-left';
+  return 'text-right';
+}
+
+function renderBannerSection(section: HomeSection, settings: SectionSettings, slug: string, visibilityClass: string) {
+  return (
+    <div key={section.id} className={visibilityClass}>
+      <BannerSection banners={[{
+        imageUrl: settings.imageUrl || '',
+        imageMobileUrl: settings.imageMobileUrl || '',
+        title: settings.subtitle || section.title || '',
+        description: settings.description || '',
+        buttonText: settings.buttonText || '',
+        linkType: settings.linkType || 'all',
+        linkValue: settings.linkValue || '',
+        height: settings.height,
+        openInNewTab: settings.openInNewTab,
+      }]} slug={slug} display={settings.display || 'contained'} />
+    </div>
+  );
+}
+
+function renderCategoryItems(categories: HomeCategory[], slug: string, categoryCardSize: number | undefined, isSlider: boolean) {
+  if (isSlider) {
+    return (
+      <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+        <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
+          {categories.map((cat, i) => (
+            <div key={cat.id} className="w-32 shrink-0"><CategoryCard category={cat} slug={slug} index={i} size={categoryCardSize ?? 3} /></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4 items-stretch">
+      {categories.map((cat, i) => (
+        <CategoryCard key={cat.id} category={cat} slug={slug} index={i} size={categoryCardSize ?? 3} />
+      ))}
+    </div>
+  );
+}
+
+function renderCategoriesSection(
+  section: HomeSection,
+  settings: SectionSettings,
+  categories: HomeCategory[],
+  slug: string,
+  visibilityClass: string,
+  categoryCardSize: number | undefined,
+  categoriesLabel: string,
+  viewAllLabel: string,
+) {
+  const catLimit = settings.categoryLimit || 6;
+  const selectedIds = settings.categoryIds || [];
+  const catItems = selectedIds.length > 0
+    ? categories.filter((c) => selectedIds.includes(c.id)).slice(0, catLimit)
+    : categories.slice(0, catLimit);
+  return (
+    <section key={section.id} className={`${sectionContainerClass} py-3 ${visibilityClass}`}>
+      <SectionHeader
+        title={section.title || categoriesLabel}
+        action={
+          categories.length > catLimit ? (
+            <Link to={`/s/${slug}/c/all`} className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1">
+              {viewAllLabel} <Icon name="ArrowLeft" size="2xs" />
+            </Link>
+          ) : undefined
+        }
+      />
+      {renderCategoryItems(catItems, slug, categoryCardSize, settings.categoryLayout === 'slider')}
+    </section>
+  );
+}
+
+function renderProductsLayout(products: HomeProduct[], slug: string, onAddToCart: AddToCart, settings: SectionSettings) {
+  if (settings.layout === 'slider') return renderSlider(products, slug, onAddToCart, settings.slider, settings.productCardSize);
+  if (settings.layout === 'horizontal') return renderHorizontalScroll(products, slug, onAddToCart, settings.productCardSize);
+  return renderProductGrid(products, slug, onAddToCart, settings.productCardSize);
+}
+
+function renderProductsSection(
+  section: HomeSection,
+  settings: SectionSettings,
+  products: HomeProduct[],
+  slug: string,
+  onAddToCart: AddToCart,
+  visibilityClass: string,
+  viewAllLabel: string,
+) {
+  const limit = settings.limit || 8;
+  const productList = getProductsForSource(products, settings.source || section.type, limit, settings);
+  if (productList.length === 0) return null;
+  return (
+    <section key={section.id} className={`${sectionContainerClass} py-4 sm:py-5 ${visibilityClass}`}>
+      <SectionHeader
+        title={section.title}
+        action={
+          settings.showMoreButton !== false && settings.showMoreUrl ? (
+            <Link to={getSectionLink(settings.showMoreUrl, slug)} className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1">
+              {viewAllLabel} <Icon name="ArrowLeft" size="2xs" />
+            </Link>
+          ) : undefined
+        }
+      />
+      {renderProductsLayout(productList, slug, onAddToCart, settings)}
+    </section>
+  );
+}
+
+function renderTextSection(section: HomeSection, settings: SectionSettings, visibilityClass: string) {
+  return (
+    <section key={section.id} className={`${sectionContainerClass} py-4 ${visibilityClass}`}>
+      {section.title && <SectionHeader title={section.title} />}
+      <div className={`text-sm text-text-secondary leading-relaxed ${getTextAlignmentClass(settings.alignment)}`} dangerouslySetInnerHTML={{ __html: sanitizeSectionHtml(settings.content || '') }} />
+    </section>
+  );
+}
+
+function renderImageTextSection(section: HomeSection, settings: SectionSettings, visibilityClass: string) {
+  return (
+    <section key={section.id} className={`${sectionContainerClass} py-4 ${visibilityClass}`}>
+      {section.title && <SectionHeader title={section.title} />}
+      <div className={`flex flex-col sm:flex-row items-center gap-6 ${settings.imagePosition === 'left' ? 'sm:flex-row-reverse' : ''}`}>
+        {settings.imageUrl && (
+          <div className="w-full sm:w-1/2">
+            <img src={settings.imageUrl} alt={section.title} className="w-full rounded-2xl object-cover" style={{ maxHeight: 300 }} />
+          </div>
+        )}
+        <div className={`w-full sm:w-1/2 text-sm text-text-secondary leading-relaxed ${getTextAlignmentClass(settings.alignment)}`} dangerouslySetInnerHTML={{ __html: sanitizeSectionHtml(settings.content || '') }} />
+      </div>
+    </section>
+  );
+}
+
+function renderSimpleListSection(section: HomeSection, settings: SectionSettings, visibilityClass: string) {
+  const items = settings.items || [];
+  return (
+    <section key={section.id} className={`${sectionContainerClass} py-4 ${visibilityClass}`}>
+      {section.title && <SectionHeader title={section.title} />}
+      {section.type === 'brands'
+        ? <BrandsCarousel items={items as Array<{ imageUrl: string; linkUrl?: string; name?: string }>} title={section.title ?? ''} speed={settings.speed} />
+        : <FAQAccordion items={items as Array<{ question: string; answer: string }>} />}
+    </section>
+  );
+}
+
+function renderHomeSection(params: {
+  section: HomeSection;
+  categories: HomeCategory[];
+  products: HomeProduct[];
+  slug: string;
+  onAddToCart: AddToCart;
+  categoryCardSize: number | undefined;
+  categoriesLabel: string;
+  viewAllLabel: string;
+}) {
+  const { section, categories, products, slug, onAddToCart, categoryCardSize, categoriesLabel, viewAllLabel } = params;
+  const settings = section.settings || {};
+  const visibilityClass = getSectionVisibilityClass(settings);
+
+  if (section.type === 'banner') return renderBannerSection(section, settings, slug, visibilityClass);
+  if (section.type === 'categories') return renderCategoriesSection(section, settings, categories, slug, visibilityClass, categoryCardSize, categoriesLabel, viewAllLabel);
+  if (productSectionTypes.has(section.type)) return renderProductsSection(section, settings, products, slug, onAddToCart, visibilityClass, viewAllLabel);
+  if (section.type === 'text') return renderTextSection(section, settings, visibilityClass);
+  if (section.type === 'imageText') return renderImageTextSection(section, settings, visibilityClass);
+  if (section.type === 'brands' || section.type === 'faq') return renderSimpleListSection(section, settings, visibilityClass);
+  return null;
+}
+
 export default function BaseElegantHomePage(props: HomePageProps) {
   const { t } = useTranslation();
   const sections = props.sections as HomeSection[];
@@ -537,139 +712,16 @@ export default function BaseElegantHomePage(props: HomePageProps) {
     <div className="animate-fade-in overflow-x-hidden" id="main-content">
       <h1 className="sr-only">{props.store.name}</h1>
       {props.store && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: organizationJSONLD(props.store.name, props.store.logoUrl || '', `${window.location.origin}/s/${props.slug}`) }} />}
-      {sections.filter((s) => s.enabled !== false).map((section) => {
-        const settings = section.settings || {};
-        const visibilityClass = getSectionVisibilityClass(settings);
-
-        switch (section.type) {
-          case 'banner':
-            return (
-              <div key={section.id} className={visibilityClass}>
-                <BannerSection banners={[{
-                  imageUrl: settings.imageUrl || '',
-                  imageMobileUrl: settings.imageMobileUrl || '',
-                  title: settings.subtitle || section.title || '',
-                  description: settings.description || '',
-                  buttonText: settings.buttonText || '',
-                  linkType: settings.linkType || 'all',
-                  linkValue: settings.linkValue || '',
-                  height: settings.height,
-                  openInNewTab: settings.openInNewTab,
-                }]} slug={props.slug} display={settings.display || 'contained'} />
-              </div>
-            );
-
-          case 'categories': {
-            const catLimit = settings.categoryLimit || 6;
-            const catLayout = settings.categoryLayout || 'grid';
-            const selectedIds: number[] = settings.categoryIds || [];
-            const catItems = selectedIds.length > 0
-              ? categories.filter((c) => selectedIds.includes(c.id)).slice(0, catLimit)
-              : categories.slice(0, catLimit);
-            return (
-              <section key={section.id} className={`max-w-[var(--container-max-width,1280px)] mx-auto px-4 sm:px-6 lg:px-8 py-3 ${visibilityClass}`}>
-                <SectionHeader
-                  title={section.title || t('home.categories')}
-                  action={
-                    categories.length > catLimit ? (
-                      <Link to={`/s/${props.slug}/c/all`} className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1">
-                        {t('home.viewAll')} <Icon name="ArrowLeft" size="2xs" />
-                      </Link>
-                    ) : undefined
-                  }
-                />
-                {catLayout === 'slider' ? (
-                  <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-                    <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
-                      {catItems.map((cat, i: number) => (
-                        <div key={cat.id} className="w-32 shrink-0"><CategoryCard category={cat} slug={props.slug} index={i} size={props.theme?.layout?.categoryCardSize ?? 3} /></div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4 items-stretch">
-                    {catItems.map((cat, i: number) => (
-                      <CategoryCard key={cat.id} category={cat} slug={props.slug} index={i} size={props.theme?.layout?.categoryCardSize ?? 3} />
-                    ))}
-                  </div>
-                )}
-              </section>
-            );
-          }
-
-          case 'products':
-          case 'bestSellers':
-          case 'newest':
-          case 'offers':
-          case 'discounted':
-          case 'featured': {
-            const limit = settings.limit || 8;
-            const layout = settings.layout || 'grid';
-            const source = settings.source || section.type;
-            const productList = getProductsForSource(products, source, limit, settings);
-            if (productList.length === 0) return null;
-            return (
-              <section key={section.id} className={`max-w-[var(--container-max-width,1280px)] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5 ${visibilityClass}`}>
-                <SectionHeader
-                  title={section.title}
-                  action={
-                    settings.showMoreButton !== false && settings.showMoreUrl ? (
-                      <Link to={getSectionLink(settings.showMoreUrl, props.slug)} className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1">
-                        {t('home.viewAll')} <Icon name="ArrowLeft" size="2xs" />
-                      </Link>
-                    ) : undefined
-                  }
-                />
-                {layout === 'slider' ? renderSlider(productList, props.slug, onAddToCart, settings.slider, settings.productCardSize) :
-                 layout === 'horizontal' ? renderHorizontalScroll(productList, props.slug, onAddToCart, settings.productCardSize) :
-                 renderProductGrid(productList, props.slug, onAddToCart, settings.productCardSize)}
-              </section>
-            );
-          }
-
-          case 'text':
-            return (
-              <section key={section.id} className={`max-w-[var(--container-max-width,1280px)] mx-auto px-4 sm:px-6 lg:px-8 py-4 ${visibilityClass}`}>
-                {section.title && <SectionHeader title={section.title} />}
-                <div className={`text-sm text-text-secondary leading-relaxed ${settings.alignment === 'center' ? 'text-center' : settings.alignment === 'left' ? 'text-left' : 'text-right'}`} dangerouslySetInnerHTML={{ __html: sanitizeSectionHtml(settings.content || '') }} />
-              </section>
-            );
-
-          case 'imageText':
-            return (
-              <section key={section.id} className={`max-w-[var(--container-max-width,1280px)] mx-auto px-4 sm:px-6 lg:px-8 py-4 ${visibilityClass}`}>
-                {section.title && <SectionHeader title={section.title} />}
-                <div className={`flex flex-col sm:flex-row items-center gap-6 ${settings.imagePosition === 'left' ? 'sm:flex-row-reverse' : ''}`}>
-                  {settings.imageUrl && (
-                    <div className="w-full sm:w-1/2">
-                      <img src={settings.imageUrl} alt={section.title} className="w-full rounded-2xl object-cover" style={{ maxHeight: 300 }} />
-                    </div>
-                  )}
-                  <div className={`w-full sm:w-1/2 text-sm text-text-secondary leading-relaxed ${settings.alignment === 'center' ? 'text-center' : settings.alignment === 'left' ? 'text-left' : 'text-right'}`} dangerouslySetInnerHTML={{ __html: sanitizeSectionHtml(settings.content || '') }} />
-                </div>
-              </section>
-            );
-
-          case 'brands':
-            return (
-              <section key={section.id} className={`max-w-[var(--container-max-width,1280px)] mx-auto px-4 sm:px-6 lg:px-8 py-4 ${visibilityClass}`}>
-                {section.title && <SectionHeader title={section.title} />}
-                <BrandsCarousel items={settings.items as Array<{ imageUrl: string; linkUrl?: string; name?: string }> || []} title={section.title ?? ''} speed={settings.speed} />
-              </section>
-            );
-
-          case 'faq':
-            return (
-              <section key={section.id} className={`max-w-[var(--container-max-width,1280px)] mx-auto px-4 sm:px-6 lg:px-8 py-4 ${visibilityClass}`}>
-                {section.title && <SectionHeader title={section.title} />}
-                <FAQAccordion items={settings.items as Array<{ question: string; answer: string }> || []} />
-              </section>
-            );
-
-          default:
-            return null;
-        }
-      })}
+      {sections.filter((s) => s.enabled !== false).map((section) => renderHomeSection({
+        section,
+        categories,
+        products,
+        slug: props.slug,
+        onAddToCart,
+        categoryCardSize: props.theme?.layout?.categoryCardSize,
+        categoriesLabel: t('home.categories'),
+        viewAllLabel: t('home.viewAll'),
+      }))}
       <div className="max-w-[var(--container-max-width,1280px)] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <TrustBadgesSection config={props.theme} variant="home" />
       </div>

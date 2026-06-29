@@ -269,7 +269,15 @@ export function hasAdminPermission(permission: string): boolean {
 
 /** Generate a fresh Idempotency-Key for a state-changing financial action. */
 export function newIdempotencyKey(): string {
-  return (globalThis.crypto?.randomUUID?.() ?? `idem-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+  if (!globalThis.crypto?.getRandomValues) {
+    throw new Error('Secure idempotency key generation is unavailable in this browser');
+  }
+  const bytes = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(bytes);
+  return `idem-${Date.now()}-${Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
 }
 
 async function request<T>(method: string, path: string, body?: unknown, idempotencyKey?: string): Promise<T> {

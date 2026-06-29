@@ -1,6 +1,6 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'fs'
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   buildOpsAlerts,
   readNdjsonEvents,

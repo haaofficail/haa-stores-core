@@ -5,19 +5,38 @@ import { Upload, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CategoryItem, HomepageSection, ProductItem, SectionSettings, BrandItem, FaqItem } from './constants';
 
-interface EditorProps {
+interface EditorBaseProps {
   section: HomepageSection;
   idx: number;
   homepageSections: HomepageSection[];
   updateConfig: (path: string, value: unknown) => void;
+}
+
+interface CategoryOptionsProps {
   categories?: CategoryItem[];
+}
+
+interface ProductOptionsProps {
   products?: ProductItem[];
-  uploadingBannerImg: string | null;
+}
+
+interface UploadActionProps {
   setUploadingBannerImg: (v: string | null) => void;
   storeId: number | null | undefined;
   uploadFile: (storeId: number, file: File) => Promise<{ url: string }>;
   validateImageFile: (file: File) => Promise<string | null>;
 }
+
+interface UploadProgressProps {
+  uploadingBannerImg: string | null;
+}
+
+type BannerEditorProps = EditorBaseProps & CategoryOptionsProps & ProductOptionsProps & UploadActionProps & UploadProgressProps;
+type ProductEditorProps = EditorBaseProps & CategoryOptionsProps & ProductOptionsProps;
+type CategoriesEditorProps = EditorBaseProps & CategoryOptionsProps;
+type ImageTextEditorProps = EditorBaseProps & UploadActionProps;
+type BrandsEditorProps = EditorBaseProps & UploadActionProps & UploadProgressProps;
+type SimpleEditorProps = EditorBaseProps;
 
 export function updateSection(
   sections: HomepageSection[],
@@ -34,7 +53,7 @@ export function updateSection(
   return updated;
 }
 
-export function BannerEditor({ section, idx, homepageSections, updateConfig, categories, products, uploadingBannerImg, setUploadingBannerImg, storeId, uploadFile, validateImageFile }: EditorProps) {
+export function BannerEditor({ section, idx, homepageSections, updateConfig, categories, products, uploadingBannerImg, setUploadingBannerImg, storeId, uploadFile, validateImageFile }: BannerEditorProps) {
   const sid = section.id;
   const settings = section.settings || {};
   return (
@@ -80,7 +99,7 @@ export function BannerEditor({ section, idx, homepageSections, updateConfig, cat
         ))}</div>
       </div>
       {(settings.linkType || 'all') === 'category' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر القسم</Label><Select value={settings.linkValue || 'all'} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkValue: v === 'all' ? '' : v })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر القسم" /></SelectTrigger><SelectContent><SelectItem value="all">جميع الأقسام</SelectItem>{(categories || []).map((cat) => (<SelectItem key={cat.id} value={cat.slug}>{cat.name}</SelectItem>))}</SelectContent></Select></div>}
-      {(settings.linkType || 'all') === 'product' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر المنتج</Label><Select value={(products || []).find((p) => p.slug === settings.linkValue) ? settings.linkValue : ''} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkValue: v })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر منتج" /></SelectTrigger><SelectContent>{(products || []).map((p) => (<SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>))}</SelectContent></Select></div>}
+      {(settings.linkType || 'all') === 'product' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر المنتج</Label><Select value={(products || []).some((p) => p.slug === settings.linkValue) ? settings.linkValue : ''} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkValue: v })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر منتج" /></SelectTrigger><SelectContent>{(products || []).map((p) => (<SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>))}</SelectContent></Select></div>}
       {(settings.linkType || 'all') === 'custom' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">الرابط المخصص</Label><Input value={settings.linkValue || ''} onChange={(e) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkValue: e.target.value })); }} className="w-full" dir="ltr" placeholder="https://..." /></div>}
       <div className="grid grid-cols-2 gap-3">
         <div><Label className="text-xs text-neutral-600 mb-1.5 block">ارتفاع البنر (بكسل)</Label><Input type="number" value={settings.height || 400} onChange={(e) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { height: Number(e.target.value) })); }} className="w-full" /></div>
@@ -95,7 +114,7 @@ export function BannerEditor({ section, idx, homepageSections, updateConfig, cat
   );
 }
 
-export function ProductEditor({ section, idx, homepageSections, updateConfig, categories, products }: EditorProps) {
+export function ProductEditor({ section, idx, homepageSections, updateConfig, categories, products }: ProductEditorProps) {
   const settings = section.settings || {};
   const selectedProductIds = Array.isArray(settings.productIds) ? settings.productIds.map(Number) : [];
   const toggleProduct = (productId: number) => {
@@ -172,7 +191,7 @@ export function ProductEditor({ section, idx, homepageSections, updateConfig, ca
   );
 }
 
-export function CategoriesEditor({ section, idx, homepageSections, updateConfig, categories }: EditorProps) {
+export function CategoriesEditor({ section, idx, homepageSections, updateConfig, categories }: CategoriesEditorProps) {
   const settings = section.settings || {};
   const selectedIds: number[] = settings.categoryIds || [];
   return (
@@ -202,7 +221,7 @@ export function CategoriesEditor({ section, idx, homepageSections, updateConfig,
   );
 }
 
-export function TextEditor({ section, idx, homepageSections, updateConfig }: EditorProps) {
+export function TextEditor({ section, idx, homepageSections, updateConfig }: SimpleEditorProps) {
   const settings = section.settings || {};
   return (
     <><div><Label className="text-xs text-neutral-600 mb-1.5 block">المحتوى</Label><textarea value={settings.content || ''} onChange={(e) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { content: e.target.value })); }} className="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:border-primary-500" rows={4} /></div>
@@ -211,7 +230,7 @@ export function TextEditor({ section, idx, homepageSections, updateConfig }: Edi
   );
 }
 
-export function ImageTextEditor({ section, idx, homepageSections, updateConfig, setUploadingBannerImg, storeId, uploadFile, validateImageFile }: EditorProps) {
+export function ImageTextEditor({ section, idx, homepageSections, updateConfig, setUploadingBannerImg, storeId, uploadFile, validateImageFile }: ImageTextEditorProps) {
   const settings = section.settings || {};
   const sid = section.id;
   return (
@@ -229,7 +248,7 @@ export function ImageTextEditor({ section, idx, homepageSections, updateConfig, 
   );
 }
 
-export function BrandsEditor({ section, idx, homepageSections, updateConfig, uploadingBannerImg, setUploadingBannerImg, storeId, uploadFile, validateImageFile }: EditorProps) {
+export function BrandsEditor({ section, idx, homepageSections, updateConfig, uploadingBannerImg, setUploadingBannerImg, storeId, uploadFile, validateImageFile }: BrandsEditorProps) {
   const settings = section.settings || {};
   const items = (settings.items || []) as BrandItem[];
   const updateItems = (next: typeof items) => {
@@ -262,7 +281,7 @@ export function BrandsEditor({ section, idx, homepageSections, updateConfig, upl
   );
 }
 
-export function FAQEditor({ section, idx, homepageSections, updateConfig }: EditorProps) {
+export function FAQEditor({ section, idx, homepageSections, updateConfig }: SimpleEditorProps) {
   const settings = section.settings || {};
   const items = (settings.items || []) as FaqItem[];
   const updateItems = (next: typeof items) => {
