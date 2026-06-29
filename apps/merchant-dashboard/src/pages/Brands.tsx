@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy `any` typing on drag-and-drop list rows/props and form state; pre-existing, not introduced by the TanStack Query migration. */
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/queryClient';
 import { brandsApi, uploadFile, ApiClientError } from '@/lib/api';
 import { handleImageError } from '@/lib/utils';
 import { PermissionGate } from '@/lib/permissions';
@@ -66,28 +69,31 @@ function SortableRow({ brand, onEdit, onDelete }: { brand: any; onEdit: (b: any)
 export default function Brands() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
+  const queryClient = useQueryClient();
   const [brands, setBrands] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', slug: '', logo: '', description: '', website: '', sortOrder: 0, isActive: true });
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [fetchError, setFetchError] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  const load = useCallback(() => {
-    if (!storeId) { setLoading(false); return; }
-    setLoading(true);
-    setFetchError(false);
-    brandsApi.list(storeId).then(data => { setBrands(data); }).catch(() => { setFetchError(true); toast.error(t('common.error')); }).finally(() => setLoading(false));
-  }, [storeId, t]);
+  const brandsQuery = useQuery({
+    queryKey: queryKeys.brands(storeId),
+    queryFn: () => brandsApi.list(storeId as number),
+    enabled: !!storeId,
+  });
+  const loading = brandsQuery.isLoading;
+  const fetchError = brandsQuery.isError;
+  const invalidateBrands = () => queryClient.invalidateQueries({ queryKey: queryKeys.brands(storeId) });
 
-  useEffect(() => { load(); }, [load]);
+  // Seed the local sortable array from the query result; @dnd-kit drag-end
+  // mutates this array optimistically before persisting the new order.
+  useEffect(() => { if (brandsQuery.data) setBrands(brandsQuery.data as typeof brands); }, [brandsQuery.data]);
+
+  useEffect(() => { if (brandsQuery.isError) toast.error(t('common.error')); }, [brandsQuery.isError, t]);
 
   const openCreate = () => {
     setEditId(null);
@@ -117,38 +123,53 @@ export default function Brands() {
     return errs;
   };
 
-  const save = async () => {
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      editId ? brandsApi.update(storeId as number, editId, form) : brandsApi.create(storeId as number, form),
+    onSuccess: () => {
+      toast.success(editId ? 'تم تحديث الماركة بنجاح' : 'تم إنشاء الماركة بنجاح');
+      setDialogOpen(false);
+      invalidateBrands();
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : t('common.error')),
+  });
+  const saving = saveMutation.isPending;
+
+  const save = () => {
     if (!storeId) return;
     const errs = validate();
     setFormErrors(errs);
     if (Object.keys(errs).length > 0) return;
-    setSaving(true);
-    try {
-      if (editId) {
-        await brandsApi.update(storeId, editId, form);
-        toast.success('تم تحديث الماركة بنجاح');
-      } else {
-        await brandsApi.create(storeId, form);
-        toast.success('تم إنشاء الماركة بنجاح');
-      }
-      setDialogOpen(false);
-      load();
-    } catch (err) { toast.error(err instanceof ApiClientError ? err.message : t('common.error')); } finally { setSaving(false); }
+    saveMutation.mutate();
   };
 
-  const confirmDelete = async () => {
-    if (!storeId || !deleteTarget) return;
-    setDeleting(true);
-    try {
-      await brandsApi.delete(storeId, deleteTarget.id);
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => brandsApi.delete(storeId as number, id),
+    onSuccess: () => {
       toast.success('تم حذف الماركة بنجاح');
       setDeleteDialogOpen(false);
       setDeleteTarget(null);
-      load();
-    } catch (err) { toast.error(err instanceof ApiClientError ? err.message : t('common.error')); } finally { setDeleting(false); }
+      invalidateBrands();
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : t('common.error')),
+  });
+  const deleting = deleteMutation.isPending;
+
+  const confirmDelete = () => {
+    if (!storeId || !deleteTarget) return;
+    deleteMutation.mutate(deleteTarget.id);
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const reorderMutation = useMutation({
+    mutationFn: (items: Array<{ id: number; sortOrder: number }>) => brandsApi.reorder(storeId as number, items),
+    onSuccess: () => invalidateBrands(),
+    onError: (err) => {
+      toast.error(err instanceof ApiClientError ? err.message : t('common.error'));
+      invalidateBrands();
+    },
+  });
+
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const oldIndex = brands.findIndex(b => b.id === active.id);
@@ -159,7 +180,7 @@ export default function Brands() {
     reordered.splice(newIndex, 0, moved);
     setBrands(reordered);
     const items = reordered.map((b, i) => ({ id: b.id, sortOrder: i }));
-    try { await brandsApi.reorder(storeId!, items); } catch { load(); }
+    reorderMutation.mutate(items);
   };
 
   return (
@@ -179,7 +200,7 @@ export default function Brands() {
             <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4"><AlertTriangle className="h-8 w-8 text-red-400" /></div>
             <p className="text-sm font-medium text-neutral-700 mb-1">فشل تحميل الماركات</p>
             <p className="text-sm text-neutral-500 mb-4">حدث خطأ أثناء الاتصال بالخادم.</p>
-            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={load}>
+            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={() => brandsQuery.refetch()}>
               <RotateCcw className="h-4 w-4" /> إعادة المحاولة
             </Button>
           </div>

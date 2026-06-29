@@ -40,4 +40,7 @@ export const queryKeys = {
   loyalty: (storeId: number | null | undefined) => ['merchant', storeId, 'loyalty'] as const,
   customerSegments: (storeId: number | null | undefined) => ['merchant', storeId, 'customerSegments'] as const,
   notifications: (storeId: number | null | undefined) => ['merchant', storeId, 'notifications'] as const,
+  tags: (storeId: number | null | undefined) => ['merchant', storeId, 'tags'] as const,
+  brands: (storeId: number | null | undefined) => ['merchant', storeId, 'brands'] as const,
+  categories: (storeId: number | null | undefined) => ['merchant', storeId, 'categories'] as const,
 };

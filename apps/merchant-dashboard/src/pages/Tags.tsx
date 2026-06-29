@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any -- legacy `any` typing on drag-and-drop list rows/props and form state; pre-existing, not introduced by the TanStack Query migration. */
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/queryClient';
 import { tagsApi, ApiClientError } from '@/lib/api';
 import { PermissionGate } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
@@ -67,28 +70,31 @@ const TAG_COLORS = ['#6366f1', '#ef4444', '#22c55e', '#f59e0b', '#3b82f6', '#ec4
 export default function Tags() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
+  const queryClient = useQueryClient();
   const [tags, setTags] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', slug: '', color: '#6366f1', sortOrder: 0 });
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [fetchError, setFetchError] = useState(false);
   const [nameError, setNameError] = useState('');
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  const load = useCallback(() => {
-    if (!storeId) { setLoading(false); return; }
-    setLoading(true);
-    setFetchError(false);
-    tagsApi.list(storeId).then(data => { setTags(data); }).catch(() => { setFetchError(true); toast.error(t('common.error')); }).finally(() => setLoading(false));
-  }, [storeId, t]);
+  const tagsQuery = useQuery({
+    queryKey: queryKeys.tags(storeId),
+    queryFn: () => tagsApi.list(storeId as number),
+    enabled: !!storeId,
+  });
+  const loading = tagsQuery.isLoading;
+  const fetchError = tagsQuery.isError;
+  const invalidateTags = () => queryClient.invalidateQueries({ queryKey: queryKeys.tags(storeId) });
 
-  useEffect(() => { load(); }, [load]);
+  // Seed the local sortable array from query data; drag-end mutates it locally
+  // for instant feedback before persisting the new order to the server.
+  useEffect(() => { if (tagsQuery.data) setTags(tagsQuery.data as any[]); }, [tagsQuery.data]);
+
+  useEffect(() => { if (tagsQuery.isError) toast.error(t('common.error')); }, [tagsQuery.isError, t]);
 
   const openCreate = () => {
     setEditId(null);
@@ -107,37 +113,51 @@ export default function Tags() {
     setDeleteDialogOpen(true);
   };
 
-  const save = async () => {
+  const saveMutation = useMutation({
+    mutationFn: (data: { name: string; slug: string; color: string; sortOrder: number }) =>
+      editId ? tagsApi.update(storeId as number, editId, data) : tagsApi.create(storeId as number, data),
+    onSuccess: () => {
+      toast.success(editId ? 'تم تحديث التاج بنجاح' : 'تم إنشاء التاج بنجاح');
+      setDialogOpen(false);
+      invalidateTags();
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : t('common.error')),
+  });
+  const saving = saveMutation.isPending;
+
+  const save = () => {
     if (!storeId) return;
     if (!form.name.trim()) { setNameError('اسم التاج مطلوب'); return; }
     setNameError('');
-    setSaving(true);
-    try {
-      if (editId) {
-        await tagsApi.update(storeId, editId, form);
-        toast.success('تم تحديث التاج بنجاح');
-      } else {
-        await tagsApi.create(storeId, form);
-        toast.success('تم إنشاء التاج بنجاح');
-      }
-      setDialogOpen(false);
-      load();
-    } catch (err) { toast.error(err instanceof ApiClientError ? err.message : t('common.error')); } finally { setSaving(false); }
+    saveMutation.mutate(form);
   };
 
-  const confirmDelete = async () => {
-    if (!storeId || !deleteTarget) return;
-    setDeleting(true);
-    try {
-      await tagsApi.delete(storeId, deleteTarget.id);
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => tagsApi.delete(storeId as number, id),
+    onSuccess: () => {
       toast.success('تم حذف التاج بنجاح');
       setDeleteDialogOpen(false);
       setDeleteTarget(null);
-      load();
-    } catch (err) { toast.error(err instanceof ApiClientError ? err.message : t('common.error')); } finally { setDeleting(false); }
+      invalidateTags();
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : t('common.error')),
+  });
+  const deleting = deleteMutation.isPending;
+
+  const confirmDelete = () => {
+    if (!storeId || !deleteTarget) return;
+    deleteMutation.mutate(deleteTarget.id);
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const reorderMutation = useMutation({
+    mutationFn: (items: { id: number; sortOrder: number }[]) => tagsApi.reorder(storeId as number, items),
+    // Re-sync with the server's persisted order on success.
+    onSuccess: () => { invalidateTags(); },
+    // Revert the optimistic local order by re-fetching the server state.
+    onError: () => { toast.error(t('common.error')); invalidateTags(); },
+  });
+
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const oldIndex = tags.findIndex(t => t.id === active.id);
@@ -148,7 +168,7 @@ export default function Tags() {
     reordered.splice(newIndex, 0, moved);
     setTags(reordered);
     const items = reordered.map((t, i) => ({ id: t.id, sortOrder: i }));
-    try { await tagsApi.reorder(storeId!, items); } catch { load(); }
+    reorderMutation.mutate(items);
   };
 
   return (
@@ -168,7 +188,7 @@ export default function Tags() {
             <div className="inline-flex p-4 rounded-2xl bg-red-50 mb-4"><AlertTriangle className="h-8 w-8 text-red-400" /></div>
             <p className="text-sm font-medium text-neutral-700 mb-1">فشل تحميل التاجات</p>
             <p className="text-sm text-neutral-500 mb-4">حدث خطأ أثناء الاتصال بالخادم.</p>
-            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={load}>
+            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={() => tagsQuery.refetch()}>
               <RotateCcw className="h-4 w-4" /> إعادة المحاولة
             </Button>
           </div>
