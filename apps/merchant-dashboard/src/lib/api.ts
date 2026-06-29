@@ -22,16 +22,46 @@ interface ApiError {
 
 type ApiResponse<T> = { success: true; data: T } | ApiError;
 
-function getToken(): string | null {
-  return localStorage.getItem('auth_token');
+const TOKEN_STORAGE_KEY = 'auth_token';
+const AUTH_PERSISTENCE_KEY = 'auth_persistence';
+
+export type AuthPersistenceMode = 'local' | 'session';
+
+function isPersistenceMode(value: string | null): value is AuthPersistenceMode {
+  return value === 'local' || value === 'session';
 }
 
-function setToken(token: string) {
-  localStorage.setItem('auth_token', token);
+function getStorageForMode(mode: AuthPersistenceMode): Storage {
+  return mode === 'session' ? sessionStorage : localStorage;
+}
+
+function getToken(): string | null {
+  const storedMode = localStorage.getItem(AUTH_PERSISTENCE_KEY);
+  if (isPersistenceMode(storedMode)) {
+    const token = getStorageForMode(storedMode).getItem(TOKEN_STORAGE_KEY);
+    if (token) return token;
+    const fallbackStorage = storedMode === 'local' ? sessionStorage : localStorage;
+    const fallbackToken = fallbackStorage.getItem(TOKEN_STORAGE_KEY);
+    if (fallbackToken) return fallbackToken;
+    localStorage.removeItem(AUTH_PERSISTENCE_KEY);
+    return null;
+  }
+  const legacyLocalToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+  if (legacyLocalToken) return legacyLocalToken;
+  return sessionStorage.getItem(TOKEN_STORAGE_KEY);
+}
+
+function setToken(token: string, mode: AuthPersistenceMode = 'local') {
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+  sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  getStorageForMode(mode).setItem(TOKEN_STORAGE_KEY, token);
+  localStorage.setItem(AUTH_PERSISTENCE_KEY, mode);
 }
 
 function clearToken() {
-  localStorage.removeItem('auth_token');
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+  sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  localStorage.removeItem(AUTH_PERSISTENCE_KEY);
 }
 
 function getStoreId(): string | null {
