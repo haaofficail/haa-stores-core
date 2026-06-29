@@ -1,5 +1,17 @@
 # Internal Changelog
 
+## 2026-06-29 — Admin Dashboard Gap Bundle Published to Staging (PR #336)
+
+- Marked PR #336 ready, merged it into `main`, and published the admin dashboard gap bundle to staging.
+- Merge evidence: PR #336 merged at `2026-06-29T19:21:31Z` with merge commit `a55d257fb2faf0b7b3924ede1569214c2fc51bb3`.
+- Deploy evidence: `main Deploy` run `28396881297` completed successfully for head SHA `a55d257fb2faf0b7b3924ede1569214c2fc51bb3`.
+- Staging gate evidence: Quality Gates passed, API/admin-dashboard/merchant-dashboard/storefront image builds passed, `Deploy to Staging` passed, and `Post-deploy smoke gate — staging (G9)` passed.
+- Production remained skipped by workflow design; no production deployment happened.
+- Public smoke evidence: `https://admin.staging.haastores.com` returned `HTTP/2 200` and served the Arabic RTL admin shell; `https://staging.haastores.com/health` returned `200`.
+- Published scope: TASK-0124 Marketplace pagination, TASK-0125 admin auth/TOTP/password-reset hardening, TASK-0126 COD fee policy admin UI/API, TASK-0127 Webhooks/Idempotency operational page, and TASK-0128 finance CSV export permission enforcement.
+- Remaining owner-gated rollout: `0090_admin_totp.sql`, `ADMIN_TOTP_ENCRYPTION_KEY`, and transactional email setup are still required before full TOTP enrollment can be used.
+- Safety boundary: staging deploy only; no `db:migrate`, no secrets, no SSH/manual server mutation, no production action, and no live payment/shipping-provider calls.
+
 ## 2026-06-29 — Admin Finance CSV Export Permission Enforcement (TASK-0128)
 
 - Added admin Finance Reports CSV export route guarded by `wallet.payout.export`.

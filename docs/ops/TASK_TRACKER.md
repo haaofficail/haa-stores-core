@@ -8,14 +8,14 @@
 
 - **Type:** Payments/Wallet / Backend API / UX/UI Polish / Testing / Documentation
 - **Priority:** P1 High
-- **Status:** Done locally
+- **Status:** Done; merged in PR #336 and published to staging
 - **Created:** 2026-06-29
 - **Updated:** 2026-06-29
 - **Branch:** `codex/admin-dashboard-gap-audit-auth`
 - **Original Request:** "لا تتوقف حتى تنتهي وتنتشر جميع الاصلاحات"
 - **Expanded Requirement:** Close the finance export permission split gap: admin finance pages may remain readable with `wallet.payout.view_all`, but official CSV export must be enforced by `wallet.payout.export` at the API and reflected in the UI.
 - **Scope:** Admin finance export API routes, admin API client Blob downloads, Finance Reports export button, Accountant Inbox export button, focused regression tests, and ops documentation.
-- **Out of Scope:** Changing settlement read models, adding full-IBAN/proof export data, DB migrations, audit-action taxonomy expansion, deploy, production action, secrets, and live provider calls.
+- **Out of Scope:** Changing settlement read models, adding full-IBAN/proof export data, DB migrations, audit-action taxonomy expansion, production deploy/action, secrets, and live provider calls.
 - **Skills Used:** `acceptance-criteria-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `design-ux-excellence-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`.
 - **Acceptance Criteria:**
   - [x] Finance report CSV export is served by an API route guarded with `wallet.payout.export`.
@@ -29,7 +29,7 @@
 - **Files Changed:** `apps/api/src/routes/admin/index.ts`, `apps/api/src/routes/admin/csv-response.ts`, `apps/api/src/routes/admin/finance-reports.ts`, `apps/api/src/routes/admin/accountant-inbox.ts`, `apps/admin-dashboard/src/lib/api.ts`, `apps/admin-dashboard/src/lib/downloadRowsAsCsv.ts`, `apps/admin-dashboard/src/pages/FinanceReports.tsx`, `apps/admin-dashboard/src/pages/AccountantInbox.tsx`, `tests/finance-reports-contract.test.ts`, `tests/accountant-inbox-route.test.ts`, `tests/accountant-inbox-page.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0128.md`.
 - **Test Results:** Passed locally: `pnpm ops:monitor` exited 0 with no failures/tasks/incidents and only expected dev-server warnings; focused finance export tests passed 4 files / 55 tests; API typecheck passed; admin-dashboard build passed.
 - **Root Cause:** The accountant role already included `wallet.payout.export`, but finance pages generated CSV files client-side from data loaded by `wallet.payout.view_all`. That made export a UI affordance instead of an API-enforced permission boundary.
-- **Verdict:** Done locally for official admin finance CSV export enforcement. No DB migration, `db:migrate`, deploy, secret, production action, or live provider call occurred.
+- **Verdict:** Done, merged in PR #336, and published to staging by Deploy run `28396881297`. The official admin finance CSV export boundary is now API-enforced with `wallet.payout.export`. No DB migration, `db:migrate`, secret, production deploy/action, or live provider call occurred.
 - **Related Issues:** ISSUE-0065.
 
 ---
@@ -38,14 +38,14 @@
 
 - **Type:** Observability / UX/UI Polish / Testing / Documentation
 - **Priority:** P1 High
-- **Status:** Done locally
+- **Status:** Done; merged in PR #336 and published to staging
 - **Created:** 2026-06-29
 - **Updated:** 2026-06-29
 - **Branch:** `codex/admin-dashboard-gap-audit-auth`
 - **Original Request:** "لا تتوقف حتى تنتهي وتنتشر جميع الاصلاحات"
 - **Expanded Requirement:** Close the admin observability surface gap: platform admins with `webhooks.read` need a first-class dashboard page for webhook delivery events, webhook deduplication metrics, and HTTP idempotency-key statistics instead of relying on raw API routes.
 - **Scope:** Admin dashboard API client/query keys, protected route/sidebar entry, operational page UI with filters/search/sort/pagination, focused source-regression tests, and ops documentation.
-- **Out of Scope:** Changing webhook middleware, changing idempotency-key middleware, adding new DB schema, live provider calls, deploy, production action, secrets, and `db:migrate`.
+- **Out of Scope:** Changing webhook middleware, changing idempotency-key middleware, adding new DB schema, live provider calls, production deploy/action, secrets, and `db:migrate`.
 - **Skills Used:** `acceptance-criteria-gate`, `regression-safety-gate`, `implementation-quality-gate`, `design-ux-excellence-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`.
 - **Acceptance Criteria:**
   - [x] Admin API client exposes typed `getWebhooks`, `getWebhookDedupStats`, and `getIdempotencyKeyStats` helpers.
@@ -59,7 +59,7 @@
 - **Files Changed:** `apps/admin-dashboard/src/App.tsx`, `apps/admin-dashboard/src/lib/api.ts`, `apps/admin-dashboard/src/lib/queryClient.ts`, `apps/admin-dashboard/src/pages/OperationalWebhooks.tsx`, `tests/admin-api-rbac-alignment.test.ts`, `tests/admin-permission-reflection.test.ts`, `docs/agent-os/REMAINING_WORK.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0127.md`.
 - **Test Results:** Passed locally: `pnpm ops:monitor` exited 0 with no failures/tasks/incidents and only expected dev-server warnings; focused admin RBAC/permission reflection tests passed 2 files / 12 tests; admin-dashboard build passed.
 - **Root Cause:** The backend already exposed `/admin/webhooks`, `/admin/webhooks/dedup-stats`, and `/admin/idempotency-key/stats`, and TASK-0104 correctly gated them with `webhooks.read`, but no admin-dashboard page consumed those routes. Operators had route-level capability without a discoverable UI for delivery triage, duplicate-rate monitoring, or idempotency-cache health.
-- **Verdict:** Done locally for the admin Webhooks/Idempotency observability page. No DB migration, `db:migrate`, deploy, secret, production action, or live provider call occurred.
+- **Verdict:** Done, merged in PR #336, and published to staging by Deploy run `28396881297`. The admin Webhooks/Idempotency observability page is now available in the deployed admin dashboard for admins with `webhooks.read`. No DB migration, `db:migrate`, secret, production deploy/action, or live provider call occurred.
 - **Related Issues:** ISSUE-0064.
 
 ---
@@ -68,14 +68,14 @@
 
 - **Type:** Payments/Wallet / Backend API / UX/UI Polish / Testing / Documentation
 - **Priority:** P1 High
-- **Status:** Done locally
+- **Status:** Done; merged in PR #336 and published to staging
 - **Created:** 2026-06-29
 - **Updated:** 2026-06-29
 - **Branch:** `codex/admin-dashboard-gap-audit-auth`
 - **Original Request:** "لا تتوقف حتى تنتهي وتنتشر جميع الاصلاحات"
 - **Expanded Requirement:** Close the deferred TASK-0032 follow-up: admin Store Billing Settings must expose and update per-store COD fee policy independently from platform fee policy, using the existing wallet-core COD validators and without changing schema or running migrations.
 - **Scope:** Admin billing-settings GET/PATCH contract, commerce-core billing settings write/audit surface, admin API client types, admin Store Billing Settings UI, focused source-regression tests, and ops documentation.
-- **Out of Scope:** New DB migrations, changing `collectCOD` calculation/posting behavior, merchant wallet COD display, live provider calls, deploy, production action, secrets, and `db:migrate`.
+- **Out of Scope:** New DB migrations, changing `collectCOD` calculation/posting behavior, merchant wallet COD display, live provider calls, production deploy/action, secrets, and `db:migrate`.
 - **Skills Used:** `acceptance-criteria-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `design-ux-excellence-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `hono-typescript`, `postgres-drizzle`, and `build-web-apps:react-best-practices`.
 - **Acceptance Criteria:**
   - [x] `GET /admin/stores/:storeId/billing-settings` returns `effectiveCodPolicy` and `effectiveCodPolicyLabel`.
@@ -89,7 +89,7 @@
 - **Files Changed:** `packages/commerce-core/src/index.ts`, `packages/commerce-core/src/billing-settings-service.ts`, `apps/api/src/routes/admin/billing-settings.ts`, `apps/admin-dashboard/src/lib/api.ts`, `apps/admin-dashboard/src/pages/StoreBillingSettings.tsx`, `tests/cod-fees-wiring.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0126.md`.
 - **Test Results:** Passed locally: `pnpm ops:monitor` exited 0 with no failures/tasks/incidents and only expected dev-server warnings; COD/platform focused tests passed 3 files / 76 tests; commerce-core build passed; commerce-core typecheck passed; API typecheck passed; admin-dashboard build passed.
 - **Root Cause:** TASK-0032 correctly added COD fee schema, wallet-core policy validation/calculation, and collectCOD integration, but intentionally deferred admin-dashboard UI and admin write/read surface. The billing settings route/service continued to expose only platform fee fields, so admins could not configure COD policy from the dashboard despite the backend calculation being policy-driven.
-- **Verdict:** Done locally for admin COD fee policy configuration. No DB migration, `db:migrate`, deploy, secret, production action, or live provider call occurred.
+- **Verdict:** Done, merged in PR #336, and published to staging by Deploy run `28396881297`. Admin COD fee policy configuration is now wired in the deployed admin dashboard/API. No DB migration, `db:migrate`, secret, production deploy/action, or live provider call occurred.
 - **Related Issues:** ISSUE-0063.
 
 ---
@@ -98,14 +98,14 @@
 
 - **Type:** UX/UI Polish / Testing / Documentation
 - **Priority:** P1 High
-- **Status:** Done locally
+- **Status:** Done; merged in PR #336 and published to staging
 - **Created:** 2026-06-29
 - **Updated:** 2026-06-29
 - **Branch:** `codex/admin-dashboard-gap-audit-auth`
 - **Original Request:** "لا تتوقف حتى تنتهي وتنتشر جميع الاصلاحات"
 - **Expanded Requirement:** Close the scoped Marketplace pagination gap: the admin Marketplace products and unified orders tables must request server-side `page`/`limit`, preserve `total`/`totalPages` metadata from the API response, and drive visible pagers from server metadata instead of only paginating locally fetched rows or a hardcoded 200-row order slice.
 - **Scope:** Admin Marketplace products API-client/page pagination, admin Marketplace orders route/API-client/page pagination, focused source-regression coverage, and ops documentation for this single gap.
-- **Out of Scope:** 2FA/password reset already handled by TASK-0125; COD fee UI later handled by TASK-0126; webhooks/idempotency admin page later handled by TASK-0127; finance export permission split later handled by TASK-0128; ZATCA invoice oversight, database migrations, deploy, production action, secrets, and live provider calls.
+- **Out of Scope:** 2FA/password reset already handled by TASK-0125; COD fee UI later handled by TASK-0126; webhooks/idempotency admin page later handled by TASK-0127; finance export permission split later handled by TASK-0128; ZATCA invoice oversight, database migrations, production deploy/action, secrets, and live provider calls.
 - **Skills Used:** `design-ux-excellence-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`.
 - **Acceptance Criteria:**
   - [x] `adminApi.getMarketplaceProducts` accepts `status`, `page`, and `limit`.
@@ -121,7 +121,7 @@
 - **Files Changed:** `apps/api/src/routes/admin/marketplace.ts`, `apps/admin-dashboard/src/lib/api.ts`, `apps/admin-dashboard/src/lib/queryClient.ts`, `apps/admin-dashboard/src/pages/Marketplace.tsx`, `tests/marketplace-p1-2-p1-3.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0124.md`.
 - **Test Results:** Passed locally: `pnpm ops:monitor` exited 0 with no failures/tasks/incidents and only expected dev-server warnings; focused Marketplace/admin query tests passed 2 files / 24 tests; API typecheck passed; admin-dashboard build passed.
 - **Root Cause:** The backend Marketplace products route already returned pagination metadata, but the admin API helper used `request<T>()`, which strips the `{ success, data, ...metadata }` envelope down to `data`. The Marketplace page then used `useTableControls` and `TablePager` against locally fetched products, so the UI could not navigate beyond the first server result set. The unified orders route still had an independent hardcoded `.limit(200)` and no metadata contract, so large marketplace-order sets had the same operational ceiling.
-- **Verdict:** Done locally for the scoped Marketplace pagination gap across products and unified orders. No DB migration, deploy, secret, production action, or live provider call occurred.
+- **Verdict:** Done, merged in PR #336, and published to staging by Deploy run `28396881297`. The scoped Marketplace pagination gap across products and unified orders is now deployed. No DB migration, secret, production deploy/action, or live provider call occurred.
 - **Related Issues:** ISSUE-0061.
 
 ---
@@ -130,14 +130,14 @@
 
 - **Type:** Security / Backend API / UX/UI Polish / Data/DB / Testing / Documentation
 - **Priority:** P1 High
-- **Status:** Done locally; staging-safe before owner-only migration/config
+- **Status:** Done; merged in PR #336 and published to staging; owner-only migration/config still pending for full TOTP enrollment
 - **Created:** 2026-06-29
 - **Updated:** 2026-06-29
 - **Branch:** `codex/admin-dashboard-gap-audit-auth`
 - **Original Request:** "لا تتوقف حتى تنتهي وتنتشر جميع الاصلاحات"
 - **Expanded Requirement:** Close the admin authentication hardening gap: platform admins need self-serve password reset and optional TOTP enrollment. If an admin has enabled TOTP, `/admin/login` must verify the code and sensitive admin mutations must require a JWT from a 2FA-verified login session. Keep admin auth separate from merchant `AuthFlowService`.
 - **Scope:** Admin auth service, admin API auth routes, sensitive admin route middleware, encrypted TOTP DB columns and unapplied migration/snapshot, admin login/reset UI, account-security UI, focused regression tests, and ops documentation.
-- **Out of Scope:** Running `db:migrate`, production/staging deploy, SSH, secrets, live email-provider setup, live payment/shipping calls, forcing all admins to enroll, merchant-dashboard auth changes, and unrelated admin gaps.
+- **Out of Scope:** Running `db:migrate`, production deploy, SSH/manual server mutation, secrets, live email-provider setup, live payment/shipping calls, forcing all admins to enroll, merchant-dashboard auth changes, and unrelated admin gaps.
 - **Skills Used:** `agent-permission-boundary`, `environment-safety-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `implementation-quality-gate`, `design-ux-excellence-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `hono-typescript`, `postgres-drizzle`, and `build-web-apps:react-best-practices`.
 - **Acceptance Criteria:**
   - [x] Admin login accepts optional 6-digit TOTP and returns a `twoFactorRequired` step when the password is correct but TOTP is enabled.
@@ -154,7 +154,7 @@
 - **Files Changed:** `packages/auth-core/src/admin-totp.ts`, `packages/auth-core/src/admin-auth-service.ts`, `packages/auth-core/src/admin.ts`, `packages/auth-core/src/index.ts`, `packages/db/src/schema/users.ts`, `packages/db/src/migrations/0090_admin_totp.sql`, `packages/db/src/migrations/meta/_journal.json`, `packages/db/src/migrations/meta/0090_snapshot.json`, `scripts/build-snapshots.cjs`, `packages/shared/src/types/orders.ts`, `packages/shared/src/types/audit.ts`, `apps/api/src/routes/admin/auth.ts`, `apps/api/src/routes/admin/index.ts`, `apps/admin-dashboard/src/lib/api.ts`, `apps/admin-dashboard/src/lib/queryClient.ts`, `apps/admin-dashboard/src/pages/Login.tsx`, `apps/admin-dashboard/src/pages/Security.tsx`, `apps/admin-dashboard/src/App.tsx`, `tests/admin-auth-hardening.test.ts`, `tests/admin-accountant-login.test.ts`, docs/ops updates.
 - **Test Results:** Passed locally on branch `codex/admin-dashboard-gap-audit-auth`: branch-start `pnpm preflight`; `pnpm --filter @haa/db build`; `pnpm --filter @haa/shared build`; `pnpm --filter @haa/auth-core build`; `pnpm --filter @haa/auth-core typecheck`; `pnpm --filter @haa/api typecheck`; `pnpm --filter @haa/admin-dashboard build`; focused auth regression suite now 5 files / 53 tests including the missing-`admin_totp_enabled_at` compatibility case; `pnpm check:skills` 43/43; `git diff --check`; and final `pnpm preflight`.
 - **Root Cause:** The admin authentication surface still had password-only login and no admin-owned recovery path. The merchant reset OTP flow existed, but admin auth intentionally lives in `AdminAuthService`; reusing merchant `AuthFlowService` would violate the admin/merchant boundary. Sensitive admin mutations also had no second-factor step after an account opted into 2FA.
-- **Verdict:** Implemented locally and safe to deploy code-only to staging before the migration: admin login/reset use base-user selects, missing TOTP columns are treated as "not enabled", and `/security` enrollment reports readiness until `0090_admin_totp.sql` plus `ADMIN_TOTP_ENCRYPTION_KEY` are owner-applied. Full TOTP enrollment/runtime still requires owner-only migration/config. No migration was applied and no production action occurred.
+- **Verdict:** Done, merged in PR #336, and published to staging by Deploy run `28396881297`. The code-only staging deploy is safe before the migration: admin login/reset use base-user selects, missing TOTP columns are treated as "not enabled", and `/security` enrollment reports readiness until `0090_admin_totp.sql` plus `ADMIN_TOTP_ENCRYPTION_KEY` are owner-applied. Full TOTP enrollment/runtime still requires owner-only migration/config. No migration was applied, no `db:migrate` ran, and no production action occurred.
 - **Related Issues:** ISSUE-0062.
 
 ---
