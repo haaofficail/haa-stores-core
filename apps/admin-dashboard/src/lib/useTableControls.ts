@@ -46,14 +46,13 @@ function defaultGetValue(row: any, key: string): unknown {
   return row?.[key];
 }
 
-/** Stable, locale-aware comparator. Nullish values always sort last. */
-function compareValues(a: unknown, b: unknown): number {
-  const aNil = a === null || a === undefined || a === '';
-  const bNil = b === null || b === undefined || b === '';
-  if (aNil && bNil) return 0;
-  if (aNil) return 1;
-  if (bNil) return -1;
+function isNil(v: unknown): boolean {
+  return v === null || v === undefined || v === '';
+}
 
+/** Locale-aware comparator for two non-nullish values. Nullish handling lives
+ * in the sort callback so it stays direction-independent. */
+function compareValues(a: unknown, b: unknown): number {
   if (typeof a === 'number' && typeof b === 'number') return a - b;
 
   const aNum = typeof a === 'string' ? Number(a) : NaN;
@@ -150,7 +149,17 @@ export function useTableControls<T>(options: UseTableControlsOptions<T>): TableC
     if (!sort.key) return filtered;
     const key = sort.key;
     const dir = sort.dir === 'asc' ? 1 : -1;
-    return [...filtered].sort((a, b) => compareValues(getValue(a, key), getValue(b, key)) * dir);
+    return [...filtered].sort((a, b) => {
+      const av = getValue(a, key);
+      const bv = getValue(b, key);
+      const aNil = isNil(av);
+      const bNil = isNil(bv);
+      // Nullish values always sort last, regardless of direction.
+      if (aNil && bNil) return 0;
+      if (aNil) return 1;
+      if (bNil) return -1;
+      return compareValues(av, bv) * dir;
+    });
   }, [filtered, sort, getValue]);
 
   const filteredCount = sorted.length;
