@@ -200,7 +200,7 @@ export default function Login() {
                       </Label>
                       <Link
                         to="/forgot-password"
-                        className="text-xs font-medium text-primary-600 hover:text-primary-700 hover:underline"
+                        className="text-xs font-medium text-primary-500 hover:text-primary-600 hover:underline"
                       >
                         نسيت كلمة المرور؟
                       </Link>
@@ -239,7 +239,7 @@ export default function Login() {
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
-                      className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-2 focus:ring-primary-400"
+                      className="h-4 w-4 accent-primary-500 rounded border-neutral-300 focus:ring-2 focus:ring-primary-400"
                     />
                     تذكّرني
                   </label>
