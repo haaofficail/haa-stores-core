@@ -8,6 +8,7 @@ const root = resolve(__dirname, '..');
 const read = (p: string) => readFileSync(resolve(root, p), 'utf-8');
 
 const adminIndex = read('apps/api/src/routes/admin/index.ts');
+const adminApi = read('apps/admin-dashboard/src/lib/api.ts');
 const ledger = read('packages/wallet-core/src/ledger.ts');
 
 /**
@@ -20,6 +21,8 @@ const MUTATING_PAYOUT_ROUTES = [
   '/settlements/manual-payouts/:payoutId/mark-transferred',
   '/settlements/manual-payouts/:payoutId/upload-proof',
   '/settlements/manual-payouts/:payoutId/verify-transfer',
+  '/settlements/manual-payouts/:payoutId/cancel',
+  '/settlements/manual-payouts/:payoutId/reverse',
 ];
 
 describe('idempotency is enforced on state-changing payout actions', () => {
@@ -34,6 +37,17 @@ describe('idempotency is enforced on state-changing payout actions', () => {
     expect(line, `${path} must enforce idempotencyKey({ required: true })`).toMatch(
       /idempotencyKey\(\s*\{\s*required:\s*true\s*\}\s*\)/,
     );
+  });
+
+  it('admin client sends Idempotency-Key for every guarded payout action', () => {
+    for (const method of ['verifyTransfer', 'cancelPayout', 'reversePayout']) {
+      const start = adminApi.indexOf(`${method}:`);
+      const end = adminApi.indexOf('\n  getAuditLogs:', start);
+      const body = adminApi.slice(start, end);
+      expect(start, `${method} must exist`).toBeGreaterThan(-1);
+      expect(body, `${method} must default a key`).toMatch(/key\s*=\s*newIdempotencyKey\(\)/);
+      expect(body, `${method} must pass key to request(...)`).toMatch(/,\s*key\)/);
+    }
   });
 });
 

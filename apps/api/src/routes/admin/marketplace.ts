@@ -15,6 +15,7 @@ import { type AdminAuthContext } from '@haa/auth-core';
 import { WalletLedger } from '@haa/wallet-core';
 import { AuditLogService } from '@haa/integration-core';
 import { NotificationService } from '@haa/notification-core';
+import { assertAdminUploadIntegrity } from '../../services/admin-upload-integrity.js';
 
 // ── /marketplace/summary ───────────────────────────────────────────────────
 export async function marketplaceSummaryRoute(c: any) {
@@ -378,7 +379,14 @@ export const manualPayoutsRoutes = {
   uploadProof: async (c: any) => {
     const payoutId = Number(c.req.param('payoutId'));
     try {
-      const payout = await new WalletLedger().uploadTransferProof(payoutId, c.req.valid('json'), payoutActionContext(c, 'finance'));
+      const proof = c.req.valid('json');
+      assertAdminUploadIntegrity({
+        key: proof.proofFileKey,
+        sha256: proof.sha256,
+        fileMimeType: proof.fileMimeType,
+        signature: proof.uploadIntegritySignature,
+      });
+      const payout = await new WalletLedger().uploadTransferProof(payoutId, proof, payoutActionContext(c, 'finance'));
       return c.json({ success: true, data: payout });
     } catch (e) {
       return c.json({ success: false, error: { code: 'PAYOUT_WORKFLOW_ERROR', message: e instanceof Error ? e.message : 'Upload proof failed' } }, 400);

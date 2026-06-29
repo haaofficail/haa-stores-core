@@ -11,6 +11,9 @@ const read = (p: string) => (existsSync(resolve(root, p)) ? readFileSync(resolve
 const ledger = read('packages/wallet-core/src/ledger.ts');
 const walletSchema = read('packages/db/src/schema/wallet.ts');
 const adminIndex = read('apps/api/src/routes/admin/index.ts');
+const adminOperations = read('apps/api/src/routes/admin/operations.ts');
+const adminMarketplace = read('apps/api/src/routes/admin/marketplace.ts');
+const uploadIntegrity = read('apps/api/src/services/admin-upload-integrity.ts');
 
 function methodBody(src: string, signature: string): string {
   const start = src.indexOf(signature);
@@ -106,9 +109,33 @@ describe('upload-proof route still enforces idempotency and the new fields', () 
     expect(line).toMatch(/idempotencyKey\(\s*\{\s*required:\s*true\s*\}\s*\)/);
   });
 
-  it('upload-proof schema requires sha256 and fileMimeType', () => {
+  it('upload-proof schema requires sha256, fileMimeType, and upload integrity signature', () => {
     const schema = adminIndex.slice(adminIndex.indexOf('payoutUploadProofSchema'));
     expect(schema).toMatch(/sha256/);
     expect(schema).toMatch(/fileMimeType/);
+    expect(schema).toMatch(/uploadIntegritySignature/);
+  });
+});
+
+describe('receipt hash is bound to the server upload result', () => {
+  it('/admin/upload computes a server-side sha256 and returns an integrity signature', () => {
+    expect(adminOperations).toMatch(/sha256Hex\(buffer\)|result\.sha256/);
+    expect(adminOperations).toMatch(/signAdminUploadIntegrity/);
+    expect(adminOperations).toMatch(/uploadIntegritySignature/);
+  });
+
+  it('upload-proof verifies the key/hash/mime signature before calling the ledger', () => {
+    const start = adminMarketplace.indexOf('uploadProof: async');
+    const body = adminMarketplace.slice(start, adminMarketplace.indexOf('\n  verifyTransfer:', start));
+    expect(body).toMatch(/assertAdminUploadIntegrity/);
+    expect(body.indexOf('assertAdminUploadIntegrity')).toBeLessThan(body.indexOf('uploadTransferProof'));
+    expect(body).toMatch(/proofFileKey/);
+    expect(body).toMatch(/uploadIntegritySignature/);
+  });
+
+  it('the signature service uses HMAC and timingSafeEqual', () => {
+    expect(uploadIntegrity).toMatch(/createHmac\(\s*['"]sha256['"]/);
+    expect(uploadIntegrity).toMatch(/timingSafeEqual/);
+    expect(uploadIntegrity).toMatch(/UPLOAD_INTEGRITY_SIGNATURE_INVALID/);
   });
 });

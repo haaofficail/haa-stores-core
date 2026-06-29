@@ -19,8 +19,10 @@ describe('legacy super_admin receipt upload matches the new contract', () => {
     }
   });
 
-  it('computes the sha256 in the browser before uploading', () => {
-    expect(page).toMatch(/crypto\.subtle\.digest\(\s*['"]SHA-256['"]/);
+  it('uses the server-computed upload hash/signature instead of browser hashing', () => {
+    expect(page).toMatch(/uploaded\.sha256/);
+    expect(page).toMatch(/uploaded\.uploadIntegritySignature/);
+    expect(page).not.toMatch(/crypto\.subtle\.digest\(\s*['"]SHA-256['"]/);
   });
 
   it('accepts only PDF/PNG/JPEG and enforces a 5MB limit', () => {

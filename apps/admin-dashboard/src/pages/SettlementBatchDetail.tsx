@@ -96,6 +96,7 @@ export default function SettlementBatchDetailPage() {
     // Batch 4F: align with the backend receipt contract (4B/4C).
     fileMimeType: '',
     sha256: '',
+    uploadIntegritySignature: '',
     transferredAmount: '',
     currency: 'SAR',
     notes: '',
@@ -226,12 +227,14 @@ export default function SettlementBatchDetailPage() {
     if (file.size > 5 * 1024 * 1024) { toast.error('حجم الملف يتجاوز 5MB'); return; }
     setProofUploading(true);
     try {
-      // Compute the sha256 in the browser before uploading (tamper detection).
-      const buf = await file.arrayBuffer();
-      const digest = await crypto.subtle.digest('SHA-256', buf);
-      const sha256 = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
       const uploaded = await adminApi.uploadFile(file);
-      setProofForm((current) => ({ ...current, proofFileKey: uploaded.key, fileMimeType: file.type, sha256 }));
+      setProofForm((current) => ({
+        ...current,
+        proofFileKey: uploaded.key,
+        fileMimeType: file.type,
+        sha256: uploaded.sha256,
+        uploadIntegritySignature: uploaded.uploadIntegritySignature,
+      }));
       setProofFileName(file.name);
       toast.success('تم رفع ملف الإثبات');
     } catch (e) {
@@ -841,7 +844,7 @@ export default function SettlementBatchDetailPage() {
               </button>
               <button
                 onClick={handleUploadProof}
-                disabled={proofUploading || !proofForm.proofFileKey || !proofForm.sha256 || !proofForm.transferredAmount || !proofForm.currency || !proofForm.bankReference || !proofForm.bankName || !proofForm.transferredAt || !proofForm.beneficiaryName || !proofForm.beneficiaryIbanMasked}
+                disabled={proofUploading || !proofForm.proofFileKey || !proofForm.sha256 || !proofForm.uploadIntegritySignature || !proofForm.transferredAmount || !proofForm.currency || !proofForm.bankReference || !proofForm.bankName || !proofForm.transferredAt || !proofForm.beneficiaryName || !proofForm.beneficiaryIbanMasked}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50"
               >
                 حفظ

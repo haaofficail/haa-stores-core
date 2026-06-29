@@ -16,13 +16,6 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'ملغاة', rejected: 'مرفوضة', reversed: 'معكوسة',
 };
 
-/** Compute the SHA-256 of a file in the browser (hex). */
-async function sha256Hex(file: File): Promise<string> {
-  const buf = await file.arrayBuffer();
-  const digest = await crypto.subtle.digest('SHA-256', buf);
-  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 export default function AccountantSettlementDetail() {
   const { payoutId: payoutIdParam } = useParams();
   const payoutId = Number(payoutIdParam);
@@ -115,12 +108,12 @@ export default function AccountantSettlementDetail() {
     setSaving(true);
     const key = newIdempotencyKey();
     try {
-      const sha256 = await sha256Hex(file);
       const uploaded = await adminApi.uploadFile(file);
       const payload: UploadProofData = {
         proofFileKey: uploaded.key,
         fileMimeType: file.type,
-        sha256,
+        sha256: uploaded.sha256,
+        uploadIntegritySignature: uploaded.uploadIntegritySignature,
         bankReference: bankReference.trim(),
         bankName: bankName.trim() || detail.bankAccount?.bankName || '',
         transferredAt: transferDate,

@@ -66,4 +66,16 @@ describe('haa-marketplace count/feed consistency', () => {
     // 3 are the helper definitions; usages must add several more.
     expect(refs).toBeGreaterThanOrEqual(8);
   });
+
+  it('SFDA gating is enforced in SQL before totals and stats are counted', () => {
+    expect(code).toMatch(/SFDA_GATED_CATEGORY_SLUGS/);
+    expect(code).toMatch(/marketplaceSfdaCompliantProductCondition/);
+    expect(code).toMatch(/sfdaVerifiedAt/);
+    expect(code).toMatch(/sfdaExpiryDate/);
+
+    const usages = code.match(/marketplaceSfdaCompliantProductCondition\(\)/g) ?? [];
+    // stats + product total/feed + detail + seller detail + real sellers +
+    // demo sellers + category facets all count from the same filtered set.
+    expect(usages.length).toBeGreaterThanOrEqual(7);
+  });
 });

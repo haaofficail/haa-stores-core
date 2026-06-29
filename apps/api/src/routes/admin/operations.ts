@@ -12,6 +12,7 @@ import { SubscriptionService } from '@haa/commerce-core';
 import { createMediaAdapter } from '@haa/shared/media';
 import { getWebhookDedupStats } from '@haa/integration-core';
 import { getIdempotencyKeyStats } from '../../middleware/idempotency-key.js';
+import { sha256Hex, signAdminUploadIntegrity } from '../../services/admin-upload-integrity.js';
 
 type AdminRouteContext = Context;
 type JsonRouteContext<T> = Context<{ Variables: Record<string, unknown> }, string, { out: { json: T } }>;
@@ -114,7 +115,23 @@ export async function uploadRoute(c: AdminRouteContext) {
       return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: validationError } }, 400);
     }
     const result = await adapter.upload(buffer, mimetype, 0, 0);
-    return c.json({ success: true, data: { url: result.url, key: result.key, thumbUrl: result.thumbUrl, sizeBytes: result.sizeBytes } }, 201);
+    const sha256 = result.sha256 ?? sha256Hex(buffer);
+    const uploadIntegritySignature = signAdminUploadIntegrity({
+      key: result.key,
+      sha256,
+      fileMimeType: mimetype,
+    });
+    return c.json({
+      success: true,
+      data: {
+        url: result.url,
+        key: result.key,
+        thumbUrl: result.thumbUrl,
+        sizeBytes: result.sizeBytes,
+        sha256,
+        uploadIntegritySignature,
+      },
+    }, 201);
   } catch (err) {
     return c.json({ success: false, error: { code: 'UPLOAD_FAILED', message: err instanceof Error ? err.message : 'Upload failed' } }, 500);
   }

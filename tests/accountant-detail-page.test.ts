@@ -73,8 +73,10 @@ describe('receipt upload form', () => {
     expect(page).toMatch(/5\s*\*\s*1024\s*\*\s*1024|5242880|5\s*MB|5MB/);
   });
 
-  it('computes the sha256 in the browser before uploading', () => {
-    expect(page).toMatch(/crypto\.subtle\.digest\(\s*['"]SHA-256['"]/);
+  it('uses the server-computed upload hash/signature instead of browser hashing', () => {
+    expect(page).toMatch(/uploaded\.sha256/);
+    expect(page).toMatch(/uploaded\.uploadIntegritySignature/);
+    expect(page).not.toMatch(/crypto\.subtle\.digest\(\s*['"]SHA-256['"]/);
   });
 
   it('sends sha256 / fileMimeType / transferredAmount / currency to upload-proof', () => {

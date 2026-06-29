@@ -1,4 +1,4 @@
-import { randomUUID, createHmac, timingSafeEqual } from 'crypto';
+import { randomUUID, createHmac, createHash, timingSafeEqual } from 'crypto';
 import { mkdirSync, writeFileSync, existsSync, unlinkSync } from 'fs';
 import { dirname, join } from 'path';
 import sharp from 'sharp';
@@ -44,6 +44,7 @@ export interface UploadResult {
   thumbUrl?: string;
   thumbKey?: string;
   sizeBytes?: number;
+  sha256?: string;
 }
 
 export interface MediaAdapter {
@@ -90,6 +91,10 @@ function extensionForMime(mimetype: string): string {
 
 function isPdf(mimetype: string): boolean {
   return mimetype === 'application/pdf';
+}
+
+function sha256Hex(buffer: Buffer): string {
+  return createHash('sha256').update(buffer).digest('hex');
 }
 
 export function generateStorageKey(storeId: number, productId: number, mimetype: string): string {
@@ -168,6 +173,7 @@ export class LocalStorageAdapter implements MediaAdapter {
         url: `${this.baseUrl}/${key}`,
         key,
         sizeBytes: buffer.length,
+        sha256: sha256Hex(buffer),
       };
     }
 
@@ -198,6 +204,7 @@ export class LocalStorageAdapter implements MediaAdapter {
       thumbUrl: `${this.baseUrl}/${thumbKey}`,
       thumbKey,
       sizeBytes: optimized.length,
+      sha256: sha256Hex(optimized),
     };
   }
 
@@ -257,7 +264,7 @@ export class S3StorageAdapter implements MediaAdapter {
         ContentType: mimetype,
       }));
 
-      return { url: `${this.publicBaseUrl}/${key}`, key, sizeBytes: buffer.length };
+      return { url: `${this.publicBaseUrl}/${key}`, key, sizeBytes: buffer.length, sha256: sha256Hex(buffer) };
     }
 
     const ext = extensionForMime(mimetype);
@@ -290,7 +297,7 @@ export class S3StorageAdapter implements MediaAdapter {
 
     const url = `${this.publicBaseUrl}/${key}`;
     const thumbUrl = `${this.publicBaseUrl}/${thumbKey}`;
-    return { url, key, thumbUrl, thumbKey, sizeBytes: optimized.length };
+    return { url, key, thumbUrl, thumbKey, sizeBytes: optimized.length, sha256: sha256Hex(optimized) };
   }
 
   async delete(key: string): Promise<void> {

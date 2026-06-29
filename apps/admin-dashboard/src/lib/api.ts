@@ -124,6 +124,7 @@ export interface UploadProofData {
   // them. Optional here so the legacy super_admin upload form still compiles.
   fileMimeType?: string;
   sha256?: string;
+  uploadIntegritySignature?: string;
   transferredAmount?: string;
   currency?: string;
   notes?: string;
@@ -451,18 +452,18 @@ export const adminApi = {
     const res = await fetch(`${BASE}/admin/upload`, { method: 'POST', headers, body: formData });
     const data = await res.json() as {
       success: boolean;
-      data?: { url: string; key: string; thumbUrl?: string; sizeBytes: number };
+      data?: { url: string; key: string; thumbUrl?: string; sizeBytes: number; sha256: string; uploadIntegritySignature: string };
       error?: { message?: string };
     };
     if (!data.success || !data.data) throw new Error(data.error?.message || 'Upload failed');
     return data.data;
   },
-  verifyTransfer: (payoutId: number) =>
-    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/verify-transfer`),
-  cancelPayout: (payoutId: number, reason: string) =>
-    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/cancel`, { reason }),
-  reversePayout: (payoutId: number, reason: string) =>
-    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/reverse`, { reason }),
+  verifyTransfer: (payoutId: number, key = newIdempotencyKey()) =>
+    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/verify-transfer`, undefined, key),
+  cancelPayout: (payoutId: number, reason: string, key = newIdempotencyKey()) =>
+    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/cancel`, { reason }, key),
+  reversePayout: (payoutId: number, reason: string, key = newIdempotencyKey()) =>
+    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/reverse`, { reason }, key),
   getAuditLogs: () => request<Record<string, unknown>[]>('GET', '/admin/audit'),
   getPlans: () => request<Record<string, unknown>[]>('GET', '/admin/plans'),
   updatePlan: (id: number, data: Record<string, unknown>) => request<Record<string, unknown>>('PATCH', `/admin/plans/${id}`, data),

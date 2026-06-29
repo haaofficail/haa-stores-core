@@ -225,6 +225,7 @@ const payoutUploadProofSchema = z.object({
   proofFileKey: z.string().min(1).max(500),
   fileMimeType: z.enum(['application/pdf', 'image/png', 'image/jpeg']),
   sha256: z.string().regex(/^[a-f0-9]{64}$/i),
+  uploadIntegritySignature: z.string().min(1).max(200),
   // Batch 4C: the accountant-entered transferred amount + currency. The ledger
   // matches these against the settlement net; a mismatch parks it in
   // manual_review and never closes/debits.

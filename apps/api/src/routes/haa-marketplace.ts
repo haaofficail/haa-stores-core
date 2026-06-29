@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
-import { paginationSchema, validateProductForMarketplace, type SfdaValidation } from '@haa/shared';
+import { SFDA_GATED_CATEGORY_SLUGS, paginationSchema, validateProductForMarketplace, type SfdaValidation } from '@haa/shared';
 
 const haaMarketplaceRouter = new Hono();
 
@@ -58,6 +58,28 @@ const noProhibitedMarketplaceCategoryCondition = () => sql`NOT EXISTS (
   INNER JOIN ${s.categories} ON ${s.categories.id} = ${s.productCategories.categoryId}
   WHERE ${s.productCategories.productId} = ${s.products.id}
     AND ${s.categories.prohibitedInMarketplace} = true
+)`;
+
+const sfdaGatedCategorySlugSql = sql.join(
+  [...SFDA_GATED_CATEGORY_SLUGS].map((slug) => sql`${slug}`),
+  sql`, `,
+);
+
+const marketplaceSfdaCompliantProductCondition = () => sql`(
+  NOT EXISTS (
+    SELECT 1
+    FROM ${s.productCategories}
+    INNER JOIN ${s.categories} ON ${s.categories.id} = ${s.productCategories.categoryId}
+    WHERE ${s.productCategories.productId} = ${s.products.id}
+      AND ${s.categories.slug} IN (${sfdaGatedCategorySlugSql})
+  )
+  OR (
+    ${s.products.sfdaNumber} IS NOT NULL
+    AND btrim(${s.products.sfdaNumber}) <> ''
+    AND ${s.products.sfdaVerifiedAt} IS NOT NULL
+    AND ${s.products.sfdaExpiryDate} IS NOT NULL
+    AND ${s.products.sfdaExpiryDate} > NOW()
+  )
 )`;
 
 type ProductImageRow = { url: string | null; thumbUrl: string | null };
@@ -166,6 +188,7 @@ haaMarketplaceRouter.get('/stats', async (c) => {
       eq(s.stores.publishStatus, 'published'),
       marketplaceVisibleProductCondition(),
       noProhibitedMarketplaceCategoryCondition(),
+      marketplaceSfdaCompliantProductCondition(),
     ));
 
   return c.json({
@@ -201,6 +224,7 @@ haaMarketplaceRouter.get('/products', async (c) => {
     eq(s.stores.publishStatus, 'published'),
     marketplaceVisibleProductCondition(),
     noProhibitedMarketplaceCategoryCondition(),
+    marketplaceSfdaCompliantProductCondition(),
   ];
 
   if (search) {
@@ -390,6 +414,7 @@ haaMarketplaceRouter.get('/products/:storeSlug/:productSlug', async (c) => {
       eq(s.stores.publishStatus, 'published'),
       marketplaceVisibleProductCondition(),
       noProhibitedMarketplaceCategoryCondition(),
+      marketplaceSfdaCompliantProductCondition(),
     ))
     .limit(1);
 
@@ -446,6 +471,7 @@ haaMarketplaceRouter.get('/sellers/:storeSlug', async (c) => {
       eq(s.products.status, 'active'),
       marketplaceVisibleProductCondition(),
       noProhibitedMarketplaceCategoryCondition(),
+      marketplaceSfdaCompliantProductCondition(),
     ));
 
   if (Number(productCount) === 0) {
@@ -503,6 +529,7 @@ haaMarketplaceRouter.get('/sellers', async (c) => {
       eq(s.stores.isActive, true),
       eq(s.stores.publishStatus, 'published'),
       noProhibitedMarketplaceCategoryCondition(),
+      marketplaceSfdaCompliantProductCondition(),
     ))
     .groupBy(s.stores.id, s.stores.name, s.stores.slug, s.stores.description, s.stores.logoUrl, s.stores.coverUrl, s.stores.city, s.stores.district, s.stores.isDemo);
 
@@ -529,6 +556,7 @@ haaMarketplaceRouter.get('/sellers', async (c) => {
       eq(s.stores.isActive, true),
       eq(s.stores.publishStatus, 'published'),
       noProhibitedMarketplaceCategoryCondition(),
+      marketplaceSfdaCompliantProductCondition(),
     ))
     .groupBy(s.stores.id, s.stores.name, s.stores.slug, s.stores.description, s.stores.logoUrl, s.stores.coverUrl, s.stores.city, s.stores.district, s.stores.isDemo);
 
@@ -575,6 +603,7 @@ haaMarketplaceRouter.get('/categories', async (c) => {
       eq(s.categories.prohibitedInMarketplace, false),
       marketplaceVisibleProductCondition(),
       noProhibitedMarketplaceCategoryCondition(),
+      marketplaceSfdaCompliantProductCondition(),
     ))
     .groupBy(s.categories.name, s.categories.slug)
     .orderBy(sql`count(${s.products.id}) DESC`, s.categories.name);
