@@ -140,7 +140,8 @@ describe('Admin Landing Inbox — route and nav registration', () => {
   it('App.tsx registers the /landing-inbox route under the admin guard', () => {
     const src = read(APP_PATH);
     expect(src).toContain('path="/landing-inbox"');
-    expect(src).toContain('element={<LandingInbox />}');
+    expect(src).toContain('permission="landing_contacts.read"');
+    expect(src).toContain('<LandingInbox /></AdminPermissionRoute>');
   });
 
   it('Admin sidebar/nav exposes the صندوق الوارد entry', () => {

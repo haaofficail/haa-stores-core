@@ -74,6 +74,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   refund_processed: 'معالجة استرداد',
   payout_requested: 'طلب سحب أرباح',
   tenant_status_changed: 'تغيير حالة المُلّاك',
+  'bank_account.iban_revealed_for_payout': 'كشف IBAN لحوالة التسوية',
+  'bank_account.iban_copied_for_payout': 'نسخ IBAN لحوالة التسوية',
   store_deactivated: 'إيقاف المتجر (PDPL)',
   kyc_reviewed: 'مراجعة بيانات التحقق',
   compliance_check_failed: 'فشل فحص الامتثال',

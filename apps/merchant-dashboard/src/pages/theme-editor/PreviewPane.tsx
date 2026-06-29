@@ -55,21 +55,23 @@ export function PreviewPane({
 
   return (
     <div className="flex-1 min-w-0 min-h-0 bg-neutral-100 flex flex-col">
-      <div className="h-10 flex items-center justify-center gap-1 bg-white border-b border-neutral-200 shrink-0 px-2">
+      <div className="h-12 flex items-center justify-center gap-1 bg-white border-b border-neutral-200 shrink-0 px-2">
         <div className="flex items-center gap-0.5 bg-neutral-100 rounded-lg p-0.5">
           {[
-            { id: 'desktop', icon: Monitor, label: 'Desktop' },
-            { id: 'tablet', icon: Tablet, label: 'Tablet' },
-            { id: 'mobile', icon: Smartphone, label: 'Mobile' },
+            { id: 'desktop', icon: Monitor, label: 'سطح المكتب' },
+            { id: 'tablet', icon: Tablet, label: 'الجهاز اللوحي' },
+            { id: 'mobile', icon: Smartphone, label: 'الجوال' },
           ].map(({ id, icon: Icon, label }) => (
             <button
               key={id}
+              type="button"
               onClick={() => setDeviceView(id as DeviceView)}
-              className={`p-1.5 rounded-md transition-all ${deviceView === id ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-400 hover:text-neutral-600'}`}
-              aria-label={label}
-              title={label}
+              className={`min-h-11 min-w-11 p-2 rounded-md transition-all ${deviceView === id ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-400 hover:text-neutral-600'}`}
+              aria-label={`عرض المعاينة على ${label}`}
+              aria-pressed={deviceView === id}
+              title={`عرض المعاينة على ${label}`}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-4 w-4" aria-hidden="true" />
             </button>
           ))}
         </div>
@@ -78,14 +80,20 @@ export function PreviewPane({
             <button
               type="button"
               onClick={() => setDesktopZoom('fit')}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${desktopZoom === 'fit' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}
+              className={`min-h-11 px-3 py-1 rounded-md text-xs font-medium transition-all ${desktopZoom === 'fit' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}
+              aria-label="ملاءمة معاينة سطح المكتب"
+              aria-pressed={desktopZoom === 'fit'}
+              title="ملاءمة معاينة سطح المكتب"
             >
               ملاءمة
             </button>
             <button
               type="button"
               onClick={() => setDesktopZoom('actual')}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${desktopZoom === 'actual' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}
+              className={`min-h-11 px-3 py-1 rounded-md text-xs font-medium transition-all ${desktopZoom === 'actual' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'}`}
+              aria-label="عرض معاينة سطح المكتب بنسبة 100%"
+              aria-pressed={desktopZoom === 'actual'}
+              title="عرض معاينة سطح المكتب بنسبة 100%"
             >
               100%
             </button>

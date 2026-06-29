@@ -1,4 +1,4 @@
-import type { Permission, UserRole } from './types/orders.js';
+import type { AdminPermission, Permission, UserRole } from './types/orders.js';
 
 export type ScopeType = 'store' | 'branch' | 'warehouse' | 'channel';
 
@@ -22,6 +22,14 @@ export interface PermissionInfo {
   riskLevel: 'low' | 'medium' | 'high' | 'critical';
   recommendedForRoles: string[];
   allowedScopes?: ScopeType[];
+}
+
+export interface AdminPermissionInfo {
+  key: AdminPermission;
+  labelAr: string;
+  descriptionAr: string;
+  category: string;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
 }
 
 export interface PermissionPreset {
@@ -313,6 +321,115 @@ export const PERMISSION_CATALOG: PermissionInfo[] = [
   { key: 'support:update', labelAr: 'تحديث التذكرة', descriptionAr: 'تحديث حالة وأولوية التذكرة والرد عليها', category: 'support', riskLevel: 'medium', recommendedForRoles: ['owner', 'admin', 'manager'] },
   { key: 'support:delete', labelAr: 'حذف التذكرة', descriptionAr: 'حذف تذكرة الدعم', category: 'support', riskLevel: 'high', recommendedForRoles: ['owner', 'admin'] },
 ];
+
+export const ADMIN_PERMISSION_CATALOG: AdminPermissionInfo[] = [
+  { key: 'dashboard:view', labelAr: 'عرض رئيسية الأدمن', descriptionAr: 'عرض ملخص المنصة في لوحة الإدارة', category: 'platform_dashboard', riskLevel: 'medium' },
+
+  { key: 'tenants.read', labelAr: 'عرض التجار', descriptionAr: 'عرض قائمة التجار وبيانات الامتثال المرتبطة بهم', category: 'platform_tenants', riskLevel: 'high' },
+  { key: 'tenants.create', labelAr: 'إنشاء تاجر', descriptionAr: 'إنشاء حساب تاجر جديد على المنصة', category: 'platform_tenants', riskLevel: 'critical' },
+  { key: 'tenants.update', labelAr: 'تحديث تاجر', descriptionAr: 'تعديل بيانات تاجر على مستوى المنصة', category: 'platform_tenants', riskLevel: 'critical' },
+  { key: 'tenants.delete', labelAr: 'حذف تاجر', descriptionAr: 'حذف تاجر من المنصة', category: 'platform_tenants', riskLevel: 'critical' },
+  { key: 'tenants.status.update', labelAr: 'تحديث حالة تاجر', descriptionAr: 'تعليق أو تفعيل تاجر مع سبب تدقيقي', category: 'platform_tenants', riskLevel: 'critical' },
+
+  { key: 'stores.read', labelAr: 'عرض المتاجر', descriptionAr: 'عرض متاجر المنصة وإعداداتها التشغيلية', category: 'platform_stores', riskLevel: 'high' },
+  { key: 'stores.create', labelAr: 'إنشاء متجر', descriptionAr: 'إنشاء متجر لتاجر على المنصة', category: 'platform_stores', riskLevel: 'critical' },
+  { key: 'stores.update', labelAr: 'تحديث متجر', descriptionAr: 'تعديل بيانات متجر أو إعداداته', category: 'platform_stores', riskLevel: 'critical' },
+  { key: 'stores.delete', labelAr: 'حذف متجر', descriptionAr: 'حذف متجر من المنصة', category: 'platform_stores', riskLevel: 'critical' },
+  { key: 'stores.status.update', labelAr: 'تحديث حالة متجر', descriptionAr: 'تعطيل أو تفعيل متجر مع سبب تدقيقي', category: 'platform_stores', riskLevel: 'critical' },
+
+  { key: 'kyc.read', labelAr: 'عرض التحقق', descriptionAr: 'عرض ملفات تحقق التجار والحسابات البنكية', category: 'platform_kyc', riskLevel: 'high' },
+  { key: 'kyc.review', labelAr: 'مراجعة التحقق', descriptionAr: 'اعتماد أو رفض ملفات التحقق والحسابات البنكية', category: 'platform_kyc', riskLevel: 'critical' },
+
+  { key: 'payments.read', labelAr: 'عرض المدفوعات', descriptionAr: 'عرض سجل مدفوعات المنصة', category: 'platform_finance', riskLevel: 'high' },
+  { key: 'wallet.payout.request', labelAr: 'طلب صرف', descriptionAr: 'إنشاء طلب صرف مالي', category: 'platform_payouts', riskLevel: 'high' },
+  { key: 'wallet.payout.review', labelAr: 'مراجعة طلب صرف', descriptionAr: 'بدء مراجعة طلب صرف مالي', category: 'platform_payouts', riskLevel: 'critical' },
+  { key: 'wallet.payout.approve', labelAr: 'اعتماد صرف', descriptionAr: 'اعتماد طلب صرف مالي', category: 'platform_payouts', riskLevel: 'critical' },
+  { key: 'wallet.payout.reject', labelAr: 'رفض صرف', descriptionAr: 'رفض طلب صرف مالي مع سبب', category: 'platform_payouts', riskLevel: 'critical' },
+  { key: 'wallet.payout.mark_transferred', labelAr: 'تأكيد تحويل', descriptionAr: 'نقل طلب الصرف إلى حالة التحويل أو التحويل المكتمل', category: 'platform_payouts', riskLevel: 'critical' },
+  { key: 'wallet.payout.upload_proof', labelAr: 'رفع إثبات تحويل', descriptionAr: 'رفع إثبات تحويل بنكي لطلب صرف', category: 'platform_payouts', riskLevel: 'high' },
+  { key: 'wallet.payout.verify_transfer', labelAr: 'التحقق من تحويل', descriptionAr: 'التحقق النهائي من تحويل طلب الصرف', category: 'platform_payouts', riskLevel: 'critical' },
+  { key: 'wallet.payout.cancel', labelAr: 'إلغاء صرف', descriptionAr: 'إلغاء طلب صرف مالي', category: 'platform_payouts', riskLevel: 'high' },
+  { key: 'wallet.payout.reverse', labelAr: 'عكس صرف', descriptionAr: 'عكس عملية صرف بعد اكتمالها', category: 'platform_payouts', riskLevel: 'critical' },
+  { key: 'wallet.payout.view_all', labelAr: 'عرض كل طلبات الصرف', descriptionAr: 'عرض تسويات وطلبات صرف كل المتاجر', category: 'platform_payouts', riskLevel: 'high' },
+  { key: 'wallet.payout.view_store', labelAr: 'عرض طلبات صرف متجر', descriptionAr: 'عرض طلبات صرف متجر محدد', category: 'platform_payouts', riskLevel: 'medium' },
+  { key: 'wallet.payout.second_approve', labelAr: 'اعتماد ثانٍ للتسوية', descriptionAr: 'اعتماد ثانٍ لتسوية كبيرة من مستخدم مختلف عن منفّذ التحويل', category: 'platform_payouts', riskLevel: 'critical' },
+  { key: 'wallet.payout.export', labelAr: 'تصدير تقرير التسويات', descriptionAr: 'تصدير تقرير مالي للتسويات والأرشيف', category: 'platform_payouts', riskLevel: 'medium' },
+
+  { key: 'merchant.bank_accounts.view', labelAr: 'عرض الحسابات البنكية للتسوية', descriptionAr: 'عرض الحساب البنكي للتاجر لأغراض التحويل (آخر 4 أرقام افتراضيًا)', category: 'platform_finance', riskLevel: 'high' },
+  { key: 'merchant.bank_accounts.verify_for_payout', labelAr: 'اعتماد حساب بنكي للتسوية', descriptionAr: 'اعتماد/توثيق الحساب البنكي للتاجر لغرض التحويل فقط', category: 'platform_finance', riskLevel: 'critical' },
+  { key: 'merchant.bank_accounts.reveal_iban_for_payout', labelAr: 'كشف IBAN لتحويل التسوية', descriptionAr: 'كشف/نسخ IBAN الكامل لتسوية محددة وقت تنفيذ التحويل فقط — مؤرشف بالتدقيق', category: 'platform_finance', riskLevel: 'critical' },
+  { key: 'finance.dashboard.view', labelAr: 'عرض لوحة المحاسب المالية', descriptionAr: 'عرض ملخص مالي مختصر للمحاسب', category: 'platform_finance', riskLevel: 'medium' },
+  { key: 'finance.audit_log.view', labelAr: 'عرض سجل التدقيق المالي', descriptionAr: 'عرض سجل التدقيق الخاص بأحداث التسويات والتحويلات', category: 'platform_finance', riskLevel: 'high' },
+  { key: 'finance.reconciliation.view', labelAr: 'عرض المطابقة المالية', descriptionAr: 'عرض تقارير المطابقة البنكية والتسويات العالقة', category: 'platform_finance', riskLevel: 'high' },
+
+  { key: 'marketplace.read', labelAr: 'عرض سوق هاء', descriptionAr: 'عرض ملخص السوق والمنتجات والبائعين وطلبات السوق', category: 'platform_marketplace', riskLevel: 'high' },
+  { key: 'marketplace.review', labelAr: 'مراجعة منتج في السوق', descriptionAr: 'الموافقة أو الرفض أو تعليق منتجات سوق هاء', category: 'platform_marketplace', riskLevel: 'critical' },
+  { key: 'marketplace.feature', labelAr: 'تمييز منتج في السوق', descriptionAr: 'تمييز منتج في سوق هاء أو إلغاء تمييزه', category: 'platform_marketplace', riskLevel: 'high' },
+
+  { key: 'audit.read', labelAr: 'عرض سجل التدقيق', descriptionAr: 'عرض أحداث التدقيق الإدارية والتشغيلية', category: 'platform_audit', riskLevel: 'high' },
+  { key: 'webhooks.read', labelAr: 'عرض webhooks', descriptionAr: 'عرض أحداث webhooks وإحصاءات منع التكرار', category: 'platform_audit', riskLevel: 'high' },
+
+  { key: 'plans.read', labelAr: 'عرض الباقات', descriptionAr: 'عرض باقات المنصة وحدودها وأسعارها', category: 'platform_plans', riskLevel: 'medium' },
+  { key: 'plans.update', labelAr: 'تحديث الباقات', descriptionAr: 'تعديل أسعار وحدود وحالة باقات المنصة', category: 'platform_plans', riskLevel: 'critical' },
+
+  { key: 'platform.settings.read', labelAr: 'عرض إعدادات المنصة', descriptionAr: 'عرض اسم وشعار وأيقونة المنصة', category: 'platform_settings', riskLevel: 'medium' },
+  { key: 'platform.settings.update', labelAr: 'تحديث إعدادات المنصة', descriptionAr: 'تعديل اسم وشعار وأيقونة المنصة', category: 'platform_settings', riskLevel: 'high' },
+  { key: 'platform.media.upload', labelAr: 'رفع وسائط المنصة', descriptionAr: 'رفع ملفات شعارات وأيقونات لوحة الإدارة', category: 'platform_settings', riskLevel: 'high' },
+
+  { key: 'users.read', labelAr: 'عرض مستخدمي المنصة', descriptionAr: 'عرض مستخدمي لوحة الإدارة', category: 'platform_users', riskLevel: 'high' },
+  { key: 'billing.platform_fee.read', labelAr: 'عرض رسوم المنصة', descriptionAr: 'عرض إعدادات رسوم المنصة للمتاجر', category: 'platform_billing', riskLevel: 'high' },
+  { key: 'billing.platform_fee.update', labelAr: 'تحديث رسوم المنصة', descriptionAr: 'تعديل إعدادات رسوم المنصة للمتاجر', category: 'platform_billing', riskLevel: 'critical' },
+
+  { key: 'landing_contacts.read', labelAr: 'عرض صندوق وارد الهبوط', descriptionAr: 'عرض رسائل صفحة الهبوط العامة', category: 'platform_leads', riskLevel: 'medium' },
+  { key: 'landing_contacts.update', labelAr: 'تحديث صندوق وارد الهبوط', descriptionAr: 'تحديث حالة ورسائل المتابعة لصندوق وارد الهبوط', category: 'platform_leads', riskLevel: 'medium' },
+];
+
+/** The historical full-access wildcard kept for the super_admin role. */
+export const ADMIN_WILDCARD = 'admin:*' as const;
+
+/**
+ * Platform admin roles. `super_admin` keeps the historical `admin:*` wildcard
+ * so that every pre-existing admin account stays a full admin and the platform
+ * is never locked out. `accountant` is finance-scoped only — no general
+ * platform power (see ADMIN_ROLE_PERMISSIONS).
+ */
+export type AdminRole = 'super_admin' | 'accountant';
+
+export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, (AdminPermission | typeof ADMIN_WILDCARD)[]> = {
+  super_admin: [ADMIN_WILDCARD],
+  // Finance-only. Deliberately excludes: tenants/stores/plans/users/platform
+  // settings/general KYC/marketplace moderation, the admin:* wildcard, and the
+  // high-risk payout actions reserved for a separate approver (second_approve,
+  // reject, cancel, reverse).
+  accountant: [
+    'finance.dashboard.view',
+    'payments.read',
+    'wallet.payout.view_all',
+    'wallet.payout.review',
+    'wallet.payout.approve',
+    'wallet.payout.mark_transferred',
+    'wallet.payout.upload_proof',
+    'wallet.payout.verify_transfer',
+    'wallet.payout.export',
+    'merchant.bank_accounts.view',
+    'merchant.bank_accounts.verify_for_payout',
+    'merchant.bank_accounts.reveal_iban_for_payout',
+    'finance.audit_log.view',
+    'finance.reconciliation.view',
+  ],
+};
+
+/**
+ * Resolve the permission set for an admin role. Existing admin rows have no
+ * `adminRole` yet (null/undefined); they fail safe to `super_admin` so this
+ * change never locks an existing admin out of the platform.
+ */
+export function getAdminPermissionsForRole(
+  role: string | null | undefined,
+): (AdminPermission | typeof ADMIN_WILDCARD)[] {
+  if (role === 'accountant') return [...ADMIN_ROLE_PERMISSIONS.accountant];
+  return [...ADMIN_ROLE_PERMISSIONS.super_admin];
+}
 
 export type PermissionCategory = (typeof PERMISSION_CATALOG)[number]['category'];
 

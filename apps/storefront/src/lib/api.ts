@@ -484,11 +484,6 @@ export const haaMarketplaceApi = {
   // POST /orders) instead of phone (PII + enumeration vector).
   getOrder: (marketplaceOrderNumber: string, accessToken: string) =>
     request<MarketplaceOrder>(`/marketplace/orders/${marketplaceOrderNumber}?access_token=${encodeURIComponent(accessToken)}`),
-  // Legacy: kept for backward compat with old links in the wild during
-  // the deprecation window. Will be removed once all customers have
-  // re-fetched via accessToken. Plan: docs/ops/MARKETPLACE_HARDENING_PLAN.md §3 Track 1B.
-  getOrderLegacy: (marketplaceOrderNumber: string, phone: string) =>
-    request<MarketplaceOrder>(`/marketplace/orders/${marketplaceOrderNumber}?phone=${encodeURIComponent(phone)}`),
 };
 
 export interface HaaMarketplaceCategory {

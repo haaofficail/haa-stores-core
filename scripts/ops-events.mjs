@@ -81,3 +81,89 @@ export function countBy(events, resolver) {
 export function topCounts(counts, limit = 5) {
   return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, limit)
 }
+
+function maxSeverity(events) {
+  const priority = { P0: 0, P1: 1, P2: 2, P3: 3, P4: 4 }
+  return events
+    .map(event => event.severity || 'P3')
+    .sort((a, b) => (priority[a] ?? 99) - (priority[b] ?? 99))[0] || 'P3'
+}
+
+function summarizeEvidence(events) {
+  return events.map(event => ({
+    eventId: event.eventId || null,
+    timestamp: event.timestamp || null,
+    severity: event.severity || null,
+    errorCode: event.errorCode || null,
+    app: event.app || null,
+    route: event.route || null,
+    target: event.target || null,
+    fingerprint: event.fingerprint || null,
+    sourceKind: event.sourceKind || null,
+  }))
+}
+
+export function buildOpsAlerts(events, config) {
+  const { actionableEvents } = partitionOpsEvents(events, config)
+  const alerts = []
+  const now = config.now.toISOString()
+
+  for (const event of actionableEvents.filter(item => item.severity === 'P0')) {
+    const fingerprint = event.fingerprint || event.errorCode || event.target || event.route || event.eventId || 'unknown'
+    alerts.push({
+      alertId: `ops-alert:${now}:incident:${event.eventId || fingerprint}`,
+      dedupeKey: `incident:p0:${fingerprint}`,
+      kind: 'incident',
+      severity: 'P0',
+      title: 'P0 incident candidate detected',
+      reason: 'Active P0 event in the monitoring action window',
+      count: 1,
+      lookbackHours: config.lookbackHours,
+      evidence: summarizeEvidence([event]),
+    })
+  }
+
+  const p1ByCode = {}
+  for (const event of actionableEvents.filter(item => item.severity === 'P1')) {
+    const code = event.errorCode || 'UNKNOWN'
+    if (!p1ByCode[code]) p1ByCode[code] = []
+    p1ByCode[code].push(event)
+  }
+  for (const [code, groupedEvents] of Object.entries(p1ByCode)) {
+    if (groupedEvents.length < 3) continue
+    alerts.push({
+      alertId: `ops-alert:${now}:task:p1:${code}`,
+      dedupeKey: `task:p1:${code}`,
+      kind: 'task',
+      severity: 'P1',
+      title: `Repeated P1 error code ${code}`,
+      reason: 'P1 error code repeated at least 3 times in the monitoring action window',
+      count: groupedEvents.length,
+      lookbackHours: config.lookbackHours,
+      evidence: summarizeEvidence(groupedEvents),
+    })
+  }
+
+  const fingerprints = {}
+  for (const event of actionableEvents) {
+    if (!event.fingerprint) continue
+    if (!fingerprints[event.fingerprint]) fingerprints[event.fingerprint] = []
+    fingerprints[event.fingerprint].push(event)
+  }
+  for (const [fingerprint, groupedEvents] of Object.entries(fingerprints)) {
+    if (groupedEvents.length < 3) continue
+    alerts.push({
+      alertId: `ops-alert:${now}:rca:${fingerprint}`,
+      dedupeKey: `rca:fingerprint:${fingerprint}`,
+      kind: 'root-cause-analysis',
+      severity: maxSeverity(groupedEvents),
+      title: 'Repeated fingerprint requires RCA',
+      reason: 'Fingerprint repeated at least 3 times in the monitoring action window',
+      count: groupedEvents.length,
+      lookbackHours: config.lookbackHours,
+      evidence: summarizeEvidence(groupedEvents),
+    })
+  }
+
+  return alerts
+}

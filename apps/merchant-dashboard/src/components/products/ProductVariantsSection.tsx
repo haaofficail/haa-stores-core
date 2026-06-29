@@ -62,6 +62,8 @@ export function ProductVariantsSection({ hasVariants, options, variants, onHasVa
                     onOptionsChange(newOpts);
                     onVariantsChange(generateVariantsFromOptions(newOpts, variants));
                   }}
+                  aria-label={`حذف خيار ${opt.name || oi + 1}`}
+                  title={`حذف خيار ${opt.name || oi + 1}`}
                   className="p-1.5 rounded-lg hover:bg-red-50 text-neutral-400 hover:text-red-500 transition-colors mt-1">
                   <X className="h-4 w-4" />
                 </button>

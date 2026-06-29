@@ -142,6 +142,62 @@ describe('Pre-launch smoke test — Security', () => {
   });
 });
 
+describe('Pre-launch smoke test — Payment + Shipping providers', () => {
+  it('FakePaymentProvider covers success, failure, cancellation, expiry, COD, bank transfer, and 3DS scenarios', () => {
+    const fakeProvider = read('packages/payment-providers/src/fake.ts');
+    expect(fakeProvider).toMatch(/fake_card_success/);
+    expect(fakeProvider).toMatch(/fake_card_failed|fake_card_declined/);
+    expect(fakeProvider).toMatch(/fake_card_cancelled/);
+    expect(fakeProvider).toMatch(/fake_card_expired/);
+    expect(fakeProvider).toMatch(/bank_transfer/);
+    expect(fakeProvider).toMatch(/cash_on_delivery/);
+    expect(fakeProvider).toMatch(/fake_3ds_challenge/);
+    expect(fakeProvider).toMatch(/redirectUrl/);
+    expect(fakeProvider).toMatch(/requires_3ds/);
+  });
+
+  it('payment factory blocks live mode and falls back to fake for unconfigured non-live providers', () => {
+    const factory = read('packages/payment-providers/src/factory.ts');
+    expect(factory).toMatch(/PAYMENT_MODE=live is not allowed/);
+    expect(factory).toMatch(/return new FakePaymentProvider\(\)/);
+    expect(factory).toMatch(/Tabby provider requested but not configured/);
+    expect(factory).toMatch(/Tamara provider requested but not configured/);
+    expect(factory).toMatch(/Moyasar provider requested but not configured/);
+    expect(factory).toMatch(/liveBlocked:\s*true/);
+  });
+
+  it('demo checkout forces FakePaymentProvider so local smoke never reaches live payment APIs', () => {
+    const checkout = read('packages/commerce-core/src/checkout.ts');
+    expect(checkout).toMatch(/Demo stores always use FakePaymentProvider/);
+    expect(checkout).toMatch(/this\.isDemo\s*\?\s*new FakePaymentProvider\(\)/);
+  });
+
+  it('shipping factory blocks live mode and keeps manual plus haa_mock local-safe', () => {
+    const factory = read('packages/shipping-core/src/factory.ts');
+    const readiness = read('packages/shipping-core/src/readiness.ts');
+    const sharedTypes = read('packages/shared/src/types/shipping.ts');
+
+    expect(factory).toMatch(/SHIPPING_MODE=live is not allowed/);
+    expect(factory).toMatch(/return new HaaMockShippingProvider\(\)/);
+    expect(factory).toMatch(/return new ManualShippingProvider\(\)/);
+    expect(readiness).toMatch(/provider === "haa_mock" \|\| provider === "manual"/);
+    expect(readiness).toMatch(/state = "mock_ready"/);
+    expect(sharedTypes).toMatch(/SAFE_SHIPPING_MODES.*manual.*mock.*sandbox/s);
+  });
+
+  it('merchant provider-status route remains mounted for local readiness smoke checks', () => {
+    const apiIndex = read('apps/api/src/index.ts');
+    const route = read('apps/api/src/routes/provider-status.ts');
+    const service = read('packages/commerce-core/src/provider-status-service.ts');
+
+    expect(apiIndex).toContain("app.route('/merchant/:storeId/provider-status', providerStatusRouter)");
+    expect(route).toMatch(/requirePermission\(['"]settings:read['"]\)/);
+    expect(service).toMatch(/payment/);
+    expect(service).toMatch(/shipping/);
+    expect(service).toMatch(/shippingLabel/);
+  });
+});
+
 describe('Pre-launch smoke test — SEO + PWA', () => {
   it('robots.txt exists and disallows internal routes', () => {
     const robots = read('apps/storefront/public/robots.txt');

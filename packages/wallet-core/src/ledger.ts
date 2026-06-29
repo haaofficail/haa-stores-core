@@ -2,6 +2,8 @@ import { eq, and, count, gte, lte, or, like, sql, desc } from 'drizzle-orm';
 import { createDbClient, type DbOrTx, type DbTransaction } from '@haa/db';
 import * as s from '@haa/db/schema';
 import type { WalletEntryType, WalletEntryDirection, WalletEntryStatus } from '@haa/shared';
+import { assertReceiptInput, assertTransferData, evaluateTransferAmount } from './receipt-validation.js';
+import { needsSecondApproval, getSecondApprovalThresholdSar } from './settlement-config.js';
 import Decimal from 'decimal.js';
 
 // DECISION-OS-018: every entry type below has a DB-level partial unique
@@ -11,6 +13,15 @@ import Decimal from 'decimal.js';
 // payout_reversal, settlement_difference. The shape matches the index
 // `where` clause so `onConflictDoNothing` lands on the right index.
 type IdempotentSpec = { type: string; referenceType: string; where: string };
+type WalletAccountRow = typeof s.walletAccounts.$inferSelect;
+type BalanceSnapshot = {
+  balanceBefore: Decimal;
+  balanceAfter: Decimal;
+  pendingBefore: Decimal;
+  pendingAfter: Decimal;
+  availableBefore: Decimal;
+  availableAfter: Decimal;
+};
 
 function resolveIdempotentSpec(input: { type: string; referenceType?: string; referenceId?: number }): IdempotentSpec | null {
   if (input.referenceId == null) return null;
@@ -25,6 +36,73 @@ function resolveIdempotentSpec(input: { type: string; referenceType?: string; re
   if (t === 'payout_reversal' && rt === 'payout') return { type: t, referenceType: rt, where: `type = 'payout_reversal' AND reference_type = 'payout'` };
   if (t === 'settlement_difference' && rt === 'adjustment') return { type: t, referenceType: rt, where: `type = 'settlement_difference' AND reference_type = 'adjustment'` };
   return null;
+}
+
+function shouldUseAvailableBalance(input: LedgerEntryInput, status: WalletEntryStatus): boolean {
+  return status === 'available' || input.type === 'payout' || input.type === 'payout_debit';
+}
+
+function calculateBalances(account: WalletAccountRow, input: LedgerEntryInput, status: WalletEntryStatus): BalanceSnapshot {
+  const balanceBefore = new Decimal(account.balance);
+  const pendingBefore = new Decimal(account.pendingBalance);
+  const availableBefore = new Decimal(account.availableBalance);
+  const balanceAfter = input.direction === 'credit'
+    ? balanceBefore.plus(input.amount)
+    : balanceBefore.minus(input.amount);
+  let pendingAfter = pendingBefore;
+  let availableAfter = availableBefore;
+
+  if (input.direction === 'credit') {
+    if (status === 'available') {
+      availableAfter = availableBefore.plus(input.amount);
+    } else {
+      pendingAfter = pendingBefore.plus(input.amount);
+    }
+  } else if (shouldUseAvailableBalance(input, status)) {
+    availableAfter = availableBefore.minus(input.amount);
+  } else {
+    pendingAfter = pendingBefore.minus(input.amount);
+  }
+
+  return { balanceBefore, balanceAfter, pendingBefore, pendingAfter, availableBefore, availableAfter };
+}
+
+function buildWalletEntryValues(input: LedgerEntryInput, account: WalletAccountRow, status: WalletEntryStatus, balances: BalanceSnapshot) {
+  return {
+    storeId: input.storeId,
+    walletAccountId: account.id,
+    type: input.type,
+    direction: input.direction,
+    amount: input.amount.toString(),
+    balanceBefore: balances.balanceBefore.toString(),
+    balanceAfter: balances.balanceAfter.toString(),
+    status,
+    referenceType: input.referenceType ?? null,
+    referenceId: input.referenceId ?? null,
+    description: input.description ?? null,
+    feeRatePct: input.feeRatePct != null ? input.feeRatePct.toString() : null,
+    feeFixed: input.feeFixed != null ? input.feeFixed.toString() : null,
+    feeSource: input.feeSource ?? null,
+    metadata: input.metadata ?? null,
+  };
+}
+
+function buildWalletAccountUpdate(input: LedgerEntryInput, account: WalletAccountRow, balances: BalanceSnapshot) {
+  return {
+    balance: balances.balanceAfter.toString(),
+    pendingBalance: balances.pendingAfter.toString(),
+    availableBalance: balances.availableAfter.toString(),
+    totalSales: input.type === 'sale' && input.direction === 'credit'
+      ? new Decimal(account.totalSales).plus(input.amount).toString()
+      : account.totalSales,
+    totalFees: (input.type === 'platform_fee' || input.type === 'payment_fee')
+      ? new Decimal(account.totalFees).plus(input.amount).toString()
+      : account.totalFees,
+    totalPayouts: (input.type === 'payout' || input.type === 'payout_debit') && input.direction === 'debit'
+      ? new Decimal(account.totalPayouts ?? 0).plus(input.amount).toString()
+      : account.totalPayouts,
+    updatedAt: new Date(),
+  };
 }
 
 interface LedgerEntryInput {
@@ -72,7 +150,14 @@ type PayoutStatus =
   | 'transfer_verified'
   | 'failed'
   | 'cancelled'
-  | 'reversed';
+  | 'reversed'
+  // Batch 4C: a receipt was uploaded whose amount/currency did not match the
+  // settlement. The settlement is parked here for a human to review; it is
+  // NOT closed and the wallet is NOT debited.
+  | 'manual_review'
+  // Batch 5: a verified large settlement parked for a SECOND approval by a
+  // different authorized user before it is finalized + debited.
+  | 'awaiting_second_approval';
 
 interface PayoutActionContext {
   actorUserId: number;
@@ -89,7 +174,27 @@ interface TransferProofInput {
   beneficiaryName: string;
   beneficiaryIbanMasked: string;
   proofFileKey?: string;
+  // Batch 4B: required for a storable receipt (validated by assertReceiptInput).
+  fileMimeType?: string;
+  sha256?: string;
+  // Batch 4C: the accountant-entered transferred amount + currency, matched
+  // against the settlement net (decimal-safe) before the receipt is accepted.
+  transferredAmount?: string | number;
+  currency?: string;
   notes?: string;
+}
+
+interface PayoutEventInput {
+  actorUserId: number | null;
+  actorRole: string;
+  eventType: string;
+  fromStatus: string | null;
+  toStatus: string | null;
+  amount?: string | null;
+  reason?: string;
+  metadata?: Record<string, unknown>;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 export class WalletLedger {
@@ -165,54 +270,23 @@ export class WalletLedger {
   }
 
   async recordEntry(input: LedgerEntryInput) {
-    return this.db.transaction(async (tx) => {
+    return this.db.transaction(async (tx) => this.recordEntryInTx(tx, input));
+  }
+
+  /**
+   * The body of recordEntry, runnable inside a caller-provided transaction so
+   * that a payout debit can be committed ATOMICALLY with the payout status
+   * change (Batch 4A — no out-of-transaction debit). Standalone callers use
+   * recordEntry, which wraps this in its own transaction.
+   */
+  private async recordEntryInTx(tx: DbTransaction, input: LedgerEntryInput) {
       // P0-2 audit fix: read+lock the account row inside this tx so two
       // concurrent recordEntry calls can't both compute newBalance from
       // the same stale starting value.
       const account = await this.ensureAccountForUpdate(tx, input.storeId);
-
-      const balanceBefore = new Decimal(account.balance);
-      let balanceAfter = balanceBefore;
-      const pendingBefore = new Decimal(account.pendingBalance);
-      let pendingAfter = pendingBefore;
-      const availableBefore = new Decimal(account.availableBalance);
-      let availableAfter = availableBefore;
-
       const status = input.status ?? 'pending';
-
-      if (input.direction === 'credit') {
-        balanceAfter = balanceBefore.plus(input.amount);
-        if (status === 'available') {
-          availableAfter = availableBefore.plus(input.amount);
-        } else {
-          pendingAfter = pendingBefore.plus(input.amount);
-        }
-      } else {
-        balanceAfter = balanceBefore.minus(input.amount);
-        if (status === 'available' || input.type === 'payout' || input.type === 'payout_debit') {
-          availableAfter = availableBefore.minus(input.amount);
-        } else {
-          pendingAfter = pendingBefore.minus(input.amount);
-        }
-      }
-
-      const values = {
-        storeId: input.storeId,
-        walletAccountId: account.id,
-        type: input.type,
-        direction: input.direction,
-        amount: input.amount.toString(),
-        balanceBefore: balanceBefore.toString(),
-        balanceAfter: balanceAfter.toString(),
-        status,
-        referenceType: input.referenceType ?? null,
-        referenceId: input.referenceId ?? null,
-        description: input.description ?? null,
-        feeRatePct: input.feeRatePct != null ? input.feeRatePct.toString() : null,
-        feeFixed: input.feeFixed != null ? input.feeFixed.toString() : null,
-        feeSource: input.feeSource ?? null,
-        metadata: input.metadata ?? null,
-      };
+      const balances = calculateBalances(account, input, status);
+      const values = buildWalletEntryValues(input, account, status, balances);
 
       // DB-level idempotency for wallet entries that are bound to a unique
       // reference (DECISION-OS-018 / migrations 0062 + 0073). The partial
@@ -239,24 +313,11 @@ export class WalletLedger {
         return existing;
       }
 
-      await tx.update(s.walletAccounts).set({
-        balance: balanceAfter.toString(),
-        pendingBalance: pendingAfter.toString(),
-        availableBalance: availableAfter.toString(),
-        totalSales: input.type === 'sale' && input.direction === 'credit'
-          ? new Decimal(account.totalSales).plus(input.amount).toString()
-          : account.totalSales,
-        totalFees: (input.type === 'platform_fee' || input.type === 'payment_fee')
-          ? new Decimal(account.totalFees).plus(input.amount).toString()
-          : account.totalFees,
-        totalPayouts: (input.type === 'payout' || input.type === 'payout_debit') && input.direction === 'debit'
-          ? new Decimal(account.totalPayouts ?? 0).plus(input.amount).toString()
-          : account.totalPayouts,
-        updatedAt: new Date(),
-      }).where(eq(s.walletAccounts.id, account.id));
+      await tx.update(s.walletAccounts)
+        .set(buildWalletAccountUpdate(input, account, balances))
+        .where(eq(s.walletAccounts.id, account.id));
 
       return entry;
-    });
   }
 
   async recordPendingMerchantPayable(input: ProviderTransactionInput) {
@@ -516,31 +577,139 @@ export class WalletLedger {
   }
 
   async uploadTransferProof(payoutId: number, proof: TransferProofInput, ctx: PayoutActionContext) {
+    // Batch 4B: a receipt is a financial document — validate file + bank
+    // reference + sha256 + allowed content type (PDF/PNG/JPEG) BEFORE any write.
+    assertReceiptInput(proof);
+    if (!proof.beneficiaryIbanMasked || proof.beneficiaryIbanMasked.replace(/\s/g, '').length > 12) {
+      throw new Error('Only masked IBAN may be stored with transfer proof');
+    }
+
     const payout = await this.getPayoutById(payoutId);
     if (payout.status !== 'transferred') throw new Error('Transfer proof can only be uploaded after transferred status');
     if (payout.transferredByUserId !== ctx.actorUserId) {
       throw new Error('Only the transfer actor can upload transfer proof');
     }
-    if (!proof.beneficiaryIbanMasked || proof.beneficiaryIbanMasked.replace(/\s/g, '').length > 12) {
-      throw new Error('Only masked IBAN may be stored with transfer proof');
+
+    // Batch 4C: validate the bank-transfer fields and match the transferred
+    // amount + currency against the settlement net (decimal-safe).
+    assertTransferData(proof, Date.now());
+    const amountCheck = evaluateTransferAmount(
+      payout.amount,
+      payout.currency,
+      proof.transferredAmount as string | number,
+      proof.currency as string,
+    );
+    if (!amountCheck.ok) {
+      if (amountCheck.code === 'TRANSFER_AMOUNT_INVALID') {
+        throw new Error('TRANSFER_AMOUNT_INVALID');
+      }
+      // Amount/currency mismatch: park the settlement in manual_review. It is
+      // NOT closed, NOT transitioned to proof_uploaded, and the wallet is NEVER
+      // debited (verifyTransfer requires proof_uploaded). The difference is
+      // recorded in the audit event, never silently dropped.
+      await this.db.transaction(async (tx) => {
+        const [moved] = await tx.update(s.payoutRequests).set({
+          status: 'manual_review',
+          updatedAt: new Date(),
+        }).where(and(eq(s.payoutRequests.id, payoutId), eq(s.payoutRequests.status, 'transferred'))).returning();
+        if (!moved) throw new Error('Payout status changed before proof upload');
+        await this.recordPayoutEventTx(tx, payoutId, payout.storeId, {
+          actorUserId: ctx.actorUserId,
+          actorRole: ctx.actorRole,
+          eventType: 'settlement.archive_blocked_amount_mismatch',
+          fromStatus: 'transferred',
+          toStatus: 'manual_review',
+          amount: payout.amount,
+          reason: amountCheck.reason,
+          metadata: {
+            amountMatched: false,
+            mismatchReason: amountCheck.reason,
+            bankReference: proof.bankReference,
+            bankName: proof.bankName,
+            transferDate: proof.transferredAt,
+            transferredAmount: String(proof.transferredAmount),
+            expectedAmount: payout.amount,
+            currency: proof.currency,
+            expectedCurrency: payout.currency,
+          },
+          ipAddress: ctx.ipAddress,
+          userAgent: ctx.userAgent,
+        });
+      });
+      throw new Error(amountCheck.code);
     }
 
-    await this.db.insert(s.payoutTransferProofs).values({
-      payoutRequestId: payoutId,
-      bankReference: proof.bankReference,
-      bankName: proof.bankName,
-      amount: payout.amount,
-      currency: payout.currency,
-      transferredAt: proof.transferredAt,
-      transferredByUserId: ctx.actorUserId,
-      beneficiaryName: proof.beneficiaryName,
-      beneficiaryIbanMasked: proof.beneficiaryIbanMasked,
-      proofFileKey: proof.proofFileKey,
-      notes: proof.notes,
-      verificationStatus: 'pending',
-    });
+    // Atomic: the GUARDED status transition runs first (acts as the lock — only
+    // one concurrent request flips transferred -> proof_uploaded), then the
+    // receipt insert + audit event commit in the SAME transaction. If the
+    // transition loses the race, the whole tx rolls back and no orphan receipt
+    // is left. The partial-unique index is the DB-level backstop.
+    return this.db.transaction(async (tx) => {
+      const [updated] = await tx.update(s.payoutRequests).set({
+        status: 'proof_uploaded',
+        updatedAt: new Date(),
+      }).where(and(eq(s.payoutRequests.id, payoutId), eq(s.payoutRequests.status, 'transferred'))).returning();
+      if (!updated) throw new Error('Payout status changed before proof upload');
 
-    return this.transitionPayout(payoutId, 'transferred', 'proof_uploaded', 'payout_transfer_proof_uploaded', {}, ctx);
+      const [proofRow] = await tx.insert(s.payoutTransferProofs).values({
+        payoutRequestId: payoutId,
+        bankReference: proof.bankReference,
+        bankName: proof.bankName,
+        amount: payout.amount,
+        currency: payout.currency,
+        transferredAt: proof.transferredAt,
+        transferredByUserId: ctx.actorUserId,
+        beneficiaryName: proof.beneficiaryName,
+        beneficiaryIbanMasked: proof.beneficiaryIbanMasked,
+        proofFileKey: proof.proofFileKey,
+        fileMimeType: proof.fileMimeType,
+        sha256: proof.sha256,
+        notes: proof.notes,
+        verificationStatus: 'pending',
+      }).returning();
+
+      // Receipt-upload audit (settlement.receipt_uploaded equivalent): the
+      // canonical transition event name is kept for backward compatibility,
+      // now enriched with receiptId + sha256.
+      await this.recordPayoutEventTx(tx, payoutId, payout.storeId, {
+        actorUserId: ctx.actorUserId,
+        actorRole: ctx.actorRole,
+        eventType: 'payout_transfer_proof_uploaded',
+        fromStatus: 'transferred',
+        toStatus: 'proof_uploaded',
+        amount: payout.amount,
+        reason: ctx.reason,
+        metadata: {
+          receiptId: proofRow.id,
+          sha256: proof.sha256,
+          fileMimeType: proof.fileMimeType,
+          // Batch 4C: transfer data + confirmed amount match.
+          bankReference: proof.bankReference,
+          bankName: proof.bankName,
+          transferDate: proof.transferredAt,
+          transferredAmount: String(proof.transferredAmount),
+          currency: proof.currency,
+          amountMatched: true,
+        },
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      });
+
+      return updated;
+    });
+  }
+
+  /** True if a (non-superseded) transfer receipt exists for this payout. */
+  private async hasTransferProof(payoutId: number): Promise<boolean> {
+    const [row] = await this.db
+      .select({ id: s.payoutTransferProofs.id })
+      .from(s.payoutTransferProofs)
+      .where(and(
+        eq(s.payoutTransferProofs.payoutRequestId, payoutId),
+        sql`${s.payoutTransferProofs.verificationStatus} <> 'superseded'`,
+      ))
+      .limit(1);
+    return !!row;
   }
 
   async verifyTransfer(payoutId: number, ctx: PayoutActionContext) {
@@ -552,8 +721,44 @@ export class WalletLedger {
     if (payout.requestedByUserId === ctx.actorUserId) {
       throw new Error('Maker-checker violation: requester cannot verify transfer');
     }
+    // Batch 4B: a settlement may never be closed/debited without a saved
+    // receipt linked to it. Defense-in-depth beyond the proof_uploaded status.
+    if (!(await this.hasTransferProof(payoutId))) {
+      throw new Error('TRANSFER_PROOF_REQUIRED');
+    }
 
-    return this.db.transaction(async (tx) => {
+    // Batch 5: large settlements require a SECOND approval by a different
+    // authorized user. Park them in awaiting_second_approval — NO ledger debit,
+    // NO finalization — until secondApprovePayout runs.
+    if (needsSecondApproval(payout.amount)) {
+      await this.db.transaction(async (tx) => {
+        const [moved] = await tx.update(s.payoutRequests).set({
+          status: 'awaiting_second_approval',
+          updatedAt: new Date(),
+        }).where(and(eq(s.payoutRequests.id, payoutId), eq(s.payoutRequests.status, 'proof_uploaded'))).returning();
+        if (!moved) throw new Error('Payout status changed before verification');
+        await this.recordPayoutEventTx(tx, payoutId, payout.storeId, {
+          actorUserId: ctx.actorUserId,
+          actorRole: ctx.actorRole,
+          eventType: 'settlement.second_approval_required',
+          fromStatus: 'proof_uploaded',
+          toStatus: 'awaiting_second_approval',
+          amount: payout.amount,
+          reason: ctx.reason,
+          metadata: {
+            threshold: getSecondApprovalThresholdSar(),
+            currency: payout.currency,
+            requiredReason: 'amount_at_or_above_threshold',
+            receiptUploadedBy: payout.transferredByUserId,
+          },
+          ipAddress: ctx.ipAddress,
+          userAgent: ctx.userAgent,
+        });
+      });
+      return this.getPayoutById(payoutId);
+    }
+
+    await this.db.transaction(async (tx) => {
       const [updated] = await tx.update(s.payoutRequests).set({
         status: 'transfer_verified',
         verifiedByUserId: ctx.actorUserId,
@@ -580,21 +785,124 @@ export class WalletLedger {
         ipAddress: ctx.ipAddress,
         userAgent: ctx.userAgent,
       });
-    });
 
-    await this.recordEntry({
-      storeId: payout.storeId,
-      type: 'payout_debit',
-      direction: 'debit',
-      amount: Number(payout.amount),
-      referenceType: 'payout',
-      referenceId: payout.id,
-      description: 'Manual payout transfer verified',
-      status: 'available',
-      metadata: { reference: payout.reference, liveBankTransfer: false },
+      // Debit the wallet ATOMICALLY in the same transaction as the status
+      // change — either both commit or both roll back (Batch 4A). Previously
+      // this debit sat AFTER `return this.db.transaction(...)`, i.e. it was
+      // unreachable: a verified payout never debited the wallet. It is also
+      // idempotent at the DB level (partial unique index on the payout
+      // reference), so a replay can never double-charge.
+      await this.recordEntryInTx(tx, {
+        storeId: payout.storeId,
+        type: 'payout_debit',
+        direction: 'debit',
+        amount: Number(payout.amount),
+        referenceType: 'payout',
+        referenceId: payout.id,
+        description: 'Manual payout transfer verified',
+        status: 'available',
+        metadata: { reference: payout.reference, liveBankTransfer: false },
+      });
     });
 
     return this.getPayoutById(payoutId);
+  }
+
+  /**
+   * Batch 5: finalize a large settlement after a SECOND approval. The approver
+   * MUST be a different user from the one who executed the transfer / uploaded
+   * the receipt (segregation of duties — enforced server-side, not the UI). The
+   * wallet debit happens ATOMICALLY in the same transaction as the transition.
+   */
+  async secondApprovePayout(payoutId: number, ctx: PayoutActionContext) {
+    const payout = await this.getPayoutById(payoutId);
+    if (payout.status !== 'awaiting_second_approval') {
+      throw new Error('Cannot second-approve unless the settlement is awaiting second approval');
+    }
+    if (!(await this.hasTransferProof(payoutId))) {
+      throw new Error('TRANSFER_PROOF_REQUIRED');
+    }
+    // Segregation of duties: the receipt uploader / transfer executor
+    // (transferredByUserId) and the original requester cannot second-approve.
+    if (payout.transferredByUserId === ctx.actorUserId || payout.requestedByUserId === ctx.actorUserId) {
+      await this.recordPayoutEvent(payoutId, payout.storeId, {
+        actorUserId: ctx.actorUserId,
+        actorRole: ctx.actorRole,
+        eventType: 'settlement.second_approval_blocked_same_actor',
+        fromStatus: 'awaiting_second_approval',
+        toStatus: 'awaiting_second_approval',
+        amount: payout.amount,
+        reason: 'segregation_of_duties',
+        metadata: { receiptUploadedBy: payout.transferredByUserId, attemptedBy: ctx.actorUserId, currency: payout.currency },
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      });
+      throw new Error('SEGREGATION_OF_DUTIES_VIOLATION');
+    }
+
+    await this.db.transaction(async (tx) => {
+      const [updated] = await tx.update(s.payoutRequests).set({
+        status: 'transfer_verified',
+        verifiedByUserId: ctx.actorUserId,
+        verifiedAt: new Date(),
+        paidAt: new Date(),
+        updatedAt: new Date(),
+      }).where(and(eq(s.payoutRequests.id, payoutId), eq(s.payoutRequests.status, 'awaiting_second_approval'))).returning();
+      if (!updated) throw new Error('Payout status changed before second approval');
+
+      await tx.update(s.payoutTransferProofs).set({
+        verificationStatus: 'verified',
+        verifiedByUserId: ctx.actorUserId,
+        verifiedAt: new Date(),
+      }).where(eq(s.payoutTransferProofs.payoutRequestId, payoutId));
+
+      await this.recordPayoutEventTx(tx, payoutId, payout.storeId, {
+        actorUserId: ctx.actorUserId,
+        actorRole: ctx.actorRole,
+        eventType: 'settlement.second_approved',
+        fromStatus: 'awaiting_second_approval',
+        toStatus: 'transfer_verified',
+        amount: payout.amount,
+        reason: ctx.reason,
+        metadata: {
+          secondApproverId: ctx.actorUserId,
+          receiptUploadedBy: payout.transferredByUserId,
+          threshold: getSecondApprovalThresholdSar(),
+          currency: payout.currency,
+        },
+        ipAddress: ctx.ipAddress,
+        userAgent: ctx.userAgent,
+      });
+
+      // Debit the wallet ATOMICALLY (same transaction, idempotent at DB level).
+      await this.recordEntryInTx(tx, {
+        storeId: payout.storeId,
+        type: 'payout_debit',
+        direction: 'debit',
+        amount: Number(payout.amount),
+        referenceType: 'payout',
+        referenceId: payout.id,
+        description: 'Manual payout second-approved',
+        status: 'available',
+        metadata: { reference: payout.reference, liveBankTransfer: false, secondApproved: true },
+      });
+    });
+
+    return this.getPayoutById(payoutId);
+  }
+
+  /**
+   * Batch 6: reject a pending second approval back to manual_review (reason
+   * required). No ledger debit. Same-actor segregation is irrelevant here — a
+   * rejection only parks it for human review.
+   */
+  async secondRejectPayout(payoutId: number, ctx: PayoutActionContext) {
+    const payout = await this.getPayoutById(payoutId);
+    if (payout.status !== 'awaiting_second_approval') {
+      throw new Error('Can only reject a settlement awaiting second approval');
+    }
+    if (!ctx.reason) throw new Error('Rejection reason is required');
+    return this.transitionPayout(payoutId, 'awaiting_second_approval', 'manual_review', 'settlement.second_approval_rejected', {}, ctx);
   }
 
   async cancelPayout(payoutId: number, ctx: PayoutActionContext) {
@@ -656,6 +964,10 @@ export class WalletLedger {
       toStatus,
       amount: payout.amount,
       reason: ctx.reason,
+      // Batch 4E: enrich every payout transition event (incl. transfer-start
+      // = payout_marked_transfer_pending / payout_marked_transferred) with the
+      // settlement currency so the audit metadata is complete.
+      metadata: { currency: payout.currency },
       ipAddress: ctx.ipAddress,
       userAgent: ctx.userAgent,
     });
@@ -690,20 +1002,20 @@ export class WalletLedger {
   private async recordPayoutEvent(
     payoutRequestId: number,
     storeId: number,
-    event: {
-      actorUserId: number | null;
-      actorRole: string;
-      eventType: string;
-      fromStatus: string | null;
-      toStatus: string | null;
-      amount?: string | null;
-      reason?: string;
-      metadata?: Record<string, unknown>;
-      ipAddress?: string;
-      userAgent?: string;
-    },
+    event: PayoutEventInput,
   ) {
-    await this.db.insert(s.payoutEvents).values({
+    return this.recordPayoutEventTx(this.db, payoutRequestId, storeId, event);
+  }
+
+  /** Append a payout event using a caller-provided db/tx (Batch 4B: lets the
+   *  receipt-upload audit commit atomically with the insert + transition). */
+  private async recordPayoutEventTx(
+    tx: DbOrTx,
+    payoutRequestId: number,
+    storeId: number,
+    event: PayoutEventInput,
+  ) {
+    await tx.insert(s.payoutEvents).values({
       payoutRequestId,
       storeId,
       actorUserId: event.actorUserId,

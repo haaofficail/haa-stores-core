@@ -11,6 +11,7 @@
 // The checklist data itself is unchanged — we reuse the existing
 // `ReadinessChecklist` component (single source of truth).
 
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'react-router-dom';
@@ -46,6 +47,16 @@ function QuickLink({ icon: Icon, iconClass, title, description, to }: QuickLinkP
 export default function GettingStarted() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
+  const [hasOnboardingDraft, setHasOnboardingDraft] = useState(false);
+
+  useEffect(() => {
+    if (!storeId) return;
+    try {
+      setHasOnboardingDraft(Boolean(localStorage.getItem(`haa.merchant.onboarding.draft.${storeId}`)));
+    } catch {
+      setHasOnboardingDraft(false);
+    }
+  }, [storeId]);
 
   if (!storeId) return null;
 
@@ -69,6 +80,25 @@ export default function GettingStarted() {
           )}
         </p>
       </div>
+
+      {hasOnboardingDraft && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-primary-100 bg-primary-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-primary-900">
+              {t('gettingStarted.resumeOnboarding.title', 'لديك إعداد غير مكتمل')}
+            </p>
+            <p className="mt-1 text-sm text-primary-700">
+              {t('gettingStarted.resumeOnboarding.description', 'أكمل الخطوات من حيث توقفت بدون إعادة إدخال بيانات المتجر.')}
+            </p>
+          </div>
+          <Link
+            to="/onboarding?resume=1"
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-primary-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-700"
+          >
+            {t('gettingStarted.resumeOnboarding.cta', 'استكمال الإعداد')}
+          </Link>
+        </div>
+      )}
 
       {/* Readiness checklist — single source of truth (reused from Settings). */}
       <ReadinessChecklist storeId={storeId} />

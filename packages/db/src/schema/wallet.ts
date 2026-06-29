@@ -162,6 +162,10 @@ export const payoutTransferProofs = pgTable('payout_transfer_proofs', {
   beneficiaryName: varchar('beneficiary_name', { length: 255 }).notNull(),
   beneficiaryIbanMasked: varchar('beneficiary_iban_masked', { length: 40 }).notNull(),
   proofFileKey: varchar('proof_file_key', { length: 500 }),
+  // Batch 4B: a receipt is a financial document — record its content type and a
+  // sha256 of the file bytes for tamper detection / audit.
+  fileMimeType: varchar('file_mime_type', { length: 100 }),
+  sha256: varchar('sha256', { length: 64 }),
   notes: text('notes'),
   verificationStatus: varchar('verification_status', { length: 30 }).notNull().default('pending'),
   verifiedByUserId: integer('verified_by_user_id').references(() => users.id),
@@ -170,6 +174,13 @@ export const payoutTransferProofs = pgTable('payout_transfer_proofs', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({
   payoutIdx: index('payout_transfer_proofs_payout_idx').on(table.payoutRequestId),
+  // At most ONE active receipt per payout (no double receipt). A future
+  // receipt_correction path (deferred) marks the old row
+  // verification_status='superseded' before inserting a replacement, so this
+  // partial-unique index stays valid.
+  activeUnique: uniqueIndex('payout_transfer_proofs_active_unique')
+    .on(table.payoutRequestId)
+    .where(sql`verification_status <> 'superseded'`),
 }));
 
 export const payoutEvents = pgTable('payout_events', {

@@ -24,7 +24,12 @@ describe('Manual settlement review workflow', () => {
     expect(walletLedger).toContain("transitionPayout(payoutId, 'under_review', 'approved'");
     expect(walletLedger).toContain("transitionPayout(payoutId, 'approved', 'transfer_pending'");
     expect(walletLedger).toContain("transitionPayout(payoutId, 'transfer_pending', 'transferred'");
-    expect(walletLedger).toContain("transitionPayout(payoutId, 'transferred', 'proof_uploaded'");
+    // Batch 4B: the transferred -> proof_uploaded transition moved INSIDE an
+    // atomic transaction in uploadTransferProof (receipt insert + audit commit
+    // together), so it is now an inline GUARDED update rather than the
+    // transitionPayout helper. The guarded transition itself must still exist.
+    expect(walletLedger).toMatch(/status:\s*'proof_uploaded'/);
+    expect(walletLedger).toMatch(/eq\(s\.payoutRequests\.status,\s*'transferred'\)/);
   });
 
   it('adds merchant and admin settlement APIs', () => {

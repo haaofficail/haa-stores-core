@@ -108,6 +108,63 @@ function formatDate(dateStr: string | null): string {
   return new Date(dateStr).toLocaleDateString('ar-SA');
 }
 
+const DAY_MS = 86400000;
+
+function toPriceNumber(value: string | number | null | undefined): number {
+  const amount = Number(value ?? 0);
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+function getCycleDays(billingCycle: string | null | undefined): number {
+  return billingCycle === 'annual' ? 365 : 30;
+}
+
+function getCyclePrice(plan: Pick<Plan, 'priceMonthly' | 'priceAnnual'>, billingCycle: string | null | undefined): number {
+  return billingCycle === 'annual' ? toPriceNumber(plan.priceAnnual) : toPriceNumber(plan.priceMonthly);
+}
+
+function getRemainingCycleDays(currentPeriodEnd: string | null, cycleDays: number): number {
+  if (!currentPeriodEnd) return cycleDays;
+  const periodEndMs = new Date(currentPeriodEnd).getTime();
+  if (!Number.isFinite(periodEndMs)) return cycleDays;
+  const msRemaining = Math.max(0, periodEndMs - Date.now());
+  return Math.min(cycleDays, Math.ceil(msRemaining / DAY_MS));
+}
+
+function getEstimatedNextPeriodEnd(billingCycle: string | null | undefined): string {
+  const cycleDays = getCycleDays(billingCycle);
+  return new Date(Date.now() + cycleDays * DAY_MS).toISOString();
+}
+
+function getPlanChangeImpact(
+  currentPlan: Subscription,
+  nextPlan: Plan,
+  direction: 'upgrade' | 'downgrade',
+) {
+  const billingCycle = currentPlan.billingCycle === 'annual' ? 'annual' : 'monthly';
+  const cycleDays = getCycleDays(billingCycle);
+  const remainingDays = getRemainingCycleDays(currentPlan.currentPeriodEnd, cycleDays);
+  const currentPrice = getCyclePrice(currentPlan, billingCycle);
+  const newPrice = getCyclePrice(nextPlan, billingCycle);
+  const priceDelta = newPrice - currentPrice;
+  const estimatedProration = direction === 'upgrade' && priceDelta > 0
+    ? (priceDelta * remainingDays) / cycleDays
+    : 0;
+
+  return {
+    billingCycle,
+    cycleDays,
+    remainingDays,
+    currentPrice,
+    newPrice,
+    priceDelta,
+    estimatedProration,
+    nextPeriodEnd: direction === 'upgrade'
+      ? getEstimatedNextPeriodEnd(billingCycle)
+      : currentPlan.currentPeriodEnd,
+  };
+}
+
 export default function Subscriptions() {
   const { storeId } = useAuth();
   const { t } = useTranslation();
@@ -196,6 +253,9 @@ export default function Subscriptions() {
   }
 
   const currentPlan = subscription;
+  const planChangeImpact = pendingChange && currentPlan
+    ? getPlanChangeImpact(currentPlan, pendingChange.plan, pendingChange.direction)
+    : null;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
@@ -431,6 +491,34 @@ export default function Subscriptions() {
                       : t('subscriptions.confirmCycleMonthly', 'شهري')}
                   </span>
                 </div>
+                {planChangeImpact && (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-neutral-500">
+                        {t('subscriptions.confirmCurrentPrice', 'السعر الحالي')}
+                      </span>
+                      <span
+                        data-testid="plan-change-current-price"
+                        className="font-semibold text-neutral-900"
+                      >
+                        {formatCurrency(planChangeImpact.currentPrice)} {t('common.sar')}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-neutral-500">
+                        {t('subscriptions.confirmPriceDelta', 'فرق السعر لكل دورة')}
+                      </span>
+                      <span
+                        data-testid="plan-change-price-delta"
+                        className={`font-semibold ${planChangeImpact.priceDelta > 0 ? 'text-amber-700' : 'text-emerald-700'}`}
+                        dir="ltr"
+                      >
+                        {planChangeImpact.priceDelta >= 0 ? '+' : '-'}
+                        {formatCurrency(Math.abs(planChangeImpact.priceDelta))} {t('common.sar')}
+                      </span>
+                    </div>
+                  </>
+                )}
                 <div className="flex items-center justify-between gap-3 border-t border-neutral-100 pt-3">
                   <span className="text-neutral-500">
                     {t('subscriptions.confirmNewPrice', 'السعر الجديد')}
@@ -448,6 +536,72 @@ export default function Subscriptions() {
                         )}${t('subscriptions.monthly')}`}
                   </span>
                 </div>
+                {planChangeImpact && (
+                  <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-3 text-amber-900">
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs text-amber-800">
+                          {t('subscriptions.confirmProrationEstimate', 'تقدير التناسب الآن')}
+                        </p>
+                        <p
+                          data-testid="plan-change-proration-estimate"
+                          className="mt-1 font-bold"
+                        >
+                          {formatCurrency(planChangeImpact.estimatedProration)} {t('common.sar')}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-amber-800">
+                          {t('subscriptions.confirmRemainingDays', 'الأيام المتبقية في الدورة الحالية')}
+                        </p>
+                        <p
+                          data-testid="plan-change-remaining-days"
+                          className="mt-1 font-bold"
+                        >
+                          {planChangeImpact.remainingDays} / {planChangeImpact.cycleDays}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-amber-800">
+                          {t('subscriptions.confirmEffectiveDate', 'تاريخ السريان')}
+                        </p>
+                        <p
+                          data-testid="plan-change-effective-date"
+                          className="mt-1 font-semibold"
+                        >
+                          {t('subscriptions.confirmEffectiveImmediately', 'فور تأكيد التغيير')}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-amber-800">
+                          {pendingChange.direction === 'upgrade'
+                            ? t('subscriptions.confirmNextRenewal', 'التجديد القادم المتوقع')
+                            : t('subscriptions.confirmCurrentPeriodEnd', 'نهاية الفترة الحالية')}
+                        </p>
+                        <p
+                          data-testid="plan-change-next-period"
+                          className="mt-1 font-semibold"
+                        >
+                          {formatDate(planChangeImpact.nextPeriodEnd)}
+                        </p>
+                      </div>
+                    </div>
+                    <p
+                      data-testid="plan-change-proration-note"
+                      className="mt-3 text-xs leading-5 text-amber-900"
+                    >
+                      {pendingChange.direction === 'upgrade'
+                        ? t(
+                            'subscriptions.confirmProrationNote',
+                            'هذا تقدير مبني على فرق السعر والأيام المتبقية. الفاتورة النهائية تُحسب من النظام بعد التأكيد.',
+                          )
+                        : t(
+                            'subscriptions.confirmDowngradeNote',
+                            'لا تُنشأ فاتورة تناسب تلقائية عند التخفيض؛ سيتم حفظ الخطة فورًا مع بقاء نهاية الفترة الحالية كما هي.',
+                          )}
+                    </p>
+                  </div>
+                )}
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-neutral-500">
                     {t('subscriptions.confirmDirection', 'نوع التغيير')}

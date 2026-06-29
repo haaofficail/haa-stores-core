@@ -18,7 +18,7 @@ import type { CategoryItem, ProductItem, ThemeConfig } from './constants';
 export function useThemeEditorPalette(storeId: number | null | undefined) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
-  const [config, setConfig] = useState<ThemeConfig>({});
+  const [config, setConfig] = useState<ThemeConfig>(() => resolveActiveThemeConfig() as ThemeConfig);
   const [isDirty, setIsDirty] = useState(false);
   const [history, setHistory] = useState<Array<{ config: ThemeConfig } & Record<string, unknown>>>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
@@ -68,14 +68,14 @@ export function useThemeEditorPalette(storeId: number | null | undefined) {
         lastUndoTime.current = now;
       }
       const keys = path.split('.');
-      const newConfig = structuredClone(prev) as Record<string, unknown>;
+      const newConfig = structuredClone(prev) as unknown as Record<string, unknown>;
       let obj: Record<string, unknown> = newConfig;
       for (let i = 0; i < keys.length - 1; i++) {
         if (!obj[keys[i]]) obj[keys[i]] = {};
         obj = obj[keys[i]] as Record<string, unknown>;
       }
       obj[keys[keys.length - 1]] = value;
-      return newConfig as ThemeConfig;
+      return newConfig as unknown as ThemeConfig;
     });
   }, []);
 

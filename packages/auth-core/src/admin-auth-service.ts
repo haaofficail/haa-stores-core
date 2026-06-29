@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { createDbClient, type DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
+import { getAdminPermissionsForRole } from '@haa/shared';
 import { verifyPassword, signAdminToken } from './index.js';
 import { AuditLogService } from '@haa/integration-core';
 
@@ -14,7 +15,8 @@ import { AuditLogService } from '@haa/integration-core';
  *   2. Rejecting non-admin or inactive accounts
  *   3. Verifying the password
  *   4. Recording the audit log entry (success or failure)
- *   5. Minting the admin JWT with `admin:*` permissions
+ *   5. Minting the admin JWT with role-scoped permissions (super_admin →
+ *      `admin:*`; accountant → finance-only) via getAdminPermissionsForRole
  *
  * Originally extracted from `apps/api/src/routes/admin/auth.ts` as
  * part of Quality Pass 5, Route Migration 2/24.
@@ -97,7 +99,9 @@ export class AdminAuthService {
     const token = signAdminToken({
       userId: user.id,
       isAdmin: true,
-      permissions: ['admin:*'],
+      // Role-scoped permissions. Legacy rows (no adminRole) fail safe to
+      // super_admin → ['admin:*'] so no existing admin is locked out.
+      permissions: getAdminPermissionsForRole(user.adminRole),
     });
 
     await this.audit.record({

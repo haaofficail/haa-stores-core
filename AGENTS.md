@@ -286,7 +286,8 @@ Before any significant development or bug fix:
 | `pnpm ops:synthetic`       | Run synthetic HTTP checks on running servers                                                                                                                               |
 | `pnpm ops:errors`          | Analyze recorded errors and suggest actions                                                                                                                                |
 | `pnpm ops:errors:simulate` | Write a random fake error event to support-error-events.ndjson                                                                                                             |
-| `pnpm ops:monitor`         | Run health + synthetic + error analysis in sequence                                                                                                                        |
+| `pnpm ops:alerts`          | Emit local NDJSON monitoring alerts for P0, repeated P1, and repeated fingerprints                                                                                         |
+| `pnpm ops:monitor`         | Run health + synthetic + error analysis + local alert emission in sequence                                                                                                 |
 | `pnpm ops:monitor:report`  | Generate a Markdown monitoring report                                                                                                                                      |
 | `pnpm ops:monitor:tail`    | View recent monitoring events                                                                                                                                              |
 | `pnpm typecheck`           | TypeScript type checking                                                                                                                                                   |

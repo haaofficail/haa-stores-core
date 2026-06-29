@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { adminApi } from '../lib/api';
+import { adminApi, hasAdminPermission } from '../lib/api';
 import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 
@@ -75,6 +75,7 @@ export default function Plans() {
   const [editId, setEditId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const canUpdatePlans = hasAdminPermission('plans.update');
 
   const load = useCallback(() => {
     setLoading(true);
@@ -88,6 +89,10 @@ export default function Plans() {
   useEffect(() => { load(); }, [load]);
 
   const toggleActive = async (plan: any) => {
+    if (!canUpdatePlans) {
+      toast.error('لا تملك صلاحية تحديث الباقات');
+      return;
+    }
     try {
       await adminApi.updatePlan(plan.id, { isActive: !plan.isActive });
       toast.success(plan.isActive ? t('plans.disabled', 'تم تعطيل الباقة') : t('plans.enabled', 'تم تفعيل الباقة'));
@@ -98,6 +103,10 @@ export default function Plans() {
   };
 
   const openEdit = (plan: any) => {
+    if (!canUpdatePlans) {
+      toast.error('لا تملك صلاحية تحديث الباقات');
+      return;
+    }
     setEditId(plan.id);
     setEditForm({
       name: plan.name || '',
@@ -119,6 +128,10 @@ export default function Plans() {
 
   const saveEdit = async () => {
     if (!editId || !editForm) return;
+    if (!canUpdatePlans) {
+      toast.error('لا تملك صلاحية تحديث الباقات');
+      return;
+    }
     setSaving(true);
     try {
       await adminApi.updatePlan(editId, {
@@ -244,17 +257,19 @@ export default function Plans() {
               <div className="mt-4 pt-4 border-t border-gray-50 flex gap-2">
                 <button
                   onClick={() => openEdit(p)}
-                  className="flex-1 px-3 py-1.5 text-footnote bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors font-medium"
+                  disabled={!canUpdatePlans}
+                  className="flex-1 px-3 py-1.5 text-footnote bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors font-medium disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
                 >
                   تعديل
                 </button>
                 <button
                   onClick={() => toggleActive(p)}
+                  disabled={!canUpdatePlans}
                   className={`flex-1 px-3 py-1.5 text-footnote rounded-lg transition-colors font-medium ${
                     p.isActive
                       ? 'bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-600'
                       : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                  }`}
+                  } disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400`}
                 >
                   {p.isActive ? 'تعطيل' : 'تفعيل'}
                 </button>
@@ -371,7 +386,7 @@ export default function Plans() {
             <div className="flex gap-3 p-6 pt-0">
               <button
                 onClick={saveEdit}
-                disabled={saving}
+                disabled={saving || !canUpdatePlans}
                 className="flex-1 px-4 py-2.5 bg-primary-600 text-white rounded-lg text-footnote font-semibold hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? 'جاري الحفظ...' : 'حفظ التغييرات'}

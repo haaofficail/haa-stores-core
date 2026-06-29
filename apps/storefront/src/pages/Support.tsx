@@ -1,10 +1,37 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { ArrowRight, Send, CheckCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supportApi, type CreatedTicket } from '@/lib/api';
+import { Icon } from '@/components/ui/icon';
 
 const FOCUS_VISIBLE = 'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--theme-primary,var(--brand-primary))]';
+
+const PRIVACY_REQUEST_TEMPLATES = {
+  dataExport: {
+    subject: '[خصوصية] طلب نسخة من بياناتي',
+    message: [
+      'أرغب بطلب نسخة من بياناتي الشخصية المرتبطة بهذا المتجر.',
+      '',
+      'بيانات التحقق:',
+      '- رقم الجوال أو البريد المستخدم في الطلبات:',
+      '- آخر رقم طلب إن وجد:',
+      '',
+      'أفهم أن هذا الطلب يفتح تذكرة خصوصية وسيتم التحقق من الهوية قبل تسليم أي بيانات.',
+    ].join('\n'),
+  },
+  dataDeletion: {
+    subject: '[خصوصية] طلب حذف بياناتي',
+    message: [
+      'أرغب بطلب حذف أو إتلاف بياناتي الشخصية المرتبطة بهذا المتجر قدر الإمكان نظامياً.',
+      '',
+      'بيانات التحقق:',
+      '- رقم الجوال أو البريد المستخدم في الطلبات:',
+      '- آخر رقم طلب إن وجد:',
+      '',
+      'أفهم أن بعض البيانات قد تُحفظ لمدة نظامية لأغراض الفواتير والضرائب والنزاعات قبل الحذف النهائي.',
+    ].join('\n'),
+  },
+};
 
 export default function Support() {
   const { slug } = useParams<{ slug: string }>();
@@ -33,11 +60,18 @@ export default function Support() {
       const result = await supportApi.createTicket(slug, { name, email, phone, subject, message });
       localStorage.setItem(`support-ticket-token:${slug}:${result.id}`, result.accessToken);
       setTicket(result);
-    } catch (err: any) {
-      setError(err.message || t('common.error'));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function applyPrivacyTemplate(kind: keyof typeof PRIVACY_REQUEST_TEMPLATES) {
+    const template = PRIVACY_REQUEST_TEMPLATES[kind];
+    setSubject(t(`support.privacy.${kind}.subject`, template.subject));
+    setMessage(t(`support.privacy.${kind}.message`, template.message));
+    setError('');
   }
 
   const ticketPath = ticket && slug ? `/s/${slug}/support/tickets/${ticket.id}` : '';
@@ -47,7 +81,7 @@ export default function Support() {
     return (
       <div className="container-store py-8 sm:py-12 max-w-2xl mx-auto text-center">
         <div className="w-16 h-16 rounded-2xl bg-success-soft flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="h-8 w-8 text-success" />
+          <Icon name="CheckCircle" size="lg" className="text-success" />
         </div>
         <h1 className="text-2xl font-bold text-text-primary mb-3">
           {t('support.submitted', 'تم إرسال طلب الدعم')}
@@ -75,7 +109,7 @@ export default function Support() {
             {t('support.viewTicket', 'متابعة الطلب')}
           </Link>
           <Link to={`/s/${slug}`} className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-primary-600 transition-colors">
-            <ArrowRight className="h-4 w-4" />
+            <Icon name="ArrowRight" size="xs" />
             {t('store.home')}
           </Link>
         </div>
@@ -86,7 +120,7 @@ export default function Support() {
   return (
     <div className="container-store py-8 sm:py-12 max-w-2xl mx-auto overflow-x-hidden">
       <Link to={`/s/${slug}`} className={`inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-primary-600 transition-colors mb-8 ${FOCUS_VISIBLE}`}>
-        <ArrowRight className="h-4 w-4" />
+        <Icon name="ArrowRight" size="xs" />
         {t('store.home')}
       </Link>
 
@@ -96,6 +130,40 @@ export default function Support() {
       <p className="text-text-secondary mb-8">
         {t('support.desc')}
       </p>
+
+      <section className="mb-6 rounded-2xl border border-border-primary bg-surface-1 p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info-soft text-info-strong">
+            <Icon name="ShieldCheck" size="md" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base font-semibold text-text-primary">
+              {t('support.privacy.title', 'طلبات الخصوصية')}
+            </h2>
+            <p className="mt-1 text-sm text-text-secondary">
+              {t('support.privacy.desc', 'يمكنك فتح تذكرة لطلب نسخة من بياناتك أو طلب حذفها. سنراجع الطلب ونتحقق من الهوية قبل أي إجراء.')}
+            </p>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                data-privacy-request="data-export"
+                onClick={() => applyPrivacyTemplate('dataExport')}
+                className={`rounded-xl border border-border-primary bg-white px-4 py-3 text-start text-sm font-medium text-text-primary transition-colors hover:border-primary-300 hover:bg-primary-50 ${FOCUS_VISIBLE}`}
+              >
+                {t('support.privacy.dataExportAction', 'طلب نسخة من بياناتي')}
+              </button>
+              <button
+                type="button"
+                data-privacy-request="data-deletion"
+                onClick={() => applyPrivacyTemplate('dataDeletion')}
+                className={`rounded-xl border border-border-primary bg-white px-4 py-3 text-start text-sm font-medium text-text-primary transition-colors hover:border-primary-300 hover:bg-primary-50 ${FOCUS_VISIBLE}`}
+              >
+                {t('support.privacy.dataDeletionAction', 'طلب حذف بياناتي')}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
@@ -124,8 +192,13 @@ export default function Support() {
               {t('support.phone')}
             </label>
             <input
-              type="tel" value={phone} onChange={e => setPhone(e.target.value)}
-              className={`w-full px-4 py-2.5 rounded-xl border border-border-primary bg-white text-text-primary ${FOCUS_VISIBLE}`}
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              dir="ltr"
+              className={`w-full px-4 py-2.5 rounded-xl border border-border-primary bg-white text-start text-text-primary ${FOCUS_VISIBLE}`}
               placeholder={t('support.phonePlaceholder')}
             />
           </div>
@@ -161,7 +234,7 @@ export default function Support() {
           type="submit" disabled={submitting}
           className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors ${FOCUS_VISIBLE}`}
         >
-          <Send className="h-4 w-4" />
+          <Icon name="Mail" size="xs" />
           {submitting ? t('support.sending') : t('support.send')}
         </button>
       </form>

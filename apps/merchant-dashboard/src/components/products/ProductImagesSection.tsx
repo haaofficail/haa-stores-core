@@ -33,13 +33,15 @@ export function ProductImagesSection({ images, queuedImages, uploadingImage, ima
         className="hidden"
         onChange={e => e.target.files && onUpload(e.target.files)}
       />
-      <div
+      <button
+        type="button"
         className="flex flex-wrap items-center gap-3 rounded-lg border-2 border-dashed p-4 cursor-pointer hover:bg-muted/50"
         onClick={() => fileRef.current?.click()}
+        aria-label={t('products.uploadImages')}
       >
         <ImagePlus className="h-5 w-5 text-muted-foreground" />
         <span className="text-sm text-muted-foreground">{t('products.uploadImages')}</span>
-      </div>
+      </button>
       {uploadingImage && <p className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" />جاري رفع الصورة...</p>}
       {imageError && <p className="text-xs text-destructive">{imageError}</p>}
       {queuedImages.length > 0 && (
@@ -47,7 +49,13 @@ export function ProductImagesSection({ images, queuedImages, uploadingImage, ima
           {queuedImages.map(q => (
             <div key={q.id} className="relative h-20 w-20 overflow-hidden rounded border">
               <img src={q.preview} alt="" className="h-full w-full object-cover" />
-              <button className="absolute top-0 left-0 rounded-br bg-background/80 p-0.5" onClick={() => onRemoveQueued(q.id)}>
+              <button
+                type="button"
+                className="absolute top-0 left-0 rounded-br bg-background/80 p-0.5"
+                onClick={() => onRemoveQueued(q.id)}
+                aria-label="إزالة الصورة قبل الحفظ"
+                title="إزالة الصورة قبل الحفظ"
+              >
                 <X className="h-3 w-3" />
               </button>
             </div>
@@ -59,7 +67,13 @@ export function ProductImagesSection({ images, queuedImages, uploadingImage, ima
           {images.map(img => (
             <div key={img.id} className="relative h-20 w-20 overflow-hidden rounded border">
               <img src={img.url} alt="" className="h-full w-full object-cover" />
-              <button className="absolute top-0 right-0 rounded-bl bg-background/80 p-0.5" onClick={() => onDelete(img.id)}>
+              <button
+                type="button"
+                className="absolute top-0 right-0 rounded-bl bg-background/80 p-0.5"
+                onClick={() => onDelete(img.id)}
+                aria-label="حذف صورة المنتج"
+                title="حذف صورة المنتج"
+              >
                 <Trash2 className="h-3 w-3 text-destructive" />
               </button>
             </div>

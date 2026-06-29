@@ -510,6 +510,8 @@ function ProductOptions({ options, selected, onChange }: {
                   key={v.id}
                   type="button"
                   onClick={() => onChange(opt.name, v.value)}
+                  aria-pressed={isSelected}
+                  aria-label={`${opt.name}: ${v.value}`}
                   className={`min-h-[40px] text-sm border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 ${
                     isSelected
                       ? 'border-primary-500 bg-primary-50 text-primary-700 font-semibold shadow-sm'

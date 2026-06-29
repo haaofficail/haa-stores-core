@@ -3,22 +3,47 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Upload, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import type { CategoryItem, HomepageSection, ProductItem, SectionSettings, BrandItem, FaqItem } from './constants';
 
-interface EditorProps {
-  section: any;
+interface EditorBaseProps {
+  section: HomepageSection;
   idx: number;
-  homepageSections: any[];
-  updateConfig: (path: string, value: any) => void;
-  categories?: any[];
-  products?: any[];
-  uploadingBannerImg: string | null;
+  homepageSections: HomepageSection[];
+  updateConfig: (path: string, value: unknown) => void;
+}
+
+interface CategoryOptionsProps {
+  categories?: CategoryItem[];
+}
+
+interface ProductOptionsProps {
+  products?: ProductItem[];
+}
+
+interface UploadActionProps {
   setUploadingBannerImg: (v: string | null) => void;
-  storeId: any;
-  uploadFile: any;
+  storeId: number | null | undefined;
+  uploadFile: (storeId: number, file: File) => Promise<{ url: string }>;
   validateImageFile: (file: File) => Promise<string | null>;
 }
 
-export function updateSection(sections: any[], idx: number, patch: Record<string, any>, settingsPatch?: Record<string, any>): any[] {
+interface UploadProgressProps {
+  uploadingBannerImg: string | null;
+}
+
+type BannerEditorProps = Readonly<EditorBaseProps & CategoryOptionsProps & ProductOptionsProps & UploadActionProps & UploadProgressProps>;
+type ProductEditorProps = Readonly<EditorBaseProps & CategoryOptionsProps & ProductOptionsProps>;
+type CategoriesEditorProps = Readonly<EditorBaseProps & CategoryOptionsProps>;
+type ImageTextEditorProps = Readonly<EditorBaseProps & UploadActionProps>;
+type BrandsEditorProps = Readonly<EditorBaseProps & UploadActionProps & UploadProgressProps>;
+type SimpleEditorProps = Readonly<EditorBaseProps>;
+
+export function updateSection(
+  sections: HomepageSection[],
+  idx: number,
+  patch: Partial<HomepageSection>,
+  settingsPatch?: SectionSettings,
+): HomepageSection[] {
   const updated = [...sections];
   if (settingsPatch) {
     updated[idx] = { ...updated[idx], ...patch, settings: { ...updated[idx].settings, ...settingsPatch } };
@@ -28,7 +53,7 @@ export function updateSection(sections: any[], idx: number, patch: Record<string
   return updated;
 }
 
-export function BannerEditor({ section, idx, homepageSections, updateConfig, categories, products, uploadingBannerImg, setUploadingBannerImg, storeId, uploadFile, validateImageFile }: EditorProps) {
+export function BannerEditor({ section, idx, homepageSections, updateConfig, categories, products, uploadingBannerImg, setUploadingBannerImg, storeId, uploadFile, validateImageFile }: BannerEditorProps) {
   const sid = section.id;
   const settings = section.settings || {};
   return (
@@ -37,7 +62,7 @@ export function BannerEditor({ section, idx, homepageSections, updateConfig, cat
         <div><Label className="text-xs text-neutral-600 mb-1.5 block">صورة سطح المكتب<span className="text-neutral-400 font-normal me-2">— 1920×600 بكسل</span></Label>
           <div className="flex items-center gap-2">
             {settings.imageUrl ? <div className="relative group w-16 h-10 rounded-lg overflow-hidden border border-neutral-200 shrink-0"><img src={settings.imageUrl} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              <button type="button" onClick={() => { const s = { ...settings }; delete s.imageUrl; updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, s)); }} className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/50 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">X</button>
+              <button type="button" onClick={() => { const s = { ...settings }; delete s.imageUrl; updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, s)); }} className="absolute top-0.5 end-0.5 w-4 h-4 bg-black/50 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity" aria-label="إزالة صورة سطح المكتب للبنر" title="إزالة صورة سطح المكتب للبنر"><span aria-hidden="true">X</span></button>
             </div> : null}
             <label className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 bg-white cursor-pointer hover:bg-neutral-50 transition-colors text-xs text-neutral-600 font-medium whitespace-nowrap">
               {uploadingBannerImg === `desktop-${sid}` ? <Loader2 className="h-3.5 w-3.5 animate-spin text-primary-500" /> : <Upload className="h-3.5 w-3.5" />}
@@ -50,7 +75,7 @@ export function BannerEditor({ section, idx, homepageSections, updateConfig, cat
         <div><Label className="text-xs text-neutral-600 mb-1.5 block">صورة الجوال<span className="text-neutral-400 font-normal me-2">— 750×800 بكسل</span></Label>
           <div className="flex items-center gap-2">
             {settings.imageMobileUrl ? <div className="relative group w-10 h-10 rounded-lg overflow-hidden border border-neutral-200 shrink-0"><img src={settings.imageMobileUrl} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              <button type="button" onClick={() => { const s = { ...settings }; delete s.imageMobileUrl; updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, s)); }} className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/50 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">X</button>
+              <button type="button" onClick={() => { const s = { ...settings }; delete s.imageMobileUrl; updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, s)); }} className="absolute top-0.5 end-0.5 w-4 h-4 bg-black/50 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity" aria-label="إزالة صورة الجوال للبنر" title="إزالة صورة الجوال للبنر"><span aria-hidden="true">X</span></button>
             </div> : null}
             <label className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 bg-white cursor-pointer hover:bg-neutral-50 transition-colors text-xs text-neutral-600 font-medium whitespace-nowrap">
               {uploadingBannerImg === `mobile-${sid}` ? <Loader2 className="h-3.5 w-3.5 animate-spin text-primary-500" /> : <Upload className="h-3.5 w-3.5" />}
@@ -68,11 +93,13 @@ export function BannerEditor({ section, idx, homepageSections, updateConfig, cat
         <div className="flex gap-2">{(['all', 'category', 'product', 'custom'] as const).map((lt) => (
           <button key={lt} type="button" onClick={() => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkType: lt, linkValue: lt === 'all' ? '' : settings.linkValue })); }}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${(settings.linkType || 'all') === lt ? 'bg-primary-500 text-white border-primary-500' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'}`}
+            aria-pressed={(settings.linkType || 'all') === lt}
+            aria-label={`نوع رابط البنر: ${{ all: 'الكل', category: 'قسم', product: 'منتج', custom: 'مخصص' }[lt]}`}
           >{{ all: 'الكل', category: 'قسم', product: 'منتج', custom: 'مخصص' }[lt]}</button>
         ))}</div>
       </div>
-      {(settings.linkType || 'all') === 'category' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر القسم</Label><Select value={settings.linkValue || 'all'} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkValue: v === 'all' ? '' : v })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر القسم" /></SelectTrigger><SelectContent><SelectItem value="all">جميع الأقسام</SelectItem>{(categories || []).map((cat: any) => (<SelectItem key={cat.id} value={cat.slug}>{cat.name}</SelectItem>))}</SelectContent></Select></div>}
-      {(settings.linkType || 'all') === 'product' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر المنتج</Label><Select value={(products || []).find((p: any) => p.slug === settings.linkValue) ? settings.linkValue : ''} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkValue: v })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر منتج" /></SelectTrigger><SelectContent>{(products || []).map((p: any) => (<SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>))}</SelectContent></Select></div>}
+      {(settings.linkType || 'all') === 'category' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر القسم</Label><Select value={settings.linkValue || 'all'} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkValue: v === 'all' ? '' : v })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر القسم" /></SelectTrigger><SelectContent><SelectItem value="all">جميع الأقسام</SelectItem>{(categories || []).map((cat) => (<SelectItem key={cat.id} value={cat.slug}>{cat.name}</SelectItem>))}</SelectContent></Select></div>}
+      {(settings.linkType || 'all') === 'product' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر المنتج</Label><Select value={(products || []).some((p) => p.slug === settings.linkValue) ? settings.linkValue : ''} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkValue: v })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر منتج" /></SelectTrigger><SelectContent>{(products || []).map((p) => (<SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>))}</SelectContent></Select></div>}
       {(settings.linkType || 'all') === 'custom' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">الرابط المخصص</Label><Input value={settings.linkValue || ''} onChange={(e) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkValue: e.target.value })); }} className="w-full" dir="ltr" placeholder="https://..." /></div>}
       <div className="grid grid-cols-2 gap-3">
         <div><Label className="text-xs text-neutral-600 mb-1.5 block">ارتفاع البنر (بكسل)</Label><Input type="number" value={settings.height || 400} onChange={(e) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { height: Number(e.target.value) })); }} className="w-full" /></div>
@@ -87,7 +114,7 @@ export function BannerEditor({ section, idx, homepageSections, updateConfig, cat
   );
 }
 
-export function ProductEditor({ section, idx, homepageSections, updateConfig, categories, products }: EditorProps) {
+export function ProductEditor({ section, idx, homepageSections, updateConfig, categories, products }: ProductEditorProps) {
   const settings = section.settings || {};
   const selectedProductIds = Array.isArray(settings.productIds) ? settings.productIds.map(Number) : [];
   const toggleProduct = (productId: number) => {
@@ -102,17 +129,19 @@ export function ProductEditor({ section, idx, homepageSections, updateConfig, ca
         <div className="flex gap-2 flex-wrap">{['manual', 'category', 'newest', 'bestSellers', 'discounted', 'featured'].map((src) => (
           <button key={src} type="button" onClick={() => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { source: src })); }}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${(settings.source || section.type) === src ? 'bg-primary-500 text-white border-primary-500' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'}`}
+            aria-pressed={(settings.source || section.type) === src}
+            aria-label={`مصدر المنتجات: ${{ manual: 'يدوي', category: 'تصنيف', newest: 'الأحدث', bestSellers: 'الأكثر مبيعاً', discounted: 'مخفضة', featured: 'مميزة' }[src]}`}
           >{{ manual: 'يدوي', category: 'تصنيف', newest: 'الأحدث', bestSellers: 'الأكثر مبيعاً', discounted: 'مخفضة', featured: 'مميزة' }[src]}</button>
         ))}</div>
       </div>
-      {(settings.source || section.type) === 'category' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر التصنيف</Label><Select value={String(settings.categoryId || '')} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { categoryId: v ? Number(v) : null })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر التصنيف" /></SelectTrigger><SelectContent>{(categories || []).map((cat: any) => (<SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>))}</SelectContent></Select></div>}
+      {(settings.source || section.type) === 'category' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر التصنيف</Label><Select value={String(settings.categoryId || '')} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { categoryId: v ? Number(v) : null })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر التصنيف" /></SelectTrigger><SelectContent>{(categories || []).map((cat) => (<SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>))}</SelectContent></Select></div>}
       {(settings.source || section.type) === 'manual' && (
         <div>
           <Label className="text-xs text-neutral-600 mb-1.5 block">المنتجات المختارة</Label>
           <div className="max-h-44 overflow-y-auto rounded-xl border border-neutral-200 bg-white divide-y divide-neutral-100">
             {(products || []).length === 0 ? (
               <p className="px-3 py-3 text-xs text-neutral-400">لا توجد منتجات متاحة للاختيار</p>
-            ) : (products || []).map((product: any) => (
+            ) : (products || []).map((product) => (
               <label key={product.id} className="flex items-center gap-2 px-3 py-2 text-xs text-neutral-700 hover:bg-neutral-50 cursor-pointer">
                 <input
                   type="checkbox"
@@ -162,7 +191,7 @@ export function ProductEditor({ section, idx, homepageSections, updateConfig, ca
   );
 }
 
-export function CategoriesEditor({ section, idx, homepageSections, updateConfig, categories }: EditorProps) {
+export function CategoriesEditor({ section, idx, homepageSections, updateConfig, categories }: CategoriesEditorProps) {
   const settings = section.settings || {};
   const selectedIds: number[] = settings.categoryIds || [];
   return (
@@ -173,7 +202,7 @@ export function CategoriesEditor({ section, idx, homepageSections, updateConfig,
       </div>
       <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختيار تصنيفات محددة (اختياري — اترك فارغاً لعرض الكل)</Label>
         <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 border border-neutral-200 rounded-xl">
-          {(categories || []).map((cat: any) => {
+          {(categories || []).map((cat) => {
             const isSelected = selectedIds.includes(cat.id);
             return (
               <button key={cat.id} type="button" onClick={() => {
@@ -181,6 +210,8 @@ export function CategoriesEditor({ section, idx, homepageSections, updateConfig,
                 updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { categoryIds: next }));
               }}
                 className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-colors ${isSelected ? 'bg-primary-500 text-white border-primary-500' : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'}`}
+                aria-pressed={isSelected}
+                aria-label={`${isSelected ? 'إزالة تصنيف' : 'إضافة تصنيف'} ${cat.name} من قسم التصنيفات`}
               >{cat.name}</button>
             );
           })}
@@ -190,7 +221,7 @@ export function CategoriesEditor({ section, idx, homepageSections, updateConfig,
   );
 }
 
-export function TextEditor({ section, idx, homepageSections, updateConfig }: EditorProps) {
+export function TextEditor({ section, idx, homepageSections, updateConfig }: SimpleEditorProps) {
   const settings = section.settings || {};
   return (
     <><div><Label className="text-xs text-neutral-600 mb-1.5 block">المحتوى</Label><textarea value={settings.content || ''} onChange={(e) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { content: e.target.value })); }} className="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:border-primary-500" rows={4} /></div>
@@ -199,12 +230,12 @@ export function TextEditor({ section, idx, homepageSections, updateConfig }: Edi
   );
 }
 
-export function ImageTextEditor({ section, idx, homepageSections, updateConfig, setUploadingBannerImg, storeId, uploadFile, validateImageFile }: EditorProps) {
+export function ImageTextEditor({ section, idx, homepageSections, updateConfig, setUploadingBannerImg, storeId, uploadFile, validateImageFile }: ImageTextEditorProps) {
   const settings = section.settings || {};
   const sid = section.id;
   return (
     <><div><Label className="text-xs text-neutral-600 mb-1.5 block">الصورة</Label>
-      <div className="flex items-center gap-2">{settings.imageUrl ? <div className="relative group w-16 h-10 rounded-lg overflow-hidden border border-neutral-200 shrink-0"><img src={settings.imageUrl} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /><button type="button" onClick={() => { const s = { ...settings }; delete s.imageUrl; updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, s)); }} className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/50 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">X</button></div> : null}
+      <div className="flex items-center gap-2">{settings.imageUrl ? <div className="relative group w-16 h-10 rounded-lg overflow-hidden border border-neutral-200 shrink-0"><img src={settings.imageUrl} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} /><button type="button" onClick={() => { const s = { ...settings }; delete s.imageUrl; updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, s)); }} className="absolute top-0.5 end-0.5 w-4 h-4 bg-black/50 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity" aria-label="إزالة صورة قسم النص والصورة" title="إزالة صورة قسم النص والصورة"><span aria-hidden="true">X</span></button></div> : null}
         <label className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 bg-white cursor-pointer hover:bg-neutral-50 transition-colors text-xs text-neutral-600 font-medium whitespace-nowrap"><Upload className="h-3.5 w-3.5" />اختيار<input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={async (e) => { const file = e.target.files?.[0]; if (!file || !storeId) return; const imgErr = await validateImageFile(file); if (imgErr) { toast.error(imgErr); return; } setUploadingBannerImg(`img-${sid}`); try { const result = await uploadFile(storeId, file); updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { imageUrl: result.url })); } catch { toast.error('فشل رفع الصورة'); } finally { setUploadingBannerImg(null); if (e.target) (e.target as HTMLInputElement).value = ''; } }} /></label>
       </div>
     </div>
@@ -217,9 +248,9 @@ export function ImageTextEditor({ section, idx, homepageSections, updateConfig, 
   );
 }
 
-export function BrandsEditor({ section, idx, homepageSections, updateConfig, uploadingBannerImg, setUploadingBannerImg, storeId, uploadFile, validateImageFile }: EditorProps) {
+export function BrandsEditor({ section, idx, homepageSections, updateConfig, uploadingBannerImg, setUploadingBannerImg, storeId, uploadFile, validateImageFile }: BrandsEditorProps) {
   const settings = section.settings || {};
-  const items: { imageUrl: string; linkUrl?: string; name?: string }[] = settings.items || [];
+  const items = (settings.items || []) as BrandItem[];
   const updateItems = (next: typeof items) => {
     updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { items: next }));
   };
@@ -231,7 +262,7 @@ export function BrandsEditor({ section, idx, homepageSections, updateConfig, upl
           <div key={i} className="flex items-start gap-2 mb-2 p-2 border border-neutral-100 rounded-xl">
             <div className="flex-1 space-y-1.5">
               <div className="flex items-center gap-2">
-                {item.imageUrl ? <div className="relative group w-10 h-10 rounded-lg overflow-hidden border border-neutral-200 shrink-0"><img src={item.imageUrl} alt="" className="w-full h-full object-cover" /><button type="button" onClick={() => { const next = [...items]; next[i] = { ...next[i], imageUrl: '' }; updateItems(next); }} className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-black/50 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">X</button></div> : null}
+                {item.imageUrl ? <div className="relative group w-10 h-10 rounded-lg overflow-hidden border border-neutral-200 shrink-0"><img src={item.imageUrl} alt="" className="w-full h-full object-cover" /><button type="button" onClick={() => { const next = [...items]; next[i] = { ...next[i], imageUrl: '' }; updateItems(next); }} className="absolute top-0.5 end-0.5 w-3.5 h-3.5 bg-black/50 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity" aria-label={`إزالة صورة البراند ${item.name || i + 1}`} title={`إزالة صورة البراند ${item.name || i + 1}`}><span aria-hidden="true">X</span></button></div> : null}
                 <label className="flex items-center gap-1 px-2 py-1 rounded-lg border border-neutral-200 bg-white cursor-pointer hover:bg-neutral-50 transition-colors text-xs text-neutral-600 font-medium whitespace-nowrap shrink-0">
                   {uploadingBannerImg === `brand-${section.id}-${i}` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
                   <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingBannerImg !== null}
@@ -241,7 +272,7 @@ export function BrandsEditor({ section, idx, homepageSections, updateConfig, upl
               </div>
               <Input value={item.linkUrl || ''} onChange={(e) => { const next = [...items]; next[i] = { ...next[i], linkUrl: e.target.value }; updateItems(next); }} className="w-full text-xs" placeholder="الرابط (اختياري)" dir="ltr" />
             </div>
-            <button type="button" onClick={() => updateItems(items.filter((_, j) => j !== i))} className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors mt-1"><X className="h-3 w-3" /></button>
+            <button type="button" onClick={() => updateItems(items.filter((_, j) => j !== i))} className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors mt-1" aria-label={`حذف البراند ${item.name || i + 1}`} title={`حذف البراند ${item.name || i + 1}`}><X className="h-3 w-3" aria-hidden="true" /></button>
           </div>
         ))}
         <button type="button" onClick={() => updateItems([...items, { imageUrl: '', name: '', linkUrl: '' }])} className="w-full py-2 text-xs text-neutral-600 font-medium border border-dashed border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors">+ إضافة براند</button>
@@ -250,9 +281,9 @@ export function BrandsEditor({ section, idx, homepageSections, updateConfig, upl
   );
 }
 
-export function FAQEditor({ section, idx, homepageSections, updateConfig }: EditorProps) {
+export function FAQEditor({ section, idx, homepageSections, updateConfig }: SimpleEditorProps) {
   const settings = section.settings || {};
-  const items: { question: string; answer: string }[] = settings.items || [];
+  const items = (settings.items || []) as FaqItem[];
   const updateItems = (next: typeof items) => {
     updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { items: next }));
   };

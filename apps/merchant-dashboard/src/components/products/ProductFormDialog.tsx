@@ -41,10 +41,10 @@ interface Props {
   warnings: string[];
   getError: (field: string) => string | null | undefined;
   onSave: () => void;
-  onFieldChange: (field: string, value: any) => void;
+  onFieldChange: (field: string, value: unknown) => void;
   onNameChange: (name: string) => void;
   onSlugChange: (slug: string) => void;
-  productImages: any[];
+  productImages: ProductImage[];
   queuedImages: { file: File; preview: string }[];
   uploadingImage: boolean;
   imageError: string | null;
@@ -52,11 +52,21 @@ interface Props {
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDeleteImage: (imageId: number) => void;
   onRemoveQueuedImage: (index: number) => void;
-  categories: any[];
-  brands: any[];
-  tags: any[];
+  categories: CategoryOption[];
+  brands: BrandOption[];
+  tags: TagOption[];
   t: TFunction;
 }
+
+type ProductImage = {
+  id: number;
+  url: string;
+  thumbUrl?: string | null;
+  alt?: string | null;
+};
+type CategoryOption = { id: number; name: string };
+type BrandOption = { id: number; name: string };
+type TagOption = { id: number; name: string; color?: string };
 
 export function ProductFormDialog({
   open, onOpenChange, editId, saving, form, warnings, getError,
@@ -254,7 +264,7 @@ export function ProductFormDialog({
                   className="flex h-9 w-full rounded-lg border border-neutral-200 bg-white px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="">بدون ماركة</option>
-                  {brands.map((b: any) => (
+                  {brands.map((b) => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>
@@ -266,7 +276,7 @@ export function ProductFormDialog({
                   <p className="text-sm text-neutral-400">لا توجد تاجات</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
-                    {tags.map((tag: any) => {
+                    {tags.map((tag) => {
                       const selected = (form.tagIds ?? []).includes(tag.id);
                       return (
                         <button
@@ -278,6 +288,8 @@ export function ProductFormDialog({
                               : [...(form.tagIds ?? []), tag.id];
                             onFieldChange('tagIds', ids);
                           }}
+                          aria-pressed={selected}
+                          aria-label={`${selected ? 'إزالة تاج' : 'إضافة تاج'} ${tag.name}`}
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm border transition-colors ${
                             selected
                               ? 'text-white border-transparent'
@@ -300,7 +312,7 @@ export function ProductFormDialog({
                   <p className="text-sm text-neutral-400">{t('products.noCategories')}</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
-                    {categories.map((cat: any) => {
+                    {categories.map((cat) => {
                       const selected = form.categoryIds.includes(cat.id);
                       return (
                         <button
@@ -312,6 +324,8 @@ export function ProductFormDialog({
                               : [...form.categoryIds, cat.id];
                             onFieldChange('categoryIds', ids);
                           }}
+                          aria-pressed={selected}
+                          aria-label={`${selected ? 'إزالة تصنيف' : 'إضافة تصنيف'} ${cat.name}`}
                           className={`px-3 py-1.5 rounded-xl text-sm border transition-colors ${selected ? 'bg-primary-500 text-white border-primary-500' : 'bg-white hover:bg-neutral-50 border-neutral-200 text-neutral-900'}`}
                         >
                           {cat.name}
@@ -338,7 +352,7 @@ export function ProductFormDialog({
           <FormSection title={`${t('products.images')} (${editId ? productImages.length : queuedImages.length})`}>
             <div className="space-y-3">
               <div className="flex gap-3 flex-wrap">
-                {productImages.map((img: any) => (
+                {productImages.map((img) => (
                   <div key={img.id} className="relative group w-20 h-20 rounded-xl border border-neutral-100 overflow-hidden">
                     <img src={img.thumbUrl || img.url} alt={`صورة منتج ${img.alt || form.name}`} className="w-full h-full object-cover" onError={handleImageError} />
                     <button

@@ -98,6 +98,9 @@ export default function OrderSuccess() {
           <p className="text-sm text-text-secondary mb-6">{t('order.phoneRequired')}</p>
           <div className="flex gap-2">
             <StoreInput
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder={t('track.phone')}
@@ -107,6 +110,32 @@ export default function OrderSuccess() {
             <StoreButton onClick={handleFetch} disabled={!phone.trim()}>
               {t('track.track')}
             </StoreButton>
+          </div>
+          <div className="mt-4 rounded-xl border border-info/20 bg-info-soft p-4 text-start">
+            <div className="flex gap-3">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface text-info">
+                <Icon name="Mail" size="xs" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-info">
+                  {t('order.confirmationHelpTitle', 'لم يصلك تأكيد الطلب؟')}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-info">
+                  {t(
+                    'order.confirmationHelpDesc',
+                    'إذا فقدت بيانات التتبع أو لم تصلك رسالة التأكيد، افتح تذكرة دعم واذكر رقم الطلب ليعاد إرسال تفاصيل المتابعة بعد التحقق.',
+                  )}
+                </p>
+                {orderNumber && (
+                  <p className="mt-2 text-xs text-info">
+                    {t('order.orderNumber', 'رقم الطلب')}: <span className="font-mono font-semibold" dir="ltr">{orderNumber}</span>
+                  </p>
+                )}
+                <Link to={slug ? `/s/${slug}/support` : '/'} className="mt-3 inline-flex min-h-[44px] items-center text-sm font-medium text-primary-700 hover:underline">
+                  {t('order.requestConfirmationResend', 'طلب مساعدة لإعادة إرسال التأكيد')}
+                </Link>
+              </div>
+            </div>
           </div>
           <div className="mt-6">
             <Link to={`/s/${slug}`} className="text-sm text-primary-600 hover:underline">

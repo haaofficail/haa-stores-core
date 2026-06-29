@@ -1,0 +1,16 @@
+-- Add a platform admin role to `users`.
+--
+-- Batch 2 of the accountant-settlements feature introduces scoped admin
+-- roles. Historically the admin auth layer minted `admin:*` for EVERY admin;
+-- this column lets the login service mint role-scoped permissions instead
+-- (see ADMIN_ROLE_PERMISSIONS in @haa/shared and AdminAuthService).
+--
+-- Safety: the column is NOT NULL with DEFAULT 'super_admin', so the ALTER
+-- backfills every existing row (admins and merchants alike) to 'super_admin'.
+-- `admin_role` is only consulted when `is_admin = true`, and 'super_admin'
+-- maps to the historical `admin:*` wildcard — so NO existing admin is locked
+-- out by this migration. 'accountant' is a finance-scoped role.
+--
+-- Owner action: this migration is NOT applied automatically (no auto-migrate
+-- policy). Apply with `pnpm db:migrate` against the target database.
+ALTER TABLE "users" ADD COLUMN "admin_role" varchar(32) DEFAULT 'super_admin' NOT NULL;

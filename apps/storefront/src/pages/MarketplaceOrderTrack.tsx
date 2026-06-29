@@ -53,7 +53,7 @@ function formatAmount(value: unknown) {
 }
 
 // TASK-0040 Track 1B — P0-3. Persist the access token per-order in
-// localStorage so customers don't have to re-enter it on every visit.
+// sessionStorage so customers don't have to re-enter it on every visit.
 // Keyed by marketplaceOrderNumber to keep tokens isolated per order.
 const TOKEN_STORAGE_PREFIX = 'haa.marketplace.order.token.';
 
@@ -62,8 +62,7 @@ export default function MarketplaceOrderTrack() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [lookupOrderNumber, setLookupOrderNumber] = useState(orderNumber ?? '');
-  // Prefer ?access_token= query param; fall back to localStorage; fall
-  // back to legacy ?phone= (deprecated, see Plan §3 Track 1B).
+  // Prefer ?access_token= query param; fall back to sessionStorage.
   const readStoredToken = (key: string): string | null => {
     try {
       return sessionStorage.getItem(key);
@@ -75,26 +74,22 @@ export default function MarketplaceOrderTrack() {
     searchParams.get('access_token') ??
     (orderNumber ? readStoredToken(TOKEN_STORAGE_PREFIX + orderNumber) : null);
   const [accessToken, setAccessToken] = useState(initialToken ?? '');
-  const [legacyPhone] = useState(searchParams.get('phone') ?? '');
   const [order, setOrder] = useState<MarketplaceOrder | null>(null);
-  const [loading, setLoading] = useState(Boolean(orderNumber && (initialToken || legacyPhone)));
+  const [loading, setLoading] = useState(Boolean(orderNumber && initialToken));
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const requestIdRef = useRef(0);
 
   useSEO({ title: `تتبع طلب سوق هاء ${orderNumber ?? ''}`, noIndex: true });
 
-  const load = useCallback(async (token: string, phone: string) => {
+  const load = useCallback(async (token: string) => {
     if (!orderNumber) return;
-    if (!token.trim() && !phone.trim()) return;
+    if (!token.trim()) return;
     const requestId = ++requestIdRef.current;
     setLoading(true);
     setError('');
     try {
-      // Prefer token; fall back to legacy phone during transition window.
-      const result = token.trim()
-        ? await haaMarketplaceApi.getOrder(orderNumber, token.trim())
-        : await haaMarketplaceApi.getOrderLegacy(orderNumber, phone.trim());
+      const result = await haaMarketplaceApi.getOrder(orderNumber, token.trim());
       if (requestId !== requestIdRef.current) return;
       setOrder(result);
       // Persist token for future visits (one-time read from API response
@@ -118,8 +113,8 @@ export default function MarketplaceOrderTrack() {
   }, [orderNumber, setSearchParams]);
 
   useEffect(() => {
-    if (orderNumber && (initialToken || legacyPhone)) load(initialToken ?? '', legacyPhone);
-  }, [orderNumber, initialToken, legacyPhone, load]);
+    if (orderNumber && initialToken) load(initialToken);
+  }, [orderNumber, initialToken, load]);
 
   useEffect(() => {
     setLookupOrderNumber(orderNumber ?? '');
@@ -187,7 +182,7 @@ export default function MarketplaceOrderTrack() {
               if (typed && typed !== orderNumber) {
                 navigate(`/marketplace/order/${encodeURIComponent(typed)}?access_token=${encodeURIComponent(token)}`);
               } else {
-                load(token, '');
+                load(token);
               }
             } : submitLookup} loading={loading} className="self-end" iconStart={<Icon icon={Search} size="xs" />}>
               استعلام وتتبع

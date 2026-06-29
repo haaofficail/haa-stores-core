@@ -33,6 +33,51 @@ import { resolveActiveStore } from './_shared.js';
 
 export const checkoutRouter = new Hono();
 
+const PUBLIC_INSUFFICIENT_STOCK_MESSAGE = 'أحد المنتجات في السلة لم يعد متوفرًا بالكمية المطلوبة. راجع السلة قبل إعادة المحاولة.';
+type PublicRecord = Record<string, unknown>;
+type CartRouteItem = {
+  item?: { productId?: number; quantity?: number };
+  product?: {
+    id?: number;
+    sku?: string | null;
+    weightGrams?: number | null;
+    requiresShipping?: boolean | null;
+  };
+};
+type CartForRates = {
+  items?: CartRouteItem[];
+  subtotal: number;
+};
+type CheckoutSessionResult = {
+  session: PublicRecord;
+  idempotent: boolean;
+};
+type BnplResult = {
+  redirectUrl: string | null;
+  paymentId: number;
+  order: PublicRecord;
+};
+type CheckoutCallbackResult = {
+  redirectUrl?: string | null;
+  orderNumber?: string | null;
+};
+type ConfirmResult = PublicRecord & {
+  order?: PublicRecord;
+  redirectUrl?: string;
+};
+
+function isInsufficientStockMessage(message: string): boolean {
+  return message.toLowerCase().includes('insufficient stock');
+}
+
+function isCheckoutClientErrorMessage(message: string): boolean {
+  const lowerMessage = message.toLowerCase();
+  return lowerMessage.includes('not found') ||
+    lowerMessage.includes('required') ||
+    lowerMessage.includes('invalid') ||
+    isInsufficientStockMessage(lowerMessage);
+}
+
 const shippingRatesSchema = z.object({
   cartId: z.string().uuid(),
   city: z.string(),
@@ -85,7 +130,7 @@ checkoutRouter.get('/:slug/shipping-methods', async (c) => {
     .select()
     .from(s.shippingMethods)
     .where(eq(s.shippingMethods.storeId, store.id));
-  return c.json({ success: true, data: methods.map((m: any) => toPublicShippingMethod(m)) });
+  return c.json({ success: true, data: methods.map((m) => toPublicShippingMethod(m)) });
 });
 
 checkoutRouter.post('/:slug/checkout/shipping-rates', zValidator('json', shippingRatesSchema), async (c) => {
@@ -96,15 +141,16 @@ checkoutRouter.post('/:slug/checkout/shipping-rates', zValidator('json', shippin
   if (!cart) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Cart not found' } }, 404);
   const provider = new ManualShippingProvider();
 
-  const cacheKeyItems = (cart.items ?? []).map((i: any) => ({
+  const cartForRates = cart as CartForRates;
+  const cacheKeyItems = (cartForRates.items ?? []).map((i) => ({
     sku: i.product?.sku ?? null,
     productId: i.product?.id ?? i.item?.productId,
     quantity: i.item?.quantity ?? 0,
   }));
-  const providerItems = (cart.items ?? []).map((i: any) => ({
+  const providerItems = (cartForRates.items ?? []).map((i) => ({
     weightGrams: i.product?.weightGrams,
-    quantity: i.item?.quantity,
-    requiresShipping: i.product?.requiresShipping,
+    quantity: i.item?.quantity ?? 0,
+    requiresShipping: i.product?.requiresShipping ?? true,
   }));
 
   const cache = getDefaultShippingRateCache();
@@ -120,7 +166,7 @@ checkoutRouter.post('/:slug/checkout/shipping-rates', zValidator('json', shippin
         storeId: store.id,
         items: providerItems,
         destination: { city: body.city, country: 'Saudi Arabia' },
-        subtotal: cart.subtotal,
+        subtotal: cartForRates.subtotal,
       }),
   );
 
@@ -154,12 +200,15 @@ checkoutRouter.post('/:slug/checkout/sessions', zValidator('json', checkoutSessi
   if (error) return error;
   const body = c.req.valid('json');
   try {
-    const sessionResult = await new CheckoutService().createSession(store.id, body);
-    const { session, idempotent } = sessionResult as any;
+    const sessionResult = await new CheckoutService().createSession(store.id, body) as CheckoutSessionResult;
+    const { session, idempotent } = sessionResult;
     return c.json({ success: true, data: { ...session, idempotent } }, idempotent ? 200 : 201);
   } catch (e) {
     if (e instanceof AppError) throw e;
-    const status = e instanceof Error && (e.message.includes('not found') || e.message.includes('required') || e.message.includes('invalid')) ? 400 : 500;
+    if (e instanceof Error && isInsufficientStockMessage(e.message)) {
+      throw new AppError(400, 'INSUFFICIENT_STOCK', PUBLIC_INSUFFICIENT_STOCK_MESSAGE);
+    }
+    const status = e instanceof Error && isCheckoutClientErrorMessage(e.message) ? 400 : 500;
     throw new AppError(status, 'CHECKOUT_ERROR', e instanceof Error ? e.message : 'Checkout failed');
   }
 });
@@ -181,8 +230,8 @@ checkoutRouter.post('/:slug/checkout/payment-session', zValidator('json', paymen
       callbackSuccessUrl: `${callbackBase}?status=success`,
       callbackCancelUrl: `${callbackBase}?status=cancelled`,
       callbackFailureUrl: `${callbackBase}?status=failed`,
-    });
-    return c.json({ success: true, data: { redirectUrl: bnplResult.redirectUrl, paymentId: bnplResult.paymentId, order: toPublicOrder(bnplResult.order as any) } });
+    }) as BnplResult;
+    return c.json({ success: true, data: { redirectUrl: bnplResult.redirectUrl, paymentId: bnplResult.paymentId, order: toPublicOrder(bnplResult.order as PublicRecord) } });
   } catch (e) {
     if (e instanceof AppError) throw e;
     const status = e instanceof Error && (e.message.includes('not found') || e.message.includes('required') || e.message.includes('invalid')) ? 400 : 500;
@@ -201,10 +250,10 @@ checkoutRouter.get('/:slug/checkout/payments/callback', async (c) => {
   if (!providerPaymentId) return c.redirect('/?error=missing_payment_id');
 
   try {
-    const result = await new CheckoutService().handleBNPLCallback(store.id, providerPaymentId);
+    const result = await new CheckoutService().handleBNPLCallback(store.id, providerPaymentId) as CheckoutCallbackResult;
     const baseUrl = result.redirectUrl || '/';
     const separator = baseUrl.includes('?') ? '&' : '?';
-    const finalUrl = (result as any).orderNumber ? `${baseUrl}${separator}orderNumber=${(result as any).orderNumber}` : baseUrl;
+    const finalUrl = result.orderNumber ? `${baseUrl}${separator}orderNumber=${result.orderNumber}` : baseUrl;
     return c.redirect(finalUrl);
   } catch {
     return c.redirect('/?error=callback_failed');
@@ -217,14 +266,14 @@ checkoutRouter.post('/:slug/checkout/sessions/:sessionId/confirm', async (c) => 
   const sessionId = c.req.param('sessionId') as string | undefined;
   if (!sessionId) return c.json({ success: false, error: { code: 'BAD_REQUEST', message: 'Session ID required' } }, 400);
   try {
-    const confirmResult = await new CheckoutService().confirm(store.id, sessionId, undefined, c.req.header('x-forwarded-for'));
+    const confirmResult = await new CheckoutService().confirm(store.id, sessionId, undefined, c.req.header('x-forwarded-for')) as ConfirmResult;
     // 3DS challenge: when the payment provider returns a redirectUrl,
     // forward it to the storefront so the customer is redirected to
     // the issuer's challenge page. The post-challenge webhook (or the
     // /3ds-callback endpoint below) will finalize the payment.
-    const responseData: Record<string, unknown> = { ...confirmResult, order: toPublicOrder(((confirmResult as any).order as any) ?? {}) };
-    if ((confirmResult as any).redirectUrl) {
-      responseData.redirectUrl = (confirmResult as any).redirectUrl;
+    const responseData: Record<string, unknown> = { ...confirmResult, order: toPublicOrder(confirmResult.order ?? {}) };
+    if (confirmResult.redirectUrl) {
+      responseData.redirectUrl = confirmResult.redirectUrl;
     }
     return c.json({ success: true, data: responseData });
   } catch (e) {
@@ -272,7 +321,7 @@ checkoutRouter.get('/:slug/order/:orderNumber', async (c) => {
   if (!phone) return c.json({ success: false, error: { code: 'BAD_REQUEST', message: 'Phone is required' } }, 400);
   const order = await new OrdersService().getByOrderNumberPublic(orderNumber, phone);
   if (!order) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } }, 404);
-  return c.json({ success: true, data: toPublicOrder(order as any) });
+  return c.json({ success: true, data: toPublicOrder(order as PublicRecord) });
 });
 
 checkoutRouter.get('/:slug/track/:orderNumber', async (c) => {
@@ -284,5 +333,5 @@ checkoutRouter.get('/:slug/track/:orderNumber', async (c) => {
   if (!phone) return c.json({ success: false, error: { code: 'BAD_REQUEST', message: 'Phone is required' } }, 400);
   const order = await new OrdersService().getByOrderNumberPublic(orderNumber, phone);
   if (!order) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } }, 404);
-  return c.json({ success: true, data: toPublicOrder(order as any) });
+  return c.json({ success: true, data: toPublicOrder(order as PublicRecord) });
 });

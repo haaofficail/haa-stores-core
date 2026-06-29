@@ -134,11 +134,24 @@ describe('Apple-grade merchant dashboard fixes (audit 2026-06-22)', () => {
   });
 
   describe('Fix 7: onboarding skip asks for confirmation', () => {
-    it('the skip button calls window.confirm before navigating', () => {
-      // The skip handler must include both window.confirm and navigate
-      // to /dashboard inside the same arrow function body.
+    it('the skip flow confirms, writes a resumable draft, then navigates', () => {
       expect(ONBOARDING).toMatch(/window\.confirm\([^)]*onboarding\.skipConfirm/s);
+      expect(ONBOARDING).toContain('ONBOARDING_DRAFT_PREFIX');
+      expect(ONBOARDING).toContain('writeOnboardingDraft(storeId, buildDraft(true))');
+      expect(ONBOARDING).toContain("localStorage.removeItem('onboarding_done')");
       expect(ONBOARDING).toMatch(/navigate\('\/dashboard'\)/);
+    });
+
+    it('the onboarding draft restores form, product, selected, and checklist state', () => {
+      expect(ONBOARDING).toContain('readOnboardingDraft(storeId)');
+      expect(ONBOARDING).toContain('setAiProducts(draft.aiProducts ?? [])');
+      expect(ONBOARDING).toContain('setSelectedProducts(new Set(draft.selectedProductIndexes ?? []))');
+      expect(ONBOARDING).toContain('setChecklist(draft.checklist');
+    });
+
+    it('onboarding completion clears the local draft', () => {
+      expect(ONBOARDING).toContain('clearOnboardingDraft(storeId)');
+      expect(ONBOARDING).toContain("localStorage.setItem('onboarding_done', 'true')");
     });
 
     it('the skip button is at least h-11 (touch target ≥ 44px)', () => {

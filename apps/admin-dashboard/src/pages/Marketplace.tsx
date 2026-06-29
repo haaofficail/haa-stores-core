@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { adminApi } from '../lib/api';
+import { AdminDialog } from '../components/ui/AdminDialog';
+import { adminApi, hasAdminPermission } from '../lib/api';
 
 const statusLabels: Record<string, string> = {
   pending: 'بانتظار المراجعة',
@@ -20,6 +21,12 @@ function money(value: unknown) {
   return `${Number(value ?? 0).toFixed(2)} ر.س`;
 }
 
+type MarketplaceDecisionModal = {
+  id: number;
+  name: string;
+  status: 'rejected' | 'suspended';
+};
+
 export default function Marketplace() {
   const [summary, setSummary] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
@@ -29,8 +36,10 @@ export default function Marketplace() {
   const [deepReport, setDeepReport] = useState<any>(null);
   const [status, setStatus] = useState('pending');
   const [loading, setLoading] = useState(true);
-  const [rejectModal, setRejectModal] = useState<{ id: number; name: string } | null>(null);
+  const [decisionModal, setDecisionModal] = useState<MarketplaceDecisionModal | null>(null);
   const [rejectNote, setRejectNote] = useState('');
+  const canReviewMarketplaceProduct = hasAdminPermission('marketplace.review');
+  const canFeatureMarketplaceProduct = hasAdminPermission('marketplace.feature');
 
   const load = async (nextStatus = status) => {
     setLoading(true);
@@ -64,10 +73,14 @@ export default function Marketplace() {
   useEffect(() => { load(); }, []);
 
   const review = async (id: number, nextStatus: 'approved' | 'rejected' | 'suspended' | 'pending', note?: string) => {
+    if (!canReviewMarketplaceProduct) {
+      toast.error('لا تملك صلاحية مراجعة منتجات السوق');
+      return;
+    }
     try {
       await adminApi.reviewMarketplaceProduct(id, nextStatus, note);
       toast.success('تم تحديث حالة المنتج');
-      setRejectModal(null);
+      setDecisionModal(null);
       setRejectNote('');
       load();
     } catch (error: any) {
@@ -76,6 +89,10 @@ export default function Marketplace() {
   };
 
   const toggleFeature = async (product: any) => {
+    if (!canFeatureMarketplaceProduct) {
+      toast.error('لا تملك صلاحية تمييز منتجات السوق');
+      return;
+    }
     try {
       await adminApi.featureMarketplaceProduct(product.id, {
         featured: !product.haaMarketplaceFeatured,
@@ -152,10 +169,10 @@ export default function Marketplace() {
                   <td className="p-3">{product.haaMarketplaceFeatured ? 'مميز' : 'عادي'}</td>
                   <td className="p-3">
                     <div className="flex flex-wrap gap-2">
-                      <button onClick={() => review(product.id, 'approved')} className="rounded bg-green-600 px-2 py-1 text-xs text-white">اعتماد</button>
-                      <button onClick={() => { setRejectNote(''); setRejectModal({ id: product.id, name: product.name }); }} className="rounded bg-red-600 px-2 py-1 text-xs text-white">رفض</button>
-                      <button onClick={() => review(product.id, 'suspended')} className="rounded bg-gray-700 px-2 py-1 text-xs text-white">إيقاف</button>
-                      <button onClick={() => toggleFeature(product)} className="rounded bg-primary-600 px-2 py-1 text-xs text-white">{product.haaMarketplaceFeatured ? 'إلغاء التمييز' : 'تمييز'}</button>
+                      <button disabled={!canReviewMarketplaceProduct} onClick={() => review(product.id, 'approved')} className="rounded bg-green-600 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">اعتماد</button>
+                      <button disabled={!canReviewMarketplaceProduct} onClick={() => { setRejectNote(''); setDecisionModal({ id: product.id, name: product.name, status: 'rejected' }); }} className="rounded bg-red-600 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">رفض</button>
+                      <button disabled={!canReviewMarketplaceProduct} onClick={() => { setRejectNote(''); setDecisionModal({ id: product.id, name: product.name, status: 'suspended' }); }} className="rounded bg-gray-700 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">إيقاف</button>
+                      <button disabled={!canFeatureMarketplaceProduct} onClick={() => toggleFeature(product)} className="rounded bg-primary-600 px-2 py-1 text-xs text-white disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500">{product.haaMarketplaceFeatured ? 'إلغاء التمييز' : 'تمييز'}</button>
                     </div>
                   </td>
                 </tr>
@@ -254,36 +271,43 @@ export default function Marketplace() {
           </table>
         </div>
       </section>
-      {rejectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md space-y-4">
-            <h3 className="text-lg font-bold text-gray-900">رفض المنتج</h3>
-            <p className="text-sm text-gray-600">المنتج: <span className="font-medium">{rejectModal.name}</span></p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">سبب الرفض</label>
-              <textarea
-                value={rejectNote}
-                onChange={e => setRejectNote(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 h-28"
-                placeholder="مثال: الصورة غير واضحة، الوصف ناقص..."
-              />
-            </div>
-            <div className="flex gap-3 pt-4 border-t">
-              <button
-                onClick={() => review(rejectModal.id, 'rejected', rejectNote || undefined)}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
-              >
-                تأكيد الرفض
-              </button>
-              <button
-                onClick={() => { setRejectModal(null); setRejectNote(''); }}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-              >
-                إلغاء
-              </button>
-            </div>
+      {decisionModal && (
+        <AdminDialog
+          title={decisionModal.status === 'rejected' ? 'رفض المنتج' : 'إيقاف المنتج'}
+          description={<span>المنتج: <span className="font-medium">{decisionModal.name}</span></span>}
+          onClose={() => { setDecisionModal(null); setRejectNote(''); }}
+        >
+          <div className="rounded-lg bg-amber-50 text-amber-800 text-xs leading-5 p-3">
+            سيظهر سبب القرار في سجل مراجعة المنتج. لا تتابع بدون سبب واضح وقابل للتنفيذ من البائع.
           </div>
-        </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {decisionModal.status === 'rejected' ? 'سبب الرفض *' : 'سبب الإيقاف *'}
+            </label>
+            <textarea
+              value={rejectNote}
+              onChange={e => setRejectNote(e.target.value)}
+              aria-label={decisionModal.status === 'rejected' ? 'سبب الرفض *' : 'سبب الإيقاف *'}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 h-28"
+              placeholder={decisionModal.status === 'rejected' ? 'مثال: الصورة غير واضحة، الوصف ناقص...' : 'مثال: مخالفة سياسة السوق أو منتج منظّم بلا إثبات.'}
+            />
+          </div>
+          <div className="flex gap-3 pt-4 border-t">
+            <button
+              onClick={() => review(decisionModal.id, decisionModal.status, rejectNote.trim())}
+              disabled={!rejectNote.trim()}
+              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
+            >
+              {decisionModal.status === 'rejected' ? 'تأكيد الرفض' : 'تأكيد الإيقاف'}
+            </button>
+            <button
+              onClick={() => { setDecisionModal(null); setRejectNote(''); }}
+              className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+            >
+              إلغاء
+            </button>
+          </div>
+        </AdminDialog>
       )}
     </div>
   );

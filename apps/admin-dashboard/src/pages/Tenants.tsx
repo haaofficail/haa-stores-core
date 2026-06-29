@@ -5,8 +5,16 @@ import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 import { useTranslation } from 'react-i18next';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
+import { AdminDialog } from '../components/ui/AdminDialog';
 import { ErrorState } from '../components/ui/ErrorState';
 import { downloadRowsAsCsv } from '../lib/downloadRowsAsCsv';
+
+type TenantStatusDialog = {
+  id: number;
+  name: string;
+  currentStatus: string;
+  nextStatus: 'active' | 'suspended';
+};
 
 export default function Tenants() {
   const { t } = useTranslation();
@@ -19,6 +27,8 @@ export default function Tenants() {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [query, setQuery] = useState('');
+  const [statusDialog, setStatusDialog] = useState<TenantStatusDialog | null>(null);
+  const [statusReason, setStatusReason] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,7 +70,7 @@ export default function Tenants() {
     setSaving(true);
     try {
       if (editId) {
-        await adminApi.updateTenant(editId, form);
+        await adminApi.updateTenant(editId, { name: form.name, email: form.email });
         toast.success(t('tenants.updated', 'تم تحديث التاجر بنجاح'));
       } else {
         await adminApi.createTenant(form);
@@ -88,12 +98,30 @@ export default function Tenants() {
     }
   };
 
-  const toggleStatus = async (id: number, current: string) => {
-    const newStatus = current === 'active' ? 'suspended' : 'active';
+  const openStatusDialog = (tenant: any) => {
+    const currentStatus = String(tenant.status || 'active');
+    const nextStatus = currentStatus === 'active' ? 'suspended' : 'active';
+    setStatusDialog({
+      id: Number(tenant.id),
+      name: String(tenant.name || ''),
+      currentStatus,
+      nextStatus,
+    });
+    setStatusReason('');
+  };
+
+  const closeStatusDialog = () => {
+    setStatusDialog(null);
+    setStatusReason('');
+  };
+
+  const submitStatusChange = async () => {
+    if (!statusDialog || !statusReason.trim()) return;
     try {
-      await adminApi.updateTenantStatus(id, newStatus);
-      setTenants(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
-      toast.success(newStatus === 'active' ? t('tenants.activated', 'تم تفعيل التاجر') : t('tenants.suspended', 'تم تعليق التاجر'));
+      await adminApi.updateTenantStatus(statusDialog.id, statusDialog.nextStatus, statusReason.trim());
+      setTenants(prev => prev.map(t => t.id === statusDialog.id ? { ...t, status: statusDialog.nextStatus } : t));
+      toast.success(statusDialog.nextStatus === 'active' ? t('tenants.activated', 'تم تفعيل التاجر') : t('tenants.suspended', 'تم تعليق التاجر'));
+      closeStatusDialog();
     } catch {
       toast.error(t('tenants.statusUpdateError', 'فشل تحديث حالة التاجر'));
     }
@@ -162,7 +190,7 @@ export default function Tenants() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => toggleStatus(tenant.id, tenant.status)} className="text-sm text-primary-600 hover:text-primary-700 transition-colors px-2 py-1">
+                      <button onClick={() => openStatusDialog(tenant)} className="text-sm text-primary-600 hover:text-primary-700 transition-colors px-2 py-1">
                         {tenant.status === 'active' ? t('tenants.suspend', 'تعليق') : t('tenants.activate', 'تفعيل')}
                       </button>
                       <button onClick={() => handleOpenDialog(tenant)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors px-2 py-1">{t('tenants.edit', 'تعديل')}</button>
@@ -177,16 +205,54 @@ export default function Tenants() {
       </div>
 
       {confirmDelete !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
-            <h3 className="text-lg font-bold text-gray-900">{t('tenants.confirmDeleteTitle', 'تأكيد الحذف')}</h3>
-            <p className="text-sm text-gray-600">{t('tenants.confirmDeleteMessage', 'هل أنت متأكد من حذف هذا التاجر؟ لا يمكن التراجع عن هذا الإجراء.')}</p>
-            <div className="flex gap-3 pt-4 border-t">
-              <button onClick={confirmDeleteTenant} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">{t('tenants.delete', 'حذف')}</button>
-              <button onClick={() => setConfirmDelete(null)} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">{t('tenants.cancel', 'إلغاء')}</button>
-            </div>
+        <AdminDialog
+          title={t('tenants.confirmDeleteTitle', 'تأكيد الحذف')}
+          description={t('tenants.confirmDeleteMessage', 'هل أنت متأكد من حذف هذا التاجر؟ لا يمكن التراجع عن هذا الإجراء.')}
+          maxWidthClassName="max-w-sm"
+          onClose={() => setConfirmDelete(null)}
+        >
+          <div className="flex gap-3 pt-4 border-t">
+            <button onClick={confirmDeleteTenant} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">{t('tenants.delete', 'حذف')}</button>
+            <button onClick={() => setConfirmDelete(null)} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">{t('tenants.cancel', 'إلغاء')}</button>
           </div>
-        </div>
+        </AdminDialog>
+      )}
+
+      {statusDialog && (
+        <AdminDialog
+          title={statusDialog.nextStatus === 'suspended' ? 'تأكيد تعليق التاجر' : 'تأكيد تفعيل التاجر'}
+          description={<span>التاجر: <span className="font-medium">{statusDialog.name || `#${statusDialog.id}`}</span></span>}
+          onClose={closeStatusDialog}
+        >
+          <div className="rounded-lg bg-amber-50 text-amber-800 text-xs leading-5 p-3">
+            تغيير حالة التاجر يؤثر على كل متاجره وعملياته. اكتب سببًا واضحًا قبل المتابعة.
+          </div>
+          <div>
+            <label htmlFor="tenant-status-reason" className="block text-sm font-medium text-gray-700 mb-1">سبب القرار *</label>
+            <textarea
+              id="tenant-status-reason"
+              value={statusReason}
+              onChange={e => setStatusReason(e.target.value)}
+              aria-label="سبب القرار *"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 h-28"
+              placeholder={statusDialog.nextStatus === 'suspended' ? 'مثال: مخالفة شروط المنصة أو طلب امتثال مفتوح.' : 'مثال: تمت معالجة سبب التعليق والتحقق من جاهزية الحساب.'}
+            />
+          </div>
+          <div className="flex gap-3 pt-4 border-t">
+            <button
+              onClick={submitStatusChange}
+              disabled={!statusReason.trim()}
+              className={`flex-1 px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors ${
+                statusDialog.nextStatus === 'suspended' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+              }`}
+            >
+              {statusDialog.nextStatus === 'suspended' ? 'تأكيد التعليق' : 'تأكيد التفعيل'}
+            </button>
+            <button onClick={closeStatusDialog} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+              {t('tenants.cancel', 'إلغاء')}
+            </button>
+          </div>
+        </AdminDialog>
       )}
 
       {dialogOpen && (
@@ -202,13 +268,15 @@ export default function Tenants() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('tenants.emailLabel', 'البريد الإلكتروني')}</label>
                 <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('tenants.status', 'الحالة')}</label>
-                <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                  <option value="active">{t('tenants.active', 'نشط')}</option>
-                  <option value="suspended">{t('tenants.inactive', 'موقوف')}</option>
-                </select>
-              </div>
+              {!editId && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('tenants.status', 'الحالة')}</label>
+                  <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="active">{t('tenants.active', 'نشط')}</option>
+                    <option value="suspended">{t('tenants.inactive', 'موقوف')}</option>
+                  </select>
+                </div>
+              )}
             </div>
             <div className="flex gap-3 pt-4 border-t">
               <button onClick={saveTenant} disabled={saving} className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors">

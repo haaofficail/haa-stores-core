@@ -15,6 +15,7 @@ import { type AdminAuthContext } from '@haa/auth-core';
 import { WalletLedger } from '@haa/wallet-core';
 import { AuditLogService } from '@haa/integration-core';
 import { NotificationService } from '@haa/notification-core';
+import { assertAdminUploadIntegrity } from '../../services/admin-upload-integrity.js';
 
 // ── /marketplace/summary ───────────────────────────────────────────────────
 export async function marketplaceSummaryRoute(c: any) {
@@ -286,6 +287,18 @@ export const settlementBatchesRoutes = {
   },
 };
 
+// Batch 6: notify the merchant when a settlement is finalized (transfer_verified).
+// Carries only non-sensitive fields — never an IBAN.
+function notifySettlementCompleted(payout: { id: number; storeId: number; status: string; amount: string; currency: string }) {
+  if (payout.status !== 'transfer_verified') return;
+  new NotificationService().send(payout.storeId, 'payout_transferred', {
+    payoutId: String(payout.id),
+    amount: String(payout.amount),
+    currency: payout.currency,
+    status: 'transfer_verified',
+  }).catch((e: unknown) => console.error('[payout notify] completed:', e));
+}
+
 // ── /settlements/manual-payouts ───────────────────────────────────────────
 export const manualPayoutsRoutes = {
   list: async (c: any) => {
@@ -366,7 +379,14 @@ export const manualPayoutsRoutes = {
   uploadProof: async (c: any) => {
     const payoutId = Number(c.req.param('payoutId'));
     try {
-      const payout = await new WalletLedger().uploadTransferProof(payoutId, c.req.valid('json'), payoutActionContext(c, 'finance'));
+      const proof = c.req.valid('json');
+      assertAdminUploadIntegrity({
+        key: proof.proofFileKey,
+        sha256: proof.sha256,
+        fileMimeType: proof.fileMimeType,
+        signature: proof.uploadIntegritySignature,
+      });
+      const payout = await new WalletLedger().uploadTransferProof(payoutId, proof, payoutActionContext(c, 'finance'));
       return c.json({ success: true, data: payout });
     } catch (e) {
       return c.json({ success: false, error: { code: 'PAYOUT_WORKFLOW_ERROR', message: e instanceof Error ? e.message : 'Upload proof failed' } }, 400);
@@ -377,9 +397,35 @@ export const manualPayoutsRoutes = {
     const payoutId = Number(c.req.param('payoutId'));
     try {
       const payout = await new WalletLedger().verifyTransfer(payoutId, payoutActionContext(c, 'verifier'));
+      notifySettlementCompleted(payout);
       return c.json({ success: true, data: payout });
     } catch (e) {
       return c.json({ success: false, error: { code: 'PAYOUT_WORKFLOW_ERROR', message: e instanceof Error ? e.message : 'Verify transfer failed' } }, 400);
+    }
+  },
+
+  // Batch 5: second approval for large settlements (segregation enforced in the
+  // ledger). Finalizes + debits atomically.
+  secondApprove: async (c: any) => {
+    const payoutId = Number(c.req.param('payoutId'));
+    try {
+      const payout = await new WalletLedger().secondApprovePayout(payoutId, payoutActionContext(c, 'second_approver'));
+      notifySettlementCompleted(payout);
+      return c.json({ success: true, data: payout });
+    } catch (e) {
+      return c.json({ success: false, error: { code: 'PAYOUT_WORKFLOW_ERROR', message: e instanceof Error ? e.message : 'Second approve failed' } }, 400);
+    }
+  },
+
+  // Batch 6: reject a pending second approval back to manual_review.
+  secondReject: async (c: any) => {
+    const payoutId = Number(c.req.param('payoutId'));
+    const ctx = { ...payoutActionContext(c, 'second_approver'), reason: c.req.valid('json').reason };
+    try {
+      const payout = await new WalletLedger().secondRejectPayout(payoutId, ctx);
+      return c.json({ success: true, data: payout });
+    } catch (e) {
+      return c.json({ success: false, error: { code: 'PAYOUT_WORKFLOW_ERROR', message: e instanceof Error ? e.message : 'Second reject failed' } }, 400);
     }
   },
 

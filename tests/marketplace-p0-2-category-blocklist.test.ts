@@ -14,8 +14,9 @@
  *  2. packages/db/src/schema/categories.ts:
  *     - Declares the two new columns
  *  3. apps/api/src/routes/haa-marketplace.ts:
- *     - Every EXISTS / category subquery filters
- *       `prohibited_in_marketplace = false` (4 sites)
+ *     - Every public product/seller/stat query applies a product-level
+ *       `NOT EXISTS` guard against any prohibited category
+ *     - Display/facet subqueries filter `prohibited_in_marketplace = false`
  *     - /categories endpoint adds the filter to its WHERE clause
  *  4. Admin UI for toggling — deferred to TASK-0041 Track 2.2 admin pass
  *     (out of scope for this commit; tests below codify the data layer
@@ -53,6 +54,18 @@ describe('TASK-0041 Phase 2 — Track 2.1 — P0-2 category blocklist', () => {
   });
 
   describe('haa-marketplace.ts — products filter', () => {
+    it('declares a product-level NOT EXISTS guard for any prohibited marketplace category', () => {
+      expect(routeSrc).toContain('noProhibitedMarketplaceCategoryCondition');
+      expect(routeSrc).toMatch(/NOT EXISTS \([\s\S]{0,500}prohibitedInMarketplace\}\s*=\s*true/);
+    });
+
+    it('applies the product-level prohibited-category guard to public marketplace queries', () => {
+      const matches = routeSrc.match(/noProhibitedMarketplaceCategoryCondition\(\)/g) ?? [];
+      // stats + products + detail + seller detail + seller list real/demo
+      // + categories. The function definition is asserted separately.
+      expect(matches.length).toBeGreaterThanOrEqual(7);
+    });
+
     it('GET /products category EXISTS subquery filters prohibitedInMarketplace=false', () => {
       // The EXISTS subquery in /products (around line 110-117) should
       // include AND categories.prohibited_in_marketplace = false.
@@ -77,6 +90,7 @@ describe('TASK-0041 Phase 2 — Track 2.1 — P0-2 category blocklist', () => {
       const src = block![0];
       const matches = src.match(/prohibitedInMarketplace/g) ?? [];
       expect(matches.length).toBeGreaterThanOrEqual(2);
+      expect(src).toContain('categorySlugs');
     });
   });
 

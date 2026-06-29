@@ -589,6 +589,20 @@
       "when": 1782950000000,
       "tag": "0087_tenant_users_store_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1782950001000,
+      "tag": "0088_users_admin_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1782950002000,
+      "tag": "0089_payout_receipt_sha256",
+      "breakpoints": true
     }
   ]
 }

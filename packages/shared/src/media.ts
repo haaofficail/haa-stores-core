@@ -1,11 +1,18 @@
-import { randomUUID, createHmac, timingSafeEqual } from 'crypto';
+import { randomUUID, createHmac, createHash, timingSafeEqual } from 'crypto';
 import { mkdirSync, writeFileSync, existsSync, unlinkSync } from 'fs';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import sharp from 'sharp';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+// Batch 4C: PDF is accepted only when an explicit financial-document upload
+// path opts in. Product images and normal media uploads stay image-only.
+const ALLOWED_DOCUMENT_MIME_TYPES = ['application/pdf'] as const;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+export interface ValidateFileOptions {
+  allowPdf?: boolean;
+}
 
 type SignatureCheck = { offset: number; bytes: Uint8Array };
 
@@ -16,6 +23,8 @@ const MAGIC_SIGNATURES: Record<string, SignatureCheck[]> = {
     { offset: 0, bytes: new Uint8Array([0x52, 0x49, 0x46, 0x46]) },
     { offset: 8, bytes: new Uint8Array([0x57, 0x45, 0x42, 0x50]) },
   ],
+  // %PDF magic header.
+  'application/pdf': [{ offset: 0, bytes: new Uint8Array([0x25, 0x50, 0x44, 0x46]) }],
 };
 
 function matchesSignature(buffer: Buffer, check: SignatureCheck): boolean {
@@ -35,6 +44,7 @@ export interface UploadResult {
   thumbUrl?: string;
   thumbKey?: string;
   sizeBytes?: number;
+  sha256?: string;
 }
 
 export interface MediaAdapter {
@@ -42,7 +52,7 @@ export interface MediaAdapter {
   delete(key: string): Promise<void>;
   getPublicUrl(key: string): string;
   getDriverName(): string;
-  validateFile(buffer: Buffer, mimetype: string): string | null;
+  validateFile(buffer: Buffer, mimetype: string, options?: ValidateFileOptions): string | null;
 }
 
 export type StorageDriver = 'local' | 's3';
@@ -54,8 +64,41 @@ function sanitizeKey(key: string): boolean {
   return true;
 }
 
+function allowedMimeTypes(options?: ValidateFileOptions): readonly string[] {
+  return options?.allowPdf ? [...ALLOWED_IMAGE_MIME_TYPES, ...ALLOWED_DOCUMENT_MIME_TYPES] : ALLOWED_IMAGE_MIME_TYPES;
+}
+
+function validateMediaFile(buffer: Buffer, mimetype: string, options?: ValidateFileOptions): string | null {
+  const allowedTypes = allowedMimeTypes(options);
+  if (!allowedTypes.includes(mimetype)) {
+    return `Unsupported file type: ${mimetype}. Allowed: ${allowedTypes.join(', ')}`;
+  }
+  if (!validateMagicBytes(buffer, mimetype)) {
+    return `File content does not match declared type ${mimetype}`;
+  }
+  if (buffer.length > MAX_FILE_SIZE) {
+    return `File size ${(buffer.length / 1024 / 1024).toFixed(1)}MB exceeds maximum ${MAX_FILE_SIZE / 1024 / 1024}MB`;
+  }
+  return null;
+}
+
+function extensionForMime(mimetype: string): string {
+  if (mimetype === 'application/pdf') return 'pdf';
+  if (mimetype === 'image/webp') return 'webp';
+  if (mimetype === 'image/png') return 'png';
+  return 'jpg';
+}
+
+function isPdf(mimetype: string): boolean {
+  return mimetype === 'application/pdf';
+}
+
+function sha256Hex(buffer: Buffer): string {
+  return createHash('sha256').update(buffer).digest('hex');
+}
+
 export function generateStorageKey(storeId: number, productId: number, mimetype: string): string {
-  const ext = mimetype === 'image/webp' ? 'webp' : mimetype === 'image/png' ? 'png' : 'jpg';
+  const ext = extensionForMime(mimetype);
   const uuid = randomUUID();
   if (storeId === 0) {
     return `admin/${uuid}.${ext}`;
@@ -112,30 +155,29 @@ export class LocalStorageAdapter implements MediaAdapter {
     return 'local';
   }
 
-  validateFile(buffer: Buffer, mimetype: string): string | null {
-    if (!ALLOWED_MIME_TYPES.includes(mimetype)) {
-      return `Unsupported file type: ${mimetype}. Allowed: ${ALLOWED_MIME_TYPES.join(', ')}`;
-    }
-    if (!validateMagicBytes(buffer, mimetype)) {
-      return `File content does not match declared type ${mimetype}`;
-    }
-    if (buffer.length > MAX_FILE_SIZE) {
-      return `File size ${(buffer.length / 1024 / 1024).toFixed(1)}MB exceeds maximum ${MAX_FILE_SIZE / 1024 / 1024}MB`;
-    }
-    return null;
+  validateFile(buffer: Buffer, mimetype: string, options?: ValidateFileOptions): string | null {
+    return validateMediaFile(buffer, mimetype, options);
   }
 
   async upload(buffer: Buffer, _mimetype: string, productId: number, storeId: number): Promise<UploadResult> {
     const key = generateStorageKey(storeId, productId, _mimetype);
     if (!sanitizeKey(key)) throw new Error('Invalid storage key');
 
-    const folder = productId === 0 ? 'uploads' : `products/${productId}`;
-    const dir = join(this.basePath, `stores/${storeId}/${folder}`);
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
+    const filePath = join(this.basePath, key);
+    const dir = dirname(filePath);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+
+    if (isPdf(_mimetype)) {
+      writeFileSync(filePath, buffer);
+      return {
+        url: `${this.baseUrl}/${key}`,
+        key,
+        sizeBytes: buffer.length,
+        sha256: sha256Hex(buffer),
+      };
     }
 
-    const ext = _mimetype === 'image/webp' ? 'webp' : _mimetype === 'image/png' ? 'png' : 'jpg';
+    const ext = extensionForMime(_mimetype);
     const thumbKey = key.replace(`.${ext}`, `.thumb.${ext}`);
 
     // Optimize original — 2048px max, quality 85, sharpen after resize
@@ -145,7 +187,6 @@ export class LocalStorageAdapter implements MediaAdapter {
       [ext === 'png' ? 'png' : ext === 'webp' ? 'webp' : 'jpeg']({ quality: 85, mozjpeg: true })
       .toBuffer();
 
-    const filePath = join(this.basePath, key);
     writeFileSync(filePath, optimized);
 
     // Generate thumbnail (200px width)
@@ -163,6 +204,7 @@ export class LocalStorageAdapter implements MediaAdapter {
       thumbUrl: `${this.baseUrl}/${thumbKey}`,
       thumbKey,
       sizeBytes: optimized.length,
+      sha256: sha256Hex(optimized),
     };
   }
 
@@ -206,24 +248,26 @@ export class S3StorageAdapter implements MediaAdapter {
     return 's3';
   }
 
-  validateFile(buffer: Buffer, mimetype: string): string | null {
-    if (!ALLOWED_MIME_TYPES.includes(mimetype)) {
-      return `Unsupported file type: ${mimetype}. Allowed: ${ALLOWED_MIME_TYPES.join(', ')}`;
-    }
-    if (!validateMagicBytes(buffer, mimetype)) {
-      return `File content does not match declared type ${mimetype}`;
-    }
-    if (buffer.length > MAX_FILE_SIZE) {
-      return `File size ${(buffer.length / 1024 / 1024).toFixed(1)}MB exceeds maximum ${MAX_FILE_SIZE / 1024 / 1024}MB`;
-    }
-    return null;
+  validateFile(buffer: Buffer, mimetype: string, options?: ValidateFileOptions): string | null {
+    return validateMediaFile(buffer, mimetype, options);
   }
 
   async upload(buffer: Buffer, mimetype: string, productId: number, storeId: number): Promise<UploadResult> {
     const key = generateStorageKey(storeId, productId, mimetype);
     if (!sanitizeKey(key)) throw new Error('Invalid storage key');
 
-    const ext = mimetype === 'image/webp' ? 'webp' : mimetype === 'image/png' ? 'png' : 'jpg';
+    if (isPdf(mimetype)) {
+      await this.client.send(new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: mimetype,
+      }));
+
+      return { url: `${this.publicBaseUrl}/${key}`, key, sizeBytes: buffer.length, sha256: sha256Hex(buffer) };
+    }
+
+    const ext = extensionForMime(mimetype);
     const thumbKey = key.replace(`.${ext}`, `.thumb.${ext}`);
 
     const optimized = await sharp(buffer)
@@ -253,7 +297,7 @@ export class S3StorageAdapter implements MediaAdapter {
 
     const url = `${this.publicBaseUrl}/${key}`;
     const thumbUrl = `${this.publicBaseUrl}/${thumbKey}`;
-    return { url, key, thumbUrl, thumbKey, sizeBytes: optimized.length };
+    return { url, key, thumbUrl, thumbKey, sizeBytes: optimized.length, sha256: sha256Hex(optimized) };
   }
 
   async delete(key: string): Promise<void> {
