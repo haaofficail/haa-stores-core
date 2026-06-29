@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2, Package, ShoppingCart, Users, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
-import { exportsApi } from '@/lib/api';
+import { exportsApi, getToken } from '@/lib/api';
 import { PermissionGate } from '@/lib/permissions';
 
 const EXPORT_TYPES = ['products', 'orders', 'customers', 'wallet'] as const;
@@ -31,10 +31,6 @@ const exportConfig: Record<string, { icon: React.ReactNode; titleKey: string; de
     descKey: 'exports.wallet.description',
   },
 };
-
-function getToken(): string | null {
-  return localStorage.getItem('auth_token');
-}
 
 export default function Exports() {
   const { t } = useTranslation();
@@ -65,8 +61,8 @@ export default function Exports() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(blobUrl);
       toast.success(t('exports.downloadSuccess'));
-    } catch (err: any) {
-      toast.error(err.message || t('exports.downloadError'));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : t('exports.downloadError'));
     } finally {
       setDownloading(null);
     }

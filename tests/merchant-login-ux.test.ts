@@ -33,7 +33,8 @@ describe('Merchant login UX (P1 audit)', () => {
     it('has a "remember me" checkbox that only persists the email', () => {
       expect(LOGIN).toMatch(/rememberMe/);
       expect(LOGIN).toMatch(/haa-remember-email/);
-      expect(LOGIN).toMatch(/تذكّر بريدي/);
+      expect(LOGIN).toMatch(/تذكّرني/);
+      expect(LOGIN).toMatch(/await login\(email,\s*password,\s*rememberMe\)/);
       // CRITICAL: password must NEVER be persisted alongside the email.
       expect(LOGIN).not.toMatch(/setItem\(['"]haa-remember-password/);
     });

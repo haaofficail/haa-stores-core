@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { feedsApi, ApiClientError } from '@/lib/api';
+import { feedsApi, ApiClientError, getToken } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRightLeft,
@@ -17,10 +17,6 @@ import {
 } from 'lucide-react';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
-
-function getToken(): string | null {
-  return localStorage.getItem('auth_token');
-}
 
 export default function MigrationHub() {
   const { t } = useTranslation();
@@ -66,8 +62,9 @@ export default function MigrationHub() {
   // Pattern mirrored from `Exports.tsx:54-67` (the reference). See
   // audit PART_5 §MigrationHub row 1 (P1).
   const downloadBlob = async (path: string, filename: string) => {
+    const token = getToken();
     const res = await fetch(`${BASE_URL}${path}`, {
-      headers: { Authorization: `Bearer ${getToken()}` },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (!res.ok) {
       const json = await res.json().catch(() => ({} as { error?: { message?: string } }));

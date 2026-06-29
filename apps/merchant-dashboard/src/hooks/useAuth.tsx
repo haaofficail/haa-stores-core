@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import { authApi, setToken as saveToken, clearToken, getStoreId } from '@/lib/api';
+import { authApi, setToken as saveToken, clearToken, getStoreId, getToken, type AuthPersistenceMode } from '@/lib/api';
 
 interface User {
   id: number;
@@ -14,7 +14,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe: boolean) => Promise<void>;
   logout: () => void;
   storeId: number | null;
 }
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const abortController = new AbortController();
-    const token = localStorage.getItem('auth_token');
+    const token = getToken();
     if (!token) {
       setLoading(false);
       return;
@@ -48,9 +48,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => abortController.abort();
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, rememberMe: boolean) => {
     const result = await authApi.login(email, password);
-    saveToken(result.token);
+    const mode: AuthPersistenceMode = rememberMe ? 'local' : 'session';
+    saveToken(result.token, mode);
     setUser(result.user);
     localStorage.setItem('active_store_id', String(result.user.activeStoreId));
   }, []);
