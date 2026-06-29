@@ -43,4 +43,9 @@ export const queryKeys = {
   marketplaceProducts: ['admin', 'marketplaceProducts'] as const,
   financeReports: ['admin', 'financeReports'] as const,
   accountantInbox: ['admin', 'accountantInbox'] as const,
+  landingContacts: ['admin', 'landingContacts'] as const,
+  settlementBatches: ['admin', 'settlementBatches'] as const,
+  settlementReadiness: ['admin', 'settlementReadiness'] as const,
+  compliance: ['admin', 'compliance'] as const,
+  settings: ['admin', 'settings'] as const,
 };

@@ -1,7 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { adminApi } from '../lib/api';
 import type { Payout, SettlementBatch } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { ErrorState } from '../components/ui/ErrorState';
 import { SortableTh } from '../components/ui/SortableTh';
@@ -51,49 +53,56 @@ const payoutStatusLabels: Record<string, string> = {
 };
 
 export default function SettlementBatches() {
-  const [batches, setBatches] = useState<SettlementBatch[]>([]);
-  const [manualPayouts, setManualPayouts] = useState<Payout[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [payoutStatusFilter, setPayoutStatusFilter] = useState('');
   const [storeIdFilter, setStoreIdFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    Promise.all([
-      adminApi.getSettlementBatches(storeIdFilter ? Number(storeIdFilter) : undefined),
-      adminApi.listPayouts(payoutStatusFilter || undefined),
-    ])
-      .then(([data, payouts]) => {
-        let filtered = data;
-        if (statusFilter) {
-          filtered = filtered.filter((b) => b.status === statusFilter);
-        }
-        if (dateFrom) {
-          const from = new Date(dateFrom);
-          filtered = filtered.filter((b) => new Date(b.createdAt) >= from);
-        }
-        if (dateTo) {
-          const to = new Date(dateTo);
-          to.setHours(23, 59, 59, 999);
-          filtered = filtered.filter((b) => new Date(b.createdAt) <= to);
-        }
-        setBatches(filtered);
-        const filteredPayouts = storeIdFilter ? payouts.filter((p) => p.storeId === Number(storeIdFilter)) : payouts;
-        setManualPayouts(filteredPayouts);
-      })
-      .catch(() => {
-        setError(true);
-        toast.error('فشل تحميل التسويات');
-      })
-      .finally(() => setLoading(false));
-  }, [statusFilter, payoutStatusFilter, storeIdFilter, dateFrom, dateTo]);
+  const batchesQuery = useQuery<SettlementBatch[]>({
+    queryKey: [...queryKeys.settlementBatches, storeIdFilter ? Number(storeIdFilter) : null],
+    queryFn: () => adminApi.getSettlementBatches(storeIdFilter ? Number(storeIdFilter) : undefined),
+  });
+  const payoutsQuery = useQuery<Payout[]>({
+    queryKey: [...queryKeys.settlementBatches, 'manualPayouts', payoutStatusFilter || null],
+    queryFn: () => adminApi.listPayouts(payoutStatusFilter || undefined),
+  });
 
-  useEffect(() => { load(); }, [load]);
+  const loading = batchesQuery.isPending || payoutsQuery.isPending;
+  const error = batchesQuery.isError || payoutsQuery.isError;
+  const refetch = () => {
+    batchesQuery.refetch();
+    payoutsQuery.refetch();
+  };
+
+  useEffect(() => {
+    if (error) toast.error('فشل تحميل التسويات');
+  }, [error]);
+
+  // Status + date-range filtering stayed client-side in the original load(); reproduce
+  // it here over the query data so the result still composes before useTableControls.
+  const batches = useMemo(() => {
+    let filtered = batchesQuery.data ?? [];
+    if (statusFilter) {
+      filtered = filtered.filter((b) => b.status === statusFilter);
+    }
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      filtered = filtered.filter((b) => new Date(b.createdAt) >= from);
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      filtered = filtered.filter((b) => new Date(b.createdAt) <= to);
+    }
+    return filtered;
+  }, [batchesQuery.data, statusFilter, dateFrom, dateTo]);
+
+  // storeId filtering of manual payouts was applied client-side after the fetch.
+  const manualPayouts = useMemo(() => {
+    const payouts = payoutsQuery.data ?? [];
+    return storeIdFilter ? payouts.filter((p) => p.storeId === Number(storeIdFilter)) : payouts;
+  }, [payoutsQuery.data, storeIdFilter]);
 
   const controls = useTableControls<SettlementBatch>({
     rows: batches,
@@ -262,7 +271,7 @@ export default function SettlementBatches() {
             ))}
           </div>
         ) : error ? (
-          <ErrorState message="فشل تحميل دفعات التسوية" onRetry={load} />
+          <ErrorState message="فشل تحميل دفعات التسوية" onRetry={() => refetch()} />
         ) : batches.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-footnote text-gray-400">لا توجد دفعات تسوية</p>

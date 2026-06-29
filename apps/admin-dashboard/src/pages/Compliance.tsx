@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { adminApi } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { ErrorState } from '../components/ui/ErrorState';
 
 type TenantCompliance = {
@@ -128,20 +129,10 @@ function getStatus(item: ComplianceItem, value: unknown): Status {
 }
 
 export default function Compliance() {
-  const [tenants, setTenants] = useState<TenantCompliance[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = () => {
-    setLoading(true);
-    setError(null);
-    adminApi.getTenants()
-      .then((data: unknown) => { setTenants(data as TenantCompliance[]); })
-      .catch((err: unknown) => { setError(err instanceof Error ? err.message : 'فشل تحميل البيانات'); })
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { load(); }, []);
+  const { data: tenants = [], isPending: loading, isError: error, refetch } = useQuery<TenantCompliance[]>({
+    queryKey: queryKeys.compliance,
+    queryFn: () => adminApi.getTenants() as unknown as Promise<TenantCompliance[]>,
+  });
 
   // Aggregate stats
   const totalSlots = tenants.length * ITEMS.length;
@@ -212,7 +203,7 @@ export default function Compliance() {
           ))}
         </div>
       ) : error ? (
-        <ErrorState message={error} onRetry={load} />
+        <ErrorState message="فشل تحميل البيانات" onRetry={() => refetch()} />
       ) : tenants.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-dashed border-gray-200">
           <p className="text-callout text-gray-500">
