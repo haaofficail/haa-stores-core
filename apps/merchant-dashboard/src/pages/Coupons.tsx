@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,30 +31,29 @@ const emptyForm = {
 export default function Coupons() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
-  const [coupons, setCoupons] = useState<Array<{ id: number; code: string; name: string; type: string; value: string; usedCount?: number; maxUses?: number; isActive: boolean; expiresAt?: string }>>([]);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(false);
+  const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
-  const loadCoupons = useCallback(() => {
-    if (!storeId) { setLoading(false); return; }
-    setLoading(true);
-    setFetchError(false);
-    couponsApi.list(storeId, { search: search || undefined, status: statusFilter || undefined })
-      .then((data) => setCoupons(data as Array<{ id: number; code: string; name: string; type: string; value: string; usedCount?: number; maxUses?: number; isActive: boolean; expiresAt?: string }>))
-      .catch(() => { setFetchError(true); toast.error(t('common.error')); })
-      .finally(() => setLoading(false));
-  }, [storeId, search, statusFilter, t]);
+  // Search + status are server-side params, so they live in the query key:
+  // changing either refetches automatically and each combination is cached.
+  const couponsQuery = useQuery({
+    queryKey: [...queryKeys.coupons(storeId), { search, status: statusFilter }],
+    queryFn: () => couponsApi.list(storeId as number, { search: search || undefined, status: statusFilter || undefined }),
+    enabled: !!storeId,
+  });
+  const coupons = (couponsQuery.data ?? []) as Array<{ id: number; code: string; name: string; type: string; value: string; usedCount?: number; maxUses?: number; isActive: boolean; expiresAt?: string }>;
+  const loading = couponsQuery.isLoading;
+  const fetchError = couponsQuery.isError;
+  const invalidateCoupons = () => queryClient.invalidateQueries({ queryKey: queryKeys.coupons(storeId) });
 
-  useEffect(() => { loadCoupons(); }, [loadCoupons]);
+  useEffect(() => { if (couponsQuery.isError) toast.error(t('common.error')); }, [couponsQuery.isError, t]);
 
   // Debounce search input by 350ms
   useEffect(() => {
@@ -115,49 +116,47 @@ export default function Coupons() {
     return errs;
   };
 
-  const save = async () => {
+  const saveMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) =>
+      editId ? couponsApi.update(storeId as number, editId, data) : couponsApi.create(storeId as number, data),
+    onSuccess: () => {
+      toast.success(editId ? t('coupons.updated') : t('coupons.created'));
+      setDialogOpen(false);
+      invalidateCoupons();
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : t('common.error')),
+  });
+  const saving = saveMutation.isPending;
+
+  const save = () => {
     if (!storeId) return;
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
-
-    setSaving(true);
-    try {
-      const data = {
-        ...form,
-        value: form.value ? Number(form.value) : undefined,
-        maxDiscountAmount: form.maxDiscountAmount ? Number(form.maxDiscountAmount) : undefined,
-        minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : undefined,
-        maxUses: form.maxUses ? Number(form.maxUses) : undefined,
-        startsAt: form.startsAt || undefined,
-        expiresAt: form.expiresAt || undefined,
-      };
-      if (editId) {
-        await couponsApi.update(storeId, editId, data);
-        toast.success(t('coupons.updated'));
-      } else {
-        await couponsApi.create(storeId, data);
-        toast.success(t('coupons.created'));
-      }
-      setDialogOpen(false);
-      loadCoupons();
-    } catch (err) {
-      if (err instanceof ApiClientError) {
-        toast.error(err.message);
-      } else {
-        toast.error(t('common.error'));
-      }
-    } finally { setSaving(false); }
+    const data = {
+      ...form,
+      value: form.value ? Number(form.value) : undefined,
+      maxDiscountAmount: form.maxDiscountAmount ? Number(form.maxDiscountAmount) : undefined,
+      minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : undefined,
+      maxUses: form.maxUses ? Number(form.maxUses) : undefined,
+      startsAt: form.startsAt || undefined,
+      expiresAt: form.expiresAt || undefined,
+    };
+    saveMutation.mutate(data);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!storeId) return;
-    try {
-      await couponsApi.delete(storeId, id);
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => couponsApi.delete(storeId as number, id),
+    onSuccess: () => {
       toast.success(t('coupons.deleted'));
       setDeleteConfirm(null);
-      loadCoupons();
-    } catch (err) { toast.error(err instanceof ApiClientError ? err.message : t('common.error')); }
+      invalidateCoupons();
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : t('common.error')),
+  });
+  const handleDelete = (id: number) => {
+    if (!storeId) return;
+    deleteMutation.mutate(id);
   };
 
   const getTypeLabel = (type: string) => {
@@ -211,7 +210,7 @@ export default function Coupons() {
               <AlertTriangle className="h-8 w-8 text-red-400" />
             </div>
             <p className="text-sm text-neutral-500 mb-3">{t('coupons.loadError')}</p>
-            <Button variant="outline" size="sm" className="h-8 text-sm" onClick={loadCoupons}>{t('common.retry')}</Button>
+            <Button variant="outline" size="sm" className="h-8 text-sm" onClick={() => couponsQuery.refetch()}>{t('common.retry')}</Button>
           </div>
         ) : coupons.length === 0 ? (
           <div className="p-12 text-center">
