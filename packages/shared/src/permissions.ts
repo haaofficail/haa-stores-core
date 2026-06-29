@@ -425,7 +425,7 @@ export const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, (AdminPermission | typeof
  * change never locks an existing admin out of the platform.
  */
 export function getAdminPermissionsForRole(
-  role: AdminRole | string | null | undefined,
+  role: string | null | undefined,
 ): (AdminPermission | typeof ADMIN_WILDCARD)[] {
   if (role === 'accountant') return [...ADMIN_ROLE_PERMISSIONS.accountant];
   return [...ADMIN_ROLE_PERMISSIONS.super_admin];

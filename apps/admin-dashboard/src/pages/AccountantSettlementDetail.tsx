@@ -6,7 +6,7 @@ import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 import { UnauthorizedState } from '../components/ui/UnauthorizedState';
 
-const ALLOWED_RECEIPT_TYPES = ['application/pdf', 'image/png', 'image/jpeg'];
+const ALLOWED_RECEIPT_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
 const MAX_RECEIPT_SIZE = 5 * 1024 * 1024; // 5MB — same limit as the backend.
 
 const STATUS_LABELS: Record<string, string> = {
@@ -107,7 +107,7 @@ export default function AccountantSettlementDetail() {
     if (!detail || saving) return;
     setMismatch(null);
     if (!file) { toast.error('ملف الإيصال مطلوب'); return; }
-    if (!ALLOWED_RECEIPT_TYPES.includes(file.type)) { toast.error('نوع غير مسموح — PDF أو PNG أو JPG فقط'); return; }
+    if (!ALLOWED_RECEIPT_TYPES.has(file.type)) { toast.error('نوع غير مسموح — PDF أو PNG أو JPG فقط'); return; }
     if (file.size > MAX_RECEIPT_SIZE) { toast.error('حجم الملف يتجاوز 5MB'); return; }
     if (!bankReference.trim()) { toast.error('مرجع العملية البنكية مطلوب'); return; }
     if (!transferDate) { toast.error('تاريخ التحويل مطلوب'); return; }
@@ -165,6 +165,9 @@ export default function AccountantSettlementDetail() {
     if (detail?.status === 'transfer_pending') return 'تسجيل التحويل البنكي';
     return null;
   }, [detail?.status]);
+  const secondApprovalBlockedCopy = hasAdminPermission('wallet.payout.second_approve')
+    ? 'لا يمكن لنفس المنفذ اعتماد التسوية'
+    : 'يتطلب اعتمادًا من مستخدم آخر مخوّل';
 
   if (loading) return <AdminTableSkeleton columns={['w-32', 'w-24', 'w-20', 'w-16']} />;
   if (unauthorized) return <UnauthorizedState permission="wallet.payout.view_all" />;
@@ -217,10 +220,8 @@ export default function AccountantSettlementDetail() {
               className="px-4 py-2 text-sm font-medium rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-40">
               {saving ? 'جارٍ الحفظ…' : 'اعتماد ثانٍ'}
             </button>
-          ) : hasAdminPermission('wallet.payout.second_approve') ? (
-            <p className="text-sm text-amber-700">لا يمكن لنفس المنفذ اعتماد التسوية</p>
           ) : (
-            <p className="text-sm text-amber-700">يتطلب اعتمادًا من مستخدم آخر مخوّل</p>
+            <p className="text-sm text-amber-700">{secondApprovalBlockedCopy}</p>
           )}
         </section>
       )}
@@ -273,8 +274,8 @@ export default function AccountantSettlementDetail() {
       <section className="bg-white rounded-xl shadow-sm p-5">
         <h3 className="font-medium text-gray-900 mb-3">سجل الأحداث</h3>
         <ul className="space-y-2 text-sm">
-          {detail.events.map((ev, i) => (
-            <li key={i} className="flex items-center justify-between border-b last:border-0 py-1">
+          {detail.events.map((ev) => (
+            <li key={`${ev.createdAt}-${ev.eventType}-${ev.fromStatus ?? 'none'}-${ev.toStatus ?? 'none'}-${ev.actorRole ?? 'none'}`} className="flex items-center justify-between border-b last:border-0 py-1">
               <span>{ev.eventType}</span>
               <span className="text-gray-500">{ev.toStatus ?? ''} · {ev.actorRole ?? ''} · {String(ev.createdAt).slice(0, 19).replace('T', ' ')}</span>
             </li>

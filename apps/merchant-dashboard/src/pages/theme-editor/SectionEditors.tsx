@@ -31,12 +31,12 @@ interface UploadProgressProps {
   uploadingBannerImg: string | null;
 }
 
-type BannerEditorProps = EditorBaseProps & CategoryOptionsProps & ProductOptionsProps & UploadActionProps & UploadProgressProps;
-type ProductEditorProps = EditorBaseProps & CategoryOptionsProps & ProductOptionsProps;
-type CategoriesEditorProps = EditorBaseProps & CategoryOptionsProps;
-type ImageTextEditorProps = EditorBaseProps & UploadActionProps;
-type BrandsEditorProps = EditorBaseProps & UploadActionProps & UploadProgressProps;
-type SimpleEditorProps = EditorBaseProps;
+type BannerEditorProps = Readonly<EditorBaseProps & CategoryOptionsProps & ProductOptionsProps & UploadActionProps & UploadProgressProps>;
+type ProductEditorProps = Readonly<EditorBaseProps & CategoryOptionsProps & ProductOptionsProps>;
+type CategoriesEditorProps = Readonly<EditorBaseProps & CategoryOptionsProps>;
+type ImageTextEditorProps = Readonly<EditorBaseProps & UploadActionProps>;
+type BrandsEditorProps = Readonly<EditorBaseProps & UploadActionProps & UploadProgressProps>;
+type SimpleEditorProps = Readonly<EditorBaseProps>;
 
 export function updateSection(
   sections: HomepageSection[],

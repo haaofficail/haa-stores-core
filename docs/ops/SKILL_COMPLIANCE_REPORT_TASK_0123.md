@@ -200,6 +200,50 @@
   ✖ 331 problems (0 errors, 331 warnings)
   ```
 
+- **Second PR #325 SonarCloud cleanup verification (check run `83968206453`):**
+
+  ```text
+  pnpm exec eslint --max-warnings 0 --no-warn-ignored <second-wave Sonar annotation files>
+  # passed with zero output
+
+  pnpm --filter @haa/admin-dashboard typecheck
+  pnpm --filter @haa/merchant-dashboard typecheck
+  pnpm --filter @haa/storefront typecheck
+  pnpm --filter @haa/api typecheck
+  pnpm --filter @haa/shared typecheck
+  # all passed
+
+  pnpm --filter @haa/shared build
+  pnpm --filter @haa/admin-dashboard build
+  pnpm --filter @haa/storefront build
+  pnpm --filter @haa/merchant-dashboard build
+  # all passed; storefront build retained the pre-existing MarketplaceProductCard Rollup circular-chunk warning
+
+  pnpm vitest run <24 second-wave regression files>
+   Test Files  24 passed (24)
+        Tests  215 passed | 1 skipped (216)
+
+  pnpm test
+   Test Files  400 passed | 1 skipped (401)
+        Tests  4940 passed | 3 skipped | 14 todo (4957)
+
+  pnpm preflight
+  ✅ Preflight PASSED — project is healthy
+
+  pnpm check:skills
+  All 43 checks passed.
+
+  pnpm ops:monitor
+  === Result: 0 failure(s) out of 25 checks ===
+  New alerts emitted: 0
+
+  git diff --check
+  # clean
+
+  pnpm lint
+  ✖ 331 problems (0 errors, 331 warnings)
+  ```
+
 - **`pnpm check:skills`:**
 
   ```text
@@ -224,7 +268,7 @@
 
 - **Deviations from selected skills:** none for the scoped integration and hook-cleanup work. Repo-wide lint warnings remain as existing debt outside TASK-0123's staged hook-cleanup scope; they were not widened into this PR to preserve branch hygiene.
 - **Reason:** The branch already integrates a large cross-agent feature handoff. Widening to every repository lint warning would mix unrelated legacy cleanup into the accountant/RBAC integration PR.
-- **Follow-up:** Watch PR CI after publish. Owner must apply migrations 0088/0089 in the target environment; agents must not run `db:migrate` without explicit owner approval. Open a separate lint-debt task if the owner wants repo-wide `--max-warnings 0`.
+- **Follow-up:** Push the second Sonar cleanup and watch PR CI after publish. Owner must apply migrations 0088/0089 in the target environment; agents must not run `db:migrate` without explicit owner approval. Open a separate lint-debt task if the owner wants repo-wide `--max-warnings 0`.
 
 ## Completion
 
@@ -239,4 +283,4 @@
 
 ## Next step
 
-Commit, push, and open a draft PR from `codex/apple-grade-finance-integration`; then monitor GitHub checks and keep migrations 0088/0089 as owner-only apply steps.
+Commit and push the second SonarCloud cleanup on draft PR #325; then monitor GitHub checks and keep migrations 0088/0089 as owner-only apply steps.

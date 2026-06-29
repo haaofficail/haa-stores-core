@@ -84,9 +84,12 @@ function mapProduct(row: MarketplaceProductRow) {
   // Products in SFDA-gated categories need a valid, non-expired,
   // admin-verified SFDA number. We compute the validation here so
   // we can filter the row out before it ever reaches the DTO.
-  const categorySlugs: string[] = Array.isArray(row.categorySlugs)
-    ? row.categorySlugs.filter((slug): slug is string => typeof slug === 'string' && slug.length > 0)
-    : row.categorySlug ? [row.categorySlug] : [];
+  let categorySlugs: string[] = [];
+  if (Array.isArray(row.categorySlugs)) {
+    categorySlugs = row.categorySlugs.filter((slug): slug is string => typeof slug === 'string' && slug.length > 0);
+  } else if (row.categorySlug) {
+    categorySlugs = [row.categorySlug];
+  }
   const sfdaCheck: SfdaValidation = validateProductForMarketplace({
     categorySlugs,
     sfdaNumber: row.sfdaNumber,

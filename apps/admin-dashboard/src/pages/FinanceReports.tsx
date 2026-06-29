@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { adminApi, type FinanceReports as FinanceReportsData, type FinanceReportRow } from '../lib/api';
@@ -57,6 +57,50 @@ export default function FinanceReports() {
     </button>
   );
 
+  let reportContent: ReactNode;
+  if (loading) {
+    reportContent = <AdminTableSkeleton columns={['w-24', 'w-28', 'w-20', 'w-20', 'w-20', 'w-24', 'w-16']} />;
+  } else if (error) {
+    reportContent = <ErrorState message="تعذّر تحميل التقارير المالية" onRetry={load} />;
+  } else if (rows.length === 0) {
+    reportContent = <div className="p-12 text-center text-gray-400 text-footnote">لا توجد سجلات</div>;
+  } else {
+    reportContent = (
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-4 py-3 text-start font-medium text-gray-500">رقم التسوية</th>
+            <th className="px-4 py-3 text-start font-medium text-gray-500">التاجر</th>
+            <th className="px-4 py-3 text-start font-medium text-gray-500">المبلغ</th>
+            <th className="px-4 py-3 text-start font-medium text-gray-500">الحالة</th>
+            <th className="px-4 py-3 text-start font-medium text-gray-500">المرجع البنكي</th>
+            <th className="px-4 py-3 text-start font-medium text-gray-500">الإيصال</th>
+            <th className="px-4 py-3 text-start font-medium text-gray-500">المطابقة</th>
+            <th className="px-4 py-3 text-start font-medium text-gray-500"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.payoutId} className="border-t hover:bg-gray-50">
+              <td className="px-4 py-3 font-mono text-gray-900">{r.settlementId}</td>
+              <td className="px-4 py-3 text-gray-900">{r.storeName}</td>
+              <td className="px-4 py-3 font-medium tabular-nums">{r.amount} {r.currency}</td>
+              <td className="px-4 py-3 text-gray-500">{r.status}</td>
+              <td className="px-4 py-3 text-gray-500">{r.bankReference ?? '—'}</td>
+              <td className="px-4 py-3 text-gray-500 font-mono">{r.receiptId ? `#${r.receiptId} · ${r.sha256 ?? ''}` : '—'}</td>
+              <td className="px-4 py-3">
+                <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">{RECON_LABELS[r.reconciliationStatus] ?? r.reconciliationStatus}</span>
+              </td>
+              <td className="px-4 py-3">
+                <Link to={`/finance/settlements/${r.payoutId}`} className="text-sm text-primary-600 hover:underline">تفاصيل</Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -74,46 +118,7 @@ export default function FinanceReports() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
-        {loading ? (
-          <AdminTableSkeleton columns={['w-24', 'w-28', 'w-20', 'w-20', 'w-20', 'w-24', 'w-16']} />
-        ) : error ? (
-          <ErrorState message="تعذّر تحميل التقارير المالية" onRetry={load} />
-        ) : rows.length === 0 ? (
-          <div className="p-12 text-center text-gray-400 text-footnote">لا توجد سجلات</div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">رقم التسوية</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">التاجر</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">المبلغ</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">الحالة</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">المرجع البنكي</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">الإيصال</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">المطابقة</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.payoutId} className="border-t hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-gray-900">{r.settlementId}</td>
-                  <td className="px-4 py-3 text-gray-900">{r.storeName}</td>
-                  <td className="px-4 py-3 font-medium tabular-nums">{r.amount} {r.currency}</td>
-                  <td className="px-4 py-3 text-gray-500">{r.status}</td>
-                  <td className="px-4 py-3 text-gray-500">{r.bankReference ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 font-mono">{r.receiptId ? `#${r.receiptId} · ${r.sha256 ?? ''}` : '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">{RECON_LABELS[r.reconciliationStatus] ?? r.reconciliationStatus}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link to={`/finance/settlements/${r.payoutId}`} className="text-sm text-primary-600 hover:underline">تفاصيل</Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        {reportContent}
       </div>
     </div>
   );

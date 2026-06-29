@@ -34,7 +34,7 @@ describe('uploadTransferProof is atomic (insert + transition + audit in one tx)'
     // mismatch -> manual_review), so there are now two transactions. The real
     // invariant is that the receipt is inserted exactly ONCE, inside a tx.
     expect((uploadBody.match(/this\.db\.transaction\(async/g) ?? []).length).toBeGreaterThanOrEqual(1);
-    expect((uploadBody.match(/tx\.insert\(s\.payoutTransferProofs\)/g) ?? []).length).toBe(1);
+    expect(uploadBody.match(/tx\.insert\(s\.payoutTransferProofs\)/g) ?? []).toHaveLength(1);
   });
 
   it('does the guarded status transition BEFORE inserting the proof', () => {

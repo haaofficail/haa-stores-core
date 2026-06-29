@@ -147,7 +147,6 @@ export function buildAccountantInbox(input: AccountantInboxInput): AccountantInb
       } else {
         exceptions.push({ ...item, exceptionReason: 'الحساب البنكي غير موثّق للتحويل' });
       }
-      continue;
     }
 
     // Completed / in-progress (proof_uploaded, transfer_verified, paid, …) are

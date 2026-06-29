@@ -19,7 +19,7 @@ function blockBetween(source: string, start: string, end: string): string {
 describe('Admin dangerous-action dialogs accessibility', () => {
   it('provides one admin dialog wrapper with dialog semantics and escape/scroll handling', () => {
     expect(adminDialog).toContain('export function AdminDialog');
-    expect(adminDialog).toContain('role="dialog"');
+    expect(adminDialog).toContain('<dialog');
     expect(adminDialog).toContain('aria-modal="true"');
     expect(adminDialog).toContain('aria-labelledby={titleId}');
     expect(adminDialog).toContain('aria-describedby={description ? descriptionId : undefined}');

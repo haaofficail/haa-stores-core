@@ -1,8 +1,8 @@
 import { Icon } from './icon';
 
-interface UnauthorizedStateProps {
+type UnauthorizedStateProps = Readonly<{
   permission?: string;
-}
+}>;
 
 export function UnauthorizedState({ permission }: UnauthorizedStateProps) {
   return (

@@ -18,7 +18,7 @@ import {
 } from '../constants';
 import { validateImageFile } from '../themeEditorService';
 
-interface Props {
+type Props = Readonly<{
   config: ThemeConfig;
   updateConfig: (path: string, value: unknown) => void;
   categories: CategoryItem[];
@@ -31,6 +31,19 @@ interface Props {
   uploadingBannerImg: string | null;
   setUploadingBannerImg: (v: string | null) => void;
   setDeleteSectionIndex: (i: number | null) => void;
+}>;
+
+function createHomepageSectionId(): string {
+  if (globalThis.crypto?.randomUUID) {
+    return `section-${globalThis.crypto.randomUUID()}`;
+  }
+  if (globalThis.crypto?.getRandomValues) {
+    const bytes = new Uint8Array(8);
+    globalThis.crypto.getRandomValues(bytes);
+    const suffix = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    return `section-${Date.now()}-${suffix}`;
+  }
+  return `section-${Date.now()}`;
 }
 
 export function HomepageTab({
@@ -64,7 +77,7 @@ export function HomepageTab({
           aria-expanded={HOMEPAGE_SECTIONS_EDITOR_ENABLED ? !collapsedGroups.order : false}
           aria-controls={orderPanelId}
         >
-          <ChevronDown className={`h-4 w-4 text-neutral-400 transition-transform duration-200 ${!collapsedGroups.order ? '' : '-rotate-90'}`} aria-hidden="true" />
+          <ChevronDown className={`h-4 w-4 text-neutral-400 transition-transform duration-200 ${collapsedGroups.order ? '-rotate-90' : ''}`} aria-hidden="true" />
           <span className="text-sm font-bold text-neutral-700">الأقسام</span>
           <span className="text-xs text-neutral-400">{HOMEPAGE_SECTIONS_EDITOR_ENABLED ? 'اضغط لتعديل، اسحب لترتيب، + لإضافة قسم جديد' : 'سيتم تفعيله بعد ربط Public Home Renderer'}</span>
         </button>
@@ -76,7 +89,8 @@ export function HomepageTab({
               const SECTION_TYPE_LABELS = SECTION_LABELS;
               const sectionLabel = section.title || SECTION_TYPE_LABELS[section.type] || section.type;
               const sectionPanelId = `theme-homepage-section-panel-${sid}`;
-              const visibilityLabel = section.enabled !== false ? `إخفاء قسم ${sectionLabel}` : `إظهار قسم ${sectionLabel}`;
+              const isSectionEnabled = section.enabled !== false;
+              const visibilityLabel = isSectionEnabled ? `إخفاء قسم ${sectionLabel}` : `إظهار قسم ${sectionLabel}`;
               const duplicateLabel = `تكرار قسم ${sectionLabel}`;
               const deleteLabel = `حذف قسم ${sectionLabel}`;
               return (
@@ -122,19 +136,19 @@ export function HomepageTab({
                   >
                     <ChevronDown className={`h-4 w-4 text-neutral-400 transition-transform duration-200 shrink-0 ${isExpanded ? '' : '-rotate-90'}`} aria-hidden="true" />
                     <button type="button" onClick={(e) => { e.stopPropagation();
-                      updateConfig('homepage.sections', updateSection(homepage.sections || [], idx, { enabled: section.enabled === false }));
+                      updateConfig('homepage.sections', updateSection(homepage.sections || [], idx, { enabled: !isSectionEnabled }));
                     }}
-                      className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors shrink-0 ${section.enabled !== false ? 'text-primary-600 bg-primary-50' : 'text-neutral-300 hover:text-neutral-400'}`}
+                      className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors shrink-0 ${isSectionEnabled ? 'text-primary-600 bg-primary-50' : 'text-neutral-300 hover:text-neutral-400'}`}
                       aria-label={visibilityLabel}
                       title={visibilityLabel}>
-                      <Eye className={`h-4 w-4 ${section.enabled !== false ? '' : 'opacity-40'}`} aria-hidden="true" />
+                      <Eye className={`h-4 w-4 ${isSectionEnabled ? '' : 'opacity-40'}`} aria-hidden="true" />
                     </button>
                     <span className="text-xs font-bold text-neutral-400 w-5 shrink-0">{idx + 1}</span>
                     <span className="text-sm text-neutral-700 truncate flex-1 text-start">{sectionLabel}</span>
                     <button type="button" onClick={(e) => { e.stopPropagation();
                       const updated = [...(homepage.sections || [])];
                       const copy = structuredClone(section);
-                      copy.id = `section-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+                      copy.id = createHomepageSectionId();
                       copy.title = copy.title + ' (نسخة)';
                       updated.splice(idx + 1, 0, copy);
                       updateConfig('homepage.sections', updated);
@@ -168,8 +182,8 @@ export function HomepageTab({
             })}
             <div className="flex gap-2 pt-2">
               <Select onValueChange={(v) => {
-                const sections = homepage.sections || [];
-                const newSection: HomepageSection = { id: `section-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type: v, enabled: true, title: SECTION_LABELS[v] || v, settings: {} };
+	                const sections = homepage.sections || [];
+	                const newSection: HomepageSection = { id: createHomepageSectionId(), type: v, enabled: true, title: SECTION_LABELS[v] || v, settings: {} };
                 newSection.settings = SECTION_DEFAULT_SETTINGS[v] || {};
                 const updated = [...sections, newSection];
                 updateConfig('homepage.sections', updated);

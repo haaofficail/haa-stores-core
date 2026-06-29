@@ -67,6 +67,20 @@ function allowedMimeTypes(options?: ValidateFileOptions): readonly string[] {
   return options?.allowPdf ? [...ALLOWED_IMAGE_MIME_TYPES, ...ALLOWED_DOCUMENT_MIME_TYPES] : ALLOWED_IMAGE_MIME_TYPES;
 }
 
+function validateMediaFile(buffer: Buffer, mimetype: string, options?: ValidateFileOptions): string | null {
+  const allowedTypes = allowedMimeTypes(options);
+  if (!allowedTypes.includes(mimetype)) {
+    return `Unsupported file type: ${mimetype}. Allowed: ${allowedTypes.join(', ')}`;
+  }
+  if (!validateMagicBytes(buffer, mimetype)) {
+    return `File content does not match declared type ${mimetype}`;
+  }
+  if (buffer.length > MAX_FILE_SIZE) {
+    return `File size ${(buffer.length / 1024 / 1024).toFixed(1)}MB exceeds maximum ${MAX_FILE_SIZE / 1024 / 1024}MB`;
+  }
+  return null;
+}
+
 function extensionForMime(mimetype: string): string {
   if (mimetype === 'application/pdf') return 'pdf';
   if (mimetype === 'image/webp') return 'webp';
@@ -137,17 +151,7 @@ export class LocalStorageAdapter implements MediaAdapter {
   }
 
   validateFile(buffer: Buffer, mimetype: string, options?: ValidateFileOptions): string | null {
-    const allowedTypes = allowedMimeTypes(options);
-    if (!allowedTypes.includes(mimetype)) {
-      return `Unsupported file type: ${mimetype}. Allowed: ${allowedTypes.join(', ')}`;
-    }
-    if (!validateMagicBytes(buffer, mimetype)) {
-      return `File content does not match declared type ${mimetype}`;
-    }
-    if (buffer.length > MAX_FILE_SIZE) {
-      return `File size ${(buffer.length / 1024 / 1024).toFixed(1)}MB exceeds maximum ${MAX_FILE_SIZE / 1024 / 1024}MB`;
-    }
-    return null;
+    return validateMediaFile(buffer, mimetype, options);
   }
 
   async upload(buffer: Buffer, _mimetype: string, productId: number, storeId: number): Promise<UploadResult> {
@@ -238,17 +242,7 @@ export class S3StorageAdapter implements MediaAdapter {
   }
 
   validateFile(buffer: Buffer, mimetype: string, options?: ValidateFileOptions): string | null {
-    const allowedTypes = allowedMimeTypes(options);
-    if (!allowedTypes.includes(mimetype)) {
-      return `Unsupported file type: ${mimetype}. Allowed: ${allowedTypes.join(', ')}`;
-    }
-    if (!validateMagicBytes(buffer, mimetype)) {
-      return `File content does not match declared type ${mimetype}`;
-    }
-    if (buffer.length > MAX_FILE_SIZE) {
-      return `File size ${(buffer.length / 1024 / 1024).toFixed(1)}MB exceeds maximum ${MAX_FILE_SIZE / 1024 / 1024}MB`;
-    }
-    return null;
+    return validateMediaFile(buffer, mimetype, options);
   }
 
   async upload(buffer: Buffer, mimetype: string, productId: number, storeId: number): Promise<UploadResult> {

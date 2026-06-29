@@ -61,6 +61,7 @@
 - [ ] Admin operational routes must not remain `requireAdminAuth()`-only when they expose dashboard, payments, marketplace, audit, plans, upload, settings, users, billing, KYC, tenant, or store data/actions
 - [ ] Admin route/sidebar permission keys must match server `requireAdminPermission(...)` keys
 - [ ] Admin mutation buttons must reflect write/review/upload permissions before calling the API, not rely on a post-click 403
+- [ ] Shared admin dialogs should use native dialog semantics without page-local noninteractive mouse listeners; source guards should not require explicit `role="dialog"` on `<dialog>`
 - [ ] Platform-admin permission keys belong in `AdminPermission` / `ADMIN_PERMISSION_CATALOG`, not in the merchant employee `PERMISSION_CATALOG` unless intentionally shared
 - [ ] Admin full-IBAN reveal routes use a dedicated `AdminPermission`, typed `AuditAction` values with Arabic labels, and audit only `ibanLast4` rather than the full IBAN
 - [ ] Accountant settlement routes/pages are verified with the admin RBAC base (`UnauthorizedState`, `AdminPermissionRoute`, `hasAdminPermission`, permission reflection) before any financial PR is pushed

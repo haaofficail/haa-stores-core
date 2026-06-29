@@ -92,7 +92,14 @@ function useInView(threshold = 0.1) {
   return [ref, inView] as const;
 }
 
-function CategoryCard({ category, slug, index = 0, size = 3 }: { category: HomeCategory; slug: string; index?: number; size?: number }) {
+type CategoryCardProps = Readonly<{
+  category: HomeCategory;
+  slug: string;
+  index?: number;
+  size?: number;
+}>;
+
+function CategoryCard({ category, slug, index = 0, size = 3 }: CategoryCardProps) {
   const [ref, inView] = useInView();
   const sz = Math.max(1, Math.min(5, size || 3));
   const sizes = [
@@ -164,7 +171,16 @@ function getGridCols(productCardSize?: number): string {
   return 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
 }
 
-function ProductCarousel({ products, slug, title, onAddToCart, slider, productCardSize }: { products: HomeProduct[]; slug: string; title: string; onAddToCart?: AddToCart; slider?: SliderSettings; productCardSize?: number }) {
+type ProductCarouselProps = Readonly<{
+  products: HomeProduct[];
+  slug: string;
+  title: string;
+  onAddToCart?: AddToCart;
+  slider?: SliderSettings;
+  productCardSize?: number;
+}>;
+
+function ProductCarousel({ products, slug, title, onAddToCart, slider, productCardSize }: ProductCarouselProps) {
   const { i18n } = useTranslation();
   const [ref, inView] = useInView();
   if (products.length === 0) return null;
@@ -574,16 +590,27 @@ function renderCategoryItems(categories: HomeCategory[], slug: string, categoryC
   );
 }
 
-function renderCategoriesSection(
-  section: HomeSection,
-  settings: SectionSettings,
-  categories: HomeCategory[],
-  slug: string,
-  visibilityClass: string,
-  categoryCardSize: number | undefined,
-  categoriesLabel: string,
-  viewAllLabel: string,
-) {
+type RenderCategoriesSectionParams = Readonly<{
+  section: HomeSection;
+  settings: SectionSettings;
+  categories: HomeCategory[];
+  slug: string;
+  visibilityClass: string;
+  categoryCardSize: number | undefined;
+  categoriesLabel: string;
+  viewAllLabel: string;
+}>;
+
+function renderCategoriesSection({
+  section,
+  settings,
+  categories,
+  slug,
+  visibilityClass,
+  categoryCardSize,
+  categoriesLabel,
+  viewAllLabel,
+}: RenderCategoriesSectionParams) {
   const catLimit = settings.categoryLimit || 6;
   const selectedIds = settings.categoryIds || [];
   const catItems = selectedIds.length > 0
@@ -693,7 +720,18 @@ function renderHomeSection(params: {
   const visibilityClass = getSectionVisibilityClass(settings);
 
   if (section.type === 'banner') return renderBannerSection(section, settings, slug, visibilityClass);
-  if (section.type === 'categories') return renderCategoriesSection(section, settings, categories, slug, visibilityClass, categoryCardSize, categoriesLabel, viewAllLabel);
+  if (section.type === 'categories') {
+    return renderCategoriesSection({
+      section,
+      settings,
+      categories,
+      slug,
+      visibilityClass,
+      categoryCardSize,
+      categoriesLabel,
+      viewAllLabel,
+    });
+  }
   if (productSectionTypes.has(section.type)) return renderProductsSection(section, settings, products, slug, onAddToCart, visibilityClass, viewAllLabel);
   if (section.type === 'text') return renderTextSection(section, settings, visibilityClass);
   if (section.type === 'imageText') return renderImageTextSection(section, settings, visibilityClass);

@@ -458,6 +458,14 @@ export default function Checkout() {
     { value: 'cash_on_delivery', label: t('checkout.payCash'), icon: <Icon name="Banknote" size="xs" />, desc: t('checkout.payCashDesc', 'ادفع عند استلام طلبك') },
     ...bnplOptions,
   ];
+  let paymentRecoveryTitle = '';
+  if (paymentRecovery?.kind === 'stock_unavailable') {
+    paymentRecoveryTitle = t('checkout.stockRecoveryTitle', 'تغير توفر المنتجات');
+  } else if (paymentRecovery?.kind === 'payment_failed') {
+    paymentRecoveryTitle = t('checkout.paymentRecoveryTitle', 'لم يكتمل الدفع');
+  } else if (paymentRecovery) {
+    paymentRecoveryTitle = t('checkout.checkoutRecoveryTitle', 'لم يكتمل الطلب');
+  }
 
   return (
     <div className="animate-fade-in overflow-x-hidden" id="main-content">
@@ -475,11 +483,7 @@ export default function Checkout() {
           <div className="mb-6" data-testid="checkout-payment-recovery">
             <StoreAlert
               variant="danger"
-              title={paymentRecovery.kind === 'stock_unavailable'
-                ? t('checkout.stockRecoveryTitle', 'تغير توفر المنتجات')
-                : paymentRecovery.kind === 'payment_failed'
-                  ? t('checkout.paymentRecoveryTitle', 'لم يكتمل الدفع')
-                  : t('checkout.checkoutRecoveryTitle', 'لم يكتمل الطلب')}
+              title={paymentRecoveryTitle}
             >
               <div className="space-y-3">
                 <p>

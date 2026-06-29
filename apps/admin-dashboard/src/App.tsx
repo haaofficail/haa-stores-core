@@ -119,6 +119,11 @@ function canAccessAdminRoute(permission?: AdminRoutePermission) {
   return !permission || hasAdminPermission(permission);
 }
 
+type AdminPermissionRouteProps = Readonly<{
+  permission: AdminRoutePermission;
+  children: ReactNode;
+}>;
+
 // Root landing. Full admins see the platform dashboard. Finance-only roles
 // (accountant — no dashboard:view) land on their settlement inbox instead of
 // an unauthorized screen.
@@ -133,10 +138,7 @@ function AdminHome() {
 function AdminPermissionRoute({
   permission,
   children,
-}: {
-  permission: AdminRoutePermission;
-  children: ReactNode;
-}) {
+}: AdminPermissionRouteProps) {
   if (!canAccessAdminRoute(permission)) {
     return <UnauthorizedState permission={permission} />;
   }

@@ -65,6 +65,8 @@ export default function BankAccounts() {
     setReviewDialog(null);
     setReviewReason('');
   };
+  const reviewReasonId = 'bank-account-review-reason';
+  const reviewSubmitLabel = reviewDialog?.status === 'verified' ? 'تأكيد التوثيق' : 'تأكيد الرفض';
 
   const submitReviewDecision = () => {
     if (!reviewDialog || !reviewReason.trim()) return;
@@ -190,10 +192,11 @@ export default function BankAccounts() {
               <p><span className="text-gray-500">البنك:</span> {reviewDialog.bankName || '-'}</p>
               <p><span className="text-gray-500">IBAN:</span> ****{reviewDialog.ibanLast4 || '----'}</p>
             </div>
-            <label className="block text-xs text-gray-500 mt-4 mb-1">
+            <label htmlFor={reviewReasonId} className="block text-xs text-gray-500 mt-4 mb-1">
               سبب القرار *
             </label>
             <textarea
+              id={reviewReasonId}
               value={reviewReason}
               onChange={(e) => setReviewReason(e.target.value)}
               placeholder={reviewDialog.status === 'verified'
@@ -215,7 +218,7 @@ export default function BankAccounts() {
                   reviewDialog.status === 'verified' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
                 }`}
               >
-                {busy === reviewDialog.id ? 'جاري...' : reviewDialog.status === 'verified' ? 'تأكيد التوثيق' : 'تأكيد الرفض'}
+                {busy === reviewDialog.id ? 'جاري...' : reviewSubmitLabel}
               </button>
             </div>
           </div>

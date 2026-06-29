@@ -59,7 +59,7 @@ describe('verifyTransfer debits the ledger atomically (inside the transaction)',
     // ONE place (the finalize path) — the awaiting path never debits.
     const txCount = (body.match(/this\.db\.transaction\(async/g) ?? []).length;
     expect(txCount).toBeGreaterThanOrEqual(1);
-    expect((body.match(/recordEntryInTx/g) ?? []).length).toBe(1);
+    expect(body.match(/recordEntryInTx/g) ?? []).toHaveLength(1);
   });
 });
 
