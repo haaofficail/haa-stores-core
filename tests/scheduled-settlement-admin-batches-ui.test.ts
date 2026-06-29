@@ -30,7 +30,7 @@ describe('Admin Settlement Batches UI', () => {
 
   it('batches page has error state with retry', () => {
     expect(settlementBatches).toContain('ErrorState');
-    expect(settlementBatches).toContain('<ErrorState message="فشل تحميل دفعات التسوية" onRetry={load} />');
+    expect(settlementBatches).toContain('<ErrorState message="فشل تحميل دفعات التسوية" onRetry={() => refetch()} />');
     expect(errorState).toContain('إعادة المحاولة');
     expect(settlementBatches).toContain('error');
   });

@@ -48,3 +48,6 @@ export { FORM_STANDARDS_VERSION } from './utils/form-standards'
 
 // Icon standards (T3.4)
 export { ICON_STANDARDS_VERSION } from './utils/icon-standards'
+
+export { createUseTableControls } from './lib/use-table-controls'
+export type { SortDir, SortState, TableControls, UseTableControlsOptions } from './lib/use-table-controls'

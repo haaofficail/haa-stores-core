@@ -3,14 +3,12 @@
 // Allows enabling/disabling payment gateways per store via
 // merchantPaymentProviderSettings table.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { StoreSelectorPanel } from '../components/ui/StoreSelectorPanel';
-const paymentSettingsApi = {
-  getStorePaymentSettings: adminApi.getStorePaymentSettings,
-  upsertStorePaymentSettings: adminApi.upsertStorePaymentSettings,
-};
 import { toast } from 'sonner';
 
 const PROVIDERS = ['moyasar', 'geidea', 'tabby', 'tamara'] as const;
@@ -36,6 +34,12 @@ type RowState = {
   mode: 'test' | 'live';
   status: string;
   saving: boolean;
+};
+
+type SavePaymentSettingsVars = {
+  providerCode: ProviderCode;
+  storeId: number;
+  row: RowState;
 };
 
 function createInitialRows(): Record<ProviderCode, RowState> {
@@ -68,6 +72,19 @@ function rowsFromSettings(prev: Record<ProviderCode, RowState>, settings: Provid
   return next;
 }
 
+function replaceProviderSettingInCache(current: unknown, providerCode: ProviderCode, updated: ProviderSetting) {
+  const settings = normalizeProviderSettings(current);
+  const next = settings.some(setting => setting.providerCode === providerCode)
+    ? settings.map(setting => setting.providerCode === providerCode ? updated : setting)
+    : [...settings, updated];
+
+  if (current && typeof current === 'object' && Array.isArray((current as { data?: unknown }).data)) {
+    return { ...current, data: next };
+  }
+
+  return next;
+}
+
 function statusBadge(status: string) {
   const map: Record<string, string> = {
     active: 'bg-green-100 text-green-800',
@@ -87,48 +104,63 @@ function statusBadge(status: string) {
 }
 
 export default function StorePaymentSettings() {
+  const queryClient = useQueryClient();
   const [params, setParams] = useSearchParams();
   const initialStoreId = params.get('storeId') ? Number(params.get('storeId')) : null;
 
   const [stores, setStores] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedId, setSelectedId] = useState<number | null>(initialStoreId);
-  const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<Record<ProviderCode, RowState>>(createInitialRows);
+  const seededStoreIdRef = useRef<number | null>(null);
+  const settingsQueryKey = [...queryKeys.storePaymentSettings, selectedId ?? null];
 
   const selectStore = (storeId: number) => {
     setSelectedId(storeId);
     setParams({ storeId: String(storeId) });
   };
 
+  const { data: settingsData, isPending: loading, isError: error, refetch } = useQuery({
+    queryKey: settingsQueryKey,
+    queryFn: () => adminApi.getStorePaymentSettings(selectedId as number),
+    enabled: !!selectedId,
+  });
+
   useEffect(() => {
     adminApi.getStores().then(setStores).catch(() => toast.error('فشل تحميل المتاجر'));
   }, []);
 
+  // Seed editable rows once per selected store. Mutations update the query cache
+  // separately, but local unsaved edits in sibling provider rows stay local.
   useEffect(() => {
-    if (selectedId == null) return;
-    setLoading(true);
-    paymentSettingsApi.getStorePaymentSettings(selectedId)
-      .then((data: unknown) => {
-        const settings = normalizeProviderSettings(data);
-        setRows(prev => rowsFromSettings(prev, settings));
-      })
-      .catch(() => toast.error('فشل تحميل إعدادات البوابات'))
-      .finally(() => setLoading(false));
-  }, [selectedId]);
+    if (settingsData === undefined || selectedId == null || seededStoreIdRef.current === selectedId) return;
+    const settings = normalizeProviderSettings(settingsData);
+    setRows(prev => rowsFromSettings(prev, settings));
+    seededStoreIdRef.current = selectedId;
+  }, [selectedId, settingsData]);
 
-  const handleSave = async (providerCode: ProviderCode) => {
-    if (selectedId == null) return;
-    setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], saving: true } }));
-    try {
-      const row = rows[providerCode];
-      const result: any = await paymentSettingsApi.upsertStorePaymentSettings(selectedId, {
+  // Surface load failures via toast (parity with the previous catch handler).
+  useEffect(() => {
+    if (error) toast.error('فشل تحميل إعدادات البوابات');
+  }, [error]);
+
+  const saveMutation = useMutation({
+    mutationFn: ({ storeId, row, providerCode }: SavePaymentSettingsVars) => {
+      return adminApi.upsertStorePaymentSettings(storeId, {
         providerCode,
         enabled: row.enabled,
         mode: row.mode,
         status: row.status,
         supportedPaymentMethod: 'card',
       });
-      const updated = result?.data ?? result;
+    },
+    onSuccess: (result: any, { providerCode, storeId }) => {
+      const updated = (result?.data ?? result) as ProviderSetting;
+      queryClient.setQueryData([...queryKeys.storePaymentSettings, storeId], (current: unknown) =>
+        replaceProviderSettingInCache(current, providerCode, updated),
+      );
+      // Patch ONLY the saved provider's row from the server response. The cache
+      // is also updated so remounts inside the query stale window see the saved
+      // value without refetching or discarding unsaved edits in other rows.
       setRows(prev => ({
         ...prev,
         [providerCode]: {
@@ -139,10 +171,18 @@ export default function StorePaymentSettings() {
         },
       }));
       toast.success(`تم حفظ إعدادات ${PROVIDER_LABELS[providerCode]}`);
-    } catch (e: any) {
+    },
+    onError: (e: any, { providerCode }) => {
       toast.error(`فشل الحفظ: ${e?.message ?? 'خطأ غير معروف'}`);
       setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], saving: false } }));
-    }
+    },
+  });
+
+  const handleSave = (providerCode: ProviderCode) => {
+    if (selectedId == null) return;
+    const row = rows[providerCode];
+    setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], saving: true } }));
+    saveMutation.mutate({ providerCode, storeId: selectedId, row });
   };
 
   return (
@@ -163,6 +203,16 @@ export default function StorePaymentSettings() {
             <p className="text-sm text-gray-500 text-center py-12">اختر متجرًا من القائمة لعرض بوابات الدفع.</p>
           ) : loading ? (
             <p className="text-sm text-gray-400 text-center py-12">...جاري التحميل</p>
+          ) : error ? (
+            <div className="text-center py-12 space-y-3">
+              <p className="text-sm text-gray-500">فشل تحميل إعدادات البوابات</p>
+              <button
+                onClick={() => refetch()}
+                className="px-3 py-1.5 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700"
+              >
+                إعادة المحاولة
+              </button>
+            </div>
           ) : (
             <div className="space-y-4">
               {PROVIDERS.map(providerCode => {

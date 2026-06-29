@@ -1,8 +1,13 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi, hasAdminPermission } from '../lib/api';
-import type { SettlementBatchDetail, PayoutDetail, UploadProofData } from '../lib/api';
+import type { SettlementBatchDetail, SettlementTransaction, PayoutDetail, UploadProofData } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
+import { SortableTh } from '../components/ui/SortableTh';
+import { TablePager } from '../components/ui/TablePager';
+import { useTableControls } from '../lib/useTableControls';
 
 const settlementStatusColors: Record<string, string> = {
   completed: 'bg-emerald-100 text-emerald-700',
@@ -72,11 +77,7 @@ export default function SettlementBatchDetailPage() {
   const { batchId } = useParams<{ batchId: string }>();
   const [searchParams] = useSearchParams();
   const manualMode = searchParams.get('manual') === '1';
-  const [detail, setDetail] = useState<SettlementBatchDetail | null>(null);
-  const [payout, setPayout] = useState<PayoutDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [payoutLoading, setPayoutLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const queryClient = useQueryClient();
   const [confirmPayoutAction, setConfirmPayoutAction] = useState<ConfirmPayoutAction | null>(null);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -108,14 +109,21 @@ export default function SettlementBatchDetailPage() {
     setProofFileName('');
   };
 
-  const load = useCallback(() => {
-    if (!batchId) return;
-    setLoading(true);
-    if (manualMode) {
-      adminApi.getPayout(Number(batchId))
-        .then((data) => {
-          setPayout(data);
-          setDetail({
+  // Primary detail query. In manual mode the detail object is synthesized from
+  // the payout record; otherwise it comes from the settlement-batch endpoint.
+  // The synthesized manual payout is carried alongside so the secondary payout
+  // query can reuse it without a second fetch.
+  const {
+    data: detailData,
+    isPending: loading,
+    isError: error,
+  } = useQuery({
+    queryKey: [...queryKeys.settlementBatchDetail, batchId, manualMode],
+    queryFn: async (): Promise<{ detail: SettlementBatchDetail; manualPayout: PayoutDetail | null }> => {
+      if (manualMode) {
+        const data = await adminApi.getPayout(Number(batchId));
+        return {
+          detail: {
             id: data.id,
             provider: 'manual',
             providerBatchId: data.reference,
@@ -130,52 +138,72 @@ export default function SettlementBatchDetailPage() {
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
             transactions: [],
-          });
-        })
-        .catch(() => toast.error('فشل تحميل تفاصيل التسوية اليدوية'))
-        .finally(() => setLoading(false));
-      return;
-    }
-    adminApi.getSettlementBatchDetail(Number(batchId))
-      .then(setDetail)
-      .catch(() => toast.error('فشل تحميل تفاصيل التسوية'))
-      .finally(() => setLoading(false));
-  }, [batchId, manualMode]);
+          },
+          manualPayout: data,
+        };
+      }
+      const detail = await adminApi.getSettlementBatchDetail(Number(batchId));
+      return { detail, manualPayout: null };
+    },
+    enabled: !!batchId,
+  });
 
-  useEffect(() => { load(); }, [load]);
+  const detail = detailData?.detail ?? null;
 
   useEffect(() => {
-    if (!detail || manualMode) return;
-    const payoutId = detail.metadata?.payoutId as number | undefined;
-    if (!payoutId) return;
-    setPayoutLoading(true);
-    adminApi.getPayout(payoutId)
-      .then(setPayout)
-      .catch(() => { /* payout may not exist yet */ })
-      .finally(() => setPayoutLoading(false));
-    // Keyed to `detail` only on purpose: `load` already depends on
-    // `manualMode`, so any manualMode change refreshes `detail` and
-    // re-runs this effect through it. Adding `manualMode` here would
-    // double-fetch the payout (once with the stale detail, once with the new).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detail]);
+    if (error) toast.error(manualMode ? 'فشل تحميل تفاصيل التسوية اليدوية' : 'فشل تحميل تفاصيل التسوية');
+  }, [error, manualMode]);
 
-  const performAction = async (action: string, fn: () => Promise<unknown>) => {
-    setActionLoading((prev) => ({ ...prev, [action]: true }));
-    try {
-      await fn();
-      toast.success('تمت العملية بنجاح');
-      const payoutId = (detail?.metadata?.payoutId as number | undefined) ?? payout?.id;
-      if (payoutId) {
-        const updated = await adminApi.getPayout(payoutId);
-        setPayout(updated);
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'فشلت العملية');
-    } finally {
-      setActionLoading((prev) => ({ ...prev, [action]: false }));
+  // Secondary payout query, derived from the loaded detail's payoutId (or the
+  // synthesized manual payout). Disabled until the detail resolves.
+  const payoutId = detail?.metadata?.payoutId as number | undefined;
+  const { data: payout = null, isFetching: payoutFetching } = useQuery({
+    queryKey: ['admin', 'settlementBatchPayout', payoutId ?? null],
+    queryFn: () => adminApi.getPayout(payoutId as number),
+    enabled: !!payoutId,
+    initialData: detailData?.manualPayout ?? undefined,
+  });
+  const payoutLoading = payoutFetching;
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: [...queryKeys.settlementBatchDetail, batchId, manualMode] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.settlementBatches });
+    if (payoutId) {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settlementBatchPayout', payoutId] });
     }
   };
+
+  // Client-side controls for the transactions (orders) table only. `detail` may
+  // be null during loading, so the hook is called unconditionally with an empty
+  // fallback (Rules of Hooks). The storeGroups summary below is intentionally
+  // NOT routed through this hook — it summarizes the FULL transactions list.
+  const txControls = useTableControls<SettlementTransaction>({
+    rows: detail?.transactions ?? [],
+    searchFields: ['orderNumber', 'status', 'reconciliationStatus'],
+    initialSort: { key: 'createdAt', dir: 'desc' },
+    storageKey: 'settlementBatchDetailTx',
+    getValue: (tx, key) => {
+      if (key === 'order') return tx.orderNumber ?? tx.orderId;
+      return (tx as unknown as Record<string, unknown>)[key];
+    },
+  });
+
+  const actionMutation = useMutation({
+    mutationFn: (vars: { action: string; fn: () => Promise<unknown> }) => vars.fn(),
+    onSuccess: () => {
+      toast.success('تمت العملية بنجاح');
+      invalidate();
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'فشلت العملية'),
+  });
+
+  const performAction = (action: string, fn: () => Promise<unknown>) => {
+    actionMutation.mutate({ action, fn });
+  };
+
+  const actionLoading: Record<string, boolean> = actionMutation.isPending && actionMutation.variables
+    ? { [actionMutation.variables.action]: true }
+    : {};
 
   const openPayoutConfirmation = (
     action: string,
@@ -192,7 +220,7 @@ export default function SettlementBatchDetailPage() {
     if (!confirmPayoutAction) return;
     const action = confirmPayoutAction;
     setConfirmPayoutAction(null);
-    void performAction(action.action, action.run);
+    performAction(action.action, action.run);
   };
 
   const handleReject = () => {
@@ -621,48 +649,76 @@ export default function SettlementBatchDetailPage() {
             <p className="text-sm text-gray-400">لا توجد معاملات في هذه التسوية</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">رقم الطلب</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">المتجر</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">إجمالي الطلب</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">رسوم البوابة</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">عمولة المنصة</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">صافي المستحق</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">حالة المطابقة</th>
-              </tr>
-            </thead>
-            <tbody>
-              {detail.transactions.map((tx) => (
-                <tr key={tx.id} className="border-t hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <a
-                      href={`/admin/orders?storeId=${tx.storeId}&orderId=${tx.orderId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline"
-                    >
-                      {tx.orderNumber ?? `#${tx.orderId}`}
-                    </a>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">#{tx.storeId}</td>
-                  <td className="px-4 py-3 font-medium tabular-nums">{formatCurrency(tx.amount)}</td>
-                  <td className="px-4 py-3 text-red-600 tabular-nums">{formatCurrency(tx.gatewayFees)}</td>
-                  <td className="px-4 py-3 text-orange-600 tabular-nums">{formatCurrency(tx.platformFees)}</td>
-                  <td className="px-4 py-3 font-semibold text-emerald-600 tabular-nums">{formatCurrency(tx.merchantPayable)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${reconciliationColors[tx.reconciliationStatus] || 'bg-gray-100 text-gray-700'}`}>
-                      {tx.reconciliationStatus === 'matched' ? 'مطابق' :
-                       tx.reconciliationStatus === 'pending' ? 'قيد المراجعة' :
-                       tx.reconciliationStatus === 'failed' ? 'غير مطابق' :
-                       'غير مطابق'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <>
+            <div className="px-4 py-3 border-b border-gray-100">
+              <input
+                type="search"
+                value={txControls.query}
+                onChange={(e) => txControls.setQuery(e.target.value)}
+                placeholder="بحث برقم الطلب أو الحالة أو حالة المطابقة..."
+                className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            {txControls.filteredCount === 0 ? (
+              <div className="p-12 text-center">
+                <p className="text-sm text-gray-400">لا توجد نتائج مطابقة</p>
+              </div>
+            ) : (
+              <>
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <SortableTh sortKey="order" label="رقم الطلب" sort={txControls.sort} onToggle={txControls.toggleSort} />
+                      <SortableTh sortKey="storeId" label="المتجر" sort={txControls.sort} onToggle={txControls.toggleSort} />
+                      <SortableTh sortKey="amount" label="إجمالي الطلب" sort={txControls.sort} onToggle={txControls.toggleSort} />
+                      <SortableTh sortKey="gatewayFees" label="رسوم البوابة" sort={txControls.sort} onToggle={txControls.toggleSort} />
+                      <SortableTh sortKey="platformFees" label="عمولة المنصة" sort={txControls.sort} onToggle={txControls.toggleSort} />
+                      <SortableTh sortKey="merchantPayable" label="صافي المستحق" sort={txControls.sort} onToggle={txControls.toggleSort} />
+                      <SortableTh sortKey="reconciliationStatus" label="حالة المطابقة" sort={txControls.sort} onToggle={txControls.toggleSort} />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {txControls.rows.map((tx) => (
+                      <tr key={tx.id} className="border-t hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3">
+                          <a
+                            href={`/admin/orders?storeId=${tx.storeId}&orderId=${tx.orderId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-mono text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline"
+                          >
+                            {tx.orderNumber ?? `#${tx.orderId}`}
+                          </a>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">#{tx.storeId}</td>
+                        <td className="px-4 py-3 font-medium tabular-nums">{formatCurrency(tx.amount)}</td>
+                        <td className="px-4 py-3 text-red-600 tabular-nums">{formatCurrency(tx.gatewayFees)}</td>
+                        <td className="px-4 py-3 text-orange-600 tabular-nums">{formatCurrency(tx.platformFees)}</td>
+                        <td className="px-4 py-3 font-semibold text-emerald-600 tabular-nums">{formatCurrency(tx.merchantPayable)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${reconciliationColors[tx.reconciliationStatus] || 'bg-gray-100 text-gray-700'}`}>
+                            {tx.reconciliationStatus === 'matched' ? 'مطابق' :
+                             tx.reconciliationStatus === 'pending' ? 'قيد المراجعة' :
+                             tx.reconciliationStatus === 'failed' ? 'غير مطابق' :
+                             'غير مطابق'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <TablePager
+                  page={txControls.page}
+                  totalPages={txControls.totalPages}
+                  startIndex={txControls.startIndex}
+                  endIndex={txControls.endIndex}
+                  filteredCount={txControls.filteredCount}
+                  onPageChange={txControls.setPage}
+                  itemLabel="عملية"
+                />
+              </>
+            )}
+          </>
         )}
       </div>
 

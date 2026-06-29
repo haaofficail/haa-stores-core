@@ -36,7 +36,7 @@ describe('Admin dangerous-action dialogs accessibility', () => {
     expect(block).toContain('<AdminDialog');
     expect(block).not.toContain('fixed inset-0');
     expect(block).toContain("review(decisionModal.id, decisionModal.status, rejectNote.trim())");
-    expect(block).toContain('disabled={!rejectNote.trim()}');
+    expect(block).toContain('disabled={!rejectNote.trim() || reviewMutation.isPending}');
     expect(block).toContain('aria-label={decisionModal.status');
   });
 

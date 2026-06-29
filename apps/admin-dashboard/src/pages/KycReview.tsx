@@ -1,46 +1,47 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
+import { SortableTh } from '../components/ui/SortableTh';
+import { TablePager } from '../components/ui/TablePager';
+import { useTableControls } from '../lib/useTableControls';
 
 export default function KycReview() {
   const { t } = useTranslation();
-  const [profiles, setProfiles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const queryClient = useQueryClient();
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
-  const [query, setQuery] = useState('');
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    adminApi.getKycProfiles()
-      .then(setProfiles)
-      .catch(() => { setError(true); toast.error(t('kyc.loadError', 'فشل تحميل ملفات التحقق')); })
-      .finally(() => setLoading(false));
-  }, [t]);
+  const { data: profiles = [], isPending: loading, isError: error, refetch } = useQuery<any[]>({
+    queryKey: queryKeys.kycProfiles,
+    queryFn: () => adminApi.getKycProfiles(),
+  });
 
-  useEffect(() => { load(); }, [load]);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.kycProfiles });
 
-  const review = async (id: number, status: string, rejectionReason?: string) => {
-    try {
-      await adminApi.reviewKyc(id, status, rejectionReason);
-      setProfiles(prev => prev.map(p => p.id === id ? { ...p, status } : p));
-      toast.success(status === 'approved' ? t('kyc.approved', 'تم اعتماد الملف') : t('kyc.rejected', 'تم رفض الملف'));
+  const reviewMutation = useMutation({
+    mutationFn: (vars: { id: number; status: string; rejectionReason?: string }) =>
+      adminApi.reviewKyc(vars.id, vars.status, vars.rejectionReason),
+    onSuccess: (_data, vars) => {
+      toast.success(vars.status === 'approved' ? t('kyc.approved', 'تم اعتماد الملف') : t('kyc.rejected', 'تم رفض الملف'));
       setRejectingId(null);
       setRejectReason('');
-      setSelectedProfile((prev: any) => prev ? { ...prev, status } : null);
-    } catch {
-      toast.error(t('kyc.updateError', 'فشل تحديث حالة الملف'));
-    }
-  };
+      setSelectedProfile((prev: any) => prev ? { ...prev, status: vars.status } : null);
+      invalidate();
+    },
+    onError: () => toast.error(t('kyc.updateError', 'فشل تحديث حالة الملف')),
+  });
+
+  const review = (id: number, status: string, rejectionReason?: string) =>
+    reviewMutation.mutate({ id, status, rejectionReason });
 
   const openDetail = (p: any) => {
     setSelectedProfile(p);
@@ -60,6 +61,17 @@ export default function KycReview() {
     return labels[s] || s;
   };
 
+  const controls = useTableControls<any>({
+    rows: profiles,
+    filterFn: (p, q) => {
+      const term = q.toLowerCase();
+      return String(p.storeId || '').includes(term) || (p.legalName || p.commercialName || '').toLowerCase().includes(term);
+    },
+    initialSort: { key: 'storeId', dir: 'desc' },
+    storageKey: 'kycReview',
+  });
+  const { query, setQuery } = controls;
+
   return (
     <div>
       <h2 className="text-title2 font-bold text-gray-900 tracking-tight mb-4">{t('kyc.pageTitle', 'مراجعة التحقق')}</h2>
@@ -76,28 +88,29 @@ export default function KycReview() {
         {loading ? (
           <AdminTableSkeleton columns={['w-16', 'w-24', 'w-32', 'w-20', 'w-24']} />
         ) : error ? (
-          <ErrorState message={t('kyc.loadError', 'فشل تحميل ملفات التحقق')} onRetry={load} />
+          <ErrorState message={t('kyc.loadError', 'فشل تحميل ملفات التحقق')} onRetry={() => refetch()} />
         ) : profiles.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-footnote text-gray-400">{t('kyc.noProfiles', 'لا توجد ملفات تحقق للمراجعة')}</p>
           </div>
+        ) : controls.filteredCount === 0 ? (
+          <div className="p-12 text-center">
+            <p className="text-footnote text-gray-400">{t('kyc.noResults', 'لا توجد نتائج مطابقة')}</p>
+          </div>
         ) : (
+          <>
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('kyc.store', 'المتجر')}</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('kyc.type', 'النوع')}</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('kyc.legalName', 'الاسم التجاري')}</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('kyc.status', 'الحالة')}</th>
+                <SortableTh sortKey="storeId" label={t('kyc.store', 'المتجر')} sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortableTh sortKey="businessType" label={t('kyc.type', 'النوع')} sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortableTh sortKey="legalName" label={t('kyc.legalName', 'الاسم التجاري')} sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortableTh sortKey="status" label={t('kyc.status', 'الحالة')} sort={controls.sort} onToggle={controls.toggleSort} />
                 <th className="px-4 py-3 text-start font-medium text-gray-500">{t('common.actions', 'الإجراءات')}</th>
               </tr>
             </thead>
             <tbody>
-              {profiles.filter(p => {
-                if (!query) return true;
-                const q = query.toLowerCase();
-                return String(p.storeId || '').includes(q) || (p.legalName || p.commercialName || '').toLowerCase().includes(q);
-              }).map(p => (
+              {controls.rows.map(p => (
                 <tr key={p.id} className="border-t hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 font-mono text-gray-900">#{p.storeId}</td>
                   <td className="px-4 py-3 text-gray-500">{p.businessType}</td>
@@ -135,6 +148,16 @@ export default function KycReview() {
               ))}
             </tbody>
           </table>
+          <TablePager
+            page={controls.page}
+            totalPages={controls.totalPages}
+            startIndex={controls.startIndex}
+            endIndex={controls.endIndex}
+            filteredCount={controls.filteredCount}
+            onPageChange={controls.setPage}
+            itemLabel={t('kyc.itemLabel', 'طلب')}
+          />
+          </>
         )}
       </div>
 

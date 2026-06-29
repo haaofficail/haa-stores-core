@@ -1,34 +1,34 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
+import { SortableTh } from '../components/ui/SortableTh';
+import { TablePager } from '../components/ui/TablePager';
+import { useTableControls } from '../lib/useTableControls';
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [query, setQuery] = useState('');
-
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    adminApi.getAdminUsers()
-      .then(setUsers)
-      .catch(() => { setError(true); toast.error('فشل تحميل المستخدمين'); })
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const filtered = users.filter(u => {
-    if (!query) return true;
-    const q = query.toLowerCase();
-    return (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
+  const { data: users = [], isPending: loading, isError: error, refetch } = useQuery<any[]>({
+    queryKey: queryKeys.adminUsers,
+    queryFn: () => adminApi.getAdminUsers(),
   });
 
+  useEffect(() => {
+    if (error) toast.error('فشل تحميل المستخدمين');
+  }, [error]);
+
   const adminCount = users.filter(u => u.isAdmin).length;
+
+  const controls = useTableControls<any>({
+    rows: users,
+    searchFields: ['name', 'email'],
+    initialSort: { key: 'name', dir: 'asc' },
+    storageKey: 'adminUsers',
+  });
+  const { query, setQuery } = controls;
 
   return (
     <div>
@@ -51,46 +51,61 @@ export default function AdminUsers() {
         {loading ? (
           <AdminTableSkeleton />
         ) : error ? (
-          <ErrorState message="فشل تحميل المستخدمين" onRetry={load} />
-        ) : filtered.length === 0 ? (
+          <ErrorState message="فشل تحميل المستخدمين" onRetry={() => refetch()} />
+        ) : users.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">{query ? 'لا توجد نتائج للبحث' : 'لا يوجد مستخدمون'}</p>
+            <p className="text-footnote text-gray-400">لا يوجد مستخدمون</p>
+          </div>
+        ) : controls.filteredCount === 0 ? (
+          <div className="p-12 text-center">
+            <p className="text-footnote text-gray-400">لا توجد نتائج مطابقة</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">الاسم</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">البريد الإلكتروني</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">الدور</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">الحالة</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">تاريخ الإنشاء</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((u: any) => (
-                <tr key={u.id} className="border-t hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900">{u.name || '-'}</td>
-                  <td className="px-4 py-3 text-gray-500">{u.email || '-'}</td>
-                  <td className="px-4 py-3">
-                    {u.isAdmin ? (
-                      <span className="px-2 py-1 rounded text-xs font-medium bg-primary-100 text-primary-700">أدمن</span>
-                    ) : (
-                      <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">مستخدم</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${u.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {u.isActive ? 'نشط' : 'موقوف'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {u.createdAt ? new Date(u.createdAt).toLocaleDateString('ar-SA') : '-'}
-                  </td>
+          <>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <SortableTh sortKey="name" label="الاسم" sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="email" label="البريد الإلكتروني" sort={controls.sort} onToggle={controls.toggleSort} />
+                  <th className="px-4 py-3 text-start font-medium text-gray-500">الدور</th>
+                  <th className="px-4 py-3 text-start font-medium text-gray-500">الحالة</th>
+                  <SortableTh sortKey="createdAt" label="تاريخ الإنشاء" sort={controls.sort} onToggle={controls.toggleSort} />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {controls.rows.map((u: any) => (
+                  <tr key={u.id} className="border-t hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-gray-900">{u.name || '-'}</td>
+                    <td className="px-4 py-3 text-gray-500">{u.email || '-'}</td>
+                    <td className="px-4 py-3">
+                      {u.isAdmin ? (
+                        <span className="px-2 py-1 rounded text-xs font-medium bg-primary-100 text-primary-700">أدمن</span>
+                      ) : (
+                        <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">مستخدم</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${u.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {u.isActive ? 'نشط' : 'موقوف'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString('ar-SA') : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <TablePager
+              page={controls.page}
+              totalPages={controls.totalPages}
+              startIndex={controls.startIndex}
+              endIndex={controls.endIndex}
+              filteredCount={controls.filteredCount}
+              onPageChange={controls.setPage}
+              itemLabel="مستخدم"
+            />
+          </>
         )}
       </div>
     </div>

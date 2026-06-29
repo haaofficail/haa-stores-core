@@ -1,9 +1,14 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { adminApi } from '../lib/api';
 import type { Payout, SettlementBatch } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { ErrorState } from '../components/ui/ErrorState';
+import { SortableTh } from '../components/ui/SortableTh';
+import { TablePager } from '../components/ui/TablePager';
+import { useTableControls } from '../lib/useTableControls';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-700',
@@ -48,49 +53,64 @@ const payoutStatusLabels: Record<string, string> = {
 };
 
 export default function SettlementBatches() {
-  const [batches, setBatches] = useState<SettlementBatch[]>([]);
-  const [manualPayouts, setManualPayouts] = useState<Payout[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [payoutStatusFilter, setPayoutStatusFilter] = useState('');
   const [storeIdFilter, setStoreIdFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    Promise.all([
-      adminApi.getSettlementBatches(storeIdFilter ? Number(storeIdFilter) : undefined),
-      adminApi.listPayouts(payoutStatusFilter || undefined),
-    ])
-      .then(([data, payouts]) => {
-        let filtered = data;
-        if (statusFilter) {
-          filtered = filtered.filter((b) => b.status === statusFilter);
-        }
-        if (dateFrom) {
-          const from = new Date(dateFrom);
-          filtered = filtered.filter((b) => new Date(b.createdAt) >= from);
-        }
-        if (dateTo) {
-          const to = new Date(dateTo);
-          to.setHours(23, 59, 59, 999);
-          filtered = filtered.filter((b) => new Date(b.createdAt) <= to);
-        }
-        setBatches(filtered);
-        const filteredPayouts = storeIdFilter ? payouts.filter((p) => p.storeId === Number(storeIdFilter)) : payouts;
-        setManualPayouts(filteredPayouts);
-      })
-      .catch(() => {
-        setError(true);
-        toast.error('فشل تحميل التسويات');
-      })
-      .finally(() => setLoading(false));
-  }, [statusFilter, payoutStatusFilter, storeIdFilter, dateFrom, dateTo]);
+  const batchesQuery = useQuery<SettlementBatch[]>({
+    queryKey: [...queryKeys.settlementBatches, storeIdFilter ? Number(storeIdFilter) : null],
+    queryFn: () => adminApi.getSettlementBatches(storeIdFilter ? Number(storeIdFilter) : undefined),
+  });
+  const payoutsQuery = useQuery<Payout[]>({
+    queryKey: [...queryKeys.settlementBatches, 'manualPayouts', payoutStatusFilter || null],
+    queryFn: () => adminApi.listPayouts(payoutStatusFilter || undefined),
+  });
 
-  useEffect(() => { load(); }, [load]);
+  const loading = batchesQuery.isPending || payoutsQuery.isPending;
+  const error = batchesQuery.isError || payoutsQuery.isError;
+  const refetch = () => {
+    batchesQuery.refetch();
+    payoutsQuery.refetch();
+  };
+
+  useEffect(() => {
+    if (error) toast.error('فشل تحميل التسويات');
+  }, [error]);
+
+  // Status + date-range filtering stayed client-side in the original load(); reproduce
+  // it here over the query data so the result still composes before useTableControls.
+  const batches = useMemo(() => {
+    let filtered = batchesQuery.data ?? [];
+    if (statusFilter) {
+      filtered = filtered.filter((b) => b.status === statusFilter);
+    }
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      filtered = filtered.filter((b) => new Date(b.createdAt) >= from);
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      filtered = filtered.filter((b) => new Date(b.createdAt) <= to);
+    }
+    return filtered;
+  }, [batchesQuery.data, statusFilter, dateFrom, dateTo]);
+
+  // storeId filtering of manual payouts was applied client-side after the fetch.
+  const manualPayouts = useMemo(() => {
+    const payouts = payoutsQuery.data ?? [];
+    return storeIdFilter ? payouts.filter((p) => p.storeId === Number(storeIdFilter)) : payouts;
+  }, [payoutsQuery.data, storeIdFilter]);
+
+  const controls = useTableControls<SettlementBatch>({
+    rows: batches,
+    searchFields: ['provider', 'providerBatchId', 'status'],
+    initialSort: { key: 'createdAt', dir: 'desc' },
+    storageKey: 'settlementBatches',
+  });
+  const { query, setQuery } = controls;
 
   return (
     <div>
@@ -101,7 +121,7 @@ export default function SettlementBatches() {
           <label className="block text-xs text-gray-500 mb-1">حالة الدفعة</label>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => { setStatusFilter(e.target.value); controls.setPage(1); }}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
           >
             <option value="">الكل</option>
@@ -136,7 +156,7 @@ export default function SettlementBatches() {
           <input
             type="number"
             value={storeIdFilter}
-            onChange={(e) => setStoreIdFilter(e.target.value)}
+            onChange={(e) => { setStoreIdFilter(e.target.value); controls.setPage(1); }}
             placeholder="storeId"
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-28"
           />
@@ -146,7 +166,7 @@ export default function SettlementBatches() {
           <input
             type="date"
             value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
+            onChange={(e) => { setDateFrom(e.target.value); controls.setPage(1); }}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
           />
         </div>
@@ -155,12 +175,12 @@ export default function SettlementBatches() {
           <input
             type="date"
             value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
+            onChange={(e) => { setDateTo(e.target.value); controls.setPage(1); }}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
           />
         </div>
         <button
-          onClick={() => { setStatusFilter(''); setPayoutStatusFilter(''); setStoreIdFilter(''); setDateFrom(''); setDateTo(''); }}
+          onClick={() => { setStatusFilter(''); setPayoutStatusFilter(''); setStoreIdFilter(''); setDateFrom(''); setDateTo(''); controls.setPage(1); }}
           className="text-sm text-primary-600 hover:text-primary-700 px-3 py-2"
         >
           إعادة تعيين
@@ -227,6 +247,16 @@ export default function SettlementBatches() {
         )}
       </div>
 
+      <div className="mb-4">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="بحث بمزوّد الدفع أو رقم الدفعة أو الحالة..."
+          className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+        />
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {loading ? (
           <div className="p-8 space-y-4">
@@ -241,27 +271,32 @@ export default function SettlementBatches() {
             ))}
           </div>
         ) : error ? (
-          <ErrorState message="فشل تحميل دفعات التسوية" onRetry={load} />
+          <ErrorState message="فشل تحميل دفعات التسوية" onRetry={() => refetch()} />
         ) : batches.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-footnote text-gray-400">لا توجد دفعات تسوية</p>
           </div>
+        ) : controls.filteredCount === 0 ? (
+          <div className="p-12 text-center">
+            <p className="text-footnote text-gray-400">لا توجد نتائج مطابقة</p>
+          </div>
         ) : (
+          <>
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">رقم الدفعة</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">تاريخ الدورة</th>
+                <SortableTh sortKey="id" label="رقم الدفعة" sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortableTh sortKey="createdAt" label="تاريخ الدورة" sort={controls.sort} onToggle={controls.toggleSort} />
                 <th className="px-4 py-3 text-start font-medium text-gray-500">عدد المتاجر</th>
                 <th className="px-4 py-3 text-start font-medium text-gray-500">عدد الطلبات</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">إجمالي المبلغ</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">صافي التسوية</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">الحالة</th>
+                <SortableTh sortKey="grossAmount" label="إجمالي المبلغ" sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortableTh sortKey="merchantPayable" label="صافي التسوية" sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortableTh sortKey="status" label="الحالة" sort={controls.sort} onToggle={controls.toggleSort} />
                 <th className="px-4 py-3 text-start font-medium text-gray-500" />
               </tr>
             </thead>
             <tbody>
-              {batches.map((b) => (
+              {controls.rows.map((b) => (
                 <tr key={b.id} className="border-t hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 font-mono font-semibold text-gray-900">
                     SET-{String(b.id).padStart(6, '0')}
@@ -294,6 +329,16 @@ export default function SettlementBatches() {
               ))}
             </tbody>
           </table>
+          <TablePager
+            page={controls.page}
+            totalPages={controls.totalPages}
+            startIndex={controls.startIndex}
+            endIndex={controls.endIndex}
+            filteredCount={controls.filteredCount}
+            onPageChange={controls.setPage}
+            itemLabel="دفعة"
+          />
+          </>
         )}
       </div>
     </div>

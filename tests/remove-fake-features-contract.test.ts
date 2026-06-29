@@ -41,11 +41,13 @@ const SHIPPING_SRC = readFileSync(
 
 describe('Fake-feature cleanup', () => {
   it('AbandonedCarts no longer renders the disabled "send reminder" button', () => {
-    // The Send icon import should be gone, and there should be no
-    // `disabled cursor-not-allowed` button left over.
+    // The Send icon import and the fake "coming soon" reminder button must be
+    // gone. (We no longer blanket-ban `cursor-not-allowed`: the page now has a
+    // legitimate paginator whose prev/next buttons use `disabled:cursor-not-allowed`
+    // for their real disabled state. The two assertions below pin the fake
+    // feature precisely.)
     expect(CARTS_SRC).not.toMatch(/\bSend\b\s*[},]/);
     expect(CARTS_SRC).not.toMatch(/إرسال تذكير — قيد التطوير/);
-    expect(CARTS_SRC).not.toMatch(/cursor-not-allowed/);
   });
 
   it('order-actions.ts no longer registers resend_tracking', () => {

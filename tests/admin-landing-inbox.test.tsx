@@ -78,7 +78,7 @@ describe('Admin Landing Inbox page', () => {
     const errorStateSrc = read(ERROR_STATE_PATH);
     expect(src).toContain('animate-pulse');
     expect(src).toContain('ErrorState');
-    expect(src).toContain('<ErrorState message="فشل تحميل صندوق الوارد" onRetry={load} />');
+    expect(src).toContain('<ErrorState message="فشل تحميل صندوق الوارد" onRetry={() => refetch()} />');
     expect(errorStateSrc).toContain('إعادة المحاولة');
     expect(src).toContain('لا توجد رسائل بعد');
   });

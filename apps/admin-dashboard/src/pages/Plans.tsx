@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { adminApi, hasAdminPermission } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 
@@ -69,37 +71,33 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 export default function Plans() {
   const { t } = useTranslation();
-  const [plans, setPlans] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const queryClient = useQueryClient();
   const [editId, setEditId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<any>(null);
-  const [saving, setSaving] = useState(false);
   const canUpdatePlans = hasAdminPermission('plans.update');
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    adminApi.getPlans()
-      .then(setPlans)
-      .catch(() => { setError(true); toast.error(t('plans.loadError', 'فشل تحميل الباقات')); })
-      .finally(() => setLoading(false));
-  }, [t]);
+  const { data: plans = [], isPending: loading, isError: error, refetch } = useQuery<any[]>({
+    queryKey: queryKeys.plans,
+    queryFn: () => adminApi.getPlans(),
+  });
 
-  useEffect(() => { load(); }, [load]);
+  const invalidatePlans = () => queryClient.invalidateQueries({ queryKey: queryKeys.plans });
 
-  const toggleActive = async (plan: any) => {
+  const toggleMutation = useMutation({
+    mutationFn: (plan: any) => adminApi.updatePlan(plan.id, { isActive: !plan.isActive }),
+    onSuccess: (_data, plan) => {
+      toast.success(plan.isActive ? t('plans.disabled', 'تم تعطيل الباقة') : t('plans.enabled', 'تم تفعيل الباقة'));
+      invalidatePlans();
+    },
+    onError: () => toast.error(t('plans.toggleError', 'فشل تحديث حالة الباقة')),
+  });
+
+  const toggleActive = (plan: any) => {
     if (!canUpdatePlans) {
       toast.error('لا تملك صلاحية تحديث الباقات');
       return;
     }
-    try {
-      await adminApi.updatePlan(plan.id, { isActive: !plan.isActive });
-      toast.success(plan.isActive ? t('plans.disabled', 'تم تعطيل الباقة') : t('plans.enabled', 'تم تفعيل الباقة'));
-      load();
-    } catch {
-      toast.error(t('plans.toggleError', 'فشل تحديث حالة الباقة'));
-    }
+    toggleMutation.mutate(plan);
   };
 
   const openEdit = (plan: any) => {
@@ -126,15 +124,28 @@ export default function Plans() {
     setEditForm(null);
   };
 
-  const saveEdit = async () => {
+  const saveMutation = useMutation({
+    mutationFn: (vars: { id: number; payload: any }) => adminApi.updatePlan(vars.id, vars.payload),
+    onSuccess: () => {
+      toast.success(t('plans.updateSuccess', 'تم تحديث الباقة بنجاح'));
+      setEditId(null);
+      setEditForm(null);
+      invalidatePlans();
+    },
+    onError: () => toast.error(t('plans.updateError', 'فشل تحديث الباقة')),
+  });
+
+  const saving = saveMutation.isPending;
+
+  const saveEdit = () => {
     if (!editId || !editForm) return;
     if (!canUpdatePlans) {
       toast.error('لا تملك صلاحية تحديث الباقات');
       return;
     }
-    setSaving(true);
-    try {
-      await adminApi.updatePlan(editId, {
+    saveMutation.mutate({
+      id: editId,
+      payload: {
         name: editForm.name,
         description: editForm.description || null,
         priceMonthly: Number(editForm.priceMonthly),
@@ -144,16 +155,8 @@ export default function Plans() {
         storageLimitMb: Number(editForm.storageLimitMb),
         orderLimit: Number(editForm.orderLimit),
         trialDays: Number(editForm.trialDays),
-      });
-      toast.success(t('plans.updateSuccess', 'تم تحديث الباقة بنجاح'));
-      setEditId(null);
-      setEditForm(null);
-      load();
-    } catch {
-      toast.error(t('plans.updateError', 'فشل تحديث الباقة'));
-    } finally {
-      setSaving(false);
-    }
+      },
+    });
   };
 
   const formatPrice = (price: string) =>
@@ -185,7 +188,7 @@ export default function Plans() {
           ))}
         </div>
       ) : error ? (
-        <ErrorState message={t('plans.loadError', 'فشل تحميل الباقات')} onRetry={load} />
+        <ErrorState message={t('plans.loadError', 'فشل تحميل الباقات')} onRetry={() => refetch()} />
       ) : plans.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-xl shadow-card">
           <div className="h-12 w-12 rounded-full bg-gray-50 flex items-center justify-center mb-4">

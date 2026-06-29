@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/queryClient';
 import { customersApi, loyaltyApi, ApiClientError, type LoyaltyCustomerSummary, type LoyaltyTxRow } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,18 +28,29 @@ type CustomerFormField = 'name' | 'phone' | 'email' | 'notes';
 export default function Customers() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
-  const [customers, setCustomers] = useState<CustomerRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(false);
+  const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' });
-  const [saving, setSaving] = useState(false);
   const limit = 20;
+
+  // Search + page are server-side params, so they live in the query key:
+  // changing either refetches automatically and each combination is cached.
+  const customersQuery = useQuery({
+    queryKey: [...queryKeys.customers(storeId), { page, limit, search }],
+    queryFn: () => customersApi.list(storeId as number, { page, limit, search: search || undefined }),
+    enabled: !!storeId,
+  });
+  const customers = (customersQuery.data?.data ?? []) as CustomerRow[];
+  const total = customersQuery.data?.total ?? 0;
+  const loading = customersQuery.isLoading;
+  const fetchError = customersQuery.isError;
+  const invalidateCustomers = () => queryClient.invalidateQueries({ queryKey: queryKeys.customers(storeId) });
+
+  useEffect(() => { if (customersQuery.isError) toast.error('فشل تحميل العملاء'); }, [customersQuery.isError]);
 
   // L-PR-5 — Loyalty drilldown drawer state.
   // Opens for a specific customer; pulls balance + first 50 ledger rows
@@ -104,18 +117,6 @@ export default function Customers() {
     { earned: 0, redeemed: 0, expired: 0 },
   );
 
-  const load = useCallback(() => {
-    if (!storeId) { setLoading(false); return; }
-    setLoading(true);
-    setFetchError(false);
-    customersApi.list(storeId, { page, limit, search: search || undefined })
-      .then(r => { setCustomers(r.data as CustomerRow[]); setTotal(r.total ?? 0); })
-      .catch(() => { setFetchError(true); toast.error('فشل تحميل العملاء'); })
-      .finally(() => setLoading(false));
-  }, [storeId, page, search]);
-
-  useEffect(() => { load(); }, [load]);
-
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -135,16 +136,23 @@ export default function Customers() {
     setEditId(c.id); setForm({ name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '', notes: c.notes ?? '' }); setDialogOpen(true);
   };
 
-  const save = async () => {
+  const saveMutation = useMutation({
+    mutationFn: (data: { name: string; phone: string; email: string; notes: string }) =>
+      editId ? customersApi.update(storeId as number, editId, data) : customersApi.create(storeId as number, data),
+    onSuccess: () => {
+      toast.success(editId ? t('customers.updated') : t('customers.created'));
+      setDialogOpen(false);
+      invalidateCustomers();
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : t('common.error')),
+  });
+  const saving = saveMutation.isPending;
+
+  const save = () => {
     if (!storeId) return;
     if (!form.name.trim()) { toast.error(t('customers.nameRequired')); return; }
     if (!form.phone.trim()) { toast.error(t('customers.phoneRequired')); return; }
-    setSaving(true);
-    try {
-      if (editId) { await customersApi.update(storeId, editId, form); toast.success(t('customers.updated')); }
-      else { await customersApi.create(storeId, form); toast.success(t('customers.created')); }
-      setDialogOpen(false); load();
-    } catch (err) { toast.error(err instanceof ApiClientError ? err.message : t('common.error')); } finally { setSaving(false); }
+    saveMutation.mutate(form);
   };
 
   return (
@@ -171,7 +179,7 @@ export default function Customers() {
             </div>
             <p className="text-sm font-medium text-neutral-700 mb-1">فشل تحميل العملاء</p>
             <p className="text-sm text-neutral-500 mb-4">حدث خطأ أثناء الاتصال بالخادم. يرجى المحاولة مرة أخرى.</p>
-            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={load}>
+            <Button variant="outline" size="sm" className="h-9 text-sm gap-1.5" onClick={() => customersQuery.refetch()}>
               <RotateCcw className="h-4 w-4" /> {t('common.retry', 'إعادة المحاولة')}
             </Button>
           </div>

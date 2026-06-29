@@ -1,31 +1,43 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
-import { useCallback, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { adminApi, hasAdminPermission } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 
 const BASE = import.meta.env.VITE_API_URL || '/api';
 
 export default function Settings() {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [form, setForm] = useState({ name: '', logoUrl: '', faviconUrl: '' });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const canUpdateSettings = hasAdminPermission('platform.settings.update');
   const canUploadPlatformMedia = hasAdminPermission('platform.media.upload');
 
-  const load = useCallback(async () => {
-    try {
-      const s = await adminApi.getSettings();
-      setForm({ name: s.name, logoUrl: s.logoUrl ?? '', faviconUrl: s.faviconUrl ?? '' });
-    } catch (err: any) {
-      toast.error(err.message || t('settings.loadError', 'فشل تحميل الإعدادات'));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
+  const { data: settings, isPending: loading, isError: error, refetch } = useQuery<any>({
+    queryKey: queryKeys.settings,
+    queryFn: () => adminApi.getSettings(),
+  });
 
-  useEffect(() => { load(); }, [load]);
+  // Seed the editable form from the loaded settings.
+  useEffect(() => {
+    if (settings) {
+      setForm({ name: settings.name, logoUrl: settings.logoUrl ?? '', faviconUrl: settings.faviconUrl ?? '' });
+    }
+  }, [settings]);
+
+  // Surface load failures as a toast (parity with the previous manual fetch),
+  // with a retry action that refetches the settings query.
+  useEffect(() => {
+    if (error) {
+      toast.error(t('settings.loadError', 'فشل تحميل الإعدادات'), {
+        action: { label: t('settings.retry', 'إعادة المحاولة'), onClick: () => refetch() },
+      });
+    }
+  }, [error, t, refetch]);
+
+  const invalidateSettings = () => queryClient.invalidateQueries({ queryKey: queryKeys.settings });
 
   const uploadFile = async (file: File): Promise<string> => {
     const token = localStorage.getItem('admin_token');
@@ -71,24 +83,28 @@ export default function Settings() {
     }
   };
 
-  const save = async () => {
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      adminApi.updateSettings({
+        name: form.name,
+        logoUrl: form.logoUrl || null,
+        faviconUrl: form.faviconUrl || null,
+      }),
+    onSuccess: () => {
+      toast.success(t('settings.saveSuccess', 'تم حفظ الإعدادات بنجاح'));
+      invalidateSettings();
+    },
+    onError: (err: any) => toast.error(err?.message || t('settings.saveError', 'فشل حفظ الإعدادات')),
+  });
+
+  const saving = saveMutation.isPending;
+
+  const save = () => {
     if (!canUpdateSettings) {
       toast.error('لا تملك صلاحية تحديث إعدادات المنصة');
       return;
     }
-    setSaving(true);
-    try {
-      await adminApi.updateSettings({
-        name: form.name,
-        logoUrl: form.logoUrl || null,
-        faviconUrl: form.faviconUrl || null,
-      });
-      toast.success(t('settings.saveSuccess', 'تم حفظ الإعدادات بنجاح'));
-    } catch (err: any) {
-      toast.error(err.message || t('settings.saveError', 'فشل حفظ الإعدادات'));
-    } finally {
-      setSaving(false);
-    }
+    saveMutation.mutate();
   };
 
   if (loading) return <div className="text-center py-12 text-gray-500">{t('settings.loading', 'جاري التحميل...')}</div>;

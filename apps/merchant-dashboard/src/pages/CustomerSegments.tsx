@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -84,80 +86,77 @@ function formatCurrency(val: string): string {
 export default function CustomerSegments() {
   const { t } = useTranslation();
   const { storeId } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [summary, setSummary] = useState<SegmentSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(false);
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
-  const [members, setMembers] = useState<SegmentMember[]>([]);
   const [membersPage, setMembersPage] = useState(1);
-  const [membersTotalPages, setMembersTotalPages] = useState(1);
-  const [loadingMembers, setLoadingMembers] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [thresholds, setThresholds] = useState<Thresholds | null>(null);
   const [editingThresholds, setEditingThresholds] = useState<Thresholds | null>(null);
-  const [savingSettings, setSavingSettings] = useState(false);
 
-  const loadSummary = useCallback(() => {
-    if (!storeId) return;
-    setLoading(true);
-    setFetchError(false);
-    Promise.all([
-      request<SegmentSummary>(`/merchant/${storeId}/marketing/segments/summary`),
-      request<Thresholds>(`/merchant/${storeId}/marketing/segments/settings/thresholds`),
-    ])
-      .then(([s, th]) => {
-        setSummary(s);
-        setThresholds(th);
-      })
-      .catch((err) => {
-        if (err instanceof ApiClientError) toast.error(err.message);
-        else toast.error(t('common.error'));
-        setFetchError(true);
-      })
-      .finally(() => setLoading(false));
-  }, [storeId, t]);
+  // Summary + thresholds are fetched together (one logical load), keyed by store.
+  const summaryQuery = useQuery({
+    queryKey: [...queryKeys.customerSegments(storeId), 'summary'],
+    queryFn: async () => {
+      const [s, th] = await Promise.all([
+        request<SegmentSummary>(`/merchant/${storeId}/marketing/segments/summary`),
+        request<Thresholds>(`/merchant/${storeId}/marketing/segments/settings/thresholds`),
+      ]);
+      return { summary: s, thresholds: th };
+    },
+    enabled: !!storeId,
+  });
+  const summary = summaryQuery.data?.summary ?? null;
+  const thresholds = summaryQuery.data?.thresholds ?? null;
+  const loading = summaryQuery.isLoading;
+  const fetchError = summaryQuery.isError;
 
-  useEffect(() => { loadSummary(); }, [loadSummary]);
+  // Members depend on the selected segment type + page, so both live in the key.
+  const membersQuery = useQuery({
+    queryKey: [...queryKeys.customerSegments(storeId), 'members', selectedSegment, membersPage],
+    queryFn: () => request<SegmentListResponse>(`/merchant/${storeId}/marketing/segments/${selectedSegment}?page=${membersPage}&limit=20`),
+    enabled: !!storeId && !!selectedSegment,
+  });
+  const members = membersQuery.data?.data ?? [];
+  const membersTotalPages = membersQuery.data?.totalPages ?? 1;
+  const loadingMembers = membersQuery.isLoading;
 
-  const loadMembers = useCallback(async (type: string, page: number) => {
-    if (!storeId) return;
-    setLoadingMembers(true);
-    try {
-      const res = await request<SegmentListResponse>(`/merchant/${storeId}/marketing/segments/${type}?page=${page}&limit=20`);
-      setMembers(res.data);
-      setMembersPage(res.page);
-      setMembersTotalPages(res.totalPages);
-    } catch (err) {
-      toast.error(err instanceof ApiClientError ? err.message : 'فشل تحميل الأعضاء');
-    } finally {
-      setLoadingMembers(false);
+  useEffect(() => {
+    if (summaryQuery.isError) {
+      const err = summaryQuery.error;
+      toast.error(err instanceof ApiClientError ? err.message : t('common.error'));
     }
-  }, [storeId]);
+  }, [summaryQuery.isError, summaryQuery.error, t]);
+
+  useEffect(() => {
+    if (membersQuery.isError) {
+      const err = membersQuery.error;
+      toast.error(err instanceof ApiClientError ? err.message : 'فشل تحميل الأعضاء');
+    }
+  }, [membersQuery.isError, membersQuery.error]);
 
   const handleSelectSegment = (type: string) => {
     setSelectedSegment(type);
     setMembersPage(1);
-    loadMembers(type, 1);
   };
 
-  const handleSaveThresholds = async () => {
-    if (!storeId || !editingThresholds) return;
-    setSavingSettings(true);
-    try {
-      await request(`/merchant/${storeId}/marketing/segments/settings/thresholds`, {
+  const saveThresholdsMutation = useMutation({
+    mutationFn: (data: Thresholds) =>
+      request(`/merchant/${storeId}/marketing/segments/settings/thresholds`, {
         method: 'PATCH',
-        body: JSON.stringify(editingThresholds),
-      });
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
       toast.success('تم حفظ الإعدادات');
-      setThresholds(editingThresholds);
       setShowSettings(false);
-      loadSummary();
-    } catch (err) {
-      toast.error(err instanceof ApiClientError ? err.message : 'فشل الحفظ');
-    } finally {
-      setSavingSettings(false);
-    }
+      queryClient.invalidateQueries({ queryKey: queryKeys.customerSegments(storeId) });
+    },
+    onError: (err) => toast.error(err instanceof ApiClientError ? err.message : 'فشل الحفظ'),
+  });
+  const savingSettings = saveThresholdsMutation.isPending;
+
+  const handleSaveThresholds = () => {
+    if (!storeId || !editingThresholds) return;
+    saveThresholdsMutation.mutate(editingThresholds);
   };
 
   if (loading) {
@@ -176,7 +175,7 @@ export default function CustomerSegments() {
       <div className="max-w-7xl mx-auto p-6 text-center">
         <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
         <p className="text-neutral-500">{t('common.error')}</p>
-        <Button onClick={loadSummary} className="mt-4">{t('common.retry')}</Button>
+        <Button onClick={() => summaryQuery.refetch()} className="mt-4">{t('common.retry')}</Button>
       </div>
     );
   }
@@ -252,17 +251,13 @@ export default function CustomerSegments() {
             {membersTotalPages > 1 && (
               <div className="flex items-center justify-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => {
-                  const nextPage = Math.max(1, membersPage - 1);
-                  setMembersPage(nextPage);
-                  loadMembers(selectedSegment, nextPage);
+                  setMembersPage(Math.max(1, membersPage - 1));
                 }} disabled={membersPage === 1}>
                   السابق
                 </Button>
                 <span className="text-sm text-neutral-500">صفحة {membersPage} من {membersTotalPages}</span>
                 <Button variant="outline" size="sm" onClick={() => {
-                  const nextPage = Math.min(membersTotalPages, membersPage + 1);
-                  setMembersPage(nextPage);
-                  loadMembers(selectedSegment, nextPage);
+                  setMembersPage(Math.min(membersTotalPages, membersPage + 1));
                 }} disabled={membersPage === membersTotalPages}>
                   التالي
                 </Button>

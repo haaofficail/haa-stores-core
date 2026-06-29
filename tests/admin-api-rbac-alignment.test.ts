@@ -113,8 +113,8 @@ describe('Admin API RBAC alignment', () => {
 
     expect(marketplacePage).toContain("hasAdminPermission('marketplace.review')");
     expect(marketplacePage).toContain("hasAdminPermission('marketplace.feature')");
-    expect(marketplacePage).toContain('disabled={!canReviewMarketplaceProduct}');
-    expect(marketplacePage).toContain('disabled={!canFeatureMarketplaceProduct}');
+    expect(marketplacePage).toContain('disabled={!canReviewMarketplaceProduct || reviewMutation.isPending}');
+    expect(marketplacePage).toContain('disabled={!canFeatureMarketplaceProduct || featureMutation.isPending}');
 
     expect(settingsPage).toContain("hasAdminPermission('platform.settings.update')");
     expect(settingsPage).toContain("hasAdminPermission('platform.media.upload')");

@@ -1,8 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 import { landingContactsApi } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { ErrorState } from '../components/ui/ErrorState';
+import { SortableTh } from '../components/ui/SortableTh';
+import { TablePager } from '../components/ui/TablePager';
+import { useTableControls } from '../lib/useTableControls';
 
 // ─── Domain types (narrowed locally from `unknown` per post-P2-030 pattern) ──
 // Mirrors `packages/db/src/schema/landing-contacts.ts`. Dates come over the
@@ -89,56 +94,50 @@ function narrowContact(value: unknown): LandingContact | null {
 }
 
 export default function LandingInbox() {
-  const [contacts, setContacts] = useState<LandingContact[]>([]);
-  const [newCount, setNewCount] = useState(0);
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<'' | LandingContactStatus>('');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
   const [selected, setSelected] = useState<LandingContact | null>(null);
   const [draftStatus, setDraftStatus] = useState<LandingContactStatus>('new');
   const [draftNotes, setDraftNotes] = useState('');
-  const [saving, setSaving] = useState(false);
-  const limit = 20;
+  // The admin landing-contacts API caps `limit` at 100 (see the zod schema in
+  // apps/api/src/routes/admin/landing-contacts.ts). To let the client-side
+  // table controls own search/sort/pagination over the full status-filtered
+  // set, we page through at the max size and concatenate, with a safety cap.
+  const PAGE_SIZE = 100;
+  const MAX_PAGES = 20; // up to 2000 contacts loaded client-side
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    landingContactsApi
-      .list({ status: status || undefined, page, limit })
-      .then((res) => {
-        const rows = res.data
-          .map(narrowContact)
-          .filter((row): row is LandingContact => row !== null);
-        setContacts(rows);
-        setTotalPages(res.totalPages || 1);
-      })
-      .catch(() => {
-        setError(true);
-        toast.error('فشل تحميل صندوق الوارد');
-      })
-      .finally(() => setLoading(false));
-  }, [status, page]);
+  // status is part of the query key, so changing the filter refetches.
+  const {
+    data: contacts = [],
+    isPending: loading,
+    isError: error,
+    refetch,
+  } = useQuery<LandingContact[]>({
+    queryKey: [...queryKeys.landingContacts, status],
+    queryFn: async () => {
+      const first = await landingContactsApi.list({ status: status || undefined, page: 1, limit: PAGE_SIZE });
+      const collected = [...first.data];
+      const totalPages = Math.min(first.totalPages || 1, MAX_PAGES);
+      for (let p = 2; p <= totalPages; p++) {
+        const res = await landingContactsApi.list({ status: status || undefined, page: p, limit: PAGE_SIZE });
+        collected.push(...res.data);
+      }
+      return collected
+        .map(narrowContact)
+        .filter((row): row is LandingContact => row !== null);
+    },
+  });
 
   // Separate "new count" lookup — uses status=new so it's accurate even
   // when the user is viewing another filter. Cheap: one tiny page query.
-  const loadNewCount = useCallback(() => {
-    landingContactsApi
-      .list({ status: 'new', page: 1, limit: 1 })
-      .then((res) => setNewCount(res.total))
-      .catch(() => {
-        /* badge is best-effort; failure already surfaced by main load */
-      });
-  }, []);
+  // Shares the `landingContacts` base key so list mutations invalidate it too.
+  const { data: newCount = 0 } = useQuery<number>({
+    queryKey: [...queryKeys.landingContacts, 'newCount'],
+    queryFn: () => landingContactsApi.list({ status: 'new', page: 1, limit: 1 }).then((res) => res.total),
+  });
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  useEffect(() => {
-    loadNewCount();
-  }, [loadNewCount, contacts]);
+  const invalidateLandingContacts = () =>
+    queryClient.invalidateQueries({ queryKey: queryKeys.landingContacts });
 
   const openDetail = (c: LandingContact) => {
     setSelected(c);
@@ -148,47 +147,43 @@ export default function LandingInbox() {
 
   const closeDetail = () => {
     setSelected(null);
-    setSaving(false);
   };
 
-  const save = async () => {
-    if (!selected) return;
-    setSaving(true);
-    try {
-      await landingContactsApi.update(selected.id, {
-        status: draftStatus,
-        adminNotes: draftNotes.trim() ? draftNotes.trim() : null,
-      });
+  const saveMutation = useMutation({
+    mutationFn: (vars: { id: number; status: LandingContactStatus; adminNotes: string | null }) =>
+      landingContactsApi.update(vars.id, { status: vars.status, adminNotes: vars.adminNotes }),
+    onSuccess: () => {
       toast.success('تم حفظ التغييرات');
-      // Optimistic local update so the table reflects new status without a refetch flash.
-      setContacts((prev) =>
-        prev.map((c) =>
-          c.id === selected.id
-            ? { ...c, status: draftStatus, adminNotes: draftNotes.trim() ? draftNotes.trim() : null }
-            : c,
-        ),
-      );
       closeDetail();
-      loadNewCount();
-    } catch {
-      toast.error('فشل حفظ التغييرات');
-      setSaving(false);
-    }
+      invalidateLandingContacts();
+    },
+    onError: () => toast.error('فشل حفظ التغييرات'),
+  });
+
+  const spamMutation = useMutation({
+    mutationFn: (id: number) => landingContactsApi.update(id, { status: 'spam' }),
+    onSuccess: () => {
+      toast.success('تم تعليم الرسالة كمزعجة');
+      closeDetail();
+      invalidateLandingContacts();
+    },
+    onError: () => toast.error('فشل تحديث الحالة'),
+  });
+
+  const saving = saveMutation.isPending || spamMutation.isPending;
+
+  const save = () => {
+    if (!selected) return;
+    saveMutation.mutate({
+      id: selected.id,
+      status: draftStatus,
+      adminNotes: draftNotes.trim() ? draftNotes.trim() : null,
+    });
   };
 
-  const markAsSpam = async () => {
+  const markAsSpam = () => {
     if (!selected) return;
-    setSaving(true);
-    try {
-      await landingContactsApi.update(selected.id, { status: 'spam' });
-      toast.success('تم تعليم الرسالة كمزعجة');
-      setContacts((prev) => prev.map((c) => (c.id === selected.id ? { ...c, status: 'spam' } : c)));
-      closeDetail();
-      loadNewCount();
-    } catch {
-      toast.error('فشل تحديث الحالة');
-      setSaving(false);
-    }
+    spamMutation.mutate(selected.id);
   };
 
   const mailtoHref = useMemo(() => {
@@ -199,6 +194,17 @@ export default function LandingInbox() {
     );
     return `mailto:${selected.email}?subject=${subject}&body=${body}`;
   }, [selected]);
+
+  // The status filter is applied server-side (see `load`), so `contacts` is
+  // already the pre-filtered array. The hook layers client-side search, column
+  // sorting, and pagination on top of the current page of results.
+  const controls = useTableControls<LandingContact>({
+    rows: contacts,
+    searchFields: ['name', 'email', 'message', 'phone'],
+    initialSort: { key: 'createdAt', dir: 'desc' },
+    storageKey: 'landingInbox',
+  });
+  const { query, setQuery } = controls;
 
   return (
     <div dir="rtl">
@@ -220,7 +226,7 @@ export default function LandingInbox() {
               key={s.key || 'all'}
               onClick={() => {
                 setStatus(s.key);
-                setPage(1);
+                controls.setPage(1);
               }}
               className={`text-sm px-3 py-1.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                 active
@@ -232,6 +238,17 @@ export default function LandingInbox() {
             </button>
           );
         })}
+      </div>
+
+      {/* Search */}
+      <div className="mb-4">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="بحث بالاسم أو البريد أو الرسالة..."
+          className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+        />
       </div>
 
       {/* Table */}
@@ -249,69 +266,62 @@ export default function LandingInbox() {
             ))}
           </div>
         ) : error ? (
-          <ErrorState message="فشل تحميل صندوق الوارد" onRetry={load} />
+          <ErrorState message="فشل تحميل صندوق الوارد" onRetry={() => refetch()} />
         ) : contacts.length === 0 ? (
           <div className="p-12 text-center">
             <Icon name="Inbox" size="lg" className="text-gray-300 mx-auto mb-3" aria-hidden="true" />
             <p className="text-sm text-gray-500">لا توجد رسائل بعد</p>
           </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">الاسم</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">البريد</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">الجوال</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">الحالة</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">التاريخ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {contacts.map((c) => (
-                <tr
-                  key={c.id}
-                  onClick={() => openDetail(c)}
-                  className="border-t hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                  <td className="px-4 py-3 text-gray-700">{c.email}</td>
-                  <td className="px-4 py-3 text-gray-500">{c.phone || '—'}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${STATUS_BADGE[c.status]}`}
-                    >
-                      {STATUS_LABELS[c.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500" title={new Date(c.createdAt).toLocaleString('ar-SA')}>
-                    {timeAgo(c.createdAt)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {!loading && !error && totalPages > 1 && (
-          <div className="flex items-center justify-between border-t px-4 py-3 text-sm">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              السابق
-            </button>
-            <span className="text-gray-500">
-              صفحة {page} من {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              التالي
-            </button>
+        ) : controls.filteredCount === 0 ? (
+          <div className="p-12 text-center">
+            <p className="text-sm text-gray-500">لا توجد نتائج مطابقة</p>
           </div>
+        ) : (
+          <>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <SortableTh sortKey="name" label="الاسم" sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="email" label="البريد" sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="phone" label="الجوال" sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="status" label="الحالة" sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="createdAt" label="التاريخ" sort={controls.sort} onToggle={controls.toggleSort} />
+                </tr>
+              </thead>
+              <tbody>
+                {controls.rows.map((c) => (
+                  <tr
+                    key={c.id}
+                    onClick={() => openDetail(c)}
+                    className="border-t hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
+                    <td className="px-4 py-3 text-gray-700">{c.email}</td>
+                    <td className="px-4 py-3 text-gray-500">{c.phone || '—'}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${STATUS_BADGE[c.status]}`}
+                      >
+                        {STATUS_LABELS[c.status]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500" title={new Date(c.createdAt).toLocaleString('ar-SA')}>
+                      {timeAgo(c.createdAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <TablePager
+              page={controls.page}
+              totalPages={controls.totalPages}
+              startIndex={controls.startIndex}
+              endIndex={controls.endIndex}
+              filteredCount={controls.filteredCount}
+              onPageChange={controls.setPage}
+              itemLabel="رسالة"
+            />
+          </>
         )}
       </div>
 

@@ -16,7 +16,11 @@ describe('Admin dangerous action reason gates', () => {
     expect(tenantsPage).toContain("import { AdminDialog } from '../components/ui/AdminDialog'");
     expect(tenantsPage).toContain('statusReason');
     expect(tenantsPage).toContain('openStatusDialog(tenant)');
-    expect(tenantsPage).toContain('updateTenantStatus(statusDialog.id, statusDialog.nextStatus, statusReason.trim())');
+    // The reasoned status change now flows through a TanStack mutation: the
+    // trimmed reason is captured at the call site and forwarded to the API in
+    // the mutationFn. Both halves are asserted so the reason can't be dropped.
+    expect(tenantsPage).toContain('statusMutation.mutate({ id: statusDialog.id, next: statusDialog.nextStatus, reason: statusReason.trim() })');
+    expect(tenantsPage).toContain('adminApi.updateTenantStatus(vars.id, vars.next, vars.reason)');
     expect(tenantsPage).toContain('disabled={!statusReason.trim()}');
     expect(tenantsPage).not.toContain('updateTenantStatus(id, newStatus)');
     expect(tenantsPage).not.toContain('updateTenant(editId, form)');
@@ -27,7 +31,9 @@ describe('Admin dangerous action reason gates', () => {
     expect(storesPage).toContain("import { AdminDialog } from '../components/ui/AdminDialog'");
     expect(storesPage).toContain('statusReason');
     expect(storesPage).toContain('openStatusDialog(s)');
-    expect(storesPage).toContain('updateStoreStatus(statusDialog.id, statusDialog.nextIsActive, statusReason.trim())');
+    // Reasoned status change flows through a TanStack mutation (see Tenants note).
+    expect(storesPage).toContain('statusMutation.mutate({ id: statusDialog.id, next: statusDialog.nextIsActive, reason: statusReason.trim() })');
+    expect(storesPage).toContain('adminApi.updateStoreStatus(vars.id, vars.next, vars.reason)');
     expect(storesPage).toContain('disabled={!statusReason.trim()}');
     expect(storesPage).not.toContain('updateStoreStatus(id, !current)');
     expect(storesPage).not.toContain('updateStore(editId, data)');
@@ -39,7 +45,9 @@ describe('Admin dangerous action reason gates', () => {
     expect(marketplacePage).toContain("status: 'rejected'");
     expect(marketplacePage).toContain("status: 'suspended'");
     expect(marketplacePage).toContain("review(decisionModal.id, decisionModal.status, rejectNote.trim())");
-    expect(marketplacePage).toContain('disabled={!rejectNote.trim()}');
+    // The confirm button still requires a note; the in-flight guard is OR'd on
+    // after the TanStack mutation migration.
+    expect(marketplacePage).toContain('disabled={!rejectNote.trim() || reviewMutation.isPending}');
     expect(marketplacePage).not.toContain("review(product.id, 'suspended')");
     expect(marketplacePage).not.toContain("rejectNote || undefined");
   });
