@@ -200,7 +200,7 @@ export default function Login() {
                       </Label>
                       <Link
                         to="/forgot-password"
-                        className="text-xs font-medium text-primary-500 hover:text-primary-600 hover:underline"
+                        className="text-xs font-medium text-primary-700 hover:text-primary-800 hover:underline"
                       >
                         نسيت كلمة المرور؟
                       </Link>
