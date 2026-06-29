@@ -49,7 +49,8 @@ describe('Quality Pass 5 — Route Migration 2/24: admin/auth.ts', () => {
   it('admin/auth.ts must preserve the request shape (email + password from c.req.valid)', () => {
     const content = read(adminAuthRouteFile);
     // The route reads the validated body — email + password must flow through
-    expect(content).toMatch(/c\.req\.valid\(['"]json['"]\)/);
+    expect(content).toMatch(/function validJson<[\s\S]*?c\.req\.valid\(['"]json['"] as never\)/);
+    expect(content).toMatch(/validJson<AdminLoginBody>\(c\)/);
     expect(content).toMatch(/email/);
     expect(content).toMatch(/password/);
   });
