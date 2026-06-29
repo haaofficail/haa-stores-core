@@ -27,7 +27,6 @@ export default function Tenants() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', email: '', status: 'active' });
-  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [statusDialog, setStatusDialog] = useState<TenantStatusDialog | null>(null);
   const [statusReason, setStatusReason] = useState('');
 
@@ -49,16 +48,6 @@ export default function Tenants() {
       invalidateTenants();
     },
     onError: (err: any) => toast.error(err?.message || t('tenants.saveError', 'حدث خطأ أثناء الحفظ')),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => adminApi.deleteTenant(id),
-    onSuccess: () => {
-      toast.success(t('tenants.deleted', 'تم حذف التاجر بنجاح'));
-      invalidateTenants();
-    },
-    onError: (err: any) => toast.error(err?.message || t('tenants.deleteError', 'فشل حذف التاجر')),
-    onSettled: () => setConfirmDelete(null),
   });
 
   const statusMutation = useMutation({
@@ -96,11 +85,6 @@ export default function Tenants() {
       return;
     }
     saveMutation.mutate();
-  };
-
-  const confirmDeleteTenant = () => {
-    if (confirmDelete === null) return;
-    deleteMutation.mutate(confirmDelete);
   };
 
   const openStatusDialog = (tenant: any) => {
@@ -201,7 +185,6 @@ export default function Tenants() {
                           {tenant.status === 'active' ? t('tenants.suspend', 'تعليق') : t('tenants.activate', 'تفعيل')}
                         </button>
                         <button onClick={() => handleOpenDialog(tenant)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors px-2 py-1">{t('tenants.edit', 'تعديل')}</button>
-                        <button onClick={() => setConfirmDelete(tenant.id)} className="text-sm text-red-600 hover:text-red-800 transition-colors px-2 py-1">{t('tenants.delete', 'حذف')}</button>
                       </div>
                     </td>
                   </tr>
@@ -220,20 +203,6 @@ export default function Tenants() {
           </>
         )}
       </div>
-
-      {confirmDelete !== null && (
-        <AdminDialog
-          title={t('tenants.confirmDeleteTitle', 'تأكيد الحذف')}
-          description={t('tenants.confirmDeleteMessage', 'هل أنت متأكد من حذف هذا التاجر؟ لا يمكن التراجع عن هذا الإجراء.')}
-          maxWidthClassName="max-w-sm"
-          onClose={() => setConfirmDelete(null)}
-        >
-          <div className="flex gap-3 pt-4 border-t">
-            <button onClick={confirmDeleteTenant} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">{t('tenants.delete', 'حذف')}</button>
-            <button onClick={() => setConfirmDelete(null)} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">{t('tenants.cancel', 'إلغاء')}</button>
-          </div>
-        </AdminDialog>
-      )}
 
       {statusDialog && (
         <AdminDialog

@@ -56,6 +56,7 @@
 - [ ] Dangerous admin financial actions require an explicit confirmation modal before calling the API
 - [ ] Admin bank-account verify/reject requires a review reason and the API validates that reason before changing status
 - [ ] Admin tenant/store status changes require an explicit reason in UI and API validation; normal edit forms must not bypass the status reason gate
+- [ ] Direct tenant/store deletion stays hidden from the admin UI during beta, and `DELETE /admin/tenants/:id` / `DELETE /admin/stores/:id` return `FORBIDDEN_BETA_POLICY` instead of hard-deleting rows
 - [ ] Marketplace product rejection/suspension requires a moderation note in UI and API validation
 - [ ] Admin Marketplace products and unified orders preserve server pagination metadata (`page`, `limit`, `total`, `totalPages`) through the API client and drive `TablePager` from server totals, not hardcoded 200-row slices or local row counts
 - [ ] Admin sidebar hides server-gated pages when the admin JWT lacks the matching permission
@@ -90,7 +91,7 @@
 - [ ] Storefront buyer-facing raw controls expose accessible names and state semantics: carousel dots use `aria-current`, disclosure buttons use `aria-expanded`/`aria-controls`, product choices use `aria-pressed`, and spinner-only loading buttons keep an `aria-label`/`aria-busy`
 - [ ] Merchant product-form media/options controls stay keyboard/screen-reader addressable: image upload is a named button, image/variant remove icon buttons have Arabic labels, and tag/category chips expose `aria-pressed`
 - [ ] Merchant theme-editor controls expose Arabic accessible names and state semantics: preview device/zoom choices use `aria-pressed`, section disclosure controls use `aria-expanded`/`aria-controls`, row Enter/Space handling ignores nested buttons, image/brand remove actions are named, and link/source/category chips expose `aria-pressed`
-- [ ] Non-financial admin dangerous-action dialogs use `AdminDialog` for dialog semantics: marketplace reject/suspend, store status/delete, and tenant status/delete expose `role="dialog"`, `aria-modal`, title linkage, and description linkage
+- [ ] Non-financial admin dangerous-action dialogs use `AdminDialog` for dialog semantics: marketplace reject/suspend plus store/tenant status changes expose `role="dialog"`, `aria-modal`, title linkage, and description linkage
 - [ ] Do not extend TASK-0122 into bank accounts, settlement/manual payout pages, accountant inbox/detail pages, admin-dashboard financial API-client actions, wallet-core, admin finance API routes, upload/PDF allowlist, or IBAN reveal while the financial Batch 4 stream is active
 - [ ] When admin finance route logic moves into services, source-grep safety tests must read the service files for column-selection/audit guarantees while routes keep only auth/wiring responsibilities
 - [ ] Product/media uploads stay image-only by default; PDF is allowed only through explicit financial-document upload paths that pass an opt-in option

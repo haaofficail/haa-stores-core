@@ -26,7 +26,6 @@ export default function Stores() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', domain: '', tenantId: '', isActive: 'true' });
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [statusDialog, setStatusDialog] = useState<StoreStatusDialog | null>(null);
   const [statusReason, setStatusReason] = useState('');
 
@@ -51,16 +50,6 @@ export default function Stores() {
       invalidateStores();
     },
     onError: (err: any) => toast.error(err?.message || t('stores.saveError', 'حدث خطأ أثناء الحفظ')),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => adminApi.deleteStore(id),
-    onSuccess: () => {
-      toast.success(t('stores.deleted', 'تم حذف المتجر بنجاح'));
-      invalidateStores();
-    },
-    onError: (err: any) => toast.error(err?.message || t('stores.deleteError', 'فشل حذف المتجر')),
-    onSettled: () => setConfirmDeleteId(null),
   });
 
   const statusMutation = useMutation({
@@ -98,11 +87,6 @@ export default function Stores() {
       return;
     }
     saveMutation.mutate();
-  };
-
-  const deleteStore = () => {
-    if (confirmDeleteId === null) return;
-    deleteMutation.mutate(confirmDeleteId);
   };
 
   const openStatusDialog = (store: any) => {
@@ -196,7 +180,6 @@ export default function Stores() {
                           {s.isActive ? t('stores.deactivate', 'تعطيل') : t('stores.activate', 'تفعيل')}
                         </button>
                         <button onClick={() => handleOpenDialog(s)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors px-2 py-1">{t('stores.edit', 'تعديل')}</button>
-                        <button onClick={() => setConfirmDeleteId(s.id)} className="text-sm text-red-600 hover:text-red-800 transition-colors px-2 py-1">{t('stores.delete', 'حذف')}</button>
                       </div>
                     </td>
                   </tr>
@@ -215,20 +198,6 @@ export default function Stores() {
           </>
         )}
       </div>
-
-      {confirmDeleteId !== null && (
-        <AdminDialog
-          title={t('stores.confirmDeleteTitle', 'تأكيد الحذف')}
-          description={t('stores.confirmDeleteMessage', 'هل أنت متأكد من حذف هذا المتجر؟ لا يمكن التراجع عن هذا الإجراء.')}
-          maxWidthClassName="max-w-sm"
-          onClose={() => setConfirmDeleteId(null)}
-        >
-          <div className="flex gap-3 pt-4 border-t">
-            <button onClick={deleteStore} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">{t('stores.delete', 'حذف')}</button>
-            <button onClick={() => setConfirmDeleteId(null)} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">{t('stores.cancel', 'إلغاء')}</button>
-          </div>
-        </AdminDialog>
-      )}
 
       {statusDialog && (
         <AdminDialog

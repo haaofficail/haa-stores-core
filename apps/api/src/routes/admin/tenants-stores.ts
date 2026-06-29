@@ -184,12 +184,18 @@ export const storesRoutes = {
   },
 
   remove: async (c: any) => {
-    const id = Number(c.req.param('id'));
-    const db = createDbClient();
-    const [store] = await db.delete(s.stores).where(eq(s.stores.id, id)).returning({ id: s.stores.id });
-    if (!store) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Store not found' } }, 404);
-    invalidateStoreTenantCache(id);
-    return c.json({ success: true, data: { deleted: true, id: store.id } });
+    // DECISION-OS-014 beta hardening:
+    // No direct store deletion as an admin feature in beta. No hard delete.
+    // Store closure must route through status deactivation plus
+    // compliance/support review until a soft-delete/archive workflow exists.
+    const _id = Number(c.req.param('id'));
+    return c.json({
+      success: false,
+      error: {
+        code: 'FORBIDDEN_BETA_POLICY',
+        message: 'Direct store deletion is disabled in beta (DECISION-OS-014). Use deactivate (PATCH /admin/stores/:id/status) or open a compliance/support ticket.',
+      },
+    }, 403);
   },
 
   status: async (c: any) => {

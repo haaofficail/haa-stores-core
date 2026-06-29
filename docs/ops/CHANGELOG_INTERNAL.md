@@ -1,5 +1,15 @@
 # Internal Changelog
 
+## 2026-06-30 — Admin Beta Direct-delete Hardening (TASK-0130)
+
+- Disabled direct admin store deletion in beta: `DELETE /admin/stores/:id` now returns `FORBIDDEN_BETA_POLICY` and does not reach `db.delete(...)`.
+- Removed tenant and store delete affordances from the admin dashboard tables so beta admins use reason-gated suspend/deactivate flows instead of a known-rejected delete button.
+- Kept tenant/store status changes intact through `AdminDialog`, explicit reason textareas, API-side reason validation, and audit payload coverage.
+- Extended deletion policy and dangerous-action regression tests to guard direct tenant/store delete from returning to the beta UI/API surface.
+- Aligned Agent OS issue register and regression checklist with DECISION-OS-014's "No hard delete anywhere" beta rule.
+- Verification so far: `pnpm ops:monitor` exited 0 with no failures/tasks/incidents, focused admin deletion/reason/dialog tests passed 3 files / 13 tests, API/admin typechecks passed, admin build passed, skills check passed 43/43, diff check was clean, and preflight passed. Staging publication remains pending in TASK-0130 until remote verification completes.
+- Safety boundary: no production deploy/action, no DB migration, no secrets, and no live payment/shipping-provider calls.
+
 ## 2026-06-30 — Admin TOTP Staging Runtime Activation (TASK-0129)
 
 - Activated the remaining admin TOTP runtime prerequisites on staging only: `0090_admin_totp` migration applied and `ADMIN_TOTP_ENCRYPTION_KEY` set through official GitHub Actions workflows.

@@ -4,6 +4,37 @@
 
 ---
 
+### TASK-0130: Admin beta direct-delete hardening round
+
+- **Type:** Security / UX-UI Polish / Backend API / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** In Progress; local implementation verified, publication pending
+- **Created:** 2026-06-30
+- **Updated:** 2026-06-30
+- **Branch:** `codex/admin-improvement-round`
+- **PR:** pending
+- **Original Request:** "خذ جوله تحسين واكمال النواقص والثغرات والتحسين للادمن" followed by "كمل الين توقف وتسلم العمل منشور".
+- **Expanded Requirement:** Run one focused admin improvement round, choose the highest safe admin gap, close it with code/tests/docs, then publish through the approved GitHub/staging path without touching production.
+- **Scope:** Admin tenants/stores dangerous delete surface: API handler, admin dashboard tenant/store list actions, focused deletion/reason/dialog regression tests, and ops/Agent OS documentation.
+- **Out of Scope:** Production deploy/action, production `db:migrate`, live provider calls, new DB soft-delete schema, financial admin flows, broad admin redesign, dependency installs, secrets, and direct edits to protected branches.
+- **Skills Used:** `acceptance-criteria-gate`, `priority-triage-gate`, `premium-product-quality-council`, `design-ux-excellence-gate`, `regression-safety-gate`, `agent-permission-boundary`, `environment-safety-gate`, `test-strategy-gate`, `branch-pr-hygiene-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `github:yeet` for the publish flow and `haa-stores-ci-release-checks` for CI/staging verification.
+- **Acceptance Criteria:**
+  - [x] Direct tenant delete is no longer exposed as a beta admin UI action.
+  - [x] Direct store delete is no longer exposed as a beta admin UI action.
+  - [x] `DELETE /admin/stores/:id` returns `FORBIDDEN_BETA_POLICY` before any `db.delete(...)` path.
+  - [x] Tenant/store status changes remain available through reason-gated `AdminDialog` flows and audited API payloads.
+  - [x] Focused regression tests prevent reintroducing direct beta tenant/store delete.
+  - [x] Ops docs, Agent OS issue register, and final skill compliance report are updated.
+  - [ ] PR is pushed, merged/published through the approved staging path, and remote checks/deploy are verified.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; `pnpm vitest run tests/deletion-policy-beta.test.ts tests/admin-dangerous-action-reasons.test.ts tests/admin-dangerous-dialog-accessibility.test.ts`; `pnpm --filter @haa/api typecheck`; `pnpm --filter @haa/admin-dashboard typecheck`; `pnpm --filter @haa/admin-dashboard build`; `pnpm check:skills`; `git diff --check`; GitHub PR checks; staging deploy/smoke verification if merged.
+- **Files Changed:** `apps/api/src/routes/admin/tenants-stores.ts`, `apps/admin-dashboard/src/pages/Tenants.tsx`, `apps/admin-dashboard/src/pages/Stores.tsx`, `tests/deletion-policy-beta.test.ts`, `tests/admin-dangerous-action-reasons.test.ts`, `tests/admin-dangerous-dialog-accessibility.test.ts`, `docs/agent-os/OWNER_DECISIONS.md`, `docs/agent-os/ISSUE_REGISTER.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0130.md`.
+- **Test Results:** Local checks passed: `pnpm ops:monitor` exited 0 with no failures, no tasks, and no incidents (only expected local dev-server warnings); focused admin deletion/reason/dialog tests passed 3 files / 13 tests; `pnpm --filter @haa/api typecheck` passed; `pnpm --filter @haa/admin-dashboard typecheck` passed; `pnpm --filter @haa/admin-dashboard build` passed; `pnpm check:skills` passed 43/43; `git diff --check` clean; `pnpm preflight` passed. Remote PR/staging publication still pending in this task entry.
+- **Root Cause:** The tenant delete API had already been beta-blocked, but the admin UI still presented tenant delete as a usable action. Store delete remained worse: the admin UI exposed delete and `storesRoutes.remove` still performed a hard `db.delete(...)`, contrary to DECISION-OS-014's "No hard delete anywhere" beta policy.
+- **Verdict:** In progress until CI/staging publication is verified. No production action, DB migration, secret handling, or live payment/shipping provider call occurred.
+- **Related Issues:** ISSUE-0067, F-QA-B-001, F-QA-B-004.
+
+---
+
 ### TASK-0129: Activate admin TOTP runtime on staging
 
 - **Type:** Security / CI/Deploy / Data/DB / Documentation
