@@ -3,9 +3,9 @@
 // Allows enabling/disabling payment gateways per store via
 // merchantPaymentProviderSettings table.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../lib/api';
 import { queryKeys } from '../lib/queryClient';
 import { StoreSelectorPanel } from '../components/ui/StoreSelectorPanel';
@@ -34,6 +34,12 @@ type RowState = {
   mode: 'test' | 'live';
   status: string;
   saving: boolean;
+};
+
+type SavePaymentSettingsVars = {
+  providerCode: ProviderCode;
+  storeId: number;
+  row: RowState;
 };
 
 function createInitialRows(): Record<ProviderCode, RowState> {
@@ -66,6 +72,19 @@ function rowsFromSettings(prev: Record<ProviderCode, RowState>, settings: Provid
   return next;
 }
 
+function replaceProviderSettingInCache(current: unknown, providerCode: ProviderCode, updated: ProviderSetting) {
+  const settings = normalizeProviderSettings(current);
+  const next = settings.some(setting => setting.providerCode === providerCode)
+    ? settings.map(setting => setting.providerCode === providerCode ? updated : setting)
+    : [...settings, updated];
+
+  if (current && typeof current === 'object' && Array.isArray((current as { data?: unknown }).data)) {
+    return { ...current, data: next };
+  }
+
+  return next;
+}
+
 function statusBadge(status: string) {
   const map: Record<string, string> = {
     active: 'bg-green-100 text-green-800',
@@ -85,12 +104,15 @@ function statusBadge(status: string) {
 }
 
 export default function StorePaymentSettings() {
+  const queryClient = useQueryClient();
   const [params, setParams] = useSearchParams();
   const initialStoreId = params.get('storeId') ? Number(params.get('storeId')) : null;
 
   const [stores, setStores] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedId, setSelectedId] = useState<number | null>(initialStoreId);
   const [rows, setRows] = useState<Record<ProviderCode, RowState>>(createInitialRows);
+  const seededStoreIdRef = useRef<number | null>(null);
+  const settingsQueryKey = [...queryKeys.storePaymentSettings, selectedId ?? null];
 
   const selectStore = (storeId: number) => {
     setSelectedId(storeId);
@@ -98,7 +120,7 @@ export default function StorePaymentSettings() {
   };
 
   const { data: settingsData, isPending: loading, isError: error, refetch } = useQuery({
-    queryKey: [...queryKeys.storePaymentSettings, selectedId ?? null],
+    queryKey: settingsQueryKey,
     queryFn: () => adminApi.getStorePaymentSettings(selectedId as number),
     enabled: !!selectedId,
   });
@@ -107,12 +129,14 @@ export default function StorePaymentSettings() {
     adminApi.getStores().then(setStores).catch(() => toast.error('فشل تحميل المتاجر'));
   }, []);
 
-  // Seed the editable form rows whenever fresh settings arrive from the query.
+  // Seed editable rows once per selected store. Mutations update the query cache
+  // separately, but local unsaved edits in sibling provider rows stay local.
   useEffect(() => {
-    if (settingsData === undefined) return;
+    if (settingsData === undefined || selectedId == null || seededStoreIdRef.current === selectedId) return;
     const settings = normalizeProviderSettings(settingsData);
     setRows(prev => rowsFromSettings(prev, settings));
-  }, [settingsData]);
+    seededStoreIdRef.current = selectedId;
+  }, [selectedId, settingsData]);
 
   // Surface load failures via toast (parity with the previous catch handler).
   useEffect(() => {
@@ -120,9 +144,8 @@ export default function StorePaymentSettings() {
   }, [error]);
 
   const saveMutation = useMutation({
-    mutationFn: (providerCode: ProviderCode) => {
-      const row = rows[providerCode];
-      return adminApi.upsertStorePaymentSettings(selectedId as number, {
+    mutationFn: ({ storeId, row, providerCode }: SavePaymentSettingsVars) => {
+      return adminApi.upsertStorePaymentSettings(storeId, {
         providerCode,
         enabled: row.enabled,
         mode: row.mode,
@@ -130,12 +153,14 @@ export default function StorePaymentSettings() {
         supportedPaymentMethod: 'card',
       });
     },
-    onSuccess: (result: any, providerCode) => {
-      const updated = result?.data ?? result;
-      // Patch ONLY the saved provider's row from the server response. We do NOT
-      // refetch/invalidate here: the seeding effect rebuilds every row from the
-      // server, which would silently discard unsaved edits the admin staged in
-      // other provider rows. Rows are seeded once on load and locally owned.
+    onSuccess: (result: any, { providerCode, storeId }) => {
+      const updated = (result?.data ?? result) as ProviderSetting;
+      queryClient.setQueryData([...queryKeys.storePaymentSettings, storeId], (current: unknown) =>
+        replaceProviderSettingInCache(current, providerCode, updated),
+      );
+      // Patch ONLY the saved provider's row from the server response. The cache
+      // is also updated so remounts inside the query stale window see the saved
+      // value without refetching or discarding unsaved edits in other rows.
       setRows(prev => ({
         ...prev,
         [providerCode]: {
@@ -147,7 +172,7 @@ export default function StorePaymentSettings() {
       }));
       toast.success(`تم حفظ إعدادات ${PROVIDER_LABELS[providerCode]}`);
     },
-    onError: (e: any, providerCode) => {
+    onError: (e: any, { providerCode }) => {
       toast.error(`فشل الحفظ: ${e?.message ?? 'خطأ غير معروف'}`);
       setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], saving: false } }));
     },
@@ -155,8 +180,9 @@ export default function StorePaymentSettings() {
 
   const handleSave = (providerCode: ProviderCode) => {
     if (selectedId == null) return;
+    const row = rows[providerCode];
     setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], saving: true } }));
-    saveMutation.mutate(providerCode);
+    saveMutation.mutate({ providerCode, storeId: selectedId, row });
   };
 
   return (

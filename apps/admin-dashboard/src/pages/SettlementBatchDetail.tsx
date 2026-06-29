@@ -167,6 +167,7 @@ export default function SettlementBatchDetailPage() {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: [...queryKeys.settlementBatchDetail, batchId, manualMode] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.settlementBatches });
     if (payoutId) {
       queryClient.invalidateQueries({ queryKey: ['admin', 'settlementBatchPayout', payoutId] });
     }
