@@ -2,14 +2,16 @@ import { useState, useEffect, useCallback, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ShoppingBag, AlertTriangle, Users, DollarSign, Clock, ChevronDown, ChevronLeft } from 'lucide-react';
+import { ShoppingBag, AlertTriangle, Users, DollarSign, Clock, Search, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ChevronsUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { abandonedCartsApi, ApiClientError } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
 import { PermissionGate } from '@/lib/permissions';
+import { useTableControls, type SortState } from '@/lib/useTableControls';
 
 // Each enriched cart item is { item: cartItems, product: products } as
 // returned by AbandonedCartsService.list() (innerJoin on products).
@@ -29,6 +31,7 @@ interface AbandonedCartRow {
   total?: number | string;
   totalAmount?: number | string;
   lastActive?: string | null;
+  updatedAt?: string | null;
   abandonedAt?: string | null;
   expiresAt?: string | null;
 }
@@ -39,6 +42,26 @@ const HOURS_OPTIONS = [
   { value: 72, labelKey: 'abandonedCarts.filter.hours_72' },
   { value: 168, labelKey: 'abandonedCarts.filter.hours_168' },
 ];
+
+/** Sortable table header cell — matches the merchant table header styling and
+ * adds a click target with an aria-sort state and a directional chevron. */
+function SortHead({ sortKey, label, sort, onToggle }: { sortKey: string; label: string; sort: SortState; onToggle: (key: string) => void }) {
+  const active = sort.key === sortKey;
+  const ariaSort: 'ascending' | 'descending' | 'none' = active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none';
+  const ChevronIcon = active ? (sort.dir === 'asc' ? ChevronUp : ChevronDown) : ChevronsUpDown;
+  return (
+    <TableHead aria-sort={ariaSort} className="h-10 text-sm text-neutral-500 font-medium">
+      <button
+        type="button"
+        onClick={() => onToggle(sortKey)}
+        className="inline-flex items-center gap-1 select-none hover:text-neutral-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 rounded"
+      >
+        <span>{label}</span>
+        <ChevronIcon className={`h-3 w-3 ${active ? 'text-primary-500' : 'text-neutral-300'}`} />
+      </button>
+    </TableHead>
+  );
+}
 
 export default function AbandonedCarts() {
   const { t } = useTranslation();
@@ -83,6 +106,28 @@ export default function AbandonedCarts() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Client-side search + column sort + pagination over the loaded carts.
+  // Composite columns (customer, items, total) resolve via getValue so sorting
+  // matches what each cell displays.
+  // Note: customerPhone is intentionally excluded from search — it is
+  // permission-masked in the UI, so allowing search on it would leak the raw
+  // value to staff without `orders:view_sensitive`.
+  const controls = useTableControls<AbandonedCartRow>({
+    rows: carts,
+    searchFields: ['customerName', 'customerEmail'],
+    initialSort: { key: 'updatedAt', dir: 'desc' },
+    storageKey: 'abandonedCarts',
+    getValue: (cart, key) => {
+      if (key === 'customer') return cart.customerName || cart.customerEmail || '';
+      if (key === 'items') return cart.itemCount ?? cart.items?.length ?? 0;
+      if (key === 'total') return Number(cart.total ?? cart.totalAmount ?? 0);
+      // The list endpoint returns checkout-session rows whose activity
+      // timestamp is `updatedAt`; `lastActive` is a defensive alias.
+      if (key === 'updatedAt') return cart.lastActive ?? cart.updatedAt ?? null;
+      return (cart as unknown as Record<string, unknown>)[key];
+    },
+  });
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="flex items-center justify-between">
@@ -124,6 +169,19 @@ export default function AbandonedCarts() {
         </div>
       )}
 
+      {!loading && !fetchError && carts.length > 0 && (
+        <div className="relative max-w-sm">
+          <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-neutral-400" />
+          <Input
+            type="search"
+            value={controls.query}
+            onChange={(e) => controls.setQuery(e.target.value)}
+            placeholder={t('abandonedCarts.search', 'بحث باسم العميل أو البريد...')}
+            className="ps-9 h-9 text-sm"
+          />
+        </div>
+      )}
+
       <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-card overflow-hidden">
         {loading ? (
           <div className="p-6 space-y-3">
@@ -144,20 +202,27 @@ export default function AbandonedCarts() {
             </div>
             <p className="text-sm text-neutral-500">{t('abandonedCarts.noCarts')}</p>
           </div>
+        ) : controls.filteredCount === 0 ? (
+          <div className="p-12 text-center">
+            <div className="inline-flex p-4 rounded-2xl bg-neutral-100 mb-4">
+              <Search className="h-8 w-8 text-neutral-400" />
+            </div>
+            <p className="text-sm text-neutral-500">{t('abandonedCarts.noResults', 'لا توجد نتائج مطابقة')}</p>
+          </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow className="border-neutral-100 hover:bg-transparent">
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('abandonedCarts.table.customer')}</TableHead>
+                <SortHead sortKey="customer" label={t('abandonedCarts.table.customer')} sort={controls.sort} onToggle={controls.toggleSort} />
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('abandonedCarts.table.phone')}</TableHead>
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('abandonedCarts.table.items')}</TableHead>
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('abandonedCarts.table.total')}</TableHead>
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('abandonedCarts.table.lastActive')}</TableHead>
-                <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('abandonedCarts.table.expiresAt')}</TableHead>
+                <SortHead sortKey="items" label={t('abandonedCarts.table.items')} sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortHead sortKey="total" label={t('abandonedCarts.table.total')} sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortHead sortKey="updatedAt" label={t('abandonedCarts.table.lastActive')} sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortHead sortKey="expiresAt" label={t('abandonedCarts.table.expiresAt')} sort={controls.sort} onToggle={controls.toggleSort} />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {carts.map((cart) => {
+              {controls.rows.map((cart) => {
                 const id = String(cart.id);
                 const items = cart.items ?? [];
                 const isOpen = expanded.has(id);
@@ -192,7 +257,10 @@ export default function AbandonedCarts() {
                   </TableCell>
                   <TableCell className="text-sm font-semibold text-neutral-900 p-3 font-mono">{formatCurrency(cart.total || cart.totalAmount || 0)} {t('common.sar')}</TableCell>
                   <TableCell className="text-sm text-neutral-400 p-3">
-                    {cart.lastActive ? new Date(cart.lastActive).toLocaleString('ar-SA', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) : '-'}
+                    {(() => {
+                      const ts = cart.lastActive ?? cart.updatedAt;
+                      return ts ? new Date(ts).toLocaleString('ar-SA', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) : '-';
+                    })()}
                   </TableCell>
                   <TableCell className="text-sm text-neutral-400 p-3">
                     {cart.expiresAt ? new Date(cart.expiresAt).toLocaleDateString('ar-SA') : '-'}
@@ -241,6 +309,34 @@ export default function AbandonedCarts() {
               })}
             </TableBody>
           </Table>
+        )}
+        {!loading && !fetchError && controls.totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-neutral-100 px-4 py-4">
+            <p className="text-sm text-neutral-500">
+              {t('abandonedCarts.pager.showing', 'عرض')} {controls.startIndex}–{controls.endIndex} {t('abandonedCarts.pager.of', 'من')} {controls.filteredCount}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => controls.setPage((p) => Math.max(1, p - 1))}
+                disabled={controls.page <= 1}
+                aria-label={t('abandonedCarts.pager.prev', 'الصفحة السابقة')}
+                className="h-11 w-11 inline-flex items-center justify-center rounded-xl hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <span className="text-sm font-medium text-neutral-700">{controls.page} / {controls.totalPages}</span>
+              <button
+                type="button"
+                onClick={() => controls.setPage((p) => Math.min(controls.totalPages, p + 1))}
+                disabled={controls.page >= controls.totalPages}
+                aria-label={t('abandonedCarts.pager.next', 'الصفحة التالية')}
+                className="h-11 w-11 inline-flex items-center justify-center rounded-xl hover:bg-neutral-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-400"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
