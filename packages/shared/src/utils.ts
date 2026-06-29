@@ -69,11 +69,11 @@ function isPartialMaskKey(key: string): boolean {
   return PARTIAL_MASK_KEY_PATTERN.test(key);
 }
 
-export function maskObject(obj: any): any {
+export function maskObject(obj: unknown): unknown {
   if (!obj || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(maskObject);
 
-  const masked: Record<string, any> = {};
+  const masked: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (EMAIL_KEY_PATTERN.test(key)) {
       if (typeof value === 'string') {

@@ -1,26 +1,46 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Check, TrendingUp } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { SarIcon } from '@/components/ui/SarIcon';
+import { Icon } from '@/components/ui/icon';
 import { luxuryCSSVars, LUXURY_THEME_CLASS } from '../luxuryTokens';
 import LuxuryImageFallback from './LuxuryImageFallback';
 
-function getDisplayName(product: any): string {
+type LuxuryProduct = {
+  id?: number;
+  name?: string;
+  nameAr?: string;
+  title?: string;
+  type?: string;
+  categoryName?: string;
+  category?: { name?: string; nameAr?: string };
+  compareAtPrice?: string | number | null;
+  price: string | number;
+  trackInventory?: boolean;
+  stockQuantity?: number;
+  images?: string[];
+  productImages?: string[];
+  slug: string;
+  salesCount?: number;
+  rating?: number | null;
+  reviewCount?: number | null;
+};
+
+function getDisplayName(product: LuxuryProduct): string {
   return product?.nameAr || product?.name || product?.title || '';
 }
 
-function getProductType(product: any): string {
+function getProductType(product: LuxuryProduct): string {
   return product?.type || product?.categoryName || product?.category?.name || product?.category?.nameAr || '';
 }
 
 export default function LuxuryProductCard({
   product, slug, onAddToCart, compact, showSalesCount, showStockBadge,
 }: {
-  product: any;
+  product: LuxuryProduct;
   slug: string;
-  onAddToCart?: (product: any) => Promise<void>;
+  onAddToCart?: (product: LuxuryProduct) => Promise<void>;
   compact?: boolean;
   showSalesCount?: boolean;
   showStockBadge?: boolean;
@@ -39,8 +59,9 @@ export default function LuxuryProductCard({
     return Math.round((1 - Number(product.price) / Number(product.compareAtPrice!)) * 100);
   }, [product.price, product.compareAtPrice, hasDiscount]);
 
-  const isOutOfStock = !!(product.trackInventory && product.stockQuantity === 0);
-  const isLowStock = !!(product.trackInventory && product.stockQuantity > 0 && product.stockQuantity <= 5);
+  const stockQuantity = product.stockQuantity ?? 0;
+  const isOutOfStock = !!(product.trackInventory && stockQuantity === 0);
+  const isLowStock = !!(product.trackInventory && stockQuantity > 0 && stockQuantity <= 5);
   const images = product?.images || product?.productImages || [];
   const firstImage = Array.isArray(images) ? images[0] : null;
   const hasImage = firstImage && !imgError;
@@ -170,7 +191,7 @@ export default function LuxuryProductCard({
           )}
           {showSalesCount !== false && product.salesCount != null && product.salesCount > 0 && (
             <span className="inline-flex items-center gap-0.5 text-xs font-light leading-none" style={{ color: 'var(--lux-muted, #756B61)' }}>
-              <TrendingUp className="h-3 w-3" />
+              <Icon name="TrendingUp" size="2xs" />
               {t('product.soldCount', 'تم بيع {{count}}', { count: product.salesCount })}
             </span>
           )}
@@ -220,7 +241,7 @@ export default function LuxuryProductCard({
             borderRadius: '3px',
           }}
         >
-          <Check className="h-3 w-3" />
+          <Icon name="Check" size="2xs" />
           {t('cart.addedToCart', 'تمت الإضافة')}
         </span>
       );
@@ -243,7 +264,7 @@ export default function LuxuryProductCard({
           <span aria-hidden="true" className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
         ) : (
           <span className="flex items-center justify-center gap-1.5">
-            <ShoppingCart className="h-3 w-3" />
+            <Icon name="ShoppingCart" size="2xs" />
             {t('product.addToCart', 'أضف للسلة')}
           </span>
         )}

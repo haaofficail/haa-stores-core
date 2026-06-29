@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, CreditCard, Package, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { cartApi, checkoutApi, haaMarketplaceApi, type CheckoutConfirm } from '@/lib/api';
 import { marketplaceCart, type MarketplaceCartItem } from '@/lib/marketplace-cart';
@@ -179,7 +178,7 @@ export default function MarketplaceCheckout() {
       <main id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-surface-2 overflow-x-hidden">
         <StoreContainer className="py-10">
           <StoreCard className="mx-auto max-w-2xl p-6 text-center">
-            <Icon icon={CheckCircle2} size="xl" className="mx-auto text-success" />
+            <Icon name="CheckCircle2" size="xl" className="mx-auto text-success" />
             <h1 className="mt-4 text-2xl font-bold text-text-primary">تم إنشاء طلب سوق هاء</h1>
             <p className="mt-2 text-sm text-text-secondary">رقم الطلب الموحد: <span className="font-bold text-primary-600">{marketplaceOrderNumber}</span></p>
             <StoreAlert variant="info" title="التنفيذ من المتاجر" className="mt-5 text-start">
@@ -223,7 +222,7 @@ export default function MarketplaceCheckout() {
       <StoreContainer className="py-6">
         <div className="mb-5 flex items-center gap-3">
           <Link to="/marketplace/cart" className="flex h-10 w-10 items-center justify-center rounded-[8px] hover:bg-surface-1" aria-label="رجوع">
-            <ArrowLeft className="h-5 w-5" />
+            <Icon name="ArrowLeft" size="md" />
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-text-primary">إتمام طلب سوق هاء</h1>
@@ -267,7 +266,7 @@ export default function MarketplaceCheckout() {
                       paymentMethod === value ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-border bg-surface-1 text-text-secondary hover:bg-surface-2'
                     }`}
                   >
-                    <CreditCard className="mx-auto mb-1 h-4 w-4" />
+                    <Icon name="CreditCard" size="xs" className="mx-auto mb-1" />
                     {label}
                   </button>
                 ))}
@@ -291,7 +290,7 @@ export default function MarketplaceCheckout() {
                   <div className="mt-2 space-y-1">
                     {group.items.map((item) => (
                       <div key={item.product.id} className="flex items-center gap-2 text-xs text-text-secondary">
-                        <Icon icon={Package} size="2xs" />
+                        <Icon name="Package" size="2xs" />
                         <span className="flex-1 truncate">{item.product.name}</span>
                         <span>x{item.quantity}</span>
                       </div>
@@ -307,7 +306,7 @@ export default function MarketplaceCheckout() {
               <span className="text-sm text-text-secondary">الإجمالي قبل الشحن</span>
               <span className="font-bold">{subtotal.toFixed(2)} <SarIcon size="md" /></span>
             </div>
-            <StoreButton onClick={submit} loading={submitting} className="mt-5 w-full" iconStart={<Icon icon={ShoppingBag} size="xs" />}>
+            <StoreButton onClick={submit} loading={submitting} className="mt-5 w-full" iconStart={<Icon name="ShoppingBag" size="xs" />}>
               إنشاء طلبات السوق
             </StoreButton>
           </aside>

@@ -19,7 +19,8 @@ TASK-0122 stop note about `packages/wallet-core/src/settlement-config.ts`
 blocking wallet-core typecheck is no longer current.
 
 The active work is now TASK-0123: integrate and prepare GitHub readiness without
-losing either agent's work. Local verification is green; publish is pending
+losing either agent's work. Local verification is green, and the staged-file
+pre-commit hook debt has been cleaned without `--no-verify`; publish is pending
 intentional commit/push/PR from this branch. The first handoff state was on a stale local branch
 behind its origin by 8 commits; that state is preserved in `stash@{0}` plus
 `/tmp/haa-apple-finance-integration-tracked-2026-06-29.patch` and
@@ -103,8 +104,8 @@ they are explicitly selected for the final integration scope.
 - **Pre-launch smoke:** GO; `pnpm test:smoke` passed 29/29.
 - **Full local smoke:** BLOCKED; `pnpm smoke` failed because `tests/smoke.test.ts` has stale response-shape assumptions and the local DB is missing `orders.preparation_status` from migration `0077_order_preparation_status.sql`.
 - **Current local preflight:** GO; post-financial-handoff `pnpm preflight` passed on 2026-06-29 after full integration repair.
-- **Targeted integration checks:** GO; RBAC/accountant/payout/settlement/TASK-0122 focused suite passed 27 files / 214 tests, focused full-test repair suites passed, full `pnpm test` passed 400 files / 4940 tests, and shared build, wallet-core/API/admin typechecks, admin build, lint, skills, diff checks, and ops monitor passed.
-- **GitHub publish readiness:** READY FOR DRAFT PR; local-only screenshots and storage logs remain excluded, owner-only migrations remain unapplied.
+- **Targeted integration checks:** GO; RBAC/accountant/payout/settlement/TASK-0122 focused suite passed 27 files / 214 tests, focused full-test repair suites passed, full `pnpm test` passed 400 files / 4940 tests, and shared build, wallet-core/API/admin typechecks, admin build, lint, skills, diff checks, and ops monitor passed. The follow-up hook-debt pass also has targeted `eslint --max-warnings 0 --no-warn-ignored` clean on the 16 touched lint-staged files, package typechecks/builds clean for affected API/merchant/storefront/shared/admin surfaces, focused vitest 9 files / 50 tests passed with 1 skipped, full `pnpm test` 400 files / 4940 tests passed again, final `pnpm preflight` passed, `pnpm check:skills` passed, and `git diff --check` clean.
+- **GitHub publish readiness:** READY FOR DRAFT PR after a normal commit; local-only screenshots, `storage/*.ndjson`, and `docs/ops/LATEST_MONITORING_REPORT.md` remain excluded unless explicitly selected, owner-only migrations remain unapplied. Repo-wide `pnpm lint` still exits 0 with 331 pre-existing warnings outside the staged hook-cleanup scope.
 - **Admin settlement handoff:** GO; inherited `SettlementBatches.tsx` syntax blocker fixed and admin build/typecheck verified during TASK-0093.
 - **SonarCloud follow-up:** CLOSED for PR #320/#322 project-owned gates; SonarCloud passed on the relevant closure PRs.
 - **GitHub Test follow-up:** CLOSED for project-owned CI; `main` CI run `28329981652` passed after PR #322 merged.

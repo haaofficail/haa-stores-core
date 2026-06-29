@@ -3,22 +3,28 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Upload, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import type { CategoryItem, HomepageSection, ProductItem, SectionSettings, BrandItem, FaqItem } from './constants';
 
 interface EditorProps {
-  section: any;
+  section: HomepageSection;
   idx: number;
-  homepageSections: any[];
-  updateConfig: (path: string, value: any) => void;
-  categories?: any[];
-  products?: any[];
+  homepageSections: HomepageSection[];
+  updateConfig: (path: string, value: unknown) => void;
+  categories?: CategoryItem[];
+  products?: ProductItem[];
   uploadingBannerImg: string | null;
   setUploadingBannerImg: (v: string | null) => void;
-  storeId: any;
-  uploadFile: any;
+  storeId: number | null | undefined;
+  uploadFile: (storeId: number, file: File) => Promise<{ url: string }>;
   validateImageFile: (file: File) => Promise<string | null>;
 }
 
-export function updateSection(sections: any[], idx: number, patch: Record<string, any>, settingsPatch?: Record<string, any>): any[] {
+export function updateSection(
+  sections: HomepageSection[],
+  idx: number,
+  patch: Partial<HomepageSection>,
+  settingsPatch?: SectionSettings,
+): HomepageSection[] {
   const updated = [...sections];
   if (settingsPatch) {
     updated[idx] = { ...updated[idx], ...patch, settings: { ...updated[idx].settings, ...settingsPatch } };
@@ -73,8 +79,8 @@ export function BannerEditor({ section, idx, homepageSections, updateConfig, cat
           >{{ all: 'الكل', category: 'قسم', product: 'منتج', custom: 'مخصص' }[lt]}</button>
         ))}</div>
       </div>
-      {(settings.linkType || 'all') === 'category' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر القسم</Label><Select value={settings.linkValue || 'all'} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkValue: v === 'all' ? '' : v })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر القسم" /></SelectTrigger><SelectContent><SelectItem value="all">جميع الأقسام</SelectItem>{(categories || []).map((cat: any) => (<SelectItem key={cat.id} value={cat.slug}>{cat.name}</SelectItem>))}</SelectContent></Select></div>}
-      {(settings.linkType || 'all') === 'product' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر المنتج</Label><Select value={(products || []).find((p: any) => p.slug === settings.linkValue) ? settings.linkValue : ''} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkValue: v })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر منتج" /></SelectTrigger><SelectContent>{(products || []).map((p: any) => (<SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>))}</SelectContent></Select></div>}
+      {(settings.linkType || 'all') === 'category' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر القسم</Label><Select value={settings.linkValue || 'all'} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkValue: v === 'all' ? '' : v })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر القسم" /></SelectTrigger><SelectContent><SelectItem value="all">جميع الأقسام</SelectItem>{(categories || []).map((cat) => (<SelectItem key={cat.id} value={cat.slug}>{cat.name}</SelectItem>))}</SelectContent></Select></div>}
+      {(settings.linkType || 'all') === 'product' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر المنتج</Label><Select value={(products || []).find((p) => p.slug === settings.linkValue) ? settings.linkValue : ''} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkValue: v })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر منتج" /></SelectTrigger><SelectContent>{(products || []).map((p) => (<SelectItem key={p.id} value={p.slug}>{p.name}</SelectItem>))}</SelectContent></Select></div>}
       {(settings.linkType || 'all') === 'custom' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">الرابط المخصص</Label><Input value={settings.linkValue || ''} onChange={(e) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { linkValue: e.target.value })); }} className="w-full" dir="ltr" placeholder="https://..." /></div>}
       <div className="grid grid-cols-2 gap-3">
         <div><Label className="text-xs text-neutral-600 mb-1.5 block">ارتفاع البنر (بكسل)</Label><Input type="number" value={settings.height || 400} onChange={(e) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { height: Number(e.target.value) })); }} className="w-full" /></div>
@@ -109,14 +115,14 @@ export function ProductEditor({ section, idx, homepageSections, updateConfig, ca
           >{{ manual: 'يدوي', category: 'تصنيف', newest: 'الأحدث', bestSellers: 'الأكثر مبيعاً', discounted: 'مخفضة', featured: 'مميزة' }[src]}</button>
         ))}</div>
       </div>
-      {(settings.source || section.type) === 'category' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر التصنيف</Label><Select value={String(settings.categoryId || '')} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { categoryId: v ? Number(v) : null })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر التصنيف" /></SelectTrigger><SelectContent>{(categories || []).map((cat: any) => (<SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>))}</SelectContent></Select></div>}
+      {(settings.source || section.type) === 'category' && <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختر التصنيف</Label><Select value={String(settings.categoryId || '')} onValueChange={(v) => { updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { categoryId: v ? Number(v) : null })); }}><SelectTrigger className="w-full"><SelectValue placeholder="اختر التصنيف" /></SelectTrigger><SelectContent>{(categories || []).map((cat) => (<SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>))}</SelectContent></Select></div>}
       {(settings.source || section.type) === 'manual' && (
         <div>
           <Label className="text-xs text-neutral-600 mb-1.5 block">المنتجات المختارة</Label>
           <div className="max-h-44 overflow-y-auto rounded-xl border border-neutral-200 bg-white divide-y divide-neutral-100">
             {(products || []).length === 0 ? (
               <p className="px-3 py-3 text-xs text-neutral-400">لا توجد منتجات متاحة للاختيار</p>
-            ) : (products || []).map((product: any) => (
+            ) : (products || []).map((product) => (
               <label key={product.id} className="flex items-center gap-2 px-3 py-2 text-xs text-neutral-700 hover:bg-neutral-50 cursor-pointer">
                 <input
                   type="checkbox"
@@ -177,7 +183,7 @@ export function CategoriesEditor({ section, idx, homepageSections, updateConfig,
       </div>
       <div><Label className="text-xs text-neutral-600 mb-1.5 block">اختيار تصنيفات محددة (اختياري — اترك فارغاً لعرض الكل)</Label>
         <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 border border-neutral-200 rounded-xl">
-          {(categories || []).map((cat: any) => {
+          {(categories || []).map((cat) => {
             const isSelected = selectedIds.includes(cat.id);
             return (
               <button key={cat.id} type="button" onClick={() => {
@@ -225,7 +231,7 @@ export function ImageTextEditor({ section, idx, homepageSections, updateConfig, 
 
 export function BrandsEditor({ section, idx, homepageSections, updateConfig, uploadingBannerImg, setUploadingBannerImg, storeId, uploadFile, validateImageFile }: EditorProps) {
   const settings = section.settings || {};
-  const items: { imageUrl: string; linkUrl?: string; name?: string }[] = settings.items || [];
+  const items = (settings.items || []) as BrandItem[];
   const updateItems = (next: typeof items) => {
     updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { items: next }));
   };
@@ -258,7 +264,7 @@ export function BrandsEditor({ section, idx, homepageSections, updateConfig, upl
 
 export function FAQEditor({ section, idx, homepageSections, updateConfig }: EditorProps) {
   const settings = section.settings || {};
-  const items: { question: string; answer: string }[] = settings.items || [];
+  const items = (settings.items || []) as FaqItem[];
   const updateItems = (next: typeof items) => {
     updateConfig('homepage.sections', updateSection(homepageSections, idx, {}, { items: next }));
   };

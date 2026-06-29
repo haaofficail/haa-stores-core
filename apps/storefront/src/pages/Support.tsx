@@ -1,8 +1,8 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { ArrowRight, Send, CheckCircle, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { supportApi, type CreatedTicket } from '@/lib/api';
+import { Icon } from '@/components/ui/icon';
 
 const FOCUS_VISIBLE = 'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--theme-primary,var(--brand-primary))]';
 
@@ -60,8 +60,8 @@ export default function Support() {
       const result = await supportApi.createTicket(slug, { name, email, phone, subject, message });
       localStorage.setItem(`support-ticket-token:${slug}:${result.id}`, result.accessToken);
       setTicket(result);
-    } catch (err: any) {
-      setError(err.message || t('common.error'));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setSubmitting(false);
     }
@@ -81,7 +81,7 @@ export default function Support() {
     return (
       <div className="container-store py-8 sm:py-12 max-w-2xl mx-auto text-center">
         <div className="w-16 h-16 rounded-2xl bg-success-soft flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="h-8 w-8 text-success" />
+          <Icon name="CheckCircle" size="lg" className="text-success" />
         </div>
         <h1 className="text-2xl font-bold text-text-primary mb-3">
           {t('support.submitted', 'تم إرسال طلب الدعم')}
@@ -109,7 +109,7 @@ export default function Support() {
             {t('support.viewTicket', 'متابعة الطلب')}
           </Link>
           <Link to={`/s/${slug}`} className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-primary-600 transition-colors">
-            <ArrowRight className="h-4 w-4" />
+            <Icon name="ArrowRight" size="xs" />
             {t('store.home')}
           </Link>
         </div>
@@ -120,7 +120,7 @@ export default function Support() {
   return (
     <div className="container-store py-8 sm:py-12 max-w-2xl mx-auto overflow-x-hidden">
       <Link to={`/s/${slug}`} className={`inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-primary-600 transition-colors mb-8 ${FOCUS_VISIBLE}`}>
-        <ArrowRight className="h-4 w-4" />
+        <Icon name="ArrowRight" size="xs" />
         {t('store.home')}
       </Link>
 
@@ -134,7 +134,7 @@ export default function Support() {
       <section className="mb-6 rounded-2xl border border-border-primary bg-surface-1 p-4 sm:p-5">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-info-soft text-info-strong">
-            <ShieldCheck className="h-5 w-5" />
+            <Icon name="ShieldCheck" size="md" />
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="text-base font-semibold text-text-primary">
@@ -234,7 +234,7 @@ export default function Support() {
           type="submit" disabled={submitting}
           className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors ${FOCUS_VISIBLE}`}
         >
-          <Send className="h-4 w-4" />
+          <Icon name="Mail" size="xs" />
           {submitting ? t('support.sending') : t('support.send')}
         </button>
       </form>

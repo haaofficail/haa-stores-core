@@ -16,7 +16,6 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { ShieldCheck, XCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { checkoutApi } from '@/lib/api';
 import { toast } from 'sonner';
@@ -57,8 +56,8 @@ export default function Fake3DSChallengePage() {
         toast.error('3DS verification failed — payment cancelled');
         navigate(`/s/${slug}`);
       }
-    } catch (err: any) {
-      toast.error(err?.message || '3DS verification error');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : '3DS verification error');
       setSubmitting(false);
     }
   };
@@ -77,7 +76,7 @@ export default function Fake3DSChallengePage() {
         </div>
         {/* Bank-style header */}
         <div className="bg-gradient-to-r from-primary-700 to-primary-900 text-white p-6 text-center">
-          <Icon icon={ShieldCheck} size="xl" className="mx-auto mb-3 text-primary-200" />
+          <Icon name="ShieldCheck" size="xl" className="mx-auto mb-3 text-primary-200" />
           <h1 className="text-xl font-bold mb-1">3-D Secure Verification</h1>
           <p className="text-xs text-primary-200 font-mono uppercase tracking-wider">{DEV_NOTICE}</p>
         </div>
@@ -130,12 +129,12 @@ export default function Fake3DSChallengePage() {
             >
               {submitting ? (
                 <>
-                  <Icon icon={Loader2} size="md" className="animate-spin" />
+                  <Icon name="Loader2" size="md" className="animate-spin" />
                   جاري التأكيد… / Confirming…
                 </>
               ) : (
                 <>
-                  <Icon icon={CheckCircle2} size="md" />
+                  <Icon name="CheckCircle2" size="md" />
                   نجاح — إتمام الدفع / Succeed — Complete Payment
                 </>
               )}
@@ -146,7 +145,7 @@ export default function Fake3DSChallengePage() {
               className="w-full flex items-center justify-center gap-2 bg-white hover:bg-danger-soft disabled:bg-slate-100 text-danger font-semibold py-3 rounded-xl border-2 border-danger hover:border-danger transition-colors"
               data-testid="fake-3ds-fail"
             >
-              <Icon icon={XCircle} size="md" />
+              <Icon name="XCircle" size="md" />
               إلغاء — فشل التحقق / Cancel — Verification Failed
             </button>
           </div>

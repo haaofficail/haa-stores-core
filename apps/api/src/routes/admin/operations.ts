@@ -4,7 +4,8 @@
 // Each export is a raw Hono handler. The aggregator in ./index.ts applies
 // `requireAdminAuth()` when mounting the route.
 
-import { eq, and, desc } from 'drizzle-orm';
+import type { Context } from 'hono';
+import { eq, and, desc, type SQL } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { SubscriptionService } from '@haa/commerce-core';
@@ -12,15 +13,37 @@ import { createMediaAdapter } from '@haa/shared/media';
 import { getWebhookDedupStats } from '@haa/integration-core';
 import { getIdempotencyKeyStats } from '../../middleware/idempotency-key.js';
 
+type AdminRouteContext = Context;
+type JsonRouteContext<T> = Context<{ Variables: Record<string, unknown> }, string, { out: { json: T } }>;
+type PlanUpdateInput = {
+  name?: string;
+  code?: string;
+  description?: string | null;
+  priceMonthly?: string;
+  priceAnnual?: string;
+  productLimit?: number;
+  staffLimit?: number;
+  storageLimitMb?: number;
+  orderLimit?: number;
+  trialDays?: number;
+  isActive?: boolean;
+  sortOrder?: number;
+};
+type PlatformSettingsInput = {
+  name: string;
+  logoUrl?: string | null;
+  faviconUrl?: string | null;
+};
+
 // ── /audit ────────────────────────────────────────────────────────────────
-export async function auditRoute(c: any) {
+export async function auditRoute(c: AdminRouteContext) {
   const tenantId = c.req.query('tenantId');
   const storeId = c.req.query('storeId');
   if (!tenantId && !storeId) {
     return c.json({ success: true, data: [] });
   }
   const db = createDbClient();
-  const conditions = [];
+  const conditions: SQL[] = [];
   if (tenantId) conditions.push(eq(s.auditLogs.tenantId, Number(tenantId)));
   if (storeId) conditions.push(eq(s.auditLogs.storeId, Number(storeId)));
   const logs = await db.select().from(s.auditLogs).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(s.auditLogs.createdAt)).limit(200);
@@ -31,26 +54,26 @@ export async function auditRoute(c: any) {
 // Per-process counters for the webhook-dedup helper. Useful when an operator
 // wants to verify a noisy provider's redelivery rate or confirm the helper
 // fired at all without scrolling paymentWebhookEvents.
-export async function webhookDedupStatsRoute(c: any) {
+export async function webhookDedupStatsRoute(c: AdminRouteContext) {
   return c.json({ success: true, data: getWebhookDedupStats() });
 }
 
 // ── /idempotency-key/stats ────────────────────────────────────────────────
 // Per-process counters for the Idempotency-Key middleware. Used by ops to
 // verify that retries are actually being deduplicated against the cache.
-export async function idempotencyKeyStatsRoute(c: any) {
+export async function idempotencyKeyStatsRoute(c: AdminRouteContext) {
   return c.json({ success: true, data: getIdempotencyKeyStats() });
 }
 
 // ── /webhooks ─────────────────────────────────────────────────────────────
-export async function webhooksRoute(c: any) {
+export async function webhooksRoute(c: AdminRouteContext) {
   const tenantId = c.req.query('tenantId');
   const storeId = c.req.query('storeId');
   if (!tenantId && !storeId) {
     return c.json({ success: true, data: [] });
   }
   const db = createDbClient();
-  const conditions = [];
+  const conditions: SQL[] = [];
   if (tenantId) conditions.push(eq(s.webhookEvents.tenantId, Number(tenantId)));
   if (storeId) conditions.push(eq(s.webhookEvents.storeId, Number(storeId)));
   const events = await db.select().from(s.webhookEvents).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(s.webhookEvents.createdAt)).limit(100);
@@ -59,14 +82,14 @@ export async function webhooksRoute(c: any) {
 
 // ── /plans ────────────────────────────────────────────────────────────────
 export const plansRoutes = {
-  list: async (c: any) => {
+  list: async (c: AdminRouteContext) => {
     const plans = await new SubscriptionService().getAllPlans();
     return c.json({ success: true, data: plans });
   },
 
-  update: async (c: any) => {
+  update: async (c: JsonRouteContext<PlanUpdateInput>) => {
     const id = Number(c.req.param('id'));
-    const body = c.req.valid('json');
+    const body = c.req.valid('json') as PlanUpdateInput;
     const plan = await new SubscriptionService().updatePlan(id, body);
     if (!plan) {
       return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Plan not found' } }, 404);
@@ -76,7 +99,7 @@ export const plansRoutes = {
 };
 
 // ── /upload ───────────────────────────────────────────────────────────────
-export async function uploadRoute(c: any) {
+export async function uploadRoute(c: AdminRouteContext) {
   const body = await c.req.parseBody();
   const file = body['file'] as File | undefined;
   if (!file) {
@@ -99,7 +122,7 @@ export async function uploadRoute(c: any) {
 
 // ── /settings ─────────────────────────────────────────────────────────────
 export const settingsRoutes = {
-  get: async (c: any) => {
+  get: async (c: AdminRouteContext) => {
     const db = createDbClient();
     const [tenant] = await db.select().from(s.tenants).limit(1);
     if (!tenant) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'No platform found' } }, 404);
@@ -116,8 +139,8 @@ export const settingsRoutes = {
     });
   },
 
-  update: async (c: any) => {
-    const body = c.req.valid('json');
+  update: async (c: JsonRouteContext<PlatformSettingsInput>) => {
+    const body = c.req.valid('json') as PlatformSettingsInput;
     const db = createDbClient();
     const [tenant] = await db.select().from(s.tenants).limit(1);
     if (!tenant) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'No platform found' } }, 404);
@@ -142,7 +165,7 @@ export const settingsRoutes = {
 };
 
 // ── /users ────────────────────────────────────────────────────────────────
-export async function usersRoute(c: any) {
+export async function usersRoute(c: AdminRouteContext) {
   const db = createDbClient();
   const users = await db.select().from(s.users).orderBy(desc(s.users.createdAt)).limit(100);
   return c.json({

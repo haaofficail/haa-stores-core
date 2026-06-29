@@ -12,6 +12,7 @@ import {
   SECTION_DEFAULT_SETTINGS,
   SECTION_LABELS,
   type CategoryItem,
+  type HomepageSection,
   type ProductItem,
   type ThemeConfig,
 } from '../constants';
@@ -19,7 +20,7 @@ import { validateImageFile } from '../themeEditorService';
 
 interface Props {
   config: ThemeConfig;
-  updateConfig: (path: string, value: any) => void;
+  updateConfig: (path: string, value: unknown) => void;
   categories: CategoryItem[];
   products: ProductItem[];
   storeId: number | null | undefined;
@@ -37,7 +38,7 @@ export function HomepageTab({
   collapsedGroups, setCollapsedGroups, expandedSections, setExpandedSections,
   uploadingBannerImg, setUploadingBannerImg, setDeleteSectionIndex,
 }: Props) {
-  const homepage = config.homepage || {};
+  const homepage = (config.homepage || {}) as { sections?: HomepageSection[] };
   const orderPanelId = 'theme-homepage-sections-panel';
   return (
     <TabsContent value="homepage" className="space-y-6">
@@ -69,7 +70,7 @@ export function HomepageTab({
         </button>
         {HOMEPAGE_SECTIONS_EDITOR_ENABLED && !collapsedGroups.order && (
           <div id={orderPanelId} className="px-5 pb-5 space-y-1" onDragOver={(e) => e.preventDefault()}>
-            {(homepage.sections || []).map((section: any, idx: number) => {
+            {(homepage.sections || []).map((section, idx: number) => {
               const sid = section.id;
               const isExpanded = expandedSections[sid];
               const SECTION_TYPE_LABELS = SECTION_LABELS;
@@ -168,7 +169,7 @@ export function HomepageTab({
             <div className="flex gap-2 pt-2">
               <Select onValueChange={(v) => {
                 const sections = homepage.sections || [];
-                const newSection: any = { id: `section-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type: v, enabled: true, title: SECTION_LABELS[v] || v, settings: {} };
+                const newSection: HomepageSection = { id: `section-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type: v, enabled: true, title: SECTION_LABELS[v] || v, settings: {} };
                 newSection.settings = SECTION_DEFAULT_SETTINGS[v] || {};
                 const updated = [...sections, newSection];
                 updateConfig('homepage.sections', updated);
