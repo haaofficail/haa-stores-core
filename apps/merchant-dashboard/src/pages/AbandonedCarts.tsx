@@ -31,6 +31,7 @@ interface AbandonedCartRow {
   total?: number | string;
   totalAmount?: number | string;
   lastActive?: string | null;
+  updatedAt?: string | null;
   abandonedAt?: string | null;
   expiresAt?: string | null;
 }
@@ -108,15 +109,21 @@ export default function AbandonedCarts() {
   // Client-side search + column sort + pagination over the loaded carts.
   // Composite columns (customer, items, total) resolve via getValue so sorting
   // matches what each cell displays.
+  // Note: customerPhone is intentionally excluded from search — it is
+  // permission-masked in the UI, so allowing search on it would leak the raw
+  // value to staff without `orders:view_sensitive`.
   const controls = useTableControls<AbandonedCartRow>({
     rows: carts,
-    searchFields: ['customerName', 'customerEmail', 'customerPhone'],
-    initialSort: { key: 'lastActive', dir: 'desc' },
+    searchFields: ['customerName', 'customerEmail'],
+    initialSort: { key: 'updatedAt', dir: 'desc' },
     storageKey: 'abandonedCarts',
     getValue: (cart, key) => {
       if (key === 'customer') return cart.customerName || cart.customerEmail || '';
       if (key === 'items') return cart.itemCount ?? cart.items?.length ?? 0;
       if (key === 'total') return Number(cart.total ?? cart.totalAmount ?? 0);
+      // The list endpoint returns checkout-session rows whose activity
+      // timestamp is `updatedAt`; `lastActive` is a defensive alias.
+      if (key === 'updatedAt') return cart.lastActive ?? cart.updatedAt ?? null;
       return (cart as unknown as Record<string, unknown>)[key];
     },
   });
@@ -169,7 +176,7 @@ export default function AbandonedCarts() {
             type="search"
             value={controls.query}
             onChange={(e) => controls.setQuery(e.target.value)}
-            placeholder={t('abandonedCarts.search', 'بحث باسم العميل أو البريد أو الجوال...')}
+            placeholder={t('abandonedCarts.search', 'بحث باسم العميل أو البريد...')}
             className="ps-9 h-9 text-sm"
           />
         </div>
@@ -210,7 +217,7 @@ export default function AbandonedCarts() {
                 <TableHead className="h-10 text-sm text-neutral-500 font-medium">{t('abandonedCarts.table.phone')}</TableHead>
                 <SortHead sortKey="items" label={t('abandonedCarts.table.items')} sort={controls.sort} onToggle={controls.toggleSort} />
                 <SortHead sortKey="total" label={t('abandonedCarts.table.total')} sort={controls.sort} onToggle={controls.toggleSort} />
-                <SortHead sortKey="lastActive" label={t('abandonedCarts.table.lastActive')} sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortHead sortKey="updatedAt" label={t('abandonedCarts.table.lastActive')} sort={controls.sort} onToggle={controls.toggleSort} />
                 <SortHead sortKey="expiresAt" label={t('abandonedCarts.table.expiresAt')} sort={controls.sort} onToggle={controls.toggleSort} />
               </TableRow>
             </TableHeader>
@@ -250,7 +257,10 @@ export default function AbandonedCarts() {
                   </TableCell>
                   <TableCell className="text-sm font-semibold text-neutral-900 p-3 font-mono">{formatCurrency(cart.total || cart.totalAmount || 0)} {t('common.sar')}</TableCell>
                   <TableCell className="text-sm text-neutral-400 p-3">
-                    {cart.lastActive ? new Date(cart.lastActive).toLocaleString('ar-SA', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) : '-'}
+                    {(() => {
+                      const ts = cart.lastActive ?? cart.updatedAt;
+                      return ts ? new Date(ts).toLocaleString('ar-SA', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) : '-';
+                    })()}
                   </TableCell>
                   <TableCell className="text-sm text-neutral-400 p-3">
                     {cart.expiresAt ? new Date(cart.expiresAt).toLocaleDateString('ar-SA') : '-'}
