@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
@@ -9,20 +11,14 @@ import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
 
 export default function AdminUsers() {
-  const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const { data: users = [], isPending: loading, isError: error, refetch } = useQuery<any[]>({
+    queryKey: queryKeys.adminUsers,
+    queryFn: () => adminApi.getAdminUsers(),
+  });
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    adminApi.getAdminUsers()
-      .then(setUsers)
-      .catch(() => { setError(true); toast.error('فشل تحميل المستخدمين'); })
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (error) toast.error('فشل تحميل المستخدمين');
+  }, [error]);
 
   const adminCount = users.filter(u => u.isAdmin).length;
 
@@ -55,7 +51,7 @@ export default function AdminUsers() {
         {loading ? (
           <AdminTableSkeleton />
         ) : error ? (
-          <ErrorState message="فشل تحميل المستخدمين" onRetry={load} />
+          <ErrorState message="فشل تحميل المستخدمين" onRetry={() => refetch()} />
         ) : users.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-footnote text-gray-400">لا يوجد مستخدمون</p>

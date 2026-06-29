@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 import { useTranslation } from 'react-i18next';
@@ -21,32 +23,56 @@ type TenantStatusDialog = {
 
 export default function Tenants() {
   const { t } = useTranslation();
-  const [tenants, setTenants] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', email: '', status: 'active' });
-  const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [statusDialog, setStatusDialog] = useState<TenantStatusDialog | null>(null);
   const [statusReason, setStatusReason] = useState('');
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(false);
-    try {
-      const data = await adminApi.getTenants();
-      setTenants(data);
-    } catch {
-      setError(true);
-      toast.error(t('tenants.loadError', 'فشل تحميل التجار'));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
+  const { data: tenants = [], isPending: loading, isError: error, refetch } = useQuery<any[]>({
+    queryKey: queryKeys.tenants,
+    queryFn: () => adminApi.getTenants(),
+  });
 
-  useEffect(() => { load(); }, [load]);
+  const invalidateTenants = () => queryClient.invalidateQueries({ queryKey: queryKeys.tenants });
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      editId
+        ? adminApi.updateTenant(editId, { name: form.name, email: form.email })
+        : adminApi.createTenant(form),
+    onSuccess: () => {
+      toast.success(editId ? t('tenants.updated', 'تم تحديث التاجر بنجاح') : t('tenants.created', 'تم إضافة التاجر بنجاح'));
+      setDialogOpen(false);
+      invalidateTenants();
+    },
+    onError: (err: any) => toast.error(err?.message || t('tenants.saveError', 'حدث خطأ أثناء الحفظ')),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => adminApi.deleteTenant(id),
+    onSuccess: () => {
+      toast.success(t('tenants.deleted', 'تم حذف التاجر بنجاح'));
+      invalidateTenants();
+    },
+    onError: (err: any) => toast.error(err?.message || t('tenants.deleteError', 'فشل حذف التاجر')),
+    onSettled: () => setConfirmDelete(null),
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: (vars: { id: number; next: 'active' | 'suspended'; reason: string }) =>
+      adminApi.updateTenantStatus(vars.id, vars.next, vars.reason),
+    onSuccess: (_data, vars) => {
+      toast.success(vars.next === 'active' ? t('tenants.activated', 'تم تفعيل التاجر') : t('tenants.suspended', 'تم تعليق التاجر'));
+      invalidateTenants();
+      closeStatusDialog();
+    },
+    onError: () => toast.error(t('tenants.statusUpdateError', 'فشل تحديث حالة التاجر')),
+  });
+
+  const saving = saveMutation.isPending;
 
   const handleOpenDialog = (tenant?: any) => {
     if (tenant) {
@@ -59,7 +85,7 @@ export default function Tenants() {
     setDialogOpen(true);
   };
 
-  const saveTenant = async () => {
+  const saveTenant = () => {
     if (!form.name || !form.email) {
       toast.error(t('tenants.fillRequired', 'يرجى ملء جميع الحقول المطلوبة'));
       return;
@@ -69,35 +95,12 @@ export default function Tenants() {
       toast.error(t('tenants.invalidEmail', 'البريد الإلكتروني غير صالح'));
       return;
     }
-    setSaving(true);
-    try {
-      if (editId) {
-        await adminApi.updateTenant(editId, { name: form.name, email: form.email });
-        toast.success(t('tenants.updated', 'تم تحديث التاجر بنجاح'));
-      } else {
-        await adminApi.createTenant(form);
-        toast.success(t('tenants.created', 'تم إضافة التاجر بنجاح'));
-      }
-      setDialogOpen(false);
-      load();
-    } catch (err: any) {
-      toast.error(err.message || t('tenants.saveError', 'حدث خطأ أثناء الحفظ'));
-    } finally {
-      setSaving(false);
-    }
+    saveMutation.mutate();
   };
 
-  const confirmDeleteTenant = async () => {
+  const confirmDeleteTenant = () => {
     if (confirmDelete === null) return;
-    try {
-      await adminApi.deleteTenant(confirmDelete);
-      toast.success(t('tenants.deleted', 'تم حذف التاجر بنجاح'));
-      load();
-    } catch (err: any) {
-      toast.error(err.message || t('tenants.deleteError', 'فشل حذف التاجر'));
-    } finally {
-      setConfirmDelete(null);
-    }
+    deleteMutation.mutate(confirmDelete);
   };
 
   const openStatusDialog = (tenant: any) => {
@@ -117,16 +120,9 @@ export default function Tenants() {
     setStatusReason('');
   };
 
-  const submitStatusChange = async () => {
+  const submitStatusChange = () => {
     if (!statusDialog || !statusReason.trim()) return;
-    try {
-      await adminApi.updateTenantStatus(statusDialog.id, statusDialog.nextStatus, statusReason.trim());
-      setTenants(prev => prev.map(t => t.id === statusDialog.id ? { ...t, status: statusDialog.nextStatus } : t));
-      toast.success(statusDialog.nextStatus === 'active' ? t('tenants.activated', 'تم تفعيل التاجر') : t('tenants.suspended', 'تم تعليق التاجر'));
-      closeStatusDialog();
-    } catch {
-      toast.error(t('tenants.statusUpdateError', 'فشل تحديث حالة التاجر'));
-    }
+    statusMutation.mutate({ id: statusDialog.id, next: statusDialog.nextStatus, reason: statusReason.trim() });
   };
 
   const controls = useTableControls<any>({
@@ -169,7 +165,7 @@ export default function Tenants() {
         {loading ? (
           <AdminTableSkeleton />
         ) : error ? (
-          <ErrorState message={t('tenants.loadError', 'فشل تحميل التجار')} onRetry={load} />
+          <ErrorState message={t('tenants.loadError', 'فشل تحميل التجار')} onRetry={() => refetch()} />
         ) : tenants.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-footnote text-gray-400">{t('tenants.empty', 'لا يوجد تجار')}</p>

@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../components/ui/icon';
@@ -25,25 +27,16 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 export default function Dashboard() {
   const { t } = useTranslation();
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const { data: stats, isPending, isError, refetch } = useQuery<any>({
+    queryKey: queryKeys.dashboard,
+    queryFn: () => adminApi.dashboard(),
+  });
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(false);
-    adminApi.dashboard()
-      .then(setStats)
-      .catch(() => {
-        setError(true);
-        toast.error(t('dashboard.loadError', 'فشل تحميل البيانات'));
-      })
-      .finally(() => setLoading(false));
-  }, [t]);
+  useEffect(() => {
+    if (isError) toast.error(t('dashboard.loadError', 'فشل تحميل البيانات'));
+  }, [isError, t]);
 
-  useEffect(() => { load(); }, [load]);
-
-  if (loading) {
+  if (isPending) {
     return (
       <div>
         <div className="h-8 w-32 bg-gray-200 rounded-lg animate-pulse mb-6" />
@@ -60,8 +53,8 @@ export default function Dashboard() {
     );
   }
 
-  if (error) {
-    return <ErrorState message={t('dashboard.loadError', 'فشل تحميل البيانات')} onRetry={load} />;
+  if (isError) {
+    return <ErrorState message={t('dashboard.loadError', 'فشل تحميل البيانات')} onRetry={() => refetch()} />;
   }
 
   type StatCard = {
