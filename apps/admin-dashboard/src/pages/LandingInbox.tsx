@@ -3,6 +3,9 @@ import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 import { landingContactsApi } from '../lib/api';
 import { ErrorState } from '../components/ui/ErrorState';
+import { SortableTh } from '../components/ui/SortableTh';
+import { TablePager } from '../components/ui/TablePager';
+import { useTableControls } from '../lib/useTableControls';
 
 // ─── Domain types (narrowed locally from `unknown` per post-P2-030 pattern) ──
 // Mirrors `packages/db/src/schema/landing-contacts.ts`. Dates come over the
@@ -92,34 +95,33 @@ export default function LandingInbox() {
   const [contacts, setContacts] = useState<LandingContact[]>([]);
   const [newCount, setNewCount] = useState(0);
   const [status, setStatus] = useState<'' | LandingContactStatus>('');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [selected, setSelected] = useState<LandingContact | null>(null);
   const [draftStatus, setDraftStatus] = useState<LandingContactStatus>('new');
   const [draftNotes, setDraftNotes] = useState('');
   const [saving, setSaving] = useState(false);
-  const limit = 20;
+  // Pull a full status-filtered window so the client-side table controls own
+  // search/sort/pagination (mirrors the array-loading reference in Tenants.tsx).
+  const limit = 500;
 
   const load = useCallback(() => {
     setLoading(true);
     setError(false);
     landingContactsApi
-      .list({ status: status || undefined, page, limit })
+      .list({ status: status || undefined, page: 1, limit })
       .then((res) => {
         const rows = res.data
           .map(narrowContact)
           .filter((row): row is LandingContact => row !== null);
         setContacts(rows);
-        setTotalPages(res.totalPages || 1);
       })
       .catch(() => {
         setError(true);
         toast.error('فشل تحميل صندوق الوارد');
       })
       .finally(() => setLoading(false));
-  }, [status, page]);
+  }, [status]);
 
   // Separate "new count" lookup — uses status=new so it's accurate even
   // when the user is viewing another filter. Cheap: one tiny page query.
@@ -200,6 +202,17 @@ export default function LandingInbox() {
     return `mailto:${selected.email}?subject=${subject}&body=${body}`;
   }, [selected]);
 
+  // The status filter is applied server-side (see `load`), so `contacts` is
+  // already the pre-filtered array. The hook layers client-side search, column
+  // sorting, and pagination on top of the current page of results.
+  const controls = useTableControls<LandingContact>({
+    rows: contacts,
+    searchFields: ['name', 'email', 'message', 'phone'],
+    initialSort: { key: 'createdAt', dir: 'desc' },
+    storageKey: 'landingInbox',
+  });
+  const { query, setQuery } = controls;
+
   return (
     <div dir="rtl">
       <div className="flex items-center gap-3 mb-6">
@@ -220,7 +233,7 @@ export default function LandingInbox() {
               key={s.key || 'all'}
               onClick={() => {
                 setStatus(s.key);
-                setPage(1);
+                controls.setPage(1);
               }}
               className={`text-sm px-3 py-1.5 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
                 active
@@ -232,6 +245,17 @@ export default function LandingInbox() {
             </button>
           );
         })}
+      </div>
+
+      {/* Search */}
+      <div className="mb-4">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="بحث بالاسم أو البريد أو الرسالة..."
+          className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+        />
       </div>
 
       {/* Table */}
@@ -255,63 +279,56 @@ export default function LandingInbox() {
             <Icon name="Inbox" size="lg" className="text-gray-300 mx-auto mb-3" aria-hidden="true" />
             <p className="text-sm text-gray-500">لا توجد رسائل بعد</p>
           </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">الاسم</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">البريد</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">الجوال</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">الحالة</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">التاريخ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {contacts.map((c) => (
-                <tr
-                  key={c.id}
-                  onClick={() => openDetail(c)}
-                  className="border-t hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
-                  <td className="px-4 py-3 text-gray-700">{c.email}</td>
-                  <td className="px-4 py-3 text-gray-500">{c.phone || '—'}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${STATUS_BADGE[c.status]}`}
-                    >
-                      {STATUS_LABELS[c.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500" title={new Date(c.createdAt).toLocaleString('ar-SA')}>
-                    {timeAgo(c.createdAt)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {!loading && !error && totalPages > 1 && (
-          <div className="flex items-center justify-between border-t px-4 py-3 text-sm">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              السابق
-            </button>
-            <span className="text-gray-500">
-              صفحة {page} من {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              التالي
-            </button>
+        ) : controls.filteredCount === 0 ? (
+          <div className="p-12 text-center">
+            <p className="text-sm text-gray-500">لا توجد نتائج مطابقة</p>
           </div>
+        ) : (
+          <>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <SortableTh sortKey="name" label="الاسم" sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="email" label="البريد" sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="phone" label="الجوال" sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="status" label="الحالة" sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="createdAt" label="التاريخ" sort={controls.sort} onToggle={controls.toggleSort} />
+                </tr>
+              </thead>
+              <tbody>
+                {controls.rows.map((c) => (
+                  <tr
+                    key={c.id}
+                    onClick={() => openDetail(c)}
+                    className="border-t hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <td className="px-4 py-3 font-medium text-gray-900">{c.name}</td>
+                    <td className="px-4 py-3 text-gray-700">{c.email}</td>
+                    <td className="px-4 py-3 text-gray-500">{c.phone || '—'}</td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${STATUS_BADGE[c.status]}`}
+                      >
+                        {STATUS_LABELS[c.status]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500" title={new Date(c.createdAt).toLocaleString('ar-SA')}>
+                      {timeAgo(c.createdAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <TablePager
+              page={controls.page}
+              totalPages={controls.totalPages}
+              startIndex={controls.startIndex}
+              endIndex={controls.endIndex}
+              filteredCount={controls.filteredCount}
+              onPageChange={controls.setPage}
+              itemLabel="رسالة"
+            />
+          </>
         )}
       </div>
 

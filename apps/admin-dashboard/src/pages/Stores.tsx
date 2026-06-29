@@ -7,6 +7,9 @@ import { useTranslation } from 'react-i18next';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { AdminDialog } from '../components/ui/AdminDialog';
 import { ErrorState } from '../components/ui/ErrorState';
+import { SortableTh } from '../components/ui/SortableTh';
+import { TablePager } from '../components/ui/TablePager';
+import { useTableControls } from '../lib/useTableControls';
 
 type StoreStatusDialog = {
   id: number;
@@ -24,7 +27,6 @@ export default function Stores() {
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: '', domain: '', tenantId: '', isActive: 'true' });
   const [saving, setSaving] = useState(false);
-  const [query, setQuery] = useState('');
   const [statusDialog, setStatusDialog] = useState<StoreStatusDialog | null>(null);
   const [statusReason, setStatusReason] = useState('');
 
@@ -127,6 +129,14 @@ export default function Stores() {
     }
   };
 
+  const controls = useTableControls<any>({
+    rows: stores,
+    searchFields: ['name', 'domain', 'tenantName'],
+    initialSort: { key: 'name', dir: 'asc' },
+    storageKey: 'stores',
+  });
+  const { query, setQuery } = controls;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -156,45 +166,56 @@ export default function Stores() {
           <div className="p-12 text-center">
             <p className="text-footnote text-gray-400">{t('stores.empty', 'لا توجد متاجر')}</p>
           </div>
+        ) : controls.filteredCount === 0 ? (
+          <div className="p-12 text-center">
+            <p className="text-footnote text-gray-400">{t('stores.noResults', 'لا توجد نتائج مطابقة')}</p>
+          </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('stores.name', 'الاسم')}</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('stores.domain', 'النطاق')}</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('stores.tenant', 'التاجر')}</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('stores.status', 'الحالة')}</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('stores.actions', 'الإجراءات')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stores.filter(s => {
-                if (!query) return true;
-                const q = query.toLowerCase();
-                return (s.name || '').toLowerCase().includes(q) || (s.domain || '').toLowerCase().includes(q) || (s.tenantName || '').toLowerCase().includes(q);
-              }).map(s => (
-                <tr key={s.id} className="border-t hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
-                  <td className="px-4 py-3 text-gray-500">{s.domain || '-'}</td>
-                  <td className="px-4 py-3 text-gray-500">{s.tenantName || '-'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${s.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {s.isActive ? t('stores.active', 'نشط') : t('stores.inactive', 'موقوف')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => openStatusDialog(s)} className="text-sm text-primary-600 hover:text-primary-700 transition-colors px-2 py-1">
-                        {s.isActive ? t('stores.deactivate', 'تعطيل') : t('stores.activate', 'تفعيل')}
-                      </button>
-                      <button onClick={() => handleOpenDialog(s)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors px-2 py-1">{t('stores.edit', 'تعديل')}</button>
-                      <button onClick={() => setConfirmDeleteId(s.id)} className="text-sm text-red-600 hover:text-red-800 transition-colors px-2 py-1">{t('stores.delete', 'حذف')}</button>
-                    </div>
-                  </td>
+          <>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <SortableTh sortKey="name" label={t('stores.name', 'الاسم')} sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="domain" label={t('stores.domain', 'النطاق')} sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="tenantName" label={t('stores.tenant', 'التاجر')} sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="isActive" label={t('stores.status', 'الحالة')} sort={controls.sort} onToggle={controls.toggleSort} />
+                  <th className="px-4 py-3 text-start font-medium text-gray-500">{t('stores.actions', 'الإجراءات')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {controls.rows.map(s => (
+                  <tr key={s.id} className="border-t hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
+                    <td className="px-4 py-3 text-gray-500">{s.domain || '-'}</td>
+                    <td className="px-4 py-3 text-gray-500">{s.tenantName || '-'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${s.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {s.isActive ? t('stores.active', 'نشط') : t('stores.inactive', 'موقوف')}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => openStatusDialog(s)} className="text-sm text-primary-600 hover:text-primary-700 transition-colors px-2 py-1">
+                          {s.isActive ? t('stores.deactivate', 'تعطيل') : t('stores.activate', 'تفعيل')}
+                        </button>
+                        <button onClick={() => handleOpenDialog(s)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors px-2 py-1">{t('stores.edit', 'تعديل')}</button>
+                        <button onClick={() => setConfirmDeleteId(s.id)} className="text-sm text-red-600 hover:text-red-800 transition-colors px-2 py-1">{t('stores.delete', 'حذف')}</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <TablePager
+              page={controls.page}
+              totalPages={controls.totalPages}
+              startIndex={controls.startIndex}
+              endIndex={controls.endIndex}
+              filteredCount={controls.filteredCount}
+              onPageChange={controls.setPage}
+              itemLabel={t('stores.itemLabel', 'متجر')}
+            />
+          </>
         )}
       </div>
 

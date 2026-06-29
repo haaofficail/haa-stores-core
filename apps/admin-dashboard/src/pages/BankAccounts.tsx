@@ -4,6 +4,9 @@ import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
+import { SortableTh } from '../components/ui/SortableTh';
+import { TablePager } from '../components/ui/TablePager';
+import { useTableControls } from '../lib/useTableControls';
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   submitted: { label: 'بانتظار المراجعة', cls: 'bg-yellow-100 text-yellow-700' },
@@ -25,7 +28,6 @@ export default function BankAccounts() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(false);
-  const [query, setQuery]       = useState('');
   const [busy, setBusy]         = useState<number | null>(null);
   const [filter, setFilter]     = useState<'all' | 'submitted' | 'verified' | 'rejected'>('all');
   const [reviewDialog, setReviewDialog] = useState<BankAccountReviewDialog | null>(null);
@@ -74,14 +76,15 @@ export default function BankAccounts() {
     closeReviewDialog();
   };
 
-  const visible = accounts.filter(a => {
-    if (filter !== 'all' && a.status !== filter) return false;
-    if (!query) return true;
-    const q = query.toLowerCase();
-    return (a.bankName || '').toLowerCase().includes(q)
-      || (a.accountHolderName || '').toLowerCase().includes(q)
-      || (a.iban || '').toLowerCase().includes(q);
+  const statusFiltered = accounts.filter(a => filter === 'all' || a.status === filter);
+
+  const controls = useTableControls<any>({
+    rows: statusFiltered,
+    searchFields: ['bankName', 'accountHolderName', 'iban'],
+    initialSort: { key: 'status', dir: 'asc' },
+    storageKey: 'bankAccounts',
   });
+  const { query, setQuery } = controls;
 
   const pending = accounts.filter(a => a.status === 'submitted').length;
 
@@ -123,24 +126,29 @@ export default function BankAccounts() {
           <AdminTableSkeleton columns={['w-32', 'w-40', 'w-24']} rows={3} />
         ) : error ? (
           <ErrorState message="فشل تحميل الحسابات البنكية" onRetry={load} />
-        ) : visible.length === 0 ? (
+        ) : accounts.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-footnote text-gray-400">لا توجد حسابات بنكية</p>
           </div>
+        ) : controls.filteredCount === 0 ? (
+          <div className="p-12 text-center">
+            <p className="text-footnote text-gray-400">لا توجد نتائج مطابقة</p>
+          </div>
         ) : (
+          <>
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">صاحب الحساب</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">البنك</th>
+                <SortableTh sortKey="accountHolderName" label="صاحب الحساب" sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortableTh sortKey="bankName" label="البنك" sort={controls.sort} onToggle={controls.toggleSort} />
                 <th className="px-4 py-3 text-start font-medium text-gray-500">IBAN (آخر 4)</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">المتجر</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">الحالة</th>
+                <SortableTh sortKey="storeId" label="المتجر" sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortableTh sortKey="status" label="الحالة" sort={controls.sort} onToggle={controls.toggleSort} />
                 <th className="px-4 py-3 text-start font-medium text-gray-500">الإجراءات</th>
               </tr>
             </thead>
             <tbody>
-              {visible.map(a => {
+              {controls.rows.map(a => {
                 const s = STATUS_LABEL[a.status] ?? STATUS_LABEL.submitted;
                 return (
                   <tr key={a.id} className="border-t hover:bg-gray-50 transition-colors">
@@ -178,6 +186,16 @@ export default function BankAccounts() {
               })}
             </tbody>
           </table>
+          <TablePager
+            page={controls.page}
+            totalPages={controls.totalPages}
+            startIndex={controls.startIndex}
+            endIndex={controls.endIndex}
+            filteredCount={controls.filteredCount}
+            onPageChange={controls.setPage}
+            itemLabel="حساب"
+          />
+          </>
         )}
       </div>
 
