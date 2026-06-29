@@ -6,6 +6,9 @@ import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
+import { SortableTh } from '../components/ui/SortableTh';
+import { TablePager } from '../components/ui/TablePager';
+import { useTableControls } from '../lib/useTableControls';
 
 export default function KycReview() {
   const { t } = useTranslation();
@@ -16,7 +19,6 @@ export default function KycReview() {
   const [rejectReason, setRejectReason] = useState('');
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
-  const [query, setQuery] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
@@ -60,6 +62,17 @@ export default function KycReview() {
     return labels[s] || s;
   };
 
+  const controls = useTableControls<any>({
+    rows: profiles,
+    filterFn: (p, q) => {
+      const term = q.toLowerCase();
+      return String(p.storeId || '').includes(term) || (p.legalName || p.commercialName || '').toLowerCase().includes(term);
+    },
+    initialSort: { key: 'storeId', dir: 'desc' },
+    storageKey: 'kycReview',
+  });
+  const { query, setQuery } = controls;
+
   return (
     <div>
       <h2 className="text-title2 font-bold text-gray-900 tracking-tight mb-4">{t('kyc.pageTitle', 'مراجعة التحقق')}</h2>
@@ -81,23 +94,24 @@ export default function KycReview() {
           <div className="p-12 text-center">
             <p className="text-footnote text-gray-400">{t('kyc.noProfiles', 'لا توجد ملفات تحقق للمراجعة')}</p>
           </div>
+        ) : controls.filteredCount === 0 ? (
+          <div className="p-12 text-center">
+            <p className="text-footnote text-gray-400">{t('kyc.noResults', 'لا توجد نتائج مطابقة')}</p>
+          </div>
         ) : (
+          <>
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('kyc.store', 'المتجر')}</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('kyc.type', 'النوع')}</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('kyc.legalName', 'الاسم التجاري')}</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('kyc.status', 'الحالة')}</th>
+                <SortableTh sortKey="storeId" label={t('kyc.store', 'المتجر')} sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortableTh sortKey="businessType" label={t('kyc.type', 'النوع')} sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortableTh sortKey="legalName" label={t('kyc.legalName', 'الاسم التجاري')} sort={controls.sort} onToggle={controls.toggleSort} />
+                <SortableTh sortKey="status" label={t('kyc.status', 'الحالة')} sort={controls.sort} onToggle={controls.toggleSort} />
                 <th className="px-4 py-3 text-start font-medium text-gray-500">{t('common.actions', 'الإجراءات')}</th>
               </tr>
             </thead>
             <tbody>
-              {profiles.filter(p => {
-                if (!query) return true;
-                const q = query.toLowerCase();
-                return String(p.storeId || '').includes(q) || (p.legalName || p.commercialName || '').toLowerCase().includes(q);
-              }).map(p => (
+              {controls.rows.map(p => (
                 <tr key={p.id} className="border-t hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 font-mono text-gray-900">#{p.storeId}</td>
                   <td className="px-4 py-3 text-gray-500">{p.businessType}</td>
@@ -135,6 +149,16 @@ export default function KycReview() {
               ))}
             </tbody>
           </table>
+          <TablePager
+            page={controls.page}
+            totalPages={controls.totalPages}
+            startIndex={controls.startIndex}
+            endIndex={controls.endIndex}
+            filteredCount={controls.filteredCount}
+            onPageChange={controls.setPage}
+            itemLabel={t('kyc.itemLabel', 'طلب')}
+          />
+          </>
         )}
       </div>
 

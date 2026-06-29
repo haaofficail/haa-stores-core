@@ -2,6 +2,9 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { AdminDialog } from '../components/ui/AdminDialog';
+import { SortableTh } from '../components/ui/SortableTh';
+import { TablePager } from '../components/ui/TablePager';
+import { useTableControls } from '../lib/useTableControls';
 import { adminApi, hasAdminPermission } from '../lib/api';
 
 const statusLabels: Record<string, string> = {
@@ -113,6 +116,14 @@ export default function Marketplace() {
     ['عمولة هاء', money(summary?.platformCommission)],
   ];
 
+  const controls = useTableControls<any>({
+    rows: products,
+    searchFields: ['name', 'storeName', 'haaMarketplaceReviewStatus'],
+    initialSort: { key: 'name', dir: 'desc' },
+    storageKey: 'marketplaceProducts',
+  });
+  const { query, setQuery } = controls;
+
   return (
     <div className="space-y-6" dir="rtl">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -135,32 +146,41 @@ export default function Marketplace() {
       <section className="rounded-xl bg-white p-5 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-lg font-bold">مراجعة منتجات السوق</h3>
-          <select
-            value={status}
-            onChange={(e) => { setStatus(e.target.value); load(e.target.value); }}
-            className="rounded-lg border px-3 py-2 text-sm"
-          >
-            <option value="">كل الحالات</option>
-            <option value="pending">بانتظار المراجعة</option>
-            <option value="approved">معتمدة</option>
-            <option value="rejected">مرفوضة</option>
-            <option value="suspended">موقوفة</option>
-          </select>
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="بحث باسم المنتج أو البائع..."
+              className="w-full max-w-sm rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+            <select
+              value={status}
+              onChange={(e) => { setStatus(e.target.value); load(e.target.value); }}
+              className="rounded-lg border px-3 py-2 text-sm"
+            >
+              <option value="">كل الحالات</option>
+              <option value="pending">بانتظار المراجعة</option>
+              <option value="approved">معتمدة</option>
+              <option value="rejected">مرفوضة</option>
+              <option value="suspended">موقوفة</option>
+            </select>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500">
               <tr>
-                <th className="p-3 text-start">المنتج</th>
-                <th className="p-3 text-start">البائع</th>
-                <th className="p-3 text-start">السعر</th>
-                <th className="p-3 text-start">الحالة</th>
-                <th className="p-3 text-start">تمييز</th>
+                <SortableTh sortKey="name" label="المنتج" sort={controls.sort} onToggle={controls.toggleSort} className="p-3" />
+                <SortableTh sortKey="storeName" label="البائع" sort={controls.sort} onToggle={controls.toggleSort} className="p-3" />
+                <SortableTh sortKey="price" label="السعر" sort={controls.sort} onToggle={controls.toggleSort} className="p-3" />
+                <SortableTh sortKey="haaMarketplaceReviewStatus" label="الحالة" sort={controls.sort} onToggle={controls.toggleSort} className="p-3" />
+                <SortableTh sortKey="haaMarketplaceFeatured" label="تمييز" sort={controls.sort} onToggle={controls.toggleSort} className="p-3" />
                 <th className="p-3 text-start">إجراء</th>
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => (
+              {controls.rows.map((product) => (
                 <tr key={product.id} className="border-t">
                   <td className="p-3 font-medium">{product.name}</td>
                   <td className="p-3">{product.storeName}</td>
@@ -180,9 +200,23 @@ export default function Marketplace() {
               {!loading && products.length === 0 && (
                 <tr><td className="p-6 text-center text-gray-500" colSpan={6}>لا توجد منتجات في هذا العرض.</td></tr>
               )}
+              {!loading && products.length > 0 && controls.filteredCount === 0 && (
+                <tr><td className="p-6 text-center text-gray-500" colSpan={6}>لا توجد نتائج مطابقة</td></tr>
+              )}
             </tbody>
           </table>
         </div>
+        {controls.filteredCount > 0 && (
+          <TablePager
+            page={controls.page}
+            totalPages={controls.totalPages}
+            startIndex={controls.startIndex}
+            endIndex={controls.endIndex}
+            filteredCount={controls.filteredCount}
+            onPageChange={controls.setPage}
+            itemLabel="منتج"
+          />
+        )}
       </section>
 
       <div className="grid gap-6 xl:grid-cols-2">

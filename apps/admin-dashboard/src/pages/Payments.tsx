@@ -5,6 +5,9 @@ import { adminApi } from '../lib/api';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
+import { SortableTh } from '../components/ui/SortableTh';
+import { TablePager } from '../components/ui/TablePager';
+import { useTableControls } from '../lib/useTableControls';
 import { downloadRowsAsCsv } from '../lib/downloadRowsAsCsv';
 
 export default function Payments() {
@@ -12,7 +15,6 @@ export default function Payments() {
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [query, setQuery] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
@@ -24,6 +26,14 @@ export default function Payments() {
   }, [t]);
 
   useEffect(() => { load(); }, [load]);
+
+  const controls = useTableControls<any>({
+    rows: payments,
+    searchFields: ['id', 'status', 'method'],
+    initialSort: { key: 'createdAt', dir: 'desc' },
+    storageKey: 'payments',
+  });
+  const { query, setQuery } = controls;
 
   return (
     <div>
@@ -54,40 +64,51 @@ export default function Payments() {
           <div className="p-12 text-center">
             <p className="text-footnote text-gray-400">{t('payments.empty', 'لا توجد مدفوعات')}</p>
           </div>
+        ) : controls.filteredCount === 0 ? (
+          <div className="p-12 text-center">
+            <p className="text-footnote text-gray-400">{t('payments.noResults', 'لا توجد نتائج مطابقة')}</p>
+          </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('payments.id', 'المعرف')}</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('payments.amount', 'المبلغ')}</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('payments.method', 'الطريقة')}</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('payments.status', 'الحالة')}</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">{t('payments.date', 'التاريخ')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.filter(p => {
-                if (!query) return true;
-                const q = query.toLowerCase();
-                return String(p.id || '').includes(q) || (p.status || '').toLowerCase().includes(q) || (p.method || '').toLowerCase().includes(q);
-              }).map(p => (
-                <tr key={p.id} className="border-t hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-gray-900">#{p.id}</td>
-                  <td className="px-4 py-3 font-medium text-gray-900">{p.amount} {p.currency || 'SAR'}</td>
-                  <td className="px-4 py-3 text-gray-500">{p.method || '-'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      p.status === 'completed' || p.status === 'paid' ? 'bg-green-100 text-green-700' :
-                      p.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                      p.status === 'failed' ? 'bg-red-100 text-red-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>{p.status}</span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">{p.createdAt ? new Date(p.createdAt).toLocaleDateString('ar-SA') : '-'}</td>
+          <>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <SortableTh sortKey="id" label={t('payments.id', 'المعرف')} sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="amount" label={t('payments.amount', 'المبلغ')} sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="method" label={t('payments.method', 'الطريقة')} sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="status" label={t('payments.status', 'الحالة')} sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="createdAt" label={t('payments.date', 'التاريخ')} sort={controls.sort} onToggle={controls.toggleSort} />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {controls.rows.map(p => (
+                  <tr key={p.id} className="border-t hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 font-mono text-gray-900">#{p.id}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{p.amount} {p.currency || 'SAR'}</td>
+                    <td className="px-4 py-3 text-gray-500">{p.method || '-'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        p.status === 'completed' || p.status === 'paid' ? 'bg-green-100 text-green-700' :
+                        p.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        p.status === 'failed' ? 'bg-red-100 text-red-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>{p.status}</span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">{p.createdAt ? new Date(p.createdAt).toLocaleDateString('ar-SA') : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <TablePager
+              page={controls.page}
+              totalPages={controls.totalPages}
+              startIndex={controls.startIndex}
+              endIndex={controls.endIndex}
+              filteredCount={controls.filteredCount}
+              onPageChange={controls.setPage}
+              itemLabel={t('payments.itemLabel', 'عملية')}
+            />
+          </>
         )}
       </div>
     </div>

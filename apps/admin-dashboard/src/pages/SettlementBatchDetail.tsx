@@ -1,8 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { adminApi, hasAdminPermission } from '../lib/api';
-import type { SettlementBatchDetail, PayoutDetail, UploadProofData } from '../lib/api';
+import type { SettlementBatchDetail, SettlementTransaction, PayoutDetail, UploadProofData } from '../lib/api';
 import { toast } from 'sonner';
+import { SortableTh } from '../components/ui/SortableTh';
+import { TablePager } from '../components/ui/TablePager';
+import { useTableControls } from '../lib/useTableControls';
 
 const settlementStatusColors: Record<string, string> = {
   completed: 'bg-emerald-100 text-emerald-700',
@@ -159,6 +162,21 @@ export default function SettlementBatchDetailPage() {
     // double-fetch the payout (once with the stale detail, once with the new).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detail]);
+
+  // Client-side controls for the transactions (orders) table only. `detail` may
+  // be null during loading, so the hook is called unconditionally with an empty
+  // fallback (Rules of Hooks). The storeGroups summary below is intentionally
+  // NOT routed through this hook — it summarizes the FULL transactions list.
+  const txControls = useTableControls<SettlementTransaction>({
+    rows: detail?.transactions ?? [],
+    searchFields: ['orderNumber', 'status', 'reconciliationStatus'],
+    initialSort: { key: 'createdAt', dir: 'desc' },
+    storageKey: 'settlementBatchDetailTx',
+    getValue: (tx, key) => {
+      if (key === 'order') return tx.orderNumber ?? tx.orderId;
+      return (tx as unknown as Record<string, unknown>)[key];
+    },
+  });
 
   const performAction = async (action: string, fn: () => Promise<unknown>) => {
     setActionLoading((prev) => ({ ...prev, [action]: true }));
@@ -621,48 +639,76 @@ export default function SettlementBatchDetailPage() {
             <p className="text-sm text-gray-400">لا توجد معاملات في هذه التسوية</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">رقم الطلب</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">المتجر</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">إجمالي الطلب</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">رسوم البوابة</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">عمولة المنصة</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">صافي المستحق</th>
-                <th className="px-4 py-3 text-start font-medium text-gray-500">حالة المطابقة</th>
-              </tr>
-            </thead>
-            <tbody>
-              {detail.transactions.map((tx) => (
-                <tr key={tx.id} className="border-t hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <a
-                      href={`/admin/orders?storeId=${tx.storeId}&orderId=${tx.orderId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline"
-                    >
-                      {tx.orderNumber ?? `#${tx.orderId}`}
-                    </a>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">#{tx.storeId}</td>
-                  <td className="px-4 py-3 font-medium tabular-nums">{formatCurrency(tx.amount)}</td>
-                  <td className="px-4 py-3 text-red-600 tabular-nums">{formatCurrency(tx.gatewayFees)}</td>
-                  <td className="px-4 py-3 text-orange-600 tabular-nums">{formatCurrency(tx.platformFees)}</td>
-                  <td className="px-4 py-3 font-semibold text-emerald-600 tabular-nums">{formatCurrency(tx.merchantPayable)}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${reconciliationColors[tx.reconciliationStatus] || 'bg-gray-100 text-gray-700'}`}>
-                      {tx.reconciliationStatus === 'matched' ? 'مطابق' :
-                       tx.reconciliationStatus === 'pending' ? 'قيد المراجعة' :
-                       tx.reconciliationStatus === 'failed' ? 'غير مطابق' :
-                       'غير مطابق'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <>
+            <div className="px-4 py-3 border-b border-gray-100">
+              <input
+                type="search"
+                value={txControls.query}
+                onChange={(e) => txControls.setQuery(e.target.value)}
+                placeholder="بحث برقم الطلب أو الحالة أو حالة المطابقة..."
+                className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            {txControls.filteredCount === 0 ? (
+              <div className="p-12 text-center">
+                <p className="text-sm text-gray-400">لا توجد نتائج مطابقة</p>
+              </div>
+            ) : (
+              <>
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <SortableTh sortKey="order" label="رقم الطلب" sort={txControls.sort} onToggle={txControls.toggleSort} />
+                      <SortableTh sortKey="storeId" label="المتجر" sort={txControls.sort} onToggle={txControls.toggleSort} />
+                      <SortableTh sortKey="amount" label="إجمالي الطلب" sort={txControls.sort} onToggle={txControls.toggleSort} />
+                      <SortableTh sortKey="gatewayFees" label="رسوم البوابة" sort={txControls.sort} onToggle={txControls.toggleSort} />
+                      <SortableTh sortKey="platformFees" label="عمولة المنصة" sort={txControls.sort} onToggle={txControls.toggleSort} />
+                      <SortableTh sortKey="merchantPayable" label="صافي المستحق" sort={txControls.sort} onToggle={txControls.toggleSort} />
+                      <SortableTh sortKey="reconciliationStatus" label="حالة المطابقة" sort={txControls.sort} onToggle={txControls.toggleSort} />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {txControls.rows.map((tx) => (
+                      <tr key={tx.id} className="border-t hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3">
+                          <a
+                            href={`/admin/orders?storeId=${tx.storeId}&orderId=${tx.orderId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-mono text-sm font-semibold text-primary-600 hover:text-primary-700 hover:underline"
+                          >
+                            {tx.orderNumber ?? `#${tx.orderId}`}
+                          </a>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">#{tx.storeId}</td>
+                        <td className="px-4 py-3 font-medium tabular-nums">{formatCurrency(tx.amount)}</td>
+                        <td className="px-4 py-3 text-red-600 tabular-nums">{formatCurrency(tx.gatewayFees)}</td>
+                        <td className="px-4 py-3 text-orange-600 tabular-nums">{formatCurrency(tx.platformFees)}</td>
+                        <td className="px-4 py-3 font-semibold text-emerald-600 tabular-nums">{formatCurrency(tx.merchantPayable)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${reconciliationColors[tx.reconciliationStatus] || 'bg-gray-100 text-gray-700'}`}>
+                            {tx.reconciliationStatus === 'matched' ? 'مطابق' :
+                             tx.reconciliationStatus === 'pending' ? 'قيد المراجعة' :
+                             tx.reconciliationStatus === 'failed' ? 'غير مطابق' :
+                             'غير مطابق'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <TablePager
+                  page={txControls.page}
+                  totalPages={txControls.totalPages}
+                  startIndex={txControls.startIndex}
+                  endIndex={txControls.endIndex}
+                  filteredCount={txControls.filteredCount}
+                  onPageChange={txControls.setPage}
+                  itemLabel="عملية"
+                />
+              </>
+            )}
+          </>
         )}
       </div>
 

@@ -1,9 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; the table-controls hook is intentionally generic over them (P2-030 follow-up). */
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { adminApi, type FinanceReports as FinanceReportsData, type FinanceReportRow } from '../lib/api';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
+import { SortableTh } from '../components/ui/SortableTh';
+import { TablePager } from '../components/ui/TablePager';
+import { useTableControls } from '../lib/useTableControls';
 import { downloadRowsAsCsv } from '../lib/downloadRowsAsCsv';
 
 type Tab = 'archive' | 'reconciliation' | 'stuck';
@@ -38,6 +42,24 @@ export default function FinanceReports() {
 
   const rows = useMemo<FinanceReportRow[]>(() => (data ? data[tab] : []), [data, tab]);
 
+  const controls = useTableControls<any>({
+    rows,
+    searchFields: ['settlementId', 'storeName', 'status', 'bankReference', 'bankName'],
+    initialSort: { key: 'amount', dir: 'desc' },
+    storageKey: 'financeReports',
+    getValue: (r, key) => {
+      if (key === 'receipt') return r.receiptId ?? '';
+      if (key === 'reconciliationStatus') return RECON_LABELS[r.reconciliationStatus] ?? r.reconciliationStatus;
+      return r[key];
+    },
+  });
+  const { query, setQuery } = controls;
+
+  const selectTab = (key: Tab) => {
+    setTab(key);
+    controls.setPage(1);
+  };
+
   const exportCsv = () => {
     // Masked rows only — never contain a full IBAN or a receipt URL.
     const out = rows.map((r) => ({
@@ -51,7 +73,7 @@ export default function FinanceReports() {
   };
 
   const tabBtn = (key: Tab, label: string, count: number) => (
-    <button onClick={() => setTab(key)}
+    <button onClick={() => selectTab(key)}
       className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${tab === key ? 'bg-primary-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
       {label} <span className="tabular-nums">({count})</span>
     </button>
@@ -64,40 +86,53 @@ export default function FinanceReports() {
     reportContent = <ErrorState message="تعذّر تحميل التقارير المالية" onRetry={load} />;
   } else if (rows.length === 0) {
     reportContent = <div className="p-12 text-center text-gray-400 text-footnote">لا توجد سجلات</div>;
+  } else if (controls.filteredCount === 0) {
+    reportContent = <div className="p-12 text-center text-gray-400 text-footnote">لا توجد نتائج مطابقة</div>;
   } else {
     reportContent = (
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-4 py-3 text-start font-medium text-gray-500">رقم التسوية</th>
-            <th className="px-4 py-3 text-start font-medium text-gray-500">التاجر</th>
-            <th className="px-4 py-3 text-start font-medium text-gray-500">المبلغ</th>
-            <th className="px-4 py-3 text-start font-medium text-gray-500">الحالة</th>
-            <th className="px-4 py-3 text-start font-medium text-gray-500">المرجع البنكي</th>
-            <th className="px-4 py-3 text-start font-medium text-gray-500">الإيصال</th>
-            <th className="px-4 py-3 text-start font-medium text-gray-500">المطابقة</th>
-            <th className="px-4 py-3 text-start font-medium text-gray-500"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.payoutId} className="border-t hover:bg-gray-50">
-              <td className="px-4 py-3 font-mono text-gray-900">{r.settlementId}</td>
-              <td className="px-4 py-3 text-gray-900">{r.storeName}</td>
-              <td className="px-4 py-3 font-medium tabular-nums">{r.amount} {r.currency}</td>
-              <td className="px-4 py-3 text-gray-500">{r.status}</td>
-              <td className="px-4 py-3 text-gray-500">{r.bankReference ?? '—'}</td>
-              <td className="px-4 py-3 text-gray-500 font-mono">{r.receiptId ? `#${r.receiptId} · ${r.sha256 ?? ''}` : '—'}</td>
-              <td className="px-4 py-3">
-                <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">{RECON_LABELS[r.reconciliationStatus] ?? r.reconciliationStatus}</span>
-              </td>
-              <td className="px-4 py-3">
-                <Link to={`/finance/settlements/${r.payoutId}`} className="text-sm text-primary-600 hover:underline">تفاصيل</Link>
-              </td>
+      <>
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <SortableTh sortKey="settlementId" label="رقم التسوية" sort={controls.sort} onToggle={controls.toggleSort} />
+              <SortableTh sortKey="storeName" label="التاجر" sort={controls.sort} onToggle={controls.toggleSort} />
+              <SortableTh sortKey="amount" label="المبلغ" sort={controls.sort} onToggle={controls.toggleSort} />
+              <SortableTh sortKey="status" label="الحالة" sort={controls.sort} onToggle={controls.toggleSort} />
+              <SortableTh sortKey="bankReference" label="المرجع البنكي" sort={controls.sort} onToggle={controls.toggleSort} />
+              <SortableTh sortKey="receipt" label="الإيصال" sort={controls.sort} onToggle={controls.toggleSort} />
+              <SortableTh sortKey="reconciliationStatus" label="المطابقة" sort={controls.sort} onToggle={controls.toggleSort} />
+              <th className="px-4 py-3 text-start font-medium text-gray-500"></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {controls.rows.map((r) => (
+              <tr key={r.payoutId} className="border-t hover:bg-gray-50">
+                <td className="px-4 py-3 font-mono text-gray-900">{r.settlementId}</td>
+                <td className="px-4 py-3 text-gray-900">{r.storeName}</td>
+                <td className="px-4 py-3 font-medium tabular-nums">{r.amount} {r.currency}</td>
+                <td className="px-4 py-3 text-gray-500">{r.status}</td>
+                <td className="px-4 py-3 text-gray-500">{r.bankReference ?? '—'}</td>
+                <td className="px-4 py-3 text-gray-500 font-mono">{r.receiptId ? `#${r.receiptId} · ${r.sha256 ?? ''}` : '—'}</td>
+                <td className="px-4 py-3">
+                  <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">{RECON_LABELS[r.reconciliationStatus] ?? r.reconciliationStatus}</span>
+                </td>
+                <td className="px-4 py-3">
+                  <Link to={`/finance/settlements/${r.payoutId}`} className="text-sm text-primary-600 hover:underline">تفاصيل</Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <TablePager
+          page={controls.page}
+          totalPages={controls.totalPages}
+          startIndex={controls.startIndex}
+          endIndex={controls.endIndex}
+          filteredCount={controls.filteredCount}
+          onPageChange={controls.setPage}
+          itemLabel="تسوية"
+        />
+      </>
     );
   }
 
@@ -115,6 +150,16 @@ export default function FinanceReports() {
         {tabBtn('archive', 'أرشيف التسويات', data?.archive.length ?? 0)}
         {tabBtn('reconciliation', 'مطابقة التسويات', data?.reconciliation.length ?? 0)}
         {tabBtn('stuck', 'التسويات العالقة', data?.stuck.length ?? 0)}
+      </div>
+
+      <div className="mb-4">
+        <input
+          type="search"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="بحث برقم التسوية أو التاجر..."
+          className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+        />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
