@@ -217,6 +217,7 @@
 **Locked.** For beta:
 
 - **No direct tenant deletion** as a feature.
+- **No direct store deletion** as a feature until an audited soft-delete/archive workflow exists.
 - **No merchant account self-deletion** as a feature.
 - **No hard delete** anywhere.
 - Account closure = suspend/deactivate/archive or routed via compliance/support request.

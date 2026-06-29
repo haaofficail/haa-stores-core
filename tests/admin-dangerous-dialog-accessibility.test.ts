@@ -40,12 +40,12 @@ describe('Admin dangerous-action dialogs accessibility', () => {
     expect(block).toContain('aria-label={decisionModal.status');
   });
 
-  it('store and tenant status/delete decisions use AdminDialog while edit forms stay out of scope', () => {
+  it('store and tenant status decisions use AdminDialog while beta delete actions stay hidden', () => {
     for (const [name, source] of [['stores', stores], ['tenants', tenants]] as const) {
       expect(source, name).toContain("import { AdminDialog } from '../components/ui/AdminDialog'");
 
       const dialogCount = source.match(/<AdminDialog/g)?.length ?? 0;
-      expect(dialogCount, name).toBeGreaterThanOrEqual(2);
+      expect(dialogCount, name).toBeGreaterThanOrEqual(1);
 
       const statusBlock = blockBetween(source, '{statusDialog && (', '</AdminDialog>');
       expect(statusBlock, name).toContain('<AdminDialog');
@@ -54,6 +54,8 @@ describe('Admin dangerous-action dialogs accessibility', () => {
       expect(statusBlock, name).toContain('disabled={!statusReason.trim()}');
       expect(statusBlock, name).toContain('aria-label="سبب القرار *"');
 
+      expect(source, name).not.toContain('setConfirmDelete');
+      expect(source, name).not.toContain('deleteMutation');
       expect(source, `${name} edit dialog intentionally remains outside this task`).toContain('{dialogOpen && (');
     }
   });

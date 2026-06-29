@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0067: Admin Store DELETE Still Hard-deleted During Beta
+
+- **ID:** ISSUE-0067
+- **Date:** 2026-06-30
+- **Severity:** High (admin destructive action / beta deletion policy)
+- **Area:** Admin Dashboard / Admin API / Tenants & Stores
+- **Related Tasks:** TASK-0130
+- **Symptoms:** The admin dashboard exposed delete buttons for tenant/store rows. Tenant delete already returned `FORBIDDEN_BETA_POLICY`, but store delete still called `db.delete(s.stores)` in `storesRoutes.remove`, invalidated cache, and returned `{ deleted: true }`.
+- **Expected:** During beta, direct tenant/store deletion should not be a feature. Admins should use reason-gated suspend/deactivate flows or compliance/support handling until an audited soft-delete/archive workflow exists.
+- **Actual:** Tenant delete was beta-blocked at the API but still shown in UI. Store delete was both shown in UI and hard-deleted rows through the API despite DECISION-OS-014 saying no hard delete anywhere.
+- **Root Cause:** The earlier DECISION-OS-014 implementation covered tenant delete and merchant self-delete, but did not extend the same guard to the admin store delete handler or remove tenant/store delete affordances from the admin tables. Existing regression coverage located tenant and merchant blocks but did not assert the store handler block.
+- **Fix:** `storesRoutes.remove` now returns `FORBIDDEN_BETA_POLICY` before any delete path. Tenant/store delete buttons, delete mutations, and delete confirmation dialogs were removed from `Tenants.tsx` and `Stores.tsx`. Regression tests now assert the store beta block and that tenant/store direct delete is not exposed as an admin UI feature.
+- **Verification:** `pnpm vitest run tests/deletion-policy-beta.test.ts tests/admin-dangerous-action-reasons.test.ts tests/admin-dangerous-dialog-accessibility.test.ts` passed 3 files / 13 tests. `pnpm --filter @haa/api typecheck`, `pnpm --filter @haa/admin-dashboard typecheck`, `pnpm --filter @haa/admin-dashboard build`, `pnpm check:skills`, `git diff --check`, `pnpm preflight`, and `pnpm ops:monitor` passed locally. CI/staging verification is tracked under TASK-0130.
+- **Prevention:** Keep deletion-policy tests asserting tenant, store, and merchant beta blocks; keep admin dangerous-action tests asserting direct tenant/store delete remains hidden from beta UI.
+- **Status:** Fixed locally in TASK-0130. Publication and staging verification are pending.
+
+---
+
 ### ISSUE-0066: Staging ENV Workflow Masked Dispatch Secrets Too Late
 
 - **ID:** ISSUE-0066

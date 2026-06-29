@@ -62,4 +62,13 @@ describe('Admin dangerous action reason gates', () => {
     expect(tenantsStoresRoutes).toContain('newValue: { isActive, statusReason }');
     expect(tenantsStoresRoutes).toContain('invalidateStoreTenantCache(id)');
   });
+
+  it('direct tenant/store delete is not exposed as a beta admin UI feature', () => {
+    expect(tenantsPage).not.toContain('adminApi.deleteTenant');
+    expect(tenantsPage).not.toContain('setConfirmDelete');
+    expect(storesPage).not.toContain('adminApi.deleteStore');
+    expect(storesPage).not.toContain('setConfirmDeleteId');
+    expect(tenantsStoresRoutes).toContain('Direct tenant deletion is disabled in beta');
+    expect(tenantsStoresRoutes).toContain('Direct store deletion is disabled in beta');
+  });
 });
