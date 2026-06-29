@@ -48,4 +48,9 @@ export const queryKeys = {
   settlementReadiness: ['admin', 'settlementReadiness'] as const,
   compliance: ['admin', 'compliance'] as const,
   settings: ['admin', 'settings'] as const,
+  settlementDetail: ['admin', 'settlementDetail'] as const,
+  settlementBatchDetail: ['admin', 'settlementBatchDetail'] as const,
+  accountantSettlementDetail: ['admin', 'accountantSettlementDetail'] as const,
+  storePaymentSettings: ['admin', 'storePaymentSettings'] as const,
+  storeBillingSettings: ['admin', 'storeBillingSettings'] as const,
 };

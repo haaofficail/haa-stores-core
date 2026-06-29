@@ -5,12 +5,10 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { StoreSelectorPanel } from '../components/ui/StoreSelectorPanel';
-const paymentSettingsApi = {
-  getStorePaymentSettings: adminApi.getStorePaymentSettings,
-  upsertStorePaymentSettings: adminApi.upsertStorePaymentSettings,
-};
 import { toast } from 'sonner';
 
 const PROVIDERS = ['moyasar', 'geidea', 'tabby', 'tamara'] as const;
@@ -90,9 +88,9 @@ export default function StorePaymentSettings() {
   const [params, setParams] = useSearchParams();
   const initialStoreId = params.get('storeId') ? Number(params.get('storeId')) : null;
 
+  const queryClient = useQueryClient();
   const [stores, setStores] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedId, setSelectedId] = useState<number | null>(initialStoreId);
-  const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<Record<ProviderCode, RowState>>(createInitialRows);
 
   const selectStore = (storeId: number) => {
@@ -100,34 +98,43 @@ export default function StorePaymentSettings() {
     setParams({ storeId: String(storeId) });
   };
 
+  const { data: settingsData, isPending: loading, isError: error, refetch } = useQuery({
+    queryKey: [...queryKeys.storePaymentSettings, selectedId ?? null],
+    queryFn: () => adminApi.getStorePaymentSettings(selectedId as number),
+    enabled: !!selectedId,
+  });
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: [...queryKeys.storePaymentSettings, selectedId ?? null] });
+
   useEffect(() => {
     adminApi.getStores().then(setStores).catch(() => toast.error('فشل تحميل المتاجر'));
   }, []);
 
+  // Seed the editable form rows whenever fresh settings arrive from the query.
   useEffect(() => {
-    if (selectedId == null) return;
-    setLoading(true);
-    paymentSettingsApi.getStorePaymentSettings(selectedId)
-      .then((data: unknown) => {
-        const settings = normalizeProviderSettings(data);
-        setRows(prev => rowsFromSettings(prev, settings));
-      })
-      .catch(() => toast.error('فشل تحميل إعدادات البوابات'))
-      .finally(() => setLoading(false));
-  }, [selectedId]);
+    if (settingsData === undefined) return;
+    const settings = normalizeProviderSettings(settingsData);
+    setRows(prev => rowsFromSettings(prev, settings));
+  }, [settingsData]);
 
-  const handleSave = async (providerCode: ProviderCode) => {
-    if (selectedId == null) return;
-    setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], saving: true } }));
-    try {
+  // Surface load failures via toast (parity with the previous catch handler).
+  useEffect(() => {
+    if (error) toast.error('فشل تحميل إعدادات البوابات');
+  }, [error]);
+
+  const saveMutation = useMutation({
+    mutationFn: (providerCode: ProviderCode) => {
       const row = rows[providerCode];
-      const result: any = await paymentSettingsApi.upsertStorePaymentSettings(selectedId, {
+      return adminApi.upsertStorePaymentSettings(selectedId as number, {
         providerCode,
         enabled: row.enabled,
         mode: row.mode,
         status: row.status,
         supportedPaymentMethod: 'card',
       });
+    },
+    onSuccess: (result: any, providerCode) => {
       const updated = result?.data ?? result;
       setRows(prev => ({
         ...prev,
@@ -139,10 +146,18 @@ export default function StorePaymentSettings() {
         },
       }));
       toast.success(`تم حفظ إعدادات ${PROVIDER_LABELS[providerCode]}`);
-    } catch (e: any) {
+      invalidate();
+    },
+    onError: (e: any, providerCode) => {
       toast.error(`فشل الحفظ: ${e?.message ?? 'خطأ غير معروف'}`);
       setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], saving: false } }));
-    }
+    },
+  });
+
+  const handleSave = (providerCode: ProviderCode) => {
+    if (selectedId == null) return;
+    setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], saving: true } }));
+    saveMutation.mutate(providerCode);
   };
 
   return (
@@ -163,6 +178,16 @@ export default function StorePaymentSettings() {
             <p className="text-sm text-gray-500 text-center py-12">اختر متجرًا من القائمة لعرض بوابات الدفع.</p>
           ) : loading ? (
             <p className="text-sm text-gray-400 text-center py-12">...جاري التحميل</p>
+          ) : error ? (
+            <div className="text-center py-12 space-y-3">
+              <p className="text-sm text-gray-500">فشل تحميل إعدادات البوابات</p>
+              <button
+                onClick={() => refetch()}
+                className="px-3 py-1.5 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700"
+              >
+                إعادة المحاولة
+              </button>
+            </div>
           ) : (
             <div className="space-y-4">
               {PROVIDERS.map(providerCode => {

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { adminApi, newIdempotencyKey, hasAdminPermission, type AccountantDetail, type UploadProofData } from '../lib/api';
+import { adminApi, newIdempotencyKey, hasAdminPermission, type UploadProofData } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 import { UnauthorizedState } from '../components/ui/UnauthorizedState';
@@ -19,12 +21,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default function AccountantSettlementDetail() {
   const { payoutId: payoutIdParam } = useParams();
   const payoutId = Number(payoutIdParam);
-
-  const [detail, setDetail] = useState<AccountantDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [unauthorized, setUnauthorized] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
 
   // IBAN reveal — held only transiently, never persisted/logged/exported.
   const [revealedIban, setRevealedIban] = useState<string | null>(null);
@@ -39,24 +36,36 @@ export default function AccountantSettlementDetail() {
   const [note, setNote] = useState('');
   const [mismatch, setMismatch] = useState<string | null>(null);
 
-  const load = useCallback(() => {
-    setLoading(true); setError(false); setUnauthorized(false);
-    adminApi.getAccountantDetail(payoutId)
-      .then((d) => {
-        setDetail(d);
-        setBankName((prev) => prev || d.bankAccount?.bankName || '');
-        setTransferredAmount((prev) => prev || d.amount);
-        setCurrency(d.currency);
-      })
-      .catch((e: unknown) => {
-        const msg = e instanceof Error ? e.message : '';
-        if (/FORBIDDEN|صلاحية/i.test(msg)) setUnauthorized(true);
-        else setError(true);
-      })
-      .finally(() => setLoading(false));
-  }, [payoutId]);
+  const {
+    data: detail,
+    isPending: loading,
+    isError: error,
+    error: loadError,
+    refetch,
+  } = useQuery({
+    queryKey: [...queryKeys.accountantSettlementDetail, payoutId],
+    queryFn: () => adminApi.getAccountantDetail(payoutId),
+    enabled: !!payoutIdParam,
+  });
 
-  useEffect(() => { load(); }, [load]);
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: [...queryKeys.accountantSettlementDetail, payoutId] });
+
+  // A FORBIDDEN load error renders the unauthorized state rather than the generic error one.
+  const unauthorized = error && /FORBIDDEN|صلاحية/i.test(loadError instanceof Error ? loadError.message : '');
+
+  // Seed the upload form defaults from the loaded detail (was previously done inside `load`).
+  useEffect(() => {
+    if (!detail) return;
+    setBankName((prev) => prev || detail.bankAccount?.bankName || '');
+    setTransferredAmount((prev) => prev || detail.amount);
+    setCurrency(detail.currency);
+  }, [detail]);
+
+  // Surface a load failure toast (kept from the previous catch behavior).
+  useEffect(() => {
+    if (error && !unauthorized) toast.error('تعذّر تحميل تفاصيل التسوية');
+  }, [error, unauthorized]);
 
   // Clear a revealed IBAN automatically so it isn't held in memory longer than needed.
   useEffect(() => {
@@ -80,53 +89,31 @@ export default function AccountantSettlementDetail() {
     }
   }, [payoutId]);
 
-  const startTransfer = useCallback(async () => {
-    if (!detail || saving) return;
-    setSaving(true);
-    const key = newIdempotencyKey(); // stable per attempt → double-click safe
-    try {
-      if (detail.status === 'approved') await adminApi.markTransferPending(payoutId, key);
-      else if (detail.status === 'transfer_pending') await adminApi.markTransferred(payoutId, key);
+  const transferMutation = useMutation({
+    mutationFn: async (status: string) => {
+      const key = newIdempotencyKey(); // stable per attempt → double-click safe
+      if (status === 'approved') await adminApi.markTransferPending(payoutId, key);
+      else if (status === 'transfer_pending') await adminApi.markTransferred(payoutId, key);
+    },
+    onSuccess: () => {
       toast.success('تم تحديث حالة التحويل');
-      load();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'تعذّر بدء التحويل');
-    } finally {
-      setSaving(false);
-    }
-  }, [detail, saving, payoutId, load]);
+      invalidate();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'تعذّر بدء التحويل'),
+  });
 
-  const submitReceipt = useCallback(async () => {
-    if (!detail || saving) return;
-    setMismatch(null);
-    if (!file) { toast.error('ملف الإيصال مطلوب'); return; }
-    if (!ALLOWED_RECEIPT_TYPES.has(file.type)) { toast.error('نوع غير مسموح — PDF أو PNG أو JPG فقط'); return; }
-    if (file.size > MAX_RECEIPT_SIZE) { toast.error('حجم الملف يتجاوز 5MB'); return; }
-    if (!bankReference.trim()) { toast.error('مرجع العملية البنكية مطلوب'); return; }
-    if (!transferDate) { toast.error('تاريخ التحويل مطلوب'); return; }
+  const startTransfer = useCallback(() => {
+    if (!detail || transferMutation.isPending) return;
+    transferMutation.mutate(detail.status);
+  }, [detail, transferMutation]);
 
-    setSaving(true);
-    const key = newIdempotencyKey();
-    try {
-      const uploaded = await adminApi.uploadFile(file);
-      const payload: UploadProofData = {
-        proofFileKey: uploaded.key,
-        fileMimeType: file.type,
-        sha256: uploaded.sha256,
-        uploadIntegritySignature: uploaded.uploadIntegritySignature,
-        bankReference: bankReference.trim(),
-        bankName: bankName.trim() || detail.bankAccount?.bankName || '',
-        transferredAt: transferDate,
-        transferredAmount,
-        currency,
-        beneficiaryName: detail.bankAccount?.accountHolderName || detail.merchantName,
-        beneficiaryIbanMasked: detail.bankAccount?.maskedIban || `****${detail.bankAccount?.ibanLast4 ?? ''}`,
-        notes: note.trim() || undefined,
-      };
-      await adminApi.uploadProof(payoutId, payload, key);
+  const receiptMutation = useMutation({
+    mutationFn: (payload: UploadProofData) => adminApi.uploadProof(payoutId, payload, newIdempotencyKey()),
+    onSuccess: () => {
       toast.success('تم حفظ الإيصال بنجاح');
-      load();
-    } catch (e) {
+      invalidate();
+    },
+    onError: (e) => {
       const msg = e instanceof Error ? e.message : 'تعذّر رفع الإيصال';
       if (/MISMATCH/i.test(msg)) {
         // The backend parks mismatches in manual_review — surface clearly, do
@@ -134,24 +121,57 @@ export default function AccountantSettlementDetail() {
         setMismatch(/CURRENCY/i.test(msg) ? 'العملة لا تطابق عملة التسوية' : 'المبلغ المحوّل لا يطابق صافي التسوية');
       }
       toast.error(msg);
-    } finally {
-      setSaving(false);
-    }
-  }, [detail, saving, file, bankReference, bankName, transferDate, transferredAmount, currency, note, payoutId, load]);
+    },
+  });
 
-  const secondApprove = useCallback(async () => {
-    if (!detail || saving) return;
-    setSaving(true);
+  const submitReceipt = useCallback(async () => {
+    if (!detail || receiptMutation.isPending) return;
+    setMismatch(null);
+    if (!file) { toast.error('ملف الإيصال مطلوب'); return; }
+    if (!ALLOWED_RECEIPT_TYPES.has(file.type)) { toast.error('نوع غير مسموح — PDF أو PNG أو JPG فقط'); return; }
+    if (file.size > MAX_RECEIPT_SIZE) { toast.error('حجم الملف يتجاوز 5MB'); return; }
+    if (!bankReference.trim()) { toast.error('مرجع العملية البنكية مطلوب'); return; }
+    if (!transferDate) { toast.error('تاريخ التحويل مطلوب'); return; }
+
+    let uploaded: Awaited<ReturnType<typeof adminApi.uploadFile>>;
     try {
-      await adminApi.secondApprovePayout(payoutId, newIdempotencyKey());
-      toast.success('تم الاعتماد الثاني');
-      load();
+      uploaded = await adminApi.uploadFile(file);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'تعذّر الاعتماد الثاني');
-    } finally {
-      setSaving(false);
+      toast.error(e instanceof Error ? e.message : 'تعذّر رفع الإيصال');
+      return;
     }
-  }, [detail, saving, payoutId, load]);
+    const payload: UploadProofData = {
+      proofFileKey: uploaded.key,
+      fileMimeType: file.type,
+      sha256: uploaded.sha256,
+      uploadIntegritySignature: uploaded.uploadIntegritySignature,
+      bankReference: bankReference.trim(),
+      bankName: bankName.trim() || detail.bankAccount?.bankName || '',
+      transferredAt: transferDate,
+      transferredAmount,
+      currency,
+      beneficiaryName: detail.bankAccount?.accountHolderName || detail.merchantName,
+      beneficiaryIbanMasked: detail.bankAccount?.maskedIban || `****${detail.bankAccount?.ibanLast4 ?? ''}`,
+      notes: note.trim() || undefined,
+    };
+    receiptMutation.mutate(payload);
+  }, [detail, receiptMutation, file, bankReference, bankName, transferDate, transferredAmount, currency, note]);
+
+  const secondApproveMutation = useMutation({
+    mutationFn: () => adminApi.secondApprovePayout(payoutId, newIdempotencyKey()),
+    onSuccess: () => {
+      toast.success('تم الاعتماد الثاني');
+      invalidate();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : 'تعذّر الاعتماد الثاني'),
+  });
+
+  const secondApprove = useCallback(() => {
+    if (!detail || secondApproveMutation.isPending) return;
+    secondApproveMutation.mutate();
+  }, [detail, secondApproveMutation]);
+
+  const saving = transferMutation.isPending || receiptMutation.isPending || secondApproveMutation.isPending;
 
   const startLabel = useMemo(() => {
     if (detail?.status === 'approved') return 'بدء التحويل';
@@ -164,7 +184,7 @@ export default function AccountantSettlementDetail() {
 
   if (loading) return <AdminTableSkeleton columns={['w-32', 'w-24', 'w-20', 'w-16']} />;
   if (unauthorized) return <UnauthorizedState permission="wallet.payout.view_all" />;
-  if (error) return <ErrorState message="تعذّر تحميل تفاصيل التسوية" onRetry={load} />;
+  if (error) return <ErrorState message="تعذّر تحميل تفاصيل التسوية" onRetry={() => refetch()} />;
   if (!detail) return <div className="p-12 text-center text-gray-400">التسوية غير موجودة</div>;
 
   const bank = detail.bankAccount;

@@ -1,7 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi, hasAdminPermission } from '../lib/api';
 import type { SettlementBatchDetail, SettlementTransaction, PayoutDetail, UploadProofData } from '../lib/api';
+import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
@@ -75,11 +77,7 @@ export default function SettlementBatchDetailPage() {
   const { batchId } = useParams<{ batchId: string }>();
   const [searchParams] = useSearchParams();
   const manualMode = searchParams.get('manual') === '1';
-  const [detail, setDetail] = useState<SettlementBatchDetail | null>(null);
-  const [payout, setPayout] = useState<PayoutDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [payoutLoading, setPayoutLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const queryClient = useQueryClient();
   const [confirmPayoutAction, setConfirmPayoutAction] = useState<ConfirmPayoutAction | null>(null);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -111,14 +109,21 @@ export default function SettlementBatchDetailPage() {
     setProofFileName('');
   };
 
-  const load = useCallback(() => {
-    if (!batchId) return;
-    setLoading(true);
-    if (manualMode) {
-      adminApi.getPayout(Number(batchId))
-        .then((data) => {
-          setPayout(data);
-          setDetail({
+  // Primary detail query. In manual mode the detail object is synthesized from
+  // the payout record; otherwise it comes from the settlement-batch endpoint.
+  // The synthesized manual payout is carried alongside so the secondary payout
+  // query can reuse it without a second fetch.
+  const {
+    data: detailData,
+    isPending: loading,
+    isError: error,
+  } = useQuery({
+    queryKey: [...queryKeys.settlementBatchDetail, batchId, manualMode],
+    queryFn: async (): Promise<{ detail: SettlementBatchDetail; manualPayout: PayoutDetail | null }> => {
+      if (manualMode) {
+        const data = await adminApi.getPayout(Number(batchId));
+        return {
+          detail: {
             id: data.id,
             provider: 'manual',
             providerBatchId: data.reference,
@@ -133,35 +138,39 @@ export default function SettlementBatchDetailPage() {
             createdAt: data.createdAt,
             updatedAt: data.updatedAt,
             transactions: [],
-          });
-        })
-        .catch(() => toast.error('فشل تحميل تفاصيل التسوية اليدوية'))
-        .finally(() => setLoading(false));
-      return;
-    }
-    adminApi.getSettlementBatchDetail(Number(batchId))
-      .then(setDetail)
-      .catch(() => toast.error('فشل تحميل تفاصيل التسوية'))
-      .finally(() => setLoading(false));
-  }, [batchId, manualMode]);
+          },
+          manualPayout: data,
+        };
+      }
+      const detail = await adminApi.getSettlementBatchDetail(Number(batchId));
+      return { detail, manualPayout: null };
+    },
+    enabled: !!batchId,
+  });
 
-  useEffect(() => { load(); }, [load]);
+  const detail = detailData?.detail ?? null;
 
   useEffect(() => {
-    if (!detail || manualMode) return;
-    const payoutId = detail.metadata?.payoutId as number | undefined;
-    if (!payoutId) return;
-    setPayoutLoading(true);
-    adminApi.getPayout(payoutId)
-      .then(setPayout)
-      .catch(() => { /* payout may not exist yet */ })
-      .finally(() => setPayoutLoading(false));
-    // Keyed to `detail` only on purpose: `load` already depends on
-    // `manualMode`, so any manualMode change refreshes `detail` and
-    // re-runs this effect through it. Adding `manualMode` here would
-    // double-fetch the payout (once with the stale detail, once with the new).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detail]);
+    if (error) toast.error(manualMode ? 'فشل تحميل تفاصيل التسوية اليدوية' : 'فشل تحميل تفاصيل التسوية');
+  }, [error, manualMode]);
+
+  // Secondary payout query, derived from the loaded detail's payoutId (or the
+  // synthesized manual payout). Disabled until the detail resolves.
+  const payoutId = detail?.metadata?.payoutId as number | undefined;
+  const { data: payout = null, isFetching: payoutFetching } = useQuery({
+    queryKey: ['admin', 'settlementBatchPayout', payoutId ?? null],
+    queryFn: () => adminApi.getPayout(payoutId as number),
+    enabled: !!payoutId,
+    initialData: detailData?.manualPayout ?? undefined,
+  });
+  const payoutLoading = payoutFetching;
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: [...queryKeys.settlementBatchDetail, batchId, manualMode] });
+    if (payoutId) {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settlementBatchPayout', payoutId] });
+    }
+  };
 
   // Client-side controls for the transactions (orders) table only. `detail` may
   // be null during loading, so the hook is called unconditionally with an empty
@@ -178,22 +187,22 @@ export default function SettlementBatchDetailPage() {
     },
   });
 
-  const performAction = async (action: string, fn: () => Promise<unknown>) => {
-    setActionLoading((prev) => ({ ...prev, [action]: true }));
-    try {
-      await fn();
+  const actionMutation = useMutation({
+    mutationFn: (vars: { action: string; fn: () => Promise<unknown> }) => vars.fn(),
+    onSuccess: () => {
       toast.success('تمت العملية بنجاح');
-      const payoutId = (detail?.metadata?.payoutId as number | undefined) ?? payout?.id;
-      if (payoutId) {
-        const updated = await adminApi.getPayout(payoutId);
-        setPayout(updated);
-      }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'فشلت العملية');
-    } finally {
-      setActionLoading((prev) => ({ ...prev, [action]: false }));
-    }
+      invalidate();
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : 'فشلت العملية'),
+  });
+
+  const performAction = (action: string, fn: () => Promise<unknown>) => {
+    actionMutation.mutate({ action, fn });
   };
+
+  const actionLoading: Record<string, boolean> = actionMutation.isPending && actionMutation.variables
+    ? { [actionMutation.variables.action]: true }
+    : {};
 
   const openPayoutConfirmation = (
     action: string,
@@ -210,7 +219,7 @@ export default function SettlementBatchDetailPage() {
     if (!confirmPayoutAction) return;
     const action = confirmPayoutAction;
     setConfirmPayoutAction(null);
-    void performAction(action.action, action.run);
+    performAction(action.action, action.run);
   };
 
   const handleReject = () => {
