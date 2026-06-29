@@ -34,4 +34,9 @@ export const queryKeys = {
   dashboard: ['admin', 'dashboard'] as const,
   tenants: ['admin', 'tenants'] as const,
   adminUsers: ['admin', 'users'] as const,
+  payments: ['admin', 'payments'] as const,
+  auditLogs: ['admin', 'audit'] as const,
+  stores: ['admin', 'stores'] as const,
+  bankAccounts: ['admin', 'bankAccounts'] as const,
+  kycProfiles: ['admin', 'kyc'] as const,
 };
