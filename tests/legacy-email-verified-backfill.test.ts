@@ -70,7 +70,7 @@ describe('Phase-1 close-out — legacy email_verified_at backfill', () => {
     const yml = read(envWorkflowFile);
     expect(yml).toMatch(/^\s*- AUTH_LEGACY_VERIFIED\s*$/m);
     expect(yml).toMatch(
-      /FEATURE_WHATSAPP_LIVE\|FEATURE_LOYALTY_LIVE\|SENTRY_DSN\|AUTH_LEGACY_VERIFIED\)/,
+      /FEATURE_WHATSAPP_LIVE\|FEATURE_LOYALTY_LIVE\|SENTRY_DSN\|AUTH_LEGACY_VERIFIED\|ADMIN_TOTP_ENCRYPTION_KEY\)/,
     );
   });
 });

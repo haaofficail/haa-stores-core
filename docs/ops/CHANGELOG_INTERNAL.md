@@ -1,5 +1,15 @@
 # Internal Changelog
 
+## 2026-06-30 — Admin TOTP Staging Runtime Activation (TASK-0129)
+
+- Activated the remaining admin TOTP runtime prerequisites on staging only: `0090_admin_totp` migration applied and `ADMIN_TOTP_ENCRYPTION_KEY` set through official GitHub Actions workflows.
+- Hardened `.github/workflows/ops-staging-migrate.yml` dry-run evidence to read `drizzle.__drizzle_migrations`, mirror Drizzle's `created_at` apply semantics, and fail on older journal hash drift instead of reporting misleading pending migrations.
+- Hardened `.github/workflows/ops-staging-env.yml` to allow-list `ADMIN_TOTP_ENCRYPTION_KEY`, avoid `ssh-keyscan` fallback when known-host secrets are missing, and support in-runner generation of the admin TOTP key without printing the active value.
+- Staging evidence: dry-run `28405297315` found exactly `0090_admin_totp` pending; apply `28405329216` captured backup `/var/lib/postgresql/data/backup-pre-28405329216.sql`, applied OK, confirmed 4 `admin_totp_*` columns, and restarted API healthy; final env rotation `28405802128` updated the key and restarted API healthy.
+- Public verification passed: admin staging returned `HTTP/2 200`; staging `/health` returned API/db/redis/queue OK with email and observability configured.
+- Deviation handled: env run `28405660775` exposed a generated staging key before masking; it was rotated by `28405802128`, the exposed run was deleted from GitHub, and ISSUE-0066 / INC-20260630-001 document the root cause and prevention.
+- Safety boundary: staging only; no production deploy/action, no production migration, no live payment/shipping-provider calls.
+
 ## 2026-06-29 — Admin Dashboard Gap Bundle Published to Staging (PR #336)
 
 - Marked PR #336 ready, merged it into `main`, and published the admin dashboard gap bundle to staging.

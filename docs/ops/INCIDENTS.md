@@ -39,6 +39,29 @@ _(No active incidents)_
 
 ## Resolved Incidents
 
+### INC-20260630-001: Superseded Staging Admin TOTP Key Exposed in GitHub Actions Log
+
+- **Date:** 2026-06-30
+- **Severity:** P1
+- **Status:** Resolved / Verified
+- **Detected By:** Developer during TASK-0129 log review
+- **Impact:** One generated staging-only `ADMIN_TOTP_ENCRYPTION_KEY` value was visible in GitHub Actions run `28405660775` before the workflow masking step took effect. No production secret, payment/shipping credential, `.env` file contents, or customer data was printed.
+- **Affected Apps:** Staging API / Admin TOTP enrollment runtime
+- **Affected Stores:** None identified
+- **Error Codes:** N/A
+- **Correlation IDs:** N/A
+- **Root Cause:** `ops-staging-env.yml` placed workflow-dispatch `inputs.value` in job-level `ENV_VALUE`, so GitHub printed it in the mask step env block before `::add-mask::` was registered.
+- **Resolution:** Rotated the staging key with run `28405802128`, which generated the replacement value inside the runner and did not print it. Deleted the exposed run `28405660775` from GitHub; subsequent `gh run view 28405660775` returned 404.
+- **Prevention:** Updated `ops-staging-env.yml` to read dispatch input from `GITHUB_EVENT_PATH` in the mask step, removed secret-like values from job-level env, added in-runner generation sentinel support for `ADMIN_TOTP_ENCRYPTION_KEY`, and recorded ISSUE-0066 / regression checklist entries.
+- **Related Tasks:** TASK-0129, ISSUE-0066
+- **Verification:** Final env run `28405802128` updated `ADMIN_TOTP_ENCRYPTION_KEY`, verified key presence without printing the value, restarted API healthy, and public staging `/health` returned API/db/redis/queue OK.
+- **Timeline:**
+  - Detection: 2026-06-30 during run-log review after `28405660775`
+  - Investigation start: immediately after detection
+  - Root cause identified: job-level env masking order in `ops-staging-env.yml`
+  - Fix deployed: branch commit `779704db`, then final rotation run `28405802128`
+  - Verified: run `28405802128` success, exposed run deletion returned 404, public staging checks passed
+
 ### INC-20260619-006..008: Historical React Runtime P0 Events Re surfaced by Monitor
 
 - **Date:** 2026-06-19

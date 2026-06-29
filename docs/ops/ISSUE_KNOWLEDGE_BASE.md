@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0066: Staging ENV Workflow Masked Dispatch Secrets Too Late
+
+- **ID:** ISSUE-0066
+- **Date:** 2026-06-30
+- **Severity:** High (staging secret handling / GitHub Actions logs)
+- **Area:** GitHub Actions / Staging Ops / Admin TOTP Runtime
+- **Related Tasks:** TASK-0129
+- **Symptoms:** While setting `ADMIN_TOTP_ENCRYPTION_KEY` on staging, the old `ops-staging-env.yml` workflow placed workflow-dispatch `inputs.value` in job-level `ENV_VALUE`. GitHub printed the job env block for the "Mask the value in logs" step before the mask command ran, exposing the first generated staging TOTP key in run `28405660775`.
+- **Expected:** Secret-like workflow inputs must be masked before any step env block can print them, or generated inside the runner so the value never appears as a workflow-dispatch input.
+- **Actual:** The workflow tried to mask the value in the first step, but because the value was already a job-level environment variable, GitHub rendered it before `::add-mask::` took effect.
+- **Root Cause:** The workflow treated workflow-dispatch input values as safe to store in job-level env. GitHub logs step env before executing the step body, so a "mask first" step cannot mask a value that is already present in that same step's env block.
+- **Fix:** Removed `ENV_VALUE` from job-level env; the mask step now reads the dispatch value from `GITHUB_EVENT_PATH` without exposing it as env. The apply step receives `ENV_VALUE` only after the mask is registered. For `ADMIN_TOTP_ENCRYPTION_KEY`, the workflow supports `__GENERATE_32_BYTE_HEX__`, generating the active key inside the runner and masking it before remote transfer. The SSH fallback now uses `StrictHostKeyChecking=accept-new` instead of `ssh-keyscan` probing when known-host secrets are missing.
+- **Verification:** `pnpm vitest run tests/ops-workflow-shell-injection.test.ts` passed 1 file / 4 tests. `pnpm check:skills` passed 43/43. `git diff --check` passed. Final env run `28405802128` showed no raw active key, printed `Generated ADMIN_TOTP_ENCRYPTION_KEY in runner`, updated the key, verified presence, and restarted API healthy.
+- **Prevention:** Do not put secret-like workflow-dispatch inputs in job-level env. Mask by reading from the event payload before later step env use, or prefer in-runner generation sentinels for newly generated operational secrets. Delete any run that exposes a superseded secret after rotation.
+- **Status:** Fixed in TASK-0129. The exposed staging key was rotated by run `28405802128`, and run `28405660775` was deleted from GitHub.
+
+---
+
 ### ISSUE-0065: Admin Finance CSV Export Was Not API-enforced by Export Permission
 
 - **ID:** ISSUE-0065

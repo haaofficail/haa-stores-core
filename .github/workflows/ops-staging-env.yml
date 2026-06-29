@@ -33,6 +33,7 @@ on:
           - FEATURE_LOYALTY_LIVE
           - SENTRY_DSN
           - AUTH_LEGACY_VERIFIED
+          - ADMIN_TOTP_ENCRYPTION_KEY
         required: true
       value:
         description: "New value (leave blank to unset)"
@@ -59,7 +60,6 @@ jobs:
       SSH_KEY: ${{ inputs.target == 'production' && secrets.PRODUCTION_SSH_KEY || secrets.STAGING_SSH_KEY }}
       PROJECT_NAME: ${{ inputs.target == 'production' && 'haa-production' || 'haa-staging' }}
       ENV_KEY: ${{ inputs.key }}
-      ENV_VALUE: ${{ inputs.value }}
       RESTART: ${{ inputs.restart_container }}
       RUN_ID: ${{ github.run_id }}
       TARGET: ${{ inputs.target }}
@@ -69,6 +69,12 @@ jobs:
         if: ${{ inputs.value != '' }}
         run: |
           set -euo pipefail
+          ENV_VALUE="$(node <<'NODE'
+          const fs = require('node:fs');
+          const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+          process.stdout.write(event.inputs?.value || '');
+          NODE
+          )"
           masked="${ENV_VALUE//'%'/'%25'}"
           masked="${masked//$'\r'/'%0D'}"
           masked="${masked//$'\n'/'%0A'}"
@@ -95,15 +101,26 @@ jobs:
           if [ -n "$HOSTS" ]; then
             printf '%s\n' "$HOSTS" >> ~/.ssh/known_hosts
             chmod 644 ~/.ssh/known_hosts
+            echo "SSH_EXTRA_OPTS=-o StrictHostKeyChecking=yes" >> "$GITHUB_ENV"
           else
-            ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-            echo "⚠ STAGING_KNOWN_HOSTS not set — used ssh-keyscan fallback."
+            echo "SSH_EXTRA_OPTS=-o StrictHostKeyChecking=accept-new" >> "$GITHUB_ENV"
+            echo "⚠ STAGING_KNOWN_HOSTS not set — using accept-new SSH fallback."
           fi
 
       - name: Apply ENV change + restart
+        env:
+          ENV_VALUE: ${{ inputs.value }}
         run: |
+          if [ "$ENV_KEY" = "ADMIN_TOTP_ENCRYPTION_KEY" ] && [ "$ENV_VALUE" = "__GENERATE_32_BYTE_HEX__" ]; then
+            ENV_VALUE="$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))')"
+            masked="${ENV_VALUE//'%'/'%25'}"
+            masked="${masked//$'\r'/'%0D'}"
+            masked="${masked//$'\n'/'%0A'}"
+            printf '::add-mask::%s\n' "$masked"
+            echo "==> Generated ADMIN_TOTP_ENCRYPTION_KEY in runner"
+          fi
           ENV_VALUE_B64="$(printf '%s' "$ENV_VALUE" | base64 -w 0 2>/dev/null || printf '%s' "$ENV_VALUE" | base64 | tr -d '\n')"
-          ssh -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" \
+          ssh -o BatchMode=yes ${SSH_EXTRA_OPTS:-} "$DEPLOY_USER@$DEPLOY_HOST" \
             "PROJECT='$PROJECT_NAME' ENV_KEY='$ENV_KEY' ENV_VALUE_B64='$ENV_VALUE_B64' RESTART='$RESTART' RUN_ID='$RUN_ID' bash -s" <<'EOSSH'
             set -euo pipefail
             cd "/srv/haa-stores"
@@ -111,7 +128,7 @@ jobs:
 
             # Allow-list — refuse arbitrary keys.
             case "$ENV_KEY" in
-              FEATURE_WHATSAPP_LIVE|FEATURE_LOYALTY_LIVE|SENTRY_DSN|AUTH_LEGACY_VERIFIED) ;;
+              FEATURE_WHATSAPP_LIVE|FEATURE_LOYALTY_LIVE|SENTRY_DSN|AUTH_LEGACY_VERIFIED|ADMIN_TOTP_ENCRYPTION_KEY) ;;
               *)
                 echo "::error::Key '$ENV_KEY' is not on the allow-list. Refusing to edit .env."
                 exit 1 ;;

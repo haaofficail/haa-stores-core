@@ -4,6 +4,36 @@
 
 ---
 
+### TASK-0129: Activate admin TOTP runtime on staging
+
+- **Type:** Security / CI/Deploy / Data/DB / Documentation
+- **Priority:** P1 High
+- **Status:** Done; staging runtime activated; PR #338
+- **Created:** 2026-06-30
+- **Updated:** 2026-06-30
+- **Branch:** `codex/admin-totp-staging-activation`
+- **PR:** #338
+- **Original Request:** "لا تتوقف حتى تكون منتهيه ومنشوره على الموقع و المهمة مكتملة" followed by owner approval: "اوافق".
+- **Expanded Requirement:** Complete the remaining staging runtime rollout for admin 2FA after PR #336: use official staging workflows to apply the `0090_admin_totp.sql` migration, set `ADMIN_TOTP_ENCRYPTION_KEY`, restart the API, and verify the deployed admin site without touching production or printing secrets.
+- **Scope:** Harden the staging migration dry-run evidence, allow-list only `ADMIN_TOTP_ENCRYPTION_KEY` in the staging env workflow, run owner-approved staging-only workflows, update ops state, and publish evidence.
+- **Out of Scope:** Production deploy/action, production `db:migrate`, live email-provider setup, payment/shipping provider calls, broad admin UI changes, direct `.env` inspection, and arbitrary workflow redesign.
+- **Skills Used:** `environment-safety-gate`, `agent-permission-boundary`, `regression-safety-gate`, `evidence-led-reporting`, `verification-before-completion`, `documentation-handoff-gate`, `acceptance-criteria-gate`.
+- **Acceptance Criteria:**
+  - [x] Staging migration workflow dry-run reads `drizzle.__drizzle_migrations`, mirrors Drizzle `created_at` apply semantics, and flags older journal hash drift without DB writes.
+  - [x] Staging env workflow can set only the dedicated `ADMIN_TOTP_ENCRYPTION_KEY` secret key in addition to the existing allow-list.
+  - [x] `0090_admin_totp.sql` is applied to staging through the owner-approved workflow after a backup is captured.
+  - [x] `ADMIN_TOTP_ENCRYPTION_KEY` is generated securely, written through the official workflow, and the API is restarted. A first generated value was exposed by the old workflow masking order; it was immediately superseded by a new in-runner generated value and the exposed run was deleted.
+  - [x] `https://admin.staging.haastores.com` and `https://staging.haastores.com/health` pass after activation.
+  - [x] Ops docs and final skill compliance report record exact evidence, run IDs, and safety boundaries.
+- **Test Plan:** `pnpm ops:monitor`; `pnpm preflight`; `pnpm check:skills`; `git diff --check`; GitHub PR checks; `gh workflow run ops-staging-migrate.yml -f target=staging -f dry_run=true`; if safe, `gh workflow run ops-staging-migrate.yml -f target=staging -f dry_run=false`; `gh workflow run ops-staging-env.yml -f target=staging -f key=ADMIN_TOTP_ENCRYPTION_KEY -f restart_container=api`; staging health/admin curl checks.
+- **Files Changed:** `.github/workflows/ops-staging-env.yml`, `.github/workflows/ops-staging-migrate.yml`, `tests/ops-workflow-shell-injection.test.ts`, `tests/legacy-email-verified-backfill.test.ts`, `docs/agent-os/REMAINING_WORK.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/INCIDENTS.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0129.md`.
+- **Test Results:** Passed locally: `pnpm ops:monitor` no failures/recommended incidents; `pnpm preflight` passed; `pnpm check:skills` 43/43; `git diff --check` clean; `pnpm vitest run tests/ops-workflow-shell-injection.test.ts tests/legacy-email-verified-backfill.test.ts` passed 2 files / 11 tests. GitHub PR checks on #338 passed for all project-owned checks before the review-thread fix: Required Merge Gate, Preflight, Lint, Typecheck, Test, E2E, all four builds, internal secret/security scans, and SonarCloud; external TestSprite/Snyk remained account/provider noise. GitHub staging migration dry-run `28405297315` reported 86 applied and 1 pending migration (`0090_admin_totp`). GitHub staging migration apply `28405329216` captured backup `/var/lib/postgresql/data/backup-pre-28405329216.sql`, applied migrations OK, confirmed 4 `admin_totp_*` columns, and restarted API healthy. GitHub env rotation `28405802128` generated the final key in-runner, updated `ADMIN_TOTP_ENCRYPTION_KEY`, verified key presence without printing the value, and restarted API healthy. Public checks passed: admin staging `HTTP/2 200` and `/health` API/db/redis/queue OK.
+- **Root Cause:** TASK-0125 shipped TOTP code safely before migration, but the runtime rollout remained owner-gated. The staging migration workflow's dry-run evidence queried the wrong migrations table name, the env workflow did not yet allow the dedicated admin TOTP encryption key, repeated `ssh-keyscan` fallback could trigger staging SSH timeouts, and the old env workflow masked workflow-dispatch `value` too late.
+- **Verdict:** Done for staging. Production rollout remains owner-gated and was not touched. Related security deviation was remediated: the first generated staging TOTP key was superseded by a new generated key in run `28405802128`, and run `28405660775` was deleted from GitHub (`404` after deletion).
+- **Related Issues:** ISSUE-0062, ISSUE-0066.
+
+---
+
 ### TASK-0128: Admin finance CSV export permission enforcement
 
 - **Type:** Payments/Wallet / Backend API / UX/UI Polish / Testing / Documentation
