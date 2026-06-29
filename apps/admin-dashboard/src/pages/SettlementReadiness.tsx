@@ -128,6 +128,16 @@ export default function SettlementReadiness() {
     }
   };
 
+  // Hooks must run on every render (Rules of Hooks): keep useTableControls
+  // above the loading/error early returns.
+  const controls = useTableControls<any>({
+    rows: stores,
+    searchFields: ['name', 'id'],
+    initialSort: { key: 'name', dir: 'asc' },
+    storageKey: 'settlementReadiness',
+  });
+  const { query, setQuery } = controls;
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -145,14 +155,6 @@ export default function SettlementReadiness() {
       </div>
     );
   }
-
-  const controls = useTableControls<any>({
-    rows: stores,
-    searchFields: ['name', 'id'],
-    initialSort: { key: 'name', dir: 'asc' },
-    storageKey: 'settlementReadiness',
-  });
-  const { query, setQuery } = controls;
 
   if (error) return <ErrorState message={error} />;
 

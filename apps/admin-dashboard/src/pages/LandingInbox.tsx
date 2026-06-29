@@ -101,26 +101,36 @@ export default function LandingInbox() {
   const [draftStatus, setDraftStatus] = useState<LandingContactStatus>('new');
   const [draftNotes, setDraftNotes] = useState('');
   const [saving, setSaving] = useState(false);
-  // Pull a full status-filtered window so the client-side table controls own
-  // search/sort/pagination (mirrors the array-loading reference in Tenants.tsx).
-  const limit = 500;
+  // The admin landing-contacts API caps `limit` at 100 (see the zod schema in
+  // apps/api/src/routes/admin/landing-contacts.ts). To let the client-side
+  // table controls own search/sort/pagination over the full status-filtered
+  // set, we page through at the max size and concatenate, with a safety cap.
+  const PAGE_SIZE = 100;
+  const MAX_PAGES = 20; // up to 2000 contacts loaded client-side
 
   const load = useCallback(() => {
     setLoading(true);
     setError(false);
-    landingContactsApi
-      .list({ status: status || undefined, page: 1, limit })
-      .then((res) => {
-        const rows = res.data
+    (async () => {
+      try {
+        const first = await landingContactsApi.list({ status: status || undefined, page: 1, limit: PAGE_SIZE });
+        const collected = [...first.data];
+        const totalPages = Math.min(first.totalPages || 1, MAX_PAGES);
+        for (let p = 2; p <= totalPages; p++) {
+          const res = await landingContactsApi.list({ status: status || undefined, page: p, limit: PAGE_SIZE });
+          collected.push(...res.data);
+        }
+        const rows = collected
           .map(narrowContact)
           .filter((row): row is LandingContact => row !== null);
         setContacts(rows);
-      })
-      .catch(() => {
+      } catch {
         setError(true);
         toast.error('فشل تحميل صندوق الوارد');
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [status]);
 
   // Separate "new count" lookup — uses status=new so it's accurate even
