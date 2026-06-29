@@ -291,11 +291,19 @@ function BannerSection({ banners, slug, display }: { banners: BannerData[]; slug
 {banners.map((_b: unknown, i: number) => (
               <button
                 key={i}
+                type="button"
                 onClick={() => setCurrent(i)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  i === current ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/60 w-2'
-                }`}
-              />
+                className="group flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+                aria-label={`عرض الشريحة ${i + 1} من ${banners.length}`}
+                aria-current={i === current ? 'true' : undefined}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    i === current ? 'bg-white w-6' : 'bg-white/40 group-hover:bg-white/60 w-2'
+                  }`}
+                />
+              </button>
             ))}
             </div>
           </>
@@ -395,22 +403,29 @@ function FAQAccordion({ items }: { items: { question: string; answer: string }[]
   if (items.length === 0) return null;
   return (
     <div className="space-y-2 max-w-2xl mx-auto">
-      {items.map((item, i) => (
-        <div key={i} className="border border-border rounded-xl overflow-hidden">
-          <button
-            onClick={() => setOpenIndex(openIndex === i ? null : i)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-text-primary hover:bg-surface-2 transition-colors text-right"
-          >
-            <span>{item.question}</span>
-            <Icon icon={ChevronDown} className={`text-text-tertiary shrink-0 transition-transform duration-200 ${openIndex === i ? '' : '-rotate-90'}`} size="xs" />
-          </button>
-          {openIndex === i && (
-            <div className="px-4 pb-3 text-sm text-text-secondary leading-relaxed">
-              {item.answer}
-            </div>
-          )}
-        </div>
-      ))}
+      {items.map((item, i) => {
+        const isOpen = openIndex === i;
+        const panelId = `home-faq-answer-${i}`;
+        return (
+          <div key={i} className="border border-border rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setOpenIndex(isOpen ? null : i)}
+              aria-expanded={isOpen}
+              aria-controls={panelId}
+              className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-text-primary hover:bg-surface-2 transition-colors text-right"
+            >
+              <span>{item.question}</span>
+              <Icon icon={ChevronDown} className={`text-text-tertiary shrink-0 transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`} size="xs" />
+            </button>
+            {isOpen && (
+              <div id={panelId} className="px-4 pb-3 text-sm text-text-secondary leading-relaxed">
+                {item.answer}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

@@ -922,6 +922,56 @@ const SCHEMA_DELTAS = {
       tu.columns['revoked_by_user_id'] = { name: 'revoked_by_user_id', type: 'integer', primaryKey: false, notNull: false };
     }
   },
+
+  // ── 0088: users — platform admin role.
+  '0088': (snap) => {
+    const users = snap.tables['public.users'];
+    if (users) {
+      users.columns['admin_role'] = {
+        name: 'admin_role',
+        type: 'varchar(32)',
+        primaryKey: false,
+        notNull: true,
+        default: "'super_admin'",
+      };
+    }
+  },
+
+  // ── 0089: payout_transfer_proofs — hardened receipt metadata +
+  //          active receipt uniqueness.
+  '0089': (snap) => {
+    const proofs = snap.tables['public.payout_transfer_proofs'];
+    if (proofs) {
+      proofs.columns['file_mime_type'] = {
+        name: 'file_mime_type',
+        type: 'varchar(100)',
+        primaryKey: false,
+        notNull: false,
+      };
+      proofs.columns['sha256'] = {
+        name: 'sha256',
+        type: 'varchar(64)',
+        primaryKey: false,
+        notNull: false,
+      };
+      proofs.indexes['payout_transfer_proofs_active_unique'] = {
+        name: 'payout_transfer_proofs_active_unique',
+        columns: [
+          {
+            expression: 'payout_request_id',
+            isExpression: false,
+            asc: true,
+            nulls: 'last',
+          },
+        ],
+        isUnique: true,
+        concurrently: false,
+        method: 'btree',
+        where: "verification_status <> 'superseded'",
+        with: {},
+      };
+    }
+  },
 };
 
 function main() {

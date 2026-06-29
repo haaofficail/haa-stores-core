@@ -52,12 +52,21 @@ const demoStoreMarketplaceCondition = () =>
 const marketplaceVisibleProductCondition = () =>
   or(realStoreMarketplaceCondition(), demoStoreMarketplaceCondition())!;
 
+const noProhibitedMarketplaceCategoryCondition = () => sql`NOT EXISTS (
+  SELECT 1
+  FROM ${s.productCategories}
+  INNER JOIN ${s.categories} ON ${s.categories.id} = ${s.productCategories.categoryId}
+  WHERE ${s.productCategories.productId} = ${s.products.id}
+    AND ${s.categories.prohibitedInMarketplace} = true
+)`;
+
 type ProductImageRow = { url: string | null; thumbUrl: string | null };
 
 interface MarketplaceProductRow {
   images?: ProductImageRow[] | null;
   storeIsDemo?: boolean | null;
   categorySlug?: string | null;
+  categorySlugs?: string[] | null;
   sfdaNumber?: string | null;
   sfdaExpiryDate?: string | Date | null;
   sfdaVerifiedAt?: string | Date | null;
@@ -75,7 +84,9 @@ function mapProduct(row: MarketplaceProductRow) {
   // Products in SFDA-gated categories need a valid, non-expired,
   // admin-verified SFDA number. We compute the validation here so
   // we can filter the row out before it ever reaches the DTO.
-  const categorySlugs: string[] = row.categorySlug ? [row.categorySlug] : [];
+  const categorySlugs: string[] = Array.isArray(row.categorySlugs)
+    ? row.categorySlugs.filter((slug): slug is string => typeof slug === 'string' && slug.length > 0)
+    : row.categorySlug ? [row.categorySlug] : [];
   const sfdaCheck: SfdaValidation = validateProductForMarketplace({
     categorySlugs,
     sfdaNumber: row.sfdaNumber,
@@ -151,6 +162,7 @@ haaMarketplaceRouter.get('/stats', async (c) => {
       eq(s.stores.isActive, true),
       eq(s.stores.publishStatus, 'published'),
       marketplaceVisibleProductCondition(),
+      noProhibitedMarketplaceCategoryCondition(),
     ));
 
   return c.json({
@@ -185,6 +197,7 @@ haaMarketplaceRouter.get('/products', async (c) => {
     eq(s.stores.isActive, true),
     eq(s.stores.publishStatus, 'published'),
     marketplaceVisibleProductCondition(),
+    noProhibitedMarketplaceCategoryCondition(),
   ];
 
   if (search) {
@@ -265,6 +278,12 @@ haaMarketplaceRouter.get('/products', async (c) => {
       ORDER BY ${s.categories.sortOrder} ASC
       LIMIT 1
     )`,
+    categorySlugs: sql<string[]>`COALESCE((
+      SELECT array_agg(${s.categories.slug})
+      FROM ${s.productCategories}
+      INNER JOIN ${s.categories} ON ${s.categories.id} = ${s.productCategories.categoryId}
+      WHERE ${s.productCategories.productId} = ${s.products.id}
+    ), ARRAY[]::text[])`,
     images: sql<ProductImageRow[]>`COALESCE((
       SELECT jsonb_agg(jsonb_build_object('url', ${s.productImages.url}, 'thumbUrl', ${s.productImages.thumbUrl}) ORDER BY ${s.productImages.sortOrder})
       FROM ${s.productImages}
@@ -345,6 +364,12 @@ haaMarketplaceRouter.get('/products/:storeSlug/:productSlug', async (c) => {
       ORDER BY ${s.categories.sortOrder} ASC
       LIMIT 1
     )`,
+    categorySlugs: sql<string[]>`COALESCE((
+      SELECT array_agg(${s.categories.slug})
+      FROM ${s.productCategories}
+      INNER JOIN ${s.categories} ON ${s.categories.id} = ${s.productCategories.categoryId}
+      WHERE ${s.productCategories.productId} = ${s.products.id}
+    ), ARRAY[]::text[])`,
     images: sql<ProductImageRow[]>`COALESCE((
       SELECT jsonb_agg(jsonb_build_object('url', ${s.productImages.url}, 'thumbUrl', ${s.productImages.thumbUrl}) ORDER BY ${s.productImages.sortOrder})
       FROM ${s.productImages}
@@ -361,6 +386,7 @@ haaMarketplaceRouter.get('/products/:storeSlug/:productSlug', async (c) => {
       eq(s.stores.isActive, true),
       eq(s.stores.publishStatus, 'published'),
       marketplaceVisibleProductCondition(),
+      noProhibitedMarketplaceCategoryCondition(),
     ))
     .limit(1);
 
@@ -388,8 +414,6 @@ haaMarketplaceRouter.get('/sellers/:storeSlug', async (c) => {
     coverUrl: s.stores.coverUrl,
     city: s.stores.city,
     district: s.stores.district,
-    email: s.stores.email,
-    phone: s.stores.phone,
     seoTitle: s.stores.seoTitle,
     seoDescription: s.stores.seoDescription,
     isDemo: s.stores.isDemo,
@@ -418,6 +442,7 @@ haaMarketplaceRouter.get('/sellers/:storeSlug', async (c) => {
       eq(s.stores.id, storeRow.id),
       eq(s.products.status, 'active'),
       marketplaceVisibleProductCondition(),
+      noProhibitedMarketplaceCategoryCondition(),
     ));
 
   if (Number(productCount) === 0) {
@@ -474,6 +499,7 @@ haaMarketplaceRouter.get('/sellers', async (c) => {
       eq(s.stores.status, 'active'),
       eq(s.stores.isActive, true),
       eq(s.stores.publishStatus, 'published'),
+      noProhibitedMarketplaceCategoryCondition(),
     ))
     .groupBy(s.stores.id, s.stores.name, s.stores.slug, s.stores.description, s.stores.logoUrl, s.stores.coverUrl, s.stores.city, s.stores.district, s.stores.isDemo);
 
@@ -499,6 +525,7 @@ haaMarketplaceRouter.get('/sellers', async (c) => {
       eq(s.stores.status, 'active'),
       eq(s.stores.isActive, true),
       eq(s.stores.publishStatus, 'published'),
+      noProhibitedMarketplaceCategoryCondition(),
     ))
     .groupBy(s.stores.id, s.stores.name, s.stores.slug, s.stores.description, s.stores.logoUrl, s.stores.coverUrl, s.stores.city, s.stores.district, s.stores.isDemo);
 
@@ -544,6 +571,7 @@ haaMarketplaceRouter.get('/categories', async (c) => {
       // Exclude prohibited categories from the marketplace category list.
       eq(s.categories.prohibitedInMarketplace, false),
       marketplaceVisibleProductCondition(),
+      noProhibitedMarketplaceCategoryCondition(),
     ))
     .groupBy(s.categories.name, s.categories.slug)
     .orderBy(sql`count(${s.products.id}) DESC`, s.categories.name);
@@ -725,31 +753,23 @@ haaMarketplaceRouter.post('/orders', zValidator('json', createMarketplaceOrderSc
 
 haaMarketplaceRouter.get('/orders/:marketplaceOrderNumber', async (c) => {
   const marketplaceOrderNumber = c.req.param('marketplaceOrderNumber');
-  // TASK-0040 Track 1B — P0-3. Authenticate via access_token (preferred)
-  // or legacy phone (deprecated, retained for backward compat during
-  // transition window). Document the deprecation path in CHANGELOG.
-  const accessToken = c.req.query('access_token') ?? c.req.query('accessToken');
-  const phone = c.req.query('phone');
-  if (!accessToken && !phone) {
+  // TASK-0098: close the legacy phone fallback. The access token is the
+  // only public proof of ownership for marketplace order tracking.
+  const accessToken = (c.req.query('access_token') ?? c.req.query('accessToken'))?.trim();
+  if (!accessToken) {
     return c.json({
       success: false,
-      error: { code: 'BAD_REQUEST', message: 'رمز الدخول أو رقم الجوال مطلوب.' },
+      error: { code: 'BAD_REQUEST', message: 'رمز الدخول مطلوب.' },
     }, 400);
   }
 
   const db = createDbClient();
-  const conditions = [eq(s.marketplaceOrders.marketplaceOrderNumber, marketplaceOrderNumber)];
-  if (accessToken) {
-    conditions.push(eq(s.marketplaceOrders.accessToken, accessToken));
-  } else if (phone) {
-    // Legacy path — kept for old links still in the wild. Plan: remove
-    // after a transition window once all customers have re-fetched via token.
-    conditions.push(eq(s.marketplaceOrders.customerPhone, phone));
-  }
-
   const [marketplaceOrder] = await db.select()
     .from(s.marketplaceOrders)
-    .where(and(...conditions))
+    .where(and(
+      eq(s.marketplaceOrders.marketplaceOrderNumber, marketplaceOrderNumber),
+      eq(s.marketplaceOrders.accessToken, accessToken),
+    ))
     .limit(1);
 
   if (!marketplaceOrder) {

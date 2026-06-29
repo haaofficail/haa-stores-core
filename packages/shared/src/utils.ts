@@ -48,12 +48,17 @@ const PARTIAL_MASK_KEYS = new Set([
   'vatNumber', 'commercialRegistrationNumber', 'iban', 'bankAccount',
 ]);
 
+const EMAIL_KEY_PATTERN = /email/i;
+const PHONE_KEY_PATTERN = /(phone|mobile|msisdn|telephone)/i;
+const PARTIAL_MASK_KEY_PATTERN = /(iban|bank_?account|account_?number|vat_?number|tax_?number|commercial_?registration|cr_?number|national_?id|identity_?number)/i;
+const FULL_MASK_KEY_PATTERN = /(password|passcode|token|secret|api_?key|access_?key|private_?key|authorization|cookie|session|credential|oauth|otp|cvv|cvc|pin|card_?number|credit_?card|address|customer_?name|beneficiary_?name|account_?holder)/i;
+
 function isFullMaskKey(key: string): boolean {
   const lower = key.toLowerCase();
   for (const k of FULL_MASK_KEYS) {
     if (k.toLowerCase() === lower) return true;
   }
-  return false;
+  return FULL_MASK_KEY_PATTERN.test(key);
 }
 
 function isPartialMaskKey(key: string): boolean {
@@ -61,7 +66,7 @@ function isPartialMaskKey(key: string): boolean {
   for (const k of PARTIAL_MASK_KEYS) {
     if (k.toLowerCase() === lower) return true;
   }
-  return false;
+  return PARTIAL_MASK_KEY_PATTERN.test(key);
 }
 
 export function maskObject(obj: any): any {
@@ -70,17 +75,18 @@ export function maskObject(obj: any): any {
 
   const masked: Record<string, any> = {};
   for (const [key, value] of Object.entries(obj)) {
-    if (isFullMaskKey(key)) {
+    if (EMAIL_KEY_PATTERN.test(key)) {
       if (typeof value === 'string') {
-        const lower = key.toLowerCase();
-        if (lower.includes('email')) masked[key] = maskEmail(value);
-        else if (lower.includes('phone')) masked[key] = maskPhone(value);
-        else masked[key] = '***MASKED***';
+        masked[key] = maskEmail(value);
       } else {
         masked[key] = '***MASKED***';
       }
+    } else if (PHONE_KEY_PATTERN.test(key)) {
+      masked[key] = typeof value === 'string' ? maskPhone(value) : '***MASKED***';
     } else if (isPartialMaskKey(key)) {
       masked[key] = typeof value === 'string' ? maskPartial(value) : '***MASKED***';
+    } else if (isFullMaskKey(key)) {
+      masked[key] = '***MASKED***';
     } else if (typeof value === 'object') {
       masked[key] = maskObject(value);
     } else {

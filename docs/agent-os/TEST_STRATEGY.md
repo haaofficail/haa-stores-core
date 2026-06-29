@@ -1,8 +1,8 @@
 # Test Strategy — Haa Stores Agent OS
 
-> **Purpose:** pick the right tests for the right change. The project's test commands live in `package.json` (54 scripts) — agents must call them by name, not invent flags.
+> **Purpose:** pick the right tests for the right change. The project's test commands live in `package.json` (55 scripts) — agents must call them by name, not invent flags.
 > **Companion documents:** `DEFINITION_OF_DONE.md`, `QUALITY_GATES.md`, `COMMAND_ROUTING_MATRIX.md`.
-> **Reference inventory (confirmed in `package.json`):** `pnpm test`, `pnpm test:e2e`, `pnpm test:e2e:ui`, `pnpm test:coverage`, `pnpm test:smoke`, `pnpm typecheck`, `pnpm lint`, `pnpm lint:fix`, `pnpm preflight`, `pnpm preflight:pentest`, `pnpm smoke`, `pnpm quality`, `pnpm ci:local`, `pnpm env:check`, `pnpm production:check`, `pnpm db:test:setup`, `pnpm db:bootstrap`, `pnpm db:reset`, `pnpm db:migrate`, `pnpm db:generate`, `pnpm load:test`, `pnpm oauth:test`, `pnpm ops:health`, `pnpm ops:monitor`, `pnpm ops:errors`, `pnpm ops:synthetic`. Use these names exactly; do not invent alternatives.
+> **Reference inventory (confirmed in `package.json`):** `pnpm test`, `pnpm test:e2e`, `pnpm test:e2e:ui`, `pnpm test:coverage`, `pnpm test:smoke`, `pnpm typecheck`, `pnpm lint`, `pnpm lint:fix`, `pnpm preflight`, `pnpm preflight:pentest`, `pnpm smoke`, `pnpm quality`, `pnpm ci:local`, `pnpm env:check`, `pnpm production:check`, `pnpm db:test:setup`, `pnpm db:bootstrap`, `pnpm db:reset`, `pnpm db:migrate`, `pnpm db:generate`, `pnpm load:test`, `pnpm oauth:test`, `pnpm ops:health`, `pnpm ops:monitor`, `pnpm ops:alerts`, `pnpm ops:errors`, `pnpm ops:synthetic`. Use these names exactly; do not invent alternatives.
 
 ---
 

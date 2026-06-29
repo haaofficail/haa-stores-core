@@ -86,7 +86,7 @@ export async function uploadRoute(c: any) {
   const mimetype = file.type || 'image/png';
   try {
     const adapter = createMediaAdapter();
-    const validationError = adapter.validateFile(buffer, mimetype);
+    const validationError = adapter.validateFile(buffer, mimetype, { allowPdf: true });
     if (validationError) {
       return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: validationError } }, 400);
     }

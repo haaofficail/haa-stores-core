@@ -5,6 +5,7 @@ import { StoreContainer, StoreCard, StoreInput, StoreButton } from '@/components
 import { Truck, Package, ArrowLeft } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { useSEO } from '@/hooks/useSEO';
+import { saveTrackPhone } from '@/lib/order-track-storage';
 
 export default function TrackOrder() {
   const { t } = useTranslation();
@@ -16,9 +17,11 @@ export default function TrackOrder() {
   const [phone, setPhone] = useState('');
 
   const handleTrack = () => {
-    if (!orderNumber.trim() || !phone.trim() || !slug) return;
-    sessionStorage.setItem(`track_phone_${slug}_${orderNumber.trim()}`, phone.trim());
-    navigate(`/s/${slug}/track/${encodeURIComponent(orderNumber.trim())}`);
+    const normalizedOrderNumber = orderNumber.trim();
+    const normalizedPhone = phone.trim();
+    if (!normalizedOrderNumber || !normalizedPhone || !slug) return;
+    saveTrackPhone(normalizedOrderNumber, normalizedPhone);
+    navigate(`/s/${slug}/track/${encodeURIComponent(normalizedOrderNumber)}`);
   };
 
   return (
@@ -47,6 +50,9 @@ export default function TrackOrder() {
               />
               <StoreInput
                 label={t('track.phone','رقم الجوال')}
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="05xxxxxxxx"

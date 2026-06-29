@@ -15,6 +15,7 @@
 - [ ] `git diff` reviewed — no unrelated changes
 - [ ] No files outside scope were modified
 - [ ] docs/ops/ files updated if needed
+- [ ] Mixed-agent handoffs are staged narrowly; do not use broad `git add .` when financial/RBAC/frontend/docs/storage artifacts coexist
 
 ## CI / Docker
 
@@ -49,6 +50,44 @@
 - [ ] Loading states present where needed
 - [ ] Empty states present where needed
 - [ ] Error states present where needed
+- [ ] Failed checkout payment shows a persistent recovery surface with retry, change-payment, and support actions; it must not be toast-only
+- [ ] Dangerous admin financial actions require an explicit confirmation modal before calling the API
+- [ ] Admin bank-account verify/reject requires a review reason and the API validates that reason before changing status
+- [ ] Admin tenant/store status changes require an explicit reason in UI and API validation; normal edit forms must not bypass the status reason gate
+- [ ] Marketplace product rejection/suspension requires a moderation note in UI and API validation
+- [ ] Admin sidebar hides server-gated pages when the admin JWT lacks the matching permission
+- [ ] Direct navigation to server-gated admin pages shows `UnauthorizedState` instead of fetching and collapsing into an error/empty state
+- [ ] Admin UI must not invent permission guards for routes whose API lacks explicit `requireAdminPermission`; add the API guard first or keep the UI route unguarded
+- [ ] Admin operational routes must not remain `requireAdminAuth()`-only when they expose dashboard, payments, marketplace, audit, plans, upload, settings, users, billing, KYC, tenant, or store data/actions
+- [ ] Admin route/sidebar permission keys must match server `requireAdminPermission(...)` keys
+- [ ] Admin mutation buttons must reflect write/review/upload permissions before calling the API, not rely on a post-click 403
+- [ ] Platform-admin permission keys belong in `AdminPermission` / `ADMIN_PERMISSION_CATALOG`, not in the merchant employee `PERMISSION_CATALOG` unless intentionally shared
+- [ ] Admin full-IBAN reveal routes use a dedicated `AdminPermission`, typed `AuditAction` values with Arabic labels, and audit only `ibanLast4` rather than the full IBAN
+- [ ] Accountant settlement routes/pages are verified with the admin RBAC base (`UnauthorizedState`, `AdminPermissionRoute`, `hasAdminPermission`, permission reflection) before any financial PR is pushed
+- [ ] Marketplace order tracking remains access-token-only; no public `phone` fallback, no `getOrderLegacy`, and no `?phone=` marketplace lookup URL
+- [ ] Public marketplace seller APIs do not select or return store email/phone
+- [ ] Public marketplace product/seller/stat/category queries apply the product-level prohibited-category guard, not only display/facet filters
+- [ ] Merchant onboarding skip writes a resumable local draft, reopening `/onboarding` restores it, Getting Started links to resume, and completing onboarding clears the draft
+- [ ] Merchant Products true empty catalog shows the first-product CTA, while filtered no-results does not show that CTA
+- [ ] Merchant Employees missing `employees:view` shows `UnauthorizedState` and does not fetch employee data
+- [ ] Merchant Employees last-owner guard explains that another owner must be assigned before edit/delete
+- [ ] Storefront order tracking shows return/refund intake only for fulfilled buyer-visible orders and opens a support ticket without putting `accessToken` in the follow-up URL
+- [ ] Storefront support exposes privacy data-export/deletion request actions that prefill structured support tickets and keep support `accessToken` out of follow-up URLs
+- [ ] Storefront order confirmation missing-phone state shows a support/resend-help fallback and manual tracking uses `saveTrackPhone()` from `order-track-storage`
+- [ ] Storefront coupon failures preserve server/API reasons and render as a persistent actionable `role="alert"` near the coupon field
+- [ ] Storefront cart shipping estimate uses the existing shipping-rates endpoint, displays rates as estimates, and keeps final-price caveat visible
+- [ ] Checkout stock depletion after cart entry returns typed `INSUFFICIENT_STOCK` 400 and shows return-to-cart recovery instead of a generic checkout/payment failure
+- [ ] Merchant subscription plan-change confirmation shows current price, new price, price delta, proration estimate, effective timing, and period impact before API confirmation
+- [ ] Storefront buyer phone fields in checkout/tracking/support flows declare tel semantics and LTR direction under RTL shells
+- [ ] Fake 3DS challenge page shows a stable visible DEV/test badge and remains mounted only under `import.meta.env.DEV`
+- [ ] Storefront buyer-facing raw controls expose accessible names and state semantics: carousel dots use `aria-current`, disclosure buttons use `aria-expanded`/`aria-controls`, product choices use `aria-pressed`, and spinner-only loading buttons keep an `aria-label`/`aria-busy`
+- [ ] Merchant product-form media/options controls stay keyboard/screen-reader addressable: image upload is a named button, image/variant remove icon buttons have Arabic labels, and tag/category chips expose `aria-pressed`
+- [ ] Merchant theme-editor controls expose Arabic accessible names and state semantics: preview device/zoom choices use `aria-pressed`, section disclosure controls use `aria-expanded`/`aria-controls`, row Enter/Space handling ignores nested buttons, image/brand remove actions are named, and link/source/category chips expose `aria-pressed`
+- [ ] Non-financial admin dangerous-action dialogs use `AdminDialog` for dialog semantics: marketplace reject/suspend, store status/delete, and tenant status/delete expose `role="dialog"`, `aria-modal`, title linkage, and description linkage
+- [ ] Do not extend TASK-0122 into bank accounts, settlement/manual payout pages, accountant inbox/detail pages, admin-dashboard financial API-client actions, wallet-core, admin finance API routes, upload/PDF allowlist, or IBAN reveal while the financial Batch 4 stream is active
+- [ ] When admin finance route logic moves into services, source-grep safety tests must read the service files for column-selection/audit guarantees while routes keep only auth/wiring responsibilities
+- [ ] Product/media uploads stay image-only by default; PDF is allowed only through explicit financial-document upload paths that pass an opt-in option
+- [ ] Every new migration journal entry must have a matching `packages/db/src/migrations/meta/<shortTag>_snapshot.json` generated by `scripts/build-snapshots.cjs`; do not apply migrations from agent tasks
 - [ ] JSX ternary branches return one valid expression; comments inside branches are wrapped in a fragment or moved outside the ternary
 - [ ] Source-grep UI tests assert shared `ErrorState` wiring when retry copy lives in the shared component
 - [ ] Source-grep nav tests assert the current nav helper contract, not an obsolete object-literal shape
@@ -75,6 +114,7 @@
 ### Backend (Pass 1)
 
 - [ ] API rejects unauthorized actions
+- [ ] Public API-key routes under `/v1` declare scope authorization with `requireApiKeyScope(...)` middleware and do not reintroduce inline handler-body `meta.scopes.includes(...)` checks
 - [ ] Branch/location scope respected
 - [ ] No cross-store data leakage
 - [ ] Audit logged where relevant
@@ -131,6 +171,7 @@
 - [ ] API enforces employee:\* permissions on all endpoints
 - [ ] API safety rules: last owner, self-downgrade, duplicate email, invalid role, self-delete
 - [ ] API custom permissions validates catalog keys and store-scoped membership permissions
+- [ ] Admin API route permissions are typed through `AdminPermission` and covered by `tests/admin-api-rbac-alignment.test.ts`
 - [ ] Employees page fetches from API (no mock data)
 - [ ] Loading state shown while fetching
 - [ ] Empty state shown when no employees
@@ -173,6 +214,14 @@
 - [ ] Gift messages are plain-text sanitized before cart/session/order storage and again at public cart/order DTO output
 - [ ] Shipment creation rejects unpaid non-COD orders, unconfirmed COD orders, unpacked orders, incomplete shipping addresses, and duplicate active shipments
 - [ ] Checkout safe path works
+- [ ] Checkout failed-payment path preserves the cart and offers retry/change-payment/support recovery
+- [ ] `pnpm test:smoke` covers FakePaymentProvider success/failure/cancel/expiry/COD/bank-transfer/3DS scenarios, live payment blocking, and demo checkout fake-provider forcing
+- [ ] `pnpm test:smoke` covers shipping live-mode blocking, manual/haa_mock `mock_ready` readiness, and provider-status route mounting
+- [ ] Settlement payout approve, transfer-pending, transferred, and verify-transfer actions are never one-click API calls
+- [ ] Bank account review writes the review reason into audit/notification context without exposing full IBAN
+- [ ] Store status changes audit `statusReason` and invalidate store tenant cache after mutation
+- [ ] Audit oldValue/newValue masking covers compound PII/secret keys such as customerEmail, customerPhone, accountNumber, cardNumber, nationalId, privateKeyPem, and authorizationHeader
+- [ ] Audit masking keeps non-sensitive metadata useful and does not rely on UI-only masking
 - [ ] Shipping label flow unaffected
 - [ ] Webhooks considered (if relevant)
 
@@ -182,6 +231,10 @@
 - [ ] Authentication enforced
 - [ ] Error handling is safe (no stack traces in responses)
 - [ ] No sensitive data leaked in responses
+- [ ] `/health` includes dependency readiness for storage, payment, shipping, email, and observability
+- [ ] `/health` reports missing key names only and never raw secret values, DSNs, API tokens, or provider credentials
+- [ ] `/health` readiness checks do not call live payment or shipping providers
+- [ ] Platform health tests (`tests/platform-health-readiness.test.ts`) pass after any health/env/provider readiness change
 - [ ] API consumers (storefront, dashboard, admin) considered
 
 ## Database
@@ -242,6 +295,8 @@
 - [ ] `pnpm ops:errors` reads both monitoring-events and support-error-events
 - [ ] `pnpm ops:errors` recommendations use only recent actionable events, not stale history or `status=pass` health checks
 - [ ] `pnpm ops:errors` keeps repeated P3 support-error fingerprints actionable for RCA while ignoring passive P3 monitoring pass/warn events
+- [ ] `pnpm ops:alerts` emits local alerts for active P0, repeated P1, and repeated fingerprints, dedupes by `dedupeKey`, and stays quiet when no alert criteria are met
+- [ ] `pnpm ops:monitor` includes `pnpm ops:alerts` after error analysis
 - [ ] `pnpm ops:monitor:report` imports the shared ops event classifier and bases health on the latest result per check target
 - [ ] `pnpm ops:errors:simulate` generates a valid test event
 - [ ] Stack traces are only included in development mode

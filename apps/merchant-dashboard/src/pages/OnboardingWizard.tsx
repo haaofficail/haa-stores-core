@@ -24,6 +24,62 @@ const steps = [
   { key: 'launch', icon: Rocket },
 ];
 
+const ONBOARDING_DRAFT_PREFIX = 'haa.merchant.onboarding.draft.';
+
+type ProductDraft = { name: string; description?: string; price: number; stockQuantity?: number };
+
+type OnboardingDraft = {
+  version: 1;
+  step: number;
+  storeName: string;
+  storeDesc: string;
+  storePhone: string;
+  storeColor: string;
+  aiProducts: ProductDraft[];
+  selectedProductIndexes: number[];
+  productsStep: 'idle' | 'generated' | 'saving';
+  checklist: {
+    storeInfo: boolean;
+    productsReady: boolean;
+    shippingReady: boolean;
+    paymentReady: boolean;
+  };
+  updatedAt: string;
+  skippedAt?: string;
+};
+
+function onboardingDraftKey(storeId: number) {
+  return `${ONBOARDING_DRAFT_PREFIX}${storeId}`;
+}
+
+function readOnboardingDraft(storeId: number): OnboardingDraft | null {
+  try {
+    const raw = localStorage.getItem(onboardingDraftKey(storeId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<OnboardingDraft>;
+    if (parsed.version !== 1) return null;
+    return parsed as OnboardingDraft;
+  } catch {
+    return null;
+  }
+}
+
+function writeOnboardingDraft(storeId: number, draft: OnboardingDraft) {
+  try {
+    localStorage.setItem(onboardingDraftKey(storeId), JSON.stringify(draft));
+  } catch {
+    // Storage can be blocked in private mode; skipping resume is non-fatal.
+  }
+}
+
+function clearOnboardingDraft(storeId: number) {
+  try {
+    localStorage.removeItem(onboardingDraftKey(storeId));
+  } catch {
+    // Non-fatal; completion should still continue.
+  }
+}
+
 export default function OnboardingWizard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -40,7 +96,7 @@ export default function OnboardingWizard() {
   const [storeColor, setStoreColor] = useState('#5c9cd5');
 
   // Step 2: Products
-  const [aiProducts, setAiProducts] = useState<Array<{ name: string; description?: string; price: number; stockQuantity?: number }>>([]);
+  const [aiProducts, setAiProducts] = useState<ProductDraft[]>([]);
   const [generating, setGenerating] = useState(false);
   const [productsStep, setProductsStep] = useState<'idle' | 'generated' | 'saving'>('idle');
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
@@ -58,10 +114,23 @@ export default function OnboardingWizard() {
     setLoading(true);
     settingsApi.get(storeId).then((raw) => {
       const s = raw as { name?: string; description?: string; phone?: string; primaryColor?: string; slug?: string };
-      setStoreName(s.name || '');
-      setStoreDesc(s.description || '');
-      setStorePhone(s.phone || '');
-      setStoreColor(s.primaryColor || '#5c9cd5');
+      const draft = readOnboardingDraft(storeId);
+      setStoreName(draft?.storeName ?? s.name ?? '');
+      setStoreDesc(draft?.storeDesc ?? s.description ?? '');
+      setStorePhone(draft?.storePhone ?? s.phone ?? '');
+      setStoreColor(draft?.storeColor ?? s.primaryColor ?? '#5c9cd5');
+      if (draft) {
+        setStep(Math.max(0, Math.min(2, draft.step)));
+        setAiProducts(draft.aiProducts ?? []);
+        setSelectedProducts(new Set(draft.selectedProductIndexes ?? []));
+        setProductsStep(draft.productsStep === 'saving' ? 'generated' : draft.productsStep ?? 'idle');
+        setChecklist(draft.checklist ?? {
+          storeInfo: false,
+          productsReady: false,
+          shippingReady: false,
+          paymentReady: false,
+        });
+      }
       setStoreUrl(s.slug ? `${getStorefrontOrigin()}/s/${s.slug}` : '');
     }).catch(() => {
       toast.error(t('common.error'));
@@ -136,8 +205,41 @@ export default function OnboardingWizard() {
   };
 
   const handleComplete = () => {
+    if (storeId) clearOnboardingDraft(storeId);
     localStorage.setItem('onboarding_done', 'true');
     navigate('/onboarding/success');
+  };
+
+  const buildDraft = (skipped = false): OnboardingDraft => ({
+    version: 1,
+    step,
+    storeName,
+    storeDesc,
+    storePhone,
+    storeColor,
+    aiProducts,
+    selectedProductIndexes: Array.from(selectedProducts),
+    productsStep,
+    checklist,
+    updatedAt: new Date().toISOString(),
+    ...(skipped ? { skippedAt: new Date().toISOString() } : {}),
+  });
+
+  const handleSkipOnboarding = () => {
+    // Confirm before skipping so a stray click does not drop the
+    // merchant mid-wizard. If they do skip, persist a local draft so
+    // `/onboarding` can resume instead of starting from a blank screen.
+    if (window.confirm(
+      t(
+        'onboarding.skipConfirm',
+        'هل تريد تخطّي إعداد المتجر؟ ستذهب للوحة التحكم مباشرة ويمكنك إكمال الإعداد لاحقاً من الإعدادات.',
+      ),
+    )) {
+      if (storeId) writeOnboardingDraft(storeId, buildDraft(true));
+      localStorage.removeItem('onboarding_done');
+      toast.success(t('onboarding.resumeSaved', 'تم حفظ تقدمك. يمكنك استكمال الإعداد لاحقاً من بدء الاستخدام.'));
+      navigate('/dashboard');
+    }
   };
 
   if (loading) {
@@ -253,20 +355,7 @@ export default function OnboardingWizard() {
                   <Button
                     variant="outline"
                     className="h-11 text-sm"
-                    onClick={() => {
-                      // Confirm before skipping so a stray click doesn't
-                      // drop the user mid-wizard with no progress saved
-                      // (audit P1-#9). window.confirm is intentional:
-                      // adds zero deps, blocks until decision, native a11y.
-                      if (window.confirm(
-                        t(
-                          'onboarding.skipConfirm',
-                          'هل تريد تخطّي إعداد المتجر؟ ستذهب للوحة التحكم مباشرة ويمكنك إكمال الإعداد لاحقاً من الإعدادات.',
-                        ),
-                      )) {
-                        navigate('/dashboard');
-                      }
-                    }}
+                    onClick={handleSkipOnboarding}
                   >
                     {t('onboarding.skip')}
                   </Button>

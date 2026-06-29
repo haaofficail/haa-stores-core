@@ -502,6 +502,9 @@ export default function Products() {
   };
 
   const warnings = getWarnings(form);
+  const hasActiveProductFilters = Boolean(
+    search || statusFilter || categoryFilter || brandFilter || tagFilter || stockFilter || typeFilter
+  );
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
@@ -618,19 +621,22 @@ export default function Products() {
           <EmptyState
             icon={<Package className="h-8 w-8" />}
             title={
-              (search || statusFilter || categoryFilter || brandFilter || tagFilter || stockFilter || typeFilter)
+              hasActiveProductFilters
                 ? t('products.noMatchTitle', 'لا توجد نتائج مطابقة')
                 : t('products.noProductsTitle', 'لا توجد منتجات بعد')
             }
             description={
-              (search || statusFilter || categoryFilter || brandFilter || tagFilter || stockFilter || typeFilter)
+              hasActiveProductFilters
                 ? t('products.noMatch', 'لم نجد منتجات تطابق الفلاتر. جرّب مسح الفلاتر أو تعديل البحث.')
                 : t('products.noProductsDesc', 'أضف منتجك الأول وابدأ البيع. يمكنك الاستيراد لاحقاً من Excel أو CSV.')
             }
             action={
-              !(search || statusFilter || categoryFilter || brandFilter || tagFilter || stockFilter || typeFilter) && (
+              !hasActiveProductFilters && (
                 <PermissionGate permission="products:create" fallback={null}>
-                  <Button className="h-11 px-5 text-sm" onClick={openCreate}>{t('products.create')}</Button>
+                  <Button className="h-11 px-5 text-sm" onClick={openCreate}>
+                    <Plus className="h-4 w-4 me-2" />
+                    {t('products.createFirst', 'إضافة أول منتج')}
+                  </Button>
                 </PermissionGate>
               )
             }

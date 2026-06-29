@@ -231,6 +231,8 @@ export default function LuxuryProductCard({
         type="button"
         onClick={handleAddToCart}
         disabled={adding}
+        aria-label={adding ? t('product.adding', 'جارٍ الإضافة...') : t('product.addToCart', 'أضف للسلة')}
+        aria-busy={adding}
         className="w-full py-2 text-xs font-medium tracking-wider text-white transition-opacity hover:opacity-85 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]"
         style={{
           backgroundColor: 'var(--lux-text, #2B2520)',
@@ -238,7 +240,7 @@ export default function LuxuryProductCard({
         }}
       >
         {adding ? (
-          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          <span aria-hidden="true" className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
         ) : (
           <span className="flex items-center justify-center gap-1.5">
             <ShoppingCart className="h-3 w-3" />

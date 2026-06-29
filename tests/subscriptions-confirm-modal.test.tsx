@@ -13,6 +13,9 @@
 //      `confirmPlanChange`.
 //   3. The Dialog shows the new plan name, the new price, and the
 //      billing cycle before the merchant confirms.
+//   3b. The Dialog shows financial impact details: current price,
+//       price delta, proration estimate, remaining days, effective timing,
+//       and the next/current period date before the merchant confirms.
 //   4. Error toasts go through `messageFromError` (no naked `err.message`
 //      fall-through that swallows API codes).
 
@@ -84,6 +87,29 @@ describe('Subscriptions confirm modal (audit Part 5 P0 #1)', () => {
     expect(SUBSCRIPTIONS).toMatch(/pendingChange\.plan\.priceAnnual/);
     // The confirm button copy is "تأكيد التغيير" per the audit ask.
     expect(SUBSCRIPTIONS).toMatch(/تأكيد التغيير/);
+  });
+
+  it('renders financial impact, proration, and effective-date details before confirm', () => {
+    expect(SUBSCRIPTIONS).toMatch(/function getPlanChangeImpact\(/);
+    expect(SUBSCRIPTIONS).toMatch(/getRemainingCycleDays/);
+    expect(SUBSCRIPTIONS).toMatch(/priceDelta/);
+    expect(SUBSCRIPTIONS).toMatch(/estimatedProration/);
+    expect(SUBSCRIPTIONS).toMatch(/remainingDays/);
+    expect(SUBSCRIPTIONS).toMatch(/cycleDays/);
+    expect(SUBSCRIPTIONS).toMatch(/getEstimatedNextPeriodEnd/);
+
+    expect(SUBSCRIPTIONS).toMatch(/data-testid="plan-change-current-price"/);
+    expect(SUBSCRIPTIONS).toMatch(/data-testid="plan-change-price-delta"/);
+    expect(SUBSCRIPTIONS).toMatch(/data-testid="plan-change-proration-estimate"/);
+    expect(SUBSCRIPTIONS).toMatch(/data-testid="plan-change-remaining-days"/);
+    expect(SUBSCRIPTIONS).toMatch(/data-testid="plan-change-effective-date"/);
+    expect(SUBSCRIPTIONS).toMatch(/data-testid="plan-change-next-period"/);
+    expect(SUBSCRIPTIONS).toMatch(/data-testid="plan-change-proration-note"/);
+
+    expect(SUBSCRIPTIONS).toContain('هذا تقدير مبني على فرق السعر والأيام المتبقية');
+    expect(SUBSCRIPTIONS).toContain('الفاتورة النهائية تُحسب من النظام بعد التأكيد');
+    expect(SUBSCRIPTIONS).toContain('فور تأكيد التغيير');
+    expect(SUBSCRIPTIONS).toContain('لا تُنشأ فاتورة تناسب تلقائية عند التخفيض');
   });
 
   it('disables the confirm button while the API call is in flight', () => {

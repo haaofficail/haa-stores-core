@@ -5,7 +5,15 @@ import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 import { useTranslation } from 'react-i18next';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
+import { AdminDialog } from '../components/ui/AdminDialog';
 import { ErrorState } from '../components/ui/ErrorState';
+
+type StoreStatusDialog = {
+  id: number;
+  name: string;
+  currentIsActive: boolean;
+  nextIsActive: boolean;
+};
 
 export default function Stores() {
   const { t } = useTranslation();
@@ -17,6 +25,8 @@ export default function Stores() {
   const [form, setForm] = useState({ name: '', domain: '', tenantId: '', isActive: 'true' });
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState('');
+  const [statusDialog, setStatusDialog] = useState<StoreStatusDialog | null>(null);
+  const [statusReason, setStatusReason] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -59,7 +69,7 @@ export default function Stores() {
     try {
       const data = { ...form, tenantId: tenantIdNum, isActive: form.isActive === 'true' };
       if (editId) {
-        await adminApi.updateStore(editId, data);
+        await adminApi.updateStore(editId, { name: data.name, domain: data.domain, tenantId: data.tenantId });
         toast.success(t('stores.updated', 'تم تحديث المتجر بنجاح'));
       } else {
         await adminApi.createStore(data);
@@ -89,11 +99,29 @@ export default function Stores() {
     }
   };
 
-  const toggleStatus = async (id: number, current: boolean) => {
+  const openStatusDialog = (store: any) => {
+    const currentIsActive = Boolean(store.isActive);
+    setStatusDialog({
+      id: Number(store.id),
+      name: String(store.name || ''),
+      currentIsActive,
+      nextIsActive: !currentIsActive,
+    });
+    setStatusReason('');
+  };
+
+  const closeStatusDialog = () => {
+    setStatusDialog(null);
+    setStatusReason('');
+  };
+
+  const submitStatusChange = async () => {
+    if (!statusDialog || !statusReason.trim()) return;
     try {
-      await adminApi.updateStoreStatus(id, !current);
-      setStores(prev => prev.map(s => s.id === id ? { ...s, isActive: !current } : s));
-      toast.success(current ? t('stores.deactivated', 'تم تعطيل المتجر') : t('stores.activated', 'تم تفعيل المتجر'));
+      await adminApi.updateStoreStatus(statusDialog.id, statusDialog.nextIsActive, statusReason.trim());
+      setStores(prev => prev.map(s => s.id === statusDialog.id ? { ...s, isActive: statusDialog.nextIsActive } : s));
+      toast.success(statusDialog.nextIsActive ? t('stores.activated', 'تم تفعيل المتجر') : t('stores.deactivated', 'تم تعطيل المتجر'));
+      closeStatusDialog();
     } catch {
       toast.error(t('stores.statusUpdateError', 'فشل تحديث حالة المتجر'));
     }
@@ -156,7 +184,7 @@ export default function Stores() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => toggleStatus(s.id, s.isActive)} className="text-sm text-primary-600 hover:text-primary-700 transition-colors px-2 py-1">
+                      <button onClick={() => openStatusDialog(s)} className="text-sm text-primary-600 hover:text-primary-700 transition-colors px-2 py-1">
                         {s.isActive ? t('stores.deactivate', 'تعطيل') : t('stores.activate', 'تفعيل')}
                       </button>
                       <button onClick={() => handleOpenDialog(s)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors px-2 py-1">{t('stores.edit', 'تعديل')}</button>
@@ -171,16 +199,53 @@ export default function Stores() {
       </div>
 
       {confirmDeleteId !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
-            <h3 className="text-lg font-bold text-gray-900">{t('stores.confirmDeleteTitle', 'تأكيد الحذف')}</h3>
-            <p className="text-sm text-gray-600">{t('stores.confirmDeleteMessage', 'هل أنت متأكد من حذف هذا المتجر؟ لا يمكن التراجع عن هذا الإجراء.')}</p>
-            <div className="flex gap-3 pt-4 border-t">
-              <button onClick={deleteStore} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">{t('stores.delete', 'حذف')}</button>
-              <button onClick={() => setConfirmDeleteId(null)} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">{t('stores.cancel', 'إلغاء')}</button>
-            </div>
+        <AdminDialog
+          title={t('stores.confirmDeleteTitle', 'تأكيد الحذف')}
+          description={t('stores.confirmDeleteMessage', 'هل أنت متأكد من حذف هذا المتجر؟ لا يمكن التراجع عن هذا الإجراء.')}
+          maxWidthClassName="max-w-sm"
+          onClose={() => setConfirmDeleteId(null)}
+        >
+          <div className="flex gap-3 pt-4 border-t">
+            <button onClick={deleteStore} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">{t('stores.delete', 'حذف')}</button>
+            <button onClick={() => setConfirmDeleteId(null)} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">{t('stores.cancel', 'إلغاء')}</button>
           </div>
-        </div>
+        </AdminDialog>
+      )}
+
+      {statusDialog && (
+        <AdminDialog
+          title={statusDialog.nextIsActive ? 'تأكيد تفعيل المتجر' : 'تأكيد تعطيل المتجر'}
+          description={<span>المتجر: <span className="font-medium">{statusDialog.name || `#${statusDialog.id}`}</span></span>}
+          onClose={closeStatusDialog}
+        >
+          <div className="rounded-lg bg-amber-50 text-amber-800 text-xs leading-5 p-3">
+            تغيير حالة المتجر يؤثر مباشرة على وصول العملاء والطلبات. اكتب سببًا واضحًا قبل المتابعة.
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">سبب القرار *</label>
+            <textarea
+              value={statusReason}
+              onChange={e => setStatusReason(e.target.value)}
+              aria-label="سبب القرار *"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 h-28"
+              placeholder={statusDialog.nextIsActive ? 'مثال: تمت معالجة سبب التعطيل والتحقق من جاهزية المتجر.' : 'مثال: مخالفة سياسة المنصة أو طلب امتثال مفتوح.'}
+            />
+          </div>
+          <div className="flex gap-3 pt-4 border-t">
+            <button
+              onClick={submitStatusChange}
+              disabled={!statusReason.trim()}
+              className={`flex-1 px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors ${
+                statusDialog.nextIsActive ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+              }`}
+            >
+              {statusDialog.nextIsActive ? 'تأكيد التفعيل' : 'تأكيد التعطيل'}
+            </button>
+            <button onClick={closeStatusDialog} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+              {t('stores.cancel', 'إلغاء')}
+            </button>
+          </div>
+        </AdminDialog>
       )}
 
       {dialogOpen && (
@@ -200,13 +265,15 @@ export default function Stores() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('stores.tenantIdLabel', 'معرّف التاجر (Tenant ID)')}</label>
                 <input type="number" value={form.tenantId} onChange={e => setForm({...form, tenantId: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('stores.status', 'الحالة')}</label>
-                <select value={form.isActive} onChange={e => setForm({...form, isActive: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-                  <option value="true">{t('stores.active', 'نشط')}</option>
-                  <option value="false">{t('stores.inactive', 'موقوف')}</option>
-                </select>
-              </div>
+              {!editId && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('stores.status', 'الحالة')}</label>
+                  <select value={form.isActive} onChange={e => setForm({...form, isActive: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="true">{t('stores.active', 'نشط')}</option>
+                    <option value="false">{t('stores.inactive', 'موقوف')}</option>
+                  </select>
+                </div>
+              )}
             </div>
             <div className="flex gap-3 pt-4 border-t">
               <button onClick={saveStore} disabled={saving} className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors">

@@ -40,6 +40,21 @@ function getVariantLabel(item: Cart['items'][number]): string {
   return '';
 }
 
+type PaymentRecoveryState = {
+  kind: 'payment_failed' | 'checkout_failed' | 'stock_unavailable';
+  message: string;
+  paymentMethod: string;
+};
+
+function isStockUnavailableError(err: unknown, message: string): boolean {
+  const code = err instanceof ApiClientError ? err.code : '';
+  const lowerMessage = message.toLowerCase();
+  return code === 'INSUFFICIENT_STOCK' ||
+    lowerMessage.includes('insufficient stock') ||
+    message.includes('مخزون') ||
+    message.includes('لم يعد متوفر');
+}
+
 export default function Checkout() {
   const { t, i18n } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
@@ -71,6 +86,7 @@ export default function Checkout() {
   const [orderGift, setOrderGift] = useState<{ sendAsGift: boolean; message: string }>({ sendAsGift: false, message: '' });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [paymentRecovery, setPaymentRecovery] = useState<PaymentRecoveryState | null>(null);
   const [bnplMethods, setBnplMethods] = useState<PaymentMethodAvailability[]>([]);
   // L-PR-6 — loyalty balance + redeem widget state.
   // The server is the SINGLE source of truth for the redemption value:
@@ -214,6 +230,27 @@ export default function Checkout() {
     setCurrentStep(Math.max(currentStep - 1, 0));
   };
 
+  const goToStep = (key: CheckoutStepKey) => {
+    const targetStep = steps.findIndex((step) => step.key === key);
+    if (targetStep >= 0) setCurrentStep(targetStep);
+  };
+
+  const handlePaymentMethodChange = (value: string) => {
+    setPaymentMethod(value);
+    setPaymentRecovery(null);
+  };
+
+  const handleChangePaymentAfterFailure = () => {
+    setPaymentRecovery(null);
+    setErrors({});
+    goToStep('payment');
+  };
+
+  const handleRetryPayment = () => {
+    setPaymentRecovery(null);
+    void handleConfirm();
+  };
+
   const isBNPL = paymentMethod === 'tabby_installments' || paymentMethod === 'tamara_installments';
 
   // L-PR-6 — server-authoritative redeem preview. Called on apply; never
@@ -252,6 +289,7 @@ export default function Checkout() {
     if (fulfillmentType === 'shipping' && !selectedShippingId) return;
     if (fulfillmentType === 'pickup' && !selectedPickupLocationId) return;
     setConfirming(true);
+    setPaymentRecovery(null);
     try {
       const session = await checkoutApi.createSession(slug, {
         cartId: cart.id,
@@ -284,7 +322,9 @@ export default function Checkout() {
         });
         // لا نمسح السلة قبل تأكيد الدفع — تُمسح عند العودة بـ orderNumber (QA CO5)
         if (!isSafeRedirectUrl(bnplResult.redirectUrl)) {
-          toast.error(t('checkout.paymentError', 'تعذّر بدء الدفع.'));
+          const message = t('checkout.paymentError', 'تعذّر بدء الدفع.');
+          setPaymentRecovery({ kind: 'payment_failed', message, paymentMethod });
+          toast.error(message);
           setConfirming(false);
           return;
         }
@@ -308,7 +348,9 @@ export default function Checkout() {
       if (result.paymentStatus === 'requires_3ds' && result.redirectUrl) {
         // لا نمسح السلة قبل اكتمال تحدّي 3DS — تُمسح عند العودة المؤكّدة (QA CO5)
         if (!isSafeRedirectUrl(result.redirectUrl)) {
-          toast.error(t('checkout.paymentError', 'تعذّر بدء التحقق من الدفع.'));
+          const message = t('checkout.paymentError', 'تعذّر بدء التحقق من الدفع.');
+          setPaymentRecovery({ kind: 'payment_failed', message, paymentMethod });
+          toast.error(message);
           setConfirming(false);
           return;
         }
@@ -334,8 +376,33 @@ export default function Checkout() {
       navigate(`/s/${slug}/order/${result.order.orderNumber}`);
     } catch (err: unknown) {
       const msg = (err as { message?: string } | null)?.message || t('checkout.error');
-      if (msg.includes('فشلت') || msg.toLowerCase().includes('fail')) {
-        toast.error(t('checkout.paymentError'));
+      const lowerMsg = msg.toLowerCase();
+      if (isStockUnavailableError(err, msg)) {
+        const stockMessage = err instanceof ApiClientError
+          ? err.message
+          : t('checkout.stockRecoveryMessage', 'أحد المنتجات في السلة لم يعد متوفرًا بالكمية المطلوبة. راجع السلة قبل إعادة المحاولة.');
+        setPaymentRecovery({
+          kind: 'stock_unavailable',
+          message: stockMessage,
+          paymentMethod,
+        });
+        toast.error(stockMessage);
+        return;
+      }
+      const paymentFailed =
+        msg.includes('فشلت') ||
+        msg.includes('دفع') ||
+        lowerMsg.includes('fail') ||
+        lowerMsg.includes('payment') ||
+        lowerMsg.includes('declined');
+      const recoveryMessage = paymentFailed ? t('checkout.paymentError', 'تعذّر إتمام الدفع.') : msg;
+      setPaymentRecovery({
+        kind: paymentFailed ? 'payment_failed' : 'checkout_failed',
+        message: recoveryMessage,
+        paymentMethod,
+      });
+      if (paymentFailed) {
+        toast.error(recoveryMessage);
       } else {
         toast.error(msg);
       }
@@ -404,6 +471,73 @@ export default function Checkout() {
 
         <StoreStepIndicator steps={STEPS} currentStep={currentStep} />
 
+        {paymentRecovery && (
+          <div className="mb-6" data-testid="checkout-payment-recovery">
+            <StoreAlert
+              variant="danger"
+              title={paymentRecovery.kind === 'stock_unavailable'
+                ? t('checkout.stockRecoveryTitle', 'تغير توفر المنتجات')
+                : paymentRecovery.kind === 'payment_failed'
+                  ? t('checkout.paymentRecoveryTitle', 'لم يكتمل الدفع')
+                  : t('checkout.checkoutRecoveryTitle', 'لم يكتمل الطلب')}
+            >
+              <div className="space-y-3">
+                <p>
+                  {paymentRecovery.message}{' '}
+                  {paymentRecovery.kind === 'stock_unavailable'
+                    ? t('checkout.stockRecoveryHelp', 'ارجع إلى السلة لتحديث الكميات أو إزالة المنتج غير المتاح قبل إعادة إتمام الطلب.')
+                    : t('checkout.paymentRecoveryHelp', 'يمكنك إعادة المحاولة، تغيير طريقة الدفع، أو التواصل مع الدعم بدون فقدان السلة.')}
+                </p>
+                {paymentRecovery.kind !== 'stock_unavailable' && (
+                  <p className="text-xs opacity-90" dir="ltr">
+                    {paymentRecovery.paymentMethod}
+                  </p>
+                )}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {paymentRecovery.kind === 'stock_unavailable' ? (
+                    <StoreButton
+                      size="sm"
+                      href={`/s/${slug}/cart`}
+                      iconStart={<Icon name="ShoppingCart" size="2xs" />}
+                    >
+                      {t('checkout.returnToCart', 'العودة للسلة')}
+                    </StoreButton>
+                  ) : (
+                    <>
+                      <StoreButton
+                        type="button"
+                        size="sm"
+                        onClick={handleRetryPayment}
+                        loading={confirming}
+                        iconStart={<Icon name="RefreshCw" size="2xs" />}
+                      >
+                        {t('checkout.retryPayment', 'إعادة المحاولة')}
+                      </StoreButton>
+                      <StoreButton
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleChangePaymentAfterFailure}
+                        iconStart={<Icon name="CreditCard" size="2xs" />}
+                      >
+                        {t('checkout.changePaymentMethod', 'تغيير طريقة الدفع')}
+                      </StoreButton>
+                    </>
+                  )}
+                  <StoreButton
+                    size="sm"
+                    variant="outline"
+                    href={`/s/${slug}/support`}
+                    iconStart={<Icon name="Phone" size="2xs" />}
+                  >
+                    {t('checkout.contactSupport', 'تواصل مع الدعم')}
+                  </StoreButton>
+                </div>
+              </div>
+            </StoreAlert>
+          </div>
+        )}
+
         <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
           <div className="lg:col-span-2">
             {activeStep === 'customer' && (
@@ -411,7 +545,7 @@ export default function Checkout() {
                 <h2 className="font-bold text-lg mb-4">{t('checkout.customerInfo')}</h2>
                 <div className="space-y-4">
                   <StoreInput label={`${t('checkout.name')} *`} value={customer.name} onChange={(e) => { setCustomer({ ...customer, name: e.target.value }); setErrors({}); }} error={errors.name} placeholder={t('checkout.placeholderFullName', 'الاسم الكامل')} />
-                  <StoreInput label={`${t('checkout.phone')} *`} value={customer.phone} onChange={(e) => { setCustomer({ ...customer, phone: e.target.value }); setErrors({}); }} error={errors.phone} placeholder="05xxxxxxxx" dir="ltr" className="text-start" />
+                  <StoreInput label={`${t('checkout.phone')} *`} type="tel" inputMode="tel" autoComplete="tel" value={customer.phone} onChange={(e) => { setCustomer({ ...customer, phone: e.target.value }); setErrors({}); }} error={errors.phone} placeholder="05xxxxxxxx" dir="ltr" className="text-start" />
                   <StoreInput label={t('checkout.email')} value={customer.email} onChange={(e) => { setCustomer({ ...customer, email: e.target.value }); setErrors({}); }} error={errors.email} placeholder={t('checkout.placeholderEmail', 'email@example.com (اختياري)')} dir="ltr" className="text-start" />
                 </div>
               </StoreCard>
@@ -588,7 +722,7 @@ export default function Checkout() {
                         name="payment"
                         value={method.value}
                         checked={paymentMethod === method.value}
-                        onChange={() => setPaymentMethod(method.value)}
+                        onChange={() => handlePaymentMethodChange(method.value)}
                         className="accent-primary-500"
                       />
                       <div className="p-2 rounded-lg bg-surface-2">{method.icon}</div>

@@ -11,6 +11,16 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   rejected:  { label: 'مرفوض',            cls: 'bg-red-100 text-red-700'      },
 };
 
+type BankAccountReviewStatus = 'verified' | 'rejected';
+
+type BankAccountReviewDialog = {
+  id: number;
+  status: BankAccountReviewStatus;
+  accountHolderName: string;
+  bankName: string;
+  ibanLast4: string;
+};
+
 export default function BankAccounts() {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -18,6 +28,8 @@ export default function BankAccounts() {
   const [query, setQuery]       = useState('');
   const [busy, setBusy]         = useState<number | null>(null);
   const [filter, setFilter]     = useState<'all' | 'submitted' | 'verified' | 'rejected'>('all');
+  const [reviewDialog, setReviewDialog] = useState<BankAccountReviewDialog | null>(null);
+  const [reviewReason, setReviewReason] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true); setError(false);
@@ -28,14 +40,36 @@ export default function BankAccounts() {
 
   useEffect(() => { load(); }, [load]);
 
-  const decide = async (id: number, status: 'verified' | 'rejected') => {
+  const decide = async (id: number, status: BankAccountReviewStatus, reason: string) => {
     setBusy(id);
     try {
-      await adminApi.reviewBankAccount(id, status);
+      await adminApi.reviewBankAccount(id, status, reason);
       setAccounts(prev => prev.map(a => a.id === id ? { ...a, status } : a));
       toast.success(status === 'verified' ? 'تم التحقق من الحساب' : 'تم رفض الحساب');
     } catch { toast.error('فشل تحديث الحساب البنكي'); }
     finally { setBusy(null); }
+  };
+
+  const openReviewDialog = (account: any, status: BankAccountReviewStatus) => {
+    setReviewDialog({
+      id: Number(account.id),
+      status,
+      accountHolderName: String(account.accountHolderName || ''),
+      bankName: String(account.bankName || ''),
+      ibanLast4: String(account.ibanLast4 || account.iban?.slice(-4) || ''),
+    });
+    setReviewReason('');
+  };
+
+  const closeReviewDialog = () => {
+    setReviewDialog(null);
+    setReviewReason('');
+  };
+
+  const submitReviewDecision = () => {
+    if (!reviewDialog || !reviewReason.trim()) return;
+    void decide(reviewDialog.id, reviewDialog.status, reviewReason.trim());
+    closeReviewDialog();
   };
 
   const visible = accounts.filter(a => {
@@ -118,18 +152,18 @@ export default function BankAccounts() {
                     <td className="px-4 py-3">
                       {a.status === 'submitted' ? (
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => decide(a.id, 'verified')}
-                            disabled={busy === a.id}
-                            className="px-3 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
-                          >
+	                          <button
+	                            onClick={() => openReviewDialog(a, 'verified')}
+	                            disabled={busy === a.id}
+	                            className="px-3 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 disabled:opacity-50 transition-colors"
+	                          >
                             {busy === a.id ? '...' : 'تحقق'}
                           </button>
-                          <button
-                            onClick={() => decide(a.id, 'rejected')}
-                            disabled={busy === a.id}
-                            className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200 disabled:opacity-50 transition-colors"
-                          >
+	                          <button
+	                            onClick={() => openReviewDialog(a, 'rejected')}
+	                            disabled={busy === a.id}
+	                            className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200 disabled:opacity-50 transition-colors"
+	                          >
                             رفض
                           </button>
                         </div>
@@ -144,6 +178,49 @@ export default function BankAccounts() {
           </table>
         )}
       </div>
+
+      {reviewDialog && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 className="font-bold text-lg mb-3">
+              {reviewDialog.status === 'verified' ? 'تأكيد توثيق الحساب البنكي' : 'تأكيد رفض الحساب البنكي'}
+            </h3>
+            <div className="rounded-lg bg-gray-50 p-3 text-sm text-gray-700 space-y-1">
+              <p><span className="text-gray-500">صاحب الحساب:</span> {reviewDialog.accountHolderName || '-'}</p>
+              <p><span className="text-gray-500">البنك:</span> {reviewDialog.bankName || '-'}</p>
+              <p><span className="text-gray-500">IBAN:</span> ****{reviewDialog.ibanLast4 || '----'}</p>
+            </div>
+            <label className="block text-xs text-gray-500 mt-4 mb-1">
+              سبب القرار *
+            </label>
+            <textarea
+              value={reviewReason}
+              onChange={(e) => setReviewReason(e.target.value)}
+              placeholder={reviewDialog.status === 'verified'
+                ? 'مثال: تمت مطابقة اسم المستفيد وآخر 4 أرقام من IBAN.'
+                : 'مثال: اسم المستفيد لا يطابق بيانات المتجر.'}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+            <div className="flex gap-2 justify-end mt-4">
+              <button
+                onClick={closeReviewDialog}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+              >
+                رجوع
+              </button>
+              <button
+                onClick={submitReviewDecision}
+                disabled={!reviewReason.trim() || busy === reviewDialog.id}
+                className={`px-4 py-2 text-white rounded-lg text-sm disabled:opacity-50 ${
+                  reviewDialog.status === 'verified' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                }`}
+              >
+                {busy === reviewDialog.id ? 'جاري...' : reviewDialog.status === 'verified' ? 'تأكيد التوثيق' : 'تأكيد الرفض'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

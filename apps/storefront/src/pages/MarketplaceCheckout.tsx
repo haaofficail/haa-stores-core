@@ -237,7 +237,7 @@ export default function MarketplaceCheckout() {
               <h2 className="mb-4 text-base font-bold text-text-primary">بيانات العميل</h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 <StoreInput label="الاسم *" value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} />
-                <StoreInput label="الجوال *" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} dir="ltr" className="text-start" />
+                <StoreInput label="الجوال *" type="tel" inputMode="tel" autoComplete="tel" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} dir="ltr" className="text-start" />
                 <StoreInput label="البريد الإلكتروني" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} dir="ltr" className="text-start sm:col-span-2" />
               </div>
             </StoreCard>

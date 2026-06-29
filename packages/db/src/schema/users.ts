@@ -8,6 +8,11 @@ export const users = pgTable('users', {
   phone: varchar('phone', { length: 20 }),
   isActive: boolean('is_active').notNull().default(true),
   isAdmin: boolean('is_admin').notNull().default(false),
+  // Platform admin role (only consulted when isAdmin = true). Defaults to
+  // 'super_admin' so every pre-existing admin keeps full `admin:*` access and
+  // the platform is never locked out by this change. 'accountant' is a
+  // finance-scoped role (see ADMIN_ROLE_PERMISSIONS in @haa/shared).
+  adminRole: varchar('admin_role', { length: 32 }).notNull().default('super_admin'),
   tokenVersion: integer('token_version').notNull().default(0),
   lastLoginAt: timestamp('last_login_at'),
   // HAA-AUTH-SIGNUP-VERIFY — non-null when the user has completed the

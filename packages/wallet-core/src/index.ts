@@ -2,6 +2,25 @@ export const WALLET_CORE_VERSION = '0.1.0';
 
 export { WalletLedger } from './ledger.js';
 export {
+  DEFAULT_SECOND_APPROVAL_THRESHOLD_SAR,
+  getSecondApprovalThresholdSar,
+  needsSecondApproval,
+  DEFAULT_STUCK_AFTER_HOURS,
+  getStuckAfterHours,
+} from './settlement-config.js';
+export {
+  ALLOWED_RECEIPT_MIME_TYPES,
+  assertReceiptInput,
+  assertTransferData,
+  evaluateTransferAmount,
+} from './receipt-validation.js';
+export type {
+  ReceiptMimeType,
+  ReceiptInput,
+  TransferDataInput,
+  TransferAmountResult,
+} from './receipt-validation.js';
+export {
   calcPlatformFee,
   normalizePlatformFeePolicy,
   describePlatformFeePolicy,

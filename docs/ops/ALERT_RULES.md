@@ -83,3 +83,19 @@
 | P1 repeated ≥3 times | Create **Task** in TASK_TRACKER |
 | Fingerprint repeated ≥3 times | Open **Root Cause Analysis** in ISSUE_KNOWLEDGE_BASE |
 | Unknown status | Default to P2, escalate if unable to diagnose |
+
+## Local Alert Emission
+
+`pnpm ops:alerts` reads the same local NDJSON event sources as `pnpm ops:errors`
+and writes new local alert candidates to `storage/monitoring-alerts.ndjson`.
+It emits:
+
+- `incident` alerts for active P0 events.
+- `task` alerts for repeated P1 error codes.
+- `root-cause-analysis` alerts for repeated fingerprints.
+
+Each alert carries a stable `dedupeKey` and safe evidence metadata only
+(`eventId`, timestamp, severity, error code, app, route/target, fingerprint,
+source kind). Raw event messages are intentionally not copied into alert
+evidence. External delivery through Sentry, uptime monitors, Slack, email, or
+webhooks remains owner/environment-gated and requires approved secrets.

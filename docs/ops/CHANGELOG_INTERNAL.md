@@ -1,5 +1,310 @@
 # Internal Changelog
 
+## 2026-06-29 — Post-financial Handoff Takeover Sync (TASK-0123)
+
+- Read the financial agent's accountant-settlement handoff and recorded the integration state in `docs/ops/ACCOUNTANT_FINANCE_HANDOFF_INTEGRATION_PLAN_2026-06-29.md`.
+- Corrected stale TASK-0122/project-state language that said final repo `pnpm preflight` was still blocked by `packages/wallet-core/src/settlement-config.ts`; current takeover verification shows `pnpm preflight` passes.
+- Added TASK-0123 and ISSUE-0060 to track the remaining GitHub-readiness risk as integration/staging hygiene, not TypeScript health.
+- Moved the handoff work onto `codex/apple-grade-finance-integration` from current `origin/main`, preserving the stale pre-move state in `/tmp` patch/tar backups and `stash@{0}`.
+- Repaired post-integration full-test fallout: route source-grep tests now inspect service-layer read models, product media upload remains image-only while admin receipt uploads explicitly opt into PDF, migration snapshots 0088/0089 are synthesized from script deltas, tenant audit/source-grep assertions match status reasons, and typography no longer uses arbitrary text sizing in the touched employee guard.
+- Verification is green locally: targeted integration suite 27 files / 214 tests, full `pnpm test` 400 files / 4940 tests, shared build, wallet-core/API/admin typechecks, admin build, lint 0 errors / 431 existing warnings, `pnpm check:skills` 43/43, diff checks, `pnpm ops:monitor`, and final `pnpm preflight`.
+- No `db:migrate`, deploy, secrets, production action, SSH, live payment-provider call, or live shipping-provider call occurred. The financial migrations 0088/0089 remain owner-only to apply.
+
+## 2026-06-29 — Non-financial Admin Dangerous-action Dialog Accessibility (TASK-0122)
+
+- Added local `AdminDialog` for admin-dashboard dangerous-action dialogs with focused dialog content, `role="dialog"`, `aria-modal`, labelled title, optional description linkage, initial focus, Escape close, overlay close, and body scroll locking.
+- Migrated only non-financial dangerous-action dialogs: marketplace reject/suspend, store delete/status, and tenant delete/status.
+- Added accessible names to the scoped reason textareas so the visible reason requirement is also programmatically addressable.
+- Preserved the existing reason/confirmation gates and API calls for those flows.
+- Split out all finance-adjacent dialog work after the owner identified a separate financial Batch 4 stream; the preserved draft is `/tmp/haa-task-0122-full-before-finance-split.patch`.
+- Added `tests/admin-dangerous-dialog-accessibility.test.ts` and extended `tests/admin-dangerous-action-reasons.test.ts`.
+- Verification after split covered focused admin dialog/reason/settlement regression tests plus mocked local Playwright QA for marketplace desktop and stores mobile; final full verification is recorded in `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0122.md`.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, no live provider calls, and no financial Batch 4 files intentionally touched.
+
+## 2026-06-29 — Admin IBAN Reveal Typing Preflight Unblock (TASK-0121)
+
+- Added `bank_account.iban_revealed_for_payout` and `bank_account.iban_copied_for_payout` to the shared `AuditAction` union.
+- Added Arabic labels for the two IBAN reveal/copy audit actions.
+- Rebuilt `@haa/shared` locally so API typecheck consumes the current `AdminPermission` and `AuditAction` declarations.
+- Added `tests/admin-iban-reveal-typing.test.ts` to guard the dedicated IBAN reveal permission, route guard, audit action labels, and audit-payload minimization.
+- Verification passed: `@haa/shared` build, focused IBAN reveal typing regression 1 file / 3 tests, API typecheck, `pnpm check:skills` 43/43, clean `git diff --check`, and final `pnpm preflight`.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, no live provider calls, and no IBAN reveal business-rule/UI changes.
+
+## 2026-06-29 — Merchant Theme-editor ARIA Polish (TASK-0120)
+
+- Added Arabic accessible names and `aria-pressed` state to merchant theme-editor preview device controls.
+- Added `aria-pressed` and Arabic labels/titles to desktop preview zoom controls.
+- Added homepage section group/row disclosure contracts with `aria-expanded`/`aria-controls`, and Enter/Space row activation guarded so nested buttons do not accidentally toggle the row.
+- Added Arabic accessible names/titles to section visibility, duplicate, delete, image-remove, and brand-remove controls.
+- Added `aria-pressed` to theme-editor link-type, product-source, and category-selection chips.
+- Added `tests/merchant-theme-editor-aria-controls.test.ts` to guard these source-level ARIA contracts.
+- Verification passed: focused merchant theme-editor ARIA regression 1 file / 4 tests; merchant-dashboard typecheck; merchant-dashboard build; `pnpm check:skills` 43/43; clean `git diff --check`; final `pnpm preflight`.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, no live provider calls, and no theme-rendering/API changes.
+
+## 2026-06-29 — Merchant Product-form ARIA Polish (TASK-0119)
+
+- Converted the merchant product image upload affordance from a clickable `div` to a named `type="button"` while preserving the hidden file input click.
+- Added Arabic `aria-label` and `title` values to queued-image removal and saved-image deletion controls.
+- Added Arabic `aria-label` and `title` values to variant option remove icon buttons.
+- Added `aria-pressed` and action-oriented Arabic labels to tag/category chips in the product form.
+- Added `tests/merchant-product-form-aria-controls.test.ts` to guard these source-level ARIA contracts.
+- Verification passed: focused merchant product-form ARIA regression 1 file / 4 tests; merchant-dashboard typecheck; merchant-dashboard build; `pnpm check:skills` 43/43; clean `git diff --check`; final `pnpm preflight`.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, no live provider calls, and no API/product-rule changes.
+
+## 2026-06-29 — Storefront Buyer-control ARIA Polish (TASK-0118)
+
+- Added accessible names, active-state semantics, and 44px hit targets to base-elegant homepage carousel dot buttons.
+- Added `aria-expanded` and `aria-controls` to base-elegant homepage FAQ disclosure buttons.
+- Added `aria-pressed` plus option/value accessible names to base-elegant and luxury product option buttons.
+- Added `aria-label`, `aria-busy`, and hidden decorative spinner treatment to the luxury product-card add-to-cart loading state.
+- Added `tests/storefront-aria-controls.test.ts` to guard these source-level ARIA contracts.
+- Verification passed: focused storefront ARIA regression 1 file / 5 tests; storefront typecheck; storefront build with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning; `pnpm check:skills` 43/43; clean `git diff --check`; final `pnpm preflight`; local Browser/Playwright QA loaded demo home/product pages, confirmed no framework overlay, confirmed luxury `aria-busy` controls, and verified Tab focus reached 10/10 interactive elements in the product page fallback run.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, no live provider calls, and no API/payment/shipping logic changes.
+
+## 2026-06-29 — Fake 3DS DEV Badge (TASK-0117)
+
+- Added a visible `DEV TEST` badge to the Fake 3DS challenge page.
+- Badge copy states the page is a local simulation only and not a real bank/payment challenge.
+- Added `data-testid="fake-3ds-dev-badge"` and `role="status"` for stable regression coverage.
+- Added `tests/fake-3ds-dev-badge.test.ts` to lock the badge and the existing `import.meta.env.DEV` route guard.
+- Verification passed: focused Fake3DS/3DS regression 2 files / 13 tests; storefront typecheck; storefront build with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, no live provider calls, and no payment logic changes.
+
+## 2026-06-29 — Storefront Buyer Phone Input RTL Hardening (TASK-0116)
+
+- Added telephone input semantics to scoped storefront buyer phone fields.
+- Checkout and marketplace checkout phone fields now use `type="tel"`, `inputMode="tel"`, `autoComplete="tel"`, and `dir="ltr"`.
+- Manual tracking, order-success recovery, and track-result recovery phone fields now use the same telephone semantics and LTR direction.
+- Support ticket phone input now uses telephone semantics, explicit LTR direction, and `text-start` alignment.
+- Added `tests/storefront-phone-input-rtl.test.ts` to guard these contracts.
+- Verification passed: focused phone/order-confirmation regression 2 files / 9 tests; storefront typecheck; storefront build with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, no live provider calls, and no phone validation/API changes.
+
+## 2026-06-29 — Subscription Plan-change Financial Clarity (TASK-0115)
+
+- Added display-only subscription impact helpers in `Subscriptions.tsx`.
+- The plan-change confirmation now shows current price, new price, and price delta for the active billing cycle.
+- Upgrade confirmations show an estimated prorated charge based on remaining days over cycle days.
+- The confirmation states the change is effective immediately.
+- The confirmation shows the next expected renewal date for upgrades or current period end for downgrades.
+- Copy clarifies that the final invoice is calculated by the system after confirmation.
+- Extended `tests/subscriptions-confirm-modal.test.tsx` to lock impact, proration, effective-date, and final-invoice copy.
+- Verification passed: focused subscription confirmation/proration regression 2 files / 13 tests; merchant-dashboard typecheck; merchant-dashboard build.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, no live payment/shipping-provider calls, and no backend billing logic change.
+
+## 2026-06-29 — Checkout Stock-depletion Recovery (TASK-0114)
+
+- Verified the current checkout core already locks/decrements stock inside the transaction before payment creation.
+- Added `INSUFFICIENT_STOCK` to shared user-friendly error messages.
+- Updated the storefront checkout-session route to map `Insufficient stock for product` to HTTP 400 with code `INSUFFICIENT_STOCK`.
+- Added stock-specific storefront checkout recovery that explains product availability changed and offers a return-to-cart action.
+- Kept payment-failure recovery behavior unchanged for actual payment failures.
+- Added `tests/storefront-checkout-stock-recovery.test.ts` to lock stock-before-payment evidence, typed API error mapping, shared message registration, and storefront recovery copy/action.
+- Verification passed: focused checkout stock/cart regression 3 files / 10 tests; API/storefront/shared typechecks; shared/API/storefront builds with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning on storefront build; `pnpm check:skills` 43/43.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls. No stock reservation system was added.
+
+## 2026-06-29 — Storefront Cart Shipping Estimate (TASK-0113)
+
+- Added a shipping estimate section to the storefront cart summary.
+- Buyers can enter a city and request estimated shipping options before checkout.
+- The estimate uses the existing `checkoutApi.getShippingRates(slug, cart.id, city)` API.
+- Rate results show method name, estimated delivery days, price, and free-above information where available.
+- Empty and error states render as persistent alerts.
+- Copy states the final shipping price is confirmed during checkout after address and method selection.
+- Added `tests/storefront-cart-shipping-estimate.test.ts` to lock endpoint wiring, estimate form, rate display, and final-price caveat.
+- Verification passed: focused cart-shipping/checkout-race regression 2 files / 6 tests; storefront typecheck; storefront build with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls. Checkout remains the final source of truth for shipping cost.
+
+## 2026-06-29 — Storefront Coupon Error Reasons (TASK-0112)
+
+- Added `getCouponErrorMessage()` in cart coupon handling to preserve API/client error messages when available.
+- Coupon catch-path failures no longer collapse every thrown error to `common.error`.
+- Coupon errors now render as a persistent `role="alert"` block instead of a terse single red line.
+- Added buyer guidance to verify code spelling, minimum order, and expiry.
+- Existing server-side Arabic rejection reasons remain passed through unchanged.
+- Added `tests/storefront-coupon-error-reasons.test.ts` to lock backend reason pass-through, catch-path message preservation, and persistent alert rendering.
+- Verification passed: focused coupon/money regression 2 files / 9 tests; storefront typecheck; storefront build with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls. Coupon business rules and discount math were not changed.
+
+## 2026-06-29 — Storefront Order Confirmation Recovery (TASK-0111)
+
+- Added a support fallback card to the order confirmation missing-phone state.
+- The fallback explains that buyers can open a support ticket for confirmation/resend help when tracking data or the confirmation message is missing.
+- The fallback displays the order number so the buyer can include it in the ticket.
+- The fallback links to the current store support page and does not place tokens or sensitive values in the URL.
+- Updated `TrackOrder` to use the shared `saveTrackPhone()` helper instead of writing a separate slug-scoped sessionStorage key.
+- Added `tests/storefront-order-confirmation-recovery.test.ts` to lock the recovery copy/link and canonical tracking phone storage contract.
+- Verification passed: focused order-confirmation/return-intake regression 2 files / 6 tests; storefront typecheck; storefront build with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls. Real email/SMS resend automation remains open.
+
+## 2026-06-29 — Storefront Privacy Request Intake (TASK-0110)
+
+- Added a privacy request section to the storefront support page.
+- Buyers can now choose "طلب نسخة من بياناتي" or "طلب حذف بياناتي" instead of writing a generic support ticket from scratch.
+- Each action prefills a structured Arabic support-ticket subject/message with verification fields.
+- Data-export copy states identity verification is required before releasing any data.
+- Data-deletion copy states some data may be retained for legal billing, tax, or dispute reasons before final deletion.
+- The flow reuses the existing support-ticket API, local `support-ticket-token:${slug}:${ticketId}` storage, and `/s/:slug/support/tickets/:ticketId` follow-up link pattern.
+- Added `tests/storefront-privacy-request-intake.test.ts` to lock explicit privacy actions, structured templates, and token-free follow-up links.
+- Verification passed: focused privacy/support regression 2 files / 6 tests; storefront typecheck; storefront build with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls. Automated export/deletion fulfillment remains open.
+
+## 2026-06-29 — Local Provider Smoke Coverage (TASK-0109)
+
+- Extended `tests/pre-launch-smoke.test.ts` with a no-network "Payment + Shipping providers" section.
+- Smoke now asserts FakePaymentProvider covers success, failure/decline, cancellation, expiry, bank transfer, COD, and fake 3DS challenge scenarios.
+- Smoke now asserts payment live mode remains blocked, unconfigured non-live providers fall back to fake where intended, and demo checkout forces `FakePaymentProvider`.
+- Smoke now asserts shipping live mode remains blocked and manual/haa_mock stay local-safe `mock_ready` providers.
+- Smoke now asserts merchant provider-status remains mounted for readiness checks and includes payment/shipping/shippingLabel readiness surfaces.
+- Verification passed: `pnpm test:smoke` 1 file / 34 tests; adjacent provider verification 4 files / 58 tests.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls. Full DB-backed `pnpm smoke` remains blocked by known local migration drift.
+
+## 2026-06-29 — Local Monitoring Alert Emission (TASK-0108)
+
+- Added `buildOpsAlerts()` to `scripts/ops-events.mjs`, reusing the existing active-window/actionable-event classifier for alert decisions.
+- Added `scripts/emit-monitoring-alerts.mjs`, exposed as `pnpm ops:alerts`.
+- `pnpm ops:alerts` writes new local alert candidates to `storage/monitoring-alerts.ndjson` for active P0 incidents, repeated P1 task candidates, and repeated-fingerprint RCA candidates.
+- Alert evidence stores safe metadata only and intentionally avoids copying raw event messages.
+- Alert records dedupe by stable `dedupeKey` so repeated monitor runs do not spam identical alert candidates.
+- `pnpm ops:monitor` now runs health, synthetic checks, error analysis, and local alert emission in sequence.
+- Updated command references in `AGENTS.md` and `docs/agent-os/TEST_STRATEGY.md`.
+- Added `tests/ops-monitoring-alerts.test.ts` to lock P0/P1/RCA alert emission, no-alert quiet behavior, dedupe behavior, and package script wiring.
+- Verification passed: focused ops alert/analyzer tests 2 files / 12 passed; `pnpm ops:alerts` emitted 0 alert candidates on current local P2-only state; `pnpm ops:monitor` exited 0 with no local alert candidates.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls. External alert delivery remains owner/environment-gated.
+
+## 2026-06-29 — Storefront Return/Refund Request Intake (TASK-0107)
+
+- Added a return/refund request card to storefront order tracking for fulfilled buyer-visible orders: `delivered`, `picked_up`, and `completed`.
+- Blocked the intake from already-cancelled, returned, refunded, or partially refunded order states.
+- Wired the form to the existing storefront support API instead of introducing a new migration-backed RMA system.
+- Structured the support-ticket message with order number, order/payment/fulfillment status, customer phone, order total, selected reason, optional details, and line-item context.
+- Saved the support access token under the existing `support-ticket-token:${slug}:${ticketId}` localStorage key and linked to `/s/:slug/support/tickets/:ticketId` without `accessToken` in the URL.
+- Added `tests/storefront-return-request-intake.test.ts` to lock eligible statuses, structured ticket payload, local token persistence, and token-free follow-up links.
+- Verification passed: focused storefront return/refund intake test 1 file / 3 passed; storefront typecheck; storefront build with the pre-existing `MarketplaceProductCard` Rollup warning.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls. Full RMA lifecycle remains open.
+
+## 2026-06-29 — Public API Scope Middleware Hardening (TASK-0106)
+
+- Added typed public API scope middleware (`requireApiKeyScope`) for `/v1` API-key routes.
+- Moved `/v1/products`, `/v1/orders`, and `POST /v1/orders` scope enforcement from inline route handlers to route definitions.
+- Preserved the existing `FORBIDDEN` response shape and 403 status for insufficient scope.
+- Added `tests/public-api-scope-middleware.test.ts` to lock route-level scope middleware coverage and prevent inline handler-body scope checks from returning.
+- Verification passed: focused public API scope/DTO/RBAC tests 3 files / 17 passed; API typecheck; `pnpm check:skills` 43/43; `git diff --check`; and final `pnpm preflight`.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls.
+
+## 2026-06-29 — Audit PII Masking Coverage (TASK-0105)
+
+- Hardened shared `maskObject()` so audit old/new diffs mask sensitive fields by key patterns in addition to exact key matches.
+- Added coverage for compound/camelCase/snake_case PII keys such as `customerEmail`, `customerPhone`, `customerName`, `beneficiaryName`, `shippingAddress`, `accountNumber`, `bank_account`, `beneficiaryIbanMasked`, `commercial_registration`, `nationalId`, and `taxNumber`.
+- Added full masking for secret/card variants such as `apiSecret`, `privateKeyPem`, `cardNumber`, `authorizationHeader`, and `oneTimePassword`.
+- Kept non-sensitive audit metadata unchanged.
+- Added `tests/audit-mask-object-pii.test.ts` to lock shared masking behavior and `AuditLogService` old/new usage of shared `maskObject()`.
+- Verification passed: focused mask/compliance tests 2 files / 37 passed; shared typecheck; integration-core typecheck; shared build; `pnpm check:skills` 43/43; `git diff --check`; and final `pnpm preflight`.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls.
+
+## 2026-06-29 — Admin API/UI RBAC Alignment (TASK-0104)
+
+- Added shared platform-admin permission source: `AdminPermission` and `ADMIN_PERMISSION_CATALOG`.
+- Kept platform-admin permission catalog separate from merchant employee `PERMISSION_CATALOG`, avoiding merchant permission-matrix pollution.
+- Typed `requireAdminPermission()` against `AdminPermission`.
+- Added explicit admin permission gates to previously auth-only admin routes: dashboard, payments, marketplace read/report endpoints, audit, webhooks/idempotency stats, plans read/update, upload, and platform settings read/update.
+- Extended admin sidebar and route wrappers to cover dashboard, payments, marketplace, audit, plans, settings, and compliance with server-aligned permission keys.
+- Guarded admin shell settings-branding fetch behind `platform.settings.read` so limited admins do not receive an unrelated forbidden toast on every page.
+- Reflected mutation permissions in page actions: `plans.update`, `marketplace.review`, `marketplace.feature`, `platform.settings.update`, and `platform.media.upload`.
+- Added `tests/admin-api-rbac-alignment.test.ts` and updated `tests/admin-permission-reflection.test.ts` to lock API guards, shared catalog keys, route/sidebar guards, and action disabled states.
+- Verification passed: focused admin RBAC tests 3 files / 27 passed; shared build; API typecheck; admin-dashboard typecheck; admin-dashboard build; `pnpm check:skills` 43/43; `git diff --check`; and final `pnpm preflight`.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls.
+
+## 2026-06-29 — Admin Permission Reflection (TASK-0103)
+
+- Added shared admin `UnauthorizedState` with clear Arabic denied-state copy and optional permission-key display.
+- Added admin route permission metadata for routes whose API already enforces `requireAdminPermission`.
+- Admin sidebar now filters server-gated links with `hasAdminPermission`, while `admin:*` remains the super-admin override through the existing helper.
+- Direct navigation to protected admin routes now renders `UnauthorizedState` before page data fetches.
+- Covered routes: tenants, stores, KYC, bank accounts, settlement batches/detail, settlement readiness, store payment settings, store billing, admin users, and landing inbox.
+- Left pages without explicit API permission gates unguarded in UI by design, avoiding UI-only permission invention.
+- Added `tests/admin-permission-reflection.test.ts` to lock denied state, sidebar filtering, route wrappers, and no UI-only guard invention.
+- Verification passed: focused admin permission reflection tests 3 files / 13 passed; admin-dashboard typecheck; admin-dashboard build; `pnpm check:skills` 43/43; `git diff --check`; and final `pnpm preflight`.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls.
+
+## 2026-06-29 — API Deep Health Readiness (TASK-0102)
+
+- Added `apps/api/src/services/platform-health.ts`, a typed readiness classifier for storage, payment, shipping, email, and observability.
+- Updated `/health` to include a non-secret `dependencies` block with aggregate status and per-dependency status/configured/reason fields.
+- Storage readiness now verifies local storage writability for development/test and marks local storage as not launch-ready for staging/production.
+- Payment readiness reports active provider/mode, missing configuration key names, and live-mode blocking without calling payment providers.
+- Shipping readiness reports active provider/mode, missing configuration key names, and live-mode blocking without calling shipping providers.
+- Email readiness matches actual provider behavior by requiring `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, and `SMTP_PASSWORD`, with Resend as an alternative.
+- Observability readiness reports whether Sentry or OTEL sink configuration is present without exposing DSN or endpoint values.
+- Added `tests/platform-health-readiness.test.ts` to lock readiness classification, route wiring, and secret-value non-disclosure.
+- Verification passed: focused platform health tests 4 files / 63 passed; API typecheck; API build; `pnpm check:skills` 43/43; `git diff --check`; final `pnpm preflight`; and final `pnpm ops:monitor` with no recommended incidents/tasks.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls.
+- Remaining open: external alerting/uptime/Sentry evidence and owner-run backup/restore drill.
+
+## 2026-06-28 — Employees Permission-denied and Last-owner UX (TASK-0101)
+
+- Added page-local `canViewEmployees` handling in Employees so missing `employees:view` returns the shared `UnauthorizedState`.
+- Employees no longer fetches employee data when `employees:view` is missing.
+- Replaced repeated permission-management lookups in save branches with `canManageEmployeePermissions`.
+- Expanded the last-owner guard from a terse badge into visible inline guidance: assign another owner before edit/delete.
+- Added `tests/employee-permission-denied-ux.test.ts` to lock the unauthorized and last-owner UX contracts.
+- Verification passed: focused employee permission UX tests 4 files / 60 passed; merchant-dashboard typecheck; merchant-dashboard build; `pnpm check:skills` 43/43; `git diff --check`; and final `pnpm preflight`.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls.
+
+## 2026-06-28 — Merchant Products First-empty-state CTA (TASK-0100)
+
+- Added `hasActiveProductFilters` in Products so a true empty catalog and filtered no-results are treated as distinct states.
+- The true empty catalog state now shows an explicit "إضافة أول منتج" CTA with a `Plus` icon.
+- The CTA remains guarded by `products:create` and opens the existing create-product dialog via `openCreate`.
+- Filtered no-results keeps search/filter guidance and does not display the first-product CTA.
+- Added Arabic copy for `products.createFirst`.
+- Added `tests/products-empty-state-cta.test.ts` to lock the empty-catalog/no-results contract.
+- Verification passed: focused products empty-state tests 3 files / 86 passed; merchant-dashboard typecheck; merchant-dashboard build; `pnpm check:skills` 43/43; `git diff --check`; and final `pnpm preflight`.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls.
+
+## 2026-06-28 — Merchant Onboarding Resume (TASK-0099)
+
+- Added a local onboarding draft keyed by `storeId` so skipping onboarding preserves step, store form fields, generated products, selected product indexes, product-step mode, and checklist state.
+- The skip action still requires confirmation, but now writes the resumable draft, clears `onboarding_done`, shows a saved-progress toast, and navigates to the dashboard.
+- Reopening `/onboarding` restores the saved draft; completing onboarding clears it before marking `onboarding_done`.
+- Getting Started now surfaces a resume CTA when an onboarding draft exists.
+- Added Arabic copy for the saved-progress toast.
+- Updated focused onboarding/Getting Started source-regression tests.
+- Verification passed: focused onboarding tests 3 files / 31 passed with 1 skipped; merchant-dashboard typecheck; merchant-dashboard build; `pnpm check:skills` 43/43; `git diff --check`; and final `pnpm preflight`.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls.
+
+## 2026-06-28 — Public Marketplace P0 Closure (TASK-0098)
+
+- Removed the legacy `phone` fallback from public marketplace order tracking; `GET /marketplace/orders/:marketplaceOrderNumber` now requires `access_token` / `accessToken`.
+- Removed storefront `haaMarketplaceApi.getOrderLegacy` and `?phone=` marketplace order-tracking URL construction.
+- Removed store email/phone selection from the public marketplace seller detail route, tightening PII minimization beyond response-shape filtering.
+- Added a product-level `noProhibitedMarketplaceCategoryCondition()` guard and applied it across public marketplace stats, product list, product detail, seller detail counts, seller list real/demo queries, and categories.
+- Product mapping now validates SFDA/prohibited-category eligibility against all linked category slugs, not only the displayed category slug.
+- Updated focused marketplace source-regression tests for access-token-only lookup, prohibited-category guards, and seller PII minimization.
+- Verification passed: focused marketplace tests 5 files / 52 passed with 1 skipped; API typecheck; storefront typecheck; API build; storefront build with the pre-existing `MarketplaceProductCard` Rollup warning; `pnpm check:skills` 43/43; `git diff --check`; and final `pnpm preflight`.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls.
+
+## 2026-06-28 — Admin Dangerous-action Reason Gates (TASK-0097)
+
+- Added reason-required confirmation dialogs for admin tenant status changes and store status changes.
+- Removed status/isActive mutation from the normal edit-save payloads in Tenants/Stores so status changes route through the audited reason gate.
+- Added reason-required marketplace moderation for rejected and suspended products; suspension no longer calls the review API directly without a note.
+- Extended admin API client methods for tenant/store status updates to send `statusReason`.
+- Extended Hono validation so tenant/store status routes require `statusReason`, and marketplace product review requires `note` for `rejected` or `suspended`.
+- Hardened store status route with not-found handling, no-op handling, audit logging via `admin_store_suspended`, and store tenant-cache invalidation after status changes.
+- Added `tests/admin-dangerous-action-reasons.test.ts` to lock the UI/API contract.
+- Verification passed: focused remediation tests 2 files / 7 tests; expanded affected regression tests 5 files / 48 passed with 1 skipped; admin-dashboard typecheck; API typecheck; admin-dashboard build; `pnpm check:skills` 43/43; `git diff --check`; and final `pnpm preflight`.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls.
+
+## 2026-06-28 — Claude Apple-grade Diagnostic Remediation Batch (TASK-0096)
+
+- Added `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md` as the traceable matrix for every item in the pasted diagnostic report, including corrected/stale claims, owner-gated items, deferred polish, and confirmed open follow-ups.
+- Fixed storefront checkout failed-payment UX: payment/session failures now set a persistent recovery alert with retry, change-payment, and store support actions instead of relying on a transient toast only.
+- Added confirmation gates for admin manual payout money-moving transitions: approve, mark transfer pending, mark transferred, and verify transfer now require explicit confirmation before the API call.
+- Added confirmation + reason capture for admin bank-account verification/rejection; the admin API now validates `reviewReason`, records it in the `bank_account_changed` audit `newValue`, and passes it into notification context.
+- Added `tests/apple-grade-remediation.test.ts` source guards so the remediated P0 gaps cannot silently regress to toast-only or one-click financial decisions.
+- Safety boundary unchanged: no deploy, no `db:migrate`, no secrets, no production action, and no live payment/shipping-provider calls.
+
 ## 2026-06-28 — Merchant/Employee Permissions UX Audit (TASK-0095)
 
 - Fixed merchant-dashboard permission API client paths so catalog, presets, and membership permission reads/writes use the mounted `/merchant/:storeId/permissions/...` route prefix.

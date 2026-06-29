@@ -8,13 +8,42 @@
 
 ## Current task
 
-**No active Codex-owned task after TASK-0095 closure (2026-06-28).**
+**Post-financial handoff takeover is active on this branch (2026-06-29).**
 
-TASK-0095 is complete locally and published as draft PR #324 on
-`codex/merchant-employee-permissions-ux-audit`.
-The merchant employee-permissions audit fixed the permissions API client mount
-prefix, URL-store scoping in `apps/api/src/routes/permissions.ts`, stale
-EmployeeFormDialog localStorage store lookup, empty permission-set saves,
+TASK-0096 through TASK-0122 are complete or scoped-complete locally. The current
+integration branch is `codex/apple-grade-finance-integration`, based on current
+`origin/main` after PR #324 was confirmed merged. The owner then provided the
+financial agent's final accountant-settlement handoff and directed this agent
+to take over "the rest." Current `pnpm preflight` passes, so the earlier
+TASK-0122 stop note about `packages/wallet-core/src/settlement-config.ts`
+blocking wallet-core typecheck is no longer current.
+
+The active work is now TASK-0123: integrate and prepare GitHub readiness without
+losing either agent's work. Local verification is green; publish is pending
+intentional commit/push/PR from this branch. The first handoff state was on a stale local branch
+behind its origin by 8 commits; that state is preserved in `stash@{0}` plus
+`/tmp/haa-apple-finance-integration-tracked-2026-06-29.patch` and
+`/tmp/haa-apple-finance-integration-untracked-2026-06-29.tgz`. The current
+worktree is now on `codex/apple-grade-finance-integration` and remains mixed
+across prior Apple-grade remediation, admin RBAC/permission
+reflection, accountant settlement finance work, screenshots, storage logs,
+migrations, docs, and tests. Do not stage broadly. The financial handoff says
+the accountant feature depends on uncommitted admin RBAC structure
+(`UnauthorizedState`, `AdminPermissionRoute`, `hasAdminPermission`, and
+permission reflection), so publish sequencing must be RBAC base first or a
+single intentionally scoped integration PR.
+
+TASK-0122 remains scoped-complete for non-financial admin dangerous-action
+dialogs only: marketplace reject/suspend, store status/delete, and tenant
+status/delete use local `AdminDialog` semantics. The finance-inclusive draft is
+preserved at `/tmp/haa-task-0122-full-before-finance-split.patch` only for
+optional later coordination. The broader remediation matrix remains in
+`docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`.
+
+Earlier in this branch, TASK-0095 was completed locally and published as draft
+PR #324. The merchant employee-permissions audit fixed the permissions API
+client mount prefix, URL-store scoping in `apps/api/src/routes/permissions.ts`,
+stale EmployeeFormDialog localStorage store lookup, empty permission-set saves,
 create-time custom permission saves after invite, the missing warehouse staff
 role, Arabic role labels, role-based permission seeding, and permission matrix
 UX copy. Final verification is recorded in the TASK-0095 compliance report.
@@ -58,9 +87,11 @@ provider calls, deploys, SSH, DNS changes, or migrations.
 
 ## Current branch
 
-`codex/merchant-employee-permissions-ux-audit` contains TASK-0095 code, tests,
-and documentation. Do not include unrelated local storefront, storage, or
-screenshot artifacts in this branch.
+`codex/apple-grade-finance-integration` contains local work from TASK-0096
+through TASK-0123 plus the financial agent's accountant-settlement handoff, on
+top of current `origin/main` after PR #324. Do not include unrelated local
+storefront, merchant-dashboard, storage, or screenshot artifacts in a PR unless
+they are explicitly selected for the final integration scope.
 
 ## Current verdict
 
@@ -71,11 +102,15 @@ screenshot artifacts in this branch.
 - **Fake/mock provider status:** GO; provider-status and shipment provider-status returned 200 with live blocked/manual fallback indicators.
 - **Pre-launch smoke:** GO; `pnpm test:smoke` passed 29/29.
 - **Full local smoke:** BLOCKED; `pnpm smoke` failed because `tests/smoke.test.ts` has stale response-shape assumptions and the local DB is missing `orders.preparation_status` from migration `0077_order_preparation_status.sql`.
+- **Current local preflight:** GO; post-financial-handoff `pnpm preflight` passed on 2026-06-29 after full integration repair.
+- **Targeted integration checks:** GO; RBAC/accountant/payout/settlement/TASK-0122 focused suite passed 27 files / 214 tests, focused full-test repair suites passed, full `pnpm test` passed 400 files / 4940 tests, and shared build, wallet-core/API/admin typechecks, admin build, lint, skills, diff checks, and ops monitor passed.
+- **GitHub publish readiness:** READY FOR DRAFT PR; local-only screenshots and storage logs remain excluded, owner-only migrations remain unapplied.
 - **Admin settlement handoff:** GO; inherited `SettlementBatches.tsx` syntax blocker fixed and admin build/typecheck verified during TASK-0093.
 - **SonarCloud follow-up:** CLOSED for PR #320/#322 project-owned gates; SonarCloud passed on the relevant closure PRs.
 - **GitHub Test follow-up:** CLOSED for project-owned CI; `main` CI run `28329981652` passed after PR #322 merged.
 - **GitHub integration closure:** DONE; PR #322 merged, branch protection requires `Required Merge Gate`, `main` CI/deploy/watchdog passed, staging smoke passed, production skipped.
 - **Merchant/employee permissions audit:** DONE locally and published as draft PR #324; URL-store permission route scoping, mounted permission client paths, employee-dialog store source, empty permission clears, create-time custom permission saves, warehouse staff role, role-based permission seeding, and UX copy fixed in TASK-0095.
+- **Apple-grade remediation matrix:** ACTIVE locally; TASK-0096 through TASK-0121 are closed and TASK-0122 is scoped-complete. The earlier external financial preflight blocker is cleared; TASK-0123 now tracks integration/GitHub readiness for the mixed RBAC/accountant/TASK-0122 worktree. Remaining high-signal engineering items include real confirmation resend automation, full RMA lifecycle, automated privacy export/deletion fulfillment and retention workflows, external alert delivery/account setup, DB-backed/browser critical E2E smoke, admin-dashboard/full WCAG accessibility sweep beyond the scoped non-financial dangerous dialogs, large-table pagination/reviews polish, and owner-run backup/restore.
 - **Skill Gate policy:** UPDATED; no 1-4 cap, use all applicable skills.
 - **Staging sandbox rehearsal:** CONDITIONAL.
 - **Staging rehearsal:** CONDITIONAL.

@@ -9,16 +9,15 @@
  *
  * Fix: Add `accessToken` column (uuid, notNull, defaultRandom, unique) to
  *      marketplace_orders schema. POST /orders returns the token ONCE in
- *      the response. GET /orders/:num requires `?access_token=` (or
- *      legacy `?phone=` for backward compat, deprecated). Mirrors the
+ *      the response. GET /orders/:num requires `?access_token=`. Mirrors the
  *      support-ticket accessToken pattern (R-0014, support-tickets.ts:17
  *      + storefront/support.ts:111).
  *
  * This test codifies the contract:
  *   - Schema has accessToken column with defaultRandom + unique index
  *   - POST /orders response includes accessToken
- *   - GET /orders/:num validates via accessToken (or legacy phone)
- *   - Storefront UI uses ?access_token= (not ?phone=)
+ *   - GET /orders/:num validates via accessToken only
+ *   - Storefront UI and API use ?access_token= (not ?phone=)
  *   - Migration file 0058 exists
  */
 
@@ -30,12 +29,14 @@ const projectRoot = resolve(new URL('..', import.meta.url).pathname);
 
 const SCHEMA = resolve(projectRoot, 'packages/db/src/schema/marketplace_orders.ts');
 const ROUTE = resolve(projectRoot, 'apps/api/src/routes/haa-marketplace.ts');
+const STOREFRONT_API = resolve(projectRoot, 'apps/storefront/src/lib/api.ts');
 const TRACK = resolve(projectRoot, 'apps/storefront/src/pages/MarketplaceOrderTrack.tsx');
 const MIGRATIONS_DIR = resolve(projectRoot, 'packages/db/src/migrations');
 const SUPPORT_SCHEMA = resolve(projectRoot, 'packages/db/src/schema/support-tickets.ts');
 
 const schemaSrc = readFileSync(SCHEMA, 'utf-8');
 const routeSrc = readFileSync(ROUTE, 'utf-8');
+const storefrontApiSrc = readFileSync(STOREFRONT_API, 'utf-8');
 const trackSrc = readFileSync(TRACK, 'utf-8');
 const supportSrc = readFileSync(SUPPORT_SCHEMA, 'utf-8');
 
@@ -76,19 +77,18 @@ describe('TASK-0040 Track 1B — P0-3 marketplace order accessToken', () => {
   });
 
   describe('haa-marketplace.ts — GET /orders/:num', () => {
-    it('validates via access_token OR legacy phone', () => {
-      // The GET handler should accept ?access_token= or fall back to ?phone=.
-      // Look for query parsing of both.
+    it('validates via access_token only and does not parse phone', () => {
       const block = routeSrc.match(
         /haaMarketplaceRouter\.get\(\s*['"]\/orders\/:marketplaceOrderNumber['"][\s\S]{0,2500}/,
       );
       expect(block).not.toBeNull();
       const src = block![0];
-      // The fix path: accept either token or phone
       expect(src).toMatch(/access[_]?token|accessToken/);
+      expect(src).not.toContain("c.req.query('phone')");
+      expect(src).not.toContain('customerPhone');
     });
 
-    it('rejects request when neither access_token nor phone provided', () => {
+    it('rejects request when access_token is not provided', () => {
       const block = routeSrc.match(
         /haaMarketplaceRouter\.get\(\s*['"]\/orders\/:marketplaceOrderNumber['"][\s\S]{0,2500}/,
       );
@@ -99,13 +99,23 @@ describe('TASK-0040 Track 1B — P0-3 marketplace order accessToken', () => {
     });
   });
 
-  describe('MarketplaceOrderTrack.tsx — UI uses access_token', () => {
-    it('uses ?access_token= query param (not ?phone=) in code', () => {
+  describe('Storefront marketplace order lookup — uses access_token', () => {
+    it('API client exposes token lookup only and no legacy phone lookup', () => {
+      const marketplaceApiBlock = storefrontApiSrc.match(/export const haaMarketplaceApi[\s\S]{0,3500}getOrder[\s\S]{0,800}/);
+      expect(marketplaceApiBlock).not.toBeNull();
+      const src = marketplaceApiBlock![0];
+      expect(src).toContain('access_token=');
+      expect(src).not.toContain('getOrderLegacy');
+      expect(src).not.toContain('?phone=');
+    });
+
+    it('tracking page uses ?access_token= query param (not ?phone=) in code', () => {
       // Strip line comments before scanning for the legacy pattern.
       // The plan reference `?phone=` is allowed in comments; the
       // contract is that no CODE path constructs `?phone=` URLs.
       const codeOnly = trackSrc.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
       expect(codeOnly).not.toMatch(/\?phone=/);
+      expect(codeOnly).not.toMatch(/legacyPhone|getOrderLegacy/);
       expect(trackSrc).toMatch(/access_token|accessToken/);
     });
   });

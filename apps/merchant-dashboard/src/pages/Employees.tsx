@@ -10,6 +10,7 @@ import { employeesApi } from '@/lib/api';
 import type { Employee } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { UnauthorizedState } from '@/components/ui/UnauthorizedState';
 
 const roleLabels: Record<string, string> = {
   owner: 'مالك',
@@ -92,6 +93,8 @@ export default function EmployeesPage() {
   const [editTarget, setEditTarget] = useState<Employee | null>(null);
   const [deleting, setDeleting] = useState<number | null>(null);
   const { can } = usePermissions();
+  const canViewEmployees = can('employees:view');
+  const canManageEmployeePermissions = can('employees:manage_permissions');
 
   // Source-of-truth: useAuth().storeId is the canonical accessor.
   // Reading the localStorage key directly used `Number(...)` on a value
@@ -103,7 +106,7 @@ export default function EmployeesPage() {
   const { storeId } = useAuth();
 
   const fetchEmployees = useCallback(async () => {
-    if (!storeId) return;
+    if (!storeId || !canViewEmployees) return;
     setLoading(true);
     setError(null);
     try {
@@ -114,11 +117,11 @@ export default function EmployeesPage() {
     } finally {
       setLoading(false);
     }
-  }, [storeId]);
+  }, [storeId, canViewEmployees]);
 
   useEffect(() => {
-    if (storeId) fetchEmployees();
-  }, [storeId, fetchEmployees]);
+    if (storeId && canViewEmployees) fetchEmployees();
+  }, [storeId, canViewEmployees, fetchEmployees]);
 
   function formatDate(iso: string | null): string {
     if (!iso) return '—';
@@ -147,7 +150,7 @@ export default function EmployeesPage() {
         password: data.password ?? '',
         role: data.role,
       });
-      if (can('employees:manage_permissions')) {
+      if (canManageEmployeePermissions) {
         await employeesApi.updateMemberPermissions(
           storeId,
           created.id,
@@ -161,7 +164,7 @@ export default function EmployeesPage() {
       });
       // Update permissions separately via permissions API. Empty arrays are
       // meaningful: they clear custom permissions for the membership.
-      if (can('employees:manage_permissions')) {
+      if (canManageEmployeePermissions) {
         await employeesApi.updateMemberPermissions(
           storeId,
           editTarget.id,
@@ -193,6 +196,14 @@ export default function EmployeesPage() {
   }
 
   const ownerCount = employees.filter(e => e.role === 'owner').length;
+
+  if (!canViewEmployees) {
+    return (
+      <div className="p-6" dir="rtl">
+        <UnauthorizedState />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6" dir="rtl">
@@ -294,10 +305,18 @@ export default function EmployeesPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2 justify-end">
                         {emp.role === 'owner' && ownerCount <= 1 ? (
-                          <span className="text-xs text-amber-500 flex items-center gap-1" title="لا يمكن تعديل أو حذف آخر مالك">
-                            <ShieldAlert className="h-3 w-3" />
-                            آخر مالك
-                          </span>
+                          <div
+                            className="max-w-[190px] rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-start"
+                            title="لا يمكن تعديل أو حذف آخر مالك. عيّن مالكًا آخر أولًا."
+                          >
+                            <span className="text-xs font-semibold text-amber-700 flex items-center gap-1">
+                              <ShieldAlert className="h-3 w-3" />
+                              آخر مالك
+                            </span>
+                            <p className="mt-0.5 text-xs leading-4 text-amber-700">
+                              عيّن مالكًا آخر قبل التعديل أو الحذف.
+                            </p>
+                          </div>
                         ) : (
                           <>
                             <PermissionGate permission="employees:update">

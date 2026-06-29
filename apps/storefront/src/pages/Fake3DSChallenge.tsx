@@ -66,6 +66,15 @@ export default function Fake3DSChallengePage() {
   return (
     <div id="storefront-scope" data-theme-scope="storefront" className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 overflow-x-hidden" dir="rtl">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div
+          data-testid="fake-3ds-dev-badge"
+          role="status"
+          aria-label="DEV only fake 3DS challenge"
+          className="flex items-center justify-center gap-2 bg-amber-400 px-4 py-2 text-center text-xs font-bold uppercase tracking-wider text-amber-950"
+        >
+          <span dir="ltr">DEV TEST</span>
+          <span>محاكاة محلية فقط — ليست تحدي بنك أو دفع حقيقي</span>
+        </div>
         {/* Bank-style header */}
         <div className="bg-gradient-to-r from-primary-700 to-primary-900 text-white p-6 text-center">
           <Icon icon={ShieldCheck} size="xl" className="mx-auto mb-3 text-primary-200" />

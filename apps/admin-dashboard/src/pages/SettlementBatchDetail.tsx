@@ -59,6 +59,15 @@ function formatCurrency(val: string | number | undefined | null): string {
   return `${Number(val).toFixed(2)} SAR`;
 }
 
+type ConfirmPayoutAction = {
+  action: string;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  confirmClassName: string;
+  run: () => Promise<unknown>;
+};
+
 export default function SettlementBatchDetailPage() {
   const { batchId } = useParams<{ batchId: string }>();
   const [searchParams] = useSearchParams();
@@ -68,6 +77,7 @@ export default function SettlementBatchDetailPage() {
   const [loading, setLoading] = useState(true);
   const [payoutLoading, setPayoutLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const [confirmPayoutAction, setConfirmPayoutAction] = useState<ConfirmPayoutAction | null>(null);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -77,17 +87,23 @@ export default function SettlementBatchDetailPage() {
   const [proofModalOpen, setProofModalOpen] = useState(false);
   const [proofFileName, setProofFileName] = useState('');
   const [proofUploading, setProofUploading] = useState(false);
-  const [proofForm, setProofForm] = useState<UploadProofData>({
+  const emptyProofForm: UploadProofData = {
     bankReference: '',
     bankName: '',
     transferredAt: '',
     beneficiaryName: '',
     beneficiaryIbanMasked: '',
+    // Batch 4F: align with the backend receipt contract (4B/4C).
+    fileMimeType: '',
+    sha256: '',
+    transferredAmount: '',
+    currency: 'SAR',
     notes: '',
-  });
+  };
+  const [proofForm, setProofForm] = useState<UploadProofData>(emptyProofForm);
 
   const resetProofForm = () => {
-    setProofForm({ bankReference: '', bankName: '', transferredAt: '', beneficiaryName: '', beneficiaryIbanMasked: '', notes: '' });
+    setProofForm(emptyProofForm);
     setProofFileName('');
   };
 
@@ -160,6 +176,24 @@ export default function SettlementBatchDetailPage() {
     }
   };
 
+  const openPayoutConfirmation = (
+    action: string,
+    title: string,
+    description: string,
+    confirmLabel: string,
+    confirmClassName: string,
+    run: () => Promise<unknown>,
+  ) => {
+    setConfirmPayoutAction({ action, title, description, confirmLabel, confirmClassName, run });
+  };
+
+  const handleConfirmedPayoutAction = () => {
+    if (!confirmPayoutAction) return;
+    const action = confirmPayoutAction;
+    setConfirmPayoutAction(null);
+    void performAction(action.action, action.run);
+  };
+
   const handleReject = () => {
     if (!payout || !rejectReason.trim()) return;
     performAction('reject', () => adminApi.rejectPayout(payout.id, rejectReason));
@@ -169,17 +203,35 @@ export default function SettlementBatchDetailPage() {
 
   const handleUploadProof = () => {
     if (!payout) return;
-    performAction('uploadProof', () => adminApi.uploadProof(payout.id, proofForm));
+    // adminApi.uploadProof auto-sends an Idempotency-Key. On an amount/currency
+    // MISMATCH the backend parks the settlement in manual_review; surface a
+    // clear message (no UI workaround of the difference).
+    performAction('uploadProof', () =>
+      adminApi.uploadProof(payout.id, proofForm).catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : '';
+        if (/MISMATCH/i.test(msg)) {
+          throw new Error(/CURRENCY/i.test(msg) ? 'العملة لا تطابق عملة التسوية' : 'المبلغ المحوّل لا يطابق صافي التسوية');
+        }
+        throw e;
+      }),
+    );
     setProofModalOpen(false);
     resetProofForm();
   };
 
   const handleProofFileUpload = async (file: File | undefined) => {
     if (!file) return;
+    const allowed = ['application/pdf', 'image/png', 'image/jpeg'];
+    if (!allowed.includes(file.type)) { toast.error('نوع غير مسموح — PDF أو PNG أو JPG فقط'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('حجم الملف يتجاوز 5MB'); return; }
     setProofUploading(true);
     try {
+      // Compute the sha256 in the browser before uploading (tamper detection).
+      const buf = await file.arrayBuffer();
+      const digest = await crypto.subtle.digest('SHA-256', buf);
+      const sha256 = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
       const uploaded = await adminApi.uploadFile(file);
-      setProofForm((current) => ({ ...current, proofFileKey: uploaded.key }));
+      setProofForm((current) => ({ ...current, proofFileKey: uploaded.key, fileMimeType: file.type, sha256 }));
       setProofFileName(file.name);
       toast.success('تم رفع ملف الإثبات');
     } catch (e) {
@@ -282,12 +334,19 @@ export default function SettlementBatchDetailPage() {
           )}
           {s === 'under_review' && (
             <>
-              {canApprove && (
-                <button
-                  onClick={() => performAction('approve', () => adminApi.approvePayout(payout.id))}
-                  disabled={actionLoading['approve']}
-                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50"
-                >
+	              {canApprove && (
+	                <button
+	                  onClick={() => openPayoutConfirmation(
+	                    'approve',
+	                    'اعتماد دفعة التسوية',
+	                    `سيتم اعتماد الدفعة ${payout.reference} بمبلغ ${formatCurrency(payout.amount)} ونقلها للمرحلة المالية التالية.`,
+	                    'تأكيد الاعتماد',
+	                    'bg-emerald-600 hover:bg-emerald-700',
+	                    () => adminApi.approvePayout(payout.id),
+	                  )}
+	                  disabled={actionLoading['approve']}
+	                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50"
+	                >
                   {actionLoading['approve'] ? 'جاري...' : 'اعتماد'}
                 </button>
               )}
@@ -302,21 +361,35 @@ export default function SettlementBatchDetailPage() {
               )}
             </>
           )}
-          {s === 'approved' && canMarkTransferred && (
-            <button
-              onClick={() => performAction('markTransferPending', () => adminApi.markTransferPending(payout.id))}
-              disabled={actionLoading['markTransferPending']}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 disabled:opacity-50"
-            >
+	          {s === 'approved' && canMarkTransferred && (
+	            <button
+	              onClick={() => openPayoutConfirmation(
+	                'markTransferPending',
+	                'تأكيد بدء التحويل',
+	                `سيتم نقل الدفعة ${payout.reference} إلى حالة بانتظار التحويل بمبلغ ${formatCurrency(payout.amount)}.`,
+	                'تأكيد بدء التحويل',
+	                'bg-primary-600 hover:bg-primary-700',
+	                () => adminApi.markTransferPending(payout.id),
+	              )}
+	              disabled={actionLoading['markTransferPending']}
+	              className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 disabled:opacity-50"
+	            >
               {actionLoading['markTransferPending'] ? 'جاري...' : 'تأكيد بدء التحويل'}
             </button>
           )}
-          {s === 'transfer_pending' && canMarkTransferred && (
-            <button
-              onClick={() => performAction('markTransferred', () => adminApi.markTransferred(payout.id))}
-              disabled={actionLoading['markTransferred']}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 disabled:opacity-50"
-            >
+	          {s === 'transfer_pending' && canMarkTransferred && (
+	            <button
+	              onClick={() => openPayoutConfirmation(
+	                'markTransferred',
+	                'تسجيل التحويل البنكي',
+	                `سيتم تسجيل الدفعة ${payout.reference} كمحوّلة بمبلغ ${formatCurrency(payout.amount)}. تأكد من مطابقة المرجع البنكي قبل المتابعة.`,
+	                'تأكيد تسجيل التحويل',
+	                'bg-primary-600 hover:bg-primary-700',
+	                () => adminApi.markTransferred(payout.id),
+	              )}
+	              disabled={actionLoading['markTransferred']}
+	              className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm hover:bg-primary-700 disabled:opacity-50"
+	            >
               {actionLoading['markTransferred'] ? 'جاري...' : 'تسجيل التحويل'}
             </button>
           )}
@@ -329,12 +402,19 @@ export default function SettlementBatchDetailPage() {
               رفع إثبات التحويل
             </button>
           )}
-          {s === 'proof_uploaded' && canVerify && (
-            <button
-              onClick={() => performAction('verifyTransfer', () => adminApi.verifyTransfer(payout.id))}
-              disabled={actionLoading['verifyTransfer']}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50"
-            >
+	          {s === 'proof_uploaded' && canVerify && (
+	            <button
+	              onClick={() => openPayoutConfirmation(
+	                'verifyTransfer',
+	                'التحقق النهائي من التحويل',
+	                `سيتم إقفال الدفعة ${payout.reference} كتحويل متحقق. راجع الإثبات والمرجع البنكي قبل التأكيد.`,
+	                'تأكيد التحقق',
+	                'bg-emerald-600 hover:bg-emerald-700',
+	                () => adminApi.verifyTransfer(payout.id),
+	              )}
+	              disabled={actionLoading['verifyTransfer']}
+	              className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50"
+	            >
               {actionLoading['verifyTransfer'] ? 'جاري...' : 'التحقق'}
             </button>
           )}
@@ -588,6 +668,36 @@ export default function SettlementBatchDetailPage() {
         {renderTimeline()}
       </div>
 
+      {/* Dangerous payout action confirmation */}
+      {confirmPayoutAction && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 className="font-bold text-lg mb-3">{confirmPayoutAction.title}</h3>
+            <p className="text-sm text-gray-600 leading-6">
+              {confirmPayoutAction.description}
+            </p>
+            <div className="rounded-lg bg-amber-50 text-amber-800 text-xs leading-5 p-3 mt-4">
+              هذا إجراء مالي مؤثر وسيظهر في سجل الدفعة. لا تتابع إلا بعد مطابقة المبلغ والحالة.
+            </div>
+            <div className="flex gap-2 justify-end mt-5">
+              <button
+                onClick={() => setConfirmPayoutAction(null)}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+              >
+                رجوع
+              </button>
+              <button
+                onClick={handleConfirmedPayoutAction}
+                disabled={Boolean(actionLoading[confirmPayoutAction.action])}
+                className={`px-4 py-2 text-white rounded-lg text-sm disabled:opacity-50 ${confirmPayoutAction.confirmClassName}`}
+              >
+                {actionLoading[confirmPayoutAction.action] ? 'جاري...' : confirmPayoutAction.confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Reject Modal */}
       {rejectModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -653,6 +763,27 @@ export default function SettlementBatchDetailPage() {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 />
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">المبلغ المحوّل *</label>
+                  <input
+                    type="text"
+                    value={proofForm.transferredAmount ?? ''}
+                    onChange={(e) => setProofForm({ ...proofForm, transferredAmount: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm tabular-nums"
+                    placeholder="يجب أن يطابق صافي التسوية"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">العملة *</label>
+                  <input
+                    type="text"
+                    value={proofForm.currency ?? ''}
+                    onChange={(e) => setProofForm({ ...proofForm, currency: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">اسم المستفيد *</label>
                 <input
@@ -679,7 +810,7 @@ export default function SettlementBatchDetailPage() {
                 <label className="block text-xs text-gray-500 mb-1">ملف الإثبات (اختياري)</label>
                 <input
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="application/pdf,image/png,image/jpeg"
                   onChange={(e) => handleProofFileUpload(e.target.files?.[0])}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                   disabled={proofUploading}
@@ -707,7 +838,7 @@ export default function SettlementBatchDetailPage() {
               </button>
               <button
                 onClick={handleUploadProof}
-                disabled={proofUploading || !proofForm.bankReference || !proofForm.bankName || !proofForm.transferredAt || !proofForm.beneficiaryName || !proofForm.beneficiaryIbanMasked}
+                disabled={proofUploading || !proofForm.proofFileKey || !proofForm.sha256 || !proofForm.transferredAmount || !proofForm.currency || !proofForm.bankReference || !proofForm.bankName || !proofForm.transferredAt || !proofForm.beneficiaryName || !proofForm.beneficiaryIbanMasked}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50"
               >
                 حفظ

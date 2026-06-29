@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import type { Context, Next } from 'hono';
 import { eq } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
@@ -11,7 +12,23 @@ interface ApiKeyMeta {
   scopes: string[];
 }
 
-const publicApiRouter = new Hono<{ Variables: { apiKeyMeta: ApiKeyMeta } }>();
+type PublicApiScope = 'products:read' | 'orders:read' | 'orders:create';
+
+interface PublicApiEnv {
+  Variables: {
+    apiKeyMeta: ApiKeyMeta;
+  };
+}
+
+const publicApiRouter = new Hono<PublicApiEnv>();
+
+const requireApiKeyScope = (scope: PublicApiScope) => async (c: Context<PublicApiEnv>, next: Next) => {
+  const meta = c.get('apiKeyMeta');
+  if (!meta.scopes.includes(scope)) {
+    return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient scope' } }, 403);
+  }
+  await next();
+};
 
 publicApiRouter.use('*', async (c, next) => {
   const apiKey = c.req.header('x-api-key');
@@ -25,25 +42,21 @@ publicApiRouter.use('*', async (c, next) => {
   await next();
 });
 
-publicApiRouter.get('/products', async (c) => {
+publicApiRouter.get('/products', requireApiKeyScope('products:read'), async (c) => {
   const meta = c.get('apiKeyMeta');
-  if (!meta.scopes.includes('products:read')) return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient scope' } }, 403);
   const db = createDbClient();
   const products = await db.select().from(s.products).where(eq(s.products.storeId, meta.storeId)).limit(50);
   return c.json({ success: true, data: products.map(toPublicProduct) });
 });
 
-publicApiRouter.get('/orders', async (c) => {
+publicApiRouter.get('/orders', requireApiKeyScope('orders:read'), async (c) => {
   const meta = c.get('apiKeyMeta');
-  if (!meta.scopes.includes('orders:read')) return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient scope' } }, 403);
   const db = createDbClient();
   const orders = await db.select().from(s.orders).where(eq(s.orders.storeId, meta.storeId)).limit(50);
   return c.json({ success: true, data: orders.map(toPublicOrder) });
 });
 
-publicApiRouter.post('/orders', async (c) => {
-  const meta = c.get('apiKeyMeta');
-  if (!meta.scopes.includes('orders:create')) return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Insufficient scope' } }, 403);
+publicApiRouter.post('/orders', requireApiKeyScope('orders:create'), async (c) => {
   return c.json({ success: true, data: { message: 'Order creation via API is available' } });
 });
 

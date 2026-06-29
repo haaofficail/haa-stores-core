@@ -1,9 +1,10 @@
-import { lazy, Suspense, useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { Toaster, toast } from 'sonner';
-import { adminApi } from './lib/api';
+import { adminApi, hasAdminPermission } from './lib/api';
 import { ErrorBoundary } from './ErrorBoundary';
 import { Icon, type AdminIconName } from './components/ui/icon';
+import { UnauthorizedState } from './components/ui/UnauthorizedState';
 
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -14,6 +15,9 @@ const Payments = lazy(() => import('./pages/Payments'));
 const Marketplace = lazy(() => import('./pages/Marketplace'));
 const SettlementBatches = lazy(() => import('./pages/SettlementBatches'));
 const SettlementBatchDetail = lazy(() => import('./pages/SettlementBatchDetail'));
+const AccountantInbox = lazy(() => import('./pages/AccountantInbox'));
+const AccountantSettlementDetail = lazy(() => import('./pages/AccountantSettlementDetail'));
+const FinanceReports = lazy(() => import('./pages/FinanceReports'));
 const AuditLogs = lazy(() => import('./pages/AuditLogs'));
 const Plans = lazy(() => import('./pages/Plans'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -49,13 +53,33 @@ function AdminGuard() {
   return <Outlet />;
 }
 
-type NavItem = { path: string; label: string; icon: AdminIconName };
+type AdminRoutePermission =
+  | 'dashboard:view'
+  | 'tenants.read'
+  | 'stores.read'
+  | 'kyc.read'
+  | 'payments.read'
+  | 'marketplace.read'
+  | 'wallet.payout.view_all'
+  | 'audit.read'
+  | 'plans.read'
+  | 'platform.settings.read'
+  | 'billing.platform_fee.read'
+  | 'users.read'
+  | 'landing_contacts.read';
+
+type NavItem = { path: string; label: string; icon: AdminIconName; permission?: AdminRoutePermission };
 
 type NavGroup = { label: string; items: NavItem[] };
 
 const navItemFromEntry = (entry: string): NavItem => {
-  const [path, label, icon] = entry.split('|');
-  return { path, label, icon: icon as AdminIconName };
+  const [path, label, icon, permission] = entry.split('|');
+  return {
+    path,
+    label,
+    icon: icon as AdminIconName,
+    permission: permission as AdminRoutePermission | undefined,
+  };
 };
 
 const navGroup = (label: string, entries: string[]): NavGroup => ({
@@ -64,30 +88,60 @@ const navGroup = (label: string, entries: string[]): NavGroup => ({
 });
 
 const navGroups: NavGroup[] = [
-  navGroup('عام', ['/|الرئيسية|LayoutDashboard']),
+  navGroup('عام', ['/|الرئيسية|LayoutDashboard|dashboard:view']),
   navGroup('إدارة', [
-    '/tenants|التجار|Users',
-    '/stores|المتاجر|Store',
-    '/store-billing|رسوم المتاجر|CreditCard',
-    '/kyc|التحقق|ShieldCheck',
-    '/bank-accounts|الحسابات البنكية|Building2',
-    '/settlement-readiness|جاهزية التسوية|CheckSquare',
-    '/store-payment-settings|إعدادات الدفع|CreditCard',
+    '/tenants|التجار|Users|tenants.read',
+    '/stores|المتاجر|Store|stores.read',
+    '/store-billing|رسوم المتاجر|CreditCard|billing.platform_fee.read',
+    '/kyc|التحقق|ShieldCheck|kyc.read',
+    '/bank-accounts|الحسابات البنكية|Building2|kyc.read',
+    '/settlement-readiness|جاهزية التسوية|CheckSquare|wallet.payout.view_all',
+    '/store-payment-settings|إعدادات الدفع|CreditCard|stores.read',
   ]),
   navGroup('مالية', [
-    '/payments|المدفوعات|BarChart2',
-    '/marketplace|سوق هاء|ShoppingBag',
-    '/payments/settlements|التسويات|Landmark',
+    '/finance/settlement-inbox|صندوق التسويات|Inbox|wallet.payout.view_all',
+    '/finance/reports|التقارير المالية|BarChart2|wallet.payout.view_all',
+    '/payments|المدفوعات|BarChart2|payments.read',
+    '/marketplace|سوق هاء|ShoppingBag|marketplace.read',
+    '/payments/settlements|التسويات|Landmark|wallet.payout.view_all',
   ]),
   navGroup('نظام', [
-    '/admin-users|المستخدمون|UserCog',
-    '/audit|سجل التدقيق|ScrollText',
-    '/plans|الباقات|Package',
-    '/compliance|الامتثال|CheckSquare',
-    '/landing-inbox|صندوق الوارد|Inbox',
-    '/settings|الإعدادات|Settings',
+    '/admin-users|المستخدمون|UserCog|users.read',
+    '/audit|سجل التدقيق|ScrollText|audit.read',
+    '/plans|الباقات|Package|plans.read',
+    '/compliance|الامتثال|CheckSquare|tenants.read',
+    '/landing-inbox|صندوق الوارد|Inbox|landing_contacts.read',
+    '/settings|الإعدادات|Settings|platform.settings.read',
   ]),
 ];
+
+function canAccessAdminRoute(permission?: AdminRoutePermission) {
+  return !permission || hasAdminPermission(permission);
+}
+
+// Root landing. Full admins see the platform dashboard. Finance-only roles
+// (accountant — no dashboard:view) land on their settlement inbox instead of
+// an unauthorized screen.
+function AdminHome() {
+  if (hasAdminPermission('dashboard:view')) return <Dashboard />;
+  if (hasAdminPermission('wallet.payout.view_all')) {
+    return <Navigate to="/finance/settlement-inbox" replace />;
+  }
+  return <UnauthorizedState permission="dashboard:view" />;
+}
+
+function AdminPermissionRoute({
+  permission,
+  children,
+}: {
+  permission: AdminRoutePermission;
+  children: ReactNode;
+}) {
+  if (!canAccessAdminRoute(permission)) {
+    return <UnauthorizedState permission={permission} />;
+  }
+  return <>{children}</>;
+}
 
 function SidebarLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
   const location = useLocation();
@@ -114,6 +168,10 @@ function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
+    if (!canAccessAdminRoute('platform.settings.read')) {
+      setLoading(false);
+      return;
+    }
     adminApi.getSettings().then(s => {
       setPlatform({ name: s.name, logoUrl: s.logoUrl });
       if (s.logoUrl) document.documentElement.style.setProperty('--logo-src', `'${s.logoUrl}'`);
@@ -137,6 +195,13 @@ function AdminLayout() {
     window.location.href = '/login';
   };
 
+  const visibleNavGroups = navGroups
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => canAccessAdminRoute(item.permission)),
+    }))
+    .filter(group => group.items.length > 0);
+
   const sidebar = (
     <nav className="flex flex-col h-full" aria-label="التنقل الرئيسي">
       {/* Logo */}
@@ -158,7 +223,7 @@ function AdminLayout() {
 
       {/* Nav groups */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-        {navGroups.map(group => (
+        {visibleNavGroups.map(group => (
           <div key={group.label}>
             <p className="px-3 mb-1.5 text-xs font-semibold text-gray-400 tracking-wide uppercase">
               {group.label}
@@ -261,24 +326,27 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route element={<AdminGuard />}>
               <Route element={<AdminLayout />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/tenants" element={<Tenants />} />
-                <Route path="/stores" element={<Stores />} />
-                <Route path="/kyc" element={<KycReview />} />
-                <Route path="/payments" element={<Payments />} />
-                <Route path="/marketplace" element={<Marketplace />} />
-                <Route path="/payments/settlements" element={<SettlementBatches />} />
-                <Route path="/payments/settlements/:batchId" element={<SettlementBatchDetail />} />
-                <Route path="/audit" element={<AuditLogs />} />
-                <Route path="/plans" element={<Plans />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/store-billing" element={<StoreBillingSettings />} />
-                <Route path="/compliance" element={<Compliance />} />
-                <Route path="/landing-inbox" element={<LandingInbox />} />
-                <Route path="/admin-users" element={<AdminUsers />} />
-                <Route path="/bank-accounts" element={<BankAccounts />} />
-                <Route path="/settlement-readiness" element={<SettlementReadiness />} />
-                <Route path="/store-payment-settings" element={<StorePaymentSettings />} />
+                <Route path="/" element={<AdminHome />} />
+                <Route path="/finance/settlement-inbox" element={<AdminPermissionRoute permission="wallet.payout.view_all"><AccountantInbox /></AdminPermissionRoute>} />
+                <Route path="/finance/settlements/:payoutId" element={<AdminPermissionRoute permission="wallet.payout.view_all"><AccountantSettlementDetail /></AdminPermissionRoute>} />
+                <Route path="/finance/reports" element={<AdminPermissionRoute permission="wallet.payout.view_all"><FinanceReports /></AdminPermissionRoute>} />
+                <Route path="/tenants" element={<AdminPermissionRoute permission="tenants.read"><Tenants /></AdminPermissionRoute>} />
+                <Route path="/stores" element={<AdminPermissionRoute permission="stores.read"><Stores /></AdminPermissionRoute>} />
+                <Route path="/kyc" element={<AdminPermissionRoute permission="kyc.read"><KycReview /></AdminPermissionRoute>} />
+                <Route path="/payments" element={<AdminPermissionRoute permission="payments.read"><Payments /></AdminPermissionRoute>} />
+                <Route path="/marketplace" element={<AdminPermissionRoute permission="marketplace.read"><Marketplace /></AdminPermissionRoute>} />
+                <Route path="/payments/settlements" element={<AdminPermissionRoute permission="wallet.payout.view_all"><SettlementBatches /></AdminPermissionRoute>} />
+                <Route path="/payments/settlements/:batchId" element={<AdminPermissionRoute permission="wallet.payout.view_all"><SettlementBatchDetail /></AdminPermissionRoute>} />
+                <Route path="/audit" element={<AdminPermissionRoute permission="audit.read"><AuditLogs /></AdminPermissionRoute>} />
+                <Route path="/plans" element={<AdminPermissionRoute permission="plans.read"><Plans /></AdminPermissionRoute>} />
+                <Route path="/settings" element={<AdminPermissionRoute permission="platform.settings.read"><Settings /></AdminPermissionRoute>} />
+                <Route path="/store-billing" element={<AdminPermissionRoute permission="billing.platform_fee.read"><StoreBillingSettings /></AdminPermissionRoute>} />
+                <Route path="/compliance" element={<AdminPermissionRoute permission="tenants.read"><Compliance /></AdminPermissionRoute>} />
+                <Route path="/landing-inbox" element={<AdminPermissionRoute permission="landing_contacts.read"><LandingInbox /></AdminPermissionRoute>} />
+                <Route path="/admin-users" element={<AdminPermissionRoute permission="users.read"><AdminUsers /></AdminPermissionRoute>} />
+                <Route path="/bank-accounts" element={<AdminPermissionRoute permission="kyc.read"><BankAccounts /></AdminPermissionRoute>} />
+                <Route path="/settlement-readiness" element={<AdminPermissionRoute permission="wallet.payout.view_all"><SettlementReadiness /></AdminPermissionRoute>} />
+                <Route path="/store-payment-settings" element={<AdminPermissionRoute permission="stores.read"><StorePaymentSettings /></AdminPermissionRoute>} />
               </Route>
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

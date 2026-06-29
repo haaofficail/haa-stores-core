@@ -278,6 +278,8 @@ export function ProductFormDialog({
                               : [...(form.tagIds ?? []), tag.id];
                             onFieldChange('tagIds', ids);
                           }}
+                          aria-pressed={selected}
+                          aria-label={`${selected ? 'إزالة تاج' : 'إضافة تاج'} ${tag.name}`}
                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm border transition-colors ${
                             selected
                               ? 'text-white border-transparent'
@@ -312,6 +314,8 @@ export function ProductFormDialog({
                               : [...form.categoryIds, cat.id];
                             onFieldChange('categoryIds', ids);
                           }}
+                          aria-pressed={selected}
+                          aria-label={`${selected ? 'إزالة تصنيف' : 'إضافة تصنيف'} ${cat.name}`}
                           className={`px-3 py-1.5 rounded-xl text-sm border transition-colors ${selected ? 'bg-primary-500 text-white border-primary-500' : 'bg-white hover:bg-neutral-50 border-neutral-200 text-neutral-900'}`}
                         >
                           {cat.name}

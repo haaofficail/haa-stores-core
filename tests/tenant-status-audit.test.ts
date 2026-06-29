@@ -50,7 +50,7 @@ describe('Tenant status change audit log (F-QA-B-004)', () => {
 
   it('captures both oldValue and newValue', () => {
     expect(handlerSlice).toMatch(/oldValue: \{ status: existing\.status \}/);
-    expect(handlerSlice).toMatch(/newValue: \{ status \}/);
+    expect(handlerSlice).toMatch(/newValue: \{ status, statusReason \}/);
   });
 
   it('forwards ipAddress + userAgent on the audit call', () => {

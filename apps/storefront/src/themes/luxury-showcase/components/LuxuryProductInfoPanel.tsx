@@ -189,11 +189,14 @@ export function LuxuryProductInfoPanel({
                     const valueLabel = typeof value === 'string' ? value : v.nameAr || v.name || v.label || v.value;
                     const valueKey = typeof value === 'string' ? value : v.id || v.key || v.value || valueLabel;
                     const active = selectedOptions?.[optionKey] === valueKey;
+                    const valueLabelText = String(valueLabel ?? valueKey ?? '');
                     return (
                       <button
                         key={valueKey}
                         type="button"
                         onClick={() => onOptionChange?.(optionKey, valueKey)}
+                        aria-pressed={active}
+                        aria-label={`${optionName}: ${valueLabelText}`}
                         className={[
                           'min-w-14 rounded-lg border px-3 py-1.5 text-sm font-light transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--lux-primary)]',
                         ].join(' ')}
@@ -203,7 +206,7 @@ export function LuxuryProductInfoPanel({
                           color: active ? '#FFFFFF' : 'var(--lux-muted, #756B61)',
                         }}
                       >
-                        {valueLabel}
+                        {valueLabelText}
                       </button>
                     );
                   })}

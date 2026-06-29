@@ -45,7 +45,7 @@ export type {
   ProductStatus, ProductType, StoreStatus,
   WalletEntryType, WalletEntryDirection, WalletEntryStatus,
   WebhookEventStatus, PaymentMethod, WebhookEventType,
-  AuditAction, UserRole, Permission,
+  AuditAction, UserRole, Permission, AdminPermission,
   ProviderCode, PaymentMode, InternalPaymentStatus,
   PaymentProviderCapabilities,
   KycStatus, BusinessType, KycDocumentType, BankAccountStatus,
@@ -135,4 +135,3 @@ export {
   CUSTOMER_SEGMENT_DESCRIPTIONS,
   CUSTOMER_SEGMENT_ICONS,
 } from './marketing.js';
-

@@ -4,6 +4,806 @@
 
 ---
 
+### TASK-0123: Post-financial handoff integration and GitHub readiness
+
+- **Type:** Documentation / Support-Ops / Testing / Product Planning
+- **Priority:** P0 Critical
+- **Status:** Local verification complete; GitHub publish pending
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/apple-grade-finance-integration`
+- **Original Request:** "الوكيل خلص مهمته والباقي عليك انت تستلم المهمة و تسوي كل الباقي"
+- **Expanded Requirement:** Take over after the financial agent's accountant-settlement handoff, preserve that work, correct stale project state, and prepare a safe integration/GitHub readiness path without staging unrelated mixed-worktree files.
+- **Scope:** Read the financial handoff, verify the current repo gate, inventory mixed-worktree and branch drift risks, document the integration sequence for RBAC/admin permission base + accountant settlement feature + TASK-0122 non-financial dialog work, repair post-integration full-test regressions caused by service-layer extraction/source-grep drift, and update canonical ops/agent state files.
+- **Out of Scope:** No `db:migrate`, no deploy, no secrets, no live payment/shipping provider calls, no production action, no unrelated screenshot/storage artifacts.
+- **Skills Used:** `documentation-handoff-gate`, `single-source-of-truth-gate`, `cross-agent-continuity-protocol`, `evidence-led-reporting`, `branch-pr-hygiene-gate`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] Financial handoff is captured in a repo-local integration plan with clean files, entangled files, dependencies, and owner-only migration notes.
+  - [x] Stale TASK-0122/preflight-blocked docs are corrected after the current `pnpm preflight` passes.
+  - [x] GitHub readiness is clearly separated from local preflight health because the initial handoff was on a stale mixed branch/worktree.
+  - [x] Worktree is moved onto a new integration branch from current `origin/main` without force-push or losing the preserved stash/patch backup.
+  - [x] Integration/code review phase verifies RBAC/admin permission base, accountant settlement feature, and non-financial dialog work together.
+  - [x] Staging/commit/push happens only after narrow file selection and verification.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; `git status --short --branch`; `git diff --check`; `git diff --cached --check`; `pnpm check:skills`; targeted accountant/RBAC/dialog tests; full `pnpm test`; package typechecks/builds before push.
+- **Files Changed:** Integration scope covers the prior Apple-grade remediation, admin RBAC/permission reflection, accountant settlement/admin finance handoff, wallet receipt/second-approval hardening, upload PDF opt-in, Drizzle migration snapshots for 0088/0089, tests, and ops/agent documentation. Local-only screenshots and `storage/*.ndjson` remain excluded.
+- **Test Results:** Initial takeover verification shows the repo gate is no longer blocked by `packages/wallet-core/src/settlement-config.ts`: `pnpm preflight` passed with TypeScript green. `pnpm ops:monitor` exited 0 with 0 failures; dev-server synthetic warnings remain because API/storefront/merchant servers were not running, 3 P2 `API-001` events remained in the 24-hour window, and no tasks/incidents/alerts were recommended. `git diff --check` and `git diff --cached --check` were clean. `pnpm check:skills` passed 43/43. After `git fetch origin`, PR #324 was confirmed merged and the worktree was moved to `codex/apple-grade-finance-integration` from current `origin/main`; the safety stash `stash@{0}` plus `/tmp/haa-apple-finance-integration-tracked-2026-06-29.patch` and `/tmp/haa-apple-finance-integration-untracked-2026-06-29.tgz` preserve the pre-move state. Targeted integration tests passed 27 files / 214 tests. Full `pnpm test` passed 400 files, 4940 tests, 1 skipped file, 3 skipped tests, and 14 todo tests. Focused repair tests passed for image/PDF allowlist, service-layer enforcement, source-grep route/service contracts, typography, tenant audit, and Drizzle snapshot integrity. `@haa/shared` build, wallet-core typecheck, API typecheck, admin-dashboard typecheck, admin-dashboard build, `pnpm lint` (0 errors / 431 existing warnings), and final `pnpm preflight` all passed.
+- **Root Cause:** The previous stop state was correct at the time, but became stale after the financial agent completed/fixed the wallet-core handoff. The remaining risk moved from TypeScript health to integration hygiene: RBAC/admin permission files, accountant settlement feature files, and non-financial dialog work are interdependent and must not be split or staged blindly.
+- **Verdict:** Local verification is green on a branch based on current `origin/main`; proceed with intentional staging, commit, push, and draft PR. Owner-only migrations remain unapplied.
+- **Related Issues:** ISSUE-0059, ISSUE-0060.
+
+---
+
+### TASK-0122: Harden non-financial admin dangerous-action dialog accessibility
+
+- **Type:** Accessibility / UX/UI Polish / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** Scoped complete; integration publish pending TASK-0123
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** "نفذ" — continue larger high-quality remediation batches without ignoring report details
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by upgrading non-financial admin dangerous-action dialogs from ad-hoc overlays to a local accessible dialog contract, while avoiding conflict with the separate financial Batch 4 stream agent.
+- **Scope:** Non-financial admin dangerous-action dialogs only: marketplace reject/suspend decision dialog, store delete/status dialogs, tenant delete/status dialogs, focused source-regression tests, browser checks with mocked local API responses, and ops documentation.
+- **Out of Scope:** Bank accounts, settlement/manual payout pages, accountant inbox/detail pages, admin API client financial actions, any finance/wallet/upload/API work owned by the financial Batch 4 stream (4C/4D/4E/UI), CRUD add/edit modals, backend route/API changes, permission changes, database migrations, staging/production action, secrets, live providers, full WCAG audit, large-table pagination, and unrelated dirty files.
+- **Skills Used:** `design-ux-excellence-gate`, `regression-safety-gate`, `acceptance-criteria-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, `context-budget-guardian`.
+- **Acceptance Criteria:**
+  - [x] Admin dangerous-action dialogs expose `role="dialog"`, `aria-modal`, `aria-labelledby`, and `aria-describedby` through a local admin dialog wrapper.
+  - [x] Marketplace reject/suspend, store status/delete, and tenant status/delete flows still require their existing reason/confirmation gates and keep the same API calls.
+  - [x] Reason textareas inside those dialogs are addressable by accessible names for keyboard/screen-reader and Playwright label targeting.
+  - [x] Focused source-regression tests guard the shared dialog wrapper and the affected admin page contracts.
+  - [x] Browser checks load affected non-financial dialogs at mobile and desktop viewport sizes with local mocked API responses.
+  - [x] Focused tests, admin-dashboard typecheck/build, lint, skill check, diff check, and final preflight pass.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; inspect admin dangerous-action dialogs and existing tests; `pnpm vitest run tests/admin-dangerous-dialog-accessibility.test.ts tests/admin-dangerous-action-reasons.test.ts tests/manual-settlement-dashboard-ux.test.ts`; `pnpm --filter @haa/admin-dashboard typecheck`; `pnpm --filter @haa/admin-dashboard build`; local Playwright browser checks against `http://localhost:5175` with mocked admin APIs for non-financial pages; `pnpm check:skills`; `git diff --check`; `pnpm lint`; final `pnpm preflight`.
+- **Files Changed:** `apps/admin-dashboard/src/components/ui/AdminDialog.tsx`, `apps/admin-dashboard/src/pages/Marketplace.tsx`, `apps/admin-dashboard/src/pages/Stores.tsx`, `apps/admin-dashboard/src/pages/Tenants.tsx`, `tests/admin-dangerous-dialog-accessibility.test.ts`, `tests/admin-dangerous-action-reasons.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0122.md`.
+- **Test Results:** Scoped TASK-0122 checks passed. Startup `pnpm preflight` passed before this scope. `pnpm ops:monitor` exited 0 with no recommended tasks/incidents and no alert candidates; local dev-server warnings and three known P2 API-001 support events remained unrelated. Focused admin dialog/regression tests passed after finance split: 3 files / 11 tests. Admin-dashboard typecheck and build passed. Mocked local Playwright QA passed for marketplace reject dialog on desktop and store status dialog on mobile; confirmation buttons were disabled before reason entry and enabled after reason entry, and screenshots were saved outside the repo under `/tmp/task-0122-*.png`. The full finance-inclusive draft was preserved at `/tmp/haa-task-0122-full-before-finance-split.patch`; no finance-page `AdminDialog` migration remains active in the working tree. `pnpm check:skills` passed 43/43. `git diff --check` was clean. `pnpm lint` exited 0 with 0 errors and 431 existing warnings across the wider repo. A later post-financial-handoff takeover run on 2026-06-29 showed final repo `pnpm preflight` now passes; GitHub publish remains pending TASK-0123 narrow staging/final verification on `codex/apple-grade-finance-integration`.
+- **Root Cause:** Non-financial admin dangerous-action dialogs had grown page by page as fixed overlays. The reason/confirmation logic was already improved by earlier tasks, but the overlay wrappers did not provide a shared accessibility contract for dialog role, modal state, title linkage, description linkage, Escape close, and scroll locking.
+- **Verdict:** Scoped non-financial admin dangerous-action dialog accessibility is implemented and verified locally. The earlier external financial preflight blocker has been cleared by the financial handoff, but TASK-0122 is still not independently GitHub-ready because the active branch/worktree now requires TASK-0123 integration hygiene and narrow staging. No finance files are part of the active TASK-0122 scope after split. No backend/API/RBAC behavior, money movement logic, DB migration, deploy, secret, production action, or live provider call occurred in TASK-0122.
+- **Coordination Note:** The owner provided the separate financial Batch 4 conversation. This task intentionally excludes `BankAccounts.tsx`, `SettlementBatchDetail.tsx`, `AccountantInbox.tsx`, `AccountantSettlementDetail.tsx`, `apps/admin-dashboard/src/lib/api.ts` financial actions, wallet, payout, upload/PDF, IBAN reveal, accountant-detail, and admin finance API surfaces. The earlier finance-adjacent accessibility draft is preserved only as `/tmp/haa-task-0122-full-before-finance-split.patch` for optional later coordination.
+- **Related Issues:** ISSUE-0059.
+
+---
+
+### TASK-0121: Unblock preflight for admin IBAN reveal typing
+
+- **Type:** Backend API / Security / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** "نفذ" — start larger high-quality remediation batches
+- **Expanded Requirement:** Before starting the larger admin accessibility batch, restore the mandatory preflight gate that failed on admin IBAN reveal typing: the dedicated full-IBAN reveal permission must be typed through `AdminPermission`, and the reveal/copy audit actions must be part of the typed audit vocabulary with labels.
+- **Scope:** Shared audit action vocabulary/labels, local shared package rebuild for stale `@haa/shared` dist artifacts, focused source-regression test, API typecheck verification, and ops documentation.
+- **Out of Scope:** Changing IBAN reveal business logic, exposing additional IBAN data, UI changes, database migrations, staging/production action, secrets, live providers, and unrelated dirty files.
+- **Skills Used:** `acceptance-criteria-gate`, `regression-safety-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `environment-safety-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `hono-typescript`.
+- **Acceptance Criteria:**
+  - [x] `bank_account.iban_revealed_for_payout` and `bank_account.iban_copied_for_payout` are included in the shared `AuditAction` union.
+  - [x] Both IBAN reveal/copy actions have Arabic labels in `AUDIT_ACTION_LABELS`.
+  - [x] Dedicated permission `merchant.bank_accounts.reveal_iban_for_payout` remains in `AdminPermission`, catalog, accountant/admin role grants, and admin route guard.
+  - [x] Focused regression guard confirms the IBAN reveal route audits only `ibanLast4`, not full `iban`, inside the audit payload.
+  - [x] `@haa/shared` is rebuilt locally so API typecheck consumes current dist types.
+  - [x] API typecheck, focused test, skill check, diff check, and final preflight pass.
+- **Test Plan:** `pnpm preflight` to capture failure; `pnpm ops:monitor`; inspect admin IBAN route/shared permission/audit types; `pnpm --filter @haa/shared build`; `pnpm vitest run tests/admin-iban-reveal-typing.test.ts`; `pnpm --filter @haa/api typecheck`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `packages/shared/src/types/orders.ts`, `packages/shared/src/types/audit.ts`, `tests/admin-iban-reveal-typing.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0121.md`.
+- **Test Results:** Passed. Initial `pnpm preflight` failed on API typecheck for missing IBAN reveal audit actions and stale `@haa/shared` dist permission typing. `pnpm ops:monitor` exited 0 with no recommended tasks/incidents and no alert candidates; local dev-server warnings and known P2 API-001 support events remained unrelated. `pnpm --filter @haa/shared build` passed. `pnpm vitest run tests/admin-iban-reveal-typing.test.ts` passed 1 file / 3 tests. `pnpm --filter @haa/api typecheck` passed. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed.
+- **Root Cause:** The admin IBAN reveal route used two new audit action literals that were not added to the shared `AuditAction` union/labels. In addition, the local `@haa/shared` `dist` artifacts consumed by API typecheck were stale and did not include the already-source-added `merchant.bank_accounts.reveal_iban_for_payout` permission.
+- **Verdict:** Done locally for preflight unblock. No IBAN reveal business-rule change, UI change, DB migration, deploy, secret, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0058.
+
+---
+
+### TASK-0120: Harden merchant theme-editor ARIA controls
+
+- **Type:** Accessibility / UX/UI Polish / Testing / Documentation
+- **Priority:** P3 Low
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing the merchant theme-editor portion of broader ARIA polish: preview controls, homepage section row controls, image/brand removal controls, and theme-editor choice chips should expose accessible names and state semantics.
+- **Scope:** Merchant theme editor only: live-preview device/zoom controls, homepage section disclosure/action controls, section image/brand removal buttons, theme-editor choice chips, focused source-regression test, and ops documentation.
+- **Out of Scope:** Admin-dashboard accessibility sweep, full WCAG/browser audit, theme rendering logic, storefront public theme behavior, API behavior, database changes, staging/production action, secrets, and unrelated dirty files.
+- **Skills Used:** `design-ux-excellence-gate`, `regression-safety-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `environment-safety-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Preview device and desktop zoom controls are `type="button"` controls with Arabic accessible names and `aria-pressed`.
+  - [x] Preview icon buttons keep stable touch targets and hide decorative lucide icons from assistive technology.
+  - [x] Homepage sections group and row controls expose `aria-expanded`/`aria-controls`, and the draggable section row supports Enter/Space without capturing nested button key events.
+  - [x] Section visibility, duplicate, delete, image-remove, and brand-remove controls have explicit Arabic accessible names/titles.
+  - [x] Theme-editor link/source/category choice chips expose selected state through `aria-pressed`.
+  - [x] A focused regression test guards the affected ARIA contracts.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; inspect merchant theme-editor controls; `pnpm vitest run tests/merchant-theme-editor-aria-controls.test.ts`; `pnpm --filter @haa/merchant-dashboard typecheck`; `pnpm --filter @haa/merchant-dashboard build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `apps/merchant-dashboard/src/pages/theme-editor/PreviewPane.tsx`, `apps/merchant-dashboard/src/pages/theme-editor/tabs/HomepageTab.tsx`, `apps/merchant-dashboard/src/pages/theme-editor/SectionEditors.tsx`, `tests/merchant-theme-editor-aria-controls.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0120.md`.
+- **Test Results:** Passed. Startup `pnpm preflight` passed. `pnpm ops:monitor` exited 0 with no recommended tasks/incidents and no alert candidates; local dev-server warnings remained expected and three known P2 API-001 support events remained unrelated. Focused merchant theme-editor ARIA regression passed 1 file / 4 tests. Merchant-dashboard typecheck passed. Merchant-dashboard build passed. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed.
+- **Root Cause:** Several theme-editor controls were local raw buttons/labels/chips instead of a stricter shared named icon-button/pressed-chip/disclosure primitive: preview device buttons had English labels and no pressed state, section rows exposed `role="button"` without disclosure linkage/Enter-Space activation, icon-only actions relied on title or visual X/icon affordances, and choice chips changed visual state without `aria-pressed`.
+- **Verdict:** Done locally for scoped merchant theme-editor ARIA polish. No theme rendering logic, API, DB, deploy, migration, secrets, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0057.
+
+---
+
+### TASK-0119: Harden merchant product-form ARIA controls
+
+- **Type:** Accessibility / UX/UI Polish / Testing / Documentation
+- **Priority:** P3 Low
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing the merchant product-form portion of broader ARIA polish: image upload/remove controls, variant option removal, and tag/category selection chips should expose keyboard/name/state semantics.
+- **Scope:** Merchant product form/product media controls only: upload area, queued/current image removal, variant option removal, tag/category chip selected state, focused source-regression test, and ops documentation.
+- **Out of Scope:** Theme editor, admin-dashboard, full WCAG audit, API behavior, product validation rules, database changes, staging/production action, secrets, and unrelated dirty files.
+- **Skills Used:** `design-ux-excellence-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `environment-safety-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Product image upload affordance is a real `type="button"` control with an accessible name and preserves `fileRef.current?.click()`.
+  - [x] Queued-image and saved-image removal icon buttons have explicit Arabic accessible names and titles.
+  - [x] Variant option remove icon button has an explicit Arabic accessible name/title that includes option name or index.
+  - [x] Tag and category chips expose selected state through `aria-pressed` and action-oriented accessible names.
+  - [x] A focused regression test guards the affected ARIA contracts.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; inspect merchant product form/media controls; `pnpm vitest run tests/merchant-product-form-aria-controls.test.ts`; `pnpm --filter @haa/merchant-dashboard typecheck`; `pnpm --filter @haa/merchant-dashboard build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `apps/merchant-dashboard/src/components/products/ProductImagesSection.tsx`, `apps/merchant-dashboard/src/components/products/ProductVariantsSection.tsx`, `apps/merchant-dashboard/src/components/products/ProductFormDialog.tsx`, `tests/merchant-product-form-aria-controls.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0119.md`.
+- **Test Results:** Passed. Startup `pnpm preflight` passed before the continuation batch. `pnpm ops:monitor` exited 0 with no recommended tasks/incidents and no alert candidates; local dev-server warnings remained expected. Focused merchant product-form ARIA regression passed 1 file / 4 tests. Merchant-dashboard typecheck passed. Merchant-dashboard build passed. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed.
+- **Root Cause:** Some product-form controls were implemented as local raw buttons/chips rather than a stricter named icon-button/pressed-chip primitive: the upload zone was a clickable `div`, image/variant removal controls relied on icon/X affordances, and tag/category chip selections lacked `aria-pressed`.
+- **Verdict:** Done locally for scoped merchant product-form ARIA polish. No API, product rules, DB, deploy, migration, secrets, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0056.
+
+---
+
+### TASK-0118: Harden storefront buyer-control ARIA states
+
+- **Type:** Accessibility / UX/UI Polish / Testing / Documentation
+- **Priority:** P3 Low
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing the storefront portion of broader ARIA polish: buyer-facing carousel, disclosure, product option, and loading/icon controls should have accessible names and state semantics.
+- **Scope:** Attribute/state-only updates to storefront theme/page controls plus a focused source-regression test and ops documentation.
+- **Out of Scope:** Admin-dashboard and merchant-dashboard ARIA sweep, full WCAG audit, browser automation, API behavior, payment/shipping logic, database changes, staging/production action, secrets, and unrelated dirty files.
+- **Skills Used:** `design-ux-excellence-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `environment-safety-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Base-elegant homepage carousel dot buttons expose a stable Arabic accessible name, 44px hit target, hidden decorative dot, and active-slide state via `aria-current`.
+  - [x] Base-elegant homepage FAQ disclosure buttons expose `aria-expanded` and `aria-controls` tied to the rendered answer panel.
+  - [x] Base-elegant and luxury product option controls expose selected state through `aria-pressed` and an option/value accessible name.
+  - [x] Luxury product-card add-to-cart keeps a non-empty accessible name and `aria-busy` while the visible content is a spinner only.
+  - [x] A focused regression test guards the affected ARIA contracts.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; inspect storefront raw button controls; `pnpm vitest run tests/storefront-aria-controls.test.ts`; `pnpm --filter @haa/storefront typecheck`; `pnpm --filter @haa/storefront build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `apps/storefront/src/themes/base-elegant/HomePage.tsx`, `apps/storefront/src/themes/base-elegant/ProductPage.tsx`, `apps/storefront/src/themes/luxury-showcase/components/LuxuryProductCard.tsx`, `apps/storefront/src/themes/luxury-showcase/components/LuxuryProductInfoPanel.tsx`, `tests/storefront-aria-controls.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0118.md`.
+- **Test Results:** Passed. Startup `pnpm preflight` passed. `pnpm ops:monitor` exited 0 with no recommended tasks/incidents and no alert candidates; local dev-server warnings remained expected. Focused storefront ARIA regression passed 1 file / 5 tests. Storefront typecheck passed. Storefront build passed with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed. Browser QA loaded `/s/haa-demo` and `/s/haa-demo/p/wireless-bluetooth-headphones` with local API/storefront servers: no framework overlay, product page title rendered, luxury add-to-cart controls exposed `aria-busy=false` and accessible label `أضف للسلة`; Playwright keyboard fallback reached 10/10 focused interactive elements, including icon button `aria-label="فتح البحث"`.
+- **Root Cause:** Some buyer-facing raw controls had visible or visual-only affordances but no source-level contract for ARIA state/name preservation: carousel dots had no accessible name/current state, FAQ buttons had no disclosure state, option choices did not expose selected state, and a loading add-to-cart state could collapse to a spinner-only accessible name.
+- **Verdict:** Done locally for scoped storefront buyer-control ARIA polish. No API, payment/shipping logic, DB, deploy, migration, secrets, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0055.
+
+---
+
+### TASK-0117: Add explicit DEV badge to Fake 3DS challenge page
+
+- **Type:** UX/UI Polish / Testing / Documentation
+- **Priority:** P3 Low
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing the Fake3DS DEV badge polish: the fake challenge page should show a stable, visually obvious dev/test badge and preserve the existing DEV-only route guard.
+- **Scope:** Presentational badge in `Fake3DSChallenge.tsx`, focused source-regression test for badge and route guard, and ops documentation.
+- **Out of Scope:** Payment provider behavior, 3DS callback logic, real payment challenge copy, route guard changes, database changes, staging/production action, secrets, and unrelated dirty files.
+- **Skills Used:** `design-ux-excellence-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `environment-safety-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Fake 3DS page renders a visible `DEV TEST` badge with stable `data-testid`.
+  - [x] Badge copy states the page is a local simulation, not a bank challenge or real payment.
+  - [x] Source-regression keeps `/fake-3ds-challenge` mounted only under `import.meta.env.DEV`.
+  - [x] Existing 3DS source-regression flow remains green.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; inspect Fake3DS page, App route guard, and existing 3DS tests; `pnpm vitest run tests/fake-3ds-dev-badge.test.ts tests/3ds-storefront-flow.test.ts`; `pnpm --filter @haa/storefront typecheck`; `pnpm --filter @haa/storefront build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `apps/storefront/src/pages/Fake3DSChallenge.tsx`, `tests/fake-3ds-dev-badge.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0117.md`.
+- **Test Results:** Passed. Startup `pnpm preflight` passed. `pnpm ops:monitor` exited 0 with no recommended tasks/incidents and no alert candidates; local dev-server warnings remained expected. Focused Fake3DS/3DS regression passed 2 files / 13 tests. Storefront typecheck passed. Storefront build passed with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning.
+- **Root Cause:** The page had developer-only text in the header, but no stable visible badge/test contract that future UI changes could preserve.
+- **Verdict:** Done locally for Fake 3DS dev/test badge clarity. No payment logic, route guard, API, DB, deploy, migration, secrets, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0054.
+
+---
+
+### TASK-0116: Harden storefront buyer phone inputs for RTL-safe tel entry
+
+- **Type:** UX/UI Polish / Accessibility / Testing / Documentation
+- **Priority:** P3 Low
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing UB7: storefront buyer phone inputs in purchase, tracking, recovery, support, and marketplace checkout flows should remain LTR under RTL and declare telephone input semantics for mobile keyboards/autofill.
+- **Scope:** Attribute-only updates to storefront buyer phone inputs in checkout, marketplace checkout, manual tracking, order-success recovery, track-result recovery, support ticket form, plus a focused source-regression test and ops documentation.
+- **Out of Scope:** Merchant/admin phone fields, auth/signup phone field, landing-page lead form, phone validation/normalization rules, API changes, database changes, staging/production action, secrets, and unrelated dirty files.
+- **Skills Used:** `design-ux-excellence-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `environment-safety-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Checkout buyer phone input declares `type="tel"`, `inputMode="tel"`, `autoComplete="tel"`, and `dir="ltr"`.
+  - [x] Marketplace checkout buyer phone input declares telephone semantics and LTR direction.
+  - [x] Manual order tracking and recovery phone inputs declare telephone semantics and LTR direction.
+  - [x] Support phone input declares telephone semantics, LTR direction, and `text-start` visual alignment.
+  - [x] A focused regression test guards the affected phone input contracts.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; inspect storefront phone fields and `StoreInput`; `pnpm vitest run tests/storefront-phone-input-rtl.test.ts tests/storefront-order-confirmation-recovery.test.ts`; `pnpm --filter @haa/storefront typecheck`; `pnpm --filter @haa/storefront build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `apps/storefront/src/pages/Checkout.tsx`, `apps/storefront/src/pages/MarketplaceCheckout.tsx`, `apps/storefront/src/pages/TrackOrder.tsx`, `apps/storefront/src/pages/OrderSuccess.tsx`, `apps/storefront/src/pages/TrackOrderResult.tsx`, `apps/storefront/src/pages/Support.tsx`, `tests/storefront-phone-input-rtl.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0116.md`.
+- **Test Results:** Passed. Startup `pnpm preflight` passed. `pnpm ops:monitor` exited 0 with no recommended tasks/incidents and no alert candidates; local dev-server warnings remained expected. Focused phone/order-confirmation regression passed 2 files / 9 tests. Storefront typecheck passed. Storefront build passed with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning.
+- **Root Cause:** Several storefront phone inputs already had `dir="ltr"` but not full telephone semantics (`type`, `inputMode`, autocomplete), and the support form phone input had native `type="tel"` without explicit LTR direction/visual alignment. In RTL contexts this leaves mobile keyboard/autofill and number rendering less predictable.
+- **Verdict:** Done locally for scoped storefront buyer phone inputs. No validation, API, DB, deploy, migration, secrets, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0053.
+
+---
+
+### TASK-0115: Add subscription plan-change financial impact clarity
+
+- **Type:** UX/UI Polish / Testing / Documentation
+- **Priority:** P2 Medium
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing UX8: the merchant subscription plan-change confirmation should explain the financial impact before confirmation, including current price, new price, price delta, estimated proration, effective timing, and next/current period date.
+- **Scope:** Merchant `Subscriptions.tsx` plan-change confirmation dialog, local display-only impact helpers, focused subscription regression test update, and ops documentation.
+- **Out of Scope:** Backend billing/proration logic changes, invoice creation changes, database changes, live payment-provider calls, staging/production action, secrets, and unrelated dirty files.
+- **Skills Used:** `design-ux-excellence-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `environment-safety-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Plan-change confirmation shows current price, new price, and price delta for the current billing cycle.
+  - [x] Upgrade confirmation shows an estimated prorated charge based on remaining days and cycle days.
+  - [x] Confirmation states the change is effective immediately.
+  - [x] Confirmation shows the next expected renewal date for upgrades or current period end for downgrades.
+  - [x] Copy states the final invoice is calculated by the system after confirmation.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; inspect `Subscriptions.tsx`, `SubscriptionService.upgrade`, existing subscription confirmation/proration tests; `pnpm vitest run tests/subscriptions-confirm-modal.test.tsx tests/subscription-proration-days-contract.test.ts`; `pnpm --filter @haa/merchant-dashboard typecheck`; `pnpm --filter @haa/merchant-dashboard build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `apps/merchant-dashboard/src/pages/Subscriptions.tsx`, `tests/subscriptions-confirm-modal.test.tsx`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0115.md`.
+- **Test Results:** Passed. Startup `pnpm preflight` passed. `pnpm ops:monitor` exited 0 with no recommended tasks/incidents and no alert candidates; local dev-server warnings remained expected. Focused subscription confirmation/proration regression passed 2 files / 13 tests. Merchant-dashboard typecheck and build passed.
+- **Root Cause:** The previous confirmation dialog blocked one-click billing changes and showed the target plan/price/cycle, but did not explain price delta, proration estimate, effective timing, or period impact. Backend proration was already days-based and covered by `tests/subscription-proration-days-contract.test.ts`.
+- **Verdict:** Done locally for subscription decision clarity. No billing logic, API, DB, deploy, migration, secrets, production action, or live payment/shipping-provider call occurred.
+- **Related Issues:** ISSUE-0052.
+
+---
+
+### TASK-0114: Make checkout stock-depletion recovery actionable
+
+- **Type:** Backend/API / UX/UI Polish / Testing / Documentation
+- **Priority:** P2 Medium
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by resolving L1 accurately: current commerce-core already locks stock inside the checkout transaction before payment creation, but stock depletion between cart and checkout was surfaced as a generic checkout failure. The API should return a typed client error and the storefront should guide the buyer back to the cart.
+- **Scope:** Storefront checkout-session error classification, shared user-friendly error message, checkout recovery UI for stock depletion, focused source-regression test, and ops documentation.
+- **Out of Scope:** New stock reservation system, database changes, checkout/payment refactor, live payment-provider calls, live shipping-provider calls, staging/production action, secrets, and unrelated dirty files.
+- **Skills Used:** `acceptance-criteria-gate`, `regression-safety-gate`, `design-ux-excellence-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `hono-typescript`.
+- **Acceptance Criteria:**
+  - [x] Commerce-core stock locking before payment creation remains verified and unchanged.
+  - [x] Storefront checkout-session route maps `Insufficient stock for product` to HTTP 400 with code `INSUFFICIENT_STOCK`.
+  - [x] Shared production-safe error messages include `INSUFFICIENT_STOCK`.
+  - [x] Storefront checkout detects the typed error and shows stock-specific recovery copy.
+  - [x] Stock recovery offers a return-to-cart action instead of payment-only retry guidance.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; inspect checkout route, commerce-core stock decrement, shared error handler, and storefront checkout; `pnpm vitest run tests/storefront-checkout-stock-recovery.test.ts tests/checkout-shipping-race.test.ts tests/storefront-cart-shipping-estimate.test.ts`; `pnpm --filter @haa/api typecheck`; `pnpm --filter @haa/storefront typecheck`; `pnpm --filter @haa/shared typecheck`; `pnpm --filter @haa/shared build`; `pnpm --filter @haa/api build`; `pnpm --filter @haa/storefront build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `apps/api/src/routes/storefront/checkout.ts`, `apps/storefront/src/pages/Checkout.tsx`, `packages/shared/src/errors.ts`, `tests/storefront-checkout-stock-recovery.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0114.md`.
+- **Test Results:** Passed. Startup `pnpm preflight` passed. `pnpm ops:monitor` exited 0 with no recommended tasks/incidents and no alert candidates; local dev-server warnings remained expected. Focused checkout stock/cart regression passed 3 files / 10 tests. API, storefront, and shared typechecks passed. Shared, API, and storefront builds passed; storefront build still emits the pre-existing `MarketplaceProductCard` Rollup circular chunk warning unrelated to this task. `pnpm check:skills` passed 43/43.
+- **Root Cause:** Stock was already decremented with `gte(...)` guards inside the checkout transaction before payment creation, but the storefront checkout-session route only classified messages containing "not found", "required", or "invalid" as 400. The commerce-core `Insufficient stock for product` error therefore fell through as a generic 500 `CHECKOUT_ERROR`, and the storefront had no stock-specific recovery path.
+- **Verdict:** Done locally for API/UI stock-depletion recovery. No stock reservation system was added. No deploy, migration, secrets, production action, or live payment/shipping-provider call occurred.
+- **Related Issues:** ISSUE-0051.
+
+---
+
+### TASK-0113: Add pre-checkout shipping estimate to storefront cart
+
+- **Type:** UX/UI Polish / Testing / Documentation
+- **Priority:** P2 Medium
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing A9: the storefront cart should let buyers estimate shipping before checkout using the existing local/manual shipping-rates endpoint, while clearly stating that final shipping is confirmed during checkout.
+- **Scope:** City-based shipping estimate UI in cart summary, use of existing `checkoutApi.getShippingRates`, empty/error/rates states, final-price caveat copy, focused source-regression test, and ops documentation.
+- **Out of Scope:** Final checkout shipping calculation changes, saving city into checkout, live shipping-provider calls, backend endpoint changes, database changes, staging/production action, secrets, and unrelated dirty files.
+- **Skills Used:** `design-ux-excellence-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Cart summary includes a shipping estimate section with city input.
+  - [x] Estimate action calls `checkoutApi.getShippingRates(slug, cart.id, city)`.
+  - [x] Rates display method name, estimated days, price, and free-above information where available.
+  - [x] Empty/error states render as persistent alerts.
+  - [x] Copy states final shipping is confirmed during checkout after address/method selection.
+- **Test Plan:** `pnpm ops:monitor`; inspect shipping contracts; `pnpm vitest run tests/storefront-cart-shipping-estimate.test.ts tests/checkout-shipping-race.test.ts`; `pnpm --filter @haa/storefront typecheck`; `pnpm --filter @haa/storefront build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `apps/storefront/src/pages/Cart.tsx`, `tests/storefront-cart-shipping-estimate.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0113.md`.
+- **Test Results:** Passed. Focused cart-shipping/checkout-race regression passed 2 files / 6 tests. Storefront typecheck passed. Storefront build passed with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning, unrelated to this task.
+- **Root Cause:** Cart only showed free-shipping progress and "shipping calculated at checkout", even though the platform already exposes a cart/city shipping-rates endpoint. Buyers had no way to preview shipping options before entering checkout.
+- **Verdict:** Done locally for cart-level shipping estimate. Final shipping calculation remains owned by checkout. No deploy, migration, secrets, production action, or live payment/shipping-provider call occurred.
+- **Related Issues:** ISSUE-0050.
+
+---
+
+### TASK-0112: Make storefront coupon errors actionable
+
+- **Type:** UX/UI Polish / Testing / Documentation
+- **Priority:** P2 Medium
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing UB6/A12: storefront cart coupon failures should preserve server/API reasons and render as an actionable persistent alert instead of collapsing catch-path failures to a generic error line.
+- **Scope:** Storefront cart coupon error mapping, actionable alert copy, focused source-regression test, and ops documentation.
+- **Out of Scope:** Coupon business rules, discount calculation, checkout totals, database changes, staging/production action, secrets, live providers, and unrelated dirty files.
+- **Skills Used:** `design-ux-excellence-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Server-side coupon rejection reasons remain passed through to the cart UI.
+  - [x] API/client error messages in coupon catch paths are not collapsed to `common.error` when a message exists.
+  - [x] Coupon error UI is a persistent `role="alert"` surface.
+  - [x] Error UI includes practical guidance about code spelling, minimum order, or expiry.
+- **Test Plan:** inspect cart/API/coupon route; `pnpm vitest run tests/storefront-coupon-error-reasons.test.ts tests/storefront-validation-money.test.ts`; `pnpm --filter @haa/storefront typecheck`; `pnpm --filter @haa/storefront build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `apps/storefront/src/pages/Cart.tsx`, `tests/storefront-coupon-error-reasons.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0112.md`.
+- **Test Results:** Passed. Focused coupon/money regression passed 2 files / 9 tests. Storefront typecheck passed. Storefront build passed with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning, unrelated to this task.
+- **Root Cause:** The backend already returns Arabic coupon rejection reasons for invalid, inactive, expired, exhausted, and minimum-order coupons. The cart UI preserved `result.reason` for normal validation responses, but catch-path failures collapsed to `common.error` and the visual treatment was only a terse red line.
+- **Verdict:** Done locally for actionable coupon error display. Coupon business rules and discount math were not changed. No deploy, migration, secrets, production action, or live payment/shipping-provider call occurred.
+- **Related Issues:** ISSUE-0049.
+
+---
+
+### TASK-0111: Add order confirmation recovery fallback and unify tracking phone storage
+
+- **Type:** UX/UI Polish / Testing / Documentation
+- **Priority:** P2 Medium
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing the OrderSuccess/Track cache-miss friction: if the confirmation page cannot auto-load an order because the phone token is missing, the buyer should see a clear support path, and manual order tracking should save the phone using the same helper/key as checkout confirmation.
+- **Scope:** Storefront confirmation missing-phone support fallback, canonical guest track-phone storage usage in the manual tracking form, focused source-regression test, and ops documentation.
+- **Out of Scope:** Real resend email/SMS endpoint, notification-provider integration, backend support automation, database changes, staging/production action, secrets, live providers, and unrelated dirty files.
+- **Skills Used:** `design-ux-excellence-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Order confirmation missing-phone state offers a clear Arabic support fallback for confirmation/resend help.
+  - [x] The fallback shows the order number so the buyer can include it in the support ticket.
+  - [x] The fallback links to the current store support page without tokens or secrets in the URL.
+  - [x] Manual track form uses `saveTrackPhone()` from `order-track-storage`.
+  - [x] The canonical track-phone key remains order-number based and shared with checkout/confirmation.
+- **Test Plan:** `pwd`; final TASK-0110 `pnpm preflight`; `pnpm ops:monitor`; read latest monitoring report; inspect `OrderSuccess.tsx`, `TrackOrder.tsx`, `TrackOrderResult.tsx`, and `order-track-storage.ts`; `pnpm vitest run tests/storefront-order-confirmation-recovery.test.ts tests/storefront-return-request-intake.test.ts`; `pnpm --filter @haa/storefront typecheck`; `pnpm --filter @haa/storefront build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `apps/storefront/src/pages/OrderSuccess.tsx`, `apps/storefront/src/pages/TrackOrder.tsx`, `tests/storefront-order-confirmation-recovery.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0111.md`.
+- **Test Results:** Passed. Focused order-confirmation/return-intake regression passed 2 files / 6 tests. Storefront typecheck passed. Storefront build passed with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning, unrelated to this task.
+- **Root Cause:** `OrderSuccess` handled missing session phone by asking for the phone again but offered no support/resend fallback. Separately, the manual tracking page wrote a slug-scoped sessionStorage key while the shared checkout/confirmation helper uses an order-number key, making guest tracking state easier to drift.
+- **Verdict:** Done locally for support fallback and storage-key unification. Actual resend email/SMS automation remains out of scope. No deploy, migration, secrets, production action, or live payment/shipping-provider call occurred.
+- **Related Issues:** ISSUE-0048.
+
+---
+
+### TASK-0110: Add storefront privacy data export/deletion request intake
+
+- **Type:** UX/UI Polish / Privacy / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by partially closing MS8: storefront buyers should have an explicit, durable path to request a copy of their personal data or request deletion through the existing support-ticket workflow, without introducing automated data-export/deletion execution or a database migration in this scope.
+- **Scope:** Storefront support-page privacy request actions, structured Arabic ticket templates for data export and deletion, reuse of existing support-ticket creation/token storage/follow-up path, focused source-regression test, and ops documentation.
+- **Out of Scope:** Automated PDPL data export generation, automated deletion/retention workflows, database schema changes, legal-policy changes, merchant/admin privacy operations queue, staging/production action, secrets, live providers, and unrelated dirty files.
+- **Skills Used:** `design-ux-excellence-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Storefront support page exposes explicit buyer actions for "طلب نسخة من بياناتي" and "طلب حذف بياناتي".
+  - [x] Each action prefills a structured support-ticket subject/message with verification fields and Arabic privacy expectations.
+  - [x] Data-export copy states identity verification is required before releasing data.
+  - [x] Data-deletion copy states legally required retention may still apply.
+  - [x] Submission continues to use the existing support ticket API and local token storage; follow-up links do not include `accessToken` in the URL.
+- **Test Plan:** `pwd`; `pnpm preflight`; inspect system map/current state/tracker/KB/decisions; inspect storefront support page/API/token handling; `pnpm vitest run tests/storefront-privacy-request-intake.test.ts tests/support-token-regression.test.ts`; `pnpm --filter @haa/storefront typecheck`; `pnpm --filter @haa/storefront build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `apps/storefront/src/pages/Support.tsx`, `tests/storefront-privacy-request-intake.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0110.md`.
+- **Test Results:** Passed. Focused storefront privacy/support regression passed 2 files / 6 tests. Storefront typecheck passed. Storefront build passed with the pre-existing `MarketplaceProductCard` Rollup circular chunk warning, unrelated to this task. `pnpm check:skills` passed 43/43, `git diff --check` was clean, and final `pnpm preflight` passed after rebuilding stale local `@haa/shared`/`@haa/db` package artifacts without adding tracked `dist` output.
+- **Root Cause:** PDPL/privacy artifacts existed elsewhere, but the buyer-facing storefront had no explicit support intake for data-export or deletion requests. Users had to infer a generic support path, which weakened privacy-right discoverability and made request triage less structured.
+- **Verdict:** Done locally for buyer-facing privacy request intake. Automated export/deletion fulfillment, retention enforcement, admin/merchant privacy operations, and legal owner review remain separate follow-ups. No deploy, migration, secrets, production action, or live payment/shipping-provider call occurred.
+- **Related Issues:** ISSUE-0047.
+
+---
+
+### TASK-0109: Extend pre-launch smoke with local provider gates
+
+- **Type:** Testing / E2E / Monitoring / Documentation
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by partially closing OP5: the local pre-launch smoke suite should assert payment/shipping provider safety contracts without requiring the DB-backed `pnpm smoke` path that is currently owner-gated by local migration drift.
+- **Scope:** No-network/no-DB provider smoke assertions for fake payment scenarios, live payment blocking, demo checkout fake-provider forcing, manual/haa_mock shipping readiness, live shipping blocking, and provider-status route mounting.
+- **Out of Scope:** Running or fixing DB-backed `pnpm smoke`, applying migrations, creating DB/browser fixtures, Playwright E2E, live payment/shipping-provider calls, staging/production action, and unrelated dirty files.
+- **Skills Used:** `acceptance-criteria-gate`, `environment-safety-gate`, `regression-safety-gate`, `test-strategy-gate`, `implementation-quality-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] `pnpm test:smoke` verifies FakePaymentProvider success/failure/cancel/expiry/COD/bank-transfer/3DS coverage.
+  - [x] Smoke verifies payment live mode remains blocked and demo checkout forces `FakePaymentProvider`.
+  - [x] Smoke verifies shipping live mode remains blocked and manual/haa_mock remain local-safe `mock_ready` options.
+  - [x] Smoke verifies merchant provider-status route remains mounted for readiness checks.
+- **Test Plan:** `pnpm test:smoke`; `pnpm vitest run tests/pre-launch-smoke.test.ts tests/payment-test-environment.test.ts tests/shipping-readiness.test.ts tests/provider-status-regression.test.ts`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `tests/pre-launch-smoke.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0109.md`.
+- **Test Results:** Passed. `pnpm test:smoke` passed 1 file / 34 tests. Adjacent provider verification passed 4 files / 58 tests.
+- **Root Cause:** The pre-launch smoke suite covered broad launch-readiness surfaces but did not explicitly guard the local fake-payment/manual-shipping provider contracts that are safe to run without DB, credentials, or live providers. The DB-backed full smoke remains separately blocked by the known local migration drift.
+- **Verdict:** Done locally for no-network provider smoke coverage. Full DB-backed smoke and browser E2E remain open/gated. No deploy, migration, secrets, production action, or live payment/shipping-provider call occurred.
+- **Related Issues:** ISSUE-0046, ISSUE-0027.
+
+---
+
+### TASK-0108: Add local monitoring alert emission to `ops:monitor`
+
+- **Type:** Monitoring / Observability / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing the local alerting portion of MS3/OP2: `ops:monitor` should not only analyze errors and print recommendations, it should emit structured local alert records for P0 incidents, repeated P1 tasks, and repeated-fingerprint RCA triggers without requiring external accounts or secrets.
+- **Scope:** Shared ops alert rule builder, local alert-emission script, package script wiring, focused alert tests, command-list documentation, and ops truth updates.
+- **Out of Scope:** External Sentry/Datadog/Uptime/Slack/email/webhook integration, staging/production deployment, secrets, live providers, database migrations, and unrelated dirty files.
+- **Skills Used:** `acceptance-criteria-gate`, `environment-safety-gate`, `implementation-quality-gate`, `regression-safety-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] Active P0 events produce local incident alert records with stable dedupe keys and safe evidence metadata.
+  - [x] Repeated P1 error codes produce local task alert records.
+  - [x] Repeated fingerprints produce local RCA alert records.
+  - [x] No alert-worthy events produce no noisy alert record.
+  - [x] `pnpm ops:monitor` runs `ops:alerts` after health, synthetic, and error analysis.
+- **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; read latest monitoring report; inspect ops scripts and alert rules; `pnpm vitest run tests/ops-monitoring-alerts.test.ts tests/ops-errors-analyzer.test.ts`; `pnpm ops:alerts`; `pnpm ops:monitor`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `scripts/ops-events.mjs`, `scripts/emit-monitoring-alerts.mjs`, `package.json`, `tests/ops-monitoring-alerts.test.ts`, `AGENTS.md`, `docs/agent-os/TEST_STRATEGY.md`, `docs/ops/ALERT_RULES.md`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0108.md`.
+- **Test Results:** Passed. Focused ops alert/analyzer tests passed 2 files / 12 tests. `pnpm ops:alerts` on current local events emitted 0 alert candidates and wrote no noisy alert. `pnpm ops:monitor` now runs health + synthetic + error analysis + alerts and exited 0; current local state has only known P2 API-001 DB-drift events and no alert-worthy P0/P1/RCA candidate.
+- **Root Cause:** The project had event capture, error analysis, and monitoring reports, but no local alert sink that persisted "this needs an incident/task/RCA" decisions as structured records. External monitoring remains owner-gated, but a local proofable alert layer was missing.
+- **Verdict:** Done locally for local monitoring alert emission. External alert delivery/account setup remains owner/environment-gated. No deploy, migration, secrets, production action, or live payment/shipping-provider call occurred.
+- **Related Issues:** ISSUE-0045.
+
+---
+
+### TASK-0107: Add storefront return/refund request intake from order tracking
+
+- **Type:** UX/UI Polish / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing the buyer-facing start-return gap without introducing a database migration: delivered/picked-up/completed order tracking should let a buyer submit a structured return/refund request through the existing support-ticket system and then follow the ticket without exposing the access token in the URL.
+- **Scope:** Storefront order tracking return/refund intake card, support-ticket creation wiring, local support-ticket token persistence, focused source-regression test, and ops documentation.
+- **Out of Scope:** New RMA tables, return labels, automatic refund execution, merchant-specific returns queue, provider calls, production/staging deployment, `db:migrate`, secrets, and unrelated dirty files.
+- **Skills Used:** `design-ux-excellence-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `verification-before-completion`, `evidence-led-reporting`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Fulfilled buyer-visible order states (`delivered`, `picked_up`, `completed`) show a return/refund request card in order tracking.
+  - [x] Cancelled/returned/refunded states do not show the start-return intake.
+  - [x] Submitting the form creates a structured support ticket with order, payment, fulfillment, total, reason, details, and line-item context.
+  - [x] The support ticket access token is stored under the existing `support-ticket-token:${slug}:${ticketId}` localStorage key.
+  - [x] The follow-up link uses `/s/:slug/support/tickets/:ticketId` and does not include `accessToken` in the URL.
+- **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; inspect system map/current state/tracker/KB/decisions; inspect `TrackOrderResult.tsx`, storefront support API, public support route/service, `Support.tsx`, and `SupportTicket.tsx`; `pnpm vitest run tests/storefront-return-request-intake.test.ts`; `pnpm --filter @haa/storefront typecheck`; `pnpm --filter @haa/storefront build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `apps/storefront/src/pages/TrackOrderResult.tsx`, `tests/storefront-return-request-intake.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0107.md`.
+- **Test Results:** Passed. Focused storefront return/refund intake test passed 1 file / 3 tests. `pnpm --filter @haa/storefront typecheck` passed. `pnpm --filter @haa/storefront build` passed with the pre-existing `MarketplaceProductCard` Rollup chunk warning, unrelated to this task. `pnpm check:skills`, `git diff --check`, and final `pnpm preflight` are recorded in the compliance report.
+- **Root Cause:** Storefront order tracking displayed returned/refunded statuses but had no buyer-facing action to start a return/refund workflow. A full RMA system requires schema and merchant operations design, but the existing support-ticket system already provides a safe no-migration intake and follow-up channel.
+- **Verdict:** Done locally for buyer-facing return/refund request intake. Full RMA lifecycle remains open: no return labels, no automated refund execution, no new RMA tables, and no dedicated merchant returns queue were added. No deploy, migration, secrets, production action, or live payment/shipping-provider call occurred.
+- **Related Issues:** ISSUE-0044.
+
+---
+
+### TASK-0106: Move public API scope checks into route middleware
+
+- **Type:** Security / Backend API / Testing / Documentation
+- **Priority:** P2 Medium
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing S5: public API routes should enforce API-key scopes through typed route middleware instead of relying on repeated inline handler checks.
+- **Scope:** Public API route scope middleware, focused source-regression tests, and ops documentation.
+- **Out of Scope:** New API-key scopes, merchant API-key management UI, database changes, migrations, runtime dev-server smoke, deploys, secrets, production action, live payment/shipping-provider calls, and unrelated dirty files.
+- **Skills Used:** `agent-permission-boundary`, `acceptance-criteria-gate`, `regression-safety-gate`, `environment-safety-gate`, `test-strategy-gate`, `verification-before-completion`, `evidence-led-reporting`, plus `hono-typescript`.
+- **Acceptance Criteria:**
+  - [x] Public API scope checks are enforced by typed middleware before route handler query logic.
+  - [x] `/v1/products`, `/v1/orders`, and `POST /v1/orders` declare the expected `requireApiKeyScope(...)` middleware.
+  - [x] Route handler bodies no longer contain inline `meta.scopes.includes(...)` authorization checks.
+  - [x] Existing unauthorized/forbidden response shape and status codes remain unchanged.
+- **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; inspect system map/current state/tracker/KB/decisions; inspect `public-api.ts`, API-key service, and existing DTO/RBAC source guards; `pnpm vitest run tests/public-api-scope-middleware.test.ts tests/dto-storefront.test.ts tests/rbac-coverage.test.ts`; `pnpm --filter @haa/api typecheck`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `apps/api/src/routes/public-api.ts`, `tests/public-api-scope-middleware.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0106.md`.
+- **Test Results:** Passed. Focused public API scope/DTO/RBAC source tests passed 3 files / 17 tests. `pnpm --filter @haa/api typecheck` passed. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed.
+- **Root Cause:** `public-api.ts` authenticated API keys at router level, but each route repeated its own `meta.scopes.includes(...)` check inside the handler. That kept current routes protected, but made future endpoint additions easier to get wrong because authorization lived in business handler bodies instead of route middleware.
+- **Verdict:** Done locally for public API-key scope middleware hardening. No deploy, migration, secrets, production action, or live payment/shipping-provider call occurred.
+- **Related Issues:** ISSUE-0043.
+
+---
+
+### TASK-0105: Harden audit `maskObject()` PII key coverage
+
+- **Type:** Security / Testing / Documentation
+- **Priority:** P2 Medium
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing S4: verify and harden audit old/new masking so PII/secrets are masked by common key patterns, not exact key matches only.
+- **Scope:** Shared `maskObject()` utility, focused tests for compound PII/secret key variants, and ops documentation.
+- **Out of Scope:** Audit log schema changes, DB migrations, AuditLogs UI redesign, production/staging action, secrets, live providers, and unrelated dirty files.
+- **Skills Used:** `agent-permission-boundary`, `environment-safety-gate`, `regression-safety-gate`, `single-source-of-truth-gate`, `implementation-quality-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] Compound email/phone/name/address keys such as `customerEmail`, `customerPhone`, `customerName`, `beneficiaryName`, and `shippingAddress` are masked.
+  - [x] Financial/legal identifiers such as `accountNumber`, `bank_account`, `beneficiaryIbanMasked`, `commercial_registration`, `nationalId`, and `taxNumber` are partially masked.
+  - [x] Secret/card variants such as `apiSecret`, `privateKeyPem`, `cardNumber`, `authorizationHeader`, and `oneTimePassword` are fully masked.
+  - [x] Non-sensitive audit metadata stays useful.
+  - [x] `AuditLogService` continues to route `oldValue` and `newValue` through shared `maskObject()`.
+- **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; inspect system map/current state/tracker/KB/decisions; inspect shared `maskObject`, integration-core audit service, and existing compliance masking tests; `pnpm vitest run tests/audit-mask-object-pii.test.ts tests/compliance-regression-gate.test.ts`; `pnpm --filter @haa/shared typecheck`; `pnpm --filter @haa/integration-core typecheck`; `pnpm --filter @haa/shared build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`.
+- **Files Changed:** `packages/shared/src/utils.ts`, `tests/audit-mask-object-pii.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0105.md`.
+- **Test Results:** Passed. Focused mask/compliance tests passed 2 files / 37 tests after tightening an over-broad `vat` pattern that initially matched `privateKeyPem`. `pnpm --filter @haa/shared typecheck`, `pnpm --filter @haa/integration-core typecheck`, and `pnpm --filter @haa/shared build` passed. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed.
+- **Root Cause:** `maskObject()` used exact key sets for many sensitive fields, so audit diffs could miss common compound/camelCase/snake_case keys such as `customerEmail`, `accountNumber`, `cardNumber`, and `nationalId`.
+- **Verdict:** Done locally for audit old/new PII masking coverage. No deploy, migration, secrets, production action, or live payment/shipping-provider call occurred.
+- **Related Issues:** ISSUE-0042.
+
+---
+
+### TASK-0104: Align remaining Admin API RBAC with admin UI permissions
+
+- **Type:** Security / Backend API / Permission/RBAC Work / UX/UI Polish / Testing
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing the follow-up from TASK-0103: admin routes that were still protected only by `requireAdminAuth()` must gain explicit server-side `requireAdminPermission(...)` gates, and the admin UI must reflect the same permissions at route/sidebar/action level.
+- **Scope:** Admin API route permission gates for dashboard, payments, marketplace read/report routes, audit, webhooks/idempotency stats, plans, upload, and platform settings; shared `AdminPermission` source; admin route/sidebar guards for the newly-gated pages; action-level disabled states for plans, marketplace review/feature, and platform settings/upload; focused tests and ops documentation.
+- **Out of Scope:** New admin roles/role assignment UI, production/staging deployment, `db:migrate`, secrets, live payment/shipping calls, RMA, external monitoring wiring, backup/restore, and unrelated dirty files.
+- **Skills Used:** `acceptance-criteria-gate`, `agent-permission-boundary`, `environment-safety-gate`, `regression-safety-gate`, `single-source-of-truth-gate`, `implementation-quality-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `hono-typescript` and `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Admin routes that were auth-only now use explicit `requireAdminPermission(...)` gates.
+  - [x] New platform admin permission keys live in a shared `AdminPermission` source and `ADMIN_PERMISSION_CATALOG`.
+  - [x] Admin App route/sidebar guards cover dashboard, payments, marketplace, audit, plans, settings, and compliance consistently with server permissions.
+  - [x] Settings shell branding fetch does not spam errors for limited admins without `platform.settings.read`.
+  - [x] Plans, Marketplace, and Settings mutation actions reflect their write/review/upload permissions before API calls.
+  - [x] Focused source-regression tests cover server RBAC gates, shared catalog keys, UI route/sidebar guards, and action-level disabled states.
+- **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; inspect admin route aggregator, admin App route map, admin pages, shared permission types/catalog, and remediation matrix; `pnpm vitest run tests/admin-api-rbac-alignment.test.ts tests/admin-permission-reflection.test.ts tests/security-boundary-gates.test.ts`; `pnpm --filter @haa/shared build`; `pnpm --filter @haa/api typecheck`; `pnpm --filter @haa/admin-dashboard typecheck`; `pnpm --filter @haa/admin-dashboard build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`; `git status --short --branch`.
+- **Files Changed:** `apps/api/src/routes/admin/index.ts`, `apps/admin-dashboard/src/App.tsx`, `apps/admin-dashboard/src/pages/Plans.tsx`, `apps/admin-dashboard/src/pages/Marketplace.tsx`, `apps/admin-dashboard/src/pages/Settings.tsx`, `packages/shared/src/types/orders.ts`, `packages/shared/src/types/index.ts`, `packages/shared/src/permissions.ts`, `tests/admin-api-rbac-alignment.test.ts`, `tests/admin-permission-reflection.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0104.md`.
+- **Test Results:** Passed. Focused admin RBAC alignment command passed 3 files / 27 tests. `pnpm --filter @haa/admin-dashboard typecheck` passed. Initial `pnpm --filter @haa/api typecheck` correctly exposed stale local `@haa/shared` dist; after `pnpm --filter @haa/shared build`, API typecheck passed. `pnpm --filter @haa/admin-dashboard build` passed. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed.
+- **Root Cause:** Several admin API routes still relied on token presence alone (`requireAdminAuth`) while the UI either exposed the page broadly or had no server permission to reflect. This left a gap between strong server permission patterns used by KYC/settlements/users and auth-only operational surfaces like payments, marketplace reads, audit logs, plans, upload, and settings.
+- **Verdict:** Done locally for admin API/UI RBAC alignment on the currently mounted admin dashboard pages and operational admin routes. No deploy, migration, secrets, production action, or live payment/shipping-provider call occurred.
+- **Related Issues:** ISSUE-0041, ISSUE-0040.
+
+---
+
+### TASK-0103: Reflect admin permissions in sidebar and protected routes
+
+- **Type:** UX/UI Polish / Permission/RBAC Work / Testing
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing the admin permission-reflection gap for routes that already have server-side `requireAdminPermission` guards: sidebar links should hide when the admin JWT lacks permission, and direct navigation should show a clear denied state instead of fetching and failing/emptying.
+- **Scope:** Admin dashboard route/sidebar permission reflection, shared admin denied state, focused source-regression tests, and ops documentation.
+- **Out of Scope:** Admin API RBAC expansion for routes without existing `requireAdminPermission`, merchant dashboard pages beyond Employees, RMA, external monitoring, backup/restore, deploys, migrations, secrets, production action, live provider calls, and unrelated dirty files.
+- **Skills Used:** `priority-triage-gate`, `acceptance-criteria-gate`, `design-ux-excellence-gate`, `agent-permission-boundary`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, `cross-agent-continuity-protocol`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Admin dashboard has a shared Arabic `UnauthorizedState`.
+  - [x] Sidebar filters server-gated admin links by decoded admin JWT permissions.
+  - [x] Direct navigation to server-gated admin pages renders the denied state before page data fetches.
+  - [x] `admin:*` still grants every protected UI route through existing `hasAdminPermission`.
+  - [x] UI does not invent permission guards for pages whose API routes do not yet have explicit `requireAdminPermission`.
+  - [x] Focused source-regression tests cover the denied state, sidebar filtering, route wrappers, and no UI-only guard invention.
+  - [x] Focused tests and admin-dashboard typecheck/build pass.
+- **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; inspect admin App route map, admin API permission guards, admin permission helpers, and remediation matrix; `pnpm vitest run tests/admin-permission-reflection.test.ts tests/manual-settlement-dashboard-ux.test.ts tests/admin-dangerous-action-reasons.test.ts`; `pnpm --filter @haa/admin-dashboard typecheck`; `pnpm --filter @haa/admin-dashboard build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`; `git status --short --branch`.
+- **Files Changed:** `apps/admin-dashboard/src/App.tsx`, `apps/admin-dashboard/src/components/ui/UnauthorizedState.tsx`, `tests/admin-permission-reflection.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0103.md`.
+- **Test Results:** Passed. `pnpm preflight` passed before edits. `pnpm ops:monitor` exited 0 with no recommended incidents/tasks; local dev-server warnings and known P2 API-001 DB-drift support events remained unrelated to this task. Focused admin permission reflection tests passed 3 files / 13 tests. `pnpm --filter @haa/admin-dashboard typecheck` passed. `pnpm --filter @haa/admin-dashboard build` passed. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed.
+- **Root Cause:** Admin App only checked for `admin_token` and rendered every route/sidebar link regardless of the permissions embedded in that token. Server-side API guards still protected data/actions, but the UI could route limited admins into pages that would then fail as API errors or empty-looking states.
+- **Verdict:** Done locally for server-gated admin route/sidebar permission reflection. Admin pages whose API routes lack explicit permission gates remain a separate RBAC alignment follow-up. No deploy, migration, secrets, production action, or live payment/shipping-provider call occurred.
+- **Related Issues:** ISSUE-0040.
+
+---
+
+### TASK-0102: Add deep API health dependency readiness
+
+- **Type:** Monitoring / Backend API / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-29
+- **Updated:** 2026-06-29
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing the shallow `/health` gap: the API health route must expose non-secret readiness for platform dependencies beyond DB/Redis/queue, without live payment/shipping calls.
+- **Scope:** API platform health service, `/health` response wiring, focused readiness tests, and ops documentation updates.
+- **Out of Scope:** External Sentry/uptime/alerting setup, production/staging deployment, `db:migrate`, secrets, live payment-provider calls, live shipping-provider calls, backup/restore drill, RMA, and broad permission-denied rollout.
+- **Skills Used:** `priority-triage-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, `cross-agent-continuity-protocol`, plus `hono-typescript`.
+- **Acceptance Criteria:**
+  - [x] `/health` includes a `dependencies` block for storage, payment, shipping, email, and observability readiness.
+  - [x] Readiness logic returns status/configured/reason and missing key names where useful, but never raw secret values.
+  - [x] Payment and shipping readiness do not call live providers and keep live modes explicitly blocked.
+  - [x] Local storage is checked for writability in development/test; staging/production readiness rejects local storage.
+  - [x] Focused tests cover readiness classification, missing-key reporting, secret-value non-disclosure, and route wiring.
+  - [x] Focused tests and API typecheck/build pass.
+- **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; inspect health route, env schema, provider status helpers, notification provider readiness, and remediation matrix; `pnpm vitest run tests/platform-health-readiness.test.ts tests/queue-reliability.test.ts tests/route-migration-3-health.test.ts tests/pre-launch-smoke.test.ts`; `pnpm --filter @haa/api typecheck`; `pnpm --filter @haa/api build`; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`; final `pnpm ops:monitor`; `git status --short --branch`.
+- **Files Changed:** `apps/api/src/services/platform-health.ts`, `apps/api/src/routes/health.ts`, `tests/platform-health-readiness.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0102.md`.
+- **Test Results:** Passed. Focused platform health command passed 4 files / 63 tests. `pnpm --filter @haa/api typecheck` passed. `pnpm --filter @haa/api build` passed. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed. Final `pnpm ops:monitor` exited 0 with no recommended incidents/tasks; local dev-server warnings and known P2 API-001 DB-drift support events remained unrelated to this task.
+- **Root Cause:** The health route had grown from DB-only into DB/Redis/queue checks, but it still did not expose readiness for storage, payment, shipping, email, or observability configuration. Operators could see that the process was alive while still being blind to missing launch-critical platform dependencies.
+- **Verdict:** Done locally for deep API health readiness. External alerting/uptime/Sentry evidence remains a separate open observability task. No deploy, migration, secrets, production action, or live payment/shipping-provider call occurred.
+- **Related Issues:** ISSUE-0039.
+
+---
+
+### TASK-0101: Add Employees permission-denied state and last-owner explanation
+
+- **Type:** UX/UI Polish / Permission/RBAC Work / Testing
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing the Employees-specific permission UX gaps: missing `employees:view` must show an explicit unauthorized state instead of any empty/list state, and the last-owner guard must explain what to do next.
+- **Scope:** Merchant Employees page permission-denied fallback, fetch guard, last-owner inline guidance, focused source-regression test, and ops documentation.
+- **Out of Scope:** Backend RBAC changes, broad admin/merchant permission-denied rollout beyond Employees, employee service logic, RMA, monitoring, backup/restore, deploys, migrations, secrets, live provider calls, and unrelated dirty files.
+- **Skills Used:** `priority-triage-gate`, `acceptance-criteria-gate`, `design-ux-excellence-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, `cross-agent-continuity-protocol`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Employees page derives an explicit `canViewEmployees` from `employees:view`.
+  - [x] Missing `employees:view` returns shared `UnauthorizedState`.
+  - [x] Missing `employees:view` does not fetch employee data.
+  - [x] Last-owner guard includes visible explanation and next action.
+  - [x] Focused source-regression tests cover the unauthorized and last-owner contracts.
+  - [x] Focused tests and merchant typecheck/build pass.
+- **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; inspect `Employees.tsx`, `UnauthorizedState`, permission helpers, existing employee/RBAC tests, and the remediation matrix; `pnpm vitest run tests/employee-permission-denied-ux.test.ts tests/employee-management.test.ts tests/employee-ui-api-wire.test.ts tests/dashboard-rbac-guards.test.ts`; merchant-dashboard typecheck/build; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`; `git status --short --branch`.
+- **Files Changed:** `apps/merchant-dashboard/src/pages/Employees.tsx`, `tests/employee-permission-denied-ux.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0101.md`.
+- **Test Results:** Passed. `pnpm ops:monitor` exited 0 with no active P0/P1 path; local dev-server warnings and known P2 support-error fingerprints remained unrelated to this task. Focused employee permission UX tests passed 4 files / 60 tests. `pnpm --filter @haa/merchant-dashboard typecheck` passed. `pnpm --filter @haa/merchant-dashboard build` passed. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed.
+- **Root Cause:** The Employees page relied on outer route guarding and had no page-local fallback for permission mismatch/direct access, so a permission-denied scenario could collapse into normal loading/empty behavior. The last-owner protection was technically present but conveyed as a terse badge/title rather than visible next-step guidance.
+- **Verdict:** Done locally for the Employees-specific permission UX batch. No deploy, migration, secrets, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0038.
+
+---
+
+### TASK-0100: Add merchant Products first-empty-state CTA
+
+- **Type:** UX/UI Polish / Testing
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing the merchant Products empty-catalog gap: a new merchant with zero products must see a clear first-product action, while filtered no-results must remain search/filter-oriented.
+- **Scope:** Merchant Products page empty state, Arabic action copy, focused source-regression test, and ops documentation.
+- **Out of Scope:** Backend product schema/API changes, import wizard changes, RMA, permission-denied UI rollout, observability, backup/restore, deploys, migrations, secrets, live provider calls, and unrelated dirty files.
+- **Skills Used:** `priority-triage-gate`, `acceptance-criteria-gate`, `design-ux-excellence-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, `cross-agent-continuity-protocol`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Products page distinguishes an empty catalog from filtered no-results using a single explicit condition.
+  - [x] True empty catalog state shows an explicit "إضافة أول منتج" CTA.
+  - [x] CTA is permission-gated with `products:create` and opens the existing product-creation dialog.
+  - [x] Filtered no-results keeps search/filter copy and does not show the first-product CTA.
+  - [x] Arabic copy for the first-product CTA is present.
+  - [x] Focused source-regression tests cover the first-product CTA contract.
+  - [x] Focused tests, merchant typecheck/build, `pnpm check:skills`, `git diff --check`, and final `pnpm preflight` pass.
+- **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; read system map/current state/tracker/KB/decisions and latest monitoring report; inspect `Products.tsx`, existing products tests, and merchant locale; `pnpm vitest run tests/products-empty-state-cta.test.ts tests/products-final-qa.test.ts tests/merchant-dashboard-full-sweep.test.ts`; merchant-dashboard typecheck/build; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`; `git status --short --branch`.
+- **Files Changed:** `apps/merchant-dashboard/src/pages/Products.tsx`, `apps/merchant-dashboard/src/i18n/locales/ar.json`, `tests/products-empty-state-cta.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0100.md`.
+- **Test Results:** Passed. Startup `pnpm preflight` passed. `pnpm ops:monitor` exited 0 with no active P0/P1 path; local dev-server warnings and known P2 support-error fingerprints remained unrelated to this task. Focused products empty-state tests passed 3 files / 86 tests. `pnpm --filter @haa/merchant-dashboard typecheck` passed. `pnpm --filter @haa/merchant-dashboard build` passed. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed.
+- **Root Cause:** The report item remained open because the first-run Products empty state was not explicitly locked to a first-product creation action in the remediation matrix/tests. Current code already had a generic empty-state foundation, but the CTA copy and regression contract were not specific enough to prevent a filtered no-results/empty-catalog UX regression.
+- **Verdict:** Done locally for the merchant Products first-empty-state batch. No deploy, migration, secrets, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0037.
+
+---
+
+### TASK-0099: Add merchant onboarding draft save and resume after skip
+
+- **Type:** UX/UI Polish / Testing
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by closing the confirmed merchant onboarding resume gap: skipping onboarding must preserve progress and provide a clear resume path.
+- **Scope:** Merchant onboarding wizard local draft persistence, Getting Started resume CTA, Arabic copy, focused source-regression tests, and ops documentation.
+- **Out of Scope:** Backend onboarding-progress schema/service, `db:migrate`, deploys, secrets, live provider calls, full merchant onboarding redesign, and unrelated dirty files.
+- **Skills Used:** `priority-triage-gate`, `acceptance-criteria-gate`, `design-ux-excellence-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, `cross-agent-continuity-protocol`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Skip confirmation still exists before leaving onboarding.
+  - [x] Skipping onboarding writes a local draft keyed by `storeId`.
+  - [x] Returning to `/onboarding` restores step, store form fields, generated products, selected products, product-step mode, and checklist state.
+  - [x] Completing onboarding clears the local draft and sets `onboarding_done`.
+  - [x] Getting Started shows a resume CTA when a local onboarding draft exists.
+  - [x] Focused source-regression tests cover the resume contract.
+  - [x] Focused tests, merchant typecheck/build, `pnpm check:skills`, `git diff --check`, and final `pnpm preflight` pass.
+- **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; inspect `OnboardingWizard.tsx`, `GettingStarted.tsx`, and existing onboarding tests; `pnpm vitest run tests/merchant-dashboard-apple-grade-fixes.test.ts tests/getting-started-page-contract.test.ts tests/onboarding-wizard-batch-save.test.ts`; merchant-dashboard typecheck/build; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`; `git status --short`.
+- **Files Changed:** `apps/merchant-dashboard/src/pages/OnboardingWizard.tsx`, `apps/merchant-dashboard/src/pages/GettingStarted.tsx`, `apps/merchant-dashboard/src/i18n/locales/ar.json`, `tests/merchant-dashboard-apple-grade-fixes.test.ts`, `tests/getting-started-page-contract.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0099.md`.
+- **Test Results:** Passed. Startup `pnpm preflight` passed. `pnpm ops:monitor` exited 0 with no P0 incident path opened; it kept the known local-dev-server/synthetic warnings and known P2 DB-drift support events separate from this task. Focused onboarding tests passed 3 files / 31 tests with 1 skipped. `pnpm --filter @haa/merchant-dashboard typecheck` passed. `pnpm --filter @haa/merchant-dashboard build` passed. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed.
+- **Root Cause:** The onboarding skip flow only showed a native confirmation before navigating away; it did not persist wizard context or surface a resume entry, so a merchant could lose draft form/product/checklist state.
+- **Verdict:** Done locally for the onboarding resume batch. No deploy, migration, secrets, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0036.
+
+---
+
+### TASK-0098: Close public Marketplace P0 lookup and prohibited-category gaps
+
+- **Type:** Security / Backend API / UX/UI Polish / Testing
+- **Priority:** P0 Critical
+- **Status:** Done
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue the Claude Apple-grade remediation matrix by re-verifying the remaining public Marketplace P0 claims against current code, then close confirmed gaps around phone-enumerable order lookup, seller PII minimization, and prohibited-category marketplace visibility.
+- **Scope:** Public marketplace API route, storefront marketplace order-tracking client/page, marketplace source-regression tests, and ops documentation.
+- **Out of Scope:** Production/staging deploys, `db:migrate`, secrets, live provider calls, owner legal gates, full RMA, monitoring wiring, and unrelated dirty files.
+- **Skills Used:** `priority-triage-gate`, `acceptance-criteria-gate`, `agent-permission-boundary`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, `cross-agent-continuity-protocol`, plus `build-web-apps:react-best-practices` and `hono-typescript`.
+- **Acceptance Criteria:**
+  - [x] Public marketplace order tracking requires `access_token` and no longer accepts `phone` as a fallback proof of ownership.
+  - [x] Storefront marketplace order tracking no longer exposes `getOrderLegacy` or constructs `?phone=` lookup URLs.
+  - [x] Seller detail route no longer selects or returns store email/phone from the public marketplace seller shape.
+  - [x] Public marketplace product, seller, stats, and category queries apply a product-level guard excluding products in any prohibited marketplace category.
+  - [x] Product mapping validates against all category slugs for SFDA/prohibited-category checks, not only the displayed category slug.
+  - [x] Focused source-regression tests cover access-token-only lookup, PII minimization, prohibited-category guard, SFDA workflow, and route contracts.
+  - [x] Focused tests, affected typechecks/builds, `pnpm check:skills`, `git diff --check`, and final `pnpm preflight` pass.
+- **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; inspect `haa-marketplace.ts`, storefront marketplace tracking, and existing marketplace tests; `pnpm vitest run tests/marketplace-p0-3-access-token.test.ts tests/marketplace-p0-2-category-blocklist.test.ts tests/marketplace-p0-1-sfda-workflow.test.ts tests/marketplace-t5-t10-integration.test.ts tests/products-qa-regression.test.ts`; API/storefront typechecks; storefront/API builds if needed; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`; `git status --short`.
+- **Files Changed:** `apps/api/src/routes/haa-marketplace.ts`, `apps/storefront/src/lib/api.ts`, `apps/storefront/src/pages/MarketplaceOrderTrack.tsx`, `tests/marketplace-p0-3-access-token.test.ts`, `tests/marketplace-p0-2-category-blocklist.test.ts`, `tests/marketplace-t5-t10-integration.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0098.md`.
+- **Test Results:** Passed. Startup `pnpm preflight` passed. `pnpm ops:monitor` exited 0 with no P0 incident path opened; it kept the known local-dev-server/synthetic warnings and known P2 DB-drift support events separate from this task. Focused marketplace command passed 5 files / 52 tests with 1 skipped. `pnpm --filter @haa/api typecheck` and `pnpm --filter @haa/storefront typecheck` passed. `pnpm --filter @haa/api build` passed. `pnpm --filter @haa/storefront build` passed with the pre-existing Rollup circular chunk warning for `MarketplaceProductCard` re-export. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed.
+- **Root Cause:** The earlier marketplace hardening left a deprecated public `phone` lookup fallback in the order-tracking route and storefront API client, and the prohibited-category guard was applied to display/facet subqueries rather than as a product-level eligibility predicate across every public marketplace query.
+- **Verdict:** Done locally for the public Marketplace P0 code/source-guard batch. Runtime abuse tests and external pen-test remain launch gates. No deploy, migration, secrets, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0035.
+
+---
+
+### TASK-0097: Add reason gates for admin tenant/store status and marketplace moderation
+
+- **Type:** Security / UX/UI Polish / Testing
+- **Priority:** P1 High
+- **Status:** Done
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** Continuation of "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Continue closing the Claude Apple-grade remediation matrix by implementing the next admin safety batch: tenant/store status changes and marketplace product reject/suspend decisions must require an explicit reason in UI and API validation, with audit evidence where available.
+- **Scope:** Admin tenant status UI/API, admin store status UI/API, marketplace product reject/suspend UI/API validation, focused source regression tests, and ops documentation.
+- **Out of Scope:** Production or staging deploys, `db:migrate`, secrets, live provider calls, RMA, monitoring wiring, backup/restore, marketplace public order lookup refactor, broad permission-denied UI rollout, and unrelated dirty files.
+- **Skills Used:** `priority-triage-gate`, `acceptance-criteria-gate`, `design-ux-excellence-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, `cross-agent-continuity-protocol`, plus `build-web-apps:react-best-practices` and `hono-typescript`.
+- **Acceptance Criteria:**
+  - [x] Tenant status changes go through a confirmation dialog with required reason.
+  - [x] Store status changes go through a confirmation dialog with required reason.
+  - [x] Marketplace product rejection and suspension require an actionable note.
+  - [x] Admin API validates tenant/store `statusReason` and marketplace negative moderation `note`.
+  - [x] Tenant/store status reasons are recorded in audit `newValue`; store status route returns 404 for missing store and invalidates store cache on status changes.
+  - [x] Focused source-regression tests cover UI/API reason gates.
+  - [x] Focused tests, affected typechecks/builds, `pnpm check:skills`, `git diff --check`, and final `pnpm preflight` pass.
+- **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; inspect current admin pages/API validators/handlers; `pnpm vitest run tests/admin-dangerous-action-reasons.test.ts tests/apple-grade-remediation.test.ts`; `pnpm --filter @haa/admin-dashboard typecheck`; `pnpm --filter @haa/api typecheck`; admin-dashboard build; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`; `git status --short`.
+- **Files Changed:** `apps/admin-dashboard/src/pages/Tenants.tsx`, `apps/admin-dashboard/src/pages/Stores.tsx`, `apps/admin-dashboard/src/pages/Marketplace.tsx`, `apps/admin-dashboard/src/lib/api.ts`, `apps/api/src/routes/admin/index.ts`, `apps/api/src/routes/admin/tenants-stores.ts`, `tests/admin-dangerous-action-reasons.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0097.md`.
+- **Test Results:** Passed. Startup `pnpm preflight` passed. `pnpm ops:monitor` exited 0 with no P0 incident path opened; it kept the known local-dev-server/synthetic warnings and known P2 DB-drift support events separate from this task. Focused remediation tests passed: `pnpm vitest run tests/admin-dangerous-action-reasons.test.ts tests/apple-grade-remediation.test.ts` passed 2 files / 7 tests. Expanded affected regression tests passed: `pnpm vitest run tests/admin-dangerous-action-reasons.test.ts tests/apple-grade-remediation.test.ts tests/marketplace-p1-2-p1-3.test.ts tests/marketplace-t5-t10-integration.test.ts tests/scheduled-settlement-admin-batches-ui.test.ts` passed 5 files / 48 tests with 1 skipped. `pnpm --filter @haa/admin-dashboard typecheck`, `pnpm --filter @haa/api typecheck`, and `pnpm --filter @haa/admin-dashboard build` passed. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed.
+- **Root Cause:** The earlier admin UI exposed high-impact state changes as ordinary inline actions, and the corresponding API contracts did not require a reason for tenant/store status changes or marketplace negative moderation.
+- **Verdict:** Done locally for this admin dangerous-action reason-gate batch. No deploy, migration, secrets, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0034.
+
+---
+
+### TASK-0096: Close Claude Apple-grade diagnostic P0 remediation batch
+
+- **Type:** Launch Readiness / UX/UI Polish / Security / Support-Ops / Testing
+- **Priority:** P0 Critical
+- **Status:** Done
+- **Created:** 2026-06-28
+- **Updated:** 2026-06-28
+- **Branch:** `codex/merchant-employee-permissions-ux-audit`
+- **Original Request:** "ابي اسلمك المهمة ولا تتجاهل اصغر جزء في التقرير"
+- **Expanded Requirement:** Treat the pasted Claude Apple-grade UX & systems diagnostic as a remediation checklist, verify every claim against current code, document every finding in a traceable matrix, and close the first confirmed P0/P1 code gaps without deploys, migrations, secrets, production action, or live provider calls.
+- **Scope:** Storefront checkout failed-payment recovery, admin manual-payout dangerous-action confirmations, admin bank-account review confirmation/reason/API audit path, focused regression tests, and ops documentation matrix.
+- **Out of Scope:** Production or staging deploys, `db:migrate`, backup/restore execution, live payment/shipping calls, DNS/server/secrets work, full RMA implementation, full observability wiring, marketplace legacy lookup refactor, broad permission-denied UI rollout, onboarding resume, and unrelated dirty storefront/storage/screenshot artifacts.
+- **Skills Used:** `priority-triage-gate`, `premium-product-quality-council`, `definition-of-done-gate`, `acceptance-criteria-gate`, `design-ux-excellence-gate`, `regression-safety-gate`, `environment-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, `cross-agent-continuity-protocol`, plus local frontend skills `redesign-existing-projects`, `build-web-apps:react-best-practices`, and `build-web-apps:frontend-testing-debugging`.
+- **Acceptance Criteria:**
+  - [x] Every diagnostic report item is represented in a remediation matrix with status, evidence, and next action.
+  - [x] Failed checkout payment no longer ends as toast-only; buyer sees persistent retry/change-payment/support recovery.
+  - [x] Manual payout approval, transfer pending, transfer recorded, and transfer verification require explicit confirmation before API calls.
+  - [x] Bank-account verify/reject requires explicit confirmation and review reason in UI and API validation.
+  - [x] Bank-account review reason is captured in audit/newValue and notification context without a DB migration.
+  - [x] Focused source regression guards cover the remediated gaps.
+  - [x] Focused tests, affected typechecks, `pnpm check:skills`, `git diff --check`, and final `pnpm preflight` pass.
+- **Test Plan:** `pwd`; `pnpm preflight`; `pnpm ops:monitor`; inspect system map/current state/tracker/KB/decisions; focused source regression `pnpm vitest run tests/apple-grade-remediation.test.ts`; affected app/API typechecks; `pnpm check:skills`; `git diff --check`; final `pnpm preflight`; `git status --short`.
+- **Files Changed:** `apps/storefront/src/pages/Checkout.tsx`, `apps/admin-dashboard/src/pages/SettlementBatchDetail.tsx`, `apps/admin-dashboard/src/pages/BankAccounts.tsx`, `apps/admin-dashboard/src/lib/api.ts`, `apps/api/src/routes/admin/index.ts`, `apps/api/src/routes/admin/tenants-stores.ts`, `tests/apple-grade-remediation.test.ts`, `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0096.md`.
+- **Test Results:** Passed. `pnpm vitest run tests/apple-grade-remediation.test.ts` passed 1 file / 3 tests. Focused regression command `pnpm vitest run tests/apple-grade-remediation.test.ts tests/scheduled-settlement-admin-batches-ui.test.ts tests/manual-settlement-maker-checker.test.ts tests/payout-ledger-integrity.test.ts` passed 4 files / 28 tests. `pnpm --filter @haa/storefront typecheck`, `pnpm --filter @haa/admin-dashboard typecheck`, and `pnpm --filter @haa/api typecheck` passed. `pnpm --filter @haa/storefront build` and `pnpm --filter @haa/admin-dashboard build` passed; storefront build kept the pre-existing Rollup circular chunk warning for `MarketplaceProductCard` re-export. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed.
+- **Root Cause:** The codebase had strong backend primitives but several high-trust UX actions still terminated as transient feedback or one-click state changes. The checkout failure path did not preserve a visible buyer recovery route. Admin payout and bank-review actions relied on API guards but lacked operator confirmation and reason capture at the UI/API contract boundary.
+- **Verdict:** Done locally for the first P0 remediation batch. The full report is tracked in `docs/ops/APPLE_GRADE_UX_SYSTEMS_REMEDIATION_2026-06-28.md`; owner/environment-gated items and broader P1/P2/P3 follow-ups remain separated from Codex-safe code fixes. No deploy, `db:migrate`, secrets, production action, or live provider call occurred.
+- **Related Issues:** ISSUE-0033.
+
+---
+
 ### TASK-0095: Audit merchant and employee permissions with UX fixes
 
 - **Type:** Security / UX/UI Polish / Testing

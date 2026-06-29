@@ -118,7 +118,7 @@ export const tenantsRoutes = {
 
   status: async (c: any) => {
     const id = Number(c.req.param('id'));
-    const { status } = c.req.valid('json');
+    const { status, statusReason } = c.req.valid('json');
     const db = createDbClient();
     const [existing] = await db
       .select({ id: s.tenants.id, status: s.tenants.status, name: s.tenants.name })
@@ -142,7 +142,7 @@ export const tenantsRoutes = {
       entityType: 'tenant',
       entityId: id,
       oldValue: { status: existing.status },
-      newValue: { status },
+      newValue: { status, statusReason },
       ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
       userAgent: c.req.header('user-agent'),
     });
@@ -194,9 +194,34 @@ export const storesRoutes = {
 
   status: async (c: any) => {
     const id = Number(c.req.param('id'));
-    const { isActive } = c.req.valid('json');
+    const { isActive, statusReason } = c.req.valid('json');
     const db = createDbClient();
+    const [existing] = await db
+      .select({ id: s.stores.id, tenantId: s.stores.tenantId, isActive: s.stores.isActive, name: s.stores.name })
+      .from(s.stores)
+      .where(eq(s.stores.id, id))
+      .limit(1);
+    if (!existing) {
+      return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Store not found' } }, 404);
+    }
+    if (existing.isActive === isActive) {
+      return c.json({ success: true, data: { id, isActive } });
+    }
     await db.update(s.stores).set({ isActive, updatedAt: new Date() }).where(eq(s.stores.id, id));
+    invalidateStoreTenantCache(id);
+    const adminAuth = c.get('adminAuth') as { userId: number } | undefined;
+    await new AuditLogService().record({
+      actorUserId: adminAuth?.userId ?? null,
+      tenantId: existing.tenantId,
+      storeId: id,
+      action: 'admin_store_suspended',
+      entityType: 'store',
+      entityId: id,
+      oldValue: { isActive: existing.isActive },
+      newValue: { isActive, statusReason },
+      ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
+      userAgent: c.req.header('user-agent'),
+    });
     return c.json({ success: true, data: { id, isActive } });
   },
 };
@@ -282,23 +307,52 @@ export const kycRoutes = {
 export const kycBankRoutes = {
   list: async (c: any) => {
     const db = createDbClient();
-    const accounts = await db.select().from(s.merchantBankAccounts).orderBy(desc(s.merchantBankAccounts.createdAt));
-    return c.json({ success: true, data: accounts });
+    // Batch 4D: NEVER return the full IBAN from this list. Server-side masking
+    // (last 4 only) — the full IBAN is available solely via the audited
+    // /settlements/:payoutId/reveal-iban route.
+    const accounts = await db.select({
+      id: s.merchantBankAccounts.id,
+      storeId: s.merchantBankAccounts.storeId,
+      accountHolderName: s.merchantBankAccounts.accountHolderName,
+      bankName: s.merchantBankAccounts.bankName,
+      ibanLast4: s.merchantBankAccounts.ibanLast4,
+      status: s.merchantBankAccounts.status,
+      isDefault: s.merchantBankAccounts.isDefault,
+      createdAt: s.merchantBankAccounts.createdAt,
+    }).from(s.merchantBankAccounts).orderBy(desc(s.merchantBankAccounts.createdAt));
+    const masked = accounts.map((a) => ({ ...a, maskedIban: a.ibanLast4 ? `****${a.ibanLast4}` : null }));
+    return c.json({ success: true, data: masked });
   },
 
   review: async (c: any) => {
     const id = Number(c.req.param('id'));
-    const { status } = c.req.valid('json');
+    const { status, reviewReason } = c.req.valid('json');
     const db = createDbClient();
     const [existing] = await db.select().from(s.merchantBankAccounts).where(eq(s.merchantBankAccounts.id, id)).limit(1);
     if (!existing) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Bank account not found' } }, 404);
     await db.update(s.merchantBankAccounts).set({ status, updatedAt: new Date() }).where(eq(s.merchantBankAccounts.id, id));
+    const adminAuth = c.get('adminAuth') as { userId: number } | undefined;
+    await new AuditLogService().record({
+      actorUserId: adminAuth?.userId ?? null,
+      storeId: existing.storeId,
+      action: 'bank_account_changed',
+      entityType: 'bank_account',
+      entityId: id,
+      oldValue: { status: existing.status },
+      newValue: { status, reviewReason },
+      ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
+      userAgent: c.req.header('user-agent'),
+    });
     // Notify merchant of bank account decision
     if (status === 'verified' || status === 'rejected') {
       try {
         const templateCode = status === 'verified' ? 'bank_account_verified' : 'bank_account_rejected';
         const notif = new NotificationService(db);
-        await notif.send(existing.storeId, templateCode, { bankName: existing.bankName, ibanLast4: existing.ibanLast4 ?? '' });
+        await notif.send(existing.storeId, templateCode, {
+          bankName: existing.bankName,
+          ibanLast4: existing.ibanLast4 ?? '',
+          reviewReason,
+        });
       } catch (err) {
         console.error('[bank-review] notification send failed:', err);
       }

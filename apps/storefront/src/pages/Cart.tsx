@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { useSEO } from '@/hooks/useSEO';
 import { useStore } from '@/hooks/useStore';
-import { checkoutApi, type CouponValidation, type Cart } from '@/lib/api';
+import { checkoutApi, type CouponValidation, type Cart, type ShippingRate } from '@/lib/api';
 
 function getVariantLabel(item: Cart['items'][number]): string {
   if (!item.variant) return '';
@@ -20,6 +20,13 @@ function getVariantLabel(item: Cart['items'][number]): string {
     return Object.values(item.variant.options).filter(Boolean).join(' / ');
   }
   return '';
+}
+
+function getCouponErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+  return fallback;
 }
 
 
@@ -39,6 +46,10 @@ export default function Cart() {
   const [couponData, setCouponData] = useState<CouponValidation | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
+  const [shippingCity, setShippingCity] = useState('');
+  const [shippingEstimateRates, setShippingEstimateRates] = useState<ShippingRate[]>([]);
+  const [shippingEstimateLoading, setShippingEstimateLoading] = useState(false);
+  const [shippingEstimateError, setShippingEstimateError] = useState('');
 
   useEffect(() => {
     if (couponData) {
@@ -47,6 +58,11 @@ export default function Cart() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart?.subtotal, cart?.items.length]);
+
+  useEffect(() => {
+    setShippingEstimateRates([]);
+    setShippingEstimateError('');
+  }, [cart?.id, cart?.subtotal, cart?.items.length]);
 
   const handleApplyCoupon = useCallback(async () => {
     const code = couponCode.trim();
@@ -66,8 +82,12 @@ export default function Cart() {
         setCouponError(result.reason || t('cart.couponInvalid', 'كود الخصم غير صالح'));
         setCouponData(null);
       }
-    } catch {
-      setCouponError(t('common.error'));
+    } catch (error) {
+      setCouponData(null);
+      setCouponError(getCouponErrorMessage(
+        error,
+        t('cart.couponApplyError', 'تعذر التحقق من كود الخصم. حاول مرة أخرى أو تأكد من شروط الكود.'),
+      ));
     } finally {
       setCouponLoading(false);
     }
@@ -78,6 +98,31 @@ export default function Cart() {
     setCouponData(null);
     setCouponError('');
   }, []);
+
+  const handleEstimateShipping = useCallback(async () => {
+    const city = shippingCity.trim();
+    if (!slug || !cart?.id || !city) {
+      setShippingEstimateError(t('cart.shippingEstimateCityRequired', 'أدخل المدينة لعرض تقدير الشحن'));
+      return;
+    }
+    setShippingEstimateLoading(true);
+    setShippingEstimateError('');
+    try {
+      const rates = await checkoutApi.getShippingRates(slug, cart.id, city);
+      setShippingEstimateRates(rates);
+      if (rates.length === 0) {
+        setShippingEstimateError(t('cart.shippingEstimateEmpty', 'لا توجد طرق شحن متاحة لهذه المدينة حالياً'));
+      }
+    } catch (error) {
+      setShippingEstimateRates([]);
+      setShippingEstimateError(getCouponErrorMessage(
+        error,
+        t('cart.shippingEstimateError', 'تعذر جلب تقدير الشحن حالياً. حاول مرة أخرى.'),
+      ));
+    } finally {
+      setShippingEstimateLoading(false);
+    }
+  }, [shippingCity, slug, cart?.id, t]);
 
   const handleQuantityChange = async (itemId: number, newQty: number) => {
     if (newQty < 1) return;
@@ -348,6 +393,70 @@ export default function Cart() {
             })()}
 
             <StoreCard className="p-3">
+              <h3 className="text-xs font-bold text-text-primary mb-2 flex items-center gap-1.5">
+                <Icon name="Truck" size="2xs" className="text-primary-600" />
+                {t('cart.shippingEstimateTitle', 'تقدير الشحن')}
+              </h3>
+              <p className="text-[var(--badge-font-size)] text-text-tertiary mb-2">
+                {t('cart.shippingEstimateDesc', 'أدخل المدينة لعرض خيارات شحن تقديرية قبل إتمام الطلب.')}
+              </p>
+              <div className="flex gap-1.5 items-start">
+                <div className="flex-1">
+                  <StoreInput
+                    value={shippingCity}
+                    onChange={(e) => { setShippingCity(e.target.value); setShippingEstimateError(''); }}
+                    placeholder={t('cart.shippingCityPlaceholder', 'مثال: الرياض')}
+                    dir="auto"
+                  />
+                </div>
+                <StoreButton
+                  onClick={handleEstimateShipping}
+                  disabled={shippingEstimateLoading || !shippingCity.trim()}
+                  className="shrink-0"
+                  size="md"
+                >
+                  {shippingEstimateLoading ? t('common.loading', '...') : t('cart.estimateShipping', 'تقدير')}
+                </StoreButton>
+              </div>
+              {shippingEstimateError && (
+                <div role="alert" className="mt-2 rounded-lg bg-warning-soft px-3 py-2 text-start">
+                  <p className="text-xs font-medium text-warning">{shippingEstimateError}</p>
+                </div>
+              )}
+              {shippingEstimateRates.length > 0 && (
+                <div className="mt-2 space-y-1.5">
+                  {shippingEstimateRates.map((rate) => {
+                    const rateAmount = toMoneyNumber(rate.baseRate);
+                    const eta = rate.estimatedDaysMin
+                      ? `${rate.estimatedDaysMin}-${rate.estimatedDaysMax ?? rate.estimatedDaysMin} ${t('checkout.days', 'أيام')}`
+                      : t('cart.shippingEstimateNoEta', 'المدة تؤكد في الدفع');
+                    return (
+                      <div key={rate.shippingMethodId} className="rounded-lg border border-border bg-surface px-3 py-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-text-primary line-clamp-1">{rate.methodName}</p>
+                            <p className="text-[var(--badge-font-size)] text-text-tertiary">{eta}</p>
+                            {rate.freeAboveAmount && toMoneyNumber(rate.freeAboveAmount) > 0 && (
+                              <p className="text-[var(--badge-font-size)] text-success">
+                                {t('cart.shippingFreeAbove', { amount: `${formatAmount(rate.freeAboveAmount)} ر.س`, defaultValue: 'مجاني عند طلب أعلى من {{amount}}' })}
+                              </p>
+                            )}
+                          </div>
+                          <p className="shrink-0 text-xs font-bold text-primary-700">
+                            {rateAmount > 0 ? <>{formatAmount(rateAmount)} <SarIcon size="sm" /></> : t('checkout.free', 'مجاني')}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="mt-2 text-[var(--badge-font-size)] text-text-tertiary">
+                {t('cart.shippingEstimateCaveat', 'السعر النهائي يتأكد عند إتمام الطلب بعد اختيار العنوان وطريقة الشحن.')}
+              </p>
+            </StoreCard>
+
+            <StoreCard className="p-3">
                 <h3 className="text-xs font-bold text-text-primary mb-2 flex items-center gap-1.5">
                   <Icon name="Tag" size="2xs" className="text-primary-600" />
                   {t('cart.couponTitle', 'كود خصم')}
@@ -389,7 +498,12 @@ export default function Cart() {
                 </div>
               )}
               {couponError && (
-                <p className="text-xs text-danger mt-1.5">{couponError}</p>
+                <div role="alert" className="mt-2 rounded-lg bg-danger-soft px-3 py-2 text-start">
+                  <p className="text-xs font-medium text-danger">{couponError}</p>
+                  <p className="mt-1 text-[var(--badge-font-size)] text-danger/80">
+                    {t('cart.couponHelp', 'تأكد من كتابة الكود كما هو ومن استيفاء الحد الأدنى أو مدة الصلاحية.')}
+                  </p>
+                </div>
               )}
             </StoreCard>
 

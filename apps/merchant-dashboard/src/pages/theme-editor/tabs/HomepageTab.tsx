@@ -38,6 +38,7 @@ export function HomepageTab({
   uploadingBannerImg, setUploadingBannerImg, setDeleteSectionIndex,
 }: Props) {
   const homepage = config.homepage || {};
+  const orderPanelId = 'theme-homepage-sections-panel';
   return (
     <TabsContent value="homepage" className="space-y-6">
       {!HOMEPAGE_SECTIONS_EDITOR_ENABLED && (
@@ -59,17 +60,24 @@ export function HomepageTab({
           disabled={!HOMEPAGE_SECTIONS_EDITOR_ENABLED}
           onClick={() => setCollapsedGroups(prev => ({ ...prev, order: !prev.order }))}
           className={`w-full flex items-center gap-3 px-5 py-4 text-start transition-colors ${HOMEPAGE_SECTIONS_EDITOR_ENABLED ? 'hover:bg-neutral-50' : 'cursor-not-allowed opacity-60'}`}
+          aria-expanded={HOMEPAGE_SECTIONS_EDITOR_ENABLED ? !collapsedGroups.order : false}
+          aria-controls={orderPanelId}
         >
-          <ChevronDown className={`h-4 w-4 text-neutral-400 transition-transform duration-200 ${!collapsedGroups.order ? '' : '-rotate-90'}`} />
+          <ChevronDown className={`h-4 w-4 text-neutral-400 transition-transform duration-200 ${!collapsedGroups.order ? '' : '-rotate-90'}`} aria-hidden="true" />
           <span className="text-sm font-bold text-neutral-700">الأقسام</span>
           <span className="text-xs text-neutral-400">{HOMEPAGE_SECTIONS_EDITOR_ENABLED ? 'اضغط لتعديل، اسحب لترتيب، + لإضافة قسم جديد' : 'سيتم تفعيله بعد ربط Public Home Renderer'}</span>
         </button>
         {HOMEPAGE_SECTIONS_EDITOR_ENABLED && !collapsedGroups.order && (
-          <div className="px-5 pb-5 space-y-1" onDragOver={(e) => e.preventDefault()}>
+          <div id={orderPanelId} className="px-5 pb-5 space-y-1" onDragOver={(e) => e.preventDefault()}>
             {(homepage.sections || []).map((section: any, idx: number) => {
               const sid = section.id;
               const isExpanded = expandedSections[sid];
               const SECTION_TYPE_LABELS = SECTION_LABELS;
+              const sectionLabel = section.title || SECTION_TYPE_LABELS[section.type] || section.type;
+              const sectionPanelId = `theme-homepage-section-panel-${sid}`;
+              const visibilityLabel = section.enabled !== false ? `إخفاء قسم ${sectionLabel}` : `إظهار قسم ${sectionLabel}`;
+              const duplicateLabel = `تكرار قسم ${sectionLabel}`;
+              const deleteLabel = `حذف قسم ${sectionLabel}`;
               return (
                 <div key={sid} className={`rounded-xl border-2 transition-all ${isExpanded ? 'border-primary-200 bg-primary-50/30' : 'border-neutral-100 bg-white'}`}>
                   <div
@@ -87,6 +95,11 @@ export function HomepageTab({
                       (e.currentTarget as HTMLElement).classList.remove('border-primary-500', 'bg-primary-50');
                     }}
                     onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget) return;
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setExpandedSections(prev => ({ ...prev, [sid]: !prev[sid] }));
+                      }
                       if (e.key === 'ArrowUp' && idx > 0) {
                         e.preventDefault(); const updated = [...(homepage.sections || [])]; [updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]];
                         updateConfig('homepage.sections', updated);
@@ -102,17 +115,21 @@ export function HomepageTab({
                     }}
                     className="flex items-center gap-2 px-4 py-2.5 cursor-pointer transition-colors rounded-t-xl focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 outline-none"
                     onClick={() => setExpandedSections(prev => ({ ...prev, [sid]: !prev[sid] }))}
+                    aria-expanded={isExpanded}
+                    aria-controls={sectionPanelId}
+                    aria-label={`${isExpanded ? 'طي' : 'فتح'} قسم ${sectionLabel}. استخدم سهم أعلى أو سهم أسفل لتغيير الترتيب`}
                   >
-                    <ChevronDown className={`h-4 w-4 text-neutral-400 transition-transform duration-200 shrink-0 ${isExpanded ? '' : '-rotate-90'}`} />
+                    <ChevronDown className={`h-4 w-4 text-neutral-400 transition-transform duration-200 shrink-0 ${isExpanded ? '' : '-rotate-90'}`} aria-hidden="true" />
                     <button type="button" onClick={(e) => { e.stopPropagation();
                       updateConfig('homepage.sections', updateSection(homepage.sections || [], idx, { enabled: section.enabled === false }));
                     }}
                       className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors shrink-0 ${section.enabled !== false ? 'text-primary-600 bg-primary-50' : 'text-neutral-300 hover:text-neutral-400'}`}
-                      title={section.enabled !== false ? 'إخفاء القسم' : 'إظهار القسم'}>
-                      <Eye className={`h-4 w-4 ${section.enabled !== false ? '' : 'opacity-40'}`} />
+                      aria-label={visibilityLabel}
+                      title={visibilityLabel}>
+                      <Eye className={`h-4 w-4 ${section.enabled !== false ? '' : 'opacity-40'}`} aria-hidden="true" />
                     </button>
                     <span className="text-xs font-bold text-neutral-400 w-5 shrink-0">{idx + 1}</span>
-                    <span className="text-sm text-neutral-700 truncate flex-1 text-start">{section.title || SECTION_TYPE_LABELS[section.type] || section.type}</span>
+                    <span className="text-sm text-neutral-700 truncate flex-1 text-start">{sectionLabel}</span>
                     <button type="button" onClick={(e) => { e.stopPropagation();
                       const updated = [...(homepage.sections || [])];
                       const copy = structuredClone(section);
@@ -120,18 +137,18 @@ export function HomepageTab({
                       copy.title = copy.title + ' (نسخة)';
                       updated.splice(idx + 1, 0, copy);
                       updateConfig('homepage.sections', updated);
-                    }} className="w-9 h-9 flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors shrink-0" title="تكرار القسم">
-                      <Copy className="h-3.5 w-3.5" />
+                    }} className="w-9 h-9 flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors shrink-0" aria-label={duplicateLabel} title={duplicateLabel}>
+                      <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
                     <button type="button" onClick={(e) => { e.stopPropagation();
                       setDeleteSectionIndex(idx);
-                    }} className="w-9 h-9 flex items-center justify-center rounded-md text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0" title="حذف">
-                      <X className="h-3.5 w-3.5" />
+                    }} className="w-9 h-9 flex items-center justify-center rounded-md text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0" aria-label={deleteLabel} title={deleteLabel}>
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
-                    <GripVertical className="h-4 w-4 text-neutral-300 shrink-0" />
+                    <GripVertical className="h-4 w-4 text-neutral-300 shrink-0" aria-hidden="true" />
                   </div>
                   {isExpanded && (
-                    <div className="border-t border-neutral-100 px-4 pb-4 pt-3 space-y-3">
+                    <div id={sectionPanelId} className="border-t border-neutral-100 px-4 pb-4 pt-3 space-y-3">
                       <Input value={section.title || ''} onChange={(e) => {
                         updateConfig('homepage.sections', updateSection(homepage.sections || [], idx, { title: e.target.value }));
                       }} className="w-full text-sm font-medium" placeholder="عنوان القسم" />

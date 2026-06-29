@@ -107,6 +107,8 @@ describe('TASK-0043 Phase 4 — Track 4C — T5-T10 contracts (source-grep)', ()
       );
       expect(block).not.toBeNull();
       const src = block![0];
+      expect(src).not.toContain('email: s.stores.email');
+      expect(src).not.toContain('phone: s.stores.phone');
       const responseShape = src.match(/data:\s*\{[\s\S]{0,1500}?\}/);
       if (responseShape) {
         expect(responseShape[0]).not.toMatch(/\bemail\s*:/);

@@ -33,6 +33,20 @@ import { resolveActiveStore } from './_shared.js';
 
 export const checkoutRouter = new Hono();
 
+const PUBLIC_INSUFFICIENT_STOCK_MESSAGE = 'أحد المنتجات في السلة لم يعد متوفرًا بالكمية المطلوبة. راجع السلة قبل إعادة المحاولة.';
+
+function isInsufficientStockMessage(message: string): boolean {
+  return message.toLowerCase().includes('insufficient stock');
+}
+
+function isCheckoutClientErrorMessage(message: string): boolean {
+  const lowerMessage = message.toLowerCase();
+  return lowerMessage.includes('not found') ||
+    lowerMessage.includes('required') ||
+    lowerMessage.includes('invalid') ||
+    isInsufficientStockMessage(lowerMessage);
+}
+
 const shippingRatesSchema = z.object({
   cartId: z.string().uuid(),
   city: z.string(),
@@ -159,7 +173,10 @@ checkoutRouter.post('/:slug/checkout/sessions', zValidator('json', checkoutSessi
     return c.json({ success: true, data: { ...session, idempotent } }, idempotent ? 200 : 201);
   } catch (e) {
     if (e instanceof AppError) throw e;
-    const status = e instanceof Error && (e.message.includes('not found') || e.message.includes('required') || e.message.includes('invalid')) ? 400 : 500;
+    if (e instanceof Error && isInsufficientStockMessage(e.message)) {
+      throw new AppError(400, 'INSUFFICIENT_STOCK', PUBLIC_INSUFFICIENT_STOCK_MESSAGE);
+    }
+    const status = e instanceof Error && isCheckoutClientErrorMessage(e.message) ? 400 : 500;
     throw new AppError(status, 'CHECKOUT_ERROR', e instanceof Error ? e.message : 'Checkout failed');
   }
 });

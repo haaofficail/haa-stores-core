@@ -46,6 +46,12 @@ describe('GettingStarted — page', () => {
   it('returns null while storeId is unresolved (no flash of partial UI)', () => {
     expect(PAGE).toMatch(/if\s*\(!storeId\)\s*return\s*null/);
   });
+
+  it('surfaces a resume CTA when an onboarding draft exists', () => {
+    expect(PAGE).toContain('haa.merchant.onboarding.draft.${storeId}');
+    expect(PAGE).toMatch(/to=['"]\/onboarding\?resume=1['"]/);
+    expect(PAGE).toContain('resumeOnboarding.cta');
+  });
 });
 
 describe('App.tsx — route wiring', () => {

@@ -119,7 +119,61 @@ export interface UploadProofData {
   beneficiaryName: string;
   beneficiaryIbanMasked: string;
   proofFileKey?: string;
+  // Batch 4B/4C: receipt content type + sha256 + matched transfer amount. The
+  // backend zod schema enforces these; the accountant detail page always sends
+  // them. Optional here so the legacy super_admin upload form still compiles.
+  fileMimeType?: string;
+  sha256?: string;
+  transferredAmount?: string;
+  currency?: string;
   notes?: string;
+}
+
+export interface AccountantDetailBank {
+  bankName: string;
+  accountHolderName: string;
+  ibanLast4: string | null;
+  maskedIban: string | null;
+  verificationStatus: string;
+}
+
+export interface AccountantDetailProof {
+  receiptId: number;
+  sha256: string | null;
+  fileMimeType: string | null;
+  bankReference: string;
+  bankName: string;
+  transferDate: string;
+  transferredAmount: string;
+  currency: string;
+}
+
+export interface AccountantDetailEvent {
+  eventType: string;
+  fromStatus: string | null;
+  toStatus: string | null;
+  actorRole: string | null;
+  amount: string | null;
+  createdAt: string;
+}
+
+export interface AccountantDetail {
+  payoutId: number;
+  storeId: number;
+  merchantName: string;
+  amount: string;
+  currency: string;
+  status: string;
+  reference: string;
+  period: string | null;
+  ordersCount: number | null;
+  dueDate: string | null;
+  bankAccount: AccountantDetailBank | null;
+  transferProof: AccountantDetailProof | null;
+  events: AccountantDetailEvent[];
+  canRevealIban: boolean;
+  awaitingSecondApproval: boolean;
+  canSecondApprove: boolean;
 }
 
 // ─── Minimal domain interfaces (only fields consumers access) ────────────────
@@ -213,10 +267,18 @@ export function hasAdminPermission(permission: string): boolean {
   return permissions.includes('admin:*') || permissions.includes(permission);
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+/** Generate a fresh Idempotency-Key for a state-changing financial action. */
+export function newIdempotencyKey(): string {
+  return (globalThis.crypto?.randomUUID?.() ?? `idem-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+}
+
+async function request<T>(method: string, path: string, body?: unknown, idempotencyKey?: string): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const token = getToken();
   if (token) headers['Authorization'] = `Bearer ${token}`;
+  // Batch 4A: sensitive payout actions require an Idempotency-Key so a
+  // double-click / retry can't run the same financial transition twice.
+  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, {
@@ -247,6 +309,54 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return data.data as T;
 }
 
+export interface AccountantInboxItem {
+  settlementId: number;
+  reference: string;
+  merchantName: string;
+  netAmount: string;
+  currency: string;
+  period: string | null;
+  ordersCount: number | null;
+  status: string;
+  bankAccountStatus: string;
+  ibanLast4: string | null;
+  dueDate: string | null;
+  needsSecondApproval: boolean;
+  exceptionReason?: string;
+}
+
+export interface AccountantInbox {
+  ready: AccountantInboxItem[];
+  exceptions: AccountantInboxItem[];
+}
+
+export interface FinanceReportRow {
+  settlementId: string;
+  payoutId: number;
+  storeName: string;
+  amount: string;
+  currency: string;
+  status: string;
+  transferDate: string | null;
+  bankReference: string | null;
+  bankName: string | null;
+  receiptId: number | null;
+  sha256: string | null;
+  fileMimeType: string | null;
+  accountantId: number | null;
+  secondApproverId: number | null;
+  reconciliationStatus: string;
+  stuck: boolean;
+}
+
+export interface FinanceReports {
+  archive: FinanceReportRow[];
+  reconciliation: FinanceReportRow[];
+  stuck: FinanceReportRow[];
+  stuckAfterHours: number;
+  generatedAt: string;
+}
+
 export const adminApi = {
   login: (email: string, password: string) => request<{ token: string; user: { id: number; name: string; email: string } }>('POST', '/admin/login', { email, password }),
   dashboard: () => request<{ tenants: number; stores: number; users: number; orders: number; pendingKyc: number }>('GET', '/admin/dashboard'),
@@ -254,16 +364,19 @@ export const adminApi = {
   createTenant: (data: Record<string, unknown>) => request<AdminTenant>('POST', '/admin/tenants', data),
   updateTenant: (id: number, data: Record<string, unknown>) => request<AdminTenant>('PATCH', `/admin/tenants/${id}`, data),
   deleteTenant: (id: number) => request<Record<string, unknown>>('DELETE', `/admin/tenants/${id}`),
-  updateTenantStatus: (id: number, status: string) => request<Record<string, unknown>>('PATCH', `/admin/tenants/${id}/status`, { status }),
+  updateTenantStatus: (id: number, status: string, statusReason: string) =>
+    request<Record<string, unknown>>('PATCH', `/admin/tenants/${id}/status`, { status, statusReason }),
   getStores: () => request<AdminStore[]>('GET', '/admin/stores'),
   createStore: (data: Record<string, unknown>) => request<AdminStore>('POST', '/admin/stores', data),
   updateStore: (id: number, data: Record<string, unknown>) => request<AdminStore>('PATCH', `/admin/stores/${id}`, data),
   deleteStore: (id: number) => request<Record<string, unknown>>('DELETE', `/admin/stores/${id}`),
-  updateStoreStatus: (id: number, isActive: boolean) => request<Record<string, unknown>>('PATCH', `/admin/stores/${id}/status`, { isActive }),
+  updateStoreStatus: (id: number, isActive: boolean, statusReason: string) =>
+    request<Record<string, unknown>>('PATCH', `/admin/stores/${id}/status`, { isActive, statusReason }),
   getKycProfiles: () => request<AdminKycProfile[]>('GET', '/admin/kyc'),
   reviewKyc: (id: number, status: string, rejectionReason?: string) => request<AdminKycProfile>('PATCH', `/admin/kyc/${id}/review`, { status, rejectionReason }),
   getBankAccounts: () => request<Record<string, unknown>[]>('GET', '/admin/kyc/bank-accounts'),
-  reviewBankAccount: (id: number, status: 'verified' | 'rejected') => request<Record<string, unknown>>('PATCH', `/admin/kyc/bank-accounts/${id}/review`, { status }),
+  reviewBankAccount: (id: number, status: 'verified' | 'rejected', reviewReason: string) =>
+    request<Record<string, unknown>>('PATCH', `/admin/kyc/bank-accounts/${id}/review`, { status, reviewReason }),
   getSettlementReadiness: (storeId: number) => request<Record<string, unknown>>('GET', `/admin/stores/${storeId}/settlement-readiness`),
   updateSettlementReadiness: (storeId: number, data: Record<string, unknown>) => request<Record<string, unknown>>('PATCH', `/admin/stores/${storeId}/settlement-readiness`, data),
   getStorePaymentSettings: (storeId: number) => request<Record<string, unknown>[]>('GET', `/admin/stores/${storeId}/payment-settings`),
@@ -292,20 +405,35 @@ export const adminApi = {
     const qs = status ? `?status=${encodeURIComponent(status)}` : '';
     return request<Payout[]>('GET', `/admin/settlements/manual-payouts${qs}`);
   },
+  // Accountant Settlement Inbox (READ-ONLY): ready queue + exceptions.
+  getAccountantInbox: () =>
+    request<AccountantInbox>('GET', '/admin/settlements/accountant-inbox'),
   getPayout: (payoutId: number) =>
     request<PayoutDetail>('GET', `/admin/settlements/manual-payouts/${payoutId}`),
-  reviewPayout: (payoutId: number) =>
-    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/review`),
-  approvePayout: (payoutId: number) =>
-    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/approve`),
-  rejectPayout: (payoutId: number, reason: string) =>
-    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/reject`, { reason }),
-  markTransferPending: (payoutId: number) =>
-    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/mark-transfer-pending`),
-  markTransferred: (payoutId: number) =>
-    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/mark-transferred`),
-  uploadProof: (payoutId: number, data: UploadProofData) =>
-    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/upload-proof`, data),
+  reviewPayout: (payoutId: number, key = newIdempotencyKey()) =>
+    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/review`, undefined, key),
+  approvePayout: (payoutId: number, key = newIdempotencyKey()) =>
+    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/approve`, undefined, key),
+  rejectPayout: (payoutId: number, reason: string, key = newIdempotencyKey()) =>
+    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/reject`, { reason }, key),
+  markTransferPending: (payoutId: number, key = newIdempotencyKey()) =>
+    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/mark-transfer-pending`, undefined, key),
+  markTransferred: (payoutId: number, key = newIdempotencyKey()) =>
+    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/mark-transferred`, undefined, key),
+  uploadProof: (payoutId: number, data: UploadProofData, key = newIdempotencyKey()) =>
+    request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/upload-proof`, data, key),
+  // Batch 4E/UI: accountant settlement detail (masked) + audited IBAN reveal.
+  getAccountantDetail: (payoutId: number) =>
+    request<AccountantDetail>('GET', `/admin/settlements/${payoutId}/accountant-detail`),
+  secondApprovePayout: (payoutId: number, key = newIdempotencyKey()) =>
+    request<Payout>('POST', `/admin/settlements/${payoutId}/second-approve`, undefined, key),
+  secondRejectPayout: (payoutId: number, reason: string, key = newIdempotencyKey()) =>
+    request<Payout>('POST', `/admin/settlements/${payoutId}/second-reject`, { reason }, key),
+  getFinanceReports: () =>
+    request<FinanceReports>('GET', '/admin/settlements/finance-reports'),
+  revealIban: (payoutId: number, action: 'view' | 'copy') =>
+    request<{ payoutId: number; storeId: number; bankName: string; accountHolderName: string; ibanLast4: string | null; iban: string }>(
+      'POST', `/admin/settlements/${payoutId}/reveal-iban`, { action }),
   uploadFile: async (file: File) => {
     const headers: Record<string, string> = {};
     const token = getToken();

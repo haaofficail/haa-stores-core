@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
-import { orderApi, pickupLocationsApi, type PublicOrder, type PickupLocation } from '@/lib/api';
+import { orderApi, pickupLocationsApi, supportApi, type PublicOrder, type PickupLocation, type CreatedTicket } from '@/lib/api';
 import { formatOrderStatus, formatPaymentStatus, formatFulfillmentStatus } from '@/lib/order-status';
 import {
   StoreContainer, StoreCard, StoreInput, StoreButton, StoreBadge,
-  StoreSkeleton,
+  StoreSkeleton, StoreSelect, StoreTextarea,
 } from '@/components/ui';
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports -- icons fed into <Icon icon={…}> per repo convention; lucide migration tracked separately
-import { Package, Truck, CheckCircle, Clock, ArrowLeft, MapPin, CreditCard, ShoppingBag, Store, Gift, Phone, FileText } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock, ArrowLeft, MapPin, CreditCard, ShoppingBag, Store, Gift, Phone, FileText, RotateCcw } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { SarIcon } from '@/components/ui/SarIcon';
 import { toast } from 'sonner';
@@ -38,6 +38,47 @@ function formatAmount(value: unknown) {
   return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
 }
 
+const RETURN_REQUEST_ELIGIBLE_STATUSES = new Set(['delivered', 'picked_up', 'completed']);
+const RETURN_REQUEST_BLOCKED_STATUSES = new Set(['cancelled', 'returned', 'refunded', 'partially_refunded']);
+
+const RETURN_REASON_OPTIONS = [
+  { value: 'changed_mind', label: 'أرغب بإرجاع المنتج' },
+  { value: 'damaged', label: 'المنتج وصل تالفاً' },
+  { value: 'wrong_item', label: 'وصلني منتج مختلف' },
+  { value: 'missing_item', label: 'يوجد منتج ناقص في الطلب' },
+  { value: 'refund_followup', label: 'متابعة استرداد مبلغ' },
+  { value: 'other', label: 'سبب آخر' },
+];
+
+function canStartReturnRequest(order: PublicOrder) {
+  if (RETURN_REQUEST_BLOCKED_STATUSES.has(order.status)) return false;
+  return RETURN_REQUEST_ELIGIBLE_STATUSES.has(order.status);
+}
+
+function buildReturnRequestMessage(order: PublicOrder, reasonLabel: string, details: string, phone: string) {
+  const items = order.items?.length
+    ? order.items.map((item) => `- ${item.name} x ${item.quantity} (${formatAmount(item.totalPrice)} ر.س)`).join('\n')
+    : '- لا توجد منتجات مرفقة في بيانات الطلب';
+
+  return [
+    'طلب إرجاع/استرداد من صفحة تتبع الطلب',
+    '',
+    `رقم الطلب: ${order.orderNumber}`,
+    `حالة الطلب: ${order.status}`,
+    `حالة الدفع: ${order.paymentStatus}`,
+    `حالة الشحن: ${order.fulfillmentStatus ?? 'غير محددة'}`,
+    `اسم العميل: ${order.customerName}`,
+    `جوال العميل: ${phone || order.customerPhone}`,
+    `إجمالي الطلب: ${formatAmount(order.total)} ر.س`,
+    '',
+    `سبب الطلب: ${reasonLabel}`,
+    details ? `تفاصيل إضافية: ${details}` : 'تفاصيل إضافية: لم يضف العميل تفاصيل إضافية.',
+    '',
+    'المنتجات:',
+    items,
+  ].join('\n');
+}
+
 export default function TrackOrderResult() {
   const { t, i18n } = useTranslation();
 
@@ -55,6 +96,10 @@ export default function TrackOrderResult() {
   const [loading, setLoading] = useState(true);
   const [phoneInput, setPhoneInput] = useState('');
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
+  const [returnReason, setReturnReason] = useState(RETURN_REASON_OPTIONS[0]?.value ?? 'changed_mind');
+  const [returnDetails, setReturnDetails] = useState('');
+  const [returnSubmitting, setReturnSubmitting] = useState(false);
+  const [returnTicket, setReturnTicket] = useState<CreatedTicket | null>(null);
 
   useEffect(() => {
     if (!slug || !orderNumber) { setLoading(false); return; }
@@ -88,6 +133,27 @@ export default function TrackOrderResult() {
     }
   };
 
+  const handleReturnRequest = async () => {
+    if (!slug || !order || !phoneInput.trim() || returnSubmitting) return;
+    const reasonLabel = RETURN_REASON_OPTIONS.find((opt) => opt.value === returnReason)?.label ?? RETURN_REASON_OPTIONS[0]?.label ?? returnReason;
+    setReturnSubmitting(true);
+    try {
+      const result = await supportApi.createTicket(slug, {
+        name: order.customerName || t('support.name', 'العميل'),
+        phone: phoneInput.trim() || order.customerPhone,
+        subject: `[طلب إرجاع] ${order.orderNumber}`,
+        message: buildReturnRequestMessage(order, reasonLabel, returnDetails.trim(), phoneInput.trim()),
+      });
+      localStorage.setItem(`support-ticket-token:${slug}:${result.id}`, result.accessToken);
+      setReturnTicket(result);
+      toast.success(t('returns.submittedToast', 'تم إرسال طلب الإرجاع، يمكنك متابعة التذكرة الآن'));
+    } catch {
+      toast.error(t('returns.submitError', 'تعذر إرسال طلب الإرجاع، حاول مرة أخرى'));
+    } finally {
+      setReturnSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <StoreContainer className="py-8">
@@ -111,6 +177,9 @@ export default function TrackOrderResult() {
           <p className="text-sm text-text-secondary mb-6">{t('order.phoneRequired', 'يرجى إدخال رقم الجوال المرتبط بالطلب')}</p>
           <div className="flex gap-2 mb-6">
             <StoreInput
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
               value={phoneInput}
               onChange={(e) => setPhoneInput(e.target.value)}
               placeholder={t('track.phone', 'رقم الجوال')}
@@ -224,6 +293,85 @@ export default function TrackOrderResult() {
               </>
             )}
           </StoreCard>
+
+          {canStartReturnRequest(order) && (
+            <StoreCard className="p-6 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-warning-soft text-warning-strong flex items-center justify-center shrink-0">
+                  <RotateCcw className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-base font-bold text-text-primary">
+                    {t('returns.title', 'طلب إرجاع أو استرداد')}
+                  </h2>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    {t('returns.description', 'أرسل طلبك للتاجر مع تفاصيل الطلب. ستظهر لك تذكرة متابعة مباشرة بدون مشاركة رمز الدخول في الرابط.')}
+                  </p>
+
+                  {returnTicket ? (
+                    <div className="mt-4 rounded-xl border border-success/20 bg-success-soft p-4">
+                      <div className="flex items-start gap-3">
+                        <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-success-strong" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-success-strong">
+                            {t('returns.submittedTitle', 'تم إرسال طلب الإرجاع')}
+                          </p>
+                          <p className="mt-1 text-sm text-success-strong">
+                            {t('returns.submittedDesc', 'حفظنا رمز متابعة التذكرة على هذا الجهاز. يمكنك فتح صفحة التذكرة لمتابعة رد التاجر.')}
+                          </p>
+                          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                            <StoreButton
+                              href={`/s/${slug}/support/tickets/${returnTicket.id}`}
+                              icon={<FileText className="h-4 w-4" />}
+                            >
+                              {t('returns.viewTicket', 'متابعة التذكرة')}
+                            </StoreButton>
+                            <StoreButton
+                              type="button"
+                              variant="outline"
+                              onClick={() => setReturnTicket(null)}
+                            >
+                              {t('returns.newRequest', 'إرسال طلب آخر')}
+                            </StoreButton>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 grid gap-4">
+                      <StoreSelect
+                        label={t('returns.reasonLabel', 'سبب الطلب')}
+                        value={returnReason}
+                        options={RETURN_REASON_OPTIONS}
+                        onChange={(e) => setReturnReason(e.target.value)}
+                      />
+                      <StoreTextarea
+                        label={t('returns.detailsLabel', 'تفاصيل إضافية')}
+                        value={returnDetails}
+                        onChange={(e) => setReturnDetails(e.target.value)}
+                        rows={4}
+                        placeholder={t('returns.detailsPlaceholder', 'مثال: المنتج وصل تالفاً من الجهة اليمنى، وأرغب بمعرفة خطوات الإرجاع.')}
+                      />
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs text-text-tertiary">
+                          {t('returns.note', 'هذا الطلب يفتح تذكرة مع التاجر ولا ينفذ استرداداً آلياً.')}
+                        </p>
+                        <StoreButton
+                          type="button"
+                          onClick={handleReturnRequest}
+                          loading={returnSubmitting}
+                          disabled={!returnReason || !phoneInput.trim()}
+                          icon={<RotateCcw className="h-4 w-4" />}
+                        >
+                          {t('returns.submit', 'إرسال طلب الإرجاع')}
+                        </StoreButton>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </StoreCard>
+          )}
 
           {order.statusHistory && order.statusHistory.length > 0 && (
             <StoreCard className="p-6 mb-6">

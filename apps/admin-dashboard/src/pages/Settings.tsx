@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
 import { useCallback, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { adminApi } from '../lib/api';
+import { adminApi, hasAdminPermission } from '../lib/api';
 import { toast } from 'sonner';
 
 const BASE = import.meta.env.VITE_API_URL || '/api';
@@ -11,6 +11,8 @@ export default function Settings() {
   const [form, setForm] = useState({ name: '', logoUrl: '', faviconUrl: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const canUpdateSettings = hasAdminPermission('platform.settings.update');
+  const canUploadPlatformMedia = hasAdminPermission('platform.media.upload');
 
   const load = useCallback(async () => {
     try {
@@ -38,6 +40,10 @@ export default function Settings() {
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canUploadPlatformMedia) {
+      toast.error('لا تملك صلاحية رفع وسائط المنصة');
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
     try {
@@ -50,6 +56,10 @@ export default function Settings() {
   };
 
   const handleFaviconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canUploadPlatformMedia) {
+      toast.error('لا تملك صلاحية رفع وسائط المنصة');
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
     try {
@@ -62,6 +72,10 @@ export default function Settings() {
   };
 
   const save = async () => {
+    if (!canUpdateSettings) {
+      toast.error('لا تملك صلاحية تحديث إعدادات المنصة');
+      return;
+    }
     setSaving(true);
     try {
       await adminApi.updateSettings({
@@ -89,8 +103,9 @@ export default function Settings() {
           <input
             type="text"
             value={form.name}
+            disabled={!canUpdateSettings}
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
           />
         </div>
 
@@ -100,12 +115,12 @@ export default function Settings() {
             {form.logoUrl && (
               <img src={form.logoUrl} alt={t('settings.logoAlt', 'شعار المنصة')} className="h-16 w-16 rounded-xl object-cover bg-gray-100 border" />
             )}
-            <label className="px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-600 cursor-pointer hover:bg-gray-50">
-              <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+            <label className={`px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-600 hover:bg-gray-50 ${canUploadPlatformMedia ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+              <input type="file" accept="image/*" className="hidden" disabled={!canUploadPlatformMedia} onChange={handleLogoUpload} />
               {t('settings.chooseImage', 'اختر صورة')}
             </label>
             {form.logoUrl && (
-              <button onClick={() => setForm(f => ({ ...f, logoUrl: '' }))} className="text-sm text-red-500 hover:text-red-600">{t('settings.remove', 'إزالة')}</button>
+              <button disabled={!canUpdateSettings} onClick={() => setForm(f => ({ ...f, logoUrl: '' }))} className="text-sm text-red-500 hover:text-red-600 disabled:cursor-not-allowed disabled:text-gray-400">{t('settings.remove', 'إزالة')}</button>
             )}
           </div>
         </div>
@@ -116,12 +131,12 @@ export default function Settings() {
             {form.faviconUrl && (
               <img src={form.faviconUrl} alt="Favicon" className="h-10 w-10 rounded-lg object-cover bg-gray-100 border" />
             )}
-            <label className="px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-600 cursor-pointer hover:bg-gray-50">
-              <input type="file" accept="image/x-icon,image/png,image/svg+xml" className="hidden" onChange={handleFaviconUpload} />
+            <label className={`px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-600 hover:bg-gray-50 ${canUploadPlatformMedia ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+              <input type="file" accept="image/x-icon,image/png,image/svg+xml" className="hidden" disabled={!canUploadPlatformMedia} onChange={handleFaviconUpload} />
               {t('settings.chooseImage', 'اختر صورة')}
             </label>
             {form.faviconUrl && (
-              <button onClick={() => setForm(f => ({ ...f, faviconUrl: '' }))} className="text-sm text-red-500 hover:text-red-600">{t('settings.remove', 'إزالة')}</button>
+              <button disabled={!canUpdateSettings} onClick={() => setForm(f => ({ ...f, faviconUrl: '' }))} className="text-sm text-red-500 hover:text-red-600 disabled:cursor-not-allowed disabled:text-gray-400">{t('settings.remove', 'إزالة')}</button>
             )}
           </div>
         </div>
@@ -129,7 +144,7 @@ export default function Settings() {
         <div className="pt-4 border-t">
           <button
             onClick={save}
-            disabled={saving || !form.name}
+            disabled={saving || !form.name || !canUpdateSettings}
             className="px-6 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? t('settings.saving', 'جاري الحفظ...') : t('settings.save', 'حفظ الإعدادات')}
