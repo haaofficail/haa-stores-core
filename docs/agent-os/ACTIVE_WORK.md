@@ -8,6 +8,27 @@
 
 ## Current task
 
+**TASK-0140 — Financial admin destructive actions audit and P1 hardening is under PR #349 refresh (2026-07-01).**
+
+Branch: `review/task-0140-financial-admin-safety`. PR: #349.
+
+This is the separate high-risk finance batch after TASK-0139 landed on `main`.
+The branch is being rebased over `main` commit
+`b9453d67d0663da787453a932bd5452324f78c46` to clear the GitHub
+`CONFLICTING / DIRTY` state without merging or deploying. Scope remains only
+Financial Admin Safety: payments read/export, finance CSV audit, settlement
+readiness, accountant settlement permissions, settlement batch detail, safe
+financial dialogs, sensitive data masking, and
+`tests/admin-financial-actions-safety.test.ts`.
+
+Do not stage `storage/monitoring-events.ndjson` or
+`storage/support-error-events.ndjson`; they are runtime artifacts and outside
+this PR. This does not authorize merge, staging deploy, production launch,
+secret handling, live provider calls, SSH to production, DNS changes, or
+migrations.
+
+## Previous task
+
 **TASK-0139 — Admin tenant operating dossier is under PR #348 review follow-up (2026-07-01).**
 
 Branch: `review/task-0139-tenant-dossier`. PR: #348.

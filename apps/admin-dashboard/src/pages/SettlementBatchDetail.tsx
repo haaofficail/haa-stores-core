@@ -730,8 +730,8 @@ export default function SettlementBatchDetailPage() {
       {/* Dangerous payout action confirmation */}
       {confirmPayoutAction && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-            <h3 className="font-bold text-lg mb-3">{confirmPayoutAction.title}</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="payout-confirm-title" className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 id="payout-confirm-title" className="font-bold text-lg mb-3">{confirmPayoutAction.title}</h3>
             <p className="text-sm text-gray-600 leading-6">
               {confirmPayoutAction.description}
             </p>
@@ -760,8 +760,8 @@ export default function SettlementBatchDetailPage() {
       {/* Reject Modal */}
       {rejectModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-            <h3 className="font-bold text-lg mb-4">رفض الدفعة</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="payout-reject-title" className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 id="payout-reject-title" className="font-bold text-lg mb-4">رفض الدفعة</h3>
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
@@ -790,8 +790,8 @@ export default function SettlementBatchDetailPage() {
       {/* Transfer Proof Modal */}
       {proofModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4">
-            <h3 className="font-bold text-lg mb-4">رفع إثبات التحويل</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="payout-proof-title" className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4">
+            <h3 id="payout-proof-title" className="font-bold text-lg mb-4">رفع إثبات التحويل</h3>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">المرجع البنكي *</label>
@@ -869,7 +869,7 @@ export default function SettlementBatchDetailPage() {
                 <p className="text-xs text-amber-600 mt-1">أدخل آخر 4 أرقام من IBAN فقط</p>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">ملف الإثبات (اختياري)</label>
+                <label className="block text-xs text-gray-500 mb-1">ملف الإثبات *</label>
                 <input
                   type="file"
                   accept="application/pdf,image/png,image/jpeg"
@@ -878,7 +878,7 @@ export default function SettlementBatchDetailPage() {
                   disabled={proofUploading}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {proofUploading ? 'جاري رفع الملف...' : proofFileName || 'يمكن حفظ الإثبات بدون ملف إذا توفر المرجع البنكي.'}
+                  {proofUploading ? 'جاري رفع الملف...' : proofFileName || 'ملف الإثبات مطلوب قبل حفظ التحويل.'}
                 </p>
               </div>
               <div>
@@ -912,8 +912,8 @@ export default function SettlementBatchDetailPage() {
 
       {cancelModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-            <h3 className="font-bold text-lg mb-4">إلغاء الدفعة</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="payout-cancel-title" className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 id="payout-cancel-title" className="font-bold text-lg mb-4">إلغاء الدفعة</h3>
             <textarea
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
@@ -941,8 +941,8 @@ export default function SettlementBatchDetailPage() {
 
       {reverseModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-            <h3 className="font-bold text-lg mb-4">عكس الدفعة</h3>
+          <div role="dialog" aria-modal="true" aria-labelledby="payout-reverse-title" className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 id="payout-reverse-title" className="font-bold text-lg mb-4">عكس الدفعة</h3>
             <textarea
               value={reverseReason}
               onChange={(e) => setReverseReason(e.target.value)}

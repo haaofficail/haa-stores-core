@@ -34,6 +34,39 @@
 
 ---
 
+### TASK-0140: Financial admin destructive actions audit and P1 hardening
+
+- **Type:** Payments / Wallet / Security / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** PR #349 refresh in progress; not merged/deployed
+- **Created:** 2026-06-30
+- **Updated:** 2026-07-01
+- **Branch:** `review/task-0140-financial-admin-safety`
+- **PR:** #349
+- **Original Request:** User supplied a follow-up report and required a separate high-risk batch for Financial Admin Destructive Actions Audit + Fix: settlements, settlement inbox, settlement readiness, accountant decisions, CSV, financial permissions, and audit trail. The batch must not mix with the tenant dossier work and must not include `storage/*.ndjson`.
+- **Expanded Requirement:** Treat financial admin as a money/permissions operating system. Inventory the finance routes and destructive actions, fix confirmed P0/P1 gaps only, ensure exports are permissioned/audited, prevent misleading admin decisions, keep sensitive proof/bank data masked, and add source guards.
+- **Scope:** `/payments`, `/settlement-readiness`, `/finance/settlement-inbox`, `/finance/reports`, `/finance/settlements/:payoutId`, `/payments/settlements/:batchId`, admin finance export routes, payments read/export API, manual payout detail redaction, focused financial source tests, and ops documentation.
+- **Out of Scope:** Deploy, staging/production changes, migrations, production config, secrets, live provider calls, new permissions/migrations, broad redesign of non-financial admin pages, TASK-0139 tenant dossier work, and `storage/*.ndjson`.
+- **Skills Used:** `acceptance-criteria-gate`, `regression-safety-gate`, `environment-safety-gate`, `agent-permission-boundary`, `test-strategy-gate`, `implementation-quality-gate`, `design-ux-excellence-gate`, `priority-triage-gate`, `premium-product-quality-council`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `build-web-apps:frontend-testing-debugging`, `build-web-apps:react-best-practices`, and `postgres-drizzle`.
+- **Acceptance Criteria:**
+  - [x] Finance CSV export actions are API-routed, permission-gated, and audited.
+  - [x] `/payments` no longer returns/export raw payment metadata, provider payment IDs, or idempotency keys.
+  - [x] Payments CSV export uses `wallet.payout.export`, Blob download, explicit columns, query validation, and audit logging.
+  - [x] Settlement readiness UI uses the same SAMA statuses accepted by the API and only allows edits to admins with `wallet.payout.approve`.
+  - [x] Accountant settlement detail does not show transfer/upload actions unless the admin has the matching mutation permission.
+  - [x] Settlement proof upload copy matches backend requirements; proof file is not described as optional.
+  - [x] Dangerous payout dialogs expose dialog semantics.
+  - [x] Manual payout read detail redacts stored `proofFileKey` from read responses.
+  - [x] Full IBAN patterns are not visible in checked finance pages.
+- **Test Plan:** `pnpm vitest run tests/admin-financial-actions-safety.test.ts`; `pnpm typecheck`; `pnpm preflight`; `pnpm check:skills`; `git diff --check`.
+- **Files Changed:** `apps/api/src/routes/admin/financial-export-audit.ts`, `apps/api/src/routes/admin/accountant-inbox.ts`, `apps/api/src/routes/admin/finance-reports.ts`, `apps/api/src/routes/admin/index.ts`, `apps/api/src/routes/admin/marketplace.ts`, `apps/api/src/routes/admin/tenants-stores.ts`, `apps/admin-dashboard/src/lib/api.ts`, `apps/admin-dashboard/src/pages/Payments.tsx`, `apps/admin-dashboard/src/pages/SettlementReadiness.tsx`, `apps/admin-dashboard/src/pages/AccountantSettlementDetail.tsx`, `apps/admin-dashboard/src/pages/SettlementBatchDetail.tsx`, `tests/admin-financial-actions-safety.test.ts`, ops docs, and skill compliance report.
+- **Test Results:** Financial guard passed locally. Workspace `pnpm typecheck`, final `pnpm preflight`, `pnpm check:skills`, and `git diff --check` passed during local verification.
+- **Root Cause:** Finance export/read paths had drifted: official settlement exports were permissioned but not audited, `/payments` still returned raw payment rows and exported locally under read permission, settlement readiness UI used statuses the API rejected, and some accountant mutation actions were visible based on route-level read access rather than their specific mutation permissions.
+- **Verdict:** Financial P1 hardening is implemented and being refreshed in PR #349 after #348 merged. No deploy, migration, DB mutation, production action, secret handling, or live payment/shipping/provider call occurred.
+- **Related Issues:** ISSUE-0077.
+
+---
+
 ### TASK-0139: Admin tenant operating dossier
 
 - **Type:** UX/UI Polish / Testing / Documentation

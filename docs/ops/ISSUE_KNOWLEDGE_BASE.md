@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0077: Financial Admin Export and Settlement Readiness Drifted From Safe Operations
+
+- **ID:** ISSUE-0077
+- **Date:** 2026-06-30
+- **Severity:** High (financial data exposure / auditability / admin decision safety)
+- **Area:** Admin Dashboard / Admin API / Payments / Settlements / Settlement Readiness
+- **Related Tasks:** TASK-0140
+- **Symptoms:** `/payments` fetched raw payment rows and exported them locally under `payments.read`, including fields the page did not need. Existing finance CSV exports were permission-gated but did not record an audit entry. Settlement Readiness UI offered SAMA values that the API rejected. Accountant detail could show transfer/upload actions from the finance detail route without checking the exact mutation permission in the UI. Settlement proof upload copy said the file was optional even though backend validation requires it.
+- **Expected:** Admin finance exports should be explicit, permission-gated, audited, and based on safe read models. The UI should only show financial mutation actions when the admin has the exact server permission, and readiness controls should save values accepted by the API.
+- **Actual:** Some finance surfaces looked operational but could either export too much, export without traceability, fail at save time, or invite an admin to click an action that the API would later reject.
+- **Root Cause:** Earlier finance hardening focused on settlement report exports and payout ledger safety, but the broader admin finance surface still had old local-export and read-model assumptions. Settlement readiness evolved independently between frontend labels and API validator values.
+- **Fix:** Added audited financial export helper, moved Payments CSV to a `wallet.payout.export` API route with explicit columns and query validation, narrowed payments read data, audited settlement CSV exports, aligned SAMA statuses, gated settlement readiness edits by `wallet.payout.approve`, gated accountant transfer/proof UI actions by exact mutation permissions, corrected proof-file required copy, added dialog semantics, and redacted stored proof file keys from manual payout detail read responses.
+- **Verification:** `pnpm vitest run tests/admin-financial-actions-safety.test.ts` passed. Workspace `pnpm typecheck`, final `pnpm preflight`, `pnpm check:skills`, and `git diff --check` passed.
+- **Prevention:** Keep `tests/admin-financial-actions-safety.test.ts` guarding payments export permission/audit, safe payment read/export columns, settlement readiness status alignment, exact mutation permission UI gates, payout dialog/proof-copy safety, and proof-file-key redaction.
+- **Status:** Fixed locally in TASK-0140. No deploy, migration, DB mutation, secret handling, production action, or live provider call occurred. Split from TASK-0139 before push/staging.
+
+---
+
 ### ISSUE-0076: Tenant Operations Were Split Across Pages Without a Single Dossier
 
 - **ID:** ISSUE-0076

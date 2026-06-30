@@ -5,14 +5,14 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { adminApi, type AdminStore } from '../lib/api';
+import { adminApi, hasAdminPermission, type AdminStore } from '../lib/api';
 import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
 
-type SamaStatus = 'unconfirmed' | 'registered' | 'licensed' | 'exempt';
+type SamaStatus = 'unconfirmed' | 'in_progress' | 'confirmed';
 
 interface ReadinessData {
   storeId: number;
@@ -24,10 +24,32 @@ interface ReadinessData {
 
 const SAMA_LABELS: Record<SamaStatus, string> = {
   unconfirmed: 'غير مؤكد',
-  registered: 'مسجّل',
-  licensed: 'مرخّص',
-  exempt: 'معفى',
+  in_progress: 'قيد الاستكمال',
+  confirmed: 'مؤكد',
 };
+
+const SAMA_STATUS_COLORS: Record<SamaStatus, string> = {
+  unconfirmed: 'bg-yellow-100 text-yellow-700',
+  in_progress: 'bg-primary-100 text-primary-700',
+  confirmed: 'bg-green-100 text-green-700',
+};
+
+function normalizeSamaStatus(value: unknown): SamaStatus {
+  if (value === 'unconfirmed' || value === 'in_progress' || value === 'confirmed') return value;
+  if (value === 'registered') return 'in_progress';
+  if (value === 'licensed' || value === 'exempt') return 'confirmed';
+  return 'unconfirmed';
+}
+
+function normalizeReadinessData(data: Partial<ReadinessData> & { storeId: number }): ReadinessData {
+  return {
+    storeId: data.storeId,
+    safeguardedAccountConfigured: Boolean(data.safeguardedAccountConfigured),
+    pspSettlementPartnerConfirmed: Boolean(data.pspSettlementPartnerConfirmed),
+    merchantOfRecordConfirmed: Boolean(data.merchantOfRecordConfirmed),
+    samaComplianceStatus: normalizeSamaStatus(data.samaComplianceStatus),
+  };
+}
 
 function StatusBadge({ ok }: { ok: boolean }) {
   return (
@@ -55,6 +77,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry?: () => voi
 
 export default function SettlementReadiness() {
   const queryClient = useQueryClient();
+  const canUpdateSettlementReadiness = hasAdminPermission('wallet.payout.approve');
 
   // Modal state
   const [selectedStore, setSelectedStore] = useState<AdminStore | null>(null);
@@ -77,15 +100,15 @@ export default function SettlementReadiness() {
       storeList.forEach((s, i) => {
         const r = results[i];
         if (r.status === 'fulfilled') {
-          map[s.id] = r.value as unknown as ReadinessData;
+          map[s.id] = normalizeReadinessData(r.value as Partial<ReadinessData> & { storeId: number });
         } else {
-          map[s.id] = {
+          map[s.id] = normalizeReadinessData({
             storeId: s.id,
             safeguardedAccountConfigured: false,
             pspSettlementPartnerConfirmed: false,
             merchantOfRecordConfirmed: false,
             samaComplianceStatus: 'unconfirmed',
-          };
+          });
         }
       });
       return { stores: storeList, readinessMap: map };
@@ -109,15 +132,15 @@ export default function SettlementReadiness() {
   const saving = saveMutation.isPending;
 
   const openModal = (store: AdminStore) => {
-    const current = readinessMap[store.id] ?? {
+    const current = readinessMap[store.id] ?? normalizeReadinessData({
       storeId: store.id,
       safeguardedAccountConfigured: false,
       pspSettlementPartnerConfirmed: false,
       merchantOfRecordConfirmed: false,
       samaComplianceStatus: 'unconfirmed' as SamaStatus,
-    };
+    });
     setSelectedStore(store);
-    setForm({ ...current });
+    setForm(normalizeReadinessData(current));
   };
 
   const closeModal = () => {
@@ -127,6 +150,10 @@ export default function SettlementReadiness() {
 
   const handleSave = () => {
     if (!selectedStore || !form) return;
+    if (!canUpdateSettlementReadiness) {
+      toast.error('لا تملك صلاحية تعديل جاهزية التسوية');
+      return;
+    }
     saveMutation.mutate({
       storeId: selectedStore.id,
       payload: {
@@ -206,6 +233,7 @@ export default function SettlementReadiness() {
           <tbody className="divide-y">
             {controls.rows.map(store => {
               const r = readinessMap[store.id];
+              const samaStatus = normalizeSamaStatus(r?.samaComplianceStatus);
               return (
                 <tr key={store.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 font-medium text-gray-900">{store.name}</td>
@@ -213,13 +241,8 @@ export default function SettlementReadiness() {
                   <td className="px-4 py-3"><StatusBadge ok={r?.pspSettlementPartnerConfirmed ?? false} /></td>
                   <td className="px-4 py-3"><StatusBadge ok={r?.merchantOfRecordConfirmed ?? false} /></td>
                   <td className="px-4 py-3">
-                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                      r?.samaComplianceStatus === 'licensed' ? 'bg-green-100 text-green-700' :
-                      r?.samaComplianceStatus === 'registered' ? 'bg-primary-100 text-primary-700' :
-                      r?.samaComplianceStatus === 'exempt' ? 'bg-gray-100 text-gray-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {SAMA_LABELS[r?.samaComplianceStatus ?? 'unconfirmed']}
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${SAMA_STATUS_COLORS[samaStatus]}`}>
+                      {SAMA_LABELS[samaStatus]}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -227,7 +250,7 @@ export default function SettlementReadiness() {
                       onClick={() => openModal(store)}
                       className="text-primary-600 hover:text-primary-800 font-medium text-xs px-3 py-1 rounded-lg border border-primary-200 hover:bg-primary-50 transition-colors"
                     >
-                      تفاصيل
+                      {canUpdateSettlementReadiness ? 'مراجعة' : 'تفاصيل'}
                     </button>
                   </td>
                 </tr>
@@ -254,7 +277,9 @@ export default function SettlementReadiness() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 space-y-5">
             <div>
               <h3 className="text-lg font-bold text-gray-900">جاهزية التسوية — {selectedStore.name}</h3>
-              <p className="text-xs text-gray-500 mt-0.5">عدّل الحقول ثم احفظ</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {canUpdateSettlementReadiness ? 'عدّل الحقول ثم احفظ' : 'عرض فقط — يتطلب التعديل صلاحية اعتماد الصرف'}
+              </p>
             </div>
 
             <div className="space-y-4">
@@ -263,6 +288,7 @@ export default function SettlementReadiness() {
                   type="checkbox"
                   checked={form.safeguardedAccountConfigured}
                   onChange={e => setForm(f => f ? { ...f, safeguardedAccountConfigured: e.target.checked } : f)}
+                  disabled={!canUpdateSettlementReadiness || saving}
                   className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
                 <span className="text-sm text-gray-700">تم تهيئة الحساب المحمي (Safeguarded Account)</span>
@@ -273,6 +299,7 @@ export default function SettlementReadiness() {
                   type="checkbox"
                   checked={form.pspSettlementPartnerConfirmed}
                   onChange={e => setForm(f => f ? { ...f, pspSettlementPartnerConfirmed: e.target.checked } : f)}
+                  disabled={!canUpdateSettlementReadiness || saving}
                   className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
                 <span className="text-sm text-gray-700">تم تأكيد شريك PSP للتسوية</span>
@@ -283,6 +310,7 @@ export default function SettlementReadiness() {
                   type="checkbox"
                   checked={form.merchantOfRecordConfirmed}
                   onChange={e => setForm(f => f ? { ...f, merchantOfRecordConfirmed: e.target.checked } : f)}
+                  disabled={!canUpdateSettlementReadiness || saving}
                   className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
                 <span className="text-sm text-gray-700">تم تأكيد Merchant of Record</span>
@@ -293,6 +321,7 @@ export default function SettlementReadiness() {
                 <select
                   value={form.samaComplianceStatus}
                   onChange={e => setForm(f => f ? { ...f, samaComplianceStatus: e.target.value as SamaStatus } : f)}
+                  disabled={!canUpdateSettlementReadiness || saving}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 >
                   {(Object.keys(SAMA_LABELS) as SamaStatus[]).map(k => (
@@ -310,13 +339,15 @@ export default function SettlementReadiness() {
               >
                 إلغاء
               </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {saving ? 'جاري الحفظ...' : 'حفظ'}
-              </button>
+              {canUpdateSettlementReadiness && (
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {saving ? 'جاري الحفظ...' : 'حفظ'}
+                </button>
+              )}
             </div>
           </div>
         </div>

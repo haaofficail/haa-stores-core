@@ -319,6 +319,18 @@ function notifySettlementCompleted(payout: { id: number; storeId: number; status
   }).catch((e: unknown) => console.error('[payout notify] completed:', e));
 }
 
+function redactPayoutDetailForAdmin(detail: any) {
+  if (!detail) return detail;
+  return {
+    ...detail,
+    proofs: (detail.proofs ?? []).map((row: Record<string, unknown>) => {
+      const proof = { ...row };
+      delete proof.proofFileKey;
+      return proof;
+    }),
+  };
+}
+
 // ── /settlements/manual-payouts ───────────────────────────────────────────
 export const manualPayoutsRoutes = {
   list: async (c: any) => {
@@ -332,7 +344,7 @@ export const manualPayoutsRoutes = {
     const [payout] = await createDbClient().select().from(s.payoutRequests).where(eq(s.payoutRequests.id, payoutId)).limit(1);
     if (!payout) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Payout not found' } }, 404);
     const detail = await new WalletLedger().getPayout(payout.storeId, payoutId);
-    return c.json({ success: true, data: detail });
+    return c.json({ success: true, data: redactPayoutDetailForAdmin(detail) });
   },
 
   review: async (c: any) => {

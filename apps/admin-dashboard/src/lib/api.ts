@@ -517,6 +517,19 @@ export interface FinanceReports {
   generatedAt: string;
 }
 
+export interface AdminPayment {
+  [key: string]: unknown;
+  id: number;
+  storeId: number;
+  orderId: number;
+  method: string;
+  amount: string;
+  currency: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type AdminStorePaymentMode = 'test' | 'live';
 export type AdminStorePaymentStatus = 'active' | 'suspended' | 'not_configured' | 'configured' | 'invalid';
 
@@ -590,7 +603,14 @@ export const adminApi = {
     const qs = new URLSearchParams();
     if (typeof params.storeId === 'number') qs.set('storeId', String(params.storeId));
     const suffix = qs.toString() ? `?${qs.toString()}` : '';
-    return request<Record<string, unknown>[]>('GET', `/admin/payments${suffix}`);
+    return request<AdminPayment[]>('GET', `/admin/payments${suffix}`);
+  },
+  exportPaymentsCsv: (params?: { storeId?: number; q?: string }) => {
+    const qs = new URLSearchParams();
+    if (typeof params?.storeId === 'number') qs.set('storeId', String(params.storeId));
+    if (params?.q) qs.set('q', params.q);
+    const query = qs.toString();
+    return requestBlob(`/admin/payments/export${query ? `?${query}` : ''}`);
   },
   getWebhooks: (params: { tenantId?: string; storeId?: string } = {}) => {
     const qs = new URLSearchParams();
