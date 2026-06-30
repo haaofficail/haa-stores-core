@@ -8,11 +8,11 @@
 
 - **Type:** Bug Fix / UX-UI Polish / Backend API / Testing / Documentation
 - **Priority:** P1 High
-- **Status:** Done locally; PR/staging publication pending
+- **Status:** PR #341 open; remote checks/staging publication pending
 - **Created:** 2026-06-30
 - **Updated:** 2026-06-30
 - **Branch:** `codex/admin-store-payment-typed-cache`
-- **PR:** Pending
+- **PR:** #341
 - **Original Request:** "كمل" after the admin improvement/publish directive.
 - **Expanded Requirement:** Continue a focused admin improvement round, identify the next highest safe admin gap, fix it with code/tests/docs, and publish through the approved GitHub/staging path without touching production.
 - **Scope:** Admin Store Payment Settings page/API contract: align the dashboard payload with the API validator, persist `enabled`/`status`/`supportedPaymentMethod` safely, remove page-local `any`, preserve the React Query cache behavior that avoids wiping sibling unsaved edits, add focused regression tests, and update ops/Agent OS documentation.
@@ -31,7 +31,7 @@
   - [ ] PR is pushed, merged/published through the approved staging path, and remote checks/deploy are verified.
 - **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; `pnpm vitest run tests/admin-store-payment-settings-contract.test.ts tests/admin-query-cache-review.test.ts`; `pnpm --filter @haa/api typecheck`; `pnpm --filter @haa/admin-dashboard typecheck`; `pnpm --filter @haa/admin-dashboard build`; `pnpm check:skills`; `git diff --check`; GitHub PR checks; staging deploy/smoke verification if merged.
 - **Files Changed:** `apps/api/src/routes/admin/index.ts`, `apps/api/src/routes/admin/tenants-stores.ts`, `apps/admin-dashboard/src/lib/api.ts`, `apps/admin-dashboard/src/pages/StorePaymentSettings.tsx`, `tests/admin-store-payment-settings-contract.test.ts`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0131.md`.
-- **Test Results:** Local verification passed: `pnpm vitest run tests/admin-store-payment-settings-contract.test.ts tests/admin-query-cache-review.test.ts` passed 2 files / 5 tests; `pnpm --filter @haa/api typecheck` passed; `pnpm --filter @haa/admin-dashboard typecheck` passed; `pnpm --filter @haa/admin-dashboard build` passed; `pnpm check:skills` passed 43/43; `git diff --check` clean; `pnpm ops:monitor` exited 0 with no failures/tasks/incidents and only expected local dev-server warnings; `pnpm preflight` passed. PR, merge, and staging publication evidence are pending.
+- **Test Results:** Local verification passed: `pnpm vitest run tests/admin-store-payment-settings-contract.test.ts tests/admin-query-cache-review.test.ts` passed 2 files / 5 tests; `pnpm --filter @haa/api typecheck` passed; `pnpm --filter @haa/admin-dashboard typecheck` passed; `pnpm --filter @haa/admin-dashboard build` passed; `pnpm check:skills` passed 43/43; `git diff --check` clean; `pnpm ops:monitor` exited 0 with no failures/tasks/incidents and only expected local dev-server warnings; `pnpm preflight` passed; pre-commit full `pnpm -r typecheck` passed. PR #341 is open; merge and staging publication evidence are pending.
 - **Root Cause:** The admin page posted `enabled`, `status: 'suspended' | 'not_configured'`, and `supportedPaymentMethod: 'card'`, but the API validator accepted `isEnabled`, rejected the page's non-active status values, and stripped `supportedPaymentMethod`. For new provider rows this could reject the request or omit required insert data; for existing rows it could leave the enabled state unchanged despite a successful-looking save path.
 - **Verdict:** Fix verified locally; publication pending. No production action, DB migration, secret handling, or live payment/shipping provider call occurred.
 - **Related Issues:** ISSUE-0068.

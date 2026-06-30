@@ -6,7 +6,7 @@
 - **Task type:** launch-readiness
 - **Risk level:** medium
 - **Branch:** `codex/admin-store-payment-typed-cache`
-- **PR:** Pending
+- **PR:** #341
 
 ## Mandatory Skill Gate (recap)
 
@@ -134,7 +134,7 @@
   Preflight PASSED — project is healthy
   ```
 
-- **For CI:** Pending GitHub PR checks and main deploy verification.
+- **For CI:** PR #341 checks and main deploy verification are pending.
 
 ## Deviations
 
