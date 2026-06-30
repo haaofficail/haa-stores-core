@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0068: Admin Payment Settings Save Contract Rejected Page Payload
+
+- **ID:** ISSUE-0068
+- **Date:** 2026-06-30
+- **Severity:** High (admin payment configuration / operational correctness)
+- **Area:** Admin Dashboard / Admin API / Store Payment Settings
+- **Related Tasks:** TASK-0131
+- **Symptoms:** The Store Payment Settings page appeared to let admins enable/disable payment providers and set status per store, but the API validator did not match the page payload. The page sent `enabled`, `status: 'suspended' | 'not_configured'`, and `supportedPaymentMethod: 'card'`; the validator accepted `isEnabled`, status values `active | inactive | pending_review`, and stripped `supportedPaymentMethod`.
+- **Expected:** Admin dashboard save payload, API validator, and persistence route should share the same field names and status vocabulary. New rows should always have the required `supportedPaymentMethod`, and existing rows should update `enabled` when the UI toggles it.
+- **Actual:** `enabled` could be stripped by validation, page status values could be rejected, and new insert attempts could lose `supportedPaymentMethod` before reaching the DB insert path.
+- **Root Cause:** The payment-settings route schema drifted from the admin page and the underlying `merchant_payment_provider_settings` defaults. It kept a legacy `isEnabled` field and non-page status vocabulary while the page had moved to `enabled`, `suspended`, and `not_configured`.
+- **Fix:** The validator now accepts canonical `enabled`, compatibility `isEnabled`, `mode: test|live`, `status: active|suspended|not_configured`, and optional `supportedPaymentMethod`. The upsert route derives `enabled` from either key, inserts safe defaults, and conflict-updates only explicitly supplied fields. The admin API client/page now use typed payment-setting contracts and the page no longer disables `no-explicit-any`.
+- **Verification:** Local verification passed: `pnpm vitest run tests/admin-store-payment-settings-contract.test.ts tests/admin-query-cache-review.test.ts` passed 2 files / 5 tests; `pnpm --filter @haa/api typecheck` passed; `pnpm --filter @haa/admin-dashboard typecheck` passed; `pnpm --filter @haa/admin-dashboard build` passed; `pnpm check:skills` passed 43/43; `git diff --check` was clean; `pnpm ops:monitor` exited 0 with no recommended tasks/incidents; and `pnpm preflight` passed. Final publication evidence is tracked under TASK-0131.
+- **Prevention:** Keep `tests/admin-store-payment-settings-contract.test.ts` guarding route schema values, insert defaults, update wiring, API client types, and page-local `any` cleanup. Keep `tests/admin-query-cache-review.test.ts` guarding the saved-provider cache patch path so future fixes do not reintroduce broad refetches that wipe sibling unsaved rows.
+- **Status:** Fixed locally in TASK-0131. Publication and staging verification are pending.
+
+---
+
 ### ISSUE-0067: Admin Store DELETE Still Hard-deleted During Beta
 
 - **ID:** ISSUE-0067
