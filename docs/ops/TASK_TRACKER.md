@@ -4,6 +4,40 @@
 
 ---
 
+### TASK-0131: Admin Store Payment Settings save-contract hardening
+
+- **Type:** Bug Fix / UX-UI Polish / Backend API / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** PR #341 open; remote checks/staging publication pending
+- **Created:** 2026-06-30
+- **Updated:** 2026-06-30
+- **Branch:** `codex/admin-store-payment-typed-cache`
+- **PR:** #341
+- **Original Request:** "كمل" after the admin improvement/publish directive.
+- **Expanded Requirement:** Continue a focused admin improvement round, identify the next highest safe admin gap, fix it with code/tests/docs, and publish through the approved GitHub/staging path without touching production.
+- **Scope:** Admin Store Payment Settings page/API contract: align the dashboard payload with the API validator, persist `enabled`/`status`/`supportedPaymentMethod` safely, remove page-local `any`, preserve the React Query cache behavior that avoids wiping sibling unsaved edits, add focused regression tests, and update ops/Agent OS documentation.
+- **Out of Scope:** Production deploy/action, production `db:migrate`, live payment-provider calls, live shipping-provider calls, DB schema changes, provider credential handling, broad admin-dashboard redesign, and unrelated legacy `any` cleanup in other admin files.
+- **Skills Used:** `acceptance-criteria-gate`, `priority-triage-gate`, `premium-product-quality-council`, `design-ux-excellence-gate`, `regression-safety-gate`, `implementation-quality-gate`, `test-strategy-gate`, `environment-safety-gate`, `agent-permission-boundary`, `branch-pr-hygiene-gate`, `documentation-handoff-gate`, `single-source-of-truth-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `github:yeet` for the publish flow and `build-web-apps:react-best-practices` for the React Query mutation/cache path.
+- **Acceptance Criteria:**
+  - [x] Store Payment Settings page sends `enabled`, `status`, and `supportedPaymentMethod` keys that the API validator accepts.
+  - [x] `PUT /admin/stores/:storeId/payment-settings` accepts the page/status-service values: `active`, `suspended`, `not_configured`, `configured`, and `invalid`.
+  - [x] Insert/upsert supplies safe defaults for new provider rows, especially `supportedPaymentMethod: 'card'`.
+  - [x] Conflict updates only patch explicitly supplied fields plus `updatedAt`, avoiding accidental `undefined` updates.
+  - [x] `isEnabled` remains accepted as backward compatibility, while the dashboard uses canonical `enabled`.
+  - [x] `StorePaymentSettings.tsx` no longer disables or uses explicit `any`.
+  - [x] Existing cache behavior is preserved: saved-provider cache patching must not broad-refetch and wipe sibling unsaved edits.
+  - [x] Focused source-regression tests cover route schema, route persistence wiring, API client types, page typing, and cache guard.
+  - [x] Local build, skills enforcement, diff check, ops monitor, and preflight pass.
+  - [ ] PR is pushed, merged/published through the approved staging path, and remote checks/deploy are verified.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; `pnpm vitest run tests/admin-store-payment-settings-contract.test.ts tests/admin-query-cache-review.test.ts`; `pnpm --filter @haa/api typecheck`; `pnpm --filter @haa/admin-dashboard typecheck`; `pnpm --filter @haa/admin-dashboard build`; `pnpm check:skills`; `git diff --check`; GitHub PR checks; staging deploy/smoke verification if merged.
+- **Files Changed:** `apps/api/src/routes/admin/index.ts`, `apps/api/src/routes/admin/tenants-stores.ts`, `apps/admin-dashboard/src/lib/api.ts`, `apps/admin-dashboard/src/pages/StorePaymentSettings.tsx`, `tests/admin-store-payment-settings-contract.test.ts`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0131.md`.
+- **Test Results:** Local verification passed: `pnpm vitest run tests/admin-store-payment-settings-contract.test.ts tests/admin-query-cache-review.test.ts` passed 2 files / 5 tests; `pnpm --filter @haa/api typecheck` passed; `pnpm --filter @haa/admin-dashboard typecheck` passed; `pnpm --filter @haa/admin-dashboard build` passed; `pnpm check:skills` passed 43/43; `git diff --check` clean; `pnpm ops:monitor` exited 0 with no failures/tasks/incidents and only expected local dev-server warnings; `pnpm preflight` passed; pre-commit full `pnpm -r typecheck` passed. PR #341 project-owned checks passed before the review-thread fix; one review comment found and fixed the need to preserve `configured`/`invalid` provider statuses. Merge and staging publication evidence are pending.
+- **Root Cause:** The admin page posted `enabled`, `status: 'suspended' | 'not_configured'`, and `supportedPaymentMethod: 'card'`, but the API validator accepted `isEnabled`, rejected the page/status-service non-active status values, and stripped `supportedPaymentMethod`. The first fix also normalized unknown statuses too aggressively; review caught that `configured`/`invalid` are real payment-settings service values and must be preserved. For new provider rows this could reject the request or omit required insert data; for existing rows it could leave the enabled state unchanged or downgrade a validated provider despite a successful-looking save path.
+- **Verdict:** Fix verified locally; publication pending. No production action, DB migration, secret handling, or live payment/shipping provider call occurred.
+- **Related Issues:** ISSUE-0068.
+
+---
+
 ### TASK-0130: Admin beta direct-delete hardening round
 
 - **Type:** Security / UX-UI Polish / Backend API / Testing / Documentation

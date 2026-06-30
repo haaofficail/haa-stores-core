@@ -71,6 +71,7 @@
 - [ ] Admin full-IBAN reveal routes use a dedicated `AdminPermission`, typed `AuditAction` values with Arabic labels, and audit only `ibanLast4` rather than the full IBAN
 - [ ] Admin finance CSV export routes are API-guarded by `wallet.payout.export`; finance read-only pages must not generate official CSV locally from `wallet.payout.view_all` data
 - [ ] Admin Store Billing Settings exposes platform fee and COD fee as separate policies; COD fields must flow through GET/PATCH, service audit old/new diff, admin API client, and UI before COD fee work is considered closed
+- [ ] Admin Store Payment Settings save contract stays aligned: page sends canonical `enabled`/`status`/`supportedPaymentMethod`, API accepts `active`/`suspended`/`not_configured` plus service statuses `configured`/`invalid`, inserts default `supportedPaymentMethod: 'card'`, and saved-provider cache patching does not broad-refetch sibling unsaved rows or downgrade validated providers
 - [ ] Accountant settlement routes/pages are verified with the admin RBAC base (`UnauthorizedState`, `AdminPermissionRoute`, `hasAdminPermission`, permission reflection) before any financial PR is pushed
 - [ ] Marketplace order tracking remains access-token-only; no public `phone` fallback, no `getOrderLegacy`, and no `?phone=` marketplace lookup URL
 - [ ] Public marketplace seller APIs do not select or return store email/phone

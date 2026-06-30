@@ -508,6 +508,38 @@ export interface FinanceReports {
   generatedAt: string;
 }
 
+export type AdminStorePaymentMode = 'test' | 'live';
+export type AdminStorePaymentStatus = 'active' | 'suspended' | 'not_configured' | 'configured' | 'invalid';
+
+export interface AdminStorePaymentSetting {
+  id: number;
+  storeId: number;
+  providerCode: string;
+  enabled: boolean;
+  mode: AdminStorePaymentMode;
+  country: string;
+  currency: string;
+  displayNameAr: string | null;
+  displayNameEn: string | null;
+  sortOrder: number;
+  minOrderAmount: string | null;
+  maxOrderAmount: string | null;
+  supportedPaymentMethod: string;
+  status: AdminStorePaymentStatus;
+  lastValidatedAt: string | null;
+  lastValidationError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminStorePaymentSettingsUpdate {
+  providerCode: string;
+  enabled: boolean;
+  mode: AdminStorePaymentMode;
+  status: AdminStorePaymentStatus;
+  supportedPaymentMethod: string;
+}
+
 export const adminApi = {
   login: (email: string, password: string, totpCode?: string) =>
     request<AdminLoginResult>('POST', '/admin/login', { email, password, ...(totpCode ? { totpCode } : {}) }),
@@ -541,8 +573,9 @@ export const adminApi = {
     request<Record<string, unknown>>('PATCH', `/admin/kyc/bank-accounts/${id}/review`, { status, reviewReason }),
   getSettlementReadiness: (storeId: number) => request<Record<string, unknown>>('GET', `/admin/stores/${storeId}/settlement-readiness`),
   updateSettlementReadiness: (storeId: number, data: Record<string, unknown>) => request<Record<string, unknown>>('PATCH', `/admin/stores/${storeId}/settlement-readiness`, data),
-  getStorePaymentSettings: (storeId: number) => request<Record<string, unknown>[]>('GET', `/admin/stores/${storeId}/payment-settings`),
-  upsertStorePaymentSettings: (storeId: number, data: Record<string, unknown>) => request<Record<string, unknown>>('PUT', `/admin/stores/${storeId}/payment-settings`, data),
+  getStorePaymentSettings: (storeId: number) => request<AdminStorePaymentSetting[]>('GET', `/admin/stores/${storeId}/payment-settings`),
+  upsertStorePaymentSettings: (storeId: number, data: AdminStorePaymentSettingsUpdate) =>
+    request<AdminStorePaymentSetting>('PUT', `/admin/stores/${storeId}/payment-settings`, data),
   getPayments: () => request<Record<string, unknown>[]>('GET', '/admin/payments'),
   getWebhooks: (params: { tenantId?: string; storeId?: string } = {}) => {
     const qs = new URLSearchParams();

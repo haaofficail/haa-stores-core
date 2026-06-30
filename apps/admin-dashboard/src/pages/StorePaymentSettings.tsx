@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // Admin: Store Payment Settings page.
 // Allows enabling/disabling payment gateways per store via
 // merchantPaymentProviderSettings table.
@@ -6,13 +5,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { adminApi } from '../lib/api';
+import {
+  adminApi,
+  type AdminStorePaymentMode,
+  type AdminStorePaymentSetting,
+  type AdminStorePaymentStatus,
+} from '../lib/api';
 import { queryKeys } from '../lib/queryClient';
 import { StoreSelectorPanel } from '../components/ui/StoreSelectorPanel';
 import { toast } from 'sonner';
 
 const PROVIDERS = ['moyasar', 'geidea', 'tabby', 'tamara'] as const;
 type ProviderCode = typeof PROVIDERS[number];
+type ProviderSetting = AdminStorePaymentSetting;
 
 const PROVIDER_LABELS: Record<ProviderCode, string> = {
   moyasar: 'ميسر (Moyasar)',
@@ -21,18 +26,10 @@ const PROVIDER_LABELS: Record<ProviderCode, string> = {
   tamara: 'تمارا (Tamara)',
 };
 
-type ProviderSetting = {
-  providerCode: string;
-  enabled: boolean;
-  mode: string;
-  status: string;
-  supportedPaymentMethod: string;
-};
-
 type RowState = {
   enabled: boolean;
-  mode: 'test' | 'live';
-  status: string;
+  mode: AdminStorePaymentMode;
+  status: AdminStorePaymentStatus;
   saving: boolean;
 };
 
@@ -50,12 +47,47 @@ function createInitialRows(): Record<ProviderCode, RowState> {
   return init;
 }
 
-function normalizeProviderSettings(data: unknown): ProviderSetting[] {
-  if (Array.isArray(data)) return data as ProviderSetting[];
-  if (data && typeof data === 'object' && Array.isArray((data as { data?: unknown }).data)) {
-    return (data as { data: ProviderSetting[] }).data;
+function normalizePaymentMode(value: string | undefined): AdminStorePaymentMode {
+  return value === 'live' ? 'live' : 'test';
+}
+
+function normalizePaymentStatus(value: string | undefined): AdminStorePaymentStatus {
+  if (
+    value === 'active' ||
+    value === 'suspended' ||
+    value === 'not_configured' ||
+    value === 'configured' ||
+    value === 'invalid'
+  ) {
+    return value;
   }
-  return [];
+  return 'not_configured';
+}
+
+function isProviderSetting(value: unknown): value is ProviderSetting {
+  if (!value || typeof value !== 'object') return false;
+  const setting = value as Partial<Record<keyof ProviderSetting, unknown>>;
+  return (
+    typeof setting.providerCode === 'string' &&
+    typeof setting.enabled === 'boolean' &&
+    typeof setting.mode === 'string' &&
+    typeof setting.status === 'string' &&
+    typeof setting.supportedPaymentMethod === 'string'
+  );
+}
+
+function normalizeProviderSettings(data: unknown): ProviderSetting[] {
+  const raw = Array.isArray(data)
+    ? data
+    : data && typeof data === 'object' && Array.isArray((data as { data?: unknown }).data)
+      ? (data as { data: unknown[] }).data
+      : [];
+
+  return raw.filter(isProviderSetting).map(setting => ({
+    ...setting,
+    mode: normalizePaymentMode(setting.mode),
+    status: normalizePaymentStatus(setting.status),
+  }));
 }
 
 function rowsFromSettings(prev: Record<ProviderCode, RowState>, settings: ProviderSetting[]) {
@@ -64,8 +96,8 @@ function rowsFromSettings(prev: Record<ProviderCode, RowState>, settings: Provid
     const found = settings.find(s => s.providerCode === p);
     next[p] = {
       enabled: found?.enabled ?? false,
-      mode: (found?.mode ?? 'test') as 'test' | 'live',
-      status: found?.status ?? 'not_configured',
+      mode: normalizePaymentMode(found?.mode),
+      status: normalizePaymentStatus(found?.status),
       saving: false,
     };
   }
@@ -88,11 +120,15 @@ function replaceProviderSettingInCache(current: unknown, providerCode: ProviderC
 function statusBadge(status: string) {
   const map: Record<string, string> = {
     active: 'bg-green-100 text-green-800',
+    configured: 'bg-emerald-100 text-emerald-800',
+    invalid: 'bg-amber-100 text-amber-800',
     suspended: 'bg-red-100 text-red-800',
     not_configured: 'bg-gray-100 text-gray-600',
   };
   const labels: Record<string, string> = {
     active: 'نشط',
+    configured: 'مهيأ',
+    invalid: 'غير صالح',
     suspended: 'موقوف',
     not_configured: 'غير مُهيَّأ',
   };
@@ -143,7 +179,7 @@ export default function StorePaymentSettings() {
     if (error) toast.error('فشل تحميل إعدادات البوابات');
   }, [error]);
 
-  const saveMutation = useMutation({
+  const saveMutation = useMutation<ProviderSetting, Error, SavePaymentSettingsVars>({
     mutationFn: ({ storeId, row, providerCode }: SavePaymentSettingsVars) => {
       return adminApi.upsertStorePaymentSettings(storeId, {
         providerCode,
@@ -153,8 +189,7 @@ export default function StorePaymentSettings() {
         supportedPaymentMethod: 'card',
       });
     },
-    onSuccess: (result: any, { providerCode, storeId }) => {
-      const updated = (result?.data ?? result) as ProviderSetting;
+    onSuccess: (updated, { providerCode, storeId }) => {
       queryClient.setQueryData([...queryKeys.storePaymentSettings, storeId], (current: unknown) =>
         replaceProviderSettingInCache(current, providerCode, updated),
       );
@@ -165,15 +200,15 @@ export default function StorePaymentSettings() {
         ...prev,
         [providerCode]: {
           enabled: updated.enabled,
-          mode: updated.mode as 'test' | 'live',
+          mode: normalizePaymentMode(updated.mode),
           status: updated.status,
           saving: false,
         },
       }));
       toast.success(`تم حفظ إعدادات ${PROVIDER_LABELS[providerCode]}`);
     },
-    onError: (e: any, { providerCode }) => {
-      toast.error(`فشل الحفظ: ${e?.message ?? 'خطأ غير معروف'}`);
+    onError: (error, { providerCode }) => {
+      toast.error(`فشل الحفظ: ${error.message || 'خطأ غير معروف'}`);
       setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], saving: false } }));
     },
   });
@@ -238,7 +273,7 @@ export default function StorePaymentSettings() {
                     {/* Mode */}
                     <select
                       value={row.mode}
-                      onChange={e => setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], mode: e.target.value as 'test' | 'live' } }))}
+                      onChange={e => setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], mode: normalizePaymentMode(e.target.value) } }))}
                       className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
                       <option value="test">تجربة</option>
@@ -248,9 +283,11 @@ export default function StorePaymentSettings() {
                     {/* Status */}
                     <select
                       value={row.status}
-                      onChange={e => setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], status: e.target.value } }))}
+                      onChange={e => setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], status: normalizePaymentStatus(e.target.value) } }))}
                       className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
+                      {row.status === 'configured' ? <option value="configured">مهيأ</option> : null}
+                      {row.status === 'invalid' ? <option value="invalid">غير صالح</option> : null}
                       <option value="not_configured">غير مُهيَّأ</option>
                       <option value="active">نشط</option>
                       <option value="suspended">موقوف</option>

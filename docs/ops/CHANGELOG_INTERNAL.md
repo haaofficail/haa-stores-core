@@ -1,5 +1,18 @@
 # Internal Changelog
 
+## 2026-06-30 — Admin Store Payment Settings Save Contract (TASK-0131)
+
+- Aligned the admin Store Payment Settings page payload with the API validator: the dashboard uses canonical `enabled`, `status`, and `supportedPaymentMethod` fields.
+- Updated the admin payment-settings validator to accept the page's actual status values: `active`, `suspended`, and `not_configured`.
+- Preserved service-owned provider validation statuses `configured` and `invalid` so editing mode/enabled does not downgrade an already validated provider.
+- Kept `isEnabled` as backward-compatible input while preserving canonical `enabled` for the dashboard.
+- Hardened upsert persistence so new provider rows get safe defaults (`mode: 'test'`, `status: 'not_configured'`, `supportedPaymentMethod: 'card'`) and conflict updates patch only explicitly supplied fields plus `updatedAt`.
+- Added typed admin API client contracts for store payment settings and removed the page-local explicit `any` ESLint disable.
+- Preserved the React Query saved-provider cache patching path so a save does not broad-refetch and wipe sibling unsaved edits.
+- Added `tests/admin-store-payment-settings-contract.test.ts` and reused `tests/admin-query-cache-review.test.ts` to guard the schema/page/client/cache contract.
+- Local verification passed: focused admin payment-settings tests 2 files / 5 tests, API typecheck, admin-dashboard typecheck, admin-dashboard build, `pnpm check:skills` 43/43, clean `git diff --check`, `pnpm ops:monitor` 0 failures/no recommended tasks or incidents, and `pnpm preflight`.
+- Safety boundary unchanged: no production deploy/action, no DB migration, no secrets, and no live payment/shipping-provider calls.
+
 ## 2026-06-30 — Admin Beta Direct-delete Hardening (TASK-0130)
 
 - Disabled direct admin store deletion in beta: `DELETE /admin/stores/:id` now returns `FORBIDDEN_BETA_POLICY` and does not reach `db.delete(...)`.

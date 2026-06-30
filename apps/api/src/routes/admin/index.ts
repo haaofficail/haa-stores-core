@@ -338,9 +338,11 @@ adminRouter.patch('/stores/:storeId/settlement-readiness', requireAdminAuth(), r
 // /stores/:storeId/payment-settings
 const paymentSettingsUpsertSchema = z.object({
   providerCode: z.string().min(1).max(50),
+  enabled: z.boolean().optional(),
   isEnabled: z.boolean().optional(),
   mode: z.enum(['test', 'live']).optional(),
-  status: z.enum(['active', 'inactive', 'pending_review']).optional(),
+  status: z.enum(['active', 'suspended', 'not_configured', 'configured', 'invalid']).optional(),
+  supportedPaymentMethod: z.string().min(1).max(50).optional(),
 });
 
 adminRouter.get('/stores/:storeId/payment-settings', requireAdminAuth(), requireAdminPermission('stores.read'), paymentSettingsRoutes.list);

@@ -407,11 +407,26 @@ export const paymentSettingsRoutes = {
     const storeId = Number(c.req.param('storeId'));
     const body = c.req.valid('json');
     const db = createDbClient();
+    const enabled = body.enabled ?? body.isEnabled;
+    const insertValues = {
+      storeId,
+      providerCode: body.providerCode,
+      enabled: enabled ?? false,
+      mode: body.mode ?? 'test',
+      status: body.status ?? 'not_configured',
+      supportedPaymentMethod: body.supportedPaymentMethod ?? 'card',
+    };
+    const updateData: Partial<typeof s.merchantPaymentProviderSettings.$inferInsert> = { updatedAt: new Date() };
+    if (enabled !== undefined) updateData.enabled = enabled;
+    if (body.mode !== undefined) updateData.mode = body.mode;
+    if (body.status !== undefined) updateData.status = body.status;
+    if (body.supportedPaymentMethod !== undefined) updateData.supportedPaymentMethod = body.supportedPaymentMethod;
+
     await db.insert(s.merchantPaymentProviderSettings)
-      .values({ storeId, ...body })
+      .values(insertValues)
       .onConflictDoUpdate({
         target: [s.merchantPaymentProviderSettings.storeId, s.merchantPaymentProviderSettings.providerCode],
-        set: { enabled: body.enabled, mode: body.mode, status: body.status, updatedAt: new Date() },
+        set: updateData,
       });
     const [row] = await db.select().from(s.merchantPaymentProviderSettings)
       .where(and(
