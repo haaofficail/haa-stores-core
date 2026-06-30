@@ -1,5 +1,21 @@
 # Internal Changelog
 
+## 2026-06-30 — Merchant WhatsApp Campaign Workflow (TASK-0133)
+
+- Extended the merchant WhatsApp page from QR/local pairing only to an end-to-end campaign workflow.
+- Added campaign creation controls for campaign name, segment, message body, optional schedule time, and recipient preview.
+- Added recipient preview and compliance copy that clarify campaigns target only WhatsApp-marketing-consented customers who have not opted out.
+- Added a campaign list with status badges, segment labels, total recipients, sent/failed/delivered/read counters, schedule/start time, loading/error/empty states, and refresh.
+- Added manual send for draft/scheduled/failed campaigns guarded by `promotions:create`.
+- Added two-click delete for draft/failed campaigns guarded by `promotions:delete`.
+- Added typed merchant API client helpers for WhatsApp campaign list, preview, create, send, and delete.
+- Added a dedicated merchant React Query key for WhatsApp campaigns.
+- Updated campaign send/delete API routes to return `data` envelopes compatible with the merchant dashboard `request<T>()` helper.
+- Updated campaign creation so scheduled campaigns persist as `scheduled`, allowing the worker's scheduled-campaign query to pick them up.
+- Added `tests/whatsapp-campaign-ui-contract.test.ts` to guard the merchant UI/client/API/service contract.
+- Local verification passed: focused WhatsApp regression suite 4 files / 21 tests, merchant-dashboard typecheck, API typecheck, commerce-core typecheck, merchant-dashboard production build, `pnpm check:skills` 43/43, clean `git diff --check`, and `pnpm preflight`.
+- Safety boundary unchanged: no deploy yet, no production action, no `db:migrate`, no secrets, no live WhatsApp/provider calls, and no live payment/shipping-provider calls.
+
 ## 2026-06-30 — Admin Store Payment Settings Save Contract (TASK-0131)
 
 - Aligned the admin Store Payment Settings page payload with the API validator: the dashboard uses canonical `enabled`, `status`, and `supportedPaymentMethod` fields.

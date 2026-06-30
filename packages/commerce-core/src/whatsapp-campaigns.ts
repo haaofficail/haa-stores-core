@@ -29,7 +29,7 @@ export class WhatsAppCampaignService {
       name: input.name,
       segmentType: input.segmentType,
       messageTemplate: input.messageTemplate,
-      status: 'draft',
+      status: input.scheduledAt ? 'scheduled' : 'draft',
       totalRecipients: recipients.length,
       scheduledAt: input.scheduledAt,
     }).returning();

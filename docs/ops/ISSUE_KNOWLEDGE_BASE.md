@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0069: Merchant WhatsApp Campaign Backend Was Hidden Behind QR-only UI
+
+- **ID:** ISSUE-0069
+- **Date:** 2026-06-30
+- **Severity:** High (merchant growth workflow / campaign operations)
+- **Area:** Merchant Dashboard / WhatsApp Campaigns / API Contract / Commerce Core
+- **Related Tasks:** TASK-0133
+- **Symptoms:** The merchant dashboard WhatsApp page only supported local QR pairing/status. Existing WhatsApp campaign routes and commerce-core service behavior were not exposed to merchants, so merchants could not preview recipients, create/schedule campaigns, start sends, or inspect delivery counters from the dashboard.
+- **Expected:** A merchant with the existing promotions permissions should be able to manage WhatsApp campaigns end-to-end from the WhatsApp page, with consent/opt-out expectations visible before creation and API response contracts matching the dashboard client helper.
+- **Actual:** Campaign capability existed mostly as backend/API surface. The page was QR-only. `POST /whatsapp-campaigns/:id/send` and `DELETE /whatsapp-campaigns/:id` returned success envelopes without `data`, while the merchant dashboard `request<T>()` helper unwraps `data`. Scheduled campaign creation also persisted `draft`, so scheduled rows would not match the worker's `status = 'scheduled'` selection.
+- **Root Cause:** Earlier WhatsApp work focused on pairing, service, consent, delivery, and transport wiring, but did not add the merchant campaign management UI or lock the client/route response contract. The scheduled creation path saved the timestamp but did not mirror it into the status field the worker uses.
+- **Fix:** Added typed merchant campaign API helpers, a dedicated React Query key, and a full campaign surface in `WhatsApp.tsx` for preview/create/schedule/send/delete/list with `promotions:read/create/delete` gating. Updated send/delete routes to return `data` payloads and updated `createCampaign()` to persist scheduled rows as `scheduled`.
+- **Verification:** `pnpm vitest run tests/whatsapp-campaign-ui-contract.test.ts tests/whatsapp-campaigns-baileys-wire.test.ts tests/whatsapp-delivery.test.ts tests/whatsapp-consent.test.ts` passed 4 files / 21 tests. `pnpm --filter @haa/merchant-dashboard typecheck`, `pnpm --filter @haa/api typecheck`, `pnpm --filter @haa/commerce-core typecheck`, and `pnpm --filter @haa/merchant-dashboard build` passed.
+- **Prevention:** Keep `tests/whatsapp-campaign-ui-contract.test.ts` asserting the merchant page consumes the campaign API, gates actions with matching permissions, displays consent/opt-out copy, returns `data` envelopes for send/delete, and persists scheduled campaigns as `scheduled`.
+- **Status:** Fixed locally in TASK-0133. Draft PR and remote checks are pending; no deploy, production action, migration, secret, or live provider call occurred.
+
+---
+
 ### ISSUE-0068: Admin Payment Settings Save Contract Rejected Page Payload
 
 - **ID:** ISSUE-0068

@@ -37,6 +37,7 @@ export const queryKeys = {
   coupons: (storeId: number | null | undefined) => ['merchant', storeId, 'coupons'] as const,
   promotions: (storeId: number | null | undefined) => ['merchant', storeId, 'promotions'] as const,
   abandonedCarts: (storeId: number | null | undefined) => ['merchant', storeId, 'abandonedCarts'] as const,
+  whatsappCampaigns: (storeId: number | null | undefined) => ['merchant', storeId, 'whatsappCampaigns'] as const,
   loyalty: (storeId: number | null | undefined) => ['merchant', storeId, 'loyalty'] as const,
   customerSegments: (storeId: number | null | undefined) => ['merchant', storeId, 'customerSegments'] as const,
   notifications: (storeId: number | null | undefined) => ['merchant', storeId, 'notifications'] as const,
