@@ -1197,6 +1197,70 @@ export const whatsappApi = {
   },
 };
 
+export type WhatsappCampaignStatus =
+  | 'draft'
+  | 'scheduled'
+  | 'running'
+  | 'completed'
+  | 'failed';
+
+export interface WhatsappCampaign {
+  id: number;
+  storeId: number;
+  name: string;
+  segmentType: string | null;
+  messageTemplate: string;
+  status: WhatsappCampaignStatus;
+  totalRecipients: number | null;
+  sentCount: number | null;
+  failedCount: number | null;
+  deliveredCount: number | null;
+  readCount: number | null;
+  scheduledAt: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WhatsappCampaignPreview {
+  count: number;
+  sample: Array<{ customerId: number; phone: string }>;
+}
+
+export interface WhatsappCampaignCreateInput {
+  name: string;
+  segmentType?: string;
+  messageTemplate: string;
+  scheduledAt?: string;
+}
+
+export const whatsappCampaignsApi = {
+  list: (storeId: number) =>
+    request<WhatsappCampaign[]>(`/merchant/${storeId}/whatsapp-campaigns`),
+  preview: (storeId: number, segmentType?: string) => {
+    const q = new URLSearchParams();
+    if (segmentType) q.set('segmentType', segmentType);
+    const suffix = q.toString() ? `?${q.toString()}` : '';
+    return request<WhatsappCampaignPreview>(
+      `/merchant/${storeId}/whatsapp-campaigns/preview${suffix}`,
+    );
+  },
+  create: (storeId: number, input: WhatsappCampaignCreateInput) =>
+    request<WhatsappCampaign>(`/merchant/${storeId}/whatsapp-campaigns`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  send: (storeId: number, id: number) =>
+    request<{ started: true }>(`/merchant/${storeId}/whatsapp-campaigns/${id}/send`, {
+      method: 'POST',
+    }),
+  delete: (storeId: number, id: number) =>
+    request<{ deleted: true }>(`/merchant/${storeId}/whatsapp-campaigns/${id}`, {
+      method: 'DELETE',
+    }),
+};
+
 // Loyalty (L-PR-4 client surface + L-PR-9 analytics extension).
 // Server routes added in PR #94 (Loyalty Phase 1) + PR for L-PR-9.
 // The mutating PUT/POST inherit the auto-attached Idempotency-Key from

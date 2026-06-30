@@ -4,6 +4,44 @@
 
 ---
 
+### TASK-0133: Merchant WhatsApp campaigns end-to-end surface
+
+- **Type:** Integration / UX-UI Polish / Backend API / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** Draft PR #344 open; remote checks pending
+- **Created:** 2026-06-30
+- **Updated:** 2026-06-30
+- **Branch:** `codex/merchant-whatsapp-e2e-slice`
+- **PR:** #344
+- **Original Request:** "الخطوة الصحيحة التالية: أحول النواقص هذه إلى سلايس تنفيذ ثاني، وأبدأ بأعلى قيمة للتاجر: واتساب end-to-end + Account Security." followed by "كمل".
+- **Expanded Requirement:** Continue the merchant dashboard completion work with one focused slice: wire the existing WhatsApp campaign backend into the merchant dashboard so merchants can preview consented recipients, create/schedule campaigns, manually start sends, inspect delivery counters, and delete safe draft/failed campaigns, while keeping Account Security for a separate slice.
+- **Scope:** Merchant WhatsApp dashboard page, merchant API client campaign helpers, merchant React Query key, WhatsApp campaign API response envelopes, scheduled-campaign status behavior, focused regression tests, and ops documentation.
+- **Out of Scope:** Account Security, external admin integration for merchants, new WhatsApp providers, live WhatsApp sends, production deploy/action, `db:migrate`, DB schema changes, secrets, and live payment/shipping-provider calls.
+- **Skills Used:** `acceptance-criteria-gate`, `priority-triage-gate`, `regression-safety-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `single-source-of-truth-gate`, `evidence-led-reporting`, `verification-before-completion`, `environment-safety-gate`, `api-contract-alignment`, `security-privacy-review`, plus `hono-typescript` for Hono API contract handling and `build-web-apps:react-best-practices` for React Query/UI mutation patterns.
+- **Acceptance Criteria:**
+  - [x] Merchant WhatsApp page keeps QR/local pairing status behavior.
+  - [x] Merchant WhatsApp page exposes a campaign creation form with name, segment, message body, optional schedule, and recipient preview.
+  - [x] Recipient preview and UI copy state that only WhatsApp-marketing-consented, non-opted-out customers are targeted.
+  - [x] Campaign list shows status, segment, total recipients, sent/failed/delivered/read counters, schedule/start time, loading/error/empty states, and refresh.
+  - [x] Manual send action is exposed for draft/scheduled/failed campaigns and remains guarded by `promotions:create`.
+  - [x] Delete action is exposed only for draft/failed campaigns, uses a two-click confirmation, and remains guarded by `promotions:delete`.
+  - [x] Campaign list/preview are guarded by `promotions:read`, matching the API route permissions.
+  - [x] Merchant API client exposes typed list/preview/create/send/delete campaign helpers.
+  - [x] `POST /whatsapp-campaigns/:id/send` and `DELETE /whatsapp-campaigns/:id` return `data` envelopes compatible with the dashboard `request<T>()` helper.
+  - [x] `createCampaign()` marks scheduled campaigns as `scheduled` instead of leaving them as `draft`.
+  - [x] Focused regression coverage guards UI/client/API/service contract.
+  - [x] Final local gates pass: `pnpm check:skills`, `git diff --check`, and `pnpm preflight`.
+  - [x] Draft PR created.
+  - [ ] Project-owned GitHub checks reviewed.
+- **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; `pnpm vitest run tests/whatsapp-campaign-ui-contract.test.ts tests/whatsapp-campaigns-baileys-wire.test.ts tests/whatsapp-delivery.test.ts tests/whatsapp-consent.test.ts`; `pnpm --filter @haa/merchant-dashboard typecheck`; `pnpm --filter @haa/api typecheck`; `pnpm --filter @haa/commerce-core typecheck`; `pnpm --filter @haa/merchant-dashboard build`; `pnpm check:skills`; `git diff --check`; GitHub PR checks.
+- **Files Changed:** `apps/merchant-dashboard/src/pages/WhatsApp.tsx`, `apps/merchant-dashboard/src/lib/api.ts`, `apps/merchant-dashboard/src/lib/queryClient.ts`, `apps/api/src/routes/whatsapp-campaigns.ts`, `packages/commerce-core/src/whatsapp-campaigns.ts`, `tests/whatsapp-campaign-ui-contract.test.ts`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0133.md`.
+- **Test Results:** Local verification passed: focused WhatsApp regression suite passed 4 files / 21 tests; merchant-dashboard typecheck passed; API typecheck passed; commerce-core typecheck passed; merchant-dashboard production build passed; `pnpm check:skills` passed 43/43; `git diff --check` was clean; `pnpm preflight` passed; pre-commit lint-staged plus full `pnpm -r typecheck` passed. Draft PR #344 is open; GitHub PR checks remain to be recorded before closure.
+- **Root Cause:** WhatsApp campaign backend/service work existed, including consent/opt-out recipient resolution and delivery counters, but the merchant dashboard WhatsApp page remained QR/pairing-only. Two API contract details also kept the UI path from being reliable: send/delete routes returned success without `data`, while the merchant `request<T>()` helper unwraps `data`, and scheduled campaign creation persisted `draft`, so scheduled campaigns would not be selected by the worker's `scheduled` query.
+- **Verdict:** Local gates passed; not merged, not deployed, and not published to staging yet.
+- **Related Issues:** ISSUE-0069.
+
+---
+
 ### TASK-0131: Admin Store Payment Settings save-contract hardening
 
 - **Type:** Bug Fix / UX-UI Polish / Backend API / Testing / Documentation

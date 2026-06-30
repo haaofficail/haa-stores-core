@@ -48,7 +48,7 @@ whatsappCampaignsRouter.post('/:id/send', requirePermission('promotions:create')
   new WhatsAppCampaignService().sendCampaign(id, storeId).catch(err => {
     console.error(`[whatsapp-campaigns] send failed campaign ${id}:`, err);
   });
-  return c.json({ success: true, message: 'Campaign send started' }, 202);
+  return c.json({ success: true, data: { started: true } }, 202);
 });
 
 // DELETE /whatsapp-campaigns/:id — delete draft/failed campaign
@@ -56,5 +56,5 @@ whatsappCampaignsRouter.delete('/:id', requirePermission('promotions:delete'), a
   const storeId = Number(c.req.param('storeId'));
   const id = Number(c.req.param('id'));
   await new WhatsAppCampaignService().deleteCampaign(id, storeId);
-  return c.json({ success: true });
+  return c.json({ success: true, data: { deleted: true } });
 });
