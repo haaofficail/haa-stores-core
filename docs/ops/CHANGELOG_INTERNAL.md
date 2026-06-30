@@ -136,6 +136,7 @@
 - Updated the Notifications page maintenance comment to point future integration work at `/sales/channels`.
 - Recorded remaining P1 product gaps: account security self-service, notification runtime/dispatch completion, import/export workflow depth, finance/reporting trust, native-confirm replacement, and full RTL/accessibility browser QA.
 - Verification passed: `pnpm --filter ./apps/merchant-dashboard typecheck`, `pnpm --filter @haa/merchant-dashboard build`, `pnpm preflight`, `pnpm check:skills` 43/43, and clean `git diff --check`.
+- Published as draft PR #343: https://github.com/haaofficail/haa-stores-core/pull/343. At creation time, GitHub reported it open, draft, and mergeable; several checks were still running and external TestSprite Pre-Check was red.
 - Safety boundary unchanged: no production deploy/action, no `db:migrate`, no secrets, and no live payment/shipping-provider calls.
 
 ## 2026-06-30 — Admin Store Payment Settings Save Contract (TASK-0131)

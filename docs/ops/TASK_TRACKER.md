@@ -305,11 +305,11 @@
 
 - **Type:** UX/UI Polish / Audit / Documentation
 - **Priority:** P1 High
-- **Status:** Local implementation verified; draft PR pending/opening
+- **Status:** Draft PR #343 open; local implementation verified
 - **Created:** 2026-06-30
 - **Updated:** 2026-06-30
 - **Branch:** `codex/merchant-dashboard-quality-slice`
-- **PR:** pending
+- **PR:** #343 — https://github.com/haaofficail/haa-stores-core/pull/343
 - **Original Request:** "راجع كل خطوة وكل اجراء وش ناقص و وش مكتمل في كل قسم بالسايد بار في لوحة التحكم ، ابحث عن المعايير العالمية للوحة التاجر ، ابي منتج عالي الجودة دون نقص او اخطاء"
 - **Expanded Requirement:** Audit every Merchant Dashboard sidebar section against current code and global merchant-dashboard UX standards, identify completed vs missing workflows, then close the first safe navigation/discoverability gap without touching production, migrations, secrets, or live providers.
 - **Scope:** Merchant Dashboard sidebar/route audit, global benchmark notes, Sales Hub customer-segments discoverability, and canonical sales-channel route cleanup across merchant channel workflows.
@@ -326,7 +326,7 @@
 - **Files Changed:** `apps/merchant-dashboard/src/pages/SalesHub.tsx`, `apps/merchant-dashboard/src/pages/Marketplaces.tsx`, `apps/merchant-dashboard/src/pages/MarketplaceGuide.tsx`, `apps/merchant-dashboard/src/pages/MarketplaceDetail.tsx`, `apps/merchant-dashboard/src/pages/MarketplaceListings.tsx`, `apps/merchant-dashboard/src/pages/SyncLogs.tsx`, `apps/merchant-dashboard/src/components/modals/MarketplaceGuideModal.tsx`, `apps/merchant-dashboard/src/pages/dashboard/hooks/smart-alerts/marketing-rules.ts`, `apps/merchant-dashboard/src/pages/Notifications.tsx`, `docs/ops/MERCHANT_DASHBOARD_SIDEBAR_AUDIT_2026-06-30.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0132.md`.
 - **Test Results:** Passed locally: merchant dashboard typecheck, merchant dashboard production build, `pnpm preflight`, `pnpm check:skills` 43/43, and `git diff --check` clean. Pre-edit `pnpm ops:monitor` also passed with only expected local dev-server warnings.
 - **Root Cause:** The merchant dashboard already had broad route/page coverage, but several important workflows were hidden behind hub-only or legacy redirect paths. Customer Segments existed as `/sales/customers/segments` but was not discoverable from Sales Hub, and channel pages still used old `/channels...` navigation even though canonical routes live under `/sales/channels...`.
-- **Verdict:** First merchant-dashboard quality slice is locally verified. Larger product gaps remain tracked in the audit report: account security self-service, real notification dispatch/runtime, import/export depth, finance/reporting trust, native-confirm replacement, and full RTL/accessibility browser QA.
+- **Verdict:** First merchant-dashboard quality slice is locally verified and published as draft PR #343. GitHub reports the PR is open, draft, and currently mergeable; some checks are still running, while external TestSprite Pre-Check is red. Larger product gaps remain tracked in the audit report: account security self-service, real notification dispatch/runtime, import/export depth, finance/reporting trust, native-confirm replacement, and full RTL/accessibility browser QA.
 
 ---
 

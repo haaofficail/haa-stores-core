@@ -6,7 +6,7 @@
 - **Task type:** frontend/design
 - **Risk level:** medium
 - **Branch:** `codex/merchant-dashboard-quality-slice`
-- **PR:** pending
+- **PR:** #343 — https://github.com/haaofficail/haa-stores-core/pull/343
 
 ## Mandatory Skill Gate (recap)
 
