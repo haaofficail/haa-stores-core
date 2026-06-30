@@ -115,7 +115,7 @@ export default function MarketplaceGuideModal({ open, onClose }: { open: boolean
 
           {/* CTA */}
           <Button className="w-full rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25"
-            onClick={() => { onClose(); navigate(`/channels/${active}`); }}>
+            onClick={() => { onClose(); navigate(`/sales/channels/${active}`); }}>
             <ExternalLink className="h-4 w-4 ms-1" />ربط {current.name}
           </Button>
         </div>

@@ -67,7 +67,7 @@ export default function MarketplaceGuide() {
           variant="ghost"
           size="sm"
           className="text-xs"
-          onClick={() => navigate('/channels')}
+          onClick={() => navigate('/sales/channels')}
         >
           <ArrowRight className="h-3.5 w-3.5 ms-1" />
           {t('syncLogs.back', 'العودة للقنوات')}
@@ -148,7 +148,7 @@ export default function MarketplaceGuide() {
           <div className="mt-6 flex justify-center">
             <Button
               className="rounded-md bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40"
-              onClick={() => navigate(`/channels/${active}`)}
+              onClick={() => navigate(`/sales/channels/${active}`)}
             >
               <ExternalLink className="h-4 w-4 ms-1" />
               {t('marketplaceGuide.connect', 'ربط')} {current.name}

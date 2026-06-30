@@ -21,6 +21,28 @@ import {
 import { getUpcomingSeason } from '../../constants';
 import type { RuleContext, SmartAlert } from './types.js';
 
+type CustomerSignal = {
+  name?: string | null;
+  totalOrders?: number | string | null;
+};
+
+type SalesDaySignal = {
+  date?: string | number | Date | null;
+  sales?: number | string | null;
+};
+
+type SalesDataSignal = {
+  salesByDay?: SalesDaySignal[];
+};
+
+type PromotionSignal = {
+  totalUsed?: number | string | null;
+};
+
+type NotificationSignal = {
+  status?: string | null;
+};
+
 export function marketingRules(ctx: RuleContext): SmartAlert[] {
   const {
     summary,
@@ -43,6 +65,10 @@ export function marketingRules(ctx: RuleContext): SmartAlert[] {
     navigate,
   } = ctx;
   const out: SmartAlert[] = [];
+  const customerSignals = recentCustomers as CustomerSignal[];
+  const salesSignals = salesData as SalesDataSignal | null | undefined;
+  const promotionSignals = completedPromotions as PromotionSignal[];
+  const notificationSignals = notificationLogs as NotificationSignal[];
 
   // Welcome (greenfield store)
   if (!hasProducts && !hasOrders)
@@ -64,8 +90,8 @@ export function marketingRules(ctx: RuleContext): SmartAlert[] {
 
   // Customers + milestones
   if (
-    recentCustomers.length >= 3 &&
-    recentCustomers.some((c: any) => (c.totalOrders ?? 0) >= 3)
+    customerSignals.length >= 3 &&
+    customerSignals.some((c) => Number(c.totalOrders ?? 0) >= 3)
   )
     out.push({
       id: 'repeat-customer',
@@ -190,11 +216,11 @@ export function marketingRules(ctx: RuleContext): SmartAlert[] {
     });
 
   // Best customer
-  if (totalOrders >= 5 && recentCustomers.length > 0) {
-    const best = recentCustomers.reduce((a: any, b: any) =>
-      (a.totalOrders ?? 0) > (b.totalOrders ?? 0) ? a : b,
+  if (totalOrders >= 5 && customerSignals.length > 0) {
+    const best = customerSignals.reduce((a, b) =>
+      Number(a.totalOrders ?? 0) > Number(b.totalOrders ?? 0) ? a : b,
     );
-    if (best && (best.totalOrders ?? 0) >= 2)
+    if (best && Number(best.totalOrders ?? 0) >= 2)
       out.push({
         id: 'best-customer',
         type: 'success',
@@ -205,7 +231,7 @@ export function marketingRules(ctx: RuleContext): SmartAlert[] {
           'dashboard.alertBestCustomerDesc',
           '{{name}} - {{count}} طلبات',
         )
-          .replace('{{name}}', best.name)
+          .replace('{{name}}', best.name ?? t('customers.customer', 'عميل'))
           .replace('{{count}}', String(best.totalOrders)),
         action: {
           label: t('customers.view', 'عرض'),
@@ -215,11 +241,11 @@ export function marketingRules(ctx: RuleContext): SmartAlert[] {
   }
 
   // Sales trend signals
-  if (salesData?.salesByDay?.length >= 7) {
-    const days = salesData.salesByDay;
+  if ((salesSignals?.salesByDay?.length ?? 0) >= 7) {
+    const days = salesSignals?.salesByDay ?? [];
     const recent = days.slice(-7);
     const avg7 =
-      recent.reduce((s: number, d: any) => s + Number(d.sales), 0) / 7;
+      recent.reduce((s, d) => s + Number(d.sales), 0) / 7;
     if (avg7 === 0 && hasProducts && totalOrders > 0)
       out.push({
         id: 'no-sales-7days',
@@ -272,19 +298,23 @@ export function marketingRules(ctx: RuleContext): SmartAlert[] {
           onClick: () => navigate('/reports'),
         },
       });
-    const wd = recent.filter((_: any, i: number) => {
-      const d = new Date(days[days.length - 7 + i]?.date);
+    const wd = recent.filter((_, i) => {
+      const dateValue = days[days.length - 7 + i]?.date;
+      if (dateValue === null || dateValue === undefined) return false;
+      const d = new Date(dateValue);
       return d.getDay() > 0 && d.getDay() < 6;
     });
-    const we = recent.filter((_: any, i: number) => {
-      const d = new Date(days[days.length - 7 + i]?.date);
+    const we = recent.filter((_, i) => {
+      const dateValue = days[days.length - 7 + i]?.date;
+      if (dateValue === null || dateValue === undefined) return false;
+      const d = new Date(dateValue);
       return d.getDay() === 0 || d.getDay() === 6;
     });
     const wdAvg = wd.length
-      ? wd.reduce((s: number, d: any) => s + Number(d.sales), 0) / wd.length
+      ? wd.reduce((s, d) => s + Number(d.sales), 0) / wd.length
       : 0;
     const weAvg = we.length
-      ? we.reduce((s: number, d: any) => s + Number(d.sales), 0) / we.length
+      ? we.reduce((s, d) => s + Number(d.sales), 0) / we.length
       : 0;
     if (weAvg > 0 && wdAvg > 0 && weAvg < wdAvg * 0.6)
       out.push({
@@ -367,9 +397,9 @@ export function marketingRules(ctx: RuleContext): SmartAlert[] {
       },
     });
 
-  if (completedPromotions.length > 0) {
-    const noResult = completedPromotions.filter(
-      (p: any) => (p.totalUsed ?? 0) === 0,
+  if (promotionSignals.length > 0) {
+    const noResult = promotionSignals.filter(
+      (p) => Number(p.totalUsed ?? 0) === 0,
     );
     if (noResult.length > 0)
       out.push({
@@ -402,12 +432,12 @@ export function marketingRules(ctx: RuleContext): SmartAlert[] {
       ),
       action: {
         label: t('common.setup', 'الإعداد'),
-        onClick: () => navigate('/channels'),
+        onClick: () => navigate('/sales/channels'),
       },
     });
 
-  if (notificationLogs.length > 0) {
-    const failed = notificationLogs.filter((l: any) => l.status === 'failed');
+  if (notificationSignals.length > 0) {
+    const failed = notificationSignals.filter((l) => l.status === 'failed');
     if (failed.length >= 3)
       out.push({
         id: 'notification-failure',
@@ -443,9 +473,9 @@ export function marketingRules(ctx: RuleContext): SmartAlert[] {
       },
     });
 
-  if (recentCustomers.length >= 3) {
-    const inactive = recentCustomers.filter(
-      (c: any) => (c.totalOrders ?? 0) === 0,
+  if (customerSignals.length >= 3) {
+    const inactive = customerSignals.filter(
+      (c) => Number(c.totalOrders ?? 0) === 0,
     );
     if (inactive.length >= 2)
       out.push({

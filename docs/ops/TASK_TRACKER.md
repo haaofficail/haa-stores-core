@@ -301,6 +301,33 @@
 - **Verdict:** Local gates passed; not merged, not deployed, and not published to staging yet.
 - **Related Issues:** ISSUE-0069.
 
+### TASK-0132: Merchant dashboard sidebar quality audit and navigation trust slice
+
+- **Type:** UX/UI Polish / Audit / Documentation
+- **Priority:** P1 High
+- **Status:** Local implementation verified; draft PR pending/opening
+- **Created:** 2026-06-30
+- **Updated:** 2026-06-30
+- **Branch:** `codex/merchant-dashboard-quality-slice`
+- **PR:** pending
+- **Original Request:** "راجع كل خطوة وكل اجراء وش ناقص و وش مكتمل في كل قسم بالسايد بار في لوحة التحكم ، ابحث عن المعايير العالمية للوحة التاجر ، ابي منتج عالي الجودة دون نقص او اخطاء"
+- **Expanded Requirement:** Audit every Merchant Dashboard sidebar section against current code and global merchant-dashboard UX standards, identify completed vs missing workflows, then close the first safe navigation/discoverability gap without touching production, migrations, secrets, or live providers.
+- **Scope:** Merchant Dashboard sidebar/route audit, global benchmark notes, Sales Hub customer-segments discoverability, and canonical sales-channel route cleanup across merchant channel workflows.
+- **Out of Scope:** Account security backend implementation, notification-provider runtime, import/export workflow rewrite, finance reconciliation redesign, production deploy/action, DB migration, secrets, and live payment/shipping-provider calls.
+- **Skills Used:** `acceptance-criteria-gate`, `priority-triage-gate`, `premium-product-quality-council`, `design-ux-excellence-gate`, `regression-safety-gate`, `test-strategy-gate`, `documentation-handoff-gate`, `single-source-of-truth-gate`, `evidence-led-reporting`, `verification-before-completion`, `environment-safety-gate`, plus `github:yeet` for the publish flow.
+- **Acceptance Criteria:**
+  - [x] Merchant sidebar groups and canonical routes are audited section-by-section.
+  - [x] External benchmark links are recorded for Shopify app design/navigation, WCAG focus/target rules, and Stripe-style reporting expectations.
+  - [x] Customer Segments is reachable from Sales Hub instead of being only a hidden canonical route.
+  - [x] Sales-channel page/back/CTA flows use canonical `/sales/channels...` routes rather than old `/channels...` paths.
+  - [x] Audit report records completed vs missing areas and the next execution order.
+  - [x] Local typecheck/build/preflight/skills/diff checks pass.
+- **Test Plan:** `pnpm --filter ./apps/merchant-dashboard typecheck`; `pnpm --filter @haa/merchant-dashboard build`; `pnpm preflight`; `pnpm check:skills`; `git diff --check`; route/source search for old `/channels` navigations.
+- **Files Changed:** `apps/merchant-dashboard/src/pages/SalesHub.tsx`, `apps/merchant-dashboard/src/pages/Marketplaces.tsx`, `apps/merchant-dashboard/src/pages/MarketplaceGuide.tsx`, `apps/merchant-dashboard/src/pages/MarketplaceDetail.tsx`, `apps/merchant-dashboard/src/pages/MarketplaceListings.tsx`, `apps/merchant-dashboard/src/pages/SyncLogs.tsx`, `apps/merchant-dashboard/src/components/modals/MarketplaceGuideModal.tsx`, `apps/merchant-dashboard/src/pages/dashboard/hooks/smart-alerts/marketing-rules.ts`, `apps/merchant-dashboard/src/pages/Notifications.tsx`, `docs/ops/MERCHANT_DASHBOARD_SIDEBAR_AUDIT_2026-06-30.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0132.md`.
+- **Test Results:** Passed locally: merchant dashboard typecheck, merchant dashboard production build, `pnpm preflight`, `pnpm check:skills` 43/43, and `git diff --check` clean. Pre-edit `pnpm ops:monitor` also passed with only expected local dev-server warnings.
+- **Root Cause:** The merchant dashboard already had broad route/page coverage, but several important workflows were hidden behind hub-only or legacy redirect paths. Customer Segments existed as `/sales/customers/segments` but was not discoverable from Sales Hub, and channel pages still used old `/channels...` navigation even though canonical routes live under `/sales/channels...`.
+- **Verdict:** First merchant-dashboard quality slice is locally verified. Larger product gaps remain tracked in the audit report: account security self-service, real notification dispatch/runtime, import/export depth, finance/reporting trust, native-confirm replacement, and full RTL/accessibility browser QA.
+
 ---
 
 ### TASK-0131: Admin Store Payment Settings save-contract hardening

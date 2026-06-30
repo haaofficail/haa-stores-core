@@ -109,7 +109,7 @@ export default function MarketplaceListingsPage() {
     <div className="p-6 space-y-6 animate-fade-in">
       <div className="flex items-center gap-3">
         {/* Touch target ≥ 44x44 (WCAG 2.5.5). */}
-        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => navigate(`/channels/${provider}`)} aria-label={t('common.back', 'رجوع')}>
+        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => navigate(`/sales/channels/${provider}`)} aria-label={t('common.back', 'رجوع')}>
           <ArrowRight className="h-5 w-5" />
         </Button>
         <div className="flex items-center gap-3">

@@ -213,7 +213,7 @@ export default function Notifications() {
 
       {/* Communication-channel status table. Payment + shipping
           providers (Geidea, OTO, OTO Label) are NOT shown here —
-          they belong on /settings/integrations or /channels. The
+          they belong on /settings/integrations or /sales/channels. The
           Notifications page is for outbound merchant→customer
           messaging only. Audit (2026-06-25). */}
       {providerStatus && (
