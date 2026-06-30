@@ -9,6 +9,7 @@ import { UnauthorizedState } from './components/ui/UnauthorizedState';
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Tenants = lazy(() => import('./pages/Tenants'));
+const TenantDossier = lazy(() => import('./pages/TenantDossier'));
 const Stores = lazy(() => import('./pages/Stores'));
 const KycReview = lazy(() => import('./pages/KycReview'));
 const Payments = lazy(() => import('./pages/Payments'));
@@ -339,6 +340,7 @@ export default function App() {
                 <Route path="/finance/settlements/:payoutId" element={<AdminPermissionRoute permission="wallet.payout.view_all"><AccountantSettlementDetail /></AdminPermissionRoute>} />
                 <Route path="/finance/reports" element={<AdminPermissionRoute permission="wallet.payout.view_all"><FinanceReports /></AdminPermissionRoute>} />
                 <Route path="/tenants" element={<AdminPermissionRoute permission="tenants.read"><Tenants /></AdminPermissionRoute>} />
+                <Route path="/tenants/:tenantId" element={<AdminPermissionRoute permission="tenants.read"><TenantDossier /></AdminPermissionRoute>} />
                 <Route path="/stores" element={<AdminPermissionRoute permission="stores.read"><Stores /></AdminPermissionRoute>} />
                 <Route path="/kyc" element={<AdminPermissionRoute permission="kyc.read"><KycReview /></AdminPermissionRoute>} />
                 <Route path="/payments" element={<AdminPermissionRoute permission="payments.read"><Payments /></AdminPermissionRoute>} />

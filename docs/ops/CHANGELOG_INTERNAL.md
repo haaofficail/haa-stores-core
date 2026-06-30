@@ -10,6 +10,16 @@
 - Post-merge verification passed: GitHub CI run `28485302991`, staging deploy run `28485302982`, staging smoke 5/5, local `pnpm typecheck`, and local `pnpm preflight`.
 - Safety boundary unchanged: staging deploy only from the merge workflow, production deploy skipped, no manual `db:migrate`, no production config, no secrets, and no stack branch push.
 
+## 2026-06-30 — Admin Tenant Operating Dossier (TASK-0139)
+
+- Added a tenant-level operating dossier route at `/tenants/:tenantId`, protected by `tenants.read`.
+- Linked tenant names and a new `ملف التاجر` action from the `/tenants` table to the dossier.
+- Added `TenantDossier.tsx` to aggregate the selected tenant's stores, Merchant Verification records, readiness blockers, warnings, masked bank state, payment/payout/publish/risk state, visible payments, payout/extract rows, settlement batches, and audit history.
+- Kept the dossier read-only for finance: no payout approval, transfer verification, settlement mutation, or full-IBAN reveal call was added.
+- Reused `buildMerchantVerificationRecords()` so the tenant file and store-level Merchant Verification file share the same readiness model instead of inventing a second compliance vocabulary.
+- Added `tests/admin-tenant-dossier.test.ts` to guard routing from `/tenants`, operating sections, finance/audit aggregation, no full IBAN, and no destructive finance actions from the overview.
+- Safety boundary unchanged: no deploy, no production action, no `db:migrate`, no DB mutation, no secrets printed, and no live payment/shipping/provider calls.
+
 ## 2026-06-30 — Admin Dashboard Deep QA Route/Action Hardening (TASK-0138)
 
 - Changed admin user-management UI navigation from `/admin-users` to `/users`, keeping `/admin-users` as a React redirect alias only.

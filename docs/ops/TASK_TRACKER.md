@@ -34,6 +34,36 @@
 
 ---
 
+### TASK-0139: Admin tenant operating dossier
+
+- **Type:** UX/UI Polish / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** Local scope verified; not pushed/deployed
+- **Created:** 2026-06-30
+- **Updated:** 2026-06-30
+- **Branch:** `review/task-0139-tenant-dossier`
+- **PR:** Not opened
+- **Original Request:** User asked that each merchant/tenant have a professional file containing verification, edits, history, sales, payouts/extracts, settlements, and all related merchant data from the tenant list.
+- **Expanded Requirement:** Add a tenant-level operating dossier reachable from `/tenants`, without mixing financial hardening or destructive finance mutations into the overview.
+- **Scope:** Admin `/tenants/:tenantId` route, tenant-list navigation, read-only operating dossier sections, Merchant Verification aggregation, finance read models, audit history, next-action links, focused regression tests, and ops documentation.
+- **Out of Scope:** New migrations, deploy, production config, secrets, live payment/shipping/provider calls, payout approval, transfer verification, settlement mutation, full IBAN display, and the TASK-0140 financial destructive-action hardening scope.
+- **Skills Used:** `acceptance-criteria-gate`, `design-ux-excellence-gate`, `regression-safety-gate`, `test-strategy-gate`, `single-source-of-truth-gate`, `verification-before-completion`, `documentation-handoff-gate`, `evidence-led-reporting`, `environment-safety-gate`, `branch-pr-hygiene-gate`, and `agent-permission-boundary`.
+- **Acceptance Criteria:**
+  - [x] `/tenants` links tenant names and a `ملف التاجر` action to `/tenants/:tenantId`.
+  - [x] Tenant dossier is protected by `tenants.read`.
+  - [x] Dossier aggregates stores, Merchant Verification readiness, blockers, warnings, payment/payout/publish/risk state, visible payments, payout/extract rows, settlement batches, and audit history.
+  - [x] Bank and finance surfaces remain masked/read-only; no full IBAN is shown.
+  - [x] No destructive finance action is introduced in the dossier overview.
+  - [x] Focused regression tests guard route/link/aggregation/safety contracts.
+- **Test Plan:** `pnpm vitest run tests/admin-tenant-dossier.test.ts`; `pnpm --filter @haa/admin-dashboard typecheck`; `pnpm --filter @haa/admin-dashboard build`; `pnpm check:skills`; `git diff --check`.
+- **Files Changed:** `apps/admin-dashboard/src/App.tsx`, `apps/admin-dashboard/src/pages/Tenants.tsx`, `apps/admin-dashboard/src/pages/TenantDossier.tsx`, `apps/admin-dashboard/src/lib/api.ts`, `tests/admin-tenant-dossier.test.ts`, and ops documentation.
+- **Test Results:** Local focused tenant dossier tests passed; admin-dashboard typecheck/build passed; `pnpm check:skills` passed; `git diff --check` was clean.
+- **Root Cause:** The admin had improved Merchant Verification and route/action hardening, but the tenant list still lacked a single operational file for reviewing one merchant's lifecycle across verification, operations, finance read models, and audit history.
+- **Verdict:** Tenant operating dossier is implemented and locally verified. Not pushed, not opened as PR, not merged, and not deployed.
+- **Related Issues:** ISSUE-0076.
+
+---
+
 ### TASK-0138: Admin dashboard deep QA route/action hardening
 
 - **Type:** UX/UI Polish / Backend API / Testing / Documentation
