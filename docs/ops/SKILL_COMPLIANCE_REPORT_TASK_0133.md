@@ -6,7 +6,7 @@
 - **Task type:** backend/api
 - **Risk level:** medium
 - **Branch:** `codex/merchant-whatsapp-e2e-slice`
-- **PR:** Pending
+- **PR:** #344 (draft)
 
 ## Mandatory Skill Gate (recap)
 
@@ -137,7 +137,8 @@
   Preflight PASSED — project is healthy
   ```
 
-- **For CI:** Pending PR creation and remote check review.
+- **For CI:** Draft PR #344 is open; remote check review is pending.
+- **For PR:** Draft PR #344 is open: `https://github.com/haaofficail/haa-stores-core/pull/344`. Remote checks are pending.
 
 ## Deviations
 

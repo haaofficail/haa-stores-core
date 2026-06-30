@@ -13,7 +13,8 @@
 - Updated campaign send/delete API routes to return `data` envelopes compatible with the merchant dashboard `request<T>()` helper.
 - Updated campaign creation so scheduled campaigns persist as `scheduled`, allowing the worker's scheduled-campaign query to pick them up.
 - Added `tests/whatsapp-campaign-ui-contract.test.ts` to guard the merchant UI/client/API/service contract.
-- Local verification passed: focused WhatsApp regression suite 4 files / 21 tests, merchant-dashboard typecheck, API typecheck, commerce-core typecheck, merchant-dashboard production build, `pnpm check:skills` 43/43, clean `git diff --check`, and `pnpm preflight`.
+- Local verification passed: focused WhatsApp regression suite 4 files / 21 tests, merchant-dashboard typecheck, API typecheck, commerce-core typecheck, merchant-dashboard production build, `pnpm check:skills` 43/43, clean `git diff --check`, `pnpm preflight`, and pre-commit lint-staged plus full `pnpm -r typecheck`.
+- Published branch to draft PR #344; remote checks are pending.
 - Safety boundary unchanged: no deploy yet, no production action, no `db:migrate`, no secrets, no live WhatsApp/provider calls, and no live payment/shipping-provider calls.
 
 ## 2026-06-30 — Admin Store Payment Settings Save Contract (TASK-0131)

@@ -8,11 +8,11 @@
 
 - **Type:** Integration / UX-UI Polish / Backend API / Testing / Documentation
 - **Priority:** P1 High
-- **Status:** Local gates passed; draft PR pending
+- **Status:** Draft PR #344 open; remote checks pending
 - **Created:** 2026-06-30
 - **Updated:** 2026-06-30
 - **Branch:** `codex/merchant-whatsapp-e2e-slice`
-- **PR:** Pending
+- **PR:** #344
 - **Original Request:** "الخطوة الصحيحة التالية: أحول النواقص هذه إلى سلايس تنفيذ ثاني، وأبدأ بأعلى قيمة للتاجر: واتساب end-to-end + Account Security." followed by "كمل".
 - **Expanded Requirement:** Continue the merchant dashboard completion work with one focused slice: wire the existing WhatsApp campaign backend into the merchant dashboard so merchants can preview consented recipients, create/schedule campaigns, manually start sends, inspect delivery counters, and delete safe draft/failed campaigns, while keeping Account Security for a separate slice.
 - **Scope:** Merchant WhatsApp dashboard page, merchant API client campaign helpers, merchant React Query key, WhatsApp campaign API response envelopes, scheduled-campaign status behavior, focused regression tests, and ops documentation.
@@ -31,10 +31,11 @@
   - [x] `createCampaign()` marks scheduled campaigns as `scheduled` instead of leaving them as `draft`.
   - [x] Focused regression coverage guards UI/client/API/service contract.
   - [x] Final local gates pass: `pnpm check:skills`, `git diff --check`, and `pnpm preflight`.
-  - [ ] Draft PR created and project-owned GitHub checks reviewed.
+  - [x] Draft PR created.
+  - [ ] Project-owned GitHub checks reviewed.
 - **Test Plan:** `pnpm preflight`; `pnpm ops:monitor`; `pnpm vitest run tests/whatsapp-campaign-ui-contract.test.ts tests/whatsapp-campaigns-baileys-wire.test.ts tests/whatsapp-delivery.test.ts tests/whatsapp-consent.test.ts`; `pnpm --filter @haa/merchant-dashboard typecheck`; `pnpm --filter @haa/api typecheck`; `pnpm --filter @haa/commerce-core typecheck`; `pnpm --filter @haa/merchant-dashboard build`; `pnpm check:skills`; `git diff --check`; GitHub PR checks.
 - **Files Changed:** `apps/merchant-dashboard/src/pages/WhatsApp.tsx`, `apps/merchant-dashboard/src/lib/api.ts`, `apps/merchant-dashboard/src/lib/queryClient.ts`, `apps/api/src/routes/whatsapp-campaigns.ts`, `packages/commerce-core/src/whatsapp-campaigns.ts`, `tests/whatsapp-campaign-ui-contract.test.ts`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0133.md`.
-- **Test Results:** Local verification passed: focused WhatsApp regression suite passed 4 files / 21 tests; merchant-dashboard typecheck passed; API typecheck passed; commerce-core typecheck passed; merchant-dashboard production build passed; `pnpm check:skills` passed 43/43; `git diff --check` was clean; `pnpm preflight` passed. GitHub PR checks remain to be recorded before closure.
+- **Test Results:** Local verification passed: focused WhatsApp regression suite passed 4 files / 21 tests; merchant-dashboard typecheck passed; API typecheck passed; commerce-core typecheck passed; merchant-dashboard production build passed; `pnpm check:skills` passed 43/43; `git diff --check` was clean; `pnpm preflight` passed; pre-commit lint-staged plus full `pnpm -r typecheck` passed. Draft PR #344 is open; GitHub PR checks remain to be recorded before closure.
 - **Root Cause:** WhatsApp campaign backend/service work existed, including consent/opt-out recipient resolution and delivery counters, but the merchant dashboard WhatsApp page remained QR/pairing-only. Two API contract details also kept the UI path from being reliable: send/delete routes returned success without `data`, while the merchant `request<T>()` helper unwraps `data`, and scheduled campaign creation persisted `draft`, so scheduled campaigns would not be selected by the worker's `scheduled` query.
 - **Verdict:** Local gates passed; not merged, not deployed, and not published to staging yet.
 - **Related Issues:** ISSUE-0069.

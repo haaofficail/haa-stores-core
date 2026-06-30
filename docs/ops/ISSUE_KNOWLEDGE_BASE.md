@@ -19,7 +19,7 @@
 - **Fix:** Added typed merchant campaign API helpers, a dedicated React Query key, and a full campaign surface in `WhatsApp.tsx` for preview/create/schedule/send/delete/list with `promotions:read/create/delete` gating. Updated send/delete routes to return `data` payloads and updated `createCampaign()` to persist scheduled rows as `scheduled`.
 - **Verification:** `pnpm vitest run tests/whatsapp-campaign-ui-contract.test.ts tests/whatsapp-campaigns-baileys-wire.test.ts tests/whatsapp-delivery.test.ts tests/whatsapp-consent.test.ts` passed 4 files / 21 tests. `pnpm --filter @haa/merchant-dashboard typecheck`, `pnpm --filter @haa/api typecheck`, `pnpm --filter @haa/commerce-core typecheck`, and `pnpm --filter @haa/merchant-dashboard build` passed.
 - **Prevention:** Keep `tests/whatsapp-campaign-ui-contract.test.ts` asserting the merchant page consumes the campaign API, gates actions with matching permissions, displays consent/opt-out copy, returns `data` envelopes for send/delete, and persists scheduled campaigns as `scheduled`.
-- **Status:** Fixed locally in TASK-0133. Draft PR and remote checks are pending; no deploy, production action, migration, secret, or live provider call occurred.
+- **Status:** Fixed locally in TASK-0133 and opened as draft PR #344. Remote checks are pending; no deploy, production action, migration, secret, or live provider call occurred.
 
 ---
 
