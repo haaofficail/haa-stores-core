@@ -4,6 +4,7 @@
 
 - Aligned the admin Store Payment Settings page payload with the API validator: the dashboard uses canonical `enabled`, `status`, and `supportedPaymentMethod` fields.
 - Updated the admin payment-settings validator to accept the page's actual status values: `active`, `suspended`, and `not_configured`.
+- Preserved service-owned provider validation statuses `configured` and `invalid` so editing mode/enabled does not downgrade an already validated provider.
 - Kept `isEnabled` as backward-compatible input while preserving canonical `enabled` for the dashboard.
 - Hardened upsert persistence so new provider rows get safe defaults (`mode: 'test'`, `status: 'not_configured'`, `supportedPaymentMethod: 'card'`) and conflict updates patch only explicitly supplied fields plus `updatedAt`.
 - Added typed admin API client contracts for store payment settings and removed the page-local explicit `any` ESLint disable.

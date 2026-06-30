@@ -19,7 +19,9 @@ dashboard posted `enabled`, `status: 'suspended' | 'not_configured'`, and
 `supportedPaymentMethod`. TASK-0131 aligns the page/API contract, keeps
 `isEnabled` compatibility, supplies safe insert defaults, types the admin API
 client/page, and removes the page-local explicit `any` disable while preserving
-the saved-provider cache patch that avoids wiping sibling unsaved edits.
+the saved-provider cache patch that avoids wiping sibling unsaved edits. Review
+also caught and the follow-up fixes the need to preserve service-owned
+`configured`/`invalid` statuses during unrelated saves.
 
 Local verification passed: focused admin payment-settings contract/cache tests
 2 files / 5 tests, API typecheck, admin-dashboard typecheck, admin-dashboard

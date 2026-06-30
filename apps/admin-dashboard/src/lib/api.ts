@@ -509,7 +509,7 @@ export interface FinanceReports {
 }
 
 export type AdminStorePaymentMode = 'test' | 'live';
-export type AdminStorePaymentStatus = 'active' | 'suspended' | 'not_configured';
+export type AdminStorePaymentStatus = 'active' | 'suspended' | 'not_configured' | 'configured' | 'invalid';
 
 export interface AdminStorePaymentSetting {
   id: number;

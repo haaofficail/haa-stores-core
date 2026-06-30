@@ -15,7 +15,9 @@ describe('admin store payment settings contract', () => {
     expect(storePaymentSettingsPage).toContain("supportedPaymentMethod: 'card'");
 
     expect(adminIndexRoute).toContain('enabled: z.boolean().optional()');
-    expect(adminIndexRoute).toContain("status: z.enum(['active', 'suspended', 'not_configured']).optional()");
+    expect(adminIndexRoute).toContain(
+      "status: z.enum(['active', 'suspended', 'not_configured', 'configured', 'invalid']).optional()",
+    );
     expect(adminIndexRoute).toContain('supportedPaymentMethod: z.string().min(1).max(50).optional()');
     expect(adminIndexRoute).not.toContain("status: z.enum(['active', 'inactive', 'pending_review']).optional()");
   });
@@ -32,11 +34,16 @@ describe('admin store payment settings contract', () => {
   });
 
   it('keeps the admin client and page typed without reintroducing page-local any', () => {
-    expect(adminApiClient).toContain("export type AdminStorePaymentStatus = 'active' | 'suspended' | 'not_configured'");
+    expect(adminApiClient).toContain(
+      "export type AdminStorePaymentStatus = 'active' | 'suspended' | 'not_configured' | 'configured' | 'invalid'",
+    );
     expect(adminApiClient).toContain('data: AdminStorePaymentSettingsUpdate');
     expect(adminApiClient).toContain("request<AdminStorePaymentSetting>('PUT'");
 
     expect(storePaymentSettingsPage).toContain('useMutation<ProviderSetting, Error, SavePaymentSettingsVars>');
+    expect(storePaymentSettingsPage).toContain("value === 'configured'");
+    expect(storePaymentSettingsPage).toContain("value === 'invalid'");
+    expect(storePaymentSettingsPage).toMatch(/row\.status === 'configured'\s*\?\s*<option value="configured">/);
     expect(storePaymentSettingsPage).not.toContain('@typescript-eslint/no-explicit-any');
     expect(storePaymentSettingsPage).not.toMatch(/:\s*any\b/);
     expect(storePaymentSettingsPage).not.toMatch(/\bas\s+any\b/);

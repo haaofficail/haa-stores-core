@@ -36,6 +36,7 @@
 - **Key decisions taken during execution:**
   - Fixed the functional UI/API save-contract mismatch before treating the remaining `any` cleanup as cosmetic.
   - Kept `isEnabled` as backward-compatible input, but made dashboard/client use canonical `enabled`.
+  - Preserved service-owned `configured`/`invalid` statuses after review caught the downgrade risk.
   - Preserved saved-provider cache patching and avoided broad refetch that can wipe sibling unsaved edits.
 - **Safety constraints respected (per AGENTS.md §14.7):**
   - [x] No `db:migrate` execution

@@ -52,7 +52,15 @@ function normalizePaymentMode(value: string | undefined): AdminStorePaymentMode 
 }
 
 function normalizePaymentStatus(value: string | undefined): AdminStorePaymentStatus {
-  if (value === 'active' || value === 'suspended') return value;
+  if (
+    value === 'active' ||
+    value === 'suspended' ||
+    value === 'not_configured' ||
+    value === 'configured' ||
+    value === 'invalid'
+  ) {
+    return value;
+  }
   return 'not_configured';
 }
 
@@ -112,11 +120,15 @@ function replaceProviderSettingInCache(current: unknown, providerCode: ProviderC
 function statusBadge(status: string) {
   const map: Record<string, string> = {
     active: 'bg-green-100 text-green-800',
+    configured: 'bg-emerald-100 text-emerald-800',
+    invalid: 'bg-amber-100 text-amber-800',
     suspended: 'bg-red-100 text-red-800',
     not_configured: 'bg-gray-100 text-gray-600',
   };
   const labels: Record<string, string> = {
     active: 'نشط',
+    configured: 'مهيأ',
+    invalid: 'غير صالح',
     suspended: 'موقوف',
     not_configured: 'غير مُهيَّأ',
   };
@@ -274,6 +286,8 @@ export default function StorePaymentSettings() {
                       onChange={e => setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], status: normalizePaymentStatus(e.target.value) } }))}
                       className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
+                      {row.status === 'configured' ? <option value="configured">مهيأ</option> : null}
+                      {row.status === 'invalid' ? <option value="invalid">غير صالح</option> : null}
                       <option value="not_configured">غير مُهيَّأ</option>
                       <option value="active">نشط</option>
                       <option value="suspended">موقوف</option>

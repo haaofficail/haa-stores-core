@@ -341,7 +341,7 @@ const paymentSettingsUpsertSchema = z.object({
   enabled: z.boolean().optional(),
   isEnabled: z.boolean().optional(),
   mode: z.enum(['test', 'live']).optional(),
-  status: z.enum(['active', 'suspended', 'not_configured']).optional(),
+  status: z.enum(['active', 'suspended', 'not_configured', 'configured', 'invalid']).optional(),
   supportedPaymentMethod: z.string().min(1).max(50).optional(),
 });
 
