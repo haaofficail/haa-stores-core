@@ -5,9 +5,9 @@
 
 ---
 
-### ISSUE-0070: Main Change-password Route Failed Against Stale Commerce-core Declaration
+### ISSUE-0075: Main Change-password Route Failed Against Stale Commerce-core Declaration
 
-- **ID:** ISSUE-0070
+- **ID:** ISSUE-0075
 - **Date:** 2026-07-01
 - **Severity:** High (main CI/preflight blocker / auth route)
 - **Area:** API Auth / Commerce Core Type Contract / Local Package Declarations
@@ -17,9 +17,99 @@
 - **Actual:** The route passed an inline object literal with `tenantId` and `storeId` directly to `AuthFlowService.changePassword()`. The commerce-core source interface already had these fields, but the ignored local `packages/commerce-core/dist/auth-flow.d.ts` declaration was stale and did not include them, so TypeScript excess-property checking blocked API typecheck.
 - **Root Cause:** PR #345 updated source-level `ChangePasswordInput`, but the API package consumes `@haa/commerce-core` through package export declarations. The ignored local `dist` declaration can lag behind source, and direct inline object literals trigger excess-property checks against that stale declaration.
 - **Fix:** Build the change-password input as a local server-side object before passing it into `service.changePassword()`, preserving runtime `tenantId`/`storeId` context without expanding the public request schema. Added a regression guard that `changePasswordSchema` does not accept `tenantId` or `storeId`.
-- **Verification:** `pnpm --filter @haa/api typecheck` passed. `pnpm vitest run tests/merchant-account-security.test.ts tests/route-migration-1-auth.test.ts tests/auth-regression.test.ts tests/account-page-contract.test.ts` passed 4 files / 34 tests. `pnpm typecheck`, `pnpm preflight`, `pnpm --filter @haa/api build`, `pnpm check:skills`, and `git diff --check` passed.
+- **Verification:** PR #346 merged at `f5af0cbc86681f5d1edbb703e03638b02a7180e5`; post-merge GitHub CI passed, staging deploy passed, staging smoke passed 5/5, production deploy was skipped, and local `pnpm typecheck` plus `pnpm preflight` passed.
 - **Prevention:** Keep `tests/merchant-account-security.test.ts` asserting password-change tenant/store context comes from JWT/server context and not from the request schema. Rebuild workspace package declarations when package export types drift during local verification.
-- **Status:** Fixed locally on `fix/main-change-password-tenant-id`; no push, deploy, migration, secret handling, production action, or live provider call occurred.
+- **Status:** Fixed and merged via PR #346. No production deploy, manual migration, secret handling, production config change, or live provider call occurred.
+
+---
+
+### ISSUE-0074: Admin Routes and Store Actions Drifted From Operational Contracts
+
+- **ID:** ISSUE-0074
+- **Date:** 2026-06-30
+- **Severity:** High (admin operations / local schema readiness / merchant setup correctness)
+- **Area:** Admin Dashboard / Admin API / Store Management
+- **Related Tasks:** TASK-0138
+- **Symptoms:** Deep admin QA found that the `المستخدمون` sidebar link pointed to `/admin-users`, which the browser blocked before React could render. Store create/edit appeared usable but sent `domain` while the API required `slug`, lacked the required store email field, and asked the admin to type raw Tenant ID. Local support-error history also showed failed admin list/settings queries caused by broad selects on evolving schemas.
+- **Expected:** Admin links should use stable routes, store create/edit should match the API and product language, and admin list/settings/user routes should select only fields needed by the UI so optional migrations do not lock out local/staging review.
+- **Actual:** The route/action surface looked present but several actions could fail or mislead the admin at execution time.
+- **Root Cause:** Admin UI and API evolved independently: the store URL field moved to canonical `slug`, while the page kept `domain`; user management used an ad/filter-sensitive route name; and split admin route handlers still carried broad select patterns from earlier monolithic routes.
+- **Fix:** Moved the UI users route to `/users` with `/admin-users` kept as a redirect alias. Updated Stores page to use `slug`, merchant select, store email, and phone. Added API compatibility for old `domain` input while normalizing to `slug`. Added explicit select maps for tenants, stores, platform settings, and admin user list.
+- **Verification:** Focused source tests passed 5 files / 37 tests, including the new `tests/admin-action-routing-integrity.test.ts`. API and admin-dashboard typechecks passed. Admin-dashboard build passed. Browser route smoke across 21 primary admin routes passed with no visible failed-query errors or full IBAN patterns; `/stores` add modal showed the corrected fields and empty-save validation.
+- **Prevention:** Keep `tests/admin-action-routing-integrity.test.ts` guarding `/users` navigation, Stores slug/email/tenant-select contract, `domain` alias normalization, and no broad selects for high-traffic admin list/settings/user routes.
+- **Status:** Fixed locally in TASK-0138. No deploy, migration, DB mutation, secret handling, production action, or live provider call occurred.
+
+---
+
+### ISSUE-0073: Merchant Verification List Was Still Carrying File-Level Work
+
+- **ID:** ISSUE-0073
+- **Date:** 2026-06-30
+- **Severity:** High (admin review ergonomics / merchant onboarding trust)
+- **Area:** Admin Dashboard / Merchant Verification / Information Architecture
+- **Related Tasks:** TASK-0137
+- **Symptoms:** After merchant verification became actionable, the admin still lacked a professional "merchant file" mental model. Reviewers expected to select a merchant from the table and then see that merchant's verification, operational activation, financial activity, settlement/payout state, review history, audit trail, and internal notes in one focused place.
+- **Expected:** `/compliance` should behave as an index. A selected merchant should open a dedicated route with approval stages and all relevant merchant-file sections. The reviewer should not see every merchant's detail workflow stacked under the global table.
+- **Actual:** The earlier page was improved, but the list/detail boundary was still too close to a dashboard detail panel. That made the journey feel less professional and made it harder to reason about the lifecycle of one merchant from documentation through publish readiness and financial operations.
+- **Root Cause:** TASK-0134/TASK-0136 focused first on concept separation, readiness calculation, and decision safety. They did not yet complete the information architecture step that separates merchant discovery from merchant dossier work.
+- **Fix:** Added `/compliance/:recordId`, linked store names and review actions to that route, treated child routes as active under "توثيق المتاجر", and built a merchant dossier with approval stages, profile/owner/phone/email/registry/bank/documents, operational activation, publish readiness, sales/payments, payouts/extracts, settlement batches, review decisions, audit logs, and internal notes. Bank display remains masked with `ibanLast4` only.
+- **Verification:** Browser verification passed on `http://localhost:5175/compliance` and `http://localhost:5175/compliance/store-1`: the list is table-only with merchant-file links, the merchant file renders approval/profile/operations/finance/history/notes tabs, and full IBAN patterns are absent. `pnpm --filter @haa/admin-dashboard typecheck` passed. Focused regression suite passed 6 files / 56 tests.
+- **Prevention:** Keep `tests/admin-merchant-verification.test.ts` guarding the `/compliance/:recordId` route, `merchantFilePath()`, route-param detail behavior, no `setSelectedId(record.id)` inline-detail regression, full-IBAN non-exposure, and absence of platform-only compliance vocabulary.
+- **Status:** Fixed locally in TASK-0137. No deploy, migration, DB mutation, secret handling, production action, or live provider call occurred.
+
+---
+
+### ISSUE-0072: Admin Merchant Verification Was Diagnostic Before It Was Actionable
+
+- **ID:** ISSUE-0072
+- **Date:** 2026-06-30
+- **Severity:** High (admin review operations / merchant onboarding trust)
+- **Area:** Admin Dashboard / Merchant Verification / Admin API
+- **Related Tasks:** TASK-0136
+- **Symptoms:** Admin `/compliance` correctly stopped showing platform-only PCI/Pentest/ASV/DR requirements after TASK-0134, but the page still did not fully operate like a review station. Admins could see blockers, yet the UI did not consistently tell them which internal page to open, what to ask the merchant to fix, or how to record a "request changes" decision. Filters could also leave the detail panel showing a previously selected store even when the table had no matching rows.
+- **Expected:** Merchant verification should tell admin reviewers what is blocking publication, where to review/fix each blocker, what message/instruction belongs to the merchant, and which review decisions are permitted. The API should persist reasons for both rejection and requested changes.
+- **Actual:** The first redesigned page was closer to a diagnostic dashboard. Approval/rejection actions existed, but requested changes were not first-class, readiness blockers were not translated into next actions, and non-approved KYC reasons were not persisted uniformly.
+- **Root Cause:** The first merchant-verification model focused on separating concepts and calculating readiness. It did not yet close the operations loop between readiness findings, admin decision capture, merchant-facing remediation instructions, and route-level persistence semantics.
+- **Fix:** Added action metadata to publish-readiness checklist items, including admin destinations and merchant instructions. Hardened the admin page search/metrics/selected-detail behavior, added an explicit verification decision workflow, blocked approval while readiness blockers remain, added `needs_more_info` as a typed KYC review status, required reasons for reject/request-changes, persisted non-approved review reasons, and added a masked bank review action panel.
+- **Verification:** `pnpm vitest run tests/admin-merchant-verification.test.ts` passed 1 file / 13 tests. Focused regression suite passed 6 files / 55 tests. `pnpm --filter @haa/admin-dashboard typecheck`, `pnpm --filter @haa/api typecheck`, `pnpm --filter @haa/admin-dashboard build`, and `pnpm check:skills` passed. Browser verification on `http://localhost:5175/compliance` confirmed the decision workflow, merchant instructions, disabled unsafe actions for incomplete local stores, empty no-selected state for no-result filters, and no full IBAN exposure.
+- **Prevention:** Keep `tests/admin-merchant-verification.test.ts` guarding actionable checklist metadata, no stale detail panel when filters are empty, `needs_more_info` API validation/persistence, bank review action wiring, full-IBAN non-exposure, and absence of platform-only compliance vocabulary from the merchant verification page.
+- **Status:** Fixed locally in TASK-0136. No deploy, migration, secret handling, DB mutation, production action, or live provider call occurred.
+
+---
+
+### ISSUE-0071: Local Admin Login Selected Optional admin_role Before Schema Was Ready
+
+- **ID:** ISSUE-0071
+- **Date:** 2026-06-30
+- **Severity:** High (local admin access blocker)
+- **Area:** Auth Core / Admin API / Local Development Schema Readiness
+- **Related Tasks:** TASK-0135
+- **Symptoms:** The admin login page returned "استجابة غير متوقعة من الخادم". API logs showed `/admin/login` failing with `column "admin_role" does not exist` while selecting the admin user by email.
+- **Expected:** Admin login should continue to work in local/dev environments where optional admin-role migration columns are not applied yet, matching the existing readiness strategy used for TOTP columns. Migrated environments should still use `admin_role` for role-scoped permissions.
+- **Actual:** `AdminAuthService.login()` selected `users.admin_role` in the base credential query, so an unapplied local schema failed before password verification or graceful fallback.
+- **Root Cause:** The admin-role permission work added `admin_role` to the base user select, but the query was not split into a migration-stable base select plus optional role select.
+- **Fix:** Removed `adminRole` from `ADMIN_BASE_USER_SELECT`, added a separate `ADMIN_ROLE_SELECT`, and resolved the role after password/TOTP checks through `getAdminRole()`. Missing `admin_role` column errors are treated as schema readiness and return `null`, preserving the legacy default-admin permission fallback.
+- **Verification:** `pnpm vitest run tests/admin-accountant-login.test.ts` passed 1 file / 5 tests. `pnpm --filter @haa/auth-core typecheck` passed. `pnpm --filter @haa/api typecheck` passed. `pnpm --filter @haa/auth-core build` passed. Local POST through `http://localhost:5175/admin/login` returned 200 with token redacted, and the in-app browser opened `http://localhost:5175/compliance`.
+- **Prevention:** Keep `tests/admin-accountant-login.test.ts` covering missing `admin_role` during login. Avoid broad `users` selects in auth-sensitive admin paths when newly added columns may not be applied in local/staging schemas yet.
+- **Status:** Fixed locally in TASK-0135. No deploy, migration, DB mutation, secret handling, or live provider call occurred. Broader `/admin/users` readiness is still a separate follow-up if local schemas remain behind.
+
+---
+
+### ISSUE-0070: Merchant Verification Drifted From KYC/Bank Contract and Admin Page Concept
+
+- **ID:** ISSUE-0070
+- **Date:** 2026-06-30
+- **Severity:** High (merchant onboarding, publish readiness, payout safety, and admin review clarity)
+- **Area:** Merchant Dashboard / Compliance API / Admin Merchant Verification
+- **Related Tasks:** TASK-0134
+- **Symptoms:** Merchant compliance readiness stayed incomplete even when data existed or could be saved. The admin `/compliance` page also showed owner/platform operational gates as if they were merchant verification requirements, which made the admin journey look like PCI-style platform readiness instead of store documentation review.
+- **Expected:** Merchant KYC fields should save and reload through one canonical API contract while preserving compatibility for existing clients. Bank readiness should use masked bank-account summaries without exposing full IBAN. Admin `/compliance` should help platform staff review each store's merchant verification journey: store/owner data, phone/email, commercial registration or freelance document, bank account, documents, payment, shipping, policies, publish readiness, review decisions, and internal notes.
+- **Actual:** The merchant page sent `crNumber`, `nationalId`, and `freelanceDocNumber`, but the API persisted `commercialRegistrationNumber`, `nationalIdOrIqama`, and `freelanceDocumentNumber`. The bank endpoint returned an array of safe summaries with `ibanLast4` and `status`, while the page expected one object with full `iban`. The admin page previously reused Platform Launch Gate requirements in the store-verification route.
+- **Root Cause:** Frontend and API contract names diverged over time, and the UI kept legacy assumptions after the API moved to safer masked banking responses. Separately, admin `/compliance` had no merchant-verification model, so platform/owner operational gates were used in the wrong review journey.
+- **Fix:** Added merchant compliance model helpers for canonical/legacy KYC fields and safe bank summaries. Added admin `merchantVerification.ts` pure functions for bank status, phone/email verification, registry/freelance document state, risk, payout status, and publish readiness. Rebuilt admin `/compliance` as "توثيق المتاجر" with a merchant verification table and detail panel. Kept Platform Launch Gate logic separated in `platformComplianceGates.ts` and removed it from the merchant verification page.
+- **Verification:** Focused TASK-0134 tests passed 5 files / 47 tests (`tests/admin-merchant-verification.test.ts`, `tests/admin-platform-compliance-gates.test.ts`, `tests/admin-permission-reflection.test.ts`, `tests/merchant-compliance-contract.test.ts`, `tests/g1-g10-engineering-prep.test.ts`). `pnpm --filter @haa/admin-dashboard typecheck` passed. `pnpm --filter @haa/admin-dashboard build` passed. `pnpm check:skills` passed 43/43. `git diff --check` was clean. Final `pnpm preflight` passed, including workspace TypeScript.
+- **Prevention:** Keep `tests/merchant-compliance-contract.test.ts` guarding canonical KYC names, safe bank readiness, and no full IBAN reliance. Keep `tests/admin-merchant-verification.test.ts` guarding publish readiness, bank masking, phone/email, registry/freelance document state, and absence of platform-only operational gate vocabulary from the merchant verification page. Keep `tests/admin-platform-compliance-gates.test.ts` guarding the separate Platform Launch Gate engine.
+- **Status:** Fixed locally in TASK-0134 and locally verified. No deploy, migration, secret handling, or live provider call occurred.
 
 ---
 

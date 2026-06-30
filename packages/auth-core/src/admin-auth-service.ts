@@ -99,6 +99,8 @@ const ADMIN_BASE_USER_SELECT = {
   passwordHash: s.users.passwordHash,
   isAdmin: s.users.isAdmin,
   isActive: s.users.isActive,
+};
+const ADMIN_ROLE_SELECT = {
   adminRole: s.users.adminRole,
 };
 const ADMIN_TOTP_LOGIN_SELECT = {
@@ -211,12 +213,13 @@ export class AdminAuthService {
       }
     }
 
+    const adminRole = await this.getAdminRole(user);
     const token = signAdminToken({
       userId: user.id,
       isAdmin: true,
       // Role-scoped permissions. Legacy rows (no adminRole) fail safe to
       // super_admin → ['admin:*'] so no existing admin is locked out.
-      permissions: getAdminPermissionsForRole(user.adminRole),
+      permissions: getAdminPermissionsForRole(adminRole),
       twoFactorEnabled,
       twoFactorVerified: twoFactorEnabled,
     });
@@ -559,6 +562,21 @@ export class AdminAuthService {
       throw error;
     }
   }
+
+  private async getAdminRole(user: { id: number; adminRole?: string | null }): Promise<string | null> {
+    if ('adminRole' in user) return user.adminRole ?? null;
+    try {
+      const [roleRow] = await this.db
+        .select(ADMIN_ROLE_SELECT)
+        .from(s.users)
+        .where(eq(s.users.id, user.id))
+        .limit(1);
+      return roleRow?.adminRole ?? null;
+    } catch (error) {
+      if (isAdminRoleSchemaReadinessError(error)) return null;
+      throw error;
+    }
+  }
 }
 
 /** Shared default instance for ad-hoc callers (most code uses DI). */
@@ -576,4 +594,20 @@ function messageForOtpFailure(reason: OtpFailureReason): string {
     case 'NOT_FOUND':
       return 'Invalid or expired reset code';
   }
+}
+
+function isAdminRoleSchemaReadinessError(error: unknown): boolean {
+  const parts: string[] = [];
+  let current: unknown = error;
+  for (let depth = 0; depth < 3 && current && typeof current === 'object'; depth += 1) {
+    const value = current as { code?: unknown; message?: unknown; cause?: unknown };
+    if (typeof value.code === 'string') parts.push(value.code);
+    if (typeof value.message === 'string') parts.push(value.message);
+    current = value.cause;
+  }
+
+  const text = parts.join(' ').toLowerCase();
+  const referencesAdminRole = text.includes('admin_role') || text.includes('adminrole');
+  const isMissingColumn = text.includes('42703') || text.includes('does not exist') || text.includes('no such column');
+  return referencesAdminRole && isMissingColumn;
 }

@@ -9,37 +9,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Loader2, Upload, Trash2, CheckCircle2, XCircle, AlertTriangle, Clock,
-  FileText, CreditCard, ShieldCheck, Info, Eye, EyeOff, CircleCheck,
+  FileText, CreditCard, ShieldCheck, Info, CircleCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { PermissionGate } from '@/lib/permissions';
-
-
-
-function validateSaudiIban(iban: string): boolean {
-  const cleaned = iban.replace(/\s/g, '');
-  if (!/^SA\d{22}$/.test(cleaned)) return false;
-
-  // Modulo 97 checksum (IBAN standard ISO 7064)
-  const rearranged = (cleaned.slice(4) + cleaned.slice(0, 4)).split('');
-  const numeric = rearranged.map(c => {
-    const code = c.charCodeAt(0);
-    return code >= 65 ? String(code - 55) : c;
-  }).join('');
-  let remainder = 0;
-  for (let i = 0; i < numeric.length; i++) {
-    remainder = (remainder * 10 + parseInt(numeric[i], 10)) % 97;
-  }
-  return remainder === 1;
-}
-
-function maskIban(iban: string): string {
-  if (!iban) return '';
-  const cleaned = iban.replace(/\s/g, '');
-  if (cleaned.length < 8) return cleaned;
-  return `SA **** **** **** **** ${cleaned.slice(-4)}`;
-}
+import {
+  emptyComplianceProfile,
+  formatMaskedIban,
+  hasProfileNationalId,
+  isBankAccountReady,
+  normalizeBankAccountSummary,
+  normalizeComplianceProfile,
+  toProfileUpdatePayload,
+  validateSaudiIban,
+  type ComplianceProfileResponse,
+  type MerchantBankAccountSummary,
+  type MerchantComplianceForm,
+} from '@/lib/complianceModel';
 
 export default function CompliancePage() {
   const { storeId } = useAuth();
@@ -75,23 +62,13 @@ export default function CompliancePage() {
 
   const [status, setStatus] = useState<{ status: string; updatedAt: string; rejectionReason?: string; needsMoreInfoReason?: string; completionPercent?: number } | null>(null);
   const [documents, setDocuments] = useState<Array<{ id: number; filename: string; type: string; status: string }>>([]);
-  const [bankAccount, setBankAccount] = useState<{ accountHolderName?: string; bankName?: string; iban?: string } | null>(null);
+  const [bankAccount, setBankAccount] = useState<MerchantBankAccountSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [checklist, setChecklist] = useState<{ passed: boolean; items: Array<{ key: string; label: string; passed: boolean; required: boolean; source: string; severity: string; message: string }>; blockingErrorsCount: number; warningsCount: number } | null>(null);
 
-  const [form, setForm] = useState({
-    businessType: '',
-    legalName: '',
-    commercialName: '',
-    nationalId: '',
-    freelanceDocNumber: '',
-    crNumber: '',
-    city: '',
-    address: '',
-    vatNumber: '',
-  });
+  const [form, setForm] = useState<MerchantComplianceForm>(() => emptyComplianceProfile());
 
   const [bankForm, setBankForm] = useState({
     accountHolderName: '',
@@ -102,8 +79,6 @@ export default function CompliancePage() {
   const [uploadType, setUploadType] = useState('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [showFullIban, setShowFullIban] = useState(false);
-
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const loadData = useCallback(async () => {
@@ -122,42 +97,17 @@ export default function CompliancePage() {
       if (id !== loadIdRef.current) return;
       if (statusData.status === 'fulfilled') setStatus(statusData.value as { status: string; updatedAt: string; rejectionReason?: string; needsMoreInfoReason?: string; completionPercent?: number });
       if (profileData.status === 'fulfilled') {
-        const p = profileData.value as {
-          businessType?: string;
-          legalName?: string;
-          commercialName?: string;
-          nationalId?: string;
-          freelanceDocNumber?: string;
-          crNumber?: string;
-          city?: string;
-          address?: string;
-          vatNumber?: string;
-        };
-        setForm({
-          businessType: p.businessType ?? '',
-          legalName: p.legalName ?? '',
-          commercialName: p.commercialName ?? '',
-          nationalId: p.nationalId ?? '',
-          freelanceDocNumber: p.freelanceDocNumber ?? '',
-          crNumber: p.crNumber ?? '',
-          city: p.city ?? '',
-          address: p.address ?? '',
-          vatNumber: p.vatNumber ?? '',
-        });
+        setForm(normalizeComplianceProfile(profileData.value as ComplianceProfileResponse));
       }
       if (id !== loadIdRef.current) return;
       if (docsData.status === 'fulfilled') setDocuments((docsData.value as Array<{ id: number; filename: string; type: string; status: string }>) ?? []);
       if (bankData.status === 'fulfilled') {
-        const b = bankData.value as {
-          accountHolderName?: string;
-          bankName?: string;
-          iban?: string;
-        };
+        const b = normalizeBankAccountSummary(bankData.value);
         setBankAccount(b);
         setBankForm({
-          accountHolderName: b.accountHolderName ?? '',
-          bankName: b.bankName ?? '',
-          iban: b.iban ?? '',
+          accountHolderName: b?.accountHolderName ?? '',
+          bankName: b?.bankName ?? '',
+          iban: '',
         });
       }
       if (checklistData.status === 'fulfilled') setChecklist(checklistData.value as { passed: boolean; items: Array<{ key: string; label: string; passed: boolean; required: boolean; source: string; severity: string; message: string }>; blockingErrorsCount: number; warningsCount: number });
@@ -179,6 +129,8 @@ export default function CompliancePage() {
   };
 
   const isIndividualOrFreelancer = form.businessType === 'individual' || form.businessType === 'freelancer';
+  const requiresNationalId = form.businessType === 'individual';
+  const requiresFreelanceDocument = form.businessType === 'freelancer';
   const isCompanyOrEstablishment = form.businessType === 'company' || form.businessType === 'establishment';
 
   const validateProfile = useCallback((): boolean => {
@@ -187,15 +139,18 @@ export default function CompliancePage() {
     if (!form.legalName.trim()) e.legalName = t('compliance.validation.legalNameRequired');
     if (!form.city.trim()) e.city = t('compliance.validation.cityRequired');
     if (!form.address.trim()) e.address = t('compliance.validation.addressRequired');
-    if (isIndividualOrFreelancer) {
-      if (!form.nationalId.trim()) e.nationalId = t('compliance.validation.nationalIdRequired');
+    if (requiresNationalId) {
+      if (!hasProfileNationalId(form)) e.nationalId = t('compliance.validation.nationalIdRequired');
+    }
+    if (requiresFreelanceDocument) {
+      if (!form.freelanceDocNumber.trim()) e.freelanceDocNumber = t('compliance.validation.freelanceDocNumberRequired', 'رقم وثيقة العمل الحر مطلوب');
     }
     if (isCompanyOrEstablishment) {
       if (!form.crNumber.trim()) e.crNumber = t('compliance.validation.crNumberRequired');
     }
     setErrors(e);
     return Object.keys(e).length === 0;
-  }, [t, form, isIndividualOrFreelancer, isCompanyOrEstablishment]);
+  }, [t, form, requiresNationalId, requiresFreelanceDocument, isCompanyOrEstablishment]);
 
   const validateBank = useCallback((): boolean => {
     const e: Record<string, string> = {};
@@ -212,21 +167,31 @@ export default function CompliancePage() {
 
   const canSubmit = useMemo(() => {
     const hasBasicFields = form.businessType && form.legalName.trim() && form.city.trim() && form.address.trim();
-    const hasConditionalFields = isIndividualOrFreelancer ? !!form.nationalId.trim() : true;
+    const hasNationalId = requiresNationalId ? hasProfileNationalId(form) : true;
+    const hasFreelanceDoc = requiresFreelanceDocument ? !!form.freelanceDocNumber.trim() : true;
     const hasCrFields = isCompanyOrEstablishment ? !!form.crNumber.trim() : true;
-    return hasBasicFields && hasConditionalFields && hasCrFields;
-  }, [form, isIndividualOrFreelancer, isCompanyOrEstablishment]);
+    return hasBasicFields && hasNationalId && hasFreelanceDoc && hasCrFields;
+  }, [form, requiresNationalId, requiresFreelanceDocument, isCompanyOrEstablishment]);
 
   const readinessItems = useMemo(() => {
+    const businessProfileDone = Boolean(
+      form.businessType
+      && form.legalName.trim()
+      && form.city.trim()
+      && form.address.trim()
+      && (!requiresNationalId || hasProfileNationalId(form))
+      && (!requiresFreelanceDocument || form.freelanceDocNumber.trim())
+      && (!isCompanyOrEstablishment || form.crNumber.trim()),
+    );
     const items = [
-      { key: 'businessProfile', labelKey: 'compliance.readinessChecklist.businessProfile', done: !!(form.businessType && form.legalName.trim() && form.city.trim() && form.address.trim()) },
+      { key: 'businessProfile', labelKey: 'compliance.readinessChecklist.businessProfile', done: businessProfileDone },
       { key: 'documents', labelKey: 'compliance.readinessChecklist.documents', done: documents.length > 0 },
-      { key: 'bankAccount', labelKey: 'compliance.readinessChecklist.bankAccount', done: !!(bankAccount?.iban || (bankForm.iban && validateSaudiIban(bankForm.iban))) },
+      { key: 'bankAccount', labelKey: 'compliance.readinessChecklist.bankAccount', done: isBankAccountReady(bankAccount, bankForm.iban) },
       { key: 'vatNumber', labelKey: 'compliance.readinessChecklist.vatNumber', done: !!form.vatNumber.trim() },
       { key: 'submitForReview', labelKey: 'compliance.readinessChecklist.submitForReview', done: status?.status === 'submitted' || status?.status === 'under_review' || status?.status === 'approved' },
     ];
     return items;
-  }, [form, documents, bankAccount, bankForm.iban, status]);
+  }, [form, requiresNationalId, requiresFreelanceDocument, isCompanyOrEstablishment, documents, bankAccount, bankForm.iban, status]);
 
   const readinessCompleted = readinessItems.filter(i => i.done).length;
   const readinessTotal = readinessItems.length;
@@ -239,19 +204,7 @@ export default function CompliancePage() {
     }
     setSaving(true);
     try {
-      const data: Record<string, string> = {
-        businessType: form.businessType,
-        legalName: form.legalName,
-        city: form.city,
-        address: form.address,
-      };
-      if (form.commercialName) data.commercialName = form.commercialName;
-      if (form.nationalId) data.nationalId = form.nationalId;
-      if (form.freelanceDocNumber) data.freelanceDocNumber = form.freelanceDocNumber;
-      if (form.crNumber) data.crNumber = form.crNumber;
-      if (form.vatNumber) data.vatNumber = form.vatNumber;
-
-      await complianceApi.updateProfile(storeId, data);
+      await complianceApi.updateProfile(storeId, toProfileUpdatePayload(form));
       loadData();
       toast.success(t('compliance.businessProfile.saved'));
     } catch (err) {
@@ -356,6 +309,21 @@ export default function CompliancePage() {
       case 'rejected': return 'bg-red-100 text-red-700 border-red-200';
       case 'uploaded': return 'bg-primary-100 text-primary-700 border-primary-200';
       default: return 'bg-neutral-100 text-neutral-500 border-neutral-200';
+    }
+  };
+
+  const bankStatusLabel = (s?: string | null) => {
+    switch (s) {
+      case 'verified':
+      case 'approved':
+        return t('compliance.bankAccount.statusVerified', 'موثق');
+      case 'rejected':
+        return t('compliance.bankAccount.statusRejected', 'مرفوض');
+      case 'submitted':
+      case 'under_review':
+        return t('compliance.bankAccount.statusSubmitted', 'قيد المراجعة');
+      default:
+        return t('compliance.bankAccount.statusPending', 'بانتظار المراجعة');
     }
   };
 
@@ -591,7 +559,10 @@ export default function CompliancePage() {
             {isIndividualOrFreelancer && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                <Label className="text-sm text-neutral-500">{t('compliance.businessProfile.nationalId')} <span className="text-red-500">*</span></Label>
+                <Label className="text-sm text-neutral-500">
+                  {t('compliance.businessProfile.nationalId')}
+                  {requiresNationalId && <span className="text-red-500"> *</span>}
+                </Label>
                 <Input
                   value={form.nationalId}
                   onChange={e => updateForm('nationalId', e.target.value)}
@@ -600,10 +571,21 @@ export default function CompliancePage() {
                   className={`text-end h-9 text-sm ${errors.nationalId ? 'border-red-300' : ''}`}
                 />
                 <p className="text-xs text-neutral-400">{t('compliance.businessProfile.nationalIdHelper')}</p>
+                  {form.hasNationalIdOnFile && !form.nationalId.trim() && (
+                    <p className="text-xs text-green-600">
+                      {t('compliance.businessProfile.nationalIdOnFile', {
+                        defaultValue: `رقم الهوية محفوظ بأمان وينتهي بـ ${form.nationalIdLast4 || '****'}`,
+                        last4: form.nationalIdLast4 || '****',
+                      })}
+                    </p>
+                  )}
                   {errors.nationalId && <p className="text-xs text-red-500">{errors.nationalId}</p>}
                 </div>
                 <div className="space-y-1">
-                <Label className="text-sm text-neutral-500">{t('compliance.businessProfile.freelanceDocNumber')}</Label>
+                <Label className="text-sm text-neutral-500">
+                  {t('compliance.businessProfile.freelanceDocNumber')}
+                  {requiresFreelanceDocument && <span className="text-red-500"> *</span>}
+                </Label>
                 <Input
                   value={form.freelanceDocNumber}
                   onChange={e => updateForm('freelanceDocNumber', e.target.value)}
@@ -612,6 +594,7 @@ export default function CompliancePage() {
                   className="text-end h-9 text-sm"
                 />
                 <p className="text-xs text-neutral-400">{t('compliance.businessProfile.freelanceDocNumberHelper')}</p>
+                  {errors.freelanceDocNumber && <p className="text-xs text-red-500">{errors.freelanceDocNumber}</p>}
                 </div>
               </div>
             )}
@@ -797,11 +780,19 @@ export default function CompliancePage() {
                 className={`text-end h-9 text-sm ${errors.iban ? 'border-red-300' : ''}`}
               />
               <p className="text-xs text-neutral-400">{t('compliance.bankAccount.ibanHelper')}</p>
+              {bankAccount?.ibanLast4 && (
+                <p className="text-xs text-green-600">
+                  {t('compliance.bankAccount.ibanOnFile', {
+                    defaultValue: `الحساب الحالي محفوظ بصيغة آمنة وينتهي بـ ${bankAccount.ibanLast4}. أدخل IBAN جديد فقط عند التحديث.`,
+                    last4: bankAccount.ibanLast4,
+                  })}
+                </p>
+              )}
               {errors.iban && <p className="text-xs text-red-500">{errors.iban}</p>}
             </div>
           </div>
 
-          {bankAccount?.iban && (
+          {bankAccount?.ibanLast4 && (
             <div className="mt-4 p-3 bg-neutral-50 rounded-2xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -809,24 +800,13 @@ export default function CompliancePage() {
                   <div>
                     <p className="text-sm font-medium text-neutral-900">{bankAccount.bankName}</p>
                     <p className="text-xs text-neutral-400 font-mono" dir="ltr">
-                      {/* Full IBAN only when the role may reveal it; others always see masked. */}
-                      <PermissionGate permission="compliance:write" fallback={<>{maskIban(bankAccount.iban)}</>}>
-                        {showFullIban ? bankAccount.iban : maskIban(bankAccount.iban)}
-                      </PermissionGate>
+                      {formatMaskedIban(bankAccount.ibanLast4)}
+                    </p>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      {bankStatusLabel(bankAccount.status)}
                     </p>
                   </div>
                 </div>
-                <PermissionGate permission="compliance:write" fallback={null}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowFullIban(!showFullIban)}
-                    className="text-neutral-400"
-                    aria-label={showFullIban ? t('compliance.hideIban', 'إخفاء رقم الآيبان') : t('compliance.showIban', 'إظهار رقم الآيبان')}
-                  >
-                    {showFullIban ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </PermissionGate>
               </div>
             </div>
           )}

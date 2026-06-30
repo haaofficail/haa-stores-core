@@ -48,7 +48,7 @@ describe('Admin dashboard permission reflection', () => {
       '/plans': 'plans.read',
       '/settings': 'platform.settings.read',
       '/compliance': 'tenants.read',
-      '/admin-users': 'users.read',
+      '/users': 'users.read',
       '/landing-inbox': 'landing_contacts.read',
     };
 
@@ -83,11 +83,11 @@ describe('Admin dashboard permission reflection', () => {
       '/payments|المدفوعات|BarChart2|payments.read',
       '/marketplace|سوق هاء|ShoppingBag|marketplace.read',
       '/payments/settlements|التسويات|Landmark|wallet.payout.view_all',
-      '/admin-users|المستخدمون|UserCog|users.read',
+      '/users|المستخدمون|UserCog|users.read',
       '/audit|سجل التدقيق|ScrollText|audit.read',
       '/operations/webhooks|عمليات Webhooks|FileText|webhooks.read',
       '/plans|الباقات|Package|plans.read',
-      '/compliance|الامتثال|CheckSquare|tenants.read',
+      '/compliance|توثيق المتاجر|CheckSquare|tenants.read',
       '/landing-inbox|صندوق الوارد|Inbox|landing_contacts.read',
       '/settings|الإعدادات|Settings|platform.settings.read',
     ];
@@ -95,6 +95,8 @@ describe('Admin dashboard permission reflection', () => {
     for (const entry of entries) {
       expect(app).toContain(entry);
     }
+    expect(app).not.toContain('/admin-users|المستخدمون|UserCog|users.read');
+    expect(app).toContain('<Route path="/admin-users" element={<Navigate to="/users" replace />} />');
   });
 
   it('keeps shell branding fetch behind the same settings read permission as the settings page', () => {

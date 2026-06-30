@@ -86,6 +86,28 @@ describe('admin login mints role-scoped permissions', () => {
     expect(perms).toEqual(['admin:*']);
   });
 
+  it('does not lock out local admins when admin_role column is not applied yet', async () => {
+    const password = 'correct-horse-battery';
+    const user = {
+      id: 44,
+      name: 'Legacy Local Admin',
+      email: 'legacy-admin@haa.test',
+      isAdmin: true,
+      isActive: true,
+      passwordHash: await hashPassword(password),
+    };
+    const missingAdminRole = Object.assign(new Error('column "admin_role" does not exist'), {
+      code: '42703',
+    });
+    const svc = new AdminAuthService(fakeDbSelectSequence([[user], [], missingAdminRole]), noopAudit);
+    const result = await svc.login({ email: user.email, password });
+    if (!('token' in result)) throw new Error('expected successful login');
+
+    const payload = decodeJwtPayload(result.token);
+    expect(payload.permissions).toEqual(['admin:*']);
+    expect(payload.twoFactorEnabled).toBe(false);
+  });
+
   it('does not lock out admins when TOTP migration columns are not applied yet', async () => {
     const password = 'correct-horse-battery';
     const user = {

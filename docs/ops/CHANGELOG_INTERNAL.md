@@ -1,14 +1,80 @@
 # Internal Changelog
 
-## 2026-07-01 — Main Change-password Tenant Context Typecheck Fix (TASK-0141)
+## 2026-07-01 — Main Change-password Tenant Context Typecheck Fix Merged (TASK-0141, PR #346)
 
+- Merged PR #346 into `main` at `f5af0cbc86681f5d1edbb703e03638b02a7180e5`.
 - Fixed the current `origin/main` TypeScript/preflight blocker in `apps/api/src/routes/auth.ts`.
 - Kept `tenantId` and `storeId` as server-side JWT context passed to `AuthFlowService.changePassword()` for audit logging.
 - Did not add `tenantId` or `storeId` to the public `/auth/change-password` request schema.
-- Avoided mixing TASK-0134..0140 stack changes into this independent main blocker branch.
-- Extended `tests/merchant-account-security.test.ts` to guard that `changePasswordSchema` remains limited to password fields.
-- Verification passed: `pnpm ops:monitor`, `pnpm --filter @haa/api typecheck`, focused auth/account-security suite 4 files / 34 tests, `pnpm typecheck`, `pnpm preflight`, `pnpm --filter @haa/api build`, `pnpm check:skills`, and `git diff --check`.
-- Safety boundary unchanged: no push, no deploy, no `db:migrate`, no production config, no secrets, no runtime files kept, and no live provider calls.
+- Added a guard in `tests/merchant-account-security.test.ts` that `changePasswordSchema` remains limited to password fields.
+- Post-merge verification passed: GitHub CI run `28485302991`, staging deploy run `28485302982`, staging smoke 5/5, local `pnpm typecheck`, and local `pnpm preflight`.
+- Safety boundary unchanged: staging deploy only from the merge workflow, production deploy skipped, no manual `db:migrate`, no production config, no secrets, and no stack branch push.
+
+## 2026-06-30 — Admin Dashboard Deep QA Route/Action Hardening (TASK-0138)
+
+- Changed admin user-management UI navigation from `/admin-users` to `/users`, keeping `/admin-users` as a React redirect alias only.
+- Fixed the Stores create/edit workflow so the form and API contract use canonical `slug`, merchant selection, required store email, and optional phone; `domain` remains accepted only as an old compatibility alias.
+- Added explicit admin API column selections for tenants, stores, settings, and user list routes so these pages do not fail on migration-optional columns or return unnecessary sensitive user fields.
+- Added `tests/admin-action-routing-integrity.test.ts` to guard route naming, store slug contract, compatibility alias, and no broad selects in the high-traffic admin list/settings/user routes.
+- Re-ran focused admin verification/RBAC/source tests, API typecheck, admin-dashboard typecheck, admin-dashboard build, and browser route smoke across 21 primary admin routes.
+- Added `docs/ops/ADMIN_DASHBOARD_DEEP_QA_TASK_0138.md` with interaction inventory, route smoke evidence, product-goal verification, deferred work, and readiness recommendation.
+- Safety boundary unchanged: no deploy, no production action, no `db:migrate`, no DB mutation, no secrets printed, and no live payment/shipping/provider calls.
+
+## 2026-06-30 — Admin Merchant Dossier Route (TASK-0137)
+
+- Split admin Merchant Verification into an index plus a dedicated merchant file route: `/compliance/:recordId`.
+- Updated admin routing so child merchant-file URLs remain under the active "توثيق المتاجر" sidebar item.
+- Changed store names and review actions in `/compliance` to open the merchant file instead of implying all details belong under the global list.
+- Added a merchant-file header with breadcrumbs, store/owner/entity identifiers, status badges, store link, and operational shortcuts.
+- Added an approval-stage board for store profile, phone, email, registry/freelance document, bank, payment, shipping, policies, risk, and final publish decision.
+- Added merchant-file tabs for approval, profile data, operational activation, sales/payouts/settlements, review/audit history, and internal notes.
+- Scoped finance surfaces to the selected store where available: payments/orders, payout/extract requests, and settlement batches.
+- Kept bank data masked with `ibanLast4`; no full IBAN display was added.
+- Kept Platform Launch Gates separate; PCI/Pentest/ASV/DR do not appear as merchant requirements.
+- Added regression coverage that guards the separate merchant-file route and prevents inline selected-detail behavior from returning to the merchant list.
+- Verification passed: `pnpm --filter @haa/admin-dashboard typecheck`, focused compliance/platform/RBAC/auth suite (6 files / 56 tests), and in-app browser checks on `/compliance` plus `/compliance/store-1`.
+- Safety boundary unchanged: no deploy, no production action, no `db:migrate`, no DB mutation, no secrets printed, and no live payment/shipping/provider calls.
+
+## 2026-06-30 — Admin Merchant Verification Decision Workflow (TASK-0136)
+
+- Hardened admin `/compliance` beyond the TASK-0134 concept split so it behaves as an operational Merchant Verification decision station.
+- Added actionable publish-readiness checklist metadata: each blocked/warning item can now expose an admin action destination plus a merchant-facing remediation instruction.
+- Updated filtered metrics so summary cards describe the currently displayed merchant set instead of contradicting active filters/search.
+- Prevented stale detail panels when filters/search return no rows; the page now shows a no-selected-store empty state.
+- Added a clear verification decision workflow: approve only when readiness allows it, request changes through `needs_more_info`, or reject.
+- Required and persisted review reasons for both rejected and requested-change KYC decisions.
+- Added a bank-account review action panel that uses masked bank summaries (`ibanLast4`) and existing review permissions; no full IBAN display was added.
+- Updated `KycReview.tsx` and the admin API client types to share the typed KYC review status vocabulary.
+- Extended `tests/admin-merchant-verification.test.ts` to guard actionable checklist items, no stale selected store details, decision workflow wiring, bank review wiring, API validation/persistence, full-IBAN non-exposure, and no platform-only compliance vocabulary in merchant verification.
+- Verification passed: `pnpm vitest run tests/admin-merchant-verification.test.ts` (1 file / 13 tests), focused compliance/platform/RBAC/auth suite (6 files / 55 tests), `pnpm --filter @haa/admin-dashboard typecheck`, `pnpm --filter @haa/api typecheck`, `pnpm --filter @haa/admin-dashboard build`, `pnpm check:skills` 43/43, and browser verification on `http://localhost:5175/compliance`.
+- Safety boundary unchanged: no deploy, no production action, no `db:migrate`, no DB mutation, no secrets printed, and no live payment/shipping/provider calls.
+
+## 2026-06-30 — Local Admin Login Schema Readiness (TASK-0135)
+
+- Fixed local admin login when the development database has not applied the optional `users.admin_role` column.
+- Kept `AdminAuthService.login()` on migration-stable base fields for credential lookup.
+- Added a separate admin-role lookup after password/TOTP checks so migrated environments still mint role-scoped admin permissions.
+- Treated missing `admin_role` as schema readiness and fell back to legacy default admin permissions instead of returning 500.
+- Added a focused regression test for the missing-column login path in `tests/admin-accountant-login.test.ts`.
+- Rebuilt `@haa/auth-core` so the local API dev server consumed the package `dist` export.
+- Verified local login through `http://localhost:5175/admin/login` returned 200 with token redacted and the in-app browser opened `/compliance` with "توثيق المتاجر".
+- Safety boundary unchanged: no deploy, no production action, no `db:migrate`, no DB mutation, no secrets printed, and no live payment/shipping/provider calls.
+
+## 2026-06-30 — Merchant Compliance Readiness and Admin Merchant Verification (TASK-0134)
+
+- Added merchant compliance model helpers for canonical KYC mapping, safe national-ID presence metadata, safe bank summary normalization, and IBAN validation.
+- Updated merchant compliance profile save to send `commercialRegistrationNumber`, `nationalIdOrIqama`, and `freelanceDocumentNumber` instead of legacy UI field names.
+- Kept API backward compatibility for `crNumber`, `nationalId`, and `freelanceDocNumber` while normalizing to canonical KYC fields.
+- Kept full national ID out of `/compliance/profile` responses; the response now includes `hasNationalIdOrIqama` and `nationalIdOrIqamaLast4`.
+- Updated bank readiness/display to use masked `ibanLast4 + status` summaries and removed the full-IBAN reveal path from the merchant compliance page.
+- Rebuilt admin `/compliance` as "توثيق المتاجر": a merchant verification table plus detail panel for store data, owner data, phone/email verification, commercial registration or freelance document, bank summary, uploaded documents, payment/shipping readiness, policies, publish readiness checklist, review decisions, and internal notes.
+- Added `apps/admin-dashboard/src/lib/merchantVerification.ts` with pure functions for bank verification status, phone/email checks, registry/freelance document status, payout/risk status, and publish readiness (`allowed`, `blockingReasons`, `warnings`, `checklist`).
+- Permission behavior now uses existing keys: read data from tenant/store/KYC/bank endpoints when the admin has the matching permissions, and only enables approve/reject actions for admins with `kyc.review`.
+- Renamed the admin sidebar route label from "الامتثال" to "توثيق المتاجر".
+- Kept Platform Launch Gate logic separated in `platformComplianceGates.ts` and covered by its own tests, but removed it from the merchant verification route.
+- Added `tests/merchant-compliance-contract.test.ts`, `tests/admin-platform-compliance-gates.test.ts`, and `tests/admin-merchant-verification.test.ts`; updated the G1-G10 prep and admin permission reflection tests.
+- Verification passed: focused TASK-0134 tests 5 files / 47 tests, `pnpm --filter @haa/admin-dashboard typecheck`, `pnpm --filter @haa/admin-dashboard build`, `pnpm check:skills` 43/43, clean `git diff --check`, and final `pnpm preflight` including workspace TypeScript.
+- Safety boundary unchanged: no deploy, no production action, no `db:migrate`, no secrets, and no live payment/shipping/provider calls.
 
 ## 2026-06-30 — Merchant WhatsApp Campaign Workflow (TASK-0133)
 

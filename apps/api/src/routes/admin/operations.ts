@@ -36,6 +36,26 @@ type PlatformSettingsInput = {
   faviconUrl?: string | null;
 };
 
+const platformSettingsTenantSelect = {
+  id: s.tenants.id,
+  name: s.tenants.name,
+  slug: s.tenants.slug,
+  logoUrl: s.tenants.logoUrl,
+  faviconUrl: s.tenants.faviconUrl,
+  email: s.tenants.email,
+  phone: s.tenants.phone,
+};
+
+const adminUserListSelect = {
+  id: s.users.id,
+  name: s.users.name,
+  email: s.users.email,
+  phone: s.users.phone,
+  isAdmin: s.users.isAdmin,
+  isActive: s.users.isActive,
+  createdAt: s.users.createdAt,
+};
+
 // ── /audit ────────────────────────────────────────────────────────────────
 export async function auditRoute(c: AdminRouteContext) {
   const tenantId = c.req.query('tenantId');
@@ -141,7 +161,7 @@ export async function uploadRoute(c: AdminRouteContext) {
 export const settingsRoutes = {
   get: async (c: AdminRouteContext) => {
     const db = createDbClient();
-    const [tenant] = await db.select().from(s.tenants).limit(1);
+    const [tenant] = await db.select(platformSettingsTenantSelect).from(s.tenants).limit(1);
     if (!tenant) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'No platform found' } }, 404);
     return c.json({
       success: true,
@@ -159,7 +179,7 @@ export const settingsRoutes = {
   update: async (c: JsonRouteContext<PlatformSettingsInput>) => {
     const body = c.req.valid('json') as PlatformSettingsInput;
     const db = createDbClient();
-    const [tenant] = await db.select().from(s.tenants).limit(1);
+    const [tenant] = await db.select(platformSettingsTenantSelect).from(s.tenants).limit(1);
     if (!tenant) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'No platform found' } }, 404);
 
     const [updated] = await db.update(s.tenants).set({
@@ -167,7 +187,7 @@ export const settingsRoutes = {
       logoUrl: body.logoUrl ?? null,
       faviconUrl: body.faviconUrl ?? null,
       updatedAt: new Date(),
-    }).where(eq(s.tenants.id, tenant.id)).returning();
+    }).where(eq(s.tenants.id, tenant.id)).returning(platformSettingsTenantSelect);
 
     return c.json({
       success: true,
@@ -184,12 +204,9 @@ export const settingsRoutes = {
 // ── /users ────────────────────────────────────────────────────────────────
 export async function usersRoute(c: AdminRouteContext) {
   const db = createDbClient();
-  const users = await db.select().from(s.users).orderBy(desc(s.users.createdAt)).limit(100);
+  const users = await db.select(adminUserListSelect).from(s.users).orderBy(desc(s.users.createdAt)).limit(100);
   return c.json({
     success: true,
-    data: users.map(u => {
-      const { passwordHash: _passwordHash, ...safe } = u;
-      return safe;
-    }),
+    data: users,
   });
 }

@@ -110,11 +110,11 @@ const navGroups: NavGroup[] = [
   ]),
   navGroup('نظام', [
     '/security|أمان الحساب|ShieldCheck',
-    '/admin-users|المستخدمون|UserCog|users.read',
+    '/users|المستخدمون|UserCog|users.read',
     '/audit|سجل التدقيق|ScrollText|audit.read',
     '/operations/webhooks|عمليات Webhooks|FileText|webhooks.read',
     '/plans|الباقات|Package|plans.read',
-    '/compliance|الامتثال|CheckSquare|tenants.read',
+    '/compliance|توثيق المتاجر|CheckSquare|tenants.read',
     '/landing-inbox|صندوق الوارد|Inbox|landing_contacts.read',
     '/settings|الإعدادات|Settings|platform.settings.read',
   ]),
@@ -152,7 +152,8 @@ function AdminPermissionRoute({
 
 function SidebarLink({ item, onClick }: { item: NavItem; onClick?: () => void }) {
   const location = useLocation();
-  const isActive = location.pathname === item.path;
+  const isActive = location.pathname === item.path
+    || (item.path !== '/' && location.pathname.startsWith(`${item.path}/`));
   return (
     <Link
       to={item.path}
@@ -351,8 +352,10 @@ export default function App() {
                 <Route path="/security" element={<Security />} />
                 <Route path="/store-billing" element={<AdminPermissionRoute permission="billing.platform_fee.read"><StoreBillingSettings /></AdminPermissionRoute>} />
                 <Route path="/compliance" element={<AdminPermissionRoute permission="tenants.read"><Compliance /></AdminPermissionRoute>} />
+                <Route path="/compliance/:recordId" element={<AdminPermissionRoute permission="tenants.read"><Compliance /></AdminPermissionRoute>} />
                 <Route path="/landing-inbox" element={<AdminPermissionRoute permission="landing_contacts.read"><LandingInbox /></AdminPermissionRoute>} />
-                <Route path="/admin-users" element={<AdminPermissionRoute permission="users.read"><AdminUsers /></AdminPermissionRoute>} />
+                <Route path="/users" element={<AdminPermissionRoute permission="users.read"><AdminUsers /></AdminPermissionRoute>} />
+                <Route path="/admin-users" element={<Navigate to="/users" replace />} />
                 <Route path="/bank-accounts" element={<AdminPermissionRoute permission="kyc.read"><BankAccounts /></AdminPermissionRoute>} />
                 <Route path="/settlement-readiness" element={<AdminPermissionRoute permission="wallet.payout.view_all"><SettlementReadiness /></AdminPermissionRoute>} />
                 <Route path="/store-payment-settings" element={<AdminPermissionRoute permission="stores.read"><StorePaymentSettings /></AdminPermissionRoute>} />

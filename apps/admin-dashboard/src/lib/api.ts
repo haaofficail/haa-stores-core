@@ -204,9 +204,16 @@ export interface AdminTenant {
 export interface AdminStore {
   id: number;
   name: string;
-  domain: string;
+  slug: string;
+  domain?: string | null;
   tenantId: number;
+  tenantName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  status?: string;
   isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AdminKycProfile {
@@ -214,6 +221,8 @@ export interface AdminKycProfile {
   storeId: number;
   status: string;
 }
+
+export type AdminKycReviewStatus = 'approved' | 'rejected' | 'needs_more_info';
 
 // Shape returned by /admin/stores/:storeId/billing-settings (matches
 // the consumer's local RawSettings in StoreBillingSettings.tsx).
@@ -567,7 +576,8 @@ export const adminApi = {
   updateStoreStatus: (id: number, isActive: boolean, statusReason: string) =>
     request<Record<string, unknown>>('PATCH', `/admin/stores/${id}/status`, { isActive, statusReason }),
   getKycProfiles: () => request<AdminKycProfile[]>('GET', '/admin/kyc'),
-  reviewKyc: (id: number, status: string, rejectionReason?: string) => request<AdminKycProfile>('PATCH', `/admin/kyc/${id}/review`, { status, rejectionReason }),
+  reviewKyc: (id: number, status: AdminKycReviewStatus, rejectionReason?: string) =>
+    request<AdminKycProfile>('PATCH', `/admin/kyc/${id}/review`, { status, rejectionReason }),
   getBankAccounts: () => request<Record<string, unknown>[]>('GET', '/admin/kyc/bank-accounts'),
   reviewBankAccount: (id: number, status: 'verified' | 'rejected', reviewReason: string) =>
     request<Record<string, unknown>>('PATCH', `/admin/kyc/bank-accounts/${id}/review`, { status, reviewReason }),
