@@ -449,6 +449,8 @@ authRouter.post(
     try {
       const result = await service.changePassword({
         userId: auth.userId,
+        tenantId: auth.tenantId,
+        storeId: auth.activeStoreId,
         currentPassword: body.currentPassword,
         newPassword: body.newPassword,
         ipAddress,

@@ -37,6 +37,10 @@ describe('merchant account security — backend contract', () => {
     expect(AUTH_FLOW).toMatch(/passwordHash,\s*[\s\S]{0,160}tokenVersion:\s*sql`\$\{s\.users\.tokenVersion\} \+ 1`/);
     expect(AUTH_FLOW).toMatch(/action:\s*['"]password_changed['"]/);
     expect(AUTH_FLOW).toMatch(/action:\s*['"]password_change_failed['"]/);
+    expect(AUTH_FLOW).toMatch(/tenantId:\s*input\.tenantId/);
+    expect(AUTH_FLOW).toMatch(/storeId:\s*input\.storeId/);
+    expect(AUTH_ROUTE).toMatch(/tenantId:\s*auth\.tenantId/);
+    expect(AUTH_ROUTE).toMatch(/storeId:\s*auth\.activeStoreId/);
     expect(AUTH_FLOW).not.toMatch(/newValue:\s*\{[\s\S]{0,120}password/);
   });
 

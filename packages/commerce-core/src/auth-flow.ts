@@ -210,6 +210,8 @@ export interface MeUser {
 
 export interface ChangePasswordInput {
   userId: number;
+  tenantId?: number | null;
+  storeId?: number | null;
   currentPassword: string;
   newPassword: string;
   ipAddress?: string | null;
@@ -781,6 +783,8 @@ export class AuthFlowService {
     const validCurrentPassword = await verifyPassword(input.currentPassword, user.passwordHash);
     if (!validCurrentPassword) {
       await audit.record({
+        tenantId: input.tenantId,
+        storeId: input.storeId,
         actorUserId: user.id,
         action: 'password_change_failed',
         entityType: 'user',
@@ -805,6 +809,8 @@ export class AuthFlowService {
         .where(eq(s.users.id, user.id));
 
       await new AuditLogService(tx).record({
+        tenantId: input.tenantId,
+        storeId: input.storeId,
         actorUserId: user.id,
         action: 'password_changed',
         entityType: 'user',
