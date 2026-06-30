@@ -135,7 +135,15 @@
   Preflight PASSED — project is healthy
   ```
 
-- **For CI:** PR #341 checks and main deploy verification are pending.
+- **For CI:** PR #341 project-owned checks passed, review feedback was addressed, and PR #341 merged into `main` at `719b234d9853182f45d7d65d012c1ae3e2fcd68d`. Post-merge `main CI` run `28413299676` passed, including E2E.
+- **For deploy/staging:** `main Deploy` run `28413299656` first failed only in staging SSH warmup before deploy; rerunning the failed job succeeded, with `Deploy to Staging` job `84327350186` passing the official staging smoke gate. `Deploy to Production` was skipped.
+- **Public staging smoke after deploy:**
+
+  ```text
+  https://admin.staging.haastores.com/        HTTP 200
+  https://staging.haastores.com/health        HTTP 200 (api ok, db connected, redis connected, queue ok)
+  https://staging.haastores.com/              HTTP 200
+  ```
 
 ## Deviations
 
@@ -145,7 +153,7 @@
 
 ## Completion
 
-- **Did the task follow the selected skills end-to-end?** pending final publish
+- **Did the task follow the selected skills end-to-end?** yes
 - **Is further owner approval required before merge/deploy?** no for staging PR/merge; production remains owner-gated and untouched
 - **Owner approvals received (cite source):** User directed continued admin improvements and publication in the current thread, including "كمل" and prior "انت تولى القيادة".
 - **Safety confirmations (re-affirmed at done):**
@@ -156,7 +164,7 @@
 
 ## Next step
 
-- Complete local build/skills/preflight checks, push PR, merge after project-owned checks pass, then verify staging.
+- No remaining TASK-0131 work. Continue with the next focused admin gap only as a separate task/branch.
 
 ---
 
