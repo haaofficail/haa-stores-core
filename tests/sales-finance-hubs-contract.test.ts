@@ -2,7 +2,7 @@
 //
 // Continues the pattern from MarketingHub (PR #237): each section
 // gets a single landing page with KPIs + tool cards. Sales = orders/
-// customers/abandoned/shipping/channels. Finance = wallet/settlements/
+// customers/segments/abandoned/shipping/channels. Finance = wallet/settlements/
 // subscription/compliance.
 
 import { describe, it, expect } from 'vitest';
@@ -50,15 +50,23 @@ describe('SalesHub', () => {
     expect(SALES).toMatch(/marketplaceApi\.hub/);
   });
 
-  it('renders 4 metric tiles + 6 tool cards', () => {
+  it('renders 4 metric tiles + 7 tool cards', () => {
     const tiles = SALES.match(/<MetricTile/g) ?? [];
     expect(tiles.length).toBe(4);
     const cards = SALES.match(/<HubCard/g) ?? [];
-    expect(cards.length).toBe(6);
+    expect(cards.length).toBe(7);
   });
 
   it('cross-links to every sales-section page', () => {
-    for (const to of ['/sales/orders', '/sales/customers', '/sales/abandoned-carts', '/sales/shipping', '/sales/channels', '/catalog/products']) {
+    for (const to of [
+      '/sales/orders',
+      '/sales/customers',
+      '/sales/customers/segments',
+      '/sales/abandoned-carts',
+      '/sales/shipping',
+      '/sales/channels',
+      '/catalog/products',
+    ]) {
       expect(SALES, `must link to ${to}`).toMatch(new RegExp(`to=['"]${to.replace(/\//g, '\\/')}['"]`));
     }
   });
