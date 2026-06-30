@@ -208,6 +208,21 @@ export interface MeUser {
   phone: string | null;
 }
 
+export interface ChangePasswordInput {
+  userId: number;
+  currentPassword: string;
+  newPassword: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
+
+export type ChangePasswordResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason: 'USER_NOT_FOUND' | 'INVALID_CURRENT_PASSWORD' | 'WEAK_PASSWORD';
+    };
+
 export class AuthFlowService {
   constructor(private db: DbClient = createDbClient()) {}
 
@@ -734,6 +749,73 @@ export class AuthFlowService {
       .limit(1);
     if (!user) return null;
     return user;
+  }
+
+  /**
+   * Rotate the signed-in merchant user's password after re-checking the
+   * current password. Bumping tokenVersion revokes every existing JWT,
+   * including the caller's current browser session; the UI must clear local
+   * storage and ask the user to sign in again.
+   */
+  async changePassword(
+    input: ChangePasswordInput,
+    audit: AuditLogService = new AuditLogService(this.db),
+  ): Promise<ChangePasswordResult> {
+    if (input.newPassword.length < 8 || input.newPassword.length > 200) {
+      return { ok: false, reason: 'WEAK_PASSWORD' };
+    }
+
+    const [user] = await this.db
+      .select({
+        id: s.users.id,
+        passwordHash: s.users.passwordHash,
+      })
+      .from(s.users)
+      .where(eq(s.users.id, input.userId))
+      .limit(1);
+
+    if (!user) {
+      return { ok: false, reason: 'USER_NOT_FOUND' };
+    }
+
+    const validCurrentPassword = await verifyPassword(input.currentPassword, user.passwordHash);
+    if (!validCurrentPassword) {
+      await audit.record({
+        actorUserId: user.id,
+        action: 'password_change_failed',
+        entityType: 'user',
+        entityId: user.id,
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      });
+      return { ok: false, reason: 'INVALID_CURRENT_PASSWORD' };
+    }
+
+    const now = new Date();
+    const passwordHash = await hashPassword(input.newPassword);
+
+    await this.db.transaction(async (tx) => {
+      await tx
+        .update(s.users)
+        .set({
+          passwordHash,
+          tokenVersion: sql`${s.users.tokenVersion} + 1`,
+          updatedAt: now,
+        })
+        .where(eq(s.users.id, user.id));
+
+      await new AuditLogService(tx).record({
+        actorUserId: user.id,
+        action: 'password_changed',
+        entityType: 'user',
+        entityId: user.id,
+        newValue: { tokenVersionRotated: true },
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      });
+    });
+
+    return { ok: true };
   }
 
   /**
@@ -1559,4 +1641,3 @@ export class AuthFlowService {
 
 /** Shared default instance for ad-hoc callers (most code uses DI). */
 export const authFlowService = new AuthFlowService();
-

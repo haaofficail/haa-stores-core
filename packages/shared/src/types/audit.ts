@@ -46,6 +46,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   admin_totp_enabled: 'تفعيل التحقق الثنائي للإدارة',
   admin_totp_disabled: 'تعطيل التحقق الثنائي للإدارة',
   admin_password_reset_requested: 'طلب إعادة تعيين كلمة مرور الإدارة',
+  password_changed: 'تغيير كلمة المرور',
+  password_change_failed: 'فشل تغيير كلمة المرور',
   store_created: 'إنشاء متجر',
   store_updated: 'تعديل المتجر',
   store_published: 'نشر المتجر',

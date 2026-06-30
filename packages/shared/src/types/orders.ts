@@ -166,6 +166,8 @@ export type AuditAction =
   | 'admin_totp_enabled'
   | 'admin_totp_disabled'
   | 'admin_password_reset_requested'
+  | 'password_changed'
+  | 'password_change_failed'
   | 'store_created'
   | 'store_updated'
   | 'store_published'

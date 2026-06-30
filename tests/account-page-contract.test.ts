@@ -36,15 +36,20 @@ describe('Account — page', () => {
     expect(src).toMatch(/account\.identity\.role/);
   });
 
-  it('exposes security stubs (password + 2FA) that hint "coming soon"', () => {
-    // The mutations are deliberately not implemented yet — the
-    // page is the canonical destination now; the buttons land
-    // here in their final position and a follow-up wires the
-    // actual endpoints without moving the UX again.
+  it('wires account-security actions instead of "coming soon" stubs', () => {
     const src = readFileSync(PAGE_PATH, 'utf-8');
-    expect(src).toMatch(/account\.security\.password/);
-    expect(src).toMatch(/account\.security\.twofa/);
-    expect(src).toMatch(/account\.comingSoon/);
+    expect(src).toMatch(/authApi\.changePassword/);
+    expect(src).toMatch(/authApi\.logoutAll/);
+    expect(src).toMatch(/account\.security\.password\.current/);
+    expect(src).toMatch(/account\.security\.password\.next/);
+    expect(src).toMatch(/account\.security\.password\.confirm/);
+    expect(src).not.toMatch(/account\.comingSoon/);
+  });
+
+  it('does not present merchant 2FA as available until an endpoint exists', () => {
+    const src = readFileSync(PAGE_PATH, 'utf-8');
+    expect(src).toMatch(/account\.security\.twofa\.unavailable/);
+    expect(src).toMatch(/غير متاح لحسابات التاجر بعد/);
   });
 
   it('cross-links to /settings so users know where store config lives', () => {

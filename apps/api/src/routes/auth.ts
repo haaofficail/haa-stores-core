@@ -252,6 +252,16 @@ const selectStoreSchema = z.object({
   storeId: z.number().int().positive(),
 });
 
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1).max(200),
+    newPassword: z.string().min(8, 'كلمة المرور الجديدة يجب ألا تقل عن 8 أحرف').max(200),
+  })
+  .refine((body) => body.currentPassword !== body.newPassword, {
+    path: ['newPassword'],
+    message: 'كلمة المرور الجديدة يجب أن تختلف عن الحالية',
+  });
+
 authRouter.post(
   '/select-store',
   rateLimiter({
@@ -412,6 +422,92 @@ authRouter.get('/me', requireAuth(), async (c) => {
       permissions: auth.permissions,
     },
   });
+});
+
+// POST /auth/change-password — signed-in merchant password rotation.
+// Requires the current password, stores only a fresh hash, and bumps
+// tokenVersion so every existing JWT is revoked after success.
+authRouter.post(
+  '/change-password',
+  requireAuth(),
+  rateLimiter({
+    windowMs: 15 * 60 * 1000,
+    maxRequests: 10,
+    message: 'تم تجاوز الحد المسموح من محاولات تغيير كلمة المرور. حاول لاحقاً.',
+  }),
+  zValidator('json', changePasswordSchema),
+  async (c) => {
+    const auth = getAuth(c)!;
+    const body = c.req.valid('json');
+    const ipAddress =
+      c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ??
+      c.req.header('x-real-ip') ??
+      null;
+    const userAgent = c.req.header('user-agent') ?? null;
+    const service = new AuthFlowService();
+
+    try {
+      const result = await service.changePassword({
+        userId: auth.userId,
+        currentPassword: body.currentPassword,
+        newPassword: body.newPassword,
+        ipAddress,
+        userAgent,
+      });
+
+      if (!result.ok) {
+        const messages: Record<typeof result.reason, string> = {
+          USER_NOT_FOUND: 'المستخدم غير موجود',
+          INVALID_CURRENT_PASSWORD: 'كلمة المرور الحالية غير صحيحة',
+          WEAK_PASSWORD: 'كلمة المرور الجديدة لا تستوفي المتطلبات',
+        };
+        const status = result.reason === 'USER_NOT_FOUND' ? 404 : 400;
+        return c.json(
+          {
+            success: false,
+            error: {
+              code: result.reason,
+              message: messages[result.reason],
+            },
+          },
+          status,
+        );
+      }
+
+      clearAuthCookie(c);
+      return c.json({
+        success: true,
+        data: { message: 'تم تغيير كلمة المرور. سجّل الدخول مرة أخرى.' },
+      });
+    } catch (err) {
+      console.error('Change password error:', err);
+      return c.json(
+        { success: false, error: { code: 'INTERNAL', message: 'تعذّر تغيير كلمة المرور' } },
+        500,
+      );
+    }
+  },
+);
+
+// POST /auth/logout-all — explicit account-security action. It reuses the
+// tokenVersion revocation primitive and clears the HttpOnly cookie.
+authRouter.post('/logout-all', requireAuth(), async (c) => {
+  const auth = getAuth(c)!;
+  const service = new AuthFlowService();
+  try {
+    await service.logout(auth.userId);
+    clearAuthCookie(c);
+    return c.json({
+      success: true,
+      data: { message: 'تم إنهاء جميع الجلسات النشطة.' },
+    });
+  } catch (err) {
+    console.error('Logout-all error:', err);
+    return c.json(
+      { success: false, error: { code: 'INTERNAL', message: 'تعذّر إنهاء الجلسات' } },
+      500,
+    );
+  }
 });
 
 // POST /auth/logout — clear the HttpOnly auth cookie

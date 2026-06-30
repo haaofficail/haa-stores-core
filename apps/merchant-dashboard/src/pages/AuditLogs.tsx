@@ -19,6 +19,7 @@ import {
 const AUDIT_ACTION_LABELS: Record<string, string> = {
   login: 'تسجيل دخول', failed_login: 'فشل تسجيل الدخول',
   admin_login: 'دخول الإدارة', admin_login_failed: 'فشل دخول الإدارة',
+  password_changed: 'تغيير كلمة المرور', password_change_failed: 'فشل تغيير كلمة المرور',
   store_created: 'إنشاء متجر', store_updated: 'تعديل المتجر',
   store_published: 'نشر المتجر', store_unpublished: 'إلغاء نشر المتجر',
   store_restricted: 'تقييد المتجر', store_suspended: 'إيقاف المتجر',
@@ -61,6 +62,8 @@ const ACTION_ICONS: Record<string, typeof Store> = {
 };
 
 const ACTION_COLORS: Record<string, string> = {
+  password_changed: 'bg-emerald-100 text-emerald-700',
+  password_change_failed: 'bg-red-100 text-red-700',
   store_published: 'bg-green-100 text-green-700',
   store_unpublished: 'bg-neutral-100 text-neutral-700',
   store_restricted: 'bg-orange-100 text-orange-700',
@@ -78,6 +81,7 @@ const ACTION_COLORS: Record<string, string> = {
 };
 
 const ALL_ACTIONS: AuditAction[] = [
+  'password_changed', 'password_change_failed',
   'store_published', 'store_unpublished', 'store_restricted', 'store_suspended',
   'compliance_check_failed', 'policy_updated', 'policy_published', 'policy_unpublished',
   'payment_settings_changed', 'shipping_settings_changed', 'return_settings_changed',
