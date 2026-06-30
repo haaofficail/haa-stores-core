@@ -11,7 +11,9 @@
 - Preserved the React Query saved-provider cache patching path so a save does not broad-refetch and wipe sibling unsaved edits.
 - Added `tests/admin-store-payment-settings-contract.test.ts` and reused `tests/admin-query-cache-review.test.ts` to guard the schema/page/client/cache contract.
 - Local verification passed: focused admin payment-settings tests 2 files / 5 tests, API typecheck, admin-dashboard typecheck, admin-dashboard build, `pnpm check:skills` 43/43, clean `git diff --check`, `pnpm ops:monitor` 0 failures/no recommended tasks or incidents, and `pnpm preflight`.
-- Safety boundary unchanged: no production deploy/action, no DB migration, no secrets, and no live payment/shipping-provider calls.
+- Published through PR #341: merged into `main` at `719b234d9853182f45d7d65d012c1ae3e2fcd68d`; post-merge `main CI` run `28413299676` passed, including E2E.
+- Staging evidence: `main Deploy` run `28413299656` initially failed only during SSH warmup before deploy; rerunning the failed job succeeded, `Deploy to Staging` job `84327350186` passed the official smoke gate, and public smoke returned 200 for `https://admin.staging.haastores.com/`, `https://staging.haastores.com/health`, and `https://staging.haastores.com/`.
+- Safety boundary unchanged: staging deploy only; `Deploy to Production` was skipped, no production deploy/action, no DB migration, no secrets, and no live payment/shipping-provider calls.
 
 ## 2026-06-30 — Admin Beta Direct-delete Hardening (TASK-0130)
 
