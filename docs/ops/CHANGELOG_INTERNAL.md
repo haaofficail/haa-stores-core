@@ -7,8 +7,10 @@
 - Kept tenant/store status changes intact through `AdminDialog`, explicit reason textareas, API-side reason validation, and audit payload coverage.
 - Extended deletion policy and dangerous-action regression tests to guard direct tenant/store delete from returning to the beta UI/API surface.
 - Aligned Agent OS issue register and regression checklist with DECISION-OS-014's "No hard delete anywhere" beta rule.
-- Verification so far: `pnpm ops:monitor` exited 0 with no failures/tasks/incidents, focused admin deletion/reason/dialog tests passed 3 files / 13 tests, API/admin typechecks passed, admin build passed, skills check passed 43/43, diff check was clean, and preflight passed. Staging publication remains pending in TASK-0130 until remote verification completes.
-- Safety boundary: no production deploy/action, no DB migration, no secrets, and no live payment/shipping-provider calls.
+- Published through PR #339: merged at `2026-06-29T23:56:16Z` with merge commit `013e95cf60418a94f42acbb6da5d146105c57f83`.
+- Verification passed: `pnpm ops:monitor` exited 0 with no failures/tasks/incidents, focused admin deletion/reason/dialog tests passed 3 files / 13 tests, API/admin typechecks passed, admin build passed, skills check passed 43/43, diff check was clean, preflight passed, PR #339 project-owned checks passed, `main CI` run `28410591313` succeeded, and `main Deploy` run `28410591317` succeeded.
+- Staging evidence: Quality Gates, all four image builds, `Deploy to Staging`, and the staging smoke gate passed; public checks returned 200 for `https://admin.staging.haastores.com` and `https://staging.haastores.com/health`.
+- Safety boundary: staging deploy only; `Deploy to Production` was skipped, no DB migration, no secrets, and no live payment/shipping-provider calls.
 
 ## 2026-06-30 — Admin TOTP Staging Runtime Activation (TASK-0129)
 
