@@ -68,7 +68,12 @@ function getStoreId(): string | null {
   return localStorage.getItem('active_store_id');
 }
 
-export { setToken, clearToken, getStoreId, getToken };
+function getAuthPersistenceMode(): AuthPersistenceMode | null {
+  const storedMode = localStorage.getItem(AUTH_PERSISTENCE_KEY);
+  return isPersistenceMode(storedMode) ? storedMode : null;
+}
+
+export { setToken, clearToken, getStoreId, getToken, getAuthPersistenceMode };
 
 // Methods that mutate server state. Every one of these MUST carry an
 // `Idempotency-Key` so that a double-click, a flaky network retry, or a
@@ -167,6 +172,16 @@ export const authApi = {
   me: () =>
     request<{ id: number; name: string; email: string; tenantId: number; activeStoreId: number; roles: string[]; permissions: string[] }>(
       '/auth/me',
+    ),
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    request<{ message: string }>(
+      '/auth/change-password',
+      { method: 'POST', body: JSON.stringify(data) },
+    ),
+  logoutAll: () =>
+    request<{ message: string }>(
+      '/auth/logout-all',
+      { method: 'POST' },
     ),
 };
 
