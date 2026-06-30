@@ -217,8 +217,13 @@ export function marketingRules(ctx: RuleContext): SmartAlert[] {
 
   // Best customer
   if (totalOrders >= 5 && customerSignals.length > 0) {
-    const best = customerSignals.reduce((a, b) =>
-      Number(a.totalOrders ?? 0) > Number(b.totalOrders ?? 0) ? a : b,
+    const best = customerSignals.reduce<CustomerSignal | null>(
+      (currentBest, customer) =>
+        Number(currentBest?.totalOrders ?? 0) >
+        Number(customer.totalOrders ?? 0)
+          ? currentBest
+          : customer,
+      null,
     );
     if (best && Number(best.totalOrders ?? 0) >= 2)
       out.push({
