@@ -6,7 +6,7 @@
 - **Task type:** launch-readiness
 - **Risk level:** high
 - **Branch:** `codex/admin-improvement-round`
-- **PR:** pending
+- **PR:** #339
 
 ## Mandatory Skill Gate (recap)
 
@@ -106,20 +106,30 @@
   no leaks found
   ```
 
-- **For UI:** source-regression coverage verifies delete actions are hidden and status dialogs remain semantic; staging browser check pending after publication.
-- **For backend:** focused source/contract tests verify the DELETE policy; staging HTTP/public smoke pending after publication.
+- **GitHub PR checks:** PR #339 project-owned checks passed before merge. External TestSprite/Snyk results were classified as account/tooling noise (`No tests detected` and private-test limit).
+- **Post-merge `main CI`:** run `28410591313` completed successfully for merge commit `013e95cf60418a94f42acbb6da5d146105c57f83`.
+- **Post-merge deploy:** run `28410591317` completed successfully for the same merge commit. Quality Gates, all four image builds, `Deploy to Staging`, and staging smoke gate passed; `Deploy to Production` was skipped.
+- **Public staging smoke:**
+
+  ```text
+  https://admin.staging.haastores.com/ -> 200
+  https://staging.haastores.com/health -> 200, API/db/redis/queue OK
+  ```
+
+- **For UI:** source-regression coverage verifies delete actions are hidden and status dialogs remain semantic; public staging admin shell returned 200 after deployment.
+- **For backend:** focused source/contract tests verify the DELETE policy; staging health smoke returned 200 after deployment.
 - **For DB schema:** no schema or migration change.
-- **For CI:** pending after PR push.
+- **For CI:** passed on PR and on post-merge `main`.
 
 ## Deviations
 
-- **Deviations from selected skills:** none so far.
+- **Deviations from selected skills:** none.
 - **Reason:** n/a
-- **Follow-up:** Complete wider checks and publish verification before marking TASK-0130 done.
+- **Follow-up:** none required for this scoped task. Wider admin enhancements should be opened as separate tasks.
 
 ## Completion
 
-- **Did the task follow the selected skills end-to-end?** in progress
+- **Did the task follow the selected skills end-to-end?** yes
 - **Is further owner approval required before merge/deploy?** no for this task-scoped publish request; yes for any production action.
 - **Owner approvals received (cite source):** User requested "كمل الين توقف وتسلم العمل منشور" on 2026-06-30 for this admin hardening round.
 - **Safety confirmations (re-affirmed at done):**
@@ -130,4 +140,4 @@
 
 ## Next step
 
-- Finish local checks, push the branch, open PR, watch CI, merge if green, and verify staging publication.
+- TASK-0130 is closed. Next admin work should start from a fresh scoped audit/task rather than extending this merged slice.
