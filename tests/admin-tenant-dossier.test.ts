@@ -6,6 +6,7 @@ const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.ur
 const app = read('apps/admin-dashboard/src/App.tsx');
 const tenantsPage = read('apps/admin-dashboard/src/pages/Tenants.tsx');
 const tenantDossier = read('apps/admin-dashboard/src/pages/TenantDossier.tsx');
+const adminApi = read('apps/admin-dashboard/src/lib/api.ts');
 
 describe('admin tenant dossier operating-system flow', () => {
   it('routes each tenant to a dedicated operating dossier from the tenants table', () => {
@@ -23,8 +24,37 @@ describe('admin tenant dossier operating-system flow', () => {
     expect(tenantDossier).toContain('سجل التدقيق والتعديلات');
     expect(tenantDossier).toContain('buildMerchantVerificationRecords');
     expect(tenantDossier).toContain('adminApi.listPayouts()');
-    expect(tenantDossier).toContain('adminApi.getAuditLogs()');
-    expect(tenantDossier).toContain('adminApi.getSettlementBatches(storeId)');
+    expect(tenantDossier).toContain('adminApi.getAuditLogs({ tenantId: numericTenantId })');
+  });
+
+  it('does not calculate tenant sales from a platform-wide payments sample', () => {
+    expect(tenantDossier).not.toContain('adminApi.getPayments()');
+    expect(tenantDossier).not.toContain('tenantPayments');
+    expect(tenantDossier).not.toContain('grossSales');
+    expect(tenantDossier).toContain('UNAVAILABLE_FROM_SCOPED_SOURCE');
+    expect(tenantDossier).toContain('يتطلب endpoint تجميعي مفلتر للتاجر أو المتجر');
+  });
+
+  it('loads audit history with tenant scope instead of an unscoped empty read', () => {
+    expect(tenantDossier).toContain('adminApi.getAuditLogs({ tenantId: numericTenantId })');
+    expect(adminApi).toContain("if (typeof params.tenantId === 'number') qs.set('tenantId', String(params.tenantId))");
+    expect(adminApi).toContain("return request<Record<string, unknown>[]>('GET', `/admin/audit${suffix}`)");
+    expect(tenantDossier).toContain('لا توجد أحداث تدقيق مفلترة لهذا التاجر');
+  });
+
+  it('does not show settlement aggregates from the current platform-wide batch source', () => {
+    expect(tenantDossier).not.toContain('adminApi.getSettlementBatches(storeId)');
+    expect(tenantDossier).not.toContain('settlementBatches.length');
+    expect(tenantDossier).toContain('غير متاح من مصدر مفلتر');
+    expect(tenantDossier).toContain('يتطلب مصدر تسويات يطبق storeId قبل عرض أي رقم');
+  });
+
+  it('does not turn missing store readiness fields into false blockers', () => {
+    expect(tenantDossier).toContain('function hasTrustedReadinessData(store: AdminStore)');
+    expect(tenantDossier).toContain('const readinessSourceAvailable = records.length > 0 && storesForTenant.every(hasTrustedReadinessData)');
+    expect(tenantDossier).toContain('const visibleBlockingItems = readinessSourceAvailable ? blockingItems : []');
+    expect(tenantDossier).toContain('جاهزية النشر غير متاحة من مصدر بيانات مكتمل');
+    expect(tenantDossier).not.toContain('value={blockingItems.length}');
   });
 
   it('keeps sensitive bank data and financial decisions out of the tenant overview', () => {

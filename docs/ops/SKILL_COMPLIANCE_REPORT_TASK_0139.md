@@ -5,8 +5,8 @@
 - **Title:** Admin tenant operating dossier from tenants list
 - **Task type:** launch-readiness
 - **Risk level:** high
-- **Branch:** `codex/task-0139-tenant-dossier`
-- **PR:** Not opened
+- **Branch:** `review/task-0139-tenant-dossier`
+- **PR:** #348
 
 ## Mandatory Skill Gate (recap)
 
@@ -29,13 +29,15 @@
 
 ## Execution Evidence
 
-- **Files actually changed:** `apps/admin-dashboard/src/App.tsx`, `apps/admin-dashboard/src/pages/Tenants.tsx`, `apps/admin-dashboard/src/pages/TenantDossier.tsx`, `tests/admin-tenant-dossier.test.ts`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0139.md`.
+- **Files actually changed:** `apps/admin-dashboard/src/App.tsx`, `apps/admin-dashboard/src/pages/Tenants.tsx`, `apps/admin-dashboard/src/pages/TenantDossier.tsx`, `apps/admin-dashboard/src/lib/api.ts`, `tests/admin-tenant-dossier.test.ts`, `docs/agent-os/ACTIVE_WORK.md`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0139.md`.
 - **Files added / removed:** Added `apps/admin-dashboard/src/pages/TenantDossier.tsx`, `tests/admin-tenant-dossier.test.ts`, and this compliance report. No files removed.
 - **Key decisions taken during execution:**
   - Added a tenant-level dossier instead of overloading the store-level `/compliance/:recordId` file.
   - Kept finance context read-only and linked to dedicated finance pages instead of adding dangerous mutation buttons.
   - Reused `buildMerchantVerificationRecords()` so tenant and store verification share one readiness model.
   - Kept bank display masked and explicitly guarded against full IBAN usage.
+  - During PR #348 review follow-up, stopped displaying payment totals from platform-wide samples, settlement counts from store-unscoped APIs, and publish-readiness blockers from incomplete store payloads.
+  - Scoped audit loading by tenant/store query parameters instead of calling `/admin/audit` without a dossier context.
 - **Safety constraints respected (per AGENTS.md §14.7):**
   - [x] No `db:migrate` execution
   - [x] No production deploy
@@ -94,9 +96,16 @@
 - **`git status --short`:**
 
   ```text
-  ## codex/task-0139-tenant-dossier
+  ## review/task-0139-tenant-dossier
   clean after local commit; no storage/*.ndjson staged or retained in the branch
   ```
+
+## PR #348 Review-thread Follow-up — 2026-07-01
+
+- **Scope:** `TenantDossier.tsx`, `adminApi.getAuditLogs(...)`, focused tenant dossier tests, and ops documentation only.
+- **Reviewer concern addressed:** platform-wide payment samples, unscoped audit, unscoped settlement batches, and incomplete readiness data could mislead the admin.
+- **Resolution:** payment totals and settlement-batch counts are unavailable until trusted scoped sources exist; audit calls include tenant/store query parameters; publish readiness, risk, and blocker counts are unavailable unless trusted readiness fields are present.
+- **Behavioral change:** yes, but only to remove misleading certainty from the dossier. No payout approval, transfer verification, settlement mutation, full-IBAN reveal, migration, deploy, production config, secret handling, or TASK-0140 financial hardening was added.
 
 ## Deviations
 
@@ -108,7 +117,7 @@
 
 - **Did the task follow the selected skills end-to-end?** yes
 - **Is further owner approval required before merge/deploy?** yes; merge/deploy was not requested and this branch must be reviewed separately from TASK-0140.
-- **Owner approvals received:** User delegated decisions and execution for local implementation only; no deploy/push approval was given in this turn.
+- **Owner approvals received:** User approved fixing PR #348 review threads and pushing only `review/task-0139-tenant-dossier`; no merge or deploy approval was given in this follow-up.
 - **Safety confirmations (re-affirmed at done):**
   - [x] No `db:migrate` was run during this task
   - [x] No production action was performed

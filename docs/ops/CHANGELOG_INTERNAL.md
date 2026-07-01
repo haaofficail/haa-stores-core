@@ -1,5 +1,14 @@
 # Internal Changelog
 
+## 2026-07-01 — Tenant Dossier Review-thread Source Hardening (TASK-0139, PR #348)
+
+- Removed misleading tenant sales totals derived from platform-wide payment samples in `TenantDossier.tsx`; the dossier now marks payment totals unavailable until a trusted tenant/store-scoped aggregate exists.
+- Changed admin audit loading to request `/admin/audit` with tenant/store query parameters through `adminApi.getAuditLogs(...)`.
+- Removed settlement-batch counts based on a store-unscoped source from the dossier overview and marks them unavailable until a source applies `storeId`.
+- Added a trusted-readiness-data guard so publish readiness, risk, and blocker counts are not shown as decisive when the store payload does not include the required readiness fields.
+- Added regression coverage in `tests/admin-tenant-dossier.test.ts` for scoped audit, unavailable payment/settlement data, and no false readiness blockers.
+- Safety boundary unchanged: no merge, no deploy, no production action, no migration, no secrets, no production config, and no TASK-0140 financial hardening scope.
+
 ## 2026-07-01 — Main Change-password Tenant Context Typecheck Fix Merged (TASK-0141, PR #346)
 
 - Merged PR #346 into `main` at `f5af0cbc86681f5d1edbb703e03638b02a7180e5`.
@@ -14,7 +23,7 @@
 
 - Added a tenant-level operating dossier route at `/tenants/:tenantId`, protected by `tenants.read`.
 - Linked tenant names and a new `ملف التاجر` action from the `/tenants` table to the dossier.
-- Added `TenantDossier.tsx` to aggregate the selected tenant's stores, Merchant Verification records, readiness blockers, warnings, masked bank state, payment/payout/publish/risk state, visible payments, payout/extract rows, settlement batches, and audit history.
+- Added `TenantDossier.tsx` to aggregate the selected tenant's stores, Merchant Verification records, masked bank state, payout/extract rows, scoped audit history, and next-action links; payment totals, settlement-batch counts, and publish-readiness blockers are only shown when backed by trusted scoped data.
 - Kept the dossier read-only for finance: no payout approval, transfer verification, settlement mutation, or full-IBAN reveal call was added.
 - Reused `buildMerchantVerificationRecords()` so the tenant file and store-level Merchant Verification file share the same readiness model instead of inventing a second compliance vocabulary.
 - Added `tests/admin-tenant-dossier.test.ts` to guard routing from `/tenants`, operating sections, finance/audit aggregation, no full IBAN, and no destructive finance actions from the overview.

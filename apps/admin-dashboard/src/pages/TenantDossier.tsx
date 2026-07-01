@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   adminApi,
   hasAdminPermission,
@@ -22,6 +22,16 @@ import {
 } from '../lib/merchantVerification';
 
 type StoreScopedRow = Record<string, unknown>;
+const UNAVAILABLE_FROM_SCOPED_SOURCE = 'غير متاح من مصدر موثوق';
+const READINESS_SOURCE_HINT = 'يتطلب مصدر بيانات جاهزية مكتمل قبل عرض قرار النشر.';
+const READINESS_FIELD_KEYS = [
+  'publishStatus',
+  'policies',
+  'paymentStatus',
+  'shippingStatus',
+  'phoneVerified',
+  'emailVerified',
+] as const;
 
 const VERIFICATION_LABEL: Record<MerchantVerificationRecord['verificationStatus'], string> = {
   not_started: 'لم يبدأ',
@@ -95,6 +105,11 @@ function matchesTenantScope(row: StoreScopedRow, tenantId: number, storeIds: num
 
 function sumMoney(rows: StoreScopedRow[], keys: string[]): number {
   return rows.reduce((total, row) => total + (rowNumber(row, keys) ?? 0), 0);
+}
+
+function hasTrustedReadinessData(store: AdminStore): boolean {
+  const source = store as unknown as Record<string, unknown>;
+  return READINESS_FIELD_KEYS.some((key) => Object.prototype.hasOwnProperty.call(source, key));
 }
 
 function formatMoney(value: number, currency = 'SAR'): string {
@@ -232,7 +247,6 @@ export default function TenantDossier() {
   const canReadStores = hasAdminPermission('stores.read');
   const canReadKyc = hasAdminPermission('kyc.read');
   const canReadBankAccounts = hasAdminPermission('kyc.read') || hasAdminPermission('merchant.bank_accounts.view');
-  const canReadPayments = hasAdminPermission('payments.read');
   const canReadFinance = hasAdminPermission('wallet.payout.view_all');
   const canReadAudit = hasAdminPermission('audit.read');
 
@@ -259,12 +273,6 @@ export default function TenantDossier() {
     enabled: canReadBankAccounts,
   });
 
-  const paymentsQuery = useQuery<StoreScopedRow[]>({
-    queryKey: [...queryKeys.payments, 'tenantDossier', numericTenantId],
-    queryFn: () => adminApi.getPayments() as Promise<StoreScopedRow[]>,
-    enabled: canReadPayments && Number.isFinite(numericTenantId),
-  });
-
   const payoutsQuery = useQuery<Payout[]>({
     queryKey: [...queryKeys.settlementBatches, 'tenantDossierPayouts', numericTenantId],
     queryFn: () => adminApi.listPayouts(),
@@ -273,7 +281,7 @@ export default function TenantDossier() {
 
   const auditQuery = useQuery<StoreScopedRow[]>({
     queryKey: [...queryKeys.auditLogs, 'tenantDossier', numericTenantId],
-    queryFn: () => adminApi.getAuditLogs() as Promise<StoreScopedRow[]>,
+    queryFn: () => adminApi.getAuditLogs({ tenantId: numericTenantId }) as Promise<StoreScopedRow[]>,
     enabled: canReadAudit && Number.isFinite(numericTenantId),
   });
 
@@ -287,24 +295,12 @@ export default function TenantDossier() {
 
   const storeIds = useMemo(() => storesForTenant.map((store) => store.id), [storesForTenant]);
 
-  const settlementQueries = useQueries({
-    queries: storeIds.map((storeId) => ({
-      queryKey: [...queryKeys.settlementBatches, 'tenantDossier', storeId],
-      queryFn: () => adminApi.getSettlementBatches(storeId),
-      enabled: canReadFinance,
-    })),
-  });
-
   const records = useMemo(() => buildMerchantVerificationRecords({
     tenants: tenant ? [tenant] : [],
     stores: storesForTenant,
     kycProfiles: kycQuery.data ?? [],
     bankAccounts: bankQuery.data ?? [],
   }), [bankQuery.data, kycQuery.data, storesForTenant, tenant]);
-
-  const tenantPayments = useMemo(() => (
-    (paymentsQuery.data ?? []).filter((row) => matchesTenantScope(row, numericTenantId, storeIds))
-  ), [numericTenantId, paymentsQuery.data, storeIds]);
 
   const tenantPayouts = useMemo(() => (
     (payoutsQuery.data ?? []).filter((row) => matchesTenantScope(row as unknown as StoreScopedRow, numericTenantId, storeIds))
@@ -314,19 +310,16 @@ export default function TenantDossier() {
     (auditQuery.data ?? []).filter((row) => matchesTenantScope(row, numericTenantId, storeIds))
   ), [auditQuery.data, numericTenantId, storeIds]);
 
-  const settlementBatches = useMemo(() => (
-    settlementQueries.flatMap((query) => query.data ?? [])
-  ), [settlementQueries]);
-
   const blockingItems = useMemo(() => (
     records.flatMap((record) => record.readiness.checklist
       .filter((item) => item.status !== 'passed')
       .map((item) => ({ record, item })))
   ), [records]);
 
+  const readinessSourceAvailable = records.length > 0 && storesForTenant.every(hasTrustedReadinessData);
+  const visibleBlockingItems = readinessSourceAvailable ? blockingItems : [];
   const verifiedBanks = records.filter((record) => record.bank.verificationStatus === 'verified').length;
-  const readyToPublish = records.filter((record) => record.readiness.allowed).length;
-  const grossSales = sumMoney(tenantPayments, ['amount', 'grossAmount', 'total', 'paidAmount']);
+  const readyToPublish = readinessSourceAvailable ? records.filter((record) => record.readiness.allowed).length : null;
   const payoutTotal = sumMoney(tenantPayouts.map((payout) => payout as unknown as StoreScopedRow), ['amount', 'netAmount', 'merchantPayable']);
   const loading = tenantsQuery.isPending
     || (canReadStores && storesQuery.isPending)
@@ -395,10 +388,10 @@ export default function TenantDossier() {
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         <Metric label="المتاجر" value={records.length} hint="كل المتاجر التابعة للتاجر" icon="Store" tone="muted" />
-        <Metric label="جاهزة للنشر" value={`${readyToPublish}/${records.length}`} hint="حسب checklist التوثيق والتشغيل" icon="CheckSquare" tone={readyToPublish === records.length && records.length > 0 ? 'good' : 'warn'} />
-        <Metric label="موانع القرار" value={blockingItems.length} hint="بنود تمنع أو تحذر قبل الاعتماد" icon="AlertTriangle" tone={blockingItems.length > 0 ? 'bad' : 'good'} />
+        <Metric label="جاهزة للنشر" value={readyToPublish === null ? 'غير متاح' : `${readyToPublish}/${records.length}`} hint={readyToPublish === null ? READINESS_SOURCE_HINT : 'حسب checklist التوثيق والتشغيل'} icon="CheckSquare" tone={readyToPublish === records.length && records.length > 0 ? 'good' : 'warn'} />
+        <Metric label="موانع القرار" value={readinessSourceAvailable ? visibleBlockingItems.length : 'غير متاح'} hint={readinessSourceAvailable ? 'بنود تمنع أو تحذر قبل الاعتماد' : READINESS_SOURCE_HINT} icon="AlertTriangle" tone={readinessSourceAvailable && visibleBlockingItems.length > 0 ? 'bad' : 'warn'} />
         <Metric label="البنوك الموثقة" value={`${verifiedBanks}/${records.length}`} hint="لا يتم عرض IBAN كامل" icon="Landmark" tone={verifiedBanks === records.length && records.length > 0 ? 'good' : 'warn'} />
-        <Metric label="إجمالي مدفوعات مرصودة" value={formatMoney(grossSales)} hint="قراءة فقط من المدفوعات" icon="CreditCard" tone="muted" />
+        <Metric label="إجمالي مدفوعات موثوقة" value={UNAVAILABLE_FROM_SCOPED_SOURCE} hint="يتطلب endpoint تجميعي مفلتر للتاجر أو المتجر" icon="CreditCard" tone="muted" />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
@@ -407,13 +400,17 @@ export default function TenantDossier() {
             <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">
               لا توجد متاجر مرتبطة بهذا التاجر. الإجراء التالي: أنشئ متجرًا أو اربط متجرًا قائمًا قبل أي توثيق أو دفع أو تسوية.
             </div>
-          ) : blockingItems.length === 0 ? (
+          ) : !readinessSourceAvailable ? (
+            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">
+              جاهزية النشر غير متاحة من مصدر بيانات مكتمل لهذا التاجر. لن يعرض الملف موانع حاسمة حتى تتوفر بيانات موثوقة عن الدفع والشحن والسياسات والتوثيق.
+            </div>
+          ) : visibleBlockingItems.length === 0 ? (
             <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-800">
               لا توجد موانع ظاهرة من ملف التاجر. لا يزال اعتماد النشر أو السحب قرارًا مستقلًا يجب أن يمر من صفحة التوثيق أو التسوية المختصة.
             </div>
           ) : (
             <div className="space-y-3">
-              {blockingItems.slice(0, 8).map(({ record, item }) => {
+              {visibleBlockingItems.slice(0, 8).map(({ record, item }) => {
                 const href = storeAwareHref(item, record);
                 return (
                   <div key={`${record.id}-${item.key}`} className="rounded-xl border border-gray-100 p-3">
@@ -438,8 +435,8 @@ export default function TenantDossier() {
                   </div>
                 );
               })}
-              {blockingItems.length > 8 && (
-                <p className="text-xs text-gray-500">يوجد {blockingItems.length - 8} مانع/تنبيه إضافي. افتح ملفات المتاجر أدناه للتفاصيل.</p>
+              {visibleBlockingItems.length > 8 && (
+                <p className="text-xs text-gray-500">يوجد {visibleBlockingItems.length - 8} مانع/تنبيه إضافي. افتح ملفات المتاجر أدناه للتفاصيل.</p>
               )}
             </div>
           )}
@@ -483,10 +480,10 @@ export default function TenantDossier() {
                     </td>
                     <td className="px-3 py-3"><StatusBadge tone={verificationTone(record.verificationStatus)}>{VERIFICATION_LABEL[record.verificationStatus]}</StatusBadge></td>
                     <td className="px-3 py-3"><StatusBadge tone={record.bank.verificationStatus === 'verified' ? 'good' : record.bank.verificationStatus === 'rejected' ? 'bad' : 'warn'}>{BANK_LABEL[record.bank.verificationStatus]}</StatusBadge></td>
-                    <td className="px-3 py-3">{record.paymentStatus === 'active' || record.paymentStatus === 'configured' ? 'جاهز' : 'غير معد'}</td>
+                    <td className="px-3 py-3">{readinessSourceAvailable ? (record.paymentStatus === 'active' || record.paymentStatus === 'configured' ? 'جاهز' : 'غير معد') : <StatusBadge tone="muted">غير متاح</StatusBadge>}</td>
                     <td className="px-3 py-3"><StatusBadge tone={record.payoutStatus === 'verified' ? 'good' : record.payoutStatus === 'rejected' || record.payoutStatus === 'payouts_blocked' ? 'bad' : 'warn'}>{PAYOUT_LABEL[record.payoutStatus]}</StatusBadge></td>
-                    <td className="px-3 py-3"><StatusBadge tone={record.readiness.allowed ? 'good' : 'bad'}>{PUBLISH_LABEL[record.publishStatus]}</StatusBadge></td>
-                    <td className="px-3 py-3"><StatusBadge tone={riskTone(record.riskStatus)}>{RISK_LABEL[record.riskStatus]}</StatusBadge></td>
+                    <td className="px-3 py-3"><StatusBadge tone={readinessSourceAvailable && record.readiness.allowed ? 'good' : readinessSourceAvailable ? 'bad' : 'muted'}>{readinessSourceAvailable ? PUBLISH_LABEL[record.publishStatus] : 'غير محسوب'}</StatusBadge></td>
+                    <td className="px-3 py-3"><StatusBadge tone={readinessSourceAvailable ? riskTone(record.riskStatus) : 'muted'}>{readinessSourceAvailable ? RISK_LABEL[record.riskStatus] : 'غير محسوبة'}</StatusBadge></td>
                     <td className="px-3 py-3">
                       <Link to={`/compliance/${record.id}`} className="inline-flex items-center rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white hover:bg-gray-800">
                         فتح ملف المتجر
@@ -503,11 +500,13 @@ export default function TenantDossier() {
       <div className="grid gap-4 xl:grid-cols-3">
         <Section title="المبيعات والمستخلصات">
           <div className="space-y-3">
-            <Field label="مدفوعات مرصودة" value={tenantPayments.length} />
-            <Field label="إجمالي المدفوعات" value={formatMoney(grossSales)} />
+            <Field label="مدفوعات مرصودة" value={UNAVAILABLE_FROM_SCOPED_SOURCE} />
+            <Field label="إجمالي المدفوعات" value={UNAVAILABLE_FROM_SCOPED_SOURCE} />
+            <Field label="مصدر المبيعات" value="يتطلب endpoint تجميعي مفلتر للتاجر أو المتجر قبل عرض الإجمالي" />
             <Field label="طلبات سحب" value={tenantPayouts.length} />
             <Field label="إجمالي السحوبات" value={formatMoney(payoutTotal)} />
-            <Field label="دفعات تسوية" value={settlementBatches.length} />
+            <Field label="دفعات تسوية" value="غير متاح من مصدر مفلتر" />
+            <Field label="مصدر التسويات" value="يتطلب مصدر تسويات يطبق storeId قبل عرض أي رقم" />
             <Link to="/finance/settlement-inbox" className="inline-flex w-full items-center justify-center rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
               فتح صندوق التسويات
             </Link>
@@ -533,8 +532,10 @@ export default function TenantDossier() {
         </Section>
 
         <Section title="سجل التدقيق والتعديلات">
-          {tenantAuditLogs.length === 0 ? (
-            <p className="text-sm text-gray-500">لا توجد أحداث تدقيق ظاهرة لهذا التاجر في البيانات الحالية.</p>
+          {!canReadAudit ? (
+            <p className="text-sm text-gray-500">سجل التدقيق غير متاح بدون صلاحية audit.read.</p>
+          ) : tenantAuditLogs.length === 0 ? (
+            <p className="text-sm text-gray-500">لا توجد أحداث تدقيق مفلترة لهذا التاجر في البيانات الحالية.</p>
           ) : (
             <div className="space-y-3">
               {latestRows(tenantAuditLogs, 5).map((event, index) => (
