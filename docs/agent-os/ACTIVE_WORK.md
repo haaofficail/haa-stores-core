@@ -8,10 +8,11 @@
 
 ## Current task
 
-**TASK-0142 — Admin dashboard SaaS operations UX controlled fix is locally verified on an isolated branch (2026-07-01).**
+**TASK-0142 — Admin dashboard SaaS operations UX controlled fix is in draft PR #351 (2026-07-01).**
 
 Worktree: `/Users/thwany/Desktop/haa-stores-core-task-0142`.
-Branch: `codex/task-0142-admin-saas-ux`. PR: not opened.
+Branch: `codex/task-0142-admin-saas-ux`.
+PR: #351 (draft) — https://github.com/haaofficail/haa-stores-core/pull/351.
 
 The admin-dashboard UX batch is local-only and focused on decision safety:
 sidebar IA groups, dashboard command-center copy, Merchant Verification risk
@@ -36,8 +37,11 @@ without horizontal document overflow.
 The branch was created from `origin/main` to keep this UX task separate from
 the API cleanup work. It contains admin-dashboard UX, TASK-0142 tests, and
 TASK-0142 docs only; no API cleanup files are part of this branch. This does not
-authorize deploy, production launch, secret handling, live provider calls, SSH
-to production, DNS changes, or migrations.
+authorize merge, deploy, production launch, secret handling, live provider
+calls, SSH to production, DNS changes, or migrations. Project-owned remote
+checks are being monitored after the draft PR publish; Snyk/TestSprite may
+remain external/account-tooling blockers if their current status does not
+change.
 
 ## Previous task
 

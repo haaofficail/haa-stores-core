@@ -1,6 +1,7 @@
 # Admin Dashboard SaaS UX Audit — 2026-07-01
 
 > Scope: full admin-dashboard UX audit with a controlled frontend fix batch.
+> Draft PR: #351 — https://github.com/haaofficail/haa-stores-core/pull/351.
 > This is local-only: no deploy, no migration, no production config, no
 > secrets, and no live payment/shipping-provider calls.
 

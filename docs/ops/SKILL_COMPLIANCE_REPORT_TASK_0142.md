@@ -6,7 +6,7 @@
 - **Task type:** frontend/design
 - **Risk level:** medium
 - **Branch:** `codex/task-0142-admin-saas-ux`
-- **PR:** Not opened
+- **PR:** #351 (draft) — https://github.com/haaofficail/haa-stores-core/pull/351
 
 ## Mandatory Skill Gate (recap)
 
@@ -19,7 +19,7 @@
   - `single-source-of-truth-gate` — risk/readiness/payment labels needed to match existing domain state, not invented UI-only truth.
   - `documentation-handoff-gate` — the audit and controlled fix needed to be recorded in ops docs.
   - `environment-safety-gate` — no deploy, migration, secrets, production action, or live provider calls were allowed.
-  - `branch-pr-hygiene-gate` — the work stayed local on the current branch without commit, push, or PR.
+  - `branch-pr-hygiene-gate` — the work was isolated on `codex/task-0142-admin-saas-ux`, committed, pushed, and opened as draft PR #351 without mixing TASK-0143/API cleanup files.
   - `evidence-led-reporting` — final status is based on command and browser evidence.
   - `verification-before-completion` — typecheck, focused tests, build, skills check, diff check, browser check, and preflight were run before done.
 - **Why these skills:** The task crosses admin IA, Arabic RTL UX, financial/readiness vocabulary, and operational safety, so the selected gates ensure the UI does not imply fake launch, payout, risk, or provider readiness while keeping the implementation controlled.
@@ -115,8 +115,8 @@
 ## Completion
 
 - **Did the task follow the selected skills end-to-end?** yes
-- **Is further owner approval required before merge/deploy?** yes, before any merge/deploy because this task is local-only and PR was not opened.
-- **Owner approvals received:** none required for local-only implementation; no deploy/migration/production action was attempted.
+- **Is further owner approval required before merge/deploy?** yes, before any merge/deploy; draft PR #351 was opened for review only.
+- **Owner approvals received:** user asked Codex to continue the task to completion, which covered publishing the scoped draft PR; no merge, deploy, migration, DB mutation, or production action was attempted.
 - **Safety confirmations (re-affirmed at done):**
   - [x] No `db:migrate` was run during this task
   - [x] No production action was performed
@@ -125,7 +125,7 @@
 
 ## Next step
 
-- Open a scoped PR for TASK-0142 from `codex/task-0142-admin-saas-ux` when approved.
+- Monitor PR #351 checks, address any project-owned failure, and keep merge/deploy as separate owner-approved actions.
 
 ---
 
