@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0076: Tenant Operations Were Split Across Pages Without a Single Dossier
+
+- **ID:** ISSUE-0076
+- **Date:** 2026-06-30
+- **Severity:** High (admin operations / merchant lifecycle visibility)
+- **Area:** Admin Dashboard / Tenant Operations / Merchant Verification / Finance Read Models
+- **Related Tasks:** TASK-0139
+- **Symptoms:** Admin reviewers could inspect merchants through separate pages, but there was no single tenant operating file that tied together stores, verification readiness, finance snapshots, payouts, settlements, audits, and next actions.
+- **Expected:** A platform admin should be able to open one tenant from `/tenants` and see the tenant's operational state with safe, read-only finance context and clear links to the right review surfaces.
+- **Actual:** Tenant operations were scattered across list pages and detail panels, increasing review friction and making it easier to miss blockers or confuse overview context with destructive finance actions.
+- **Root Cause:** TASK-0134..0138 improved Merchant Verification and admin action contracts first, but did not yet create a tenant-level dossier entry point from the tenant list.
+- **Fix:** Added `/tenants/:tenantId`, linked tenant names and `ملف التاجر` actions to it, and built a read-only dossier aggregating tenant stores, Merchant Verification context, masked bank state, payout/extract rows, and audit history. PR #348 review follow-up keeps payment totals, settlement-batch counts, and publish-readiness blockers unavailable unless backed by trusted scoped source data.
+- **Verification:** Focused tenant dossier regression passed. Admin-dashboard typecheck and build passed. `pnpm check:skills` and `git diff --check` passed.
+- **Prevention:** Keep `tests/admin-tenant-dossier.test.ts` guarding the `/tenants/:tenantId` route, table links, source scoping, finance read-only behavior, no full IBAN, no misleading payment/settlement totals, and no destructive finance actions from the dossier overview.
+- **Status:** Fixed locally in TASK-0139. No deploy, migration, DB mutation, secret handling, production action, or live provider call occurred.
+
+---
+
 ### ISSUE-0075: Main Change-password Route Failed Against Stale Commerce-core Declaration
 
 - **ID:** ISSUE-0075

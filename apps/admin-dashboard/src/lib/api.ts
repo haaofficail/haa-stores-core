@@ -705,7 +705,13 @@ export const adminApi = {
     request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/cancel`, { reason }, key),
   reversePayout: (payoutId: number, reason: string, key = newIdempotencyKey()) =>
     request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/reverse`, { reason }, key),
-  getAuditLogs: () => request<Record<string, unknown>[]>('GET', '/admin/audit'),
+  getAuditLogs: (params: { tenantId?: number; storeId?: number } = {}) => {
+    const qs = new URLSearchParams();
+    if (typeof params.tenantId === 'number') qs.set('tenantId', String(params.tenantId));
+    if (typeof params.storeId === 'number') qs.set('storeId', String(params.storeId));
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return request<Record<string, unknown>[]>('GET', `/admin/audit${suffix}`);
+  },
   getPlans: () => request<Record<string, unknown>[]>('GET', '/admin/plans'),
   updatePlan: (id: number, data: Record<string, unknown>) => request<Record<string, unknown>>('PATCH', `/admin/plans/${id}`, data),
   getSettings: () => request<{ name: string; slug: string; logoUrl: string | null; faviconUrl: string | null }>('GET', '/admin/settings'),

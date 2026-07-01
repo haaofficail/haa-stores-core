@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../lib/api';
 import { queryKeys } from '../lib/queryClient';
@@ -20,6 +21,10 @@ type TenantStatusDialog = {
   currentStatus: string;
   nextStatus: 'active' | 'suspended';
 };
+
+export function tenantDossierPath(tenantId: number | string) {
+  return `/tenants/${tenantId}`;
+}
 
 export default function Tenants() {
   const { t } = useTranslation();
@@ -172,7 +177,11 @@ export default function Tenants() {
               <tbody>
                 {controls.rows.map(tenant => (
                   <tr key={tenant.id} className="border-t hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-900">{tenant.name}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      <Link to={tenantDossierPath(tenant.id)} className="text-primary-700 hover:text-primary-800 hover:underline">
+                        {tenant.name}
+                      </Link>
+                    </td>
                     <td className="px-4 py-3 text-gray-500">{tenant.email || '-'}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${tenant.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -184,6 +193,9 @@ export default function Tenants() {
                         <button onClick={() => openStatusDialog(tenant)} className="text-sm text-primary-600 hover:text-primary-700 transition-colors px-2 py-1">
                           {tenant.status === 'active' ? t('tenants.suspend', 'تعليق') : t('tenants.activate', 'تفعيل')}
                         </button>
+                        <Link to={tenantDossierPath(tenant.id)} className="text-sm text-gray-700 hover:text-gray-900 transition-colors px-2 py-1">
+                          ملف التاجر
+                        </Link>
                         <button onClick={() => handleOpenDialog(tenant)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors px-2 py-1">{t('tenants.edit', 'تعديل')}</button>
                       </div>
                     </td>
