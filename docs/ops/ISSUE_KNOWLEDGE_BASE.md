@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0082: GitHub-hosted Runner SSH Timed Out Before Reaching Staging Deploy
+
+- **ID:** ISSUE-0082
+- **Date:** 2026-07-01
+- **Severity:** High (staging deployment blocked / infrastructure reachability)
+- **Area:** GitHub Actions / Deploy to Staging / SSH / Hostinger VPS Reachability
+- **Related Tasks:** TASK-0145
+- **Symptoms:** After PR #353 merged, GitHub Deploy run `28539710740` passed Quality Gates and image builds, but `Deploy to Staging` failed in job `84615337444`. The workflow verified staging config, loaded the staging SSH key, configured known-host fallback, then failed the SSH warmup step with six repeated `ssh: connect to host *** port 22: Connection timed out` messages.
+- **Expected:** The staging deploy runner should either connect to the staging host and proceed to GHCR authentication/deploy/smoke, or produce enough network evidence for the owner to allowlist the runner/public route or switch to an alternate SSH port.
+- **Actual:** The workflow only reported a generic fail2ban/host-down hint, while the observed failure happened before any server-side command, deploy script, smoke check, or rollback step could run.
+- **Root Cause:** The failure is a runner-to-staging SSH reachability issue, not an application/build/migration failure. Evidence: required staging config was present, the SSH key loaded successfully, Quality Gates and image builds succeeded, production deploy was skipped, and every failure was a TCP timeout to port `22` before authentication. The likely causes are Hostinger/provider firewall filtering, GitHub-hosted runner IP filtering, masked host mismatch, or port-22 path filtering.
+- **Fix:** Updated the staging deploy workflow to print the GitHub runner public IPv4 for allowlisting, validate optional `STAGING_SSH_PORT` from environment variable/secret with legacy `STAGING_PORT` fallback and default `22`, validate pre-baked `STAGING_KNOWN_HOSTS` against the configured port, apply the configured port consistently to staging SSH and SCP calls, and replace the final warmup error with firewall/provider/alternate-port guidance that includes the observed runner IP.
+- **Verification:** Local verification for TASK-0145 passed: workflow YAML parsed, focused deploy guard test passed, `git diff --check` clean, `pnpm check:skills` passed 43/43, and `CI=true pnpm preflight` passed in the isolated worktree. Plain `pnpm preflight` only failed on the intentional root guard because the branch lives in a separate worktree. Source diff is limited to staging deploy workflow, its source guard, and ops docs. No deploy, migration, secret change, production action, Hostinger firewall change, or product-code change occurred during the fix.
+- **Prevention:** Keep staging deploy diagnostics able to identify the runner IP and target port. When staging SSH fails, first distinguish config/key failures from TCP reachability failures; do not attribute port-22 timeouts to application code. If port `22` remains filtered for GitHub runners, configure the server for an alternate port, set `STAGING_SSH_PORT` (preferred) or `STAGING_PORT` in the `staging` environment, and regenerate `STAGING_KNOWN_HOSTS` for that port because OpenSSH stores non-standard ports as `[host]:port`.
+- **Status:** Fix prepared in TASK-0145; PR pending. Merge will require explicit owner approval because `main` merge triggers staging deploy automatically.
+
+---
+
 ### ISSUE-0081: Admin Support Gateway Needed Triage Ownership and Next Action
 
 - **ID:** ISSUE-0081

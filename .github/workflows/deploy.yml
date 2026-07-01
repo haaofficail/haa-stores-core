@@ -205,6 +205,7 @@ jobs:
       url: ${{ vars.STAGING_URL }}
     env:
       IMAGE_TAG: sha-${{ github.sha }}
+      STAGING_SSH_PORT: ${{ vars.STAGING_SSH_PORT || secrets.STAGING_SSH_PORT || vars.STAGING_PORT || secrets.STAGING_PORT || '22' }}
 
     steps:
       - name: Preflight — verify required staging config
@@ -215,6 +216,7 @@ jobs:
           STAGING_DEPLOY_PATH: ${{ secrets.STAGING_DEPLOY_PATH }}
           STAGING_URL: ${{ vars.STAGING_URL }}
           STAGING_HEALTH_URL: ${{ vars.STAGING_HEALTH_URL }}
+          STAGING_SSH_PORT: ${{ vars.STAGING_SSH_PORT || secrets.STAGING_SSH_PORT || vars.STAGING_PORT || secrets.STAGING_PORT || '22' }}
         run: |
           missing=()
           for v in STAGING_SSH_KEY STAGING_HOST STAGING_USER STAGING_DEPLOY_PATH STAGING_URL STAGING_HEALTH_URL; do
@@ -227,10 +229,28 @@ jobs:
             echo "and variables: STAGING_URL, STAGING_HEALTH_URL."
             exit 1
           fi
+          if ! [[ "$STAGING_SSH_PORT" =~ ^[0-9]+$ ]] || [ "$STAGING_SSH_PORT" -lt 1 ] || [ "$STAGING_SSH_PORT" -gt 65535 ]; then
+            echo "::error::STAGING_SSH_PORT must be a TCP port number between 1 and 65535; got '$STAGING_SSH_PORT'."
+            exit 1
+          fi
           echo "✓ All required staging secrets and variables are present."
+          echo "✓ Staging SSH port configured as $STAGING_SSH_PORT."
 
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Report GitHub runner network diagnostics
+        run: |
+          set -euo pipefail
+          runner_ip="$(curl -fsS https://api.ipify.org || curl -fsS https://ifconfig.me || true)"
+          if [ -n "$runner_ip" ]; then
+            echo "GITHUB_RUNNER_PUBLIC_IP=$runner_ip" >> "$GITHUB_ENV"
+            echo "::notice::GitHub runner public IPv4 for staging SSH allowlisting: $runner_ip"
+          else
+            echo "GITHUB_RUNNER_PUBLIC_IP=unknown" >> "$GITHUB_ENV"
+            echo "::warning::Unable to determine GitHub runner public IPv4 for staging SSH allowlisting."
+          fi
+          echo "::notice::Staging SSH target port: $STAGING_SSH_PORT"
 
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
@@ -255,6 +275,7 @@ jobs:
         env:
           STAGING_KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
           STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          STAGING_SSH_PORT: ${{ vars.STAGING_SSH_PORT || secrets.STAGING_SSH_PORT || vars.STAGING_PORT || secrets.STAGING_PORT || '22' }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
@@ -262,10 +283,24 @@ jobs:
           if [ -n "${STAGING_KNOWN_HOSTS:-}" ]; then
             printf '%s\n' "$STAGING_KNOWN_HOSTS" >> ~/.ssh/known_hosts
             chmod 644 ~/.ssh/known_hosts
+            if [ "$STAGING_SSH_PORT" = "22" ]; then
+              known_host_lookup="$STAGING_HOST"
+              known_host_hint="<staging-host>"
+            else
+              known_host_lookup="[$STAGING_HOST]:$STAGING_SSH_PORT"
+              known_host_hint="[<staging-host>]:$STAGING_SSH_PORT"
+            fi
+            if ! ssh-keygen -F "$known_host_lookup" -f ~/.ssh/known_hosts >/dev/null; then
+              echo "::error::STAGING_KNOWN_HOSTS does not contain an entry for $known_host_hint."
+              echo "::error::Regenerate STAGING_KNOWN_HOSTS for TCP $STAGING_SSH_PORT. OpenSSH stores non-standard ports as [host]:port."
+              echo "::error::Example: ssh-keyscan -p $STAGING_SSH_PORT -H <staging-host> | base64  → paste decoded value as secret."
+              exit 1
+            fi
             echo "✓ Used pre-baked STAGING_KNOWN_HOSTS (no probing)."
           else
             cat >> ~/.ssh/config <<EOF
           Host ${STAGING_HOST}
+            Port ${STAGING_SSH_PORT}
             StrictHostKeyChecking accept-new
             UserKnownHostsFile ~/.ssh/known_hosts
             ConnectTimeout 30
@@ -277,7 +312,7 @@ jobs:
             echo "⚠ STAGING_KNOWN_HOSTS secret not set — falling back to accept-new on first connect."
             echo "  This is one SSH connection (the docker login that follows) instead of two."
             echo "  To eliminate the fallback, add STAGING_KNOWN_HOSTS as a repo secret:"
-            echo "    ssh-keyscan -H <staging-host> | base64  → paste decoded value as secret"
+            echo "    ssh-keyscan -p <staging-port> -H <staging-host> | base64  → paste decoded value as secret"
           fi
 
       - name: Warm up SSH (survive full 15-min fail2ban window)
@@ -299,19 +334,21 @@ jobs:
         env:
           DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
           DEPLOY_USER: ${{ secrets.STAGING_USER }}
+          DEPLOY_PORT: ${{ vars.STAGING_SSH_PORT || secrets.STAGING_SSH_PORT || vars.STAGING_PORT || secrets.STAGING_PORT || '22' }}
         run: |
           set -euo pipefail
           backoffs=(30 60 120 240 480 480)
           for i in "${!backoffs[@]}"; do
             attempt=$((i + 1))
-            if ssh -o ConnectTimeout=20 -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" "echo ssh-ok"; then
+            if ssh -p "$DEPLOY_PORT" -o ConnectTimeout=20 -o BatchMode=yes "$DEPLOY_USER@$DEPLOY_HOST" "echo ssh-ok"; then
               echo "✓ SSH warmed up on attempt $attempt"
               exit 0
             fi
             # Don't sleep after the LAST failed attempt — exit immediately.
             if [ "$attempt" -eq "${#backoffs[@]}" ]; then
-              echo "::error::SSH warmup failed after $attempt attempts (~24 min total) — likely persistent fail2ban ban or host down. Manual unban required."
-              echo "::error::Run on staging: sudo fail2ban-client unban <runner-ip> · or sudo fail2ban-client set sshd unbanip <runner-ip>"
+              echo "::error::SSH warmup failed after $attempt attempts (~24 min total) to staging port $DEPLOY_PORT — likely upstream firewall/provider filtering, host mismatch, persistent ban, or host down."
+              echo "::error::GitHub runner public IPv4 observed by this job: ${GITHUB_RUNNER_PUBLIC_IP:-unknown}. Allowlist/test that IP for TCP $DEPLOY_PORT in Hostinger/VPS firewall, or set STAGING_SSH_PORT to an open alternate port."
+              echo "::error::If fail2ban is installed, run on staging: sudo fail2ban-client unban ${GITHUB_RUNNER_PUBLIC_IP:-<runner-ip>} · or sudo fail2ban-client set sshd unbanip ${GITHUB_RUNNER_PUBLIC_IP:-<runner-ip>}"
               exit 1
             fi
             wait_s="${backoffs[$i]}"
@@ -323,20 +360,22 @@ jobs:
         env:
           DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
           DEPLOY_USER: ${{ secrets.STAGING_USER }}
+          DEPLOY_PORT: ${{ vars.STAGING_SSH_PORT || secrets.STAGING_SSH_PORT || vars.STAGING_PORT || secrets.STAGING_PORT || '22' }}
           # Prefer a long-lived, read-only packages token; fall back to the
           # run-scoped GITHUB_TOKEN when GHCR_READ_TOKEN isn't configured.
           GHCR_TOKEN: ${{ secrets.GHCR_READ_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           echo "$GHCR_TOKEN" \
-            | ssh -o ConnectTimeout=30 "$DEPLOY_USER@$DEPLOY_HOST" \
+            | ssh -p "$DEPLOY_PORT" -o ConnectTimeout=30 "$DEPLOY_USER@$DEPLOY_HOST" \
                 "docker login ghcr.io -u ${{ github.actor }} --password-stdin"
 
       - name: Port ownership preflight (G7)
         env:
           DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
           DEPLOY_USER: ${{ secrets.STAGING_USER }}
+          DEPLOY_PORT: ${{ vars.STAGING_SSH_PORT || secrets.STAGING_SSH_PORT || vars.STAGING_PORT || secrets.STAGING_PORT || '22' }}
         run: |
-          ssh "$DEPLOY_USER@$DEPLOY_HOST" "PROJECT=haa-staging bash -s" << 'G7_EOF'
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "PROJECT=haa-staging bash -s" << 'G7_EOF'
             set -euo pipefail
             echo "==> G7: asserting ports 80 / 443 / 5433 are free or owned by $PROJECT..."
             _failed=0
@@ -379,20 +418,22 @@ jobs:
         env:
           DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
           DEPLOY_USER: ${{ secrets.STAGING_USER }}
+          DEPLOY_PORT: ${{ vars.STAGING_SSH_PORT || secrets.STAGING_SSH_PORT || vars.STAGING_PORT || secrets.STAGING_PORT || '22' }}
           DEPLOY_PATH: ${{ secrets.STAGING_DEPLOY_PATH }}
         run: |
           set -euo pipefail
           # -o BatchMode=yes prevents an interactive prompt if the host key
           # path hits an unexpected condition; the previous step already
           # populated ~/.ssh/known_hosts (or set accept-new in ssh config).
-          scp -o BatchMode=yes deploy/staging/Caddyfile "$DEPLOY_USER@$DEPLOY_HOST":"$DEPLOY_PATH/Caddyfile"
-          scp -o BatchMode=yes deploy/staging/docker-compose.yml "$DEPLOY_USER@$DEPLOY_HOST":"$DEPLOY_PATH/docker-compose.yml"
+          scp -P "$DEPLOY_PORT" -o BatchMode=yes deploy/staging/Caddyfile "$DEPLOY_USER@$DEPLOY_HOST":"$DEPLOY_PATH/Caddyfile"
+          scp -P "$DEPLOY_PORT" -o BatchMode=yes deploy/staging/docker-compose.yml "$DEPLOY_USER@$DEPLOY_HOST":"$DEPLOY_PATH/docker-compose.yml"
           echo "✓ Synced Caddyfile + docker-compose.yml to $DEPLOY_PATH"
 
       - name: Deploy to staging server
         env:
           DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
           DEPLOY_USER: ${{ secrets.STAGING_USER }}
+          DEPLOY_PORT: ${{ vars.STAGING_SSH_PORT || secrets.STAGING_SSH_PORT || vars.STAGING_PORT || secrets.STAGING_PORT || '22' }}
           DEPLOY_PATH: ${{ secrets.STAGING_DEPLOY_PATH }}
           GIT_SHA: ${{ github.sha }}
           REGISTRY: ${{ env.REGISTRY }}
@@ -402,7 +443,7 @@ jobs:
           # via the ssh command prefix; the quoted heredoc body then runs on the
           # server using those vars. This records the previous tag for a
           # deterministic rollback (never relies on `latest`).
-          ssh "$DEPLOY_USER@$DEPLOY_HOST" \
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
             "DEPLOY_PATH='$DEPLOY_PATH' NEW_TAG='sha-${GIT_SHA:0:7}' REGISTRY='$REGISTRY' IMAGE_PREFIX='$IMAGE_PREFIX' bash -s" << 'REMOTE'
             set -euo pipefail
             cd "$DEPLOY_PATH"
@@ -523,10 +564,11 @@ jobs:
         env:
           DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
           DEPLOY_USER: ${{ secrets.STAGING_USER }}
+          DEPLOY_PORT: ${{ vars.STAGING_SSH_PORT || secrets.STAGING_SSH_PORT || vars.STAGING_PORT || secrets.STAGING_PORT || '22' }}
           DEPLOY_PATH: ${{ secrets.STAGING_DEPLOY_PATH }}
         run: |
           echo "::group::Staging container + Caddy logs at failure (SHA ${{ github.sha }})"
-          ssh "$DEPLOY_USER@$DEPLOY_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash -s" << 'DIAG' || true
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "DEPLOY_PATH='$DEPLOY_PATH' bash -s" << 'DIAG' || true
             set +e
             cd "$DEPLOY_PATH" || exit 0
             echo "==> docker compose ps"; docker compose ps
@@ -542,12 +584,13 @@ jobs:
         env:
           DEPLOY_HOST: ${{ secrets.STAGING_HOST }}
           DEPLOY_USER: ${{ secrets.STAGING_USER }}
+          DEPLOY_PORT: ${{ vars.STAGING_SSH_PORT || secrets.STAGING_SSH_PORT || vars.STAGING_PORT || secrets.STAGING_PORT || '22' }}
           DEPLOY_PATH: ${{ secrets.STAGING_DEPLOY_PATH }}
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_PREFIX: ${{ env.IMAGE_PREFIX }}
         run: |
           echo "::error::Staging health/smoke failed — rolling back to previous tag"
-          ssh "$DEPLOY_USER@$DEPLOY_HOST" \
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
             "DEPLOY_PATH='$DEPLOY_PATH' REGISTRY='$REGISTRY' IMAGE_PREFIX='$IMAGE_PREFIX' bash -s" << 'REMOTE'
             set -euo pipefail
             cd "$DEPLOY_PATH"

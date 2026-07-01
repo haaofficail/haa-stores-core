@@ -56,12 +56,24 @@ describe('Deploy workflow — no ssh-keyscan probing', () => {
   });
 
   describe('Caddyfile + docker-compose.yml sync (PR #60 follow-up)', () => {
+    it('staging SSH uses a configurable deploy port', () => {
+      expect(DEPLOY).toMatch(/STAGING_SSH_PORT:\s+\$\{\{\s+vars\.STAGING_SSH_PORT/);
+      expect(DEPLOY).toMatch(/vars\.STAGING_PORT\s+\|\|\s+secrets\.STAGING_PORT\s+\|\|\s+'22'/);
+      expect(DEPLOY).toMatch(/ssh\s+-p\s+"\$DEPLOY_PORT"\s+-o\s+ConnectTimeout=20/);
+    });
+
+    it('validates pre-baked staging known_hosts against the configured SSH port', () => {
+      expect(DEPLOY).toMatch(/known_host_lookup="\[\$STAGING_HOST\]:\$STAGING_SSH_PORT"/);
+      expect(DEPLOY).toMatch(/ssh-keygen\s+-F\s+"\$known_host_lookup"\s+-f\s+~\/\.ssh\/known_hosts/);
+      expect(DEPLOY).toMatch(/OpenSSH stores non-standard ports as \[host\]:port/);
+    });
+
     it('staging deploy scps deploy/staging/Caddyfile to the server', () => {
-      expect(DEPLOY).toMatch(/scp\s+-o\s+BatchMode=yes\s+deploy\/staging\/Caddyfile/);
+      expect(DEPLOY).toMatch(/scp\s+-P\s+"\$DEPLOY_PORT"\s+-o\s+BatchMode=yes\s+deploy\/staging\/Caddyfile/);
     });
 
     it('staging deploy scps deploy/staging/docker-compose.yml to the server', () => {
-      expect(DEPLOY).toMatch(/scp\s+-o\s+BatchMode=yes\s+deploy\/staging\/docker-compose\.yml/);
+      expect(DEPLOY).toMatch(/scp\s+-P\s+"\$DEPLOY_PORT"\s+-o\s+BatchMode=yes\s+deploy\/staging\/docker-compose\.yml/);
     });
 
     it('production deploy scps deploy/production/Caddyfile + docker-compose.yml', () => {
