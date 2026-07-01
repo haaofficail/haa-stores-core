@@ -4,6 +4,35 @@
 
 ---
 
+### TASK-0144: Admin Support Gateway decision UX polish
+
+- **Type:** UX/UI Polish / Testing / Documentation
+- **Priority:** P2 Medium
+- **Status:** Locally verified
+- **Created:** 2026-07-01
+- **Updated:** 2026-07-01
+- **Branch:** `codex/admin-support-gateway-decision-ux`
+- **PR:** Not opened
+- **Original Request:** "نفذ" after selecting the next safe admin UX slice from clean `main`.
+- **Expanded Requirement:** Improve the already-exposed platform-admin Support Gateway so it behaves more like an operations triage surface: every visible ticket should communicate who owns the next step and what the admin should do next, without adding mutation actions or exposing sensitive support access tokens.
+- **Scope:** Read-only Support Gateway page triage copy, filter reset affordance, focused regression tests, and ops documentation.
+- **Out of Scope:** Deploy, staging/production action, migrations, secrets, API contract changes, support-ticket mutations, notification dispatch, live provider calls, and broad admin dashboard redesign.
+- **Skills Used:** `acceptance-criteria-gate`, `regression-safety-gate`, `frontend-rtl-polish`, `implementation-quality-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] Support Gateway rows show a responsible owner for triage.
+  - [x] Support Gateway rows show a clear next action.
+  - [x] Filters can be reset without leaving the page.
+  - [x] The page remains read-only and does not add support mutation actions.
+  - [x] No support `accessToken`, secrets, full sensitive token text, migration, deploy, or production action is introduced.
+- **Test Plan:** `pnpm vitest run tests/admin-support-gateway.test.ts tests/admin-dashboard-saas-ux.test.ts tests/admin-permission-reflection.test.ts`; `pnpm --filter @haa/admin-dashboard typecheck`; `pnpm --filter @haa/admin-dashboard build`; `pnpm vitest run tests/admin-brand-tokens.test.ts tests/typography.test.ts`; `pnpm check:skills`; `git diff --check`; `pnpm preflight`.
+- **Files Changed:** `apps/admin-dashboard/src/pages/SupportGateway.tsx`, `tests/admin-support-gateway.test.ts`, and ops documentation.
+- **Test Results:** Local verification passed: focused support/IA/permission tests passed 3 files / 19 tests; admin-dashboard typecheck passed; admin-dashboard build passed; brand/typography tests passed 2 files / 4 tests; `pnpm check:skills` passed; `git diff --check` passed; `pnpm preflight` passed.
+- **Root Cause:** The Support Gateway was safely exposed in TASK-0142, but ticket rows still behaved like a read table. They did not tell admins who owns the next step or what action should happen next, which weakens operational triage even when the route and data contract are correct.
+- **Verdict:** Local-only branch is ready for review. No commit, push, PR, deploy, migration, DB mutation, production action, secret handling, support mutation, or live payment/shipping/provider call occurred.
+- **Related Issues:** ISSUE-0081.
+
+---
+
 ### TASK-0142: Admin dashboard SaaS operations UX controlled fix
 
 - **Type:** UX/UI Polish / Testing / Documentation

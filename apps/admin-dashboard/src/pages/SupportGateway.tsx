@@ -56,6 +56,70 @@ const PRIORITY_BADGES: Record<string, string> = {
   low: 'bg-emerald-100 text-emerald-700',
 };
 
+type DecisionTone = 'danger' | 'warning' | 'primary' | 'success' | 'neutral';
+
+type TicketDecision = {
+  owner: string;
+  nextAction: string;
+  tone: DecisionTone;
+};
+
+const DECISION_BADGES: Record<DecisionTone, string> = {
+  danger: 'border-red-200 bg-red-50 text-red-700',
+  warning: 'border-amber-200 bg-amber-50 text-amber-700',
+  primary: 'border-primary-200 bg-primary-50 text-primary-700',
+  success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  neutral: 'border-gray-200 bg-gray-50 text-gray-700',
+};
+
+function supportTicketDecision(ticket: AdminSupportTicket): TicketDecision {
+  if (ticket.status === 'resolved' || ticket.status === 'closed') {
+    return {
+      owner: 'لا يوجد إجراء نشط',
+      nextAction: 'راجع السجل عند إعادة فتح أو تصعيد جديد.',
+      tone: ticket.status === 'resolved' ? 'success' : 'neutral',
+    };
+  }
+
+  if (ticket.priority === 'urgent') {
+    return {
+      owner: 'فريق الدعم',
+      nextAction: 'صعّد التذكرة اليوم وابدأ التواصل مع المتجر أو العميل.',
+      tone: 'danger',
+    };
+  }
+
+  if (ticket.status === 'open') {
+    return {
+      owner: 'فريق الدعم',
+      nextAction: 'ابدأ الفرز وحدد هل تحتاج التذكرة تواصلًا مع التاجر أو العميل.',
+      tone: 'warning',
+    };
+  }
+
+  if (ticket.status === 'in_progress') {
+    return {
+      owner: ticket.assignedTo ? 'عضو دعم مخصص' : 'فريق الدعم',
+      nextAction: 'تابع الحل المفتوح وحدّث التاجر قبل إغلاق اليوم.',
+      tone: 'primary',
+    };
+  }
+
+  if (ticket.status === 'waiting_on_customer') {
+    return {
+      owner: 'العميل/التاجر',
+      nextAction: 'أرسل تذكيرًا أو انتظر الرد قبل التصعيد.',
+      tone: 'warning',
+    };
+  }
+
+  return {
+    owner: 'لا يوجد إجراء نشط',
+    nextAction: 'راجع السجل عند إعادة فتح أو تصعيد جديد.',
+    tone: 'neutral',
+  };
+}
+
 function timeAgo(iso: string): string {
   const timestamp = new Date(iso).getTime();
   if (Number.isNaN(timestamp)) return '—';
@@ -99,6 +163,8 @@ function SummaryCard({ label, value, helper, tone }: { label: string; value: num
 }
 
 function TicketRow({ ticket }: { ticket: AdminSupportTicket }) {
+  const decision = supportTicketDecision(ticket);
+
   return (
     <tr className="border-t border-gray-100 hover:bg-gray-50">
       <td className="px-4 py-4 align-top">
@@ -116,6 +182,10 @@ function TicketRow({ ticket }: { ticket: AdminSupportTicket }) {
       <td className="px-4 py-4 align-top"><Badge label={STATUS_LABELS[ticket.status] ?? ticket.status} className={STATUS_BADGES[ticket.status] ?? 'bg-gray-100 text-gray-700'} /></td>
       <td className="px-4 py-4 align-top"><Badge label={PRIORITY_LABELS[ticket.priority] ?? ticket.priority} className={PRIORITY_BADGES[ticket.priority] ?? 'bg-gray-100 text-gray-700'} /></td>
       <td className="px-4 py-4 align-top text-sm text-gray-500">{timeAgo(ticket.updatedAt)}</td>
+      <td className="px-4 py-4 align-top">
+        <span className={`inline-flex rounded-md border px-2 py-1 text-xs font-semibold ${DECISION_BADGES[decision.tone]}`}>{decision.owner}</span>
+      </td>
+      <td className="max-w-xs px-4 py-4 align-top text-xs leading-5 text-gray-600">{decision.nextAction}</td>
       <td className="px-4 py-4 align-top"><Link to={`/tenants/${ticket.tenantId}`} className="inline-flex h-9 items-center rounded-lg border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1">ملف التاجر</Link></td>
     </tr>
   );
@@ -139,6 +209,13 @@ export default function SupportGateway() {
   const startIndex = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
   const endIndex = total === 0 ? 0 : Math.min(total, page * PAGE_SIZE);
   const resetPage = (fn: (value: string) => void) => (value: string) => { fn(value); setPage(1); };
+  const hasActiveFilters = Boolean(status || priority || query.trim());
+  const clearFilters = () => {
+    setStatus('');
+    setPriority('');
+    setQuery('');
+    setPage(1);
+  };
 
   return (
     <div dir="rtl" className="space-y-6">
@@ -159,16 +236,19 @@ export default function SupportGateway() {
       </div>
 
       <div className="rounded-lg border border-gray-100 bg-white p-4 shadow-sm">
-        <div className="grid gap-3 lg:grid-cols-[1fr_180px_180px]">
+        <div className="grid gap-3 lg:grid-cols-[1fr_180px_180px_auto]">
           <label className="block"><span className="text-xs font-semibold text-gray-500">بحث</span><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} type="search" placeholder="ابحث بالموضوع أو العميل أو المتجر..." className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100" /></label>
           <label className="block"><span className="text-xs font-semibold text-gray-500">الحالة</span><select value={status} onChange={(event) => resetPage(setStatus)(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100">{STATUS_OPTIONS.map(option => <option key={option.key || 'all'} value={option.key}>{option.label}</option>)}</select></label>
           <label className="block"><span className="text-xs font-semibold text-gray-500">الأولوية</span><select value={priority} onChange={(event) => resetPage(setPriority)(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100">{PRIORITY_OPTIONS.map(option => <option key={option.key || 'all'} value={option.key}>{option.label}</option>)}</select></label>
+          <div className="flex items-end">
+            <button type="button" onClick={clearFilters} disabled={!hasActiveFilters} className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50">مسح الفلاتر</button>
+          </div>
         </div>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm">
         {ticketsQuery.isPending ? <div className="p-6 space-y-3">{[1, 2, 3, 4].map(i => <div key={i} className="h-12 animate-pulse rounded-lg bg-gray-100" />)}</div> : ticketsQuery.isError ? <ErrorState message="فشل تحميل بوابة الدعم" onRetry={() => ticketsQuery.refetch()} /> : rows.length === 0 ? <AdminEmptyState icon="Headphones" title="لا توجد تذاكر دعم ضمن الفلتر الحالي" description="هذا لا يعني أن الدعم غير موجود؛ قد تكون كل التذاكر مغلقة أو أن الفلتر ضيق." meaning="إذا كان التجار يبلغون عن مشاكل ولا تظهر هنا، راجع إعدادات إنشاء التذاكر في المتجر أو افتح صندوق وارد الهبوط للرسائل العامة." actions={[{ label: 'عرض كل التذاكر', href: '/support-gateway' }, { label: 'فتح المتاجر', href: '/stores' }]} /> : <>
-          <div className="overflow-x-auto"><table className="min-w-full text-right text-sm"><thead className="bg-gray-50 text-xs font-semibold text-gray-500"><tr><th className="px-4 py-3 text-start">التذكرة</th><th className="px-4 py-3 text-start">المتجر</th><th className="px-4 py-3 text-start">العميل</th><th className="px-4 py-3 text-start">الحالة</th><th className="px-4 py-3 text-start">الأولوية</th><th className="px-4 py-3 text-start">آخر تحديث</th><th className="px-4 py-3 text-start">إجراء</th></tr></thead><tbody>{rows.map(ticket => <TicketRow key={ticket.id} ticket={ticket} />)}</tbody></table></div>
+          <div className="overflow-x-auto"><table className="min-w-full text-right text-sm"><thead className="bg-gray-50 text-xs font-semibold text-gray-500"><tr><th className="px-4 py-3 text-start">التذكرة</th><th className="px-4 py-3 text-start">المتجر</th><th className="px-4 py-3 text-start">العميل</th><th className="px-4 py-3 text-start">الحالة</th><th className="px-4 py-3 text-start">الأولوية</th><th className="px-4 py-3 text-start">آخر تحديث</th><th className="px-4 py-3 text-start">المسؤول</th><th className="px-4 py-3 text-start">الإجراء التالي</th><th className="px-4 py-3 text-start">إجراء</th></tr></thead><tbody>{rows.map(ticket => <TicketRow key={ticket.id} ticket={ticket} />)}</tbody></table></div>
           <TablePager page={page} totalPages={totalPages} startIndex={startIndex} endIndex={endIndex} filteredCount={total} onPageChange={setPage} itemLabel="تذكرة" />
         </>}
       </div>

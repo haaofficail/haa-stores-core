@@ -1,5 +1,15 @@
 # Internal Changelog
 
+## 2026-07-01 — Admin Support Gateway Decision UX Polish (TASK-0144)
+
+- Added a ticket-level triage decision helper on `/support-gateway` so each row shows the responsible owner and next operational action.
+- Added owner states for urgent/open/in-progress/waiting/resolved support tickets without displaying assigned numeric IDs as staff names.
+- Added a local `مسح الفلاتر` control so admins can reset search/status/priority filters without leaving the support queue.
+- Kept the page read-only: no support-ticket mutation action, notification dispatch, API contract change, or token reveal was added.
+- Expanded `tests/admin-support-gateway.test.ts` to guard owner/next-action columns, filter reset label, read-only source behavior, and no `accessToken` exposure.
+- Verification passed: focused support/IA/permission tests, admin-dashboard typecheck, admin-dashboard build, brand/typography tests, `pnpm check:skills`, clean `git diff --check`, and `pnpm preflight`.
+- Safety boundary unchanged: no deploy, no production action, no `db:migrate`, no DB mutation, no secrets printed, no API contract expansion, no support mutation action, and no live provider calls.
+
 ## 2026-07-01 — Admin Support Gateway Visibility Fix (TASK-0142 follow-up)
 
 - Added a read-only platform-admin Support Gateway at `/support-gateway`, visible in the admin sidebar under system operations when the admin has `support.gateway.read`.

@@ -21,6 +21,10 @@ describe('Admin Support Gateway visibility and safety', () => {
     expect(src).toContain('بوابة الدعم');
     expect(src).toContain('AdminEmptyState');
     expect(src).toContain('ملف التاجر');
+    expect(src).toContain('supportTicketDecision');
+    expect(src).toContain('المسؤول');
+    expect(src).toContain('الإجراء التالي');
+    expect(src).toContain('مسح الفلاتر');
   });
 
   it('registers the page in admin nav and guards the route with an admin permission', () => {
@@ -64,5 +68,28 @@ describe('Admin Support Gateway visibility and safety', () => {
     expect(service).not.toContain('accessToken:');
     expect(service).not.toContain('s.supportTickets.accessToken');
     expect(service).toContain('messagePreview');
+  });
+
+  it('turns tickets into triage decisions without adding mutation actions', () => {
+    const src = read(PAGE_PATH);
+    expect(src).toContain('function supportTicketDecision');
+    expect(src).toContain("ticket.priority === 'urgent'");
+    expect(src).toContain("ticket.status === 'waiting_on_customer'");
+    expect(src).toContain('فريق الدعم');
+    expect(src).toContain('العميل/التاجر');
+    expect(src).toContain('nextAction');
+    expect(src).not.toContain('PATCH');
+    expect(src).not.toContain('DELETE');
+    expect(src).not.toContain('reviewTicket');
+  });
+
+  it('keeps resolved or closed urgent tickets inactive in triage copy', () => {
+    const src = read(PAGE_PATH);
+    const terminalBranch = src.indexOf("ticket.status === 'resolved' || ticket.status === 'closed'");
+    const urgentBranch = src.indexOf("ticket.priority === 'urgent'");
+    expect(terminalBranch).toBeGreaterThan(-1);
+    expect(urgentBranch).toBeGreaterThan(-1);
+    expect(terminalBranch).toBeLessThan(urgentBranch);
+    expect(src).toContain('لا يوجد إجراء نشط');
   });
 });
