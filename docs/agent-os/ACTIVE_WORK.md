@@ -39,9 +39,8 @@ the API cleanup work. It contains admin-dashboard UX, TASK-0142 tests, and
 TASK-0142 docs only; no API cleanup files are part of this branch. This does not
 authorize merge, deploy, production launch, secret handling, live provider
 calls, SSH to production, DNS changes, or migrations. Project-owned remote
-checks are being monitored after the draft PR publish; Snyk/TestSprite may
-remain external/account-tooling blockers if their current status does not
-change.
+checks passed for draft PR #351; Snyk/TestSprite remain external/account-tooling
+blockers (`private tests` limit and `No tests detected`).
 
 ## Previous task
 

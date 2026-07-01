@@ -105,6 +105,9 @@
   - `/store-payment-settings` after selecting store `#1` shows readiness, activation state, and `التفعيل: غير قابلة للتفعيل` for unconfigured providers.
   - `/operations/webhooks` and `/audit` show smart empty-state meaning and next-action copy.
   - Mobile RTL spot check at 390px confirmed command-center content, sidebar groups, `dir="rtl"`, and no document/body horizontal scroll overflow.
+- **PR #351 remote checks:**
+  - Project-owned checks passed: Required Merge Gate, CI Preflight, Secret Scan, Lint, Typecheck, Test, app builds, E2E Tests, Security Scan jobs, and SonarCloud.
+  - External/account-tooling blockers remain: Snyk private-test limit and TestSprite `No tests detected`.
 
 ## Deviations
 
@@ -125,7 +128,7 @@
 
 ## Next step
 
-- Monitor PR #351 checks, address any project-owned failure, and keep merge/deploy as separate owner-approved actions.
+- Review draft PR #351, resolve external Snyk/TestSprite account-tooling blockers if required by branch policy, and keep merge/deploy as separate owner-approved actions.
 
 ---
 

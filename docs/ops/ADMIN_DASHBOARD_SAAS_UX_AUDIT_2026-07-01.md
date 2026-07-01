@@ -100,4 +100,6 @@ remains a redirect to `/users`.
 - `pnpm check:skills` — passed 43/43.
 - `git diff --check` — clean.
 - `CI=true pnpm preflight` — passed in the isolated worktree with root guard skipped; admin-dashboard typecheck was run separately.
+- `pnpm test` — passed locally after the permission-reflection test was aligned with the grouped sidebar labels.
 - Browser verification on `localhost:5175` — passed for sidebar IA, dashboard command center, Merchant Verification vocabulary, Settlement Readiness decision columns, Store Payment Settings readiness after selecting a store, smart empty states, and mobile RTL without document/body horizontal overflow.
+- Draft PR #351 project-owned GitHub checks — passed: Required Merge Gate, CI, Security Scan jobs, SonarCloud, and E2E. External Snyk/TestSprite account-tooling blockers remain.
