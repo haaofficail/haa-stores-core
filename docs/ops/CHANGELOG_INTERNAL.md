@@ -7,6 +7,7 @@
 - Removed staging SSH setup, known-host handling, SSH warmup, staging `scp`, and staging `ssh` commands from the staging deploy path.
 - Kept Quality Gates, image builds, and production deploy behavior unchanged.
 - Staging GHCR login, deploy config sync, compose deploy, smoke diagnostics, and rollback now execute locally on the staging self-hosted runner.
+- Added `scripts/server/install-github-runner-staging.sh` to register/install the VPS runner without storing the GitHub registration token in the repo or printing it in docs.
 - Updated deploy workflow tests to guard the self-hosted runner contract and prevent reintroducing inbound SSH for staging.
 - Verified workflow YAML parsing and focused deploy workflow tests locally.
 - Current operational blocker: no repository self-hosted runner is registered yet (`total_count: 0`), and this Codex session cannot SSH to `deploy@72.61.108.208`; the VPS runner must be registered with labels `self-hosted`, `linux`, `x64`, `haa-staging` before merge.

@@ -24,6 +24,7 @@
 
 - **Files actually changed:**
   - `.github/workflows/deploy.yml`
+  - `scripts/server/install-github-runner-staging.sh`
   - `tests/deploy-no-ssh-keyscan.test.ts`
   - `tests/deploy-hardening.test.ts`
   - `docs/ops/TASK_TRACKER.md`
@@ -37,6 +38,7 @@
   - `deploy-staging` now uses `[self-hosted, linux, x64, haa-staging]`.
   - Staging deploy now runs GHCR login, config sync, compose deploy, diagnostics, and rollback locally on the staging runner.
   - Staging no longer references `STAGING_SSH_KEY`, `STAGING_HOST`, `STAGING_USER`, `STAGING_SSH_PORT`, `ssh`, or `scp`.
+  - A VPS-side bootstrap script now installs/registers the runner as a systemd service and accepts the GitHub registration token only through `GITHUB_RUNNER_TOKEN`.
   - Production deploy SSH behavior was not changed.
   - GitHub currently has no registered self-hosted runners for this repo, so merge/live deploy must wait until the VPS runner is online.
 - **Safety constraints respected (per AGENTS.md §14.7):**
