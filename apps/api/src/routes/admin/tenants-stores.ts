@@ -5,7 +5,7 @@
 // Each export is a raw Hono handler. The aggregator in ./index.ts applies
 // `requireAdminAuth()` and any other middleware when mounting the route.
 
-import { eq, desc, sql, and } from 'drizzle-orm';
+import { eq, desc, sql, and, or, ilike } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { AuditLogService } from '@haa/integration-core';
@@ -87,11 +87,33 @@ function paymentMatchesQuery(payment: Record<string, unknown>, query: string) {
   return haystack.some((value) => value.includes(query));
 }
 
-async function getAdminPaymentRows(storeId?: number, limit = 200) {
+function adminPaymentWhere(storeId?: number, query?: string) {
+  const conditions = [];
+  if (storeId) conditions.push(eq(s.payments.storeId, storeId));
+  if (query) {
+    conditions.push(or(
+      ilike(s.payments.provider, `%${query}%`),
+      ilike(s.payments.status, `%${query}%`),
+      ilike(s.payments.currency, `%${query}%`),
+      sql`${s.payments.id}::text ILIKE ${`%${query}%`}`,
+      sql`${s.payments.orderId}::text ILIKE ${`%${query}%`}`,
+    ));
+  }
+  return conditions.length ? and(...conditions) : undefined;
+}
+
+async function getAdminPaymentRows(storeId?: number, limit = 200, offset = 0, query?: string) {
   const db = createDbClient();
-  return storeId
-    ? db.select(adminPaymentSelect).from(s.payments).where(eq(s.payments.storeId, storeId)).orderBy(desc(s.payments.createdAt)).limit(limit)
-    : db.select(adminPaymentSelect).from(s.payments).orderBy(desc(s.payments.createdAt)).limit(limit);
+  return db.select(adminPaymentSelect).from(s.payments)
+    .where(adminPaymentWhere(storeId, query))
+    .orderBy(desc(s.payments.createdAt)).limit(limit).offset(offset);
+}
+
+async function getAdminPaymentCount(storeId?: number, query?: string): Promise<number> {
+  const db = createDbClient();
+  const [row] = await db.select({ total: sql<number>`count(*)::int` }).from(s.payments)
+    .where(adminPaymentWhere(storeId, query));
+  return row.total;
 }
 
 // ── /dashboard ─────────────────────────────────────────────────────────────
@@ -170,7 +192,11 @@ export const tenantsRoutes = {
       try {
         const { logAdminAction } = await import('../../services/audit-log.js');
         await logAdminAction({
-          adminId: c.get('admin')?.id,
+          // P1-8 audit fix: the admin middleware sets 'adminAuth' (with a
+          // `userId` field), not 'admin'/'id' — this line always read
+          // undefined, so every compliance-field change was logged with
+          // no actor identity.
+          adminId: c.get('adminAuth')?.userId,
           action: 'tenant.compliance.update',
           tenantId: id,
           changes: complianceChanges,
@@ -529,10 +555,31 @@ export const paymentSettingsRoutes = {
 };
 
 // ── /payments ──────────────────────────────────────────────────────────────
+// P1-9 audit fix: this used to hard-cap at 100/200 rows with no page/limit
+// params and no total count — the admin table's own client-side "search"
+// and pagination silently operated on a truncated slice with no indicator
+// the platform had more payments than what was shown. Mirrors the
+// page/limit/offset/total/totalPages contract already established for
+// /marketplace/products (see marketplace.ts).
 export async function paymentsRoute(c: any) {
-  const storeId = c.req.query('storeId');
-  const payments = await getAdminPaymentRows(storeId ? Number(storeId) : undefined, storeId ? 100 : 200);
-  return c.json({ success: true, data: payments });
+  const storeIdParam = c.req.query('storeId');
+  const storeId = storeIdParam ? Number(storeIdParam) : undefined;
+  const query = (c.req.query('q') ?? '').trim();
+  const page = Math.max(1, Number(c.req.query('page')) || 1);
+  const limit = Math.min(200, Math.max(1, Number(c.req.query('limit')) || 50));
+  const offset = (page - 1) * limit;
+  const [total, payments] = await Promise.all([
+    getAdminPaymentCount(storeId, query || undefined),
+    getAdminPaymentRows(storeId, limit, offset, query || undefined),
+  ]);
+  return c.json({
+    success: true,
+    data: payments,
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit),
+  });
 }
 
 export async function paymentsExportRoute(c: any) {

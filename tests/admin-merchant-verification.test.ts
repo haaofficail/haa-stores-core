@@ -284,9 +284,12 @@ describe('admin merchant verification page separation', () => {
     const page = readFileSync(new URL('../apps/admin-dashboard/src/pages/Compliance.tsx', import.meta.url), 'utf-8');
     const api = readFileSync(new URL('../apps/admin-dashboard/src/lib/api.ts', import.meta.url), 'utf-8');
 
-    expect(api).toContain('getPayments: (params: { storeId?: number } = {})');
+    // P1-9 audit fix: getPayments gained q/page/limit params (server-side
+    // pagination — see admin-payments-audit-pagination.test.ts) alongside
+    // the pre-existing storeId scoping this test locks.
+    expect(api).toContain("getPayments: (params: { storeId?: number; q?: string; page?: number; limit?: number } = {})");
     expect(api).toContain("qs.set('storeId', String(params.storeId))");
-    expect(page).toContain('adminApi.getPayments({ storeId: selectedRecord!.storeId! })');
+    expect(page).toContain('adminApi.getPayments({ storeId: selectedRecord!.storeId!, limit: 200 })');
     expect(page).toContain('enabled: isMerchantFile && canReadPayments && Boolean(selectedRecord?.storeId)');
   });
 });

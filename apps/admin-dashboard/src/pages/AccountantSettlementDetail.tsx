@@ -11,6 +11,18 @@ import { UnauthorizedState } from '../components/ui/UnauthorizedState';
 const ALLOWED_RECEIPT_TYPES = new Set(['application/pdf', 'image/png', 'image/jpeg']);
 const MAX_RECEIPT_SIZE = 5 * 1024 * 1024; // 5MB — same limit as the backend.
 
+// P1-7 audit fix: markTransferPending/markTransferred fired directly on
+// click with no confirmation — the only place in the settlement flow
+// missing the modal-confirm pattern already used everywhere else
+// (SettlementBatchDetail.tsx). The accountant is the primary day-to-day
+// user of this exact action.
+type ConfirmTransferAction = {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  status: string;
+};
+
 const STATUS_LABELS: Record<string, string> = {
   requested: 'مطلوبة', under_review: 'قيد المراجعة', approved: 'معتمدة',
   transfer_pending: 'قيد التحويل', transferred: 'تم التحويل', proof_uploaded: 'تم رفع الإيصال',
@@ -35,6 +47,8 @@ export default function AccountantSettlementDetail() {
   const [currency, setCurrency] = useState('SAR');
   const [note, setNote] = useState('');
   const [mismatch, setMismatch] = useState<string | null>(null);
+  const [transferError, setTransferError] = useState<string | null>(null);
+  const [confirmTransferAction, setConfirmTransferAction] = useState<ConfirmTransferAction | null>(null);
 
   const {
     data: detail,
@@ -103,15 +117,49 @@ export default function AccountantSettlementDetail() {
     },
     onSuccess: () => {
       toast.success('تم تحديث حالة التحويل');
+      setTransferError(null);
       invalidate();
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : 'تعذّر بدء التحويل'),
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : 'تعذّر بدء التحويل';
+      // Keep a persistent banner for mismatch-class errors — a toast alone
+      // (the previous behavior) disappears before the accountant can
+      // reconcile the amount/currency mismatch it's warning about.
+      setTransferError(msg);
+      toast.error(msg);
+    },
   });
 
+  // P1-7 audit fix: opens the confirmation modal instead of firing the
+  // mutation directly. The actual mutate() call now lives in
+  // confirmTransfer, invoked only after the accountant clicks "تأكيد" in
+  // the modal below.
   const startTransfer = useCallback(() => {
     if (!detail || transferMutation.isPending) return;
-    transferMutation.mutate(detail.status);
+    setTransferError(null);
+    if (detail.status === 'approved') {
+      setConfirmTransferAction({
+        status: detail.status,
+        title: 'تأكيد بدء التحويل البنكي',
+        description: `سيتم تحويل حالة التسوية إلى "قيد التحويل" لهذا المبلغ (${detail.amount} ${detail.currency}). تأكد من مطابقة المبلغ قبل المتابعة.`,
+        confirmLabel: 'بدء التحويل',
+      });
+    } else if (detail.status === 'transfer_pending') {
+      setConfirmTransferAction({
+        status: detail.status,
+        title: 'تأكيد تسجيل التحويل البنكي',
+        description: `هذا يؤكد أن التحويل البنكي (${detail.amount} ${detail.currency}) تم فعلياً من حساب المتجر البنكي. هذا إجراء مالي لا يمكن التراجع عنه من هنا — تأكد من إتمام التحويل الفعلي أولاً.`,
+        confirmLabel: 'تأكيد أن التحويل تم',
+      });
+    }
   }, [detail, transferMutation]);
+
+  const confirmTransfer = useCallback(() => {
+    if (!confirmTransferAction) return;
+    const { status } = confirmTransferAction;
+    setConfirmTransferAction(null);
+    transferMutation.mutate(status);
+  }, [confirmTransferAction, transferMutation]);
 
   // The file upload runs INSIDE the mutation so `isPending` (and thus the
   // disabled Save button + the re-entrancy guard) covers the whole upload →
@@ -255,7 +303,10 @@ export default function AccountantSettlementDetail() {
       )}
 
       {startLabel && (
-        <section className="bg-white rounded-xl shadow-sm p-5">
+        <section className="bg-white rounded-xl shadow-sm p-5 space-y-3">
+          {transferError && (
+            <div className="rounded-lg bg-red-50 text-red-700 text-sm px-3 py-2">{transferError}</div>
+          )}
           {canMarkTransferred ? (
             <button onClick={startTransfer} disabled={saving}
               className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-40">
@@ -321,6 +372,36 @@ export default function AccountantSettlementDetail() {
           {detail.events.length === 0 && <li className="text-gray-400">لا توجد أحداث</li>}
         </ul>
       </section>
+
+      {/* P1-7 audit fix: confirmation modal for markTransferPending/markTransferred */}
+      {confirmTransferAction && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div role="dialog" aria-modal="true" aria-labelledby="transfer-confirm-title" className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+            <h3 id="transfer-confirm-title" className="font-bold text-lg mb-3">{confirmTransferAction.title}</h3>
+            <p className="text-sm text-gray-600 leading-6">
+              {confirmTransferAction.description}
+            </p>
+            <div className="rounded-lg bg-amber-50 text-amber-800 text-xs leading-5 p-3 mt-4">
+              هذا إجراء مالي مؤثر وسيظهر في سجل الأحداث. لا تتابع إلا بعد مطابقة المبلغ والحالة.
+            </div>
+            <div className="flex gap-2 justify-end mt-5">
+              <button
+                onClick={() => setConfirmTransferAction(null)}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+              >
+                رجوع
+              </button>
+              <button
+                onClick={confirmTransfer}
+                disabled={transferMutation.isPending}
+                className="px-4 py-2 text-white rounded-lg text-sm disabled:opacity-50 bg-primary-600 hover:bg-primary-700"
+              >
+                {transferMutation.isPending ? 'جاري...' : confirmTransferAction.confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

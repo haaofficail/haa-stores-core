@@ -5,7 +5,7 @@
 // `requireAdminAuth()` when mounting the route.
 
 import type { Context } from 'hono';
-import { eq, and, desc, type SQL } from 'drizzle-orm';
+import { eq, and, desc, sql, type SQL } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { SubscriptionService } from '@haa/commerce-core';
@@ -57,18 +57,42 @@ const adminUserListSelect = {
 };
 
 // ── /audit ────────────────────────────────────────────────────────────────
+// P1-9 audit fix (two bugs, same route):
+//   1. Hard-capped at 200 rows with no page/limit params and no total
+//      count — silently only showed the most recent 200 events with no
+//      indicator older ones existed.
+//   2. The admin-dashboard's /audit page (AuditLogs.tsx) has NO
+//      tenantId/storeId filter UI and always called this endpoint
+//      unscoped — but this route returned an empty array whenever BOTH
+//      were absent. The page has therefore always rendered zero rows,
+//      regardless of how much audit history existed. Fixed by allowing
+//      an unscoped (platform-wide) paginated query — requireAdminAuth +
+//      requireAdminPermission('audit.read') already gate who can reach
+//      this route at all, so an unscoped view is consistent with what an
+//      admin holding that permission is meant to see.
+// Mirrors the page/limit/offset/total/totalPages contract already
+// established for /marketplace/products (see marketplace.ts).
 export async function auditRoute(c: AdminRouteContext) {
   const tenantId = c.req.query('tenantId');
   const storeId = c.req.query('storeId');
-  if (!tenantId && !storeId) {
-    return c.json({ success: true, data: [] });
-  }
+  const page = Math.max(1, Number(c.req.query('page')) || 1);
+  const limit = Math.min(200, Math.max(1, Number(c.req.query('limit')) || 50));
+  const offset = (page - 1) * limit;
   const db = createDbClient();
   const conditions: SQL[] = [];
   if (tenantId) conditions.push(eq(s.auditLogs.tenantId, Number(tenantId)));
   if (storeId) conditions.push(eq(s.auditLogs.storeId, Number(storeId)));
-  const logs = await db.select().from(s.auditLogs).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(s.auditLogs.createdAt)).limit(200);
-  return c.json({ success: true, data: logs });
+  const where = conditions.length ? and(...conditions) : undefined;
+  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(s.auditLogs).where(where);
+  const logs = await db.select().from(s.auditLogs).where(where).orderBy(desc(s.auditLogs.createdAt)).limit(limit).offset(offset);
+  return c.json({
+    success: true,
+    data: logs,
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit),
+  });
 }
 
 // ── /webhooks/dedup-stats ─────────────────────────────────────────────────
