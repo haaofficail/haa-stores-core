@@ -60,6 +60,10 @@ import {
   listLandingContactsQuerySchema,
   patchLandingContactBodySchema,
 } from './landing-contacts.js';
+import {
+  listSupportGatewayTickets,
+  listSupportGatewayTicketsQuerySchema,
+} from './support-gateway.js';
 
 // ── Permission guard used by settlement/payout routes. ────────────────────
 export function requireAdminPermission(permission: AdminPermission) {
@@ -486,6 +490,17 @@ adminRouter.patch(
   requireAdminTwoFactorIfEnabled(),
   zValidator('json', patchLandingContactBodySchema),
   patchLandingContact,
+);
+
+// /support-gateway/* — platform-wide support ticket visibility. Read-only in
+// TASK-0142 so support staff can triage without gaining merchant-scoped ticket
+// mutation powers.
+adminRouter.get(
+  '/support-gateway/tickets',
+  requireAdminAuth(),
+  requireAdminPermission('support.gateway.read'),
+  zValidator('query', listSupportGatewayTicketsQuerySchema),
+  listSupportGatewayTickets,
 );
 
 export { adminRouter };

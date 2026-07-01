@@ -17,8 +17,8 @@ PR: #351 — https://github.com/haaofficail/haa-stores-core/pull/351.
 The admin-dashboard UX batch is local-only and focused on decision safety:
 sidebar IA groups, dashboard command-center copy, Merchant Verification risk
 vocabulary, Settlement Readiness decision language, Store Payment Settings
-configured/enabled/readiness separation, smart empty states, focused tests, and
-ops docs.
+configured/enabled/readiness separation, smart empty states, and the Support
+Gateway visibility fix, with focused tests and ops docs.
 
 Review-thread follow-up before merge addressed both unresolved PR comments:
 the dashboard no longer reports API health from static green copy, and Store
@@ -52,6 +52,11 @@ authorize deploy, production launch, secret handling, live provider
 calls, SSH to production, DNS changes, or migrations. Project-owned remote
 checks passed for PR #351; Snyk/TestSprite remain external/account-tooling
 blockers (`private tests` limit and `No tests detected`).
+
+Support Gateway follow-up: root cause was a missing platform-admin support-ticket
+contract, not a CSS/nav-only bug. The branch now adds `support.gateway.read`,
+`/support-gateway`, `/admin/support-gateway/tickets`, admin API-client wiring,
+and tests proving no support `accessToken` is selected or rendered.
 
 ## Previous task
 

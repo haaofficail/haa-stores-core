@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0080: Admin Support Gateway Was Missing From Platform-admin Contract
+
+- **ID:** ISSUE-0080
+- **Date:** 2026-07-01
+- **Severity:** High (admin support operations visibility / lifecycle ownership)
+- **Area:** Admin Dashboard / Admin API / Support Tickets / RBAC
+- **Related Tasks:** TASK-0142
+- **Symptoms:** The admin dashboard did not show a support gateway. Admins could see `/landing-inbox`, but that page is for landing/contact leads and not merchant/customer support-ticket operations.
+- **Expected:** Platform admins should have a read-only support gateway in the admin console that lists support tickets with store/tenant context, status, priority, and next operational links, while keeping sensitive support access tokens hidden.
+- **Actual:** No admin route, sidebar item, API client helper, server route, or platform-admin permission existed for the support-ticket gateway. Existing `support:*` permissions and `/support` routes were merchant/store-scoped and could not be safely reused as platform-admin RBAC.
+- **Root Cause:** Support operations existed in merchant/storefront contexts, but the admin operations console never received a platform-admin support-ticket contract. The similarly named admin `/landing-inbox` route masked the gap because it handled lead inbox review, not support tickets.
+- **Fix:** Added `support.gateway.read` to the admin permission model and catalog, mounted `/admin/support-gateway/tickets` with admin auth and permission guard, added an admin API-client helper, added `/support-gateway` to the admin sidebar/router, and built a read-only Support Gateway page with safe summaries, filters, tenant links, and no `accessToken` exposure.
+- **Verification:** `pnpm vitest run tests/admin-support-gateway.test.ts tests/admin-permission-reflection.test.ts tests/admin-dashboard-saas-ux.test.ts` passed. Shared build, API typecheck, admin-dashboard typecheck/build, brand/typography tests, `pnpm check:skills`, clean `git diff --check`, and `CI=true pnpm preflight` passed. Browser QA on `http://127.0.0.1:5176/support-gateway` confirmed the heading, sidebar link, API request, landing-inbox bridge, smart empty state, and no access-token text.
+- **Prevention:** Keep `tests/admin-support-gateway.test.ts`, `tests/admin-permission-reflection.test.ts`, and `tests/admin-dashboard-saas-ux.test.ts` guarding route/nav/permission/API visibility plus no `accessToken` selection or rendering.
+- **Status:** Fixed locally in TASK-0142 / draft PR #351. No merge, deploy, migration, DB mutation, secret handling, production action, or live provider call occurred.
+
+---
+
 ### ISSUE-0078: Admin Operations UX Confused Readiness Gaps With Risk Decisions
 
 - **ID:** ISSUE-0078

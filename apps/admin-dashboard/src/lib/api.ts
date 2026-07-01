@@ -562,6 +562,39 @@ export interface AdminStorePaymentSettingsUpdate {
   supportedPaymentMethod: string;
 }
 
+export interface AdminSupportTicket {
+  id: number;
+  storeId: number;
+  storeName: string;
+  storeSlug: string;
+  tenantId: number;
+  tenantName: string;
+  customerId: number | null;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  subject: string;
+  messagePreview: string;
+  status: string;
+  priority: string;
+  assignedTo: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminSupportGatewayPage {
+  data: AdminSupportTicket[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  summary: {
+    open: number;
+    waitingOnCustomer: number;
+    urgent: number;
+  };
+}
+
 export const adminApi = {
   login: (email: string, password: string, totpCode?: string) =>
     request<AdminLoginResult>('POST', '/admin/login', { email, password, ...(totpCode ? { totpCode } : {}) }),
@@ -599,6 +632,17 @@ export const adminApi = {
   getStorePaymentSettings: (storeId: number) => request<AdminStorePaymentSetting[]>('GET', `/admin/stores/${storeId}/payment-settings`),
   upsertStorePaymentSettings: (storeId: number, data: AdminStorePaymentSettingsUpdate) =>
     request<AdminStorePaymentSetting>('PUT', `/admin/stores/${storeId}/payment-settings`, data),
+  getSupportGatewayTickets: (params: { status?: string; priority?: string; storeId?: number; q?: string; page?: number; limit?: number } = {}) => {
+    const qs = new URLSearchParams();
+    if (params.status) qs.set('status', params.status);
+    if (params.priority) qs.set('priority', params.priority);
+    if (typeof params.storeId === 'number') qs.set('storeId', String(params.storeId));
+    if (params.q) qs.set('q', params.q);
+    if (params.page) qs.set('page', String(params.page));
+    if (params.limit) qs.set('limit', String(params.limit));
+    const query = qs.toString();
+    return request<AdminSupportGatewayPage>('GET', `/admin/support-gateway/tickets${query ? `?${query}` : ''}`);
+  },
   getPayments: (params: { storeId?: number } = {}) => {
     const qs = new URLSearchParams();
     if (typeof params.storeId === 'number') qs.set('storeId', String(params.storeId));

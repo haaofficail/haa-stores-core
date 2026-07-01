@@ -16,7 +16,7 @@
 import {
   AlertCircle, AlertTriangle, BarChart2, Building2, CheckSquare,
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown, CreditCard,
-  Eye, FileText, Inbox, LayoutDashboard, Landmark, LogOut, Mail,
+  Eye, FileText, Headphones, Inbox, LayoutDashboard, Landmark, LogOut, Mail,
   Menu, Package, Plus, ReceiptText, ScrollText, Settings,
   ShieldCheck, ShoppingBag, Store, Users, UserCog, X,
   type LucideIcon,
@@ -25,7 +25,7 @@ import {
 export const ADMIN_ICON_REGISTRY = {
   AlertCircle, AlertTriangle, BarChart2, Building2, CheckSquare,
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown, CreditCard,
-  Eye, FileText, Inbox, LayoutDashboard, Landmark, LogOut, Mail,
+  Eye, FileText, Headphones, Inbox, LayoutDashboard, Landmark, LogOut, Mail,
   Menu, Package, Plus, ReceiptText, ScrollText, Settings,
   ShieldCheck, ShoppingBag, Store, Users, UserCog, X,
 } as const satisfies Record<string, LucideIcon>;

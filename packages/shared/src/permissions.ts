@@ -382,6 +382,8 @@ export const ADMIN_PERMISSION_CATALOG: AdminPermissionInfo[] = [
 
   { key: 'landing_contacts.read', labelAr: 'عرض صندوق وارد الهبوط', descriptionAr: 'عرض رسائل صفحة الهبوط العامة', category: 'platform_leads', riskLevel: 'medium' },
   { key: 'landing_contacts.update', labelAr: 'تحديث صندوق وارد الهبوط', descriptionAr: 'تحديث حالة ورسائل المتابعة لصندوق وارد الهبوط', category: 'platform_leads', riskLevel: 'medium' },
+
+  { key: 'support.gateway.read', labelAr: 'عرض بوابة الدعم', descriptionAr: 'عرض تذاكر الدعم على مستوى المنصة بدون كشف رموز الوصول أو تعديل التذاكر', category: 'platform_support', riskLevel: 'high' },
 ];
 
 /** The historical full-access wildcard kept for the super_admin role. */

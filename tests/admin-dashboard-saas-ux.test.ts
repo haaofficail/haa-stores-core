@@ -26,6 +26,7 @@ describe('admin dashboard SaaS operations UX', () => {
     expect(app).toContain('/compliance|توثيق المتاجر|CheckSquare|tenants.read');
     expect(app).toContain('/settlement-readiness|جاهزية التسوية|CheckSquare|wallet.payout.view_all');
     expect(app).toContain('/store-payment-settings|إعدادات الدفع|CreditCard|stores.read');
+    expect(app).toContain('/support-gateway|بوابة الدعم|Headphones|support.gateway.read');
   });
 
   it('turns the home page into a command center with next actions and launch blockers', () => {
