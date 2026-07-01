@@ -36,6 +36,7 @@
   - Kept the change isolated in a clean worktree at `/Users/thwany/Desktop/haa-stores-core-deploy-ssh-diagnostics` to avoid the dirty main worktree and concurrent-agent changes.
   - Treated the failure as runner-to-staging SSH reachability because PR #353 code/build jobs succeeded and the deploy failed before remote commands ran.
   - Added runner public IPv4 logging and optional `STAGING_SSH_PORT` with legacy `STAGING_PORT` fallback, defaulting to `22`, rather than changing secrets or touching Hostinger/firewall state.
+  - Added local `STAGING_KNOWN_HOSTS` validation for the configured SSH port so alternate-port deployments fail early with regeneration instructions if the known-host secret still targets port `22`.
   - Updated the deploy source guard to match port-aware staging `scp` commands and guard the new configurable-port behavior.
   - Left production deploy behavior untouched.
 - **Safety constraints respected (per AGENTS.md §14.7):**
@@ -88,6 +89,13 @@
   ```text
   Test Files  1 passed (1)
        Tests  12 passed (12)
+  ```
+
+- **PR review follow-up:**
+
+  ```text
+  Added ssh-keygen -F validation so STAGING_KNOWN_HOSTS must contain the configured host/port entry.
+  Non-standard ports are validated in OpenSSH [host]:port format before SSH warmup.
   ```
 
 - **`pnpm check:skills`:**

@@ -62,6 +62,12 @@ describe('Deploy workflow — no ssh-keyscan probing', () => {
       expect(DEPLOY).toMatch(/ssh\s+-p\s+"\$DEPLOY_PORT"\s+-o\s+ConnectTimeout=20/);
     });
 
+    it('validates pre-baked staging known_hosts against the configured SSH port', () => {
+      expect(DEPLOY).toMatch(/known_host_lookup="\[\$STAGING_HOST\]:\$STAGING_SSH_PORT"/);
+      expect(DEPLOY).toMatch(/ssh-keygen\s+-F\s+"\$known_host_lookup"\s+-f\s+~\/\.ssh\/known_hosts/);
+      expect(DEPLOY).toMatch(/OpenSSH stores non-standard ports as \[host\]:port/);
+    });
+
     it('staging deploy scps deploy/staging/Caddyfile to the server', () => {
       expect(DEPLOY).toMatch(/scp\s+-P\s+"\$DEPLOY_PORT"\s+-o\s+BatchMode=yes\s+deploy\/staging\/Caddyfile/);
     });

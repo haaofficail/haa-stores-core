@@ -5,6 +5,7 @@
 - Added a staging-only deploy diagnostic step that records the GitHub runner public IPv4 in workflow logs and `GITHUB_RUNNER_PUBLIC_IP`.
 - Added optional `STAGING_SSH_PORT` support for the staging deploy job, reading from environment variable or secret, falling back to legacy `STAGING_PORT`, and defaulting to `22`.
 - Validated `STAGING_SSH_PORT` as a TCP port in the staging deploy preflight.
+- Validated pre-baked `STAGING_KNOWN_HOSTS` with `ssh-keygen -F` against the configured staging SSH port before warmup, including the `[host]:port` format required for non-standard ports.
 - Applied the configured staging SSH port consistently to staging `ssh` and `scp` calls.
 - Updated the staging known-hosts hint to include `ssh-keyscan -p <staging-port>`.
 - Replaced the warmup failure text with a more accurate runner-IP/firewall/provider/alternate-port diagnostic instead of assuming fail2ban.

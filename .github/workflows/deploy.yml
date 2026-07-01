@@ -283,6 +283,19 @@ jobs:
           if [ -n "${STAGING_KNOWN_HOSTS:-}" ]; then
             printf '%s\n' "$STAGING_KNOWN_HOSTS" >> ~/.ssh/known_hosts
             chmod 644 ~/.ssh/known_hosts
+            if [ "$STAGING_SSH_PORT" = "22" ]; then
+              known_host_lookup="$STAGING_HOST"
+              known_host_hint="<staging-host>"
+            else
+              known_host_lookup="[$STAGING_HOST]:$STAGING_SSH_PORT"
+              known_host_hint="[<staging-host>]:$STAGING_SSH_PORT"
+            fi
+            if ! ssh-keygen -F "$known_host_lookup" -f ~/.ssh/known_hosts >/dev/null; then
+              echo "::error::STAGING_KNOWN_HOSTS does not contain an entry for $known_host_hint."
+              echo "::error::Regenerate STAGING_KNOWN_HOSTS for TCP $STAGING_SSH_PORT. OpenSSH stores non-standard ports as [host]:port."
+              echo "::error::Example: ssh-keyscan -p $STAGING_SSH_PORT -H <staging-host> | base64  → paste decoded value as secret."
+              exit 1
+            fi
             echo "✓ Used pre-baked STAGING_KNOWN_HOSTS (no probing)."
           else
             cat >> ~/.ssh/config <<EOF

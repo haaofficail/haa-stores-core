@@ -26,7 +26,7 @@
 - [ ] Secret-like workflow-dispatch inputs are not stored in job-level env; mask them by reading `GITHUB_EVENT_PATH` before later step env use, or generate new operational secrets inside the runner with a non-secret sentinel
 - [ ] SSH/remote workflow payloads that may contain newlines or shell metacharacters are transferred via quoted/base64-safe values
 - [ ] Staging ops workflows avoid `ssh-keyscan` probing fallback when known-host secrets are missing; use pre-baked known-host secrets or `StrictHostKeyChecking=accept-new` for first-connect fallback
-- [ ] Staging deploy SSH failures distinguish config/key errors from TCP reachability errors: workflow should report the GitHub runner public IPv4, validate/use `STAGING_SSH_PORT` (or legacy `STAGING_PORT`) consistently for staging SSH/SCP, and point operators to Hostinger/VPS firewall or alternate-port testing before blaming application code
+- [ ] Staging deploy SSH failures distinguish config/key errors from TCP reachability errors: workflow should report the GitHub runner public IPv4, validate/use `STAGING_SSH_PORT` (or legacy `STAGING_PORT`) consistently for staging SSH/SCP, validate `STAGING_KNOWN_HOSTS` against the configured port, and point operators to Hostinger/VPS firewall or alternate-port testing before blaming application code
 - [ ] Sonar CPD excludes templated governance docs; Markdown compliance/runbook repetition should not fail code duplication gates
 - [ ] Repeated admin-dashboard nav/list/loading/export UI patterns are extracted to shared helpers before relying on Sonar exclusions
 - [ ] Bash hook scripts use `[[ ]]` conditionals instead of `[` where bash is available
