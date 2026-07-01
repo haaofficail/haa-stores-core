@@ -179,14 +179,30 @@ async function createStore(): Promise<RateLimiterStore> {
 
 // ── Middleware ───────────────────────────────────────
 
+// P1-1 audit fix: the LEFTMOST X-Forwarded-For entry is whatever the
+// client sent — Caddy (no `trusted_proxies` configured) APPENDS the real
+// connecting IP rather than replacing the header, so an attacker can
+// prepend `X-Forwarded-For: <random>` on every request to get a fresh
+// rate-limit bucket each time. The RIGHTMOST entry is the one Caddy
+// itself appended (the actual TCP peer) and is not client-controlled in
+// this single-hop deployment. x-real-ip is checked first in case a
+// future Caddy config sets it explicitly — Caddy does not set it today,
+// so this is a no-op fallback, not the primary defense. Exported for
+// direct unit testing.
+export function extractClientIp(c: Context): string {
+  const xffLast = c.req.header('x-forwarded-for')
+    ?.split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .pop();
+  return c.req.header('x-real-ip') ?? xffLast ?? 'unknown';
+}
+
 export function rateLimiter(config: RateLimitConfig): MiddlewareHandler {
   const windowMs = config.windowMs;
   const maxRequests = config.maxRequests;
   const getKey = config.keyGenerator ?? ((c: Context) => {
-    const ip = c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
-      ?? c.req.header('x-real-ip')
-      ?? 'unknown';
-    return `${ip}:${c.req.method}:${c.req.path}`;
+    return `${extractClientIp(c)}:${c.req.method}:${c.req.path}`;
   });
   const message = config.message ?? 'تم تجاوز الحد المسموح من المحاولات. حاول لاحقًا.';
 

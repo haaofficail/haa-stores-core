@@ -1,5 +1,5 @@
 import type { Context, Next } from 'hono';
-import { getAuth } from '@haa/auth-core';
+import { getAuth, verifyStoreOwnership } from '@haa/auth-core';
 import { verifyLocalStoragePath } from '@haa/shared/media';
 
 export function storageGuard() {
@@ -9,8 +9,13 @@ export function storageGuard() {
     const expires = Number(url.searchParams.get('expires'));
     const sig = url.searchParams.get('sig') || '';
 
-    // Allow product images publicly (storefront needs them)
-    if (path.includes('/products/')) {
+    // Allow product images publicly (storefront needs them). Anchored to
+    // the real upload convention (`stores/<id>/products/...`) rather than
+    // a bare `.includes('/products/')` substring check — the latter could
+    // be fooled by a path containing `..` segments (e.g.
+    // `stores/5/../../products/../secret/x`), which `URL.pathname` does
+    // NOT collapse before this check runs.
+    if (/^stores\/\d+\/products\//.test(path) && !path.includes('..')) {
       await next();
       return;
     }
@@ -21,13 +26,16 @@ export function storageGuard() {
       return;
     }
 
-    // Authenticated user with store access
+    // Authenticated user with VERIFIED ownership of this store (P1-2 fix:
+    // previously any authenticated user with a tenantId could read any
+    // other tenant's non-product storage files by guessing the numeric
+    // storeId in the path).
     const auth = getAuth(c);
     if (auth && auth.tenantId) {
       const storeMatch = path.match(/^stores\/(\d+)\//);
       if (storeMatch) {
         const storeId = Number(storeMatch[1]);
-        if (storeId > 0) {
+        if (await verifyStoreOwnership(auth, storeId)) {
           await next();
           return;
         }
