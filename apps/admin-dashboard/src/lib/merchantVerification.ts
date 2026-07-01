@@ -573,6 +573,8 @@ export function calculatePublishReadiness(input: PublishReadinessInput): Publish
 
   if (input.registryStatus === 'accepted') {
     addItem({ key: 'registry', label: 'السجل أو الوثيقة', status: 'passed', message: 'وثيقة الكيان مقبولة.', action: checklistAction('registry', 'passed') });
+  } else if (input.registryStatus === 'pending_review') {
+    addItem({ key: 'registry', label: 'السجل أو الوثيقة', status: 'warning', message: 'السجل التجاري أو وثيقة العمل الحر بانتظار قرار المراجع.', action: checklistAction('registry', 'warning') });
   } else {
     addItem({ key: 'registry', label: 'السجل أو الوثيقة', status: 'blocked', message: 'السجل التجاري أو وثيقة العمل الحر غير مقبولة.', action: checklistAction('registry', 'blocked') });
   }

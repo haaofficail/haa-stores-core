@@ -846,8 +846,8 @@ export default function Compliance() {
 
   const paymentsQuery = useQuery<StoreScopedRow[]>({
     queryKey: [...queryKeys.payments, 'merchantFile', selectedRecord?.storeId ?? selectedRecord?.tenantId ?? null],
-    queryFn: () => adminApi.getPayments() as Promise<StoreScopedRow[]>,
-    enabled: isMerchantFile && canReadPayments && Boolean(selectedRecord),
+    queryFn: () => adminApi.getPayments({ storeId: selectedRecord!.storeId! }) as Promise<StoreScopedRow[]>,
+    enabled: isMerchantFile && canReadPayments && Boolean(selectedRecord?.storeId),
   });
 
   const settlementBatchesQuery = useQuery<SettlementBatch[]>({

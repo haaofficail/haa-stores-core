@@ -61,6 +61,27 @@ describe('admin merchant verification readiness', () => {
     expect(result.blockingReasons).toContain('رقم الجوال غير موثق.');
   });
 
+  it('keeps a submitted registry document reviewable instead of blocking KYC approval', () => {
+    const result = calculatePublishReadiness({
+      storeProfileComplete: true,
+      phoneVerified: true,
+      emailVerified: true,
+      registryStatus: 'pending_review',
+      bankStatus: 'verified',
+      paymentConfigured: true,
+      shippingConfigured: true,
+      policiesPresent: true,
+      highRiskFlags: [],
+    });
+
+    const registry = result.checklist.find((item) => item.key === 'registry');
+
+    expect(result.allowed).toBe(true);
+    expect(result.blockingReasons).toEqual([]);
+    expect(registry?.status).toBe('warning');
+    expect(result.warnings).toContain('السجل التجاري أو وثيقة العمل الحر بانتظار قرار المراجع.');
+  });
+
   it('returns actionable admin links and merchant instructions for blocked checklist items', () => {
     const result = calculatePublishReadiness({
       storeProfileComplete: false,
@@ -232,6 +253,16 @@ describe('admin merchant verification page separation', () => {
     expect(page).toContain('const { recordId } = useParams');
     expect(page).toContain('if (isMerchantFile)');
     expect(page).not.toContain('setSelectedId(record.id)');
+  });
+
+  it('scopes merchant-file payments to the selected store on the server', () => {
+    const page = readFileSync(new URL('../apps/admin-dashboard/src/pages/Compliance.tsx', import.meta.url), 'utf-8');
+    const api = readFileSync(new URL('../apps/admin-dashboard/src/lib/api.ts', import.meta.url), 'utf-8');
+
+    expect(api).toContain('getPayments: (params: { storeId?: number } = {})');
+    expect(api).toContain("qs.set('storeId', String(params.storeId))");
+    expect(page).toContain('adminApi.getPayments({ storeId: selectedRecord!.storeId! })');
+    expect(page).toContain('enabled: isMerchantFile && canReadPayments && Boolean(selectedRecord?.storeId)');
   });
 });
 

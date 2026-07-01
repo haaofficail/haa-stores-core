@@ -586,7 +586,12 @@ export const adminApi = {
   getStorePaymentSettings: (storeId: number) => request<AdminStorePaymentSetting[]>('GET', `/admin/stores/${storeId}/payment-settings`),
   upsertStorePaymentSettings: (storeId: number, data: AdminStorePaymentSettingsUpdate) =>
     request<AdminStorePaymentSetting>('PUT', `/admin/stores/${storeId}/payment-settings`, data),
-  getPayments: () => request<Record<string, unknown>[]>('GET', '/admin/payments'),
+  getPayments: (params: { storeId?: number } = {}) => {
+    const qs = new URLSearchParams();
+    if (typeof params.storeId === 'number') qs.set('storeId', String(params.storeId));
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return request<Record<string, unknown>[]>('GET', `/admin/payments${suffix}`);
+  },
   getWebhooks: (params: { tenantId?: string; storeId?: string } = {}) => {
     const qs = new URLSearchParams();
     if (params.tenantId) qs.set('tenantId', params.tenantId);
