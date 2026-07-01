@@ -8,6 +8,7 @@
 - Applied the configured staging SSH port consistently to staging `ssh` and `scp` calls.
 - Updated the staging known-hosts hint to include `ssh-keyscan -p <staging-port>`.
 - Replaced the warmup failure text with a more accurate runner-IP/firewall/provider/alternate-port diagnostic instead of assuming fail2ban.
+- Updated `tests/deploy-no-ssh-keyscan.test.ts` so the deploy source guard now expects port-aware staging `scp` commands and configurable staging SSH port fallback.
 - Left production deploy workflow behavior untouched.
 - Safety boundary unchanged: no deploy, no production action, no `db:migrate`, no DB mutation, no secrets printed or changed, no Hostinger/firewall action, and no product/admin-dashboard code change.
 

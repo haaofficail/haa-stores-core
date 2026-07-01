@@ -17,13 +17,14 @@
   - `verification-before-completion` — YAML/diff/skill/preflight checks are required before commit or PR.
   - `github:gh-fix-ci` — the task is a GitHub Actions failure investigation and narrow CI fix.
 - **Why these skills:** The task changes `.github/workflows/deploy.yml` after a staging deploy failure. It must diagnose the GitHub-hosted runner SSH path without changing product code, production deployment, secrets, or database state.
-- **Files expected to change:** `.github/workflows/deploy.yml`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0145.md`
-- **Verification planned:** `ruby -e "require 'yaml'; YAML.load_file('.github/workflows/deploy.yml'); puts 'yaml ok'"`; `pnpm check:skills`; `git diff --check`; `CI=true pnpm preflight`; PR checks after push.
+- **Files expected to change:** `.github/workflows/deploy.yml`, `tests/deploy-no-ssh-keyscan.test.ts`, `docs/ops/TASK_TRACKER.md`, `docs/ops/CURRENT_STATE.md`, `docs/ops/ISSUE_KNOWLEDGE_BASE.md`, `docs/ops/REGRESSION_CHECKLIST.md`, `docs/ops/CHANGELOG_INTERNAL.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0145.md`
+- **Verification planned:** `ruby -e "require 'yaml'; YAML.load_file('.github/workflows/deploy.yml'); puts 'yaml ok'"`; `pnpm vitest run tests/deploy-no-ssh-keyscan.test.ts`; `pnpm check:skills`; `git diff --check`; `CI=true pnpm preflight`; PR checks after push.
 
 ## Execution Evidence
 
 - **Files actually changed:**
   - `.github/workflows/deploy.yml`
+  - `tests/deploy-no-ssh-keyscan.test.ts`
   - `docs/ops/CHANGELOG_INTERNAL.md`
   - `docs/ops/CURRENT_STATE.md`
   - `docs/ops/ISSUE_KNOWLEDGE_BASE.md`
@@ -35,6 +36,7 @@
   - Kept the change isolated in a clean worktree at `/Users/thwany/Desktop/haa-stores-core-deploy-ssh-diagnostics` to avoid the dirty main worktree and concurrent-agent changes.
   - Treated the failure as runner-to-staging SSH reachability because PR #353 code/build jobs succeeded and the deploy failed before remote commands ran.
   - Added runner public IPv4 logging and optional `STAGING_SSH_PORT` with legacy `STAGING_PORT` fallback, defaulting to `22`, rather than changing secrets or touching Hostinger/firewall state.
+  - Updated the deploy source guard to match port-aware staging `scp` commands and guard the new configurable-port behavior.
   - Left production deploy behavior untouched.
 - **Safety constraints respected (per AGENTS.md §14.7):**
   - [x] No `db:migrate` execution
@@ -79,6 +81,13 @@
 
   ```text
   clean
+  ```
+
+- **`pnpm vitest run tests/deploy-no-ssh-keyscan.test.ts`:**
+
+  ```text
+  Test Files  1 passed (1)
+       Tests  12 passed (12)
   ```
 
 - **`pnpm check:skills`:**
