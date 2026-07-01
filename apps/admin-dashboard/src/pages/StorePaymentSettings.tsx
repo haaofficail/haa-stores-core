@@ -147,6 +147,16 @@ function paymentDecision(row: RowState) {
   const configured = isProviderConfigured(row);
   const enabled = configured && row.enabled;
   if (!configured) {
+    if (row.enabled) {
+      return {
+        readinessLabel: 'مفعلة في البيانات وغير جاهزة',
+        readinessClass: 'bg-amber-50 text-amber-700 border-amber-100',
+        blocker: row.status === 'invalid'
+          ? 'الاعتمادات غير صالحة رغم أن التفعيل المخزن true. عند الحفظ سيُرسل enabled=false حتى لا تظهر البوابة كمتاحة.'
+          : 'التفعيل المخزن true، لكن الحالة الحالية تمنع اعتبار البوابة جاهزة أو متاحة للعملاء.',
+        enabledLabel: 'مفعلة مخزنة',
+      };
+    }
     return {
       readinessLabel: 'غير جاهزة',
       readinessClass: 'bg-red-50 text-red-700 border-red-100',
@@ -292,6 +302,11 @@ export default function StorePaymentSettings() {
                 const row = rows[providerCode];
                 const decision = paymentDecision(row);
                 const canToggleEnabled = isProviderConfigured(row);
+                const toggleClass = canToggleEnabled
+                  ? 'cursor-pointer'
+                  : row.enabled
+                    ? 'cursor-not-allowed'
+                    : 'cursor-not-allowed opacity-60';
                 return (
                   <div key={providerCode} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                     <div className="flex flex-wrap items-start gap-3">
@@ -306,10 +321,10 @@ export default function StorePaymentSettings() {
                       </div>
 
                       {/* Toggle enabled */}
-                      <label className={`flex items-center gap-2 ${canToggleEnabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
+                      <label className={`flex items-center gap-2 ${toggleClass}`}>
                         <input
                           type="checkbox"
-                          checked={row.enabled && canToggleEnabled}
+                          checked={row.enabled}
                           disabled={!canToggleEnabled}
                           onChange={e => setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], enabled: e.target.checked } }))}
                           className="h-4 w-4 rounded border-gray-300"
@@ -330,7 +345,7 @@ export default function StorePaymentSettings() {
                       {/* Status */}
                       <select
                         value={row.status}
-                        onChange={e => setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], status: normalizePaymentStatus(e.target.value), enabled: isProviderConfigured({ ...prev[providerCode], status: normalizePaymentStatus(e.target.value) }) ? prev[providerCode].enabled : false } }))}
+                        onChange={e => setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], status: normalizePaymentStatus(e.target.value) } }))}
                         className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                       >
                         {row.status === 'configured' ? <option value="configured">مهيأ</option> : null}

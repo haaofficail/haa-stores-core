@@ -34,6 +34,10 @@ describe('admin dashboard SaaS operations UX', () => {
     expect(dashboard).toContain('/bank-accounts');
     expect(dashboard).toContain('/settlement-readiness');
     expect(dashboard).toContain('لا تعرض الصفحة حالة live كحقيقة إلا من مصدر موثوق');
+    expect(dashboard).toContain('غير متاح من الصفحة');
+    expect(dashboard).toContain('هذه الصفحة لا تقرأ حالة مباشرة');
+    expect(dashboard).not.toContain('سليم محليًا');
+    expect(dashboard).not.toContain('آخر ops:monitor لم يسجل P0/P1');
   });
 
   it('uses smart empty states on decision-heavy admin pages', () => {
@@ -60,6 +64,8 @@ describe('admin dashboard SaaS operations UX', () => {
     expect(storePaymentSettings).toContain('function isProviderConfigured(row: RowState)');
     expect(storePaymentSettings).toContain('function paymentDecision(row: RowState)');
     expect(storePaymentSettings).toContain('enabled: safeEnabled');
+    expect(storePaymentSettings).toContain('checked={row.enabled}');
+    expect(storePaymentSettings).toContain('مفعلة في البيانات وغير جاهزة');
     expect(storePaymentSettings).toContain('التفعيل: {decision.enabledLabel}');
     expect(storePaymentSettings).toContain('وضع التجربة مناسب للاختبار فقط');
   });

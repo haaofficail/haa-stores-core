@@ -6,7 +6,7 @@
 - **Task type:** frontend/design
 - **Risk level:** medium
 - **Branch:** `codex/task-0142-admin-saas-ux`
-- **PR:** #351 (draft) — https://github.com/haaofficail/haa-stores-core/pull/351
+- **PR:** #351 — https://github.com/haaofficail/haa-stores-core/pull/351
 
 ## Mandatory Skill Gate (recap)
 
@@ -33,6 +33,8 @@
 - **Key decisions taken during execution:**
   - Readiness gaps such as `not_started` and `incomplete` are not high risk unless an actual risk signal exists.
   - Unconfigured payment providers cannot send `enabled=true`; configured/enabled/mode/readiness are separate UI facts.
+  - Invalid/suspended payment providers with stored `enabled=true` are displayed honestly as enabled-in-data but not ready; save payloads still coerce unready providers to `enabled=false`.
+  - Dashboard API health is marked unavailable from the page instead of rendering a static green health claim.
   - Settlement Readiness now presents decision, withdrawal permission, blockers, owner, and next action instead of raw status only.
   - Empty data is treated as operational information with meaning and next actions, not blank tables.
 - **Safety constraints respected (per AGENTS.md §14.7):**
@@ -67,6 +69,22 @@
   pnpm vitest run tests/admin-dashboard-saas-ux.test.ts tests/admin-merchant-verification.test.ts tests/admin-store-payment-settings-contract.test.ts tests/admin-financial-actions-safety.test.ts
   Test Files  4 passed (4)
   Tests  33 passed (33)
+  ```
+
+- **Review-thread fix verification:**
+
+  ```text
+  pnpm ops:monitor
+  Result: 0 failure(s) out of 25 checks
+  Recommended Tasks: No tasks recommended at this time.
+  Recommended Incidents: No incidents recommended.
+
+  pnpm --filter @haa/admin-dashboard typecheck
+  > tsc --noEmit
+
+  pnpm vitest run tests/admin-dashboard-saas-ux.test.ts tests/admin-store-payment-settings-contract.test.ts
+  Test Files  2 passed (2)
+  Tests  9 passed (9)
   ```
 
 - **UI build:**
@@ -118,8 +136,8 @@
 ## Completion
 
 - **Did the task follow the selected skills end-to-end?** yes
-- **Is further owner approval required before merge/deploy?** yes, before any merge/deploy; draft PR #351 was opened for review only.
-- **Owner approvals received:** user asked Codex to continue the task to completion, which covered publishing the scoped draft PR; no merge, deploy, migration, DB mutation, or production action was attempted.
+- **Is further owner approval required before merge/deploy?** merge approval received via user message `ادمج`; deploy still requires separate explicit approval.
+- **Owner approvals received:** user asked Codex to continue the task to completion, which covered publishing the scoped PR; user later explicitly said `ادمج`, authorizing the merge step. Manual deploy, migration, DB mutation, production action, and secret handling remain out of scope.
 - **Safety confirmations (re-affirmed at done):**
   - [x] No `db:migrate` was run during this task
   - [x] No production action was performed
@@ -128,7 +146,7 @@
 
 ## Next step
 
-- Review draft PR #351, resolve external Snyk/TestSprite account-tooling blockers if required by branch policy, and keep merge/deploy as separate owner-approved actions.
+- Merge PR #351 after review threads and required checks are clear; keep deploy/migration/production actions separate unless explicitly authorized.
 
 ---
 

@@ -8,17 +8,23 @@
 
 ## Current task
 
-**TASK-0142 — Admin dashboard SaaS operations UX controlled fix is in draft PR #351 (2026-07-01).**
+**TASK-0142 — Admin dashboard SaaS operations UX controlled fix is ready in PR #351 (2026-07-01).**
 
-Worktree: `/Users/thwany/Desktop/haa-stores-core-task-0142`.
+Worktrees: `/Users/thwany/Desktop/haa-stores-core-task-0142` and review-fix worktree `/Users/thwany/Desktop/haa-stores-core-task-0142-reviewfix`.
 Branch: `codex/task-0142-admin-saas-ux`.
-PR: #351 (draft) — https://github.com/haaofficail/haa-stores-core/pull/351.
+PR: #351 — https://github.com/haaofficail/haa-stores-core/pull/351.
 
 The admin-dashboard UX batch is local-only and focused on decision safety:
 sidebar IA groups, dashboard command-center copy, Merchant Verification risk
 vocabulary, Settlement Readiness decision language, Store Payment Settings
 configured/enabled/readiness separation, smart empty states, focused tests, and
 ops docs.
+
+Review-thread follow-up before merge addressed both unresolved PR comments:
+the dashboard no longer reports API health from static green copy, and Store
+Payment Settings no longer hides a stored `enabled=true` flag when a provider
+status is invalid/suspended. Save payloads still send `enabled=false` for
+unready providers so storefront availability cannot remain enabled after save.
 
 Verification passed: `pnpm --filter @haa/admin-dashboard typecheck`;
 `pnpm vitest run tests/admin-dashboard-saas-ux.test.ts
@@ -34,12 +40,17 @@ sidebar IA, dashboard command center, compliance vocabulary, settlement
 decision columns, payment-provider readiness, smart empty states, and mobile RTL
 without horizontal document overflow.
 
+Review-fix verification passed: `pnpm ops:monitor` (0 failures, no recommended
+incidents/tasks), `pnpm --filter @haa/admin-dashboard typecheck`, and
+`pnpm vitest run tests/admin-dashboard-saas-ux.test.ts
+tests/admin-store-payment-settings-contract.test.ts` (2 files / 9 tests).
+
 The branch was created from `origin/main` to keep this UX task separate from
 the API cleanup work. It contains admin-dashboard UX, TASK-0142 tests, and
 TASK-0142 docs only; no API cleanup files are part of this branch. This does not
-authorize merge, deploy, production launch, secret handling, live provider
+authorize deploy, production launch, secret handling, live provider
 calls, SSH to production, DNS changes, or migrations. Project-owned remote
-checks passed for draft PR #351; Snyk/TestSprite remain external/account-tooling
+checks passed for PR #351; Snyk/TestSprite remain external/account-tooling
 blockers (`private tests` limit and `No tests detected`).
 
 ## Previous task

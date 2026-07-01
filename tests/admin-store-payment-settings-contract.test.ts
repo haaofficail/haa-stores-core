@@ -46,6 +46,9 @@ describe('admin store payment settings contract', () => {
     expect(storePaymentSettingsPage).toContain("value === 'invalid'");
     expect(storePaymentSettingsPage).toContain('function paymentDecision(row: RowState)');
     expect(storePaymentSettingsPage).toContain('غير قابلة للتفعيل');
+    expect(storePaymentSettingsPage).toContain('checked={row.enabled}');
+    expect(storePaymentSettingsPage).toContain('مفعلة مخزنة');
+    expect(storePaymentSettingsPage).toContain('عند الحفظ سيُرسل enabled=false');
     expect(storePaymentSettingsPage).toContain('التفعيل: {decision.enabledLabel}');
     expect(storePaymentSettingsPage).toMatch(/row\.status === 'configured'\s*\?\s*<option value="configured">/);
     expect(storePaymentSettingsPage).not.toContain('@typescript-eslint/no-explicit-any');
