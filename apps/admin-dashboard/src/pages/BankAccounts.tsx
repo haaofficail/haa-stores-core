@@ -6,6 +6,7 @@ import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
+import { AdminEmptyState } from '../components/ui/AdminEmptyState';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
@@ -126,13 +127,22 @@ export default function BankAccounts() {
         ) : error ? (
           <ErrorState message="فشل تحميل الحسابات البنكية" onRetry={() => refetch()} />
         ) : accounts.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">لا توجد حسابات بنكية</p>
-          </div>
+          <AdminEmptyState
+            icon="Building2"
+            title="لا توجد حسابات بنكية للمراجعة"
+            description="قد يعني ذلك أن التجار لم يضيفوا حساباتهم البنكية بعد، وليس أن كل المتاجر جاهزة للسحب."
+            meaning="الإجراء التالي: افتح توثيق المتاجر أو صفحة المتاجر للعثور على المتاجر غير المكتملة."
+            actions={[
+              { label: 'فتح توثيق المتاجر', href: '/compliance' },
+              { label: 'عرض المتاجر', href: '/stores' },
+            ]}
+          />
         ) : controls.filteredCount === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">لا توجد نتائج مطابقة</p>
-          </div>
+          <AdminEmptyState
+            icon="AlertCircle"
+            title="لا توجد نتائج ضمن الفلتر الحالي"
+            description="غيّر البحث أو حالة الحساب البنكي قبل افتراض عدم وجود طلبات مراجعة."
+          />
         ) : (
           <>
           <table className="w-full text-sm">

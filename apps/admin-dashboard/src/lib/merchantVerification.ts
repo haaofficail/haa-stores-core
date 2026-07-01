@@ -24,7 +24,7 @@ export type PayoutStatus =
   | 'rejected'
   | 'payouts_blocked';
 
-export type RiskStatus = 'low' | 'medium' | 'high' | 'blocked';
+export type RiskStatus = 'low' | 'medium' | 'high' | 'blocked' | 'not_ready' | 'incomplete' | 'unknown';
 
 export type BankVerificationStatus =
   | 'not_added'
@@ -661,15 +661,13 @@ function computeRiskStatus(args: {
   bankStatus: BankVerificationStatus;
   highRiskFlags: string[];
 }): RiskStatus {
-  if (
-    args.highRiskFlags.length > 0
-    || args.verificationStatus === 'suspended'
-    || args.registryStatus === 'rejected'
-    || args.bankStatus === 'rejected'
-  ) {
+  if (args.verificationStatus === 'suspended' || args.highRiskFlags.length > 0) {
     return 'blocked';
   }
-  if (!args.readiness.allowed) return args.readiness.blockingReasons.length >= 3 ? 'high' : 'medium';
+  if (args.registryStatus === 'rejected' || args.bankStatus === 'rejected') return 'high';
+  if (args.verificationStatus === 'not_started') return 'unknown';
+  if (args.verificationStatus === 'incomplete') return 'incomplete';
+  if (!args.readiness.allowed) return 'not_ready';
   return args.readiness.warnings.length > 0 ? 'medium' : 'low';
 }
 

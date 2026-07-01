@@ -139,6 +139,43 @@ function statusBadge(status: string) {
   );
 }
 
+function isProviderConfigured(row: RowState): boolean {
+  return row.status === 'configured' || row.status === 'active';
+}
+
+function paymentDecision(row: RowState) {
+  const configured = isProviderConfigured(row);
+  const enabled = configured && row.enabled;
+  if (!configured) {
+    return {
+      readinessLabel: 'غير جاهزة',
+      readinessClass: 'bg-red-50 text-red-700 border-red-100',
+      blocker: row.status === 'invalid'
+        ? 'الاعتمادات غير صالحة. أصلح المفاتيح قبل تفعيل البوابة.'
+        : 'مفاتيح أو إعدادات المزود غير مكتملة، لذلك لا يمكن اعتبارها مفعلة.',
+      enabledLabel: 'غير قابلة للتفعيل',
+    };
+  }
+  if (!enabled) {
+    return {
+      readinessLabel: 'مهيأة وغير مفعلة',
+      readinessClass: 'bg-amber-50 text-amber-700 border-amber-100',
+      blocker: 'الإعداد موجود، لكن استقبال المدفوعات عبر هذه البوابة غير مفعل.',
+      enabledLabel: 'غير مفعلة',
+    };
+  }
+  return {
+    readinessLabel: row.mode === 'live' ? 'جاهزة للتشغيل المباشر' : 'جاهزة في وضع التجربة',
+    readinessClass: row.mode === 'live'
+      ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+      : 'bg-sky-50 text-sky-700 border-sky-100',
+    blocker: row.mode === 'live'
+      ? 'لا تحفظ وضع live إلا بعد تأكيد المفاتيح والتسوية من المزود.'
+      : 'وضع التجربة مناسب للاختبار فقط، وليس إشارة إطلاق إنتاجي.',
+    enabledLabel: 'مفعلة',
+  };
+}
+
 export default function StorePaymentSettings() {
   const queryClient = useQueryClient();
   const [params, setParams] = useSearchParams();
@@ -181,9 +218,10 @@ export default function StorePaymentSettings() {
 
   const saveMutation = useMutation<ProviderSetting, Error, SavePaymentSettingsVars>({
     mutationFn: ({ storeId, row, providerCode }: SavePaymentSettingsVars) => {
+      const safeEnabled = row.enabled && isProviderConfigured(row);
       return adminApi.upsertStorePaymentSettings(storeId, {
         providerCode,
-        enabled: row.enabled,
+        enabled: safeEnabled,
         mode: row.mode,
         status: row.status,
         supportedPaymentMethod: 'card',
@@ -252,54 +290,65 @@ export default function StorePaymentSettings() {
             <div className="space-y-4">
               {PROVIDERS.map(providerCode => {
                 const row = rows[providerCode];
+                const decision = paymentDecision(row);
+                const canToggleEnabled = isProviderConfigured(row);
                 return (
-                  <div key={providerCode} className="flex flex-wrap items-center gap-3 p-4 rounded-lg border border-gray-200 bg-gray-50">
-                    <div className="flex-1 min-w-[140px]">
+                  <div key={providerCode} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                    <div className="flex flex-wrap items-start gap-3">
+                      <div className="flex-1 min-w-[160px]">
                       <p className="text-sm font-semibold text-gray-800">{PROVIDER_LABELS[providerCode]}</p>
-                      <div className="mt-1">{statusBadge(row.status)}</div>
+                        <div className="mt-1 flex flex-wrap gap-2">
+                          {statusBadge(row.status)}
+                          <span className={`inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium ${decision.readinessClass}`}>
+                            {decision.readinessLabel}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Toggle enabled */}
+                      <label className={`flex items-center gap-2 ${canToggleEnabled ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
+                        <input
+                          type="checkbox"
+                          checked={row.enabled && canToggleEnabled}
+                          disabled={!canToggleEnabled}
+                          onChange={e => setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], enabled: e.target.checked } }))}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <span className="text-sm text-gray-700">التفعيل: {decision.enabledLabel}</span>
+                      </label>
+
+                      {/* Mode */}
+                      <select
+                        value={row.mode}
+                        onChange={e => setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], mode: normalizePaymentMode(e.target.value) } }))}
+                        className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="test">تجربة</option>
+                        <option value="live">مباشر</option>
+                      </select>
+
+                      {/* Status */}
+                      <select
+                        value={row.status}
+                        onChange={e => setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], status: normalizePaymentStatus(e.target.value), enabled: isProviderConfigured({ ...prev[providerCode], status: normalizePaymentStatus(e.target.value) }) ? prev[providerCode].enabled : false } }))}
+                        className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        {row.status === 'configured' ? <option value="configured">مهيأ</option> : null}
+                        {row.status === 'invalid' ? <option value="invalid">غير صالح</option> : null}
+                        <option value="not_configured">غير مُهيَّأ</option>
+                        <option value="active">نشط</option>
+                        <option value="suspended">موقوف</option>
+                      </select>
+
+                      <button
+                        onClick={() => handleSave(providerCode)}
+                        disabled={row.saving}
+                        className="px-3 py-1.5 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {row.saving ? '...' : 'حفظ'}
+                      </button>
                     </div>
-
-                    {/* Toggle enabled */}
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={row.enabled}
-                        onChange={e => setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], enabled: e.target.checked } }))}
-                        className="h-4 w-4 rounded border-gray-300"
-                      />
-                      <span className="text-sm text-gray-700">مفعّلة</span>
-                    </label>
-
-                    {/* Mode */}
-                    <select
-                      value={row.mode}
-                      onChange={e => setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], mode: normalizePaymentMode(e.target.value) } }))}
-                      className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    >
-                      <option value="test">تجربة</option>
-                      <option value="live">مباشر</option>
-                    </select>
-
-                    {/* Status */}
-                    <select
-                      value={row.status}
-                      onChange={e => setRows(prev => ({ ...prev, [providerCode]: { ...prev[providerCode], status: normalizePaymentStatus(e.target.value) } }))}
-                      className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    >
-                      {row.status === 'configured' ? <option value="configured">مهيأ</option> : null}
-                      {row.status === 'invalid' ? <option value="invalid">غير صالح</option> : null}
-                      <option value="not_configured">غير مُهيَّأ</option>
-                      <option value="active">نشط</option>
-                      <option value="suspended">موقوف</option>
-                    </select>
-
-                    <button
-                      onClick={() => handleSave(providerCode)}
-                      disabled={row.saving}
-                      className="px-3 py-1.5 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {row.saving ? '...' : 'حفظ'}
-                    </button>
+                    <p className="mt-3 text-xs leading-5 text-gray-500">{decision.blocker}</p>
                   </div>
                 );
               })}

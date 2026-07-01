@@ -4,6 +4,36 @@
 
 ---
 
+### TASK-0142: Admin dashboard SaaS operations UX controlled fix
+
+- **Type:** UX/UI Polish / Testing / Documentation
+- **Priority:** P1 High
+- **Status:** Locally verified
+- **Created:** 2026-07-01
+- **Updated:** 2026-07-01
+- **Branch:** `codex/task-0142-admin-saas-ux`
+- **PR:** Not opened
+- **Original Request:** User supplied an admin-dashboard SaaS UX audit brief and required Codex to complete it as a SaaS Admin Product Designer + Staff Frontend Engineer + Operations UX Auditor, without ignoring any point.
+- **Expanded Requirement:** Audit the full admin dashboard as an operations console, document every requested page, and implement one controlled frontend slice that fixes the highest decision-safety issues without API/DB/deploy scope.
+- **Scope:** Admin sidebar IA, dashboard command center, Merchant Verification risk vocabulary, Settlement Readiness decision UX, Store Payment Settings readiness vocabulary, smart empty states on decision-heavy admin pages, focused source/behavior tests, and ops documentation.
+- **Out of Scope:** Deploy, staging/production changes, migrations, production config, secrets, live provider calls, API contract changes beyond existing frontend payload safety, owner-level pricing decisions, full table/drawer redesign across every admin page, and finance destructive-action changes already tracked under TASK-0140.
+- **Skills Used:** `design-ux-excellence-gate`, `acceptance-criteria-gate`, `regression-safety-gate`, `test-strategy-gate`, `implementation-quality-gate`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `environment-safety-gate`, `branch-pr-hygiene-gate`, `evidence-led-reporting`, `verification-before-completion`, plus `redesign-existing-projects`, `design-taste-frontend`, and `build-web-apps:react-best-practices`.
+- **Acceptance Criteria:**
+  - [x] `not_started` / `incomplete` Merchant Verification records are not classified as `high` risk unless an actual risk signal exists.
+  - [x] Payment providers distinguish configured, enabled, mode, and readiness; unconfigured providers cannot send `enabled=true`.
+  - [x] Settlement Readiness shows decision, withdrawal permission, blockers, owner, and next action.
+  - [x] Empty states explain meaning and next action on key admin operations pages.
+  - [x] Sidebar IA is grouped by operational journeys without removing routes or widening permissions.
+  - [x] Final full verification is complete.
+- **Test Plan:** `pnpm --filter @haa/admin-dashboard typecheck`; `pnpm --filter @haa/admin-dashboard build`; focused UX/admin tests; brand/typography tests; `pnpm check:skills`; `git diff --check`; `pnpm preflight`; browser check if local admin dev server starts cleanly.
+- **Files Changed:** `apps/admin-dashboard/src/App.tsx`, `apps/admin-dashboard/src/components/ui/AdminEmptyState.tsx`, `apps/admin-dashboard/src/lib/merchantVerification.ts`, selected `apps/admin-dashboard/src/pages/**`, `tests/admin-dashboard-saas-ux.test.ts`, existing admin tests, `docs/ops/ADMIN_DASHBOARD_SAAS_UX_AUDIT_2026-07-01.md`, `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0142.md`, and ops docs.
+- **Test Results:** Verification passed: `pnpm --filter @haa/admin-dashboard typecheck`; `pnpm vitest run tests/admin-dashboard-saas-ux.test.ts tests/admin-merchant-verification.test.ts tests/admin-store-payment-settings-contract.test.ts tests/admin-financial-actions-safety.test.ts` passed 4 files / 33 tests; `pnpm --filter @haa/admin-dashboard build` passed; `pnpm vitest run tests/admin-brand-tokens.test.ts tests/typography.test.ts` passed 2 files / 4 tests; `pnpm check:skills` passed 43/43; `git diff --check` passed; `CI=true pnpm preflight` passed in the isolated worktree. Browser verification on `localhost:5175` confirmed sidebar IA, dashboard command center, risk vocabulary, Settlement Readiness decision columns, payment-provider disabled readiness, smart empty states, and mobile RTL with no horizontal document overflow.
+- **Root Cause:** The admin console had grown feature-complete pages before the IA/decision layer caught up. Readiness blockers, incomplete onboarding, provider configuration, and empty data were sometimes displayed as raw state rather than an admin decision with meaning and next action.
+- **Verdict:** Locally verified on isolated worktree `/Users/thwany/Desktop/haa-stores-core-task-0142` and ready for a scoped PR. The branch contains admin-dashboard UX, tests, and TASK-0142 docs only; no API cleanup files are included. No deploy, migration, DB mutation, production action, secret handling, or live payment/shipping/provider call occurred.
+- **Related Issues:** ISSUE-0078.
+
+---
+
 ### TASK-0143: API explicit-any quality-gate cleanup
 
 - **Type:** Backend API / Refactor / Testing / Documentation

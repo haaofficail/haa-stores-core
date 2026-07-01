@@ -6,6 +6,7 @@ import { adminApi, type AdminWebhookEvent } from '../lib/api';
 import { queryKeys } from '../lib/queryClient';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
+import { AdminEmptyState } from '../components/ui/AdminEmptyState';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
@@ -106,6 +107,9 @@ export default function OperationalWebhooks() {
     <div className="space-y-6" dir="rtl">
       <header>
         <h1 className="text-title2 font-bold text-gray-900 tracking-tight">عمليات Webhooks</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          مراقبة أحداث الدفع والشحن الواردة. الفراغ هنا طبيعي فقط إذا لم تصل أحداث من المزودين ضمن النطاق.
+        </p>
       </header>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -130,7 +134,12 @@ export default function OperationalWebhooks() {
             {statsQuery.isPending ? (
               <AdminTableSkeleton columns={['w-28', 'w-16', 'w-16']} rows={4} />
             ) : providerRows.length === 0 ? (
-              <p className="py-8 text-center text-sm text-gray-400">لا توجد إحصاءات حسب المزود</p>
+              <AdminEmptyState
+                icon="FileText"
+                title="لا توجد إحصاءات حسب المزود"
+                description="Webhook health: لا توجد أحداث مزودين ضمن النطاق الحالي."
+                meaning="Last received: —"
+              />
             ) : (
               providerRows.map((row) => (
                 <div key={row.provider} className="rounded-lg bg-gray-50 p-3 text-sm">
@@ -188,9 +197,18 @@ export default function OperationalWebhooks() {
             ) : eventsQuery.isError ? (
               <ErrorState message="فشل تحميل أحداث webhooks" onRetry={() => eventsQuery.refetch()} />
             ) : events.length === 0 ? (
-              <div className="p-12 text-center text-sm text-gray-400">لا توجد أحداث webhooks لهذا النطاق</div>
+              <AdminEmptyState
+                icon="FileText"
+                title="لا توجد أحداث webhooks لهذا النطاق"
+                description="هذا طبيعي إذا لم تصل أحداث دفع أو شحن من المزودين بعد."
+                meaning="Webhook health: لا توجد أحداث. Last received: —"
+              />
             ) : controls.filteredCount === 0 ? (
-              <div className="p-12 text-center text-sm text-gray-400">لا توجد نتائج مطابقة</div>
+              <AdminEmptyState
+                icon="AlertCircle"
+                title="لا توجد نتائج مطابقة"
+                description="غيّر tenant/store أو نص البحث قبل فتح بلاغ webhook."
+              />
             ) : (
               <>
                 <table className="w-full text-sm">

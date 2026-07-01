@@ -1,5 +1,19 @@
 # Internal Changelog
 
+## 2026-07-01 — Admin Dashboard SaaS Operations UX Controlled Fix (TASK-0142)
+
+- Re-grouped admin sidebar information architecture into: عام، التجار والمتاجر، الماليات، السوق، نظام.
+- Added a reusable `AdminEmptyState` component for decision-heavy admin empty states with meaning and next-action links.
+- Updated the admin dashboard home page into a command-center surface with daily priorities and launch/readiness caveats instead of only raw counts.
+- Changed Merchant Verification risk modeling so `not_started` and `incomplete` onboarding no longer become `high` risk just because readiness blockers exist.
+- Added `غير جاهز`, `ناقص بيانات`, and `غير مصنفة` risk vocabulary in Merchant Verification and Tenant Dossier consumers.
+- Reworked Settlement Readiness from internal field columns into a decision dashboard: financial decision, withdrawal permission, blockers, owner, and next action.
+- Reworked Store Payment Settings to distinguish provider configured/enabled/mode/readiness and prevent unconfigured providers from sending `enabled=true`.
+- Improved empty states across bank accounts, KYC review, audit logs, payments, finance reports, settlement batches, operational webhooks, admin users, and stores.
+- Added `tests/admin-dashboard-saas-ux.test.ts` plus focused updates to Merchant Verification and Store Payment Settings contract tests.
+- Verification passed: admin-dashboard typecheck, focused UX/admin tests 4 files / 33 tests, admin-dashboard build, brand/typography tests 2 files / 4 tests, `pnpm check:skills` 43/43, clean `git diff --check`, final `CI=true pnpm preflight` in the isolated worktree, and local browser verification on `localhost:5175`.
+- Safety boundary unchanged: no deploy, no production action, no `db:migrate`, no DB mutation, no secrets printed, no live payment/shipping-provider calls, and no API contract expansion.
+
 ## 2026-07-01 — API Explicit-any Quality-gate Cleanup (TASK-0143)
 
 - Removed explicit `any` from the API files directly touched by PR #343 Quality Gates warnings.

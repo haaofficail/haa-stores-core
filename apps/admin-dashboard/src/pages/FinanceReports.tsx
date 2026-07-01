@@ -7,6 +7,7 @@ import { adminApi, hasAdminPermission, type FinanceReports as FinanceReportsData
 import { queryKeys } from '../lib/queryClient';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
+import { AdminEmptyState } from '../components/ui/AdminEmptyState';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
@@ -89,9 +90,26 @@ export default function FinanceReports() {
   } else if (error) {
     reportContent = <ErrorState message="تعذّر تحميل التقارير المالية" onRetry={() => refetch()} />;
   } else if (rows.length === 0) {
-    reportContent = <div className="p-12 text-center text-gray-400 text-footnote">لا توجد سجلات</div>;
+    reportContent = (
+      <AdminEmptyState
+        icon="BarChart2"
+        title="لا توجد سجلات في هذا التقرير"
+        description="قد لا توجد تسويات مكتملة، أو لا توجد فترة تسوية مغلقة، أو أن الحسابات البنكية/PSP غير جاهزة."
+        meaning="الإجراء التالي: افتح جاهزية التسوية أو صندوق التسويات لمعرفة المانع التشغيلي."
+        actions={[
+          { label: 'فتح جاهزية التسوية', href: '/settlement-readiness' },
+          { label: 'فتح صندوق التسويات', href: '/finance/settlement-inbox' },
+        ]}
+      />
+    );
   } else if (controls.filteredCount === 0) {
-    reportContent = <div className="p-12 text-center text-gray-400 text-footnote">لا توجد نتائج مطابقة</div>;
+    reportContent = (
+      <AdminEmptyState
+        icon="AlertCircle"
+        title="لا توجد نتائج مطابقة"
+        description="غيّر البحث أو التبويب قبل تصدير CSV أو استنتاج عدم وجود تسويات."
+      />
+    );
   } else {
     reportContent = (
       <>

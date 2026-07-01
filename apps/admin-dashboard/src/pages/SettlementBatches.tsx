@@ -6,6 +6,7 @@ import type { Payout, SettlementBatch } from '../lib/api';
 import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { ErrorState } from '../components/ui/ErrorState';
+import { AdminEmptyState } from '../components/ui/AdminEmptyState';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
@@ -203,9 +204,16 @@ export default function SettlementBatches() {
             ))}
           </div>
         ) : manualPayouts.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-sm text-gray-500">لا توجد تسويات يدوية</p>
-          </div>
+          <AdminEmptyState
+            icon="Landmark"
+            title="لا توجد تسويات جاهزة للتحويل"
+            description="الأسباب المحتملة: لا توجد طلبات مدفوعة مكتملة، الحساب البنكي غير موثق، PSP غير مفعّل، أو لا توجد فترة تسوية مغلقة."
+            meaning="الإجراء التالي: افتح جاهزية التسوية أو المدفوعات لتحديد المانع بدل اعتبار الصندوق فارغًا فقط."
+            actions={[
+              { label: 'فتح جاهزية التسوية', href: '/settlement-readiness' },
+              { label: 'فتح المدفوعات', href: '/payments' },
+            ]}
+          />
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
@@ -273,13 +281,22 @@ export default function SettlementBatches() {
         ) : error ? (
           <ErrorState message="فشل تحميل دفعات التسوية" onRetry={() => refetch()} />
         ) : batches.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">لا توجد دفعات تسوية</p>
-          </div>
+          <AdminEmptyState
+            icon="Landmark"
+            title="لا توجد دفعات تسوية"
+            description="قد يعني ذلك أن نافذة التسوية لم تغلق بعد أو أن المتاجر غير جاهزة ماليًا."
+            meaning="الإجراء التالي: راجع صندوق التسويات وجاهزية التسوية قبل فتح متابعة مالية."
+            actions={[
+              { label: 'صندوق التسويات', href: '/finance/settlement-inbox' },
+              { label: 'جاهزية التسوية', href: '/settlement-readiness' },
+            ]}
+          />
         ) : controls.filteredCount === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">لا توجد نتائج مطابقة</p>
-          </div>
+          <AdminEmptyState
+            icon="AlertCircle"
+            title="لا توجد نتائج مطابقة"
+            description="غيّر فلتر الحالة أو التاريخ قبل اعتبار التسويات غير موجودة."
+          />
         ) : (
           <>
           <table className="w-full text-sm">

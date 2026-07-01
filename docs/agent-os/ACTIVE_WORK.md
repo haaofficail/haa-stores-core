@@ -8,6 +8,39 @@
 
 ## Current task
 
+**TASK-0142 — Admin dashboard SaaS operations UX controlled fix is locally verified on an isolated branch (2026-07-01).**
+
+Worktree: `/Users/thwany/Desktop/haa-stores-core-task-0142`.
+Branch: `codex/task-0142-admin-saas-ux`. PR: not opened.
+
+The admin-dashboard UX batch is local-only and focused on decision safety:
+sidebar IA groups, dashboard command-center copy, Merchant Verification risk
+vocabulary, Settlement Readiness decision language, Store Payment Settings
+configured/enabled/readiness separation, smart empty states, focused tests, and
+ops docs.
+
+Verification passed: `pnpm --filter @haa/admin-dashboard typecheck`;
+`pnpm vitest run tests/admin-dashboard-saas-ux.test.ts
+tests/admin-merchant-verification.test.ts
+tests/admin-store-payment-settings-contract.test.ts
+tests/admin-financial-actions-safety.test.ts` (4 files / 33 tests);
+`pnpm --filter @haa/admin-dashboard build`; `pnpm vitest run
+tests/admin-brand-tokens.test.ts tests/typography.test.ts` (2 files / 4
+tests); `pnpm check:skills` (43/43); clean `git diff --check`; and final
+`CI=true pnpm preflight` in the isolated worktree. Browser verification on
+`localhost:5175` confirmed the new
+sidebar IA, dashboard command center, compliance vocabulary, settlement
+decision columns, payment-provider readiness, smart empty states, and mobile RTL
+without horizontal document overflow.
+
+The branch was created from `origin/main` to keep this UX task separate from
+the API cleanup work. It contains admin-dashboard UX, TASK-0142 tests, and
+TASK-0142 docs only; no API cleanup files are part of this branch. This does not
+authorize deploy, production launch, secret handling, live provider calls, SSH
+to production, DNS changes, or migrations.
+
+## Previous task
+
 **TASK-0140 — Financial admin destructive actions audit and P1 hardening is under PR #349 refresh (2026-07-01).**
 
 Branch: `review/task-0140-financial-admin-safety`. PR: #349.

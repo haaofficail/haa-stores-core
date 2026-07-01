@@ -64,6 +64,9 @@ const RISK_LABEL: Record<MerchantVerificationRecord['riskStatus'], string> = {
   medium: 'متوسطة',
   high: 'عالية',
   blocked: 'محجوبة',
+  not_ready: 'غير جاهز',
+  incomplete: 'ناقص بيانات',
+  unknown: 'غير مصنفة',
 };
 
 const BANK_LABEL: Record<MerchantVerificationRecord['bank']['verificationStatus'], string> = {
@@ -170,7 +173,8 @@ function statusClass(tone: Tone) {
 
 function riskTone(status: MerchantVerificationRecord['riskStatus']): Tone {
   if (status === 'low') return 'good';
-  if (status === 'medium') return 'warn';
+  if (status === 'medium' || status === 'not_ready' || status === 'incomplete') return 'warn';
+  if (status === 'unknown') return 'muted';
   return 'bad';
 }
 

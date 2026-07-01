@@ -209,6 +209,31 @@ describe('admin merchant verification readiness', () => {
     expect(JSON.stringify(records[0])).not.toContain('SA0380000000608010167519');
     expect(records[0].bank.maskedIban).toBe('****1234');
   });
+
+  it('does not classify not-started onboarding as high risk', () => {
+    const records = buildMerchantVerificationRecords({
+      tenants: [{ id: 11, name: 'تاجر جديد', slug: 'new-merchant' }],
+      stores: [{
+        id: 21,
+        tenantId: 11,
+        name: 'متجر لم يبدأ',
+        slug: 'not-started-store',
+        email: 'new@example.com',
+        phone: '+966555000000',
+        paymentStatus: 'not_configured',
+        shippingStatus: 'not_configured',
+        policies: null,
+      }],
+      kycProfiles: [],
+      bankAccounts: [],
+    });
+
+    expect(records[0].verificationStatus).toBe('not_started');
+    expect(records[0].readiness.allowed).toBe(false);
+    expect(records[0].riskStatus).toBe('unknown');
+    expect(records[0].riskStatus).not.toBe('high');
+    expect(records[0].riskStatus).not.toBe('blocked');
+  });
 });
 
 describe('admin merchant verification page separation', () => {

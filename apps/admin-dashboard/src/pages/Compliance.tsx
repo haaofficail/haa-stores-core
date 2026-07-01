@@ -88,6 +88,9 @@ const RISK_LABEL: Record<RiskStatus, string> = {
   medium: 'متوسطة',
   high: 'عالية',
   blocked: 'محجوبة',
+  not_ready: 'غير جاهز',
+  incomplete: 'ناقص بيانات',
+  unknown: 'غير مصنفة',
 };
 
 const BANK_LABEL: Record<BankVerificationStatus, string> = {
@@ -124,7 +127,8 @@ function classForVerification(status: VerificationStatus): string {
 
 function classForRisk(status: RiskStatus): string {
   if (status === 'low') return STATUS_CLASS.good;
-  if (status === 'medium') return STATUS_CLASS.warn;
+  if (status === 'medium' || status === 'not_ready' || status === 'incomplete') return STATUS_CLASS.warn;
+  if (status === 'unknown') return STATUS_CLASS.muted;
   return STATUS_CLASS.bad;
 }
 
@@ -909,7 +913,7 @@ export default function Compliance() {
   const approved = metricRecords.filter((record) => record.verificationStatus === 'approved').length;
   const pending = metricRecords.filter((record) => record.verificationStatus === 'submitted' || record.verificationStatus === 'under_review').length;
   const rejected = metricRecords.filter((record) => record.verificationStatus === 'rejected').length;
-  const highRisk = metricRecords.filter((record) => record.riskStatus === 'high' || record.riskStatus === 'blocked').length;
+  const actualRisk = metricRecords.filter((record) => record.riskStatus === 'high' || record.riskStatus === 'blocked').length;
 
   const approveSelected = () => {
     if (!selectedRecord?.kycProfileId || !canReviewVerification || !selectedRecord.readiness.allowed) return;
@@ -1397,7 +1401,7 @@ export default function Compliance() {
         <MetricCard label="موثقة" value={approved} hint={visibleTotal ? `${Math.round((approved / visibleTotal) * 100)}% من المعروض` : 'لا توجد سجلات'} icon="ShieldCheck" tone="green" />
         <MetricCard label="بانتظار المراجعة" value={pending} hint="مقدمة أو قيد المراجعة" icon="CheckSquare" tone="amber" />
         <MetricCard label="مرفوضة" value={rejected} hint="تحتاج قرارًا أو إعادة تقديم" icon="X" tone="red" />
-        <MetricCard label="عالية الخطورة" value={highRisk} hint="ممنوعة من الجاهزية" icon="AlertTriangle" tone="red" />
+        <MetricCard label="مخاطر فعلية" value={actualRisk} hint="أعلام خطر أو رفض بنكي/وثائقي" icon="AlertTriangle" tone="red" />
       </div>
 
       {records.length === 0 ? (

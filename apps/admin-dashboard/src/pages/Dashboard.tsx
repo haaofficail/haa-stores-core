@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { adminApi } from '../lib/api';
 import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
@@ -105,11 +106,54 @@ export default function Dashboard() {
     },
   ];
 
+  const urgentActions = [
+    {
+      title: t('dashboard.reviewMerchants', 'متاجر تحتاج مراجعة'),
+      value: stats.pendingKyc ?? 0,
+      href: '/compliance',
+      tone: (stats.pendingKyc ?? 0) > 0 ? 'border-red-100 bg-red-50 text-red-700' : 'border-emerald-100 bg-emerald-50 text-emerald-700',
+      hint: (stats.pendingKyc ?? 0) > 0 ? 'ابدأ بملفات التوثيق قبل أي قرار نشر.' : 'لا توجد طلبات توثيق معلقة في هذا المؤشر.',
+    },
+    {
+      title: 'حسابات بنكية',
+      value: 'مراجعة',
+      href: '/bank-accounts',
+      tone: 'border-amber-100 bg-amber-50 text-amber-700',
+      hint: 'افتح الحسابات البنكية للتأكد من وجود حساب موثق قبل السحب.',
+    },
+    {
+      title: 'جاهزية التسوية',
+      value: 'قرار',
+      href: '/settlement-readiness',
+      tone: 'border-sky-100 bg-sky-50 text-sky-700',
+      hint: 'راجع الموانع: الحساب المحمي، PSP، MoR، وامتثال ساما.',
+    },
+    {
+      title: 'Webhooks',
+      value: 'صحة',
+      href: '/operations/webhooks',
+      tone: 'border-gray-100 bg-gray-50 text-gray-700',
+      hint: 'تحقق من آخر أحداث الدفع/الشحن والتكرارات قبل فتح بلاغات تشغيلية.',
+    },
+  ];
+
+  const healthRows = [
+    ['API', 'سليم محليًا', 'آخر ops:monitor لم يسجل P0/P1'],
+    ['DB / Queue', 'راقب قبل الإطلاق', 'يعتمد على تقرير الصحة وليس رقمًا مخترعًا داخل الصفحة'],
+    ['Payments', 'تحقق لكل متجر', 'لا تعتمد الدفع كجاهز حتى تظهر configured + enabled + mode بوضوح'],
+    ['Shipping', 'تحقق يدويًا', 'الشحن اليدوي أو غير المهيأ يبقى مانع إطلاق حتى يؤكد المالك'],
+  ];
+
   return (
-    <div>
-      <h2 className="text-title2 font-bold text-gray-900 tracking-tight mb-6">
-        {t('dashboard.title', 'الرئيسية')}
-      </h2>
+    <div className="space-y-6">
+      <header>
+        <h2 className="text-title2 font-bold text-gray-900 tracking-tight">
+          {t('dashboard.title', 'الرئيسية')}
+        </h2>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-500">
+          مركز قيادة للقرارات اليومية: راجع ما يمنع النشر أو السحب أو التشغيل قبل التعامل مع الأرقام كإشارة جاهزية.
+        </p>
+      </header>
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {cards.map(c => (
           <div
@@ -134,6 +178,51 @@ export default function Dashboard() {
           </div>
         ))}
       </div>
+
+      <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
+        <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">أولويات اليوم</h3>
+              <p className="mt-1 text-sm text-gray-500">كل عنصر يفتح صفحة قرار، وليس جدولًا خامًا فقط.</p>
+            </div>
+            <span className="rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-700">
+              Decision queue
+            </span>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {urgentActions.map(action => (
+              <Link
+                key={action.href}
+                to={action.href}
+                className={`rounded-xl border p-4 transition-colors hover:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 ${action.tone}`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold">{action.title}</p>
+                  <span className="text-xl font-bold tabular-nums">{typeof action.value === 'number' ? action.value.toLocaleString('ar-SA') : action.value}</span>
+                </div>
+                <p className="mt-2 text-xs leading-5 opacity-80">{action.hint}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900">صحة التشغيل والإطلاق</h3>
+          <p className="mt-1 text-sm text-gray-500">لا تعرض الصفحة حالة live كحقيقة إلا من مصدر موثوق.</p>
+          <div className="mt-4 divide-y divide-gray-100">
+            {healthRows.map(([label, status, hint]) => (
+              <div key={label} className="py-3 first:pt-0 last:pb-0">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-gray-900">{label}</p>
+                  <span className="rounded-md bg-gray-50 px-2 py-1 text-xs font-semibold text-gray-600">{status}</span>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-gray-500">{hint}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

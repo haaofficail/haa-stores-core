@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0078: Admin Operations UX Confused Readiness Gaps With Risk Decisions
+
+- **ID:** ISSUE-0078
+- **Date:** 2026-07-01
+- **Severity:** High (admin decision safety / financial operations UX)
+- **Area:** Admin Dashboard / Merchant Verification / Settlement Readiness / Store Payment Settings / Empty States
+- **Related Tasks:** TASK-0142
+- **Symptoms:** The admin console had functional pages, but several surfaces still looked like raw internal tables. Merchant Verification could classify incomplete/not-started onboarding as high risk when several readiness blockers existed. Store Payment Settings could visually combine an enabled toggle with an unconfigured provider. Settlement Readiness showed internal terms without telling admins whether withdrawal was allowed, what blocked it, or who owned the next action. Many empty states said only "لا توجد" without explaining whether the absence was healthy, filtered, or a missing-data problem.
+- **Expected:** Admin pages should drive safe operational decisions: incomplete onboarding is not automatically high risk, payment readiness distinguishes configured/enabled/mode/readiness, settlement readiness explains blockers and withdrawal state, and empty states explain meaning and next action.
+- **Actual:** Some admin surfaces exposed state but not decision semantics, increasing the chance of wrong review, payout, or launch-readiness interpretation.
+- **Root Cause:** The admin dashboard added many operational pages before a shared decision-UX vocabulary caught up. Readiness, risk, provider configuration, and empty-data semantics evolved page-by-page instead of through a consistent admin operations model.
+- **Fix:** Re-grouped sidebar IA, added a reusable `AdminEmptyState`, reworked the home page as a command center, changed Merchant Verification risk modeling to return `unknown`/`incomplete`/`not_ready` instead of high risk for normal onboarding gaps, updated Merchant Verification and Tenant Dossier labels, converted Settlement Readiness into a decision dashboard, and made Store Payment Settings prevent `enabled=true` for unconfigured providers.
+- **Verification:** Local verification passed: `pnpm --filter @haa/admin-dashboard typecheck`; focused UX/admin tests passed 4 files / 33 tests; admin-dashboard build passed; brand/typography tests passed 2 files / 4 tests; `pnpm check:skills` passed 43/43; `git diff --check` was clean; `pnpm preflight` passed; browser verification on `localhost:5175` confirmed the IA, decision vocabulary, settlement/payment readiness surfaces, smart empty states, and mobile RTL without horizontal document overflow.
+- **Prevention:** Keep `tests/admin-dashboard-saas-ux.test.ts`, `tests/admin-merchant-verification.test.ts`, and `tests/admin-store-payment-settings-contract.test.ts` guarding IA groups, dashboard decision copy, smart empty states, settlement decision language, risk vocabulary, and payment configured/enabled/readiness separation.
+- **Status:** Fixed locally in TASK-0142. No deploy, migration, DB mutation, secret handling, production action, or live provider call occurred.
+
+---
+
 ### ISSUE-0079: API Quality Gates Surfaced Explicit Any Debt
 
 - **ID:** ISSUE-0079
