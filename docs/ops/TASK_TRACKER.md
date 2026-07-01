@@ -4,6 +4,36 @@
 
 ---
 
+### TASK-0145: Staging deploy SSH diagnostics and configurable port
+
+- **Type:** CI / Deploy / Incident Response / Documentation
+- **Priority:** P1 High
+- **Status:** PR-ready local fix; not merged/deployed
+- **Created:** 2026-07-01
+- **Updated:** 2026-07-01
+- **Branch:** `codex/deploy-staging-ssh-diagnostics`
+- **PR:** Pending
+- **Original Request:** "نفذه" after staging deploy for merged admin work failed on SSH warmup timeout and the owner asked to solve the previous problem before continuing product changes.
+- **Expanded Requirement:** Keep the fix isolated from admin-dashboard/API work and make the staging deploy workflow reveal the GitHub runner public IP plus support a configurable staging SSH port so Hostinger/VPS firewall allowlisting or alternate-port testing can be performed with evidence.
+- **Scope:** Staging deploy GitHub Actions SSH diagnostics, optional `STAGING_SSH_PORT` configuration defaulting to `22` with legacy `STAGING_PORT` fallback, use of the configured port across staging SSH/SCP calls, and ops documentation for the root cause and next operating step.
+- **Out of Scope:** Merge, deploy, production deploy/action, migrations, secrets, production config, SSH key changes, Hostinger firewall edits, product/admin-dashboard features, and TASK-0142/TASK-0143 changes.
+- **Skills Used:** `environment-safety-gate`, `evidence-led-reporting`, `regression-safety-gate`, `verification-before-completion`, plus `github:gh-fix-ci`.
+- **Acceptance Criteria:**
+  - [x] Workflow keeps staging deployment behavior but reports the GitHub runner public IPv4 before SSH warmup.
+  - [x] Workflow supports `STAGING_SSH_PORT` from environment variable or secret, falls back to legacy `STAGING_PORT`, and defaults to `22`.
+  - [x] Staging SSH/SCP steps consistently use the configured port.
+  - [x] Failure message points to runner-IP allowlisting/provider firewall/alternate-port diagnosis rather than only fail2ban.
+  - [x] Production deploy job remains untouched.
+  - [x] No deploy, migration, secret change, production action, or product-code change occurs during the fix.
+- **Test Plan:** `ruby -e "require 'yaml'; YAML.load_file('.github/workflows/deploy.yml'); puts 'yaml ok'"`; `pnpm check:skills`; `git diff --check`; `CI=true pnpm preflight`; PR checks after push. Plain `pnpm preflight` is expected to fail in this isolated worktree because the root guard is hard-coded to `/Users/thwany/Desktop/haa-stores-core`.
+- **Files Changed:** `.github/workflows/deploy.yml`, ops documentation, and `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0145.md`.
+- **Test Results:** Local verification passed: workflow YAML parsed (`yaml ok`), `git diff --check` was clean, `pnpm check:skills` passed 43/43, and `CI=true pnpm preflight` passed. Plain `pnpm preflight` correctly failed in the isolated worktree on the root-guard path check only.
+- **Root Cause:** Merged PR #353 passed code/build jobs, but staging deployment failed before any server-side deploy commands ran: GitHub-hosted runner SSH attempts to the masked staging host on port `22` timed out six times after staging config and SSH key setup succeeded. This points to runner-to-host SSH reachability such as Hostinger/provider firewall, runner IP filtering, host mismatch, or a port-22 path issue rather than application code.
+- **Verdict:** In progress. No merge, deploy, migration, production action, secret handling, Hostinger change, or product-code change occurred.
+- **Related Issues:** ISSUE-0082.
+
+---
+
 ### TASK-0144: Admin Support Gateway decision UX polish
 
 - **Type:** UX/UI Polish / Testing / Documentation
