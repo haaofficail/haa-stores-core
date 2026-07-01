@@ -391,7 +391,8 @@ export type AdminPermission =
   | 'billing.platform_fee.read'
   | 'billing.platform_fee.update'
   | 'landing_contacts.read'
-  | 'landing_contacts.update';
+  | 'landing_contacts.update'
+  | 'support.gateway.read';
 
 export type KycStatus =
   | 'not_started'

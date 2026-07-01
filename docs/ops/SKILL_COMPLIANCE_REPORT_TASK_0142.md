@@ -133,6 +133,15 @@
 - **Reason:** Not applicable.
 - **Follow-up:** Continue with a second, separate UI batch for full table/drawer polish if desired; do not mix with this verified decision-safety slice.
 
+## Support Gateway Follow-up Addendum
+
+- **User follow-up:** "بعد ما تخلص شوف سبب عدم ظهور بوابة الدعم في الادمن".
+- **Root cause:** The support gateway was absent from the platform-admin contract. Admin had `/landing-inbox` for landing/contact leads, while existing `support:*` permissions and support routes were merchant/store-scoped. There was no admin route, nav item, API-client helper, server route, or `AdminPermission` for platform support-ticket review.
+- **Fix:** Added `support.gateway.read`, `/support-gateway`, `/admin/support-gateway/tickets`, typed admin API-client helpers, icon/sidebar/route wiring, and a read-only Arabic Support Gateway page with summaries, filters, tenant links, a `/landing-inbox` bridge, and smart empty state. The server route stays HTTP/validation-only, the service-layer read model intentionally does not select support `accessToken`, and tests assert the token is not rendered or exposed by source.
+- **Additional files changed:** `apps/admin-dashboard/src/pages/SupportGateway.tsx`, `apps/admin-dashboard/src/components/ui/icon-registry.ts`, `apps/admin-dashboard/src/lib/api.ts`, `apps/api/src/routes/admin/support-gateway.ts`, `apps/api/src/routes/admin/index.ts`, `apps/api/src/services/admin-support-gateway.ts`, `packages/shared/src/permissions.ts`, `packages/shared/src/types/orders.ts`, `tests/admin-support-gateway.test.ts`, `tests/admin-permission-reflection.test.ts`, and `tests/admin-dashboard-saas-ux.test.ts`.
+- **Additional verification:** Focused support/permission/IA vitest passed, shared build passed, API typecheck passed, admin-dashboard typecheck/build passed, brand/typography tests passed, browser QA on `http://127.0.0.1:5176/support-gateway` passed, `pnpm check:skills` passed, `git diff --check` passed, and `CI=true pnpm preflight` passed.
+- **Safety:** No merge, deploy, `db:migrate`, DB mutation, production action, secrets, live provider calls, or support access-token exposure occurred.
+
 ## Completion
 
 - **Did the task follow the selected skills end-to-end?** yes

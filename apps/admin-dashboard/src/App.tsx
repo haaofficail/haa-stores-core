@@ -31,6 +31,7 @@ const AdminUsers = lazy(() => import('./pages/AdminUsers'));
 const BankAccounts = lazy(() => import('./pages/BankAccounts'));
 const SettlementReadiness = lazy(() => import('./pages/SettlementReadiness'));
 const StorePaymentSettings = lazy(() => import('./pages/StorePaymentSettings'));
+const SupportGateway = lazy(() => import('./pages/SupportGateway'));
 
 function PageSkeleton() {
   return (
@@ -70,7 +71,8 @@ type AdminRoutePermission =
   | 'platform.settings.read'
   | 'billing.platform_fee.read'
   | 'users.read'
-  | 'landing_contacts.read';
+  | 'landing_contacts.read'
+  | 'support.gateway.read';
 
 type NavItem = { path: string; label: string; icon: AdminIconName; permission?: AdminRoutePermission };
 
@@ -118,6 +120,7 @@ const navGroups: NavGroup[] = [
     '/audit|سجل التدقيق|ScrollText|audit.read',
     '/operations/webhooks|Webhooks|FileText|webhooks.read',
     '/plans|الباقات|Package|plans.read',
+    '/support-gateway|بوابة الدعم|Headphones|support.gateway.read',
     '/landing-inbox|صندوق الوارد|Inbox|landing_contacts.read',
     '/settings|إعدادات المنصة|Settings|platform.settings.read',
   ]),
@@ -357,6 +360,7 @@ export default function App() {
                 <Route path="/store-billing" element={<AdminPermissionRoute permission="billing.platform_fee.read"><StoreBillingSettings /></AdminPermissionRoute>} />
                 <Route path="/compliance" element={<AdminPermissionRoute permission="tenants.read"><Compliance /></AdminPermissionRoute>} />
                 <Route path="/compliance/:recordId" element={<AdminPermissionRoute permission="tenants.read"><Compliance /></AdminPermissionRoute>} />
+                <Route path="/support-gateway" element={<AdminPermissionRoute permission="support.gateway.read"><SupportGateway /></AdminPermissionRoute>} />
                 <Route path="/landing-inbox" element={<AdminPermissionRoute permission="landing_contacts.read"><LandingInbox /></AdminPermissionRoute>} />
                 <Route path="/users" element={<AdminPermissionRoute permission="users.read"><AdminUsers /></AdminPermissionRoute>} />
                 <Route path="/admin-users" element={<Navigate to="/users" replace />} />

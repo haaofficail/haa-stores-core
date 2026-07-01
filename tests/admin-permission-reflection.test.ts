@@ -49,6 +49,7 @@ describe('Admin dashboard permission reflection', () => {
       '/settings': 'platform.settings.read',
       '/compliance': 'tenants.read',
       '/users': 'users.read',
+      '/support-gateway': 'support.gateway.read',
       '/landing-inbox': 'landing_contacts.read',
     };
 
@@ -88,6 +89,7 @@ describe('Admin dashboard permission reflection', () => {
       '/operations/webhooks|Webhooks|FileText|webhooks.read',
       '/plans|الباقات|Package|plans.read',
       '/compliance|توثيق المتاجر|CheckSquare|tenants.read',
+      '/support-gateway|بوابة الدعم|Headphones|support.gateway.read',
       '/landing-inbox|صندوق الوارد|Inbox|landing_contacts.read',
       '/settings|إعدادات المنصة|Settings|platform.settings.read',
     ];
