@@ -82,4 +82,14 @@ describe('Admin Support Gateway visibility and safety', () => {
     expect(src).not.toContain('DELETE');
     expect(src).not.toContain('reviewTicket');
   });
+
+  it('keeps resolved or closed urgent tickets inactive in triage copy', () => {
+    const src = read(PAGE_PATH);
+    const terminalBranch = src.indexOf("ticket.status === 'resolved' || ticket.status === 'closed'");
+    const urgentBranch = src.indexOf("ticket.priority === 'urgent'");
+    expect(terminalBranch).toBeGreaterThan(-1);
+    expect(urgentBranch).toBeGreaterThan(-1);
+    expect(terminalBranch).toBeLessThan(urgentBranch);
+    expect(src).toContain('لا يوجد إجراء نشط');
+  });
 });

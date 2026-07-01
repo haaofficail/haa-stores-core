@@ -73,6 +73,14 @@ const DECISION_BADGES: Record<DecisionTone, string> = {
 };
 
 function supportTicketDecision(ticket: AdminSupportTicket): TicketDecision {
+  if (ticket.status === 'resolved' || ticket.status === 'closed') {
+    return {
+      owner: 'لا يوجد إجراء نشط',
+      nextAction: 'راجع السجل عند إعادة فتح أو تصعيد جديد.',
+      tone: ticket.status === 'resolved' ? 'success' : 'neutral',
+    };
+  }
+
   if (ticket.priority === 'urgent') {
     return {
       owner: 'فريق الدعم',
@@ -108,7 +116,7 @@ function supportTicketDecision(ticket: AdminSupportTicket): TicketDecision {
   return {
     owner: 'لا يوجد إجراء نشط',
     nextAction: 'راجع السجل عند إعادة فتح أو تصعيد جديد.',
-    tone: ticket.status === 'resolved' ? 'success' : 'neutral',
+    tone: 'neutral',
   };
 }
 
