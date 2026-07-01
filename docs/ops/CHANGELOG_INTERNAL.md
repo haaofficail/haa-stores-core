@@ -1,5 +1,17 @@
 # Internal Changelog
 
+## 2026-07-01 — API Explicit-any Quality-gate Cleanup (TASK-0143)
+
+- Removed explicit `any` from the API files directly touched by PR #343 Quality Gates warnings.
+- Replaced category route `catch (err: any)` blocks with `unknown` plus safe fallback messages.
+- Tightened marketplace order/listing typing with `ChannelOrder.orderData`, `ProductListing`, and the existing marketplace-channel shape.
+- Replaced Hono `as any` status casts in the API error handler with a contentful status-code guard.
+- Reworked idempotency replay caching as a typed union so contentless responses replay with `null` bodies and contentful responses replay with typed body statuses.
+- Replaced storefront cart/policy DTO casts with `Record<string, unknown>` and removed the support-ticket access-token `any` cast.
+- Tightened support-error normalization by narrowing optional status/code metadata from `unknown`.
+- Verification passed: API typecheck, focused ESLint on touched files, focused vitest 6 files / 56 tests, full `pnpm lint` with warning-only baseline, clean `git diff --check`, and full `pnpm preflight`.
+- Safety boundary unchanged: no deploy, no production action, no `db:migrate`, no DB mutation, no secrets printed, no live payment/shipping-provider calls, and no lint suppression.
+
 ## 2026-07-01 — Tenant Dossier Review-thread Source Hardening (TASK-0139, PR #348)
 
 - Removed misleading tenant sales totals derived from platform-wide payment samples in `TenantDossier.tsx`; the dossier now marks payment totals unavailable until a trusted tenant/store-scoped aggregate exists.

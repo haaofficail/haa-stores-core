@@ -18,6 +18,17 @@ import { resolveActiveStore } from './_shared.js';
 
 export const supportRouter = new Hono();
 
+type PublicDtoInput = Record<string, unknown>;
+
+function hasPgErrorCode(error: unknown, code: string): boolean {
+  return Boolean(
+    error
+    && typeof error === 'object'
+    && 'code' in error
+    && (error as { code?: unknown }).code === code,
+  );
+}
+
 const heartbeatRateLimit = rateLimiter({
   windowMs: 10 * 1000,
   maxRequests: 30,
@@ -96,7 +107,7 @@ supportRouter.get('/:slug/policies/:type', async (c) => {
     ))
     .limit(1);
   if (!policy) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Policy not found' } }, 404);
-  return c.json({ success: true, data: toPublicPolicy(policy as any) });
+  return c.json({ success: true, data: toPublicPolicy(policy as PublicDtoInput) });
 });
 
 // ── Support tickets ─────────────────────────────────────
@@ -131,7 +142,7 @@ supportRouter.post('/:slug/support/tickets', zValidator('json', ticketSchema), a
     success: true,
     data: {
       id: ticket.id,
-      accessToken: (ticket as any).accessToken,
+      accessToken: ticket.accessToken,
       subject: ticket.subject,
       createdAt: ticket.createdAt,
     },
@@ -239,8 +250,8 @@ supportRouter.post('/:slug/events', zValidator('json', eventPayloadSchema), asyn
   };
   try {
     await db.insert(s.marketingEvents).values(baseValues);
-  } catch (err: any) {
-    if (err?.code === '23503') {
+  } catch (err: unknown) {
+    if (hasPgErrorCode(err, '23503')) {
       // FK violation (ISSUE-0006): referenced product/customer/order doesn't exist.
       // Retry with FK fields nulled — the event is still recorded for session analytics.
       try {

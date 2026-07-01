@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0079: API Quality Gates Surfaced Explicit Any Debt
+
+- **ID:** ISSUE-0079
+- **Date:** 2026-07-01
+- **Severity:** Medium (type-safety / quality-gate signal)
+- **Area:** API Routes / Middleware / Storefront API DTOs / Observability
+- **Related Tasks:** TASK-0143
+- **Symptoms:** The latest deploy/quality output surfaced `Unexpected any` warnings in API code, including category route catch blocks, marketplace order/listing metadata, Hono error/status casts, and idempotency replay status handling.
+- **Expected:** API route and middleware code should narrow unknown errors, JSON metadata, DTO input casts, and Hono status codes without `any`, while preserving response behavior.
+- **Actual:** Older code used `any` to read `err.message`, index marketplace JSON blobs, pass Hono status codes, replay cached responses, cast storefront DTO rows, and read support-error metadata.
+- **Root Cause:** These API surfaces were written before the current quality gates became strict about `@typescript-eslint/no-explicit-any`. The quickest implementations used `any` as a bridge across unknown error objects, JSONB data, and Hono overloads instead of typed narrowing helpers.
+- **Fix:** Converted catch blocks to `unknown`, used `ProductListing` and marketplace-channel types, added Hono status-code narrowing in the error handler, modeled idempotency cached responses as a contentful/contentless union, replaced storefront DTO casts with `Record<string, unknown>`, and narrowed optional status/code metadata in support-error normalization.
+- **Verification:** `pnpm --filter @haa/api typecheck` passed. Focused ESLint on touched files passed with no output. Focused vitest passed 6 files / 56 tests. Full `pnpm lint` passed with existing warning-only baseline. `git diff --check` passed. `pnpm preflight` passed.
+- **Prevention:** Keep API route/middleware changes away from `as any`; use `unknown` plus type guards for errors/metadata and Hono `StatusCode` / `ContentfulStatusCode` for dynamic response statuses.
+- **Status:** Fixed locally in TASK-0143 for the touched API surfaces. Repo-wide `no-explicit-any` warning debt remains a separate cleanup batch; no deploy, migration, DB mutation, secret handling, production action, or live provider call occurred.
+
+---
+
 ### ISSUE-0077: Financial Admin Export and Settlement Readiness Drifted From Safe Operations
 
 - **ID:** ISSUE-0077

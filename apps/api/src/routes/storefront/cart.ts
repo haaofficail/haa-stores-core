@@ -23,12 +23,14 @@ const updateItemSchema = z.object({
   quantity: z.coerce.number().int().positive(),
 });
 
+type PublicDtoInput = Record<string, unknown>;
+
 cartRouter.post('/:slug/cart', async (c) => {
   const { store, error } = await resolveActiveStore(c);
   if (error) return error;
   const cartService = new CartService();
   const cart = await cartService.createCart(store.id, undefined, c.req.header('x-session-token'));
-  return c.json({ success: true, data: toPublicCart(cart as any) }, 201);
+  return c.json({ success: true, data: toPublicCart(cart as PublicDtoInput) }, 201);
 });
 
 cartRouter.get('/:slug/cart/:cartId', async (c) => {
@@ -38,7 +40,7 @@ cartRouter.get('/:slug/cart/:cartId', async (c) => {
   if (!cartId) return c.json({ success: false, error: { code: 'BAD_REQUEST', message: 'Cart ID required' } }, 400);
   const cart = await new CartService().getCart(store.id, cartId);
   if (!cart) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Cart not found' } }, 404);
-  return c.json({ success: true, data: toPublicCart(cart as any) });
+  return c.json({ success: true, data: toPublicCart(cart as PublicDtoInput) });
 });
 
 cartRouter.post('/:slug/cart/:cartId/items', zValidator('json', addItemSchema), async (c) => {
@@ -61,7 +63,7 @@ cartRouter.post('/:slug/cart/:cartId/items', zValidator('json', addItemSchema), 
     body.variantId,
   );
   if (!cart) return c.json({ success: false, error: { code: 'BAD_REQUEST', message: 'Product not available' } }, 400);
-  return c.json({ success: true, data: toPublicCart(cart as any) });
+  return c.json({ success: true, data: toPublicCart(cart as PublicDtoInput) });
 });
 
 cartRouter.patch('/:slug/cart/:cartId/items/:itemId', zValidator('json', updateItemSchema), async (c) => {
@@ -75,7 +77,7 @@ cartRouter.patch('/:slug/cart/:cartId/items/:itemId', zValidator('json', updateI
   if (!updated) return c.json({ success: false, error: { code: 'BAD_REQUEST', message: 'Cart item not found, inactive, or insufficient stock' } }, 400);
   const updatedCart = await new CartService().getCart(store.id, cartId);
   if (!updatedCart) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Cart not found' } }, 404);
-  return c.json({ success: true, data: toPublicCart(updatedCart as any) });
+  return c.json({ success: true, data: toPublicCart(updatedCart as PublicDtoInput) });
 });
 
 cartRouter.delete('/:slug/cart/:cartId/items/:itemId', async (c) => {
@@ -88,5 +90,5 @@ cartRouter.delete('/:slug/cart/:cartId/items/:itemId', async (c) => {
   if (!removed) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Cart item not found' } }, 404);
   const updatedCart = await new CartService().getCart(store.id, cartId);
   if (!updatedCart) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Cart not found' } }, 404);
-  return c.json({ success: true, data: toPublicCart(updatedCart as any) });
+  return c.json({ success: true, data: toPublicCart(updatedCart as PublicDtoInput) });
 });

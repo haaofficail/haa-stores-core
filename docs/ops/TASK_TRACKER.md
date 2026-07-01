@@ -4,6 +4,35 @@
 
 ---
 
+### TASK-0143: API explicit-any quality-gate cleanup
+
+- **Type:** Backend API / Refactor / Testing / Documentation
+- **Priority:** P2 Medium
+- **Status:** Locally verified
+- **Created:** 2026-07-01
+- **Updated:** 2026-07-01
+- **Branch:** `codex/chore-new-branch-20260701`
+- **PR:** Not opened
+- **Original Request:** User selected `any` from the deploy/quality output and said: "بعد ما تخلص حلها".
+- **Expanded Requirement:** Remove the explicit `any` warnings that surfaced in the latest Quality Gates annotations for API route/middleware code, preserve runtime behavior, and keep the fix local-only with no deploy, migration, secrets, or production action.
+- **Scope:** API category error catch paths, marketplace order/listing typing, Hono error/status handling, idempotency replay status typing, storefront cart/policy DTO casts, storefront support ticket/access-token typing, and support-error normalization.
+- **Out of Scope:** Repo-wide `no-explicit-any` debt outside the touched API files, admin-dashboard UX changes from TASK-0142, deploy, migration, production config, secrets, live provider calls, and broad route refactors.
+- **Skills Used:** `acceptance-criteria-gate`, `regression-safety-gate`, `implementation-quality-gate`, `agent-permission-boundary`, `single-source-of-truth-gate`, `documentation-handoff-gate`, `evidence-led-reporting`, `verification-before-completion`.
+- **Acceptance Criteria:**
+  - [x] Touched API files no longer contain explicit `any` usages.
+  - [x] API typecheck passes.
+  - [x] Focused adjacent tests for error handling, idempotency, storefront cart/DTO, and service-layer guards pass.
+  - [x] Full `pnpm preflight` passes.
+  - [x] No deploy, no migration, no production action, and no secrets.
+- **Test Plan:** `pnpm --filter @haa/api typecheck`; `pnpm exec eslint <touched files>`; focused vitest for observability, storefront DTO/cart, products/cart regression, service-layer guard, and payout idempotency; `pnpm lint`; `git diff --check`; `pnpm preflight`.
+- **Files Changed:** `apps/api/src/routes/categories.ts`, `apps/api/src/routes/marketplaces.ts`, `apps/api/src/middleware/error-handler.ts`, `apps/api/src/middleware/idempotency-key.ts`, `apps/api/src/routes/storefront/cart.ts`, `apps/api/src/routes/storefront/support.ts`, `apps/api/src/services/support-error-log.ts`, and ops documentation.
+- **Test Results:** `pnpm --filter @haa/api typecheck` passed. `pnpm exec eslint` on all touched API files passed with no output. `pnpm vitest run tests/observability-wiring.test.ts tests/cart-security-regression.test.ts tests/dto-storefront.test.ts tests/products-qa-regression.test.ts tests/service-layer-enforcement.test.ts tests/payout-admin-actions-protection.test.ts` passed 6 files / 56 tests. `pnpm lint` passed with existing warning-only baseline. `git diff --check` passed. `pnpm preflight` passed.
+- **Root Cause:** Several older API routes used `any` for error objects, JSON metadata, Drizzle DTO casts, and Hono status-code casts. Quality Gates surfaced the first batch as warnings after PR #343, but the safer fix was to narrow the directly touched API surfaces instead of suppressing lint.
+- **Verdict:** Locally verified. No commit, push, PR, deploy, migration, DB mutation, production action, secret handling, or live payment/shipping/provider call occurred.
+- **Related Issues:** ISSUE-0079.
+
+---
+
 ### TASK-0141: Main change-password tenant context typecheck blocker
 
 - **Type:** Security / Backend API / Testing / Documentation
