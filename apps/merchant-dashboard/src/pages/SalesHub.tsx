@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import {
   ShoppingCart, Users, ShoppingBag, Truck, Store, Package,
-  ClipboardList,
+  ClipboardList, PieChart,
 } from 'lucide-react';
 import { ordersApi, customersApi, abandonedCartsApi, marketplaceApi } from '@/lib/api';
 import { formatCurrency } from '@/lib/utils';
@@ -136,6 +136,17 @@ export default function SalesHub() {
             cta={t('sales.hub.tools.customers.cta', 'فتح العملاء')}
           />
           <HubCard
+            icon={PieChart}
+            iconClass="bg-cyan-50 text-cyan-600"
+            title={t('sales.hub.tools.customerSegments.title', 'شرائح العملاء')}
+            description={t(
+              'sales.hub.tools.customerSegments.description',
+              'قسّم العملاء حسب السلوك والقيمة والولاء لتوجيه حملات واسترداد أدق.',
+            )}
+            to="/sales/customers/segments"
+            cta={t('sales.hub.tools.customerSegments.cta', 'عرض الشرائح')}
+          />
+          <HubCard
             icon={ShoppingBag}
             iconClass="bg-rose-50 text-rose-600"
             title={t('sales.hub.tools.abandoned.title', 'العربات المتروكة')}
@@ -170,7 +181,7 @@ export default function SalesHub() {
           />
           <HubCard
             icon={Package}
-            iconClass="bg-cyan-50 text-cyan-600"
+            iconClass="bg-sky-50 text-sky-600"
             title={t('sales.hub.tools.catalog.title', 'الكتالوج')}
             description={t(
               'sales.hub.tools.catalog.description',

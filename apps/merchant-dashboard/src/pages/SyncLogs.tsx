@@ -87,7 +87,7 @@ export default function SyncLogs() {
             variant="ghost"
             size="sm"
             className="text-xs"
-            onClick={() => navigate('/channels')}
+            onClick={() => navigate('/sales/channels')}
           >
             <ArrowRight className="h-3.5 w-3.5 ms-1" />
             {t('syncLogs.back', 'العودة للقنوات')}

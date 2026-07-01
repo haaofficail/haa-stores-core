@@ -231,7 +231,7 @@ export default function MarketplaceDetailPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         {/* Back nav — touch target ≥ 44x44 (WCAG 2.5.5). */}
-        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => navigate('/channels')} aria-label={t('common.back', 'رجوع')}>
+        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => navigate('/sales/channels')} aria-label={t('common.back', 'رجوع')}>
           <ArrowRight className="h-5 w-5" />
         </Button>
         <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${meta.color} flex items-center justify-center text-white shadow-lg font-bold text-sm`}>

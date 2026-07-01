@@ -128,6 +128,17 @@
 - Published branch to draft PR #344; remote checks are pending.
 - Safety boundary unchanged: no deploy yet, no production action, no `db:migrate`, no secrets, no live WhatsApp/provider calls, and no live payment/shipping-provider calls.
 
+## 2026-06-30 — Merchant Dashboard Sidebar Audit and Navigation Trust Slice (TASK-0132)
+
+- Added `docs/ops/MERCHANT_DASHBOARD_SIDEBAR_AUDIT_2026-06-30.md` with a section-by-section Merchant Dashboard sidebar audit, global benchmark links, P1/P2 findings, and recommended execution order.
+- Added a Sales Hub card for Customer Segments so `/sales/customers/segments` is discoverable from the Sales workflow.
+- Updated sales-channel navigation to use canonical `/sales/channels...` routes in Marketplaces, Marketplace Detail, Marketplace Guide, Marketplace Listings, Sync Logs, Marketplace Guide modal, and dashboard smart alerts.
+- Updated the Notifications page maintenance comment to point future integration work at `/sales/channels`.
+- Recorded remaining P1 product gaps: account security self-service, notification runtime/dispatch completion, import/export workflow depth, finance/reporting trust, native-confirm replacement, and full RTL/accessibility browser QA.
+- Verification passed: `pnpm --filter ./apps/merchant-dashboard typecheck`, `pnpm --filter @haa/merchant-dashboard build`, `pnpm preflight`, `pnpm check:skills` 43/43, and clean `git diff --check`.
+- Published as draft PR #343: https://github.com/haaofficail/haa-stores-core/pull/343. At creation time, GitHub reported it open, draft, and mergeable; several checks were still running and external TestSprite Pre-Check was red.
+- Safety boundary unchanged: no production deploy/action, no `db:migrate`, no secrets, and no live payment/shipping-provider calls.
+
 ## 2026-06-30 — Admin Store Payment Settings Save Contract (TASK-0131)
 
 - Aligned the admin Store Payment Settings page payload with the API validator: the dashboard uses canonical `enabled`, `status`, and `supportedPaymentMethod` fields.

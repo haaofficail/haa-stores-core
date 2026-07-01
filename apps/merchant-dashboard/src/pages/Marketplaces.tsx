@@ -253,7 +253,7 @@ export default function MarketplacesPage() {
           <p className="text-sm text-neutral-500 mt-0.5">اربط متجرك بمنصات البيع الإلكترونية وأدر مزامنة المنتجات والطلبات</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={() => navigate('/channels/sync-logs')}>
+          <Button variant="outline" size="sm" onClick={() => navigate('/sales/channels/sync-logs')}>
             <Clock className="h-3.5 w-3.5 ms-1.5" />سجل المزامنة
           </Button>
           <Button variant="outline" size="sm" onClick={() => setGuideOpen(true)}>
@@ -343,7 +343,7 @@ export default function MarketplacesPage() {
                       </div>
                       {/* Touch target ≥ 44x44 (WCAG 2.5.5). */}
                       <Button variant="ghost" size="icon" className="h-11 w-11 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => navigate(`/channels/${p.code}`)} aria-label={t('marketplaces.viewChannel', 'عرض القناة')}>
+                        onClick={() => navigate(`/sales/channels/${p.code}`)} aria-label={t('marketplaces.viewChannel', 'عرض القناة')}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     </div>
@@ -381,7 +381,7 @@ export default function MarketplacesPage() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-2 mt-4">
-                      <Button size="sm" className="flex-1" onClick={() => navigate(`/channels/${p.code}`)}>
+                      <Button size="sm" className="flex-1" onClick={() => navigate(`/sales/channels/${p.code}`)}>
                         <ExternalLink className="h-3.5 w-3.5 ms-1" />إدارة
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => handleSync(p.code)} disabled={syncingProvider === p.code}>
@@ -426,7 +426,7 @@ export default function MarketplacesPage() {
               if (!provider) return null;
               return (
                 <Card key={p.code} className="border-dashed border-neutral-200 bg-white/50 hover:border-neutral-300 hover:bg-neutral-50 transition-all cursor-pointer group"
-                  onClick={() => navigate(`/channels/${p.code}`)}>
+                  onClick={() => navigate(`/sales/channels/${p.code}`)}>
                   <CardContent className="p-5 text-center">
                     <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${provider.color} flex items-center justify-center text-white shadow-lg mx-auto mb-3 opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all`}>
                       <Store className="h-5 w-5" />
@@ -452,7 +452,7 @@ export default function MarketplacesPage() {
             <Clock className="h-4 w-4 text-neutral-400" />
             آخر المزامنات
           </CardTitle>
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/channels/sync-logs')}>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate('/sales/channels/sync-logs')}>
             عرض الكل<ArrowLeft className="h-3 w-3 me-1" />
           </Button>
         </CardHeader>
