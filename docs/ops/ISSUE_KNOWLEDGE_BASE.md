@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0081: Admin Support Gateway Needed Triage Ownership and Next Action
+
+- **ID:** ISSUE-0081
+- **Date:** 2026-07-01
+- **Severity:** Medium (admin support triage / operational clarity)
+- **Area:** Admin Dashboard / Support Gateway / Operations UX
+- **Related Tasks:** TASK-0144
+- **Symptoms:** `/support-gateway` exposed support tickets safely, but each row still behaved like a raw table entry. Admins could see status and priority, yet the page did not clearly state who owns the next step or what action should happen next.
+- **Expected:** A platform support queue should turn ticket state into an admin decision: owner, next action, and a clear way to reset filters while preserving the safe read-only contract.
+- **Actual:** The page showed summaries, filters, and tenant links, but operational triage cues were missing from individual rows.
+- **Root Cause:** TASK-0142 focused on making the missing platform-admin support contract visible and safe. The first implementation intentionally stayed narrow, so row-level decision UX was deferred.
+- **Fix:** Added a local `supportTicketDecision()` helper that derives owner, next action, and tone from ticket priority/status; rendered `المسؤول` and `الإجراء التالي` columns; added `مسح الفلاتر`; and expanded regression coverage to keep the page read-only and token-safe.
+- **Verification:** Focused support/IA/permission tests passed 3 files / 19 tests. Admin-dashboard typecheck, admin-dashboard build, brand/typography tests, `pnpm check:skills`, clean `git diff --check`, and `pnpm preflight` passed.
+- **Prevention:** Keep `tests/admin-support-gateway.test.ts` guarding the triage helper, owner/next-action columns, filter reset affordance, no `PATCH`/`DELETE` mutation strings, and no support `accessToken` selection or rendering.
+- **Status:** Fixed locally in TASK-0144. No deploy, migration, DB mutation, secret handling, production action, API contract expansion, support-ticket mutation, or live provider call occurred.
+
+---
+
 ### ISSUE-0080: Admin Support Gateway Was Missing From Platform-admin Contract
 
 - **ID:** ISSUE-0080
