@@ -57,7 +57,7 @@
   - [x] Focused regression tests guard route/link/aggregation/safety contracts.
 - **Test Plan:** `pnpm vitest run tests/admin-tenant-dossier.test.ts`; `pnpm --filter @haa/admin-dashboard typecheck`; `pnpm --filter @haa/admin-dashboard build`; `pnpm check:skills`; `git diff --check`.
 - **Files Changed:** `apps/admin-dashboard/src/App.tsx`, `apps/admin-dashboard/src/pages/Tenants.tsx`, `apps/admin-dashboard/src/pages/TenantDossier.tsx`, `apps/admin-dashboard/src/lib/api.ts`, `tests/admin-tenant-dossier.test.ts`, and ops documentation.
-- **Test Results:** Local focused tenant dossier tests passed; admin-dashboard typecheck/build passed; `pnpm check:skills` passed; `git diff --check` was clean. PR #348 review-thread follow-up adds source-scope guards for payments, audit, settlements, and readiness.
+- **Test Results:** Local focused tenant dossier tests passed; admin-dashboard typecheck/build passed; `pnpm check:skills` passed; `git diff --check` was clean. PR #348 review-thread follow-up adds source-scope guards for payments, audit, settlements, and readiness, plus a narrow TenantDossier refactor to clear SonarCloud duplication.
 - **Root Cause:** The admin had improved Merchant Verification and route/action hardening, but the tenant list still lacked a single operational file for reviewing one merchant's lifecycle across verification, operations, finance read models, and audit history.
 - **Verdict:** Tenant operating dossier is implemented and PR #348 review-thread source hardening is scoped to the dossier. Not merged and not deployed.
 - **Related Issues:** ISSUE-0076.

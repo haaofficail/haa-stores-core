@@ -6,6 +6,7 @@
 - Changed admin audit loading to request `/admin/audit` with tenant/store query parameters through `adminApi.getAuditLogs(...)`.
 - Removed settlement-batch counts based on a store-unscoped source from the dossier overview and marks them unavailable until a source applies `storeId`.
 - Added a trusted-readiness-data guard so publish readiness, risk, and blocker counts are not shown as decisive when the store payload does not include the required readiness fields.
+- Refactored `TenantDossier.tsx` helpers and row rendering to remove SonarCloud duplication against the existing merchant verification page without changing dossier behavior.
 - Added regression coverage in `tests/admin-tenant-dossier.test.ts` for scoped audit, unavailable payment/settlement data, and no false readiness blockers.
 - Safety boundary unchanged: no merge, no deploy, no production action, no migration, no secrets, no production config, and no TASK-0140 financial hardening scope.
 

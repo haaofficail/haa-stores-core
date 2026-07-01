@@ -105,6 +105,7 @@
 - **Scope:** `TenantDossier.tsx`, `adminApi.getAuditLogs(...)`, focused tenant dossier tests, and ops documentation only.
 - **Reviewer concern addressed:** platform-wide payment samples, unscoped audit, unscoped settlement batches, and incomplete readiness data could mislead the admin.
 - **Resolution:** payment totals and settlement-batch counts are unavailable until trusted scoped sources exist; audit calls include tenant/store query parameters; publish readiness, risk, and blocker counts are unavailable unless trusted readiness fields are present.
+- **CI follow-up:** SonarCloud then reported new-code duplication between `TenantDossier.tsx` and the existing `Compliance.tsx`; the dossier helpers and rendering were refactored without product behavior changes to remove that duplication.
 - **Behavioral change:** yes, but only to remove misleading certainty from the dossier. No payout approval, transfer verification, settlement mutation, full-IBAN reveal, migration, deploy, production config, secret handling, or TASK-0140 financial hardening was added.
 
 ## Deviations
