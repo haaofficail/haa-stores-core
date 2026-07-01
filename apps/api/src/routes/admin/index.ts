@@ -25,7 +25,7 @@ import {
   requestAdminPasswordResetRoute,
   startAdminTotpEnrollmentRoute,
 } from './auth.js';
-import { dashboardRoute, tenantsRoutes, storesRoutes, kycRoutes, kycBankRoutes, settlementReadinessRoutes, paymentSettingsRoutes, paymentsRoute } from './tenants-stores.js';
+import { dashboardRoute, tenantsRoutes, storesRoutes, kycRoutes, kycBankRoutes, settlementReadinessRoutes, paymentSettingsRoutes, paymentsRoute, paymentsExportRoute } from './tenants-stores.js';
 import {
   marketplaceSummaryRoute,
   marketplaceProductsRoute,
@@ -368,7 +368,13 @@ adminRouter.get('/stores/:storeId/payment-settings', requireAdminAuth(), require
 adminRouter.put('/stores/:storeId/payment-settings', requireAdminAuth(), requireAdminPermission('stores.update'), requireAdminTwoFactorIfEnabled(), zValidator('json', paymentSettingsUpsertSchema), paymentSettingsRoutes.upsert);
 
 // /payments
+const paymentsExportQuerySchema = z.object({
+  storeId: z.coerce.number().int().positive().optional(),
+  q: z.string().trim().max(120).optional(),
+});
+
 adminRouter.get('/payments', requireAdminAuth(), requireAdminPermission('payments.read'), paymentsRoute);
+adminRouter.get('/payments/export', requireAdminAuth(), requireAdminPermission('wallet.payout.export'), zValidator('query', paymentsExportQuerySchema), paymentsExportRoute);
 
 // /marketplace/*
 adminRouter.get('/marketplace/summary', requireAdminAuth(), requireAdminPermission('marketplace.read'), marketplaceSummaryRoute);

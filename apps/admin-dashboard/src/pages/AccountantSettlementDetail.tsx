@@ -183,6 +183,8 @@ export default function AccountantSettlementDetail() {
   }, [detail, secondApproveMutation]);
 
   const saving = transferMutation.isPending || receiptMutation.isPending || secondApproveMutation.isPending;
+  const canMarkTransferred = hasAdminPermission('wallet.payout.mark_transferred');
+  const canUploadProof = hasAdminPermission('wallet.payout.upload_proof');
 
   const startLabel = useMemo(() => {
     if (detail?.status === 'approved') return 'بدء التحويل';
@@ -192,6 +194,8 @@ export default function AccountantSettlementDetail() {
   const secondApprovalBlockedCopy = hasAdminPermission('wallet.payout.second_approve')
     ? 'لا يمكن لنفس المنفذ اعتماد التسوية'
     : 'يتطلب اعتمادًا من مستخدم آخر مخوّل';
+  const transferPermissionCopy = 'يتطلب تنفيذ التحويل صلاحية wallet.payout.mark_transferred';
+  const uploadProofPermissionCopy = 'يتطلب رفع إيصال التحويل صلاحية wallet.payout.upload_proof';
 
   if (loading) return <AdminTableSkeleton columns={['w-32', 'w-24', 'w-20', 'w-16']} />;
   if (unauthorized) return <UnauthorizedState permission="wallet.payout.view_all" />;
@@ -252,31 +256,41 @@ export default function AccountantSettlementDetail() {
 
       {startLabel && (
         <section className="bg-white rounded-xl shadow-sm p-5">
-          <button onClick={startTransfer} disabled={saving}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-40">
-            {saving ? 'جارٍ الحفظ…' : startLabel}
-          </button>
+          {canMarkTransferred ? (
+            <button onClick={startTransfer} disabled={saving}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-40">
+              {saving ? 'جارٍ الحفظ…' : startLabel}
+            </button>
+          ) : (
+            <p className="text-sm text-amber-700">{transferPermissionCopy}</p>
+          )}
         </section>
       )}
 
       {detail.status === 'transferred' && (
         <section className="bg-white rounded-xl shadow-sm p-5 space-y-3">
           <h3 className="font-medium text-gray-900">رفع إيصال التحويل</h3>
-          {mismatch && <div className="rounded-lg bg-red-50 text-red-700 text-sm px-3 py-2">{mismatch}</div>}
-          <input type="file" accept="application/pdf,image/png,image/jpeg"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="block text-sm" />
-          <div className="grid grid-cols-2 gap-3">
-            <input value={bankReference} onChange={(e) => setBankReference(e.target.value)} placeholder="مرجع العملية البنكية" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-            <input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="اسم البنك" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-            <input type="date" value={transferDate} onChange={(e) => setTransferDate(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-            <input value={transferredAmount} onChange={(e) => setTransferredAmount(e.target.value)} placeholder="المبلغ المحوّل" className="rounded-lg border border-gray-300 px-3 py-2 text-sm tabular-nums" />
-            <input value={currency} onChange={(e) => setCurrency(e.target.value)} placeholder="العملة" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ملاحظة (اختياري)" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-          </div>
-          <button onClick={submitReceipt} disabled={saving || !file}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-40">
-            {saving ? 'جارٍ الحفظ…' : 'حفظ الإيصال'}
-          </button>
+          {canUploadProof ? (
+            <>
+              {mismatch && <div className="rounded-lg bg-red-50 text-red-700 text-sm px-3 py-2">{mismatch}</div>}
+              <input type="file" accept="application/pdf,image/png,image/jpeg"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="block text-sm" />
+              <div className="grid grid-cols-2 gap-3">
+                <input value={bankReference} onChange={(e) => setBankReference(e.target.value)} placeholder="مرجع العملية البنكية" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                <input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="اسم البنك" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                <input type="date" value={transferDate} onChange={(e) => setTransferDate(e.target.value)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                <input value={transferredAmount} onChange={(e) => setTransferredAmount(e.target.value)} placeholder="المبلغ المحوّل" className="rounded-lg border border-gray-300 px-3 py-2 text-sm tabular-nums" />
+                <input value={currency} onChange={(e) => setCurrency(e.target.value)} placeholder="العملة" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+                <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ملاحظة (اختياري)" className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              </div>
+              <button onClick={submitReceipt} disabled={saving || !file}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-40">
+                {saving ? 'جارٍ الحفظ…' : 'حفظ الإيصال'}
+              </button>
+            </>
+          ) : (
+            <p className="text-sm text-amber-700">{uploadProofPermissionCopy}</p>
+          )}
         </section>
       )}
 

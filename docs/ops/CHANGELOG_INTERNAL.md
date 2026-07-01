@@ -20,6 +20,21 @@
 - Post-merge verification passed: GitHub CI run `28485302991`, staging deploy run `28485302982`, staging smoke 5/5, local `pnpm typecheck`, and local `pnpm preflight`.
 - Safety boundary unchanged: staging deploy only from the merge workflow, production deploy skipped, no manual `db:migrate`, no production config, no secrets, and no stack branch push.
 
+## 2026-06-30 — Financial Admin Destructive Actions Audit + P1 Hardening (TASK-0140)
+
+- Added `financial-export-audit.ts` so finance CSV exports record auditable `export_wallet` events with `entityType: finance_csv_export`, report name, row count, filters, actor, IP, and user agent.
+- Added audit recording to Accountant Inbox CSV export and Finance Reports CSV export before the CSV Blob is returned.
+- Reworked `/admin/payments` to return an explicit admin payment read model only; it no longer returns raw payment metadata, provider payment IDs, or idempotency keys.
+- Added `/admin/payments/export`, guarded by `wallet.payout.export`, validated by a query schema, exported through explicit CSV columns, and audited.
+- Updated the admin Payments page to use the permission-gated API Blob export instead of local `downloadRowsAsCsv(payments)`.
+- Aligned Settlement Readiness SAMA values with the API contract (`unconfirmed`, `in_progress`, `confirmed`) and normalized legacy display values from older local data.
+- Gated Settlement Readiness edits behind `wallet.payout.approve`.
+- Gated Accountant Settlement Detail transfer and receipt-upload actions behind `wallet.payout.mark_transferred` and `wallet.payout.upload_proof`.
+- Corrected Settlement Batch Detail proof-upload copy: the receipt file is required, matching backend validation.
+- Added dialog semantics to destructive payout modals and redacted `proofFileKey` from manual payout detail read responses.
+- Added `tests/admin-financial-actions-safety.test.ts` covering export permission/audit, safe payments read/export model, SAMA status contract, mutation-permission gating, dialog/proof-copy safety, and proof-file-key redaction.
+- Safety boundary unchanged: no deploy, no production action, no `db:migrate`, no DB mutation, no secrets printed, no live payment/shipping/provider calls, and no `storage/*.ndjson` retained.
+
 ## 2026-06-30 — Admin Tenant Operating Dossier (TASK-0139)
 
 - Added a tenant-level operating dossier route at `/tenants/:tenantId`, protected by `tenants.read`.

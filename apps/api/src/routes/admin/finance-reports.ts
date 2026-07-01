@@ -7,6 +7,7 @@
 import { z } from 'zod';
 import { getFinanceReportsReadModel } from '../../services/settlement-reports.js';
 import { csvResponse, toCsv } from './csv-response.js';
+import { recordFinancialExportAudit } from './financial-export-audit.js';
 
 export const financeReportsExportQuerySchema = z.object({
   tab: z.enum(['archive', 'reconciliation', 'stuck']).default('archive'),
@@ -53,6 +54,12 @@ export const financeReportsRoutes = {
       secondApproverId: r.secondApproverId ?? '',
       reconciliationStatus: r.reconciliationStatus,
     }));
+
+    await recordFinancialExportAudit(c, {
+      report: `finance_reports_${tab}`,
+      rowCount: rows.length,
+      filters: { tab },
+    });
 
     return csvResponse(c, toCsv(FINANCE_REPORT_EXPORT_COLUMNS, rows), `settlement-${tab}.csv`);
   },

@@ -11,6 +11,8 @@ import * as s from '@haa/db/schema';
 import { AuditLogService } from '@haa/integration-core';
 import { NotificationService } from '@haa/notification-core';
 import { invalidateStoreTenantCache } from '../../middleware/store-tenant-cache.js';
+import { csvResponse, toCsv } from './csv-response.js';
+import { recordFinancialExportAudit } from './financial-export-audit.js';
 
 const adminTenantSelect = {
   id: s.tenants.id,
@@ -47,6 +49,50 @@ const adminStoreMutationSelect = {
   createdAt: s.stores.createdAt,
   updatedAt: s.stores.updatedAt,
 };
+
+const adminPaymentSelect = {
+  id: s.payments.id,
+  storeId: s.payments.storeId,
+  orderId: s.payments.orderId,
+  method: s.payments.provider,
+  amount: s.payments.amount,
+  currency: s.payments.currency,
+  status: s.payments.status,
+  createdAt: s.payments.createdAt,
+  updatedAt: s.payments.updatedAt,
+};
+
+const PAYMENT_EXPORT_COLUMNS = [
+  'id',
+  'storeId',
+  'orderId',
+  'method',
+  'amount',
+  'currency',
+  'status',
+  'createdAt',
+];
+
+function paymentMatchesQuery(payment: Record<string, unknown>, query: string) {
+  if (!query) return true;
+  const haystack = [
+    payment.id,
+    payment.storeId,
+    payment.orderId,
+    payment.method,
+    payment.amount,
+    payment.currency,
+    payment.status,
+  ].map((value) => String(value ?? '').toLowerCase());
+  return haystack.some((value) => value.includes(query));
+}
+
+async function getAdminPaymentRows(storeId?: number, limit = 200) {
+  const db = createDbClient();
+  return storeId
+    ? db.select(adminPaymentSelect).from(s.payments).where(eq(s.payments.storeId, storeId)).orderBy(desc(s.payments.createdAt)).limit(limit)
+    : db.select(adminPaymentSelect).from(s.payments).orderBy(desc(s.payments.createdAt)).limit(limit);
+}
 
 // ── /dashboard ─────────────────────────────────────────────────────────────
 export async function dashboardRoute(c: any) {
@@ -485,9 +531,34 @@ export const paymentSettingsRoutes = {
 // ── /payments ──────────────────────────────────────────────────────────────
 export async function paymentsRoute(c: any) {
   const storeId = c.req.query('storeId');
-  const db = createDbClient();
-  const payments = storeId
-    ? await db.select().from(s.payments).where(eq(s.payments.storeId, Number(storeId))).orderBy(desc(s.payments.createdAt)).limit(100)
-    : await db.select().from(s.payments).orderBy(desc(s.payments.createdAt)).limit(200);
+  const payments = await getAdminPaymentRows(storeId ? Number(storeId) : undefined, storeId ? 100 : 200);
   return c.json({ success: true, data: payments });
+}
+
+export async function paymentsExportRoute(c: any) {
+  const params = c.req.valid('query') as { storeId?: number; q?: string };
+  const storeId = params.storeId;
+  const query = (params.q ?? '').trim().toLowerCase();
+  const payments = await getAdminPaymentRows(storeId, 1000);
+  const rows = payments
+    .filter((payment) => paymentMatchesQuery(payment as Record<string, unknown>, query))
+    .map((payment) => ({
+      id: payment.id,
+      storeId: payment.storeId,
+      orderId: payment.orderId,
+      method: payment.method,
+      amount: payment.amount,
+      currency: payment.currency ?? 'SAR',
+      status: payment.status,
+      createdAt: payment.createdAt,
+    }));
+
+  await recordFinancialExportAudit(c, {
+    report: 'payments',
+    rowCount: rows.length,
+    storeId: storeId ?? null,
+    filters: { storeId: storeId ?? null, q: query || null },
+  });
+
+  return csvResponse(c, toCsv(PAYMENT_EXPORT_COLUMNS, rows), 'payments.csv');
 }

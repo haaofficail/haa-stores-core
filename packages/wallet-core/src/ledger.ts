@@ -1156,7 +1156,7 @@ export class WalletLedger {
       readiness?.safeguardedAccountConfigured &&
       readiness.pspSettlementPartnerConfirmed &&
       readiness.merchantOfRecordConfirmed &&
-      readiness.samaComplianceStatus !== 'unconfirmed'
+      readiness.samaComplianceStatus === 'confirmed'
     );
     const ready = storeActive && kycApproved && bankAccountVerified && complianceConfirmed && reconciliationHealthy && refundRiskClear && disputeRiskClear;
 

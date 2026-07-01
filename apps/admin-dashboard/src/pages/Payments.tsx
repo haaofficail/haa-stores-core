@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
-import { useEffect } from 'react';
+ 
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { adminApi } from '../lib/api';
+import { adminApi, hasAdminPermission, type AdminPayment } from '../lib/api';
 import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
@@ -10,11 +10,13 @@ import { ErrorState } from '../components/ui/ErrorState';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
-import { downloadRowsAsCsv } from '../lib/downloadRowsAsCsv';
+import { downloadBlob } from '../lib/downloadRowsAsCsv';
 
 export default function Payments() {
   const { t } = useTranslation();
-  const { data: payments = [], isPending: loading, isError: error, refetch } = useQuery<any[]>({
+  const [exporting, setExporting] = useState(false);
+  const canExportPayments = hasAdminPermission('wallet.payout.export');
+  const { data: payments = [], isPending: loading, isError: error, refetch } = useQuery<AdminPayment[]>({
     queryKey: queryKeys.payments,
     queryFn: () => adminApi.getPayments(),
   });
@@ -23,7 +25,7 @@ export default function Payments() {
     if (error) toast.error(t('payments.loadError', 'فشل تحميل المدفوعات'));
   }, [error, t]);
 
-  const controls = useTableControls<any>({
+  const controls = useTableControls<AdminPayment>({
     rows: payments,
     searchFields: ['id', 'status', 'method'],
     initialSort: { key: 'createdAt', dir: 'desc' },
@@ -31,15 +33,34 @@ export default function Payments() {
   });
   const { query, setQuery } = controls;
 
+  const exportCsv = async () => {
+    if (!canExportPayments) {
+      toast.error('لا تملك صلاحية تصدير المدفوعات');
+      return;
+    }
+    if (controls.filteredCount === 0 || exporting) return;
+    setExporting(true);
+    try {
+      const blob = await adminApi.exportPaymentsCsv({ q: query.trim() || undefined });
+      downloadBlob(blob, 'payments.csv');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'تعذّر تصدير المدفوعات');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-title2 font-bold text-gray-900 tracking-tight">{t('payments.pageTitle', 'المدفوعات')}</h2>
         <button
-          onClick={() => downloadRowsAsCsv(payments, 'payments.csv')}
-          className="px-3 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          onClick={exportCsv}
+          disabled={!canExportPayments || controls.filteredCount === 0 || exporting}
+          title={canExportPayments ? undefined : 'لا تملك صلاحية تصدير المدفوعات'}
+          className="px-3 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-40"
         >
-          تصدير CSV
+          {exporting ? 'جاري التصدير...' : 'تصدير CSV'}
         </button>
       </div>
       <div className="mb-4">
