@@ -4,6 +4,38 @@
 
 ---
 
+### TASK-0146: Staging deploy self-hosted runner cutover
+
+- **Type:** CI / Deploy / Incident Response / Documentation
+- **Priority:** P0 Critical
+- **Status:** Local workflow fix prepared; blocked from live deploy until the VPS runner is registered
+- **Created:** 2026-07-02
+- **Updated:** 2026-07-02
+- **Branch:** `codex/staging-self-hosted-runner`
+- **PR:** Pending
+- **Original Request:** "المشكلة ليست كود. حول staging deploy إلى self-hosted runner على VPS 72.61.108.208 حتى لا يعتمد على SSH inbound من GitHub-hosted runners..."
+- **Expanded Requirement:** Stop relying on GitHub-hosted runner SSH ingress for staging deployment by moving only the staging deploy job to a dedicated self-hosted runner on the staging VPS with labels `self-hosted`, `linux`, `x64`, and `haa-staging`. Keep quality gates/builds on GitHub-hosted runners, leave production untouched, and preserve staging smoke/rollback behavior without app-code, migration, or secret changes.
+- **Scope:** `.github/workflows/deploy.yml` staging job runner selection, staging job-level concurrency, removal of staging SSH setup/warmup/scp/ssh commands, local-on-runner GHCR login/config sync/deploy/diagnostics/rollback, focused deploy workflow regression tests, and ops documentation.
+- **Out of Scope:** Application code, production deploy job changes, `db:migrate`, production config, secrets, live payment/shipping calls, Hostinger firewall edits, and runner-token disclosure.
+- **Skills Used:** `environment-safety-gate`, `evidence-led-reporting`, `verification-before-completion`, `haa-stores-ci-release-checks`, plus `github:gh-fix-ci`.
+- **Acceptance Criteria:**
+  - [x] `deploy-staging` uses `runs-on: [self-hosted, linux, x64, haa-staging]`.
+  - [x] `deploy-staging` has its own `staging-deploy` concurrency group with `cancel-in-progress: false`.
+  - [x] `deploy-staging` no longer references `STAGING_SSH_KEY`, `STAGING_HOST`, `STAGING_USER`, `STAGING_SSH_PORT`, `webfactory/ssh-agent`, staging `ssh`, or staging `scp`.
+  - [x] Staging deploy config is copied locally into `STAGING_DEPLOY_PATH` from the self-hosted runner.
+  - [x] Production deploy behavior remains unchanged.
+  - [x] Focused workflow tests guard the self-hosted runner contract.
+  - [ ] A GitHub self-hosted runner with label `haa-staging` is registered on VPS `72.61.108.208`.
+  - [ ] Post-merge `Deploy to Staging` runs on the self-hosted runner and smoke passes.
+- **Test Plan:** `ruby -e "require 'yaml'; YAML.load_file('.github/workflows/deploy.yml'); puts 'yaml ok'"`; `pnpm vitest run tests/deploy-no-ssh-keyscan.test.ts tests/deploy-hardening.test.ts tests/deploy-port-contract.test.ts`; `pnpm check:skills`; `git diff --check`; `pnpm preflight`; GitHub PR checks; after runner registration and merge, staging smoke URLs.
+- **Files Changed:** `.github/workflows/deploy.yml`, `tests/deploy-no-ssh-keyscan.test.ts`, `tests/deploy-hardening.test.ts`, ops documentation, and `docs/ops/SKILL_COMPLIANCE_REPORT_TASK_0146.md`.
+- **Test Results:** In the isolated worktree, workflow YAML parsed successfully and focused deploy workflow tests passed 3 files / 47 tests. GitHub API currently reports `total_count: 0` self-hosted runners for the repository, and local SSH to `deploy@72.61.108.208` fails with `Permission denied (publickey,password)`, so runner installation on the VPS cannot be completed from this Codex session without owner-provided server access.
+- **Root Cause:** TASK-0145 proved the deploy failure was intermittent GitHub-hosted runner network reachability to staging SSH on TCP 22: runner `20.168.107.213` connected and deployed successfully, while runners `172.203.30.209` and `52.159.229.67` timed out before SSH authentication. Moving staging deployment onto a self-hosted runner on the VPS removes that inbound SSH dependency.
+- **Verdict:** Local workflow fix is ready for PR. Do not merge until the `haa-staging` self-hosted runner is online, otherwise `Deploy to Staging` will queue waiting for a matching runner. No deploy, migration, production action, app-code change, or secret print occurred.
+- **Related Issues:** ISSUE-0082.
+
+---
+
 ### TASK-0145: Staging deploy SSH diagnostics and configurable port
 
 - **Type:** CI / Deploy / Incident Response / Documentation
