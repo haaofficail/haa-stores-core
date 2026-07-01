@@ -1,4 +1,5 @@
-import { pgTable, serial, varchar, timestamp, boolean, integer, text } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, timestamp, boolean, integer, text, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -27,4 +28,13 @@ export const users = pgTable('users', {
   emailVerifiedAt: timestamp('email_verified_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
-});
+}, (table) => ({
+  // DB drift fix: these two indexes already exist in migrations
+  // 0080_users_phone_unique.sql and 0090_admin_totp.sql (both owner-gated,
+  // "not auto-applied") and were present in the drizzle-kit snapshot chain,
+  // but were never declared here — meaning a future `drizzle-kit generate`
+  // would have proposed DROPPING them. Declaring them keeps schema.ts in
+  // sync with the migration chain's intended end-state.
+  phoneUnique: uniqueIndex('users_phone_unique').on(table.phone).where(sql`phone IS NOT NULL`),
+  adminTotpEnabledIdx: index('users_admin_totp_enabled_idx').on(table.id).where(sql`admin_totp_enabled_at IS NOT NULL`),
+}));

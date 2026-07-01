@@ -610,6 +610,13 @@
       "when": 1782950003000,
       "tag": "0090_admin_totp",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1782950004000,
+      "tag": "0091_compliance_pii_encryption",
+      "breakpoints": true
     }
   ]
 }

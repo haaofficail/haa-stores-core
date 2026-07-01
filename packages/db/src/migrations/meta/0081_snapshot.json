@@ -10066,7 +10066,14 @@
       "indexes": {
         "marketplace_orders_marketplace_order_number_unique": {
           "name": "marketplace_orders_marketplace_order_number_unique",
-          "columns": ["marketplace_order_number"],
+          "columns": [
+            {
+              "expression": "marketplace_order_number",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
           "isUnique": true
         }
       },
@@ -10075,7 +10082,8 @@
       "uniqueConstraints": {
         "marketplace_orders_marketplace_order_number_unique": {
           "name": "marketplace_orders_marketplace_order_number_unique",
-          "columns": ["marketplace_order_number"]
+          "columns": ["marketplace_order_number"],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -11776,7 +11784,8 @@
       "uniqueConstraints": {
         "marketing_action_settings_store_key_unique": {
           "name": "marketing_action_settings_store_key_unique",
-          "columns": ["store_id", "key"]
+          "columns": ["store_id", "key"],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -12038,7 +12047,14 @@
       "indexes": {
         "store_billing_settings_store_id_unique": {
           "name": "store_billing_settings_store_id_unique",
-          "columns": ["store_id"],
+          "columns": [
+            {
+              "expression": "store_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
           "isUnique": true
         }
       },
@@ -12066,7 +12082,8 @@
       "uniqueConstraints": {
         "store_billing_settings_store_id_unique": {
           "name": "store_billing_settings_store_id_unique",
-          "columns": ["store_id"]
+          "columns": ["store_id"],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
