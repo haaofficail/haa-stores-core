@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { adminApi } from '../lib/api';
+import { adminApi, type AdminKycReviewStatus } from '../lib/api';
 import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
@@ -28,7 +28,7 @@ export default function KycReview() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.kycProfiles });
 
   const reviewMutation = useMutation({
-    mutationFn: (vars: { id: number; status: string; rejectionReason?: string }) =>
+    mutationFn: (vars: { id: number; status: AdminKycReviewStatus; rejectionReason?: string }) =>
       adminApi.reviewKyc(vars.id, vars.status, vars.rejectionReason),
     onSuccess: (_data, vars) => {
       toast.success(vars.status === 'approved' ? t('kyc.approved', 'تم اعتماد الملف') : t('kyc.rejected', 'تم رفض الملف'));
@@ -40,7 +40,7 @@ export default function KycReview() {
     onError: () => toast.error(t('kyc.updateError', 'فشل تحديث حالة الملف')),
   });
 
-  const review = (id: number, status: string, rejectionReason?: string) =>
+  const review = (id: number, status: AdminKycReviewStatus, rejectionReason?: string) =>
     reviewMutation.mutate({ id, status, rejectionReason });
 
   const openDetail = (p: any) => {

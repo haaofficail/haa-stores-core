@@ -166,19 +166,30 @@ const tenantStatusSchema = z.object({
   statusReason: z.string().trim().min(3).max(500),
 });
 
+const storeSlugSchema = z.string().min(1).max(100).regex(/^[a-z0-9-]+$/);
+
 const storeCreateSchema = z.object({
   tenantId: z.coerce.number().int().positive(),
   name: z.string().min(1).max(255),
-  slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
+  slug: storeSlugSchema.optional(),
+  domain: storeSlugSchema.optional(),
   email: z.string().email(),
   phone: z.string().max(20).optional(),
   isActive: z.boolean().default(true),
+}).superRefine((value, ctx) => {
+  if (value.slug || value.domain) return;
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    path: ['slug'],
+    message: 'Store slug is required',
+  });
 });
 
 const storeUpdateSchema = z.object({
   tenantId: z.coerce.number().int().positive().optional(),
   name: z.string().min(1).max(255).optional(),
-  slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/).optional(),
+  slug: storeSlugSchema.optional(),
+  domain: storeSlugSchema.optional(),
   email: z.string().email().optional(),
   phone: z.string().max(20).optional(),
   isActive: z.boolean().optional(),
@@ -191,7 +202,15 @@ const storeStatusSchema = z.object({
 
 const kycReviewSchema = z.object({
   status: z.enum(['approved', 'rejected', 'needs_more_info']),
-  rejectionReason: z.string().max(500).optional(),
+  rejectionReason: z.string().trim().max(500).optional(),
+}).superRefine((value, ctx) => {
+  if (value.status === 'approved') return;
+  if (value.rejectionReason?.trim()) return;
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    path: ['rejectionReason'],
+    message: 'Review reason is required when rejecting or requesting changes',
+  });
 });
 
 const productReviewSchema = z.object({
@@ -419,9 +438,9 @@ adminRouter.post('/upload', requireAdminAuth(), requireAdminPermission('platform
 adminRouter.get('/settings', requireAdminAuth(), requireAdminPermission('platform.settings.read'), settingsRoutes.get);
 adminRouter.put('/settings', requireAdminAuth(), requireAdminPermission('platform.settings.update'), requireAdminTwoFactorIfEnabled(), zValidator('json', settingsUpdateSchema), settingsRoutes.update);
 
-// /users
-// /users — listing platform users. Audit P1-8: needs explicit
-// permission since the route exposes a window into the user table.
+// /users — listing platform users. Audit P1-8: explicit users.read guard,
+// not auth-only. UI uses /users because /admin-users can be blocked by
+// browser/client filters; the API remains /admin/users.
 adminRouter.get('/users', requireAdminAuth(), requireAdminPermission('users.read'), usersRoute);
 
 // /stores/:storeId/billing-settings

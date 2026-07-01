@@ -38,7 +38,7 @@ describe('accountant lands on the inbox (finance-only, no dashboard:view)', () =
 
   it('non-finance nav items keep non-finance permissions (hidden from accountant)', () => {
     expect(app).toContain('/tenants|التجار|Users|tenants.read');
-    expect(app).toContain('/admin-users|المستخدمون|UserCog|users.read');
+    expect(app).toContain('/users|المستخدمون|UserCog|users.read');
   });
 });
 

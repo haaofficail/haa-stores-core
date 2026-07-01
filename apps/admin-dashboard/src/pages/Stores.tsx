@@ -25,7 +25,7 @@ export default function Stores() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const [form, setForm] = useState({ name: '', domain: '', tenantId: '', isActive: 'true' });
+  const [form, setForm] = useState({ name: '', slug: '', tenantId: '', email: '', phone: '', isActive: 'true' });
   const [statusDialog, setStatusDialog] = useState<StoreStatusDialog | null>(null);
   const [statusReason, setStatusReason] = useState('');
 
@@ -33,16 +33,33 @@ export default function Stores() {
     queryKey: queryKeys.stores,
     queryFn: () => adminApi.getStores(),
   });
+  const { data: tenants = [] } = useQuery<any[]>({
+    queryKey: queryKeys.tenants,
+    queryFn: () => adminApi.getTenants(),
+  });
 
   const invalidateStores = () => queryClient.invalidateQueries({ queryKey: queryKeys.stores });
 
   const saveMutation = useMutation({
     mutationFn: () => {
       const tenantIdNum = Number(form.tenantId);
-      const data = { ...form, tenantId: tenantIdNum, isActive: form.isActive === 'true' };
+      const payload = {
+        name: form.name.trim(),
+        slug: form.slug.trim(),
+        tenantId: tenantIdNum,
+        email: form.email.trim(),
+        phone: form.phone.trim() || undefined,
+        isActive: form.isActive === 'true',
+      };
       return editId
-        ? adminApi.updateStore(editId, { name: data.name, domain: data.domain, tenantId: data.tenantId })
-        : adminApi.createStore(data);
+        ? adminApi.updateStore(editId, {
+            name: payload.name,
+            slug: payload.slug,
+            tenantId: payload.tenantId,
+            email: payload.email,
+            phone: payload.phone,
+          })
+        : adminApi.createStore(payload);
     },
     onSuccess: () => {
       toast.success(editId ? t('stores.updated', 'تم تحديث المتجر بنجاح') : t('stores.created', 'تم إضافة المتجر بنجاح'));
@@ -68,22 +85,38 @@ export default function Stores() {
   const handleOpenDialog = (store?: any) => {
     if (store) {
       setEditId(store.id);
-      setForm({ name: store.name, domain: store.domain, tenantId: String(store.tenantId), isActive: String(store.isActive) });
+      setForm({
+        name: store.name || '',
+        slug: store.slug || store.domain || '',
+        tenantId: String(store.tenantId || ''),
+        email: store.email || '',
+        phone: store.phone || '',
+        isActive: String(store.isActive),
+      });
     } else {
       setEditId(null);
-      setForm({ name: '', domain: '', tenantId: '', isActive: 'true' });
+      setForm({ name: '', slug: '', tenantId: '', email: '', phone: '', isActive: 'true' });
     }
     setDialogOpen(true);
   };
 
   const saveStore = () => {
-    if (!form.name || !form.domain || !form.tenantId) {
+    if (!form.name.trim() || !form.slug.trim() || !form.tenantId || !form.email.trim()) {
       toast.error(t('stores.fillRequired', 'يرجى ملء جميع الحقول المطلوبة'));
+      return;
+    }
+    if (!/^[a-z0-9-]+$/.test(form.slug.trim())) {
+      toast.error(t('stores.invalidSlug', 'رابط المتجر يجب أن يحتوي أحرفًا إنجليزية صغيرة أو أرقامًا أو شرطات فقط'));
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email.trim())) {
+      toast.error(t('stores.invalidEmail', 'البريد الإلكتروني غير صالح'));
       return;
     }
     const tenantIdNum = Number(form.tenantId);
     if (!Number.isInteger(tenantIdNum) || tenantIdNum <= 0) {
-      toast.error(t('stores.invalidTenantId', 'معرّف التاجر (Tenant ID) يجب أن يكون رقمًا صحيحًا موجبًا'));
+      toast.error(t('stores.invalidTenantId', 'اختر تاجرًا صحيحًا للمتجر'));
       return;
     }
     saveMutation.mutate();
@@ -112,7 +145,7 @@ export default function Stores() {
 
   const controls = useTableControls<any>({
     rows: stores,
-    searchFields: ['name', 'domain', 'tenantName'],
+    searchFields: ['name', 'slug', 'tenantName', 'email'],
     initialSort: { key: 'name', dir: 'asc' },
     storageKey: 'stores',
   });
@@ -134,7 +167,7 @@ export default function Stores() {
           type="search"
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder={t('stores.search', 'بحث باسم المتجر أو النطاق...')}
+          placeholder={t('stores.search', 'بحث باسم المتجر أو الرابط أو البريد...')}
           className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
@@ -157,8 +190,9 @@ export default function Stores() {
               <thead className="bg-gray-50">
                 <tr>
                   <SortableTh sortKey="name" label={t('stores.name', 'الاسم')} sort={controls.sort} onToggle={controls.toggleSort} />
-                  <SortableTh sortKey="domain" label={t('stores.domain', 'النطاق')} sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="slug" label={t('stores.slug', 'رابط المتجر')} sort={controls.sort} onToggle={controls.toggleSort} />
                   <SortableTh sortKey="tenantName" label={t('stores.tenant', 'التاجر')} sort={controls.sort} onToggle={controls.toggleSort} />
+                  <SortableTh sortKey="email" label={t('stores.email', 'البريد')} sort={controls.sort} onToggle={controls.toggleSort} />
                   <SortableTh sortKey="isActive" label={t('stores.status', 'الحالة')} sort={controls.sort} onToggle={controls.toggleSort} />
                   <th className="px-4 py-3 text-start font-medium text-gray-500">{t('stores.actions', 'الإجراءات')}</th>
                 </tr>
@@ -167,8 +201,9 @@ export default function Stores() {
                 {controls.rows.map(s => (
                   <tr key={s.id} className="border-t hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-900">{s.name}</td>
-                    <td className="px-4 py-3 text-gray-500">{s.domain || '-'}</td>
+                    <td className="px-4 py-3 text-gray-500">{s.slug ? `/s/${s.slug}` : '-'}</td>
                     <td className="px-4 py-3 text-gray-500">{s.tenantName || '-'}</td>
+                    <td className="px-4 py-3 text-gray-500">{s.email || '-'}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${s.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {s.isActive ? t('stores.active', 'نشط') : t('stores.inactive', 'موقوف')}
@@ -246,12 +281,25 @@ export default function Stores() {
                 <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('stores.domainLabel', 'النطاق (Domain)')}</label>
-                <input type="text" value={form.domain} onChange={e => setForm({...form, domain: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('stores.slugLabel', 'رابط المتجر (Slug)')}</label>
+                <input type="text" dir="ltr" value={form.slug} onChange={e => setForm({...form, slug: e.target.value.toLowerCase().trim()})} placeholder="smart-tech" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('stores.tenantIdLabel', 'معرّف التاجر (Tenant ID)')}</label>
-                <input type="number" value={form.tenantId} onChange={e => setForm({...form, tenantId: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('stores.tenantLabel', 'التاجر')}</label>
+                <select value={form.tenantId} onChange={e => setForm({...form, tenantId: e.target.value})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
+                  <option value="">{t('stores.selectTenant', 'اختر التاجر')}</option>
+                  {tenants.map((tenant: any) => (
+                    <option key={tenant.id} value={tenant.id}>{tenant.name || tenant.email || `#${tenant.id}`}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('stores.emailLabel', 'بريد المتجر')}</label>
+                <input type="email" dir="ltr" value={form.email} onChange={e => setForm({...form, email: e.target.value.trim()})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('stores.phoneLabel', 'جوال المتجر')}</label>
+                <input type="tel" dir="ltr" value={form.phone} onChange={e => setForm({...form, phone: e.target.value.trim()})} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               {!editId && (
                 <div>

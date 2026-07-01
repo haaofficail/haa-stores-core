@@ -8,35 +8,65 @@ import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@ha
 const complianceRouter = new Hono();
 complianceRouter.use('*', requireAuth(), requireStoreAccess());
 
+const profileUpdateSchema = z.object({
+  businessType: z.enum(['individual', 'establishment', 'company', 'freelancer', 'productive_family']).optional(),
+  legalName: z.string().max(255).optional(),
+  commercialName: z.string().max(255).optional(),
+  nationalIdOrIqama: z.string().max(20).optional(),
+  nationalId: z.string().max(20).optional(),
+  commercialRegistrationNumber: z.string().max(50).optional(),
+  crNumber: z.string().max(50).optional(),
+  freelanceDocumentNumber: z.string().max(50).optional(),
+  freelanceDocNumber: z.string().max(50).optional(),
+  vatNumber: z.string().max(50).optional(),
+  city: z.string().max(100).optional(),
+  address: z.string().max(500).optional(),
+});
+
+function sanitizeKycProfile(profile: Record<string, unknown>) {
+  const safe = { ...profile };
+  const nationalId = typeof safe.nationalIdOrIqama === 'string' ? safe.nationalIdOrIqama.trim() : '';
+  safe.hasNationalIdOrIqama = nationalId.length > 0;
+  safe.nationalIdOrIqamaLast4 = nationalId ? nationalId.slice(-4) : null;
+  delete safe.nationalIdOrIqama;
+  return safe;
+}
+
+function normalizeProfileUpdate(body: z.infer<typeof profileUpdateSchema>) {
+  const {
+    nationalId,
+    crNumber,
+    freelanceDocNumber,
+    ...canonical
+  } = body;
+
+  return {
+    ...canonical,
+    nationalIdOrIqama: body.nationalIdOrIqama ?? nationalId,
+    commercialRegistrationNumber: body.commercialRegistrationNumber ?? crNumber,
+    freelanceDocumentNumber: body.freelanceDocumentNumber ?? freelanceDocNumber,
+  };
+}
+
+type KycAuditField = 'commercialRegistrationNumber' | 'vatNumber';
+
 complianceRouter.get('/profile', requirePermission('compliance:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const profile = await new KycService().getProfile(storeId);
   if (!profile) {
     return c.json({ success: true, data: { businessType: 'individual', status: 'not_started' } });
   }
-  const safe = { ...profile };
-  delete (safe as any).nationalIdOrIqama;
-  return c.json({ success: true, data: safe });
+  return c.json({ success: true, data: sanitizeKycProfile(profile) });
 });
 
-complianceRouter.put('/profile', requirePermission('compliance:write'), zValidator('json', z.object({
-  businessType: z.enum(['individual', 'establishment', 'company', 'freelancer', 'productive_family']).optional(),
-  legalName: z.string().max(255).optional(),
-  commercialName: z.string().max(255).optional(),
-  nationalIdOrIqama: z.string().max(20).optional(),
-  commercialRegistrationNumber: z.string().max(50).optional(),
-  freelanceDocumentNumber: z.string().max(50).optional(),
-  vatNumber: z.string().max(50).optional(),
-  city: z.string().max(100).optional(),
-  address: z.string().max(500).optional(),
-})), async (c) => {
+complianceRouter.put('/profile', requirePermission('compliance:write'), zValidator('json', profileUpdateSchema), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const tenantId = getAuth(c)?.tenantId ?? 0;
-  const body = c.req.valid('json');
+  const body = normalizeProfileUpdate(c.req.valid('json'));
   try {
     const existing = await new KycService().getProfile(storeId);
     const profile = await new KycService().upsertProfile(storeId, tenantId, body);
-    const auditActions: Array<{ field: string; action: 'commercial_registration_updated' | 'vat_number_updated' }> = [];
+    const auditActions: Array<{ field: KycAuditField; action: 'commercial_registration_updated' | 'vat_number_updated' }> = [];
     if (body.commercialRegistrationNumber && body.commercialRegistrationNumber !== existing?.commercialRegistrationNumber) {
       auditActions.push({ field: 'commercialRegistrationNumber', action: 'commercial_registration_updated' });
     }
@@ -51,15 +81,13 @@ complianceRouter.put('/profile', requirePermission('compliance:write'), zValidat
         action,
         entityType: 'kyc',
         entityId: profile.id,
-        oldValue: { [field]: (existing as any)?.[field] ?? null },
-        newValue: { [field]: (body as any)[field] },
+        oldValue: { [field]: existing?.[field] ?? null },
+        newValue: { [field]: body[field] ?? null },
         ipAddress: c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip'),
         userAgent: c.req.header('user-agent'),
       });
     }
-    const safe = { ...profile };
-    delete (safe as any).nationalIdOrIqama;
-    return c.json({ success: true, data: safe });
+    return c.json({ success: true, data: sanitizeKycProfile(profile) });
   } catch (e) {
     return c.json({ success: false, error: { code: 'PROFILE_ERROR', message: e instanceof Error ? e.message : 'Update failed' } }, 400);
   }

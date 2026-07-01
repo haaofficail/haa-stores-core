@@ -12,6 +12,42 @@ import { AuditLogService } from '@haa/integration-core';
 import { NotificationService } from '@haa/notification-core';
 import { invalidateStoreTenantCache } from '../../middleware/store-tenant-cache.js';
 
+const adminTenantSelect = {
+  id: s.tenants.id,
+  name: s.tenants.name,
+  slug: s.tenants.slug,
+  email: s.tenants.email,
+  phone: s.tenants.phone,
+  status: s.tenants.status,
+  createdAt: s.tenants.createdAt,
+  updatedAt: s.tenants.updatedAt,
+};
+
+const adminStoreListSelect = {
+  id: s.stores.id,
+  tenantId: s.stores.tenantId,
+  tenantName: s.tenants.name,
+  name: s.stores.name,
+  slug: s.stores.slug,
+  email: s.stores.email,
+  phone: s.stores.phone,
+  isActive: s.stores.isActive,
+  createdAt: s.stores.createdAt,
+  updatedAt: s.stores.updatedAt,
+};
+
+const adminStoreMutationSelect = {
+  id: s.stores.id,
+  tenantId: s.stores.tenantId,
+  name: s.stores.name,
+  slug: s.stores.slug,
+  email: s.stores.email,
+  phone: s.stores.phone,
+  isActive: s.stores.isActive,
+  createdAt: s.stores.createdAt,
+  updatedAt: s.stores.updatedAt,
+};
+
 // ── /dashboard ─────────────────────────────────────────────────────────────
 export async function dashboardRoute(c: any) {
   const db = createDbClient();
@@ -34,7 +70,7 @@ export async function dashboardRoute(c: any) {
 export const tenantsRoutes = {
   list: async (c: any) => {
     const db = createDbClient();
-    const tenants = await db.select().from(s.tenants).orderBy(desc(s.tenants.createdAt));
+    const tenants = await db.select(adminTenantSelect).from(s.tenants).orderBy(desc(s.tenants.createdAt));
     return c.json({ success: true, data: tenants });
   },
 
@@ -47,7 +83,7 @@ export const tenantsRoutes = {
       email: body.email,
       phone: body.phone,
       status: body.status,
-    }).returning();
+    }).returning(adminTenantSelect);
     return c.json({ success: true, data: tenant }, 201);
   },
 
@@ -81,7 +117,7 @@ export const tenantsRoutes = {
         }
       }
     }
-    const [tenant] = await db.update(s.tenants).set({ ...body, updatedAt: new Date() }).where(eq(s.tenants.id, id)).returning();
+    const [tenant] = await db.update(s.tenants).set({ ...body, updatedAt: new Date() }).where(eq(s.tenants.id, id)).returning(adminTenantSelect);
     if (!tenant) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Tenant not found' } }, 404);
     // Audit log compliance changes (best-effort; do not fail the request if log write fails)
     if (Object.keys(complianceChanges).length > 0) {
@@ -154,21 +190,26 @@ export const tenantsRoutes = {
 export const storesRoutes = {
   list: async (c: any) => {
     const db = createDbClient();
-    const stores = await db.select().from(s.stores).orderBy(desc(s.stores.createdAt));
+    const stores = await db
+      .select(adminStoreListSelect)
+      .from(s.stores)
+      .leftJoin(s.tenants, eq(s.stores.tenantId, s.tenants.id))
+      .orderBy(desc(s.stores.createdAt));
     return c.json({ success: true, data: stores });
   },
 
   create: async (c: any) => {
     const body = c.req.valid('json');
     const db = createDbClient();
+    const slug = body.slug ?? body.domain;
     const [store] = await db.insert(s.stores).values({
       tenantId: body.tenantId,
       name: body.name,
-      slug: body.slug,
+      slug,
       email: body.email,
       phone: body.phone,
       isActive: body.isActive,
-    }).returning();
+    }).returning(adminStoreMutationSelect);
     await db.insert(s.storeSettings).values({ storeId: store.id });
     return c.json({ success: true, data: store }, 201);
   },
@@ -177,7 +218,11 @@ export const storesRoutes = {
     const id = Number(c.req.param('id'));
     const body = c.req.valid('json');
     const db = createDbClient();
-    const [store] = await db.update(s.stores).set({ ...body, updatedAt: new Date() }).where(eq(s.stores.id, id)).returning();
+    const updateBody = { ...body };
+    delete updateBody.domain;
+    const storePatch: Record<string, unknown> = { ...updateBody, updatedAt: new Date() };
+    if (body.slug || body.domain) storePatch.slug = body.slug ?? body.domain;
+    const [store] = await db.update(s.stores).set(storePatch).where(eq(s.stores.id, id)).returning(adminStoreMutationSelect);
     if (!store) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Store not found' } }, 404);
     invalidateStoreTenantCache(id);
     return c.json({ success: true, data: store });
@@ -277,7 +322,7 @@ export const kycRoutes = {
       status,
       reviewedAt: new Date(),
       reviewedBy: adminAuth?.userId,
-      rejectionReason: status === 'rejected' ? (rejectionReason || null) : null,
+      rejectionReason: status === 'approved' ? null : (rejectionReason || null),
       updatedAt: new Date(),
     }).where(eq(s.kycProfiles.id, id));
     await audit.record({

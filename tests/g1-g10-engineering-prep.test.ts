@@ -187,9 +187,9 @@ describe('G4: DPO + DSAR engineering surface', () => {
     expect(content).toMatch(/export/i);
   });
 
-  it('Compliance page (admin) tracks dpoEmail + dpoPhone + dpoAppointedAt', async () => {
+  it('Admin platform compliance gate engine tracks dpoEmail + dpoPhone + dpoAppointedAt', async () => {
     const compliancePath = path.resolve(
-      __dirname, '..', 'apps/admin-dashboard/src/pages/Compliance.tsx',
+      __dirname, '..', 'apps/admin-dashboard/src/lib/platformComplianceGates.ts',
     );
     const content = await fs.readFile(compliancePath, 'utf-8');
     expect(content).toMatch(/dpoEmail/);
