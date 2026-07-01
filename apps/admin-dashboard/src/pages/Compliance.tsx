@@ -422,6 +422,321 @@ function MiniStat({ label, value, hint }: { label: string; value: ReactNode; hin
   );
 }
 
+function activityMatchLabel(status: MerchantVerificationRecord['registry']['activityMatchStatus']): string {
+  if (status === 'matched') return 'مطابق';
+  if (status === 'mismatch') return 'غير مطابق';
+  return 'غير مفحوص';
+}
+
+function bankReviewHint(record: MerchantVerificationRecord, bankActionable: boolean): string {
+  if (!record.bank.id) return 'لا يوجد حساب بنكي مضاف لهذا المتجر.';
+  if (bankActionable) return 'راجع الاسم وآخر 4 أرقام فقط، ثم وثق أو ارفض مع سبب واضح.';
+  if (record.bank.verificationStatus === 'verified') return 'الحساب موثق حاليًا.';
+  return 'الحالة الحالية لا تقبل قرارًا من هذه الصفحة.';
+}
+
+function StoreDetailsSection({ record }: { record: MerchantVerificationRecord }) {
+  return (
+    <DetailSection title="بيانات المتجر">
+      <Field label="اسم المتجر" value={record.storeName} />
+      <Field label="رابط المتجر" value={<StoreLink record={record} />} />
+      <Field label="حالة النشر" value={<StatusBadge label={PUBLISH_LABEL[record.publishStatus]} className={classForPublish(record.publishStatus)} />} />
+      <Field label="آخر تحديث" value={formatDate(record.lastUpdated)} />
+    </DetailSection>
+  );
+}
+
+function OwnerDetailsSection({ record }: { record: MerchantVerificationRecord }) {
+  return (
+    <DetailSection title="بيانات المالك">
+      <Field label="اسم المالك" value={record.ownerName} />
+      <Field label="نوع الكيان" value={ENTITY_LABEL[record.entityType]} />
+      <Field label="مستوى المخاطر" value={<StatusBadge label={RISK_LABEL[record.riskStatus]} className={classForRisk(record.riskStatus)} />} />
+    </DetailSection>
+  );
+}
+
+function ContactVerificationSection({ record }: { record: MerchantVerificationRecord }) {
+  return (
+    <DetailSection title="توثيق الجوال والبريد">
+      <Field label="الجوال" value={<StatusBadge label={record.contact.phoneVerified ? 'موثق' : 'غير موثق'} className={record.contact.phoneVerified ? STATUS_CLASS.good : STATUS_CLASS.bad} />} />
+      <Field label="وقت توثيق الجوال" value={formatDate(record.contact.phoneVerifiedAt)} />
+      <Field label="البريد" value={<StatusBadge label={record.contact.emailVerified ? 'موثق' : 'غير موثق'} className={record.contact.emailVerified ? STATUS_CLASS.good : STATUS_CLASS.bad} />} />
+      <Field label="وقت توثيق البريد" value={formatDate(record.contact.emailVerifiedAt)} />
+      <Field label="آخر محاولة OTP" value={formatDate(record.contact.lastOtpAttemptAt)} />
+      <Field label="حالة آخر محاولة" value={valueOrDash(record.contact.lastOtpAttemptStatus)} />
+      {record.contact.phoneChangedAfterVerification && (
+        <div className="mt-2 rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-xs font-semibold text-amber-800">
+          تم تغيير رقم الجوال بعد التوثيق.
+        </div>
+      )}
+    </DetailSection>
+  );
+}
+
+function RegistrySection({ record }: { record: MerchantVerificationRecord }) {
+  return (
+    <DetailSection title={record.entityType === 'freelance' ? 'وثيقة العمل الحر' : 'السجل التجاري'}>
+      {record.entityType === 'freelance' ? (
+        <>
+          <Field label="رقم الوثيقة" value={valueOrDash(record.registry.freelanceDocumentNumber)} />
+          <Field label="اسم حامل الوثيقة" value={valueOrDash(record.registry.holderName)} />
+          <Field label="النشاط" value={valueOrDash(record.registry.activity)} />
+          <Field label="تاريخ الانتهاء" value={formatDate(record.registry.expiryDate)} />
+        </>
+      ) : (
+        <>
+          <Field label="رقم السجل" value={valueOrDash(record.registry.commercialRegistrationNumber)} />
+          <Field label="اسم الكيان" value={valueOrDash(record.registry.entityName)} />
+          <Field label="الرقم الوطني الموحد" value={valueOrDash(record.registry.unifiedNationalNumber)} />
+          <Field label="تاريخ الإصدار" value={formatDate(record.registry.issueDate)} />
+          <Field label="تاريخ الانتهاء" value={formatDate(record.registry.expiryDate)} />
+        </>
+      )}
+      <Field label="الحالة" value={<StatusBadge label={REGISTRY_LABEL[record.registry.status]} className={classForRegistry(record.registry.status)} />} />
+      <Field label="مطابقة النشاط" value={activityMatchLabel(record.registry.activityMatchStatus)} />
+    </DetailSection>
+  );
+}
+
+function UploadedDocumentsSection({ record }: { record: MerchantVerificationRecord }) {
+  return (
+    <DetailSection title="المستندات المرفوعة">
+      {record.documents.length > 0 ? (
+        <div className="space-y-2">
+          {record.documents.map((document, index) => (
+            <div key={document.id ?? `${document.type}-${index}`} className="rounded-lg bg-gray-50 px-3 py-2 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <Icon name="FileText" size="xs" className="text-gray-400" />
+                <span className="text-sm text-gray-700 truncate">{document.filename ?? document.type ?? 'مستند'}</span>
+              </div>
+              {document.fileUrl ? (
+                <a href={document.fileUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-600 hover:underline">عرض</a>
+              ) : (
+                <span className="text-xs text-gray-400">غير متاح</span>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400">لا توجد مستندات مرفوعة</p>
+      )}
+    </DetailSection>
+  );
+}
+
+function ReviewDecisionsSection({ record, title = 'سجل قرارات المراجعة' }: { record: MerchantVerificationRecord; title?: string }) {
+  return (
+    <DetailSection title={title}>
+      {record.reviewDecisions.length > 0 ? (
+        <div className="space-y-2">
+          {record.reviewDecisions.map((decision, index) => (
+            <div key={`${decision.status}-${index}`} className="rounded-lg bg-gray-50 px-3 py-2 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-gray-900">{valueOrDash(decision.status)}</span>
+                <span className="text-xs text-gray-400">{formatDate(decision.reviewedAt)}</span>
+              </div>
+              {decision.reason && <p className="mt-1 text-xs text-gray-500">{decision.reason}</p>}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400">لا توجد قرارات مراجعة بعد</p>
+      )}
+    </DetailSection>
+  );
+}
+
+type BankReviewSectionProps = {
+  record: MerchantVerificationRecord;
+  bankActionable: boolean;
+  canReviewBank: boolean;
+  bankReviewPending: boolean;
+  bankDecisionMode: BankDecisionMode | null;
+  bankReviewReason: string;
+  showHint?: boolean;
+  onOpenBankDecision: (mode: BankDecisionMode) => void;
+  onBankReviewReasonChange: (value: string) => void;
+  onSubmitBankDecision: (status: 'verified' | 'rejected') => void;
+};
+
+function BankReviewSection({
+  record,
+  bankActionable,
+  canReviewBank,
+  bankReviewPending,
+  bankDecisionMode,
+  bankReviewReason,
+  showHint = false,
+  onOpenBankDecision,
+  onBankReviewReasonChange,
+  onSubmitBankDecision,
+}: BankReviewSectionProps) {
+  return (
+    <DetailSection title="الحساب البنكي">
+      <Field label="اسم البنك" value={valueOrDash(record.bank.bankName)} />
+      <Field label="صاحب الحساب" value={valueOrDash(record.bank.accountHolderName)} />
+      <Field label="IBAN آخر 4" value={record.bank.ibanLast4 ? `****${record.bank.ibanLast4}` : 'غير متوفر'} />
+      <Field label="الحالة" value={<StatusBadge label={BANK_LABEL[record.bank.verificationStatus]} className={classForBank(record.bank.verificationStatus)} />} />
+      <Field label="سبب الرفض" value={valueOrDash(record.bank.rejectionReason)} />
+      <Field label="وقت المراجعة" value={formatDate(record.bank.reviewedAt)} />
+      <Field label="المراجع" value={valueOrDash(record.bank.reviewedBy)} />
+      <div className="mt-3 rounded-xl bg-gray-50 border border-gray-100 p-3 space-y-3">
+        <div>
+          <p className="text-sm font-semibold text-gray-900">قرار الحساب البنكي</p>
+          {showHint && <p className="text-xs text-gray-500 mt-1 leading-5">{bankReviewHint(record, bankActionable)}</p>}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => onOpenBankDecision('verify')}
+            disabled={!bankActionable || bankReviewPending}
+            className="h-10 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-colors"
+          >
+            توثيق البنك
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenBankDecision('reject')}
+            disabled={!record.bank.id || !canReviewBank || record.bank.verificationStatus === 'rejected' || bankReviewPending}
+            className="h-10 rounded-lg border border-red-200 text-red-700 text-xs font-semibold hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-colors"
+          >
+            رفض البنك
+          </button>
+        </div>
+        {bankDecisionMode && (
+          <div className={`rounded-xl border p-3 space-y-2 ${bankDecisionMode === 'verify' ? 'border-emerald-100 bg-emerald-50' : 'border-red-100 bg-red-50'}`}>
+            <label htmlFor="merchant-bank-review-reason" className={`text-xs font-semibold ${bankDecisionMode === 'verify' ? 'text-emerald-900' : 'text-red-800'}`}>
+              {bankDecisionMode === 'verify' ? 'سبب توثيق البنك' : 'سبب رفض البنك'}
+            </label>
+            <textarea
+              id="merchant-bank-review-reason"
+              value={bankReviewReason}
+              onChange={(event) => onBankReviewReasonChange(event.target.value)}
+              className={`w-full min-h-[88px] rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 ${bankDecisionMode === 'verify' ? 'border-emerald-200 focus:ring-emerald-500' : 'border-red-200 focus:ring-red-500'}`}
+              placeholder={bankDecisionMode === 'verify' ? 'مثال: الاسم مطابق وآخر 4 أرقام مطابقة للمستند.' : 'مثال: اسم صاحب الحساب لا يطابق السجل التجاري.'}
+            />
+            <button
+              type="button"
+              onClick={() => onSubmitBankDecision(bankDecisionMode === 'verify' ? 'verified' : 'rejected')}
+              disabled={bankReviewReason.trim().length < 3 || bankReviewPending}
+              className={`h-10 w-full rounded-lg text-white text-sm font-semibold disabled:opacity-40 transition-colors ${bankDecisionMode === 'verify' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`}
+            >
+              {bankDecisionMode === 'verify' ? 'تأكيد توثيق البنك' : 'تأكيد رفض البنك'}
+            </button>
+          </div>
+        )}
+      </div>
+    </DetailSection>
+  );
+}
+
+type MerchantProfileSectionsProps = BankReviewSectionProps & {
+  showBankHint?: boolean;
+};
+
+function MerchantProfileSections({ showBankHint = false, ...bankProps }: MerchantProfileSectionsProps) {
+  return (
+    <>
+      <StoreDetailsSection record={bankProps.record} />
+      <OwnerDetailsSection record={bankProps.record} />
+      <ContactVerificationSection record={bankProps.record} />
+      <RegistrySection record={bankProps.record} />
+      <BankReviewSection {...bankProps} showHint={showBankHint} />
+      <UploadedDocumentsSection record={bankProps.record} />
+    </>
+  );
+}
+
+type VerificationReviewPanelProps = {
+  record: MerchantVerificationRecord;
+  canReviewVerification: boolean;
+  canApproveSelected: boolean;
+  canRequestChanges: boolean;
+  reviewPending: boolean;
+  decisionMode: VerificationDecisionMode | null;
+  decisionReason: string;
+  compact?: boolean;
+  onApprove: () => void;
+  onOpenDecision: (mode: VerificationDecisionMode) => void;
+  onDecisionReasonChange: (value: string) => void;
+  submitDecision: (status: Exclude<AdminKycReviewStatus, 'approved'>) => void;
+};
+
+function VerificationReviewPanel({
+  record,
+  canReviewVerification,
+  canApproveSelected,
+  canRequestChanges,
+  reviewPending,
+  decisionMode,
+  decisionReason,
+  compact = false,
+  onApprove,
+  onOpenDecision,
+  onDecisionReasonChange,
+  submitDecision,
+}: VerificationReviewPanelProps) {
+  return (
+    <section className={compact ? 'rounded-xl border border-gray-100 bg-white p-3 space-y-3' : 'rounded-xl bg-white border border-gray-100 shadow-sm p-4 space-y-4'}>
+      <div>
+        <h3 className="text-sm font-bold text-gray-900">قرار مراجعة التوثيق</h3>
+        <p className="text-xs text-gray-500 mt-1 leading-5">{reviewBlockedMessage(record, canReviewVerification)}</p>
+      </div>
+      <div className={compact ? 'grid grid-cols-1 gap-2' : 'space-y-2'}>
+        <button
+          type="button"
+          onClick={onApprove}
+          disabled={!canApproveSelected || reviewPending}
+          className={`${compact ? 'h-11' : 'h-11 w-full'} rounded-lg bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 transition-colors`}
+        >
+          اعتماد التوثيق
+        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => onOpenDecision('changes')}
+            disabled={!canRequestChanges || reviewPending}
+            className="h-11 rounded-lg border border-amber-200 text-amber-800 text-sm font-semibold hover:bg-amber-50 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 transition-colors"
+          >
+            طلب تعديلات
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenDecision('reject')}
+            disabled={!canRequestChanges || reviewPending}
+            className="h-11 rounded-lg border border-red-200 text-red-700 text-sm font-semibold hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-colors"
+          >
+            رفض التوثيق
+          </button>
+        </div>
+      </div>
+      {decisionMode && (
+        <div className={`rounded-xl border p-3 space-y-2 ${decisionMode === 'changes' ? 'border-amber-100 bg-amber-50' : 'border-red-100 bg-red-50'}`}>
+          <label htmlFor="merchant-verification-decision-reason" className={`text-xs font-semibold ${decisionMode === 'changes' ? 'text-amber-900' : 'text-red-800'}`}>
+            {decisionMode === 'changes' ? 'التعديلات المطلوبة للتاجر' : 'سبب الرفض النهائي'}
+          </label>
+          <textarea
+            id="merchant-verification-decision-reason"
+            value={decisionReason}
+            onChange={(event) => onDecisionReasonChange(event.target.value)}
+            className={`w-full min-h-[112px] rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 ${decisionMode === 'changes' ? 'border-amber-200 focus:ring-amber-500' : 'border-red-200 focus:ring-red-500'}`}
+            placeholder={decisionMode === 'changes' ? 'اكتب قائمة التعديلات المطلوبة قبل إعادة التقديم.' : 'اكتب سببًا واضحًا للرفض النهائي.'}
+          />
+          <button
+            type="button"
+            onClick={() => submitDecision(decisionMode === 'changes' ? 'needs_more_info' : 'rejected')}
+            disabled={decisionReason.trim().length < 3 || reviewPending}
+            className={`h-10 w-full rounded-lg text-white text-sm font-semibold disabled:opacity-40 transition-colors ${decisionMode === 'changes' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-red-600 hover:bg-red-700'}`}
+          >
+            {decisionMode === 'changes' ? 'إرسال طلب التعديلات' : 'تأكيد الرفض'}
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function Compliance() {
   const { recordId } = useParams<{ recordId?: string }>();
   const queryClient = useQueryClient();
@@ -851,182 +1166,35 @@ export default function Compliance() {
               )}
             </DetailSection>
 
-            <section className="rounded-xl bg-white border border-gray-100 shadow-sm p-4 space-y-4">
-              <div>
-                <h3 className="text-sm font-bold text-gray-900">قرار مراجعة التوثيق</h3>
-                <p className="text-xs text-gray-500 mt-1 leading-5">{reviewBlockedMessage(selectedRecord, canReviewVerification)}</p>
-              </div>
-              <button
-                type="button"
-                onClick={approveSelected}
-                disabled={!canApproveSelected || reviewMutation.isPending}
-                className="h-11 w-full rounded-lg bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 transition-colors"
-              >
-                اعتماد التوثيق
-              </button>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => openDecision('changes')}
-                  disabled={!canRequestChanges || reviewMutation.isPending}
-                  className="h-11 rounded-lg border border-amber-200 text-amber-800 text-sm font-semibold hover:bg-amber-50 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 transition-colors"
-                >
-                  طلب تعديلات
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openDecision('reject')}
-                  disabled={!canRequestChanges || reviewMutation.isPending}
-                  className="h-11 rounded-lg border border-red-200 text-red-700 text-sm font-semibold hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-colors"
-                >
-                  رفض التوثيق
-                </button>
-              </div>
-              {decisionMode && (
-                <div className={`rounded-xl border p-3 space-y-2 ${decisionMode === 'changes' ? 'border-amber-100 bg-amber-50' : 'border-red-100 bg-red-50'}`}>
-                  <label htmlFor="merchant-verification-decision-reason" className={`text-xs font-semibold ${decisionMode === 'changes' ? 'text-amber-900' : 'text-red-800'}`}>
-                    {decisionMode === 'changes' ? 'التعديلات المطلوبة للتاجر' : 'سبب الرفض النهائي'}
-                  </label>
-                  <textarea
-                    id="merchant-verification-decision-reason"
-                    value={decisionReason}
-                    onChange={(event) => setDecisionReason(event.target.value)}
-                    className={`w-full min-h-[112px] rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 ${decisionMode === 'changes' ? 'border-amber-200 focus:ring-amber-500' : 'border-red-200 focus:ring-red-500'}`}
-                    placeholder={decisionMode === 'changes' ? 'اكتب قائمة التعديلات المطلوبة قبل إعادة التقديم.' : 'اكتب سببًا واضحًا للرفض النهائي.'}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => submitDecision(decisionMode === 'changes' ? 'needs_more_info' : 'rejected')}
-                    disabled={decisionReason.trim().length < 3 || reviewMutation.isPending}
-                    className={`h-10 w-full rounded-lg text-white text-sm font-semibold disabled:opacity-40 transition-colors ${decisionMode === 'changes' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-red-600 hover:bg-red-700'}`}
-                  >
-                    {decisionMode === 'changes' ? 'إرسال طلب التعديلات' : 'تأكيد الرفض'}
-                  </button>
-                </div>
-              )}
-            </section>
+            <VerificationReviewPanel
+              record={selectedRecord}
+              canReviewVerification={canReviewVerification}
+              canApproveSelected={canApproveSelected}
+              canRequestChanges={canRequestChanges}
+              reviewPending={reviewMutation.isPending}
+              decisionMode={decisionMode}
+              decisionReason={decisionReason}
+              onApprove={approveSelected}
+              onOpenDecision={openDecision}
+              onDecisionReasonChange={setDecisionReason}
+              submitDecision={submitDecision}
+            />
           </div>
         )}
 
         {activeTab === 'profile' && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-            <DetailSection title="بيانات المتجر">
-              <Field label="اسم المتجر" value={selectedRecord.storeName} />
-              <Field label="رابط المتجر" value={<StoreLink record={selectedRecord} />} />
-              <Field label="حالة النشر" value={<StatusBadge label={PUBLISH_LABEL[selectedRecord.publishStatus]} className={classForPublish(selectedRecord.publishStatus)} />} />
-              <Field label="آخر تحديث" value={formatDate(selectedRecord.lastUpdated)} />
-            </DetailSection>
-            <DetailSection title="بيانات المالك">
-              <Field label="اسم المالك" value={selectedRecord.ownerName} />
-              <Field label="نوع الكيان" value={ENTITY_LABEL[selectedRecord.entityType]} />
-              <Field label="مستوى المخاطر" value={<StatusBadge label={RISK_LABEL[selectedRecord.riskStatus]} className={classForRisk(selectedRecord.riskStatus)} />} />
-            </DetailSection>
-            <DetailSection title="توثيق الجوال والبريد">
-              <Field label="الجوال" value={<StatusBadge label={selectedRecord.contact.phoneVerified ? 'موثق' : 'غير موثق'} className={selectedRecord.contact.phoneVerified ? STATUS_CLASS.good : STATUS_CLASS.bad} />} />
-              <Field label="وقت توثيق الجوال" value={formatDate(selectedRecord.contact.phoneVerifiedAt)} />
-              <Field label="البريد" value={<StatusBadge label={selectedRecord.contact.emailVerified ? 'موثق' : 'غير موثق'} className={selectedRecord.contact.emailVerified ? STATUS_CLASS.good : STATUS_CLASS.bad} />} />
-              <Field label="وقت توثيق البريد" value={formatDate(selectedRecord.contact.emailVerifiedAt)} />
-              <Field label="آخر محاولة OTP" value={formatDate(selectedRecord.contact.lastOtpAttemptAt)} />
-              <Field label="حالة آخر محاولة" value={valueOrDash(selectedRecord.contact.lastOtpAttemptStatus)} />
-              {selectedRecord.contact.phoneChangedAfterVerification && (
-                <div className="mt-2 rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-xs font-semibold text-amber-800">
-                  تم تغيير رقم الجوال بعد التوثيق.
-                </div>
-              )}
-            </DetailSection>
-            <DetailSection title={selectedRecord.entityType === 'freelance' ? 'وثيقة العمل الحر' : 'السجل التجاري'}>
-              {selectedRecord.entityType === 'freelance' ? (
-                <>
-                  <Field label="رقم الوثيقة" value={valueOrDash(selectedRecord.registry.freelanceDocumentNumber)} />
-                  <Field label="اسم حامل الوثيقة" value={valueOrDash(selectedRecord.registry.holderName)} />
-                  <Field label="النشاط" value={valueOrDash(selectedRecord.registry.activity)} />
-                  <Field label="تاريخ الانتهاء" value={formatDate(selectedRecord.registry.expiryDate)} />
-                </>
-              ) : (
-                <>
-                  <Field label="رقم السجل" value={valueOrDash(selectedRecord.registry.commercialRegistrationNumber)} />
-                  <Field label="اسم الكيان" value={valueOrDash(selectedRecord.registry.entityName)} />
-                  <Field label="الرقم الوطني الموحد" value={valueOrDash(selectedRecord.registry.unifiedNationalNumber)} />
-                  <Field label="تاريخ الإصدار" value={formatDate(selectedRecord.registry.issueDate)} />
-                  <Field label="تاريخ الانتهاء" value={formatDate(selectedRecord.registry.expiryDate)} />
-                </>
-              )}
-              <Field label="الحالة" value={<StatusBadge label={REGISTRY_LABEL[selectedRecord.registry.status]} className={classForRegistry(selectedRecord.registry.status)} />} />
-              <Field label="مطابقة النشاط" value={selectedRecord.registry.activityMatchStatus === 'matched' ? 'مطابق' : selectedRecord.registry.activityMatchStatus === 'mismatch' ? 'غير مطابق' : 'غير مفحوص'} />
-            </DetailSection>
-            <DetailSection title="الحساب البنكي">
-              <Field label="اسم البنك" value={valueOrDash(selectedRecord.bank.bankName)} />
-              <Field label="صاحب الحساب" value={valueOrDash(selectedRecord.bank.accountHolderName)} />
-              <Field label="IBAN آخر 4" value={selectedRecord.bank.ibanLast4 ? `****${selectedRecord.bank.ibanLast4}` : 'غير متوفر'} />
-              <Field label="الحالة" value={<StatusBadge label={BANK_LABEL[selectedRecord.bank.verificationStatus]} className={classForBank(selectedRecord.bank.verificationStatus)} />} />
-              <Field label="سبب الرفض" value={valueOrDash(selectedRecord.bank.rejectionReason)} />
-              <Field label="وقت المراجعة" value={formatDate(selectedRecord.bank.reviewedAt)} />
-              <Field label="المراجع" value={valueOrDash(selectedRecord.bank.reviewedBy)} />
-              <div className="mt-3 rounded-xl bg-gray-50 border border-gray-100 p-3 space-y-3">
-                <p className="text-sm font-semibold text-gray-900">قرار الحساب البنكي</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => openBankDecision('verify')}
-                    disabled={!bankActionable || bankReviewMutation.isPending}
-                    className="h-10 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-colors"
-                  >
-                    توثيق البنك
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openBankDecision('reject')}
-                    disabled={!selectedRecord.bank.id || !canReviewBank || selectedRecord.bank.verificationStatus === 'rejected' || bankReviewMutation.isPending}
-                    className="h-10 rounded-lg border border-red-200 text-red-700 text-xs font-semibold hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-colors"
-                  >
-                    رفض البنك
-                  </button>
-                </div>
-                {bankDecisionMode && (
-                  <div className={`rounded-xl border p-3 space-y-2 ${bankDecisionMode === 'verify' ? 'border-emerald-100 bg-emerald-50' : 'border-red-100 bg-red-50'}`}>
-                    <label htmlFor="merchant-bank-review-reason" className={`text-xs font-semibold ${bankDecisionMode === 'verify' ? 'text-emerald-900' : 'text-red-800'}`}>
-                      {bankDecisionMode === 'verify' ? 'سبب توثيق البنك' : 'سبب رفض البنك'}
-                    </label>
-                    <textarea
-                      id="merchant-bank-review-reason"
-                      value={bankReviewReason}
-                      onChange={(event) => setBankReviewReason(event.target.value)}
-                      className={`w-full min-h-[88px] rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 ${bankDecisionMode === 'verify' ? 'border-emerald-200 focus:ring-emerald-500' : 'border-red-200 focus:ring-red-500'}`}
-                      placeholder={bankDecisionMode === 'verify' ? 'مثال: الاسم مطابق وآخر 4 أرقام مطابقة للمستند.' : 'مثال: اسم صاحب الحساب لا يطابق السجل التجاري.'}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => submitBankDecision(bankDecisionMode === 'verify' ? 'verified' : 'rejected')}
-                      disabled={bankReviewReason.trim().length < 3 || bankReviewMutation.isPending}
-                      className={`h-10 w-full rounded-lg text-white text-sm font-semibold disabled:opacity-40 transition-colors ${bankDecisionMode === 'verify' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`}
-                    >
-                      {bankDecisionMode === 'verify' ? 'تأكيد توثيق البنك' : 'تأكيد رفض البنك'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </DetailSection>
-            <DetailSection title="المستندات المرفوعة">
-              {selectedRecord.documents.length > 0 ? (
-                <div className="space-y-2">
-                  {selectedRecord.documents.map((document, index) => (
-                    <div key={document.id ?? `${document.type}-${index}`} className="rounded-lg bg-gray-50 px-3 py-2 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Icon name="FileText" size="xs" className="text-gray-400" />
-                        <span className="text-sm text-gray-700 truncate">{document.filename ?? document.type ?? 'مستند'}</span>
-                      </div>
-                      {document.fileUrl ? (
-                        <a href={document.fileUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-600 hover:underline">عرض</a>
-                      ) : (
-                        <span className="text-xs text-gray-400">غير متاح</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-400">لا توجد مستندات مرفوعة</p>
-              )}
-            </DetailSection>
+            <MerchantProfileSections
+              record={selectedRecord}
+              bankActionable={bankActionable}
+              canReviewBank={canReviewBank}
+              bankReviewPending={bankReviewMutation.isPending}
+              bankDecisionMode={bankDecisionMode}
+              bankReviewReason={bankReviewReason}
+              onOpenBankDecision={openBankDecision}
+              onBankReviewReasonChange={setBankReviewReason}
+              onSubmitBankDecision={submitBankDecision}
+            />
           </div>
         )}
 
@@ -1160,23 +1328,7 @@ export default function Compliance() {
 
         {activeTab === 'history' && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-            <DetailSection title="سجل قرارات المراجعة والتعديلات">
-              {selectedRecord.reviewDecisions.length > 0 ? (
-                <div className="space-y-2">
-                  {selectedRecord.reviewDecisions.map((decision, index) => (
-                    <div key={`${decision.status}-${index}`} className="rounded-lg bg-gray-50 px-3 py-2 text-sm">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-gray-900">{valueOrDash(decision.status)}</span>
-                        <span className="text-xs text-gray-400">{formatDate(decision.reviewedAt)}</span>
-                      </div>
-                      {decision.reason && <p className="mt-1 text-xs text-gray-500">{decision.reason}</p>}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-400">لا توجد قرارات مراجعة بعد</p>
-              )}
-            </DetailSection>
+            <ReviewDecisionsSection record={selectedRecord} title="سجل قرارات المراجعة والتعديلات" />
             <DetailSection title="سجل التدقيق والتعديلات">
               {auditQuery.isPending ? (
                 <p className="text-sm text-gray-400">جاري تحميل سجل التدقيق</p>
@@ -1472,199 +1624,35 @@ export default function Compliance() {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-gray-100 bg-white p-3 space-y-3">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">قرار مراجعة التوثيق</p>
-                      <p className="text-xs text-gray-500 mt-1 leading-5">{reviewBlockedMessage(selectedRecord, canReviewVerification)}</p>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2">
-                      <button
-                        type="button"
-                        onClick={approveSelected}
-                        disabled={!canApproveSelected || reviewMutation.isPending}
-                        className="h-11 rounded-lg bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 transition-colors"
-                      >
-                        اعتماد التوثيق
-                      </button>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openDecision('changes')}
-                          disabled={!canRequestChanges || reviewMutation.isPending}
-                          className="h-11 rounded-lg border border-amber-200 text-amber-800 text-sm font-semibold hover:bg-amber-50 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 transition-colors"
-                        >
-                          طلب تعديلات
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openDecision('reject')}
-                          disabled={!canRequestChanges || reviewMutation.isPending}
-                          className="h-11 rounded-lg border border-red-200 text-red-700 text-sm font-semibold hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-colors"
-                        >
-                          رفض التوثيق
-                        </button>
-                      </div>
-                    </div>
-
-                    {decisionMode && (
-                      <div className={`rounded-xl border p-3 space-y-2 ${decisionMode === 'changes' ? 'border-amber-100 bg-amber-50' : 'border-red-100 bg-red-50'}`}>
-                        <label htmlFor="merchant-verification-decision-reason" className={`text-xs font-semibold ${decisionMode === 'changes' ? 'text-amber-900' : 'text-red-800'}`}>
-                          {decisionMode === 'changes' ? 'التعديلات المطلوبة للتاجر' : 'سبب الرفض النهائي'}
-                        </label>
-                        <textarea
-                          id="merchant-verification-decision-reason"
-                          value={decisionReason}
-                          onChange={(event) => setDecisionReason(event.target.value)}
-                          className={`w-full min-h-[112px] rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 ${decisionMode === 'changes' ? 'border-amber-200 focus:ring-amber-500' : 'border-red-200 focus:ring-red-500'}`}
-                          placeholder={decisionMode === 'changes' ? 'اكتب قائمة التعديلات المطلوبة قبل إعادة التقديم.' : 'اكتب سببًا واضحًا للرفض النهائي.'}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => submitDecision(decisionMode === 'changes' ? 'needs_more_info' : 'rejected')}
-                          disabled={decisionReason.trim().length < 3 || reviewMutation.isPending}
-                          className={`h-10 w-full rounded-lg text-white text-sm font-semibold disabled:opacity-40 transition-colors ${decisionMode === 'changes' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-red-600 hover:bg-red-700'}`}
-                        >
-                          {decisionMode === 'changes' ? 'إرسال طلب التعديلات' : 'تأكيد الرفض'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <VerificationReviewPanel
+                    record={selectedRecord}
+                    canReviewVerification={canReviewVerification}
+                    canApproveSelected={canApproveSelected}
+                    canRequestChanges={canRequestChanges}
+                    reviewPending={reviewMutation.isPending}
+                    decisionMode={decisionMode}
+                    decisionReason={decisionReason}
+                    compact
+                    onApprove={approveSelected}
+                    onOpenDecision={openDecision}
+                    onDecisionReasonChange={setDecisionReason}
+                    submitDecision={submitDecision}
+                  />
                 </div>
               </section>
 
-              <DetailSection title="بيانات المتجر">
-                <Field label="اسم المتجر" value={selectedRecord.storeName} />
-                <Field label="رابط المتجر" value={<StoreLink record={selectedRecord} />} />
-                <Field label="حالة النشر" value={<StatusBadge label={PUBLISH_LABEL[selectedRecord.publishStatus]} className={classForPublish(selectedRecord.publishStatus)} />} />
-                <Field label="آخر تحديث" value={formatDate(selectedRecord.lastUpdated)} />
-              </DetailSection>
-
-              <DetailSection title="بيانات المالك">
-                <Field label="اسم المالك" value={selectedRecord.ownerName} />
-                <Field label="نوع الكيان" value={ENTITY_LABEL[selectedRecord.entityType]} />
-                <Field label="مستوى المخاطر" value={<StatusBadge label={RISK_LABEL[selectedRecord.riskStatus]} className={classForRisk(selectedRecord.riskStatus)} />} />
-              </DetailSection>
-
-              <DetailSection title="توثيق الجوال والبريد">
-                <Field label="الجوال" value={<StatusBadge label={selectedRecord.contact.phoneVerified ? 'موثق' : 'غير موثق'} className={selectedRecord.contact.phoneVerified ? STATUS_CLASS.good : STATUS_CLASS.bad} />} />
-                <Field label="وقت توثيق الجوال" value={formatDate(selectedRecord.contact.phoneVerifiedAt)} />
-                <Field label="البريد" value={<StatusBadge label={selectedRecord.contact.emailVerified ? 'موثق' : 'غير موثق'} className={selectedRecord.contact.emailVerified ? STATUS_CLASS.good : STATUS_CLASS.bad} />} />
-                <Field label="وقت توثيق البريد" value={formatDate(selectedRecord.contact.emailVerifiedAt)} />
-                <Field label="آخر محاولة OTP" value={formatDate(selectedRecord.contact.lastOtpAttemptAt)} />
-                <Field label="حالة آخر محاولة" value={valueOrDash(selectedRecord.contact.lastOtpAttemptStatus)} />
-                {selectedRecord.contact.phoneChangedAfterVerification && (
-                  <div className="mt-2 rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-xs font-semibold text-amber-800">
-                    تم تغيير رقم الجوال بعد التوثيق.
-                  </div>
-                )}
-              </DetailSection>
-
-              <DetailSection title={selectedRecord.entityType === 'freelance' ? 'وثيقة العمل الحر' : 'السجل التجاري'}>
-                {selectedRecord.entityType === 'freelance' ? (
-                  <>
-                    <Field label="رقم الوثيقة" value={valueOrDash(selectedRecord.registry.freelanceDocumentNumber)} />
-                    <Field label="اسم حامل الوثيقة" value={valueOrDash(selectedRecord.registry.holderName)} />
-                    <Field label="النشاط" value={valueOrDash(selectedRecord.registry.activity)} />
-                    <Field label="تاريخ الانتهاء" value={formatDate(selectedRecord.registry.expiryDate)} />
-                  </>
-                ) : (
-                  <>
-                    <Field label="رقم السجل" value={valueOrDash(selectedRecord.registry.commercialRegistrationNumber)} />
-                    <Field label="اسم الكيان" value={valueOrDash(selectedRecord.registry.entityName)} />
-                    <Field label="الرقم الوطني الموحد" value={valueOrDash(selectedRecord.registry.unifiedNationalNumber)} />
-                    <Field label="تاريخ الإصدار" value={formatDate(selectedRecord.registry.issueDate)} />
-                    <Field label="تاريخ الانتهاء" value={formatDate(selectedRecord.registry.expiryDate)} />
-                  </>
-                )}
-                <Field label="الحالة" value={<StatusBadge label={REGISTRY_LABEL[selectedRecord.registry.status]} className={classForRegistry(selectedRecord.registry.status)} />} />
-                <Field label="مطابقة النشاط" value={selectedRecord.registry.activityMatchStatus === 'matched' ? 'مطابق' : selectedRecord.registry.activityMatchStatus === 'mismatch' ? 'غير مطابق' : 'غير مفحوص'} />
-              </DetailSection>
-
-              <DetailSection title="الحساب البنكي">
-                <Field label="اسم البنك" value={valueOrDash(selectedRecord.bank.bankName)} />
-                <Field label="صاحب الحساب" value={valueOrDash(selectedRecord.bank.accountHolderName)} />
-                <Field label="IBAN آخر 4" value={selectedRecord.bank.ibanLast4 ? `****${selectedRecord.bank.ibanLast4}` : 'غير متوفر'} />
-                <Field label="الحالة" value={<StatusBadge label={BANK_LABEL[selectedRecord.bank.verificationStatus]} className={classForBank(selectedRecord.bank.verificationStatus)} />} />
-                <Field label="سبب الرفض" value={valueOrDash(selectedRecord.bank.rejectionReason)} />
-                <Field label="وقت المراجعة" value={formatDate(selectedRecord.bank.reviewedAt)} />
-                <Field label="المراجع" value={valueOrDash(selectedRecord.bank.reviewedBy)} />
-                <div className="mt-3 rounded-xl bg-gray-50 border border-gray-100 p-3 space-y-3">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">قرار الحساب البنكي</p>
-                    <p className="text-xs text-gray-500 mt-1 leading-5">
-                      {selectedRecord.bank.id
-                        ? bankActionable
-                          ? 'راجع الاسم وآخر 4 أرقام فقط، ثم وثق أو ارفض مع سبب واضح.'
-                          : selectedRecord.bank.verificationStatus === 'verified'
-                            ? 'الحساب موثق حاليًا.'
-                            : 'الحالة الحالية لا تقبل قرارًا من هذه الصفحة.'
-                        : 'لا يوجد حساب بنكي مضاف لهذا المتجر.'}
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openBankDecision('verify')}
-                      disabled={!bankActionable || bankReviewMutation.isPending}
-                      className="h-10 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-colors"
-                    >
-                      توثيق البنك
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openBankDecision('reject')}
-                      disabled={!selectedRecord.bank.id || !canReviewBank || selectedRecord.bank.verificationStatus === 'rejected' || bankReviewMutation.isPending}
-                      className="h-10 rounded-lg border border-red-200 text-red-700 text-xs font-semibold hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-colors"
-                    >
-                      رفض البنك
-                    </button>
-                  </div>
-                  {bankDecisionMode && (
-                    <div className={`rounded-xl border p-3 space-y-2 ${bankDecisionMode === 'verify' ? 'border-emerald-100 bg-emerald-50' : 'border-red-100 bg-red-50'}`}>
-                      <label htmlFor="merchant-bank-review-reason" className={`text-xs font-semibold ${bankDecisionMode === 'verify' ? 'text-emerald-900' : 'text-red-800'}`}>
-                        {bankDecisionMode === 'verify' ? 'سبب توثيق البنك' : 'سبب رفض البنك'}
-                      </label>
-                      <textarea
-                        id="merchant-bank-review-reason"
-                        value={bankReviewReason}
-                        onChange={(event) => setBankReviewReason(event.target.value)}
-                        className={`w-full min-h-[88px] rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 ${bankDecisionMode === 'verify' ? 'border-emerald-200 focus:ring-emerald-500' : 'border-red-200 focus:ring-red-500'}`}
-                        placeholder={bankDecisionMode === 'verify' ? 'مثال: الاسم مطابق وآخر 4 أرقام مطابقة للمستند.' : 'مثال: اسم صاحب الحساب لا يطابق السجل التجاري.'}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => submitBankDecision(bankDecisionMode === 'verify' ? 'verified' : 'rejected')}
-                        disabled={bankReviewReason.trim().length < 3 || bankReviewMutation.isPending}
-                        className={`h-10 w-full rounded-lg text-white text-sm font-semibold disabled:opacity-40 transition-colors ${bankDecisionMode === 'verify' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'}`}
-                      >
-                        {bankDecisionMode === 'verify' ? 'تأكيد توثيق البنك' : 'تأكيد رفض البنك'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </DetailSection>
-
-              <DetailSection title="المستندات المرفوعة">
-                {selectedRecord.documents.length > 0 ? (
-                  <div className="space-y-2">
-                    {selectedRecord.documents.map((document, index) => (
-                      <div key={document.id ?? `${document.type}-${index}`} className="rounded-lg bg-gray-50 px-3 py-2 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Icon name="FileText" size="xs" className="text-gray-400" />
-                          <span className="text-sm text-gray-700 truncate">{document.filename ?? document.type ?? 'مستند'}</span>
-                        </div>
-                        {document.fileUrl ? (
-                          <a href={document.fileUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-primary-600 hover:underline">عرض</a>
-                        ) : (
-                          <span className="text-xs text-gray-400">غير متاح</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-400">لا توجد مستندات مرفوعة</p>
-                )}
-              </DetailSection>
+              <MerchantProfileSections
+                record={selectedRecord}
+                bankActionable={bankActionable}
+                canReviewBank={canReviewBank}
+                bankReviewPending={bankReviewMutation.isPending}
+                bankDecisionMode={bankDecisionMode}
+                bankReviewReason={bankReviewReason}
+                showBankHint
+                onOpenBankDecision={openBankDecision}
+                onBankReviewReasonChange={setBankReviewReason}
+                onSubmitBankDecision={submitBankDecision}
+              />
 
               <DetailSection title="جاهزية الدفع">
                 <Field label="الحالة" value={selectedRecord.paymentStatus === 'active' || selectedRecord.paymentStatus === 'configured' ? 'جاهز' : 'غير معد'} />
@@ -1678,23 +1666,7 @@ export default function Compliance() {
                 <Field label="السياسات المطلوبة" value={selectedRecord.policiesPresent ? 'موجودة' : 'غير مكتملة'} />
               </DetailSection>
 
-              <DetailSection title="سجل قرارات المراجعة">
-                {selectedRecord.reviewDecisions.length > 0 ? (
-                  <div className="space-y-2">
-                    {selectedRecord.reviewDecisions.map((decision, index) => (
-                      <div key={`${decision.status}-${index}`} className="rounded-lg bg-gray-50 px-3 py-2 text-sm">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-semibold text-gray-900">{valueOrDash(decision.status)}</span>
-                          <span className="text-xs text-gray-400">{formatDate(decision.reviewedAt)}</span>
-                        </div>
-                        {decision.reason && <p className="mt-1 text-xs text-gray-500">{decision.reason}</p>}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-400">لا توجد قرارات مراجعة بعد</p>
-                )}
-              </DetailSection>
+              <ReviewDecisionsSection record={selectedRecord} />
 
               <DetailSection title="ملاحظات داخلية للأدمن">
                 <p className="text-sm text-gray-600 leading-6">{valueOrDash(selectedRecord.internalNotes)}</p>
