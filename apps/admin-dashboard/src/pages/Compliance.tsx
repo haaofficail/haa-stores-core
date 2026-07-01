@@ -197,7 +197,7 @@ function MetricCard({
   tone: 'blue' | 'green' | 'amber' | 'red';
 }) {
   const toneClass = {
-    blue: 'bg-blue-50 text-blue-700',
+    blue: 'bg-primary-50 text-primary-700',
     green: 'bg-emerald-50 text-emerald-700',
     amber: 'bg-amber-50 text-amber-700',
     red: 'bg-red-50 text-red-700',
@@ -807,7 +807,7 @@ export default function Compliance() {
                         {stage.actionLabel}
                       </span>
                     )}
-                    <p className="text-[11px] leading-5 opacity-90">للتاجر: {stage.merchantInstruction}</p>
+                    <p className="text-xs leading-5 opacity-90">للتاجر: {stage.merchantInstruction}</p>
                   </div>
                 </article>
               );
@@ -1326,7 +1326,7 @@ export default function Compliance() {
                         >
                           <td className="px-4 py-3 align-top">
                             <div className="flex items-start gap-2">
-                              <span className="mt-0.5 h-8 w-8 rounded-lg bg-blue-50 text-blue-700 inline-flex items-center justify-center">
+                              <span className="mt-0.5 h-8 w-8 rounded-lg bg-primary-50 text-primary-700 inline-flex items-center justify-center">
                                 <Icon name="Store" size="xs" />
                               </span>
                               <div>
@@ -1462,7 +1462,7 @@ export default function Compliance() {
                                   </span>
                                 )}
                               </div>
-                              <p className="rounded-md bg-blue-50 px-2.5 py-2 text-blue-800 leading-5">
+                              <p className="rounded-md bg-primary-50 px-2.5 py-2 text-primary-700 leading-5">
                                 للتاجر: {item.action.merchantInstruction}
                               </p>
                             </div>
