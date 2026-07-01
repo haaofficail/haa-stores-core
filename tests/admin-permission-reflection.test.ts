@@ -76,7 +76,7 @@ describe('Admin dashboard permission reflection', () => {
       '/tenants|التجار|Users|tenants.read',
       '/stores|المتاجر|Store|stores.read',
       '/store-billing|رسوم المتاجر|CreditCard|billing.platform_fee.read',
-      '/kyc|التحقق|ShieldCheck|kyc.read',
+      '/kyc|طلبات التحقق|ShieldCheck|kyc.read',
       '/bank-accounts|الحسابات البنكية|Building2|kyc.read',
       '/settlement-readiness|جاهزية التسوية|CheckSquare|wallet.payout.view_all',
       '/store-payment-settings|إعدادات الدفع|CreditCard|stores.read',
@@ -85,11 +85,11 @@ describe('Admin dashboard permission reflection', () => {
       '/payments/settlements|التسويات|Landmark|wallet.payout.view_all',
       '/users|المستخدمون|UserCog|users.read',
       '/audit|سجل التدقيق|ScrollText|audit.read',
-      '/operations/webhooks|عمليات Webhooks|FileText|webhooks.read',
+      '/operations/webhooks|Webhooks|FileText|webhooks.read',
       '/plans|الباقات|Package|plans.read',
       '/compliance|توثيق المتاجر|CheckSquare|tenants.read',
       '/landing-inbox|صندوق الوارد|Inbox|landing_contacts.read',
-      '/settings|الإعدادات|Settings|platform.settings.read',
+      '/settings|إعدادات المنصة|Settings|platform.settings.read',
     ];
 
     for (const entry of entries) {
