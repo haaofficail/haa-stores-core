@@ -263,6 +263,7 @@
 - [ ] `/health` reports missing key names only and never raw secret values, DSNs, API tokens, or provider credentials
 - [ ] `/health` readiness checks do not call live payment or shipping providers
 - [ ] Platform health tests (`tests/platform-health-readiness.test.ts`) pass after any health/env/provider readiness change
+- [ ] API route/middleware changes use `unknown` + type guards or Hono `StatusCode` / `ContentfulStatusCode`; do not reintroduce `as any` for errors, JSON metadata, DTO casts, or dynamic response statuses
 - [ ] API consumers (storefront, dashboard, admin) considered
 
 ## Database

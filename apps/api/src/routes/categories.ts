@@ -9,6 +9,10 @@ const categoriesRouter = new Hono();
 
 categoriesRouter.use('*', requireAuth(), requireStoreAccess());
 
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 categoriesRouter.get('/', requirePermission('categories:manage'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const items = await new CategoriesService().list(storeId);
@@ -35,8 +39,8 @@ categoriesRouter.post('/', requirePermission('categories:manage'), zValidator('j
   try {
     const item = await new CategoriesService().create(storeId, body);
     return c.json({ success: true, data: item }, 201);
-  } catch (err: any) {
-    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } }, 400);
+  } catch (err: unknown) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: errorMessage(err, 'Category validation failed') } }, 400);
   }
 });
 
@@ -52,8 +56,8 @@ categoriesRouter.put('/reorder', requirePermission('categories:manage'), zValida
   try {
     await new CategoriesService().reorder(storeId, items);
     return c.json({ success: true });
-  } catch (err: any) {
-    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } }, 400);
+  } catch (err: unknown) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: errorMessage(err, 'Category reorder failed') } }, 400);
   }
 });
 
@@ -65,8 +69,8 @@ categoriesRouter.patch('/:id', requirePermission('categories:manage'), zValidato
     const item = await new CategoriesService().update(storeId, id, body);
     if (!item) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Category not found' } }, 404);
     return c.json({ success: true, data: item });
-  } catch (err: any) {
-    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } }, 400);
+  } catch (err: unknown) {
+    return c.json({ success: false, error: { code: 'VALIDATION_ERROR', message: errorMessage(err, 'Category update failed') } }, 400);
   }
 });
 
@@ -77,8 +81,8 @@ categoriesRouter.delete('/:id', requirePermission('categories:manage'), async (c
     const item = await new CategoriesService().delete(storeId, id);
     if (!item) return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Category not found' } }, 404);
     return c.json({ success: true, data: item });
-  } catch (err: any) {
-    return c.json({ success: false, error: { code: 'CONFLICT', message: err.message } }, 409);
+  } catch (err: unknown) {
+    return c.json({ success: false, error: { code: 'CONFLICT', message: errorMessage(err, 'Category delete conflict') } }, 409);
   }
 });
 

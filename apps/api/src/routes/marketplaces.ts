@@ -6,7 +6,7 @@ import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';
 import { SallaService, ZidService, NoonService, AmazonService } from '@haa/marketplace-core';
-import type { ProviderCode, ChannelOrder } from '@haa/marketplace-core';
+import type { ProviderCode, ChannelOrder, ProductListing } from '@haa/marketplace-core';
 import { sallaRouter } from './marketplaces/salla.js';
 import { zidRouter } from './marketplaces/zid.js';
 import { amazonRouter } from './marketplaces/amazon.js';
@@ -25,6 +25,13 @@ marketplacesRouter.route('/zid', zidRouter);
 marketplacesRouter.route('/amazon', amazonRouter);
 
 const codes = ['salla', 'zid', 'noon', 'amazon'] as const;
+
+type MarketplaceChannels = Record<string, {
+  productId: string;
+  url?: string;
+  price?: string;
+  status?: string;
+}>;
 
 function parseProvider(p: string | undefined): ProviderCode {
   if (!p || !(codes as readonly string[]).includes(p)) throw new Error('Unsupported provider');
@@ -628,7 +635,13 @@ async function persistChannelOrders(storeId: number, connectionId: number, provi
     if (existing) continue;
 
     const orderNumber = `${providerCode.toUpperCase()}-${order.marketplaceOrderId.slice(-6)}`;
-    const orderData = (order.orderData || {}) as Record<string, any>;
+    const orderData = order.orderData || {};
+    const phone = typeof orderData.phone === 'string' && orderData.phone.trim()
+      ? orderData.phone
+      : '0000000000';
+    const email = typeof orderData.email === 'string' && orderData.email.trim()
+      ? orderData.email
+      : null;
     await db.insert(s.orders).values({
       storeId,
       orderNumber,
@@ -636,8 +649,8 @@ async function persistChannelOrders(storeId: number, connectionId: number, provi
       paymentStatus: order.status === 'cancelled' ? 'unpaid' : 'paid',
       fulfillmentStatus: 'unfulfilled',
       customerName: order.customerName || providerCode,
-      customerPhone: orderData.phone || '0000000000',
-      customerEmail: orderData.email || null,
+      customerPhone: phone,
+      customerEmail: email,
       subtotal: order.totalAmount,
       total: order.totalAmount,
       source: providerCode,
@@ -791,16 +804,18 @@ marketplacesRouter.post(
     };
 
     try {
-      let result: any;
+      let result: ProductListing;
       if (provider === 'salla') result = await getSallaService(storeId).createProduct(publishData);
       else if (provider === 'noon') result = await getNoonService(storeId).createProduct(publishData);
       else if (provider === 'amazon') result = await getAmazonService(storeId).createProduct(publishData);
       else if (provider === 'zid') result = await getZidService(storeId).createProduct(publishData);
       else return c.json({ success: false, error: { code: 'NOT_IMPLEMENTED', message: `${provider} not yet implemented` } }, 501);
 
-      const existingChannels = (product.marketplaceChannels || {}) as Record<string, any>;
+      const existingChannels: MarketplaceChannels = product.marketplaceChannels
+        ? { ...product.marketplaceChannels }
+        : {};
       existingChannels[provider] = {
-        productId: result?.marketplaceProductId || result?.id || 'unknown',
+        productId: String(result.marketplaceProductId ?? result.id ?? 'unknown'),
         url: result?.marketplaceUrl,
         price: publishData.price as string,
         status: 'active',

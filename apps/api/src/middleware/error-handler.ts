@@ -1,4 +1,5 @@
 import { Context, ErrorHandler } from 'hono'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { HTTPException } from 'hono/http-exception'
 import { AppError, getUserFriendlyMessage, getFullErrorMessage } from '@haa/shared'
 import { reportSupportError } from '../services/support-error-log.js'
@@ -16,6 +17,22 @@ export function setErrorMonitor(m: ErrorMonitor): void {
 
 export function getErrorMonitor(): ErrorMonitor | null {
   return monitor
+}
+
+const CONTENTFUL_STATUS_CODES = new Set<number>([
+  100, 102, 103,
+  200, 201, 202, 203, 206, 207, 208, 226,
+  300, 301, 302, 303, 305, 306, 307, 308,
+  400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411,
+  412, 413, 414, 415, 416, 417, 418, 421, 422, 423, 424, 425,
+  426, 428, 429, 431, 451,
+  500, 501, 502, 503, 504, 505, 506, 507, 508, 510, 511,
+])
+
+function toContentfulStatusCode(status: number | undefined, fallback: ContentfulStatusCode): ContentfulStatusCode {
+  return typeof status === 'number' && CONTENTFUL_STATUS_CODES.has(status)
+    ? status as ContentfulStatusCode
+    : fallback
 }
 
 
@@ -49,14 +66,14 @@ const errorHandler: ErrorHandler = async (err: Error, c: Context) => {
       handled: true,
     }).catch(() => {})
 
-    return c.json(body, err.statusCode as any)
+    return c.json(body, toContentfulStatusCode(err.statusCode, 500))
   }
 
   if (err instanceof HTTPException) {
     const res = err.getResponse()
     try {
       const json = await res.clone().json()
-      return c.json(json, res.status as any)
+      return c.json(json, toContentfulStatusCode(res.status, 500))
     } catch {
       return c.json({
         success: false,
@@ -64,7 +81,7 @@ const errorHandler: ErrorHandler = async (err: Error, c: Context) => {
           code: 'HTTP_ERROR',
           message: isProduction ? getUserFriendlyMessage('INTERNAL_ERROR', 'An unexpected error occurred') : err.message,
         },
-      }, (err.status || 500) as any)
+      }, toContentfulStatusCode(err.status || 500, 500))
     }
   }
 

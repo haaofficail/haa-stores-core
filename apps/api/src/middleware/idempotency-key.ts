@@ -22,6 +22,7 @@
 // the header (and reject calls without one with 400).
 
 import type { Context, MiddlewareHandler, Next } from 'hono';
+import type { ContentfulStatusCode, StatusCode } from 'hono/utils/http-status';
 import { createHash } from 'node:crypto';
 
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000; // 24h — matches the draft's recommended floor.
@@ -29,13 +30,15 @@ const MAX_KEY_LENGTH = 256;
 const MIN_KEY_LENGTH = 8;
 const HEADER = 'idempotency-key';
 
-interface CachedResponse {
-  status: number;
+interface CachedResponseBase {
   headers: Record<string, string>;
-  body: string;
   fingerprint: string;
   expiresAt: number;
 }
+
+type CachedResponse =
+  | (CachedResponseBase & { status: ContentfulStatusCode; body: string })
+  | (CachedResponseBase & { status: StatusCode; body: null });
 
 interface IdempotencyMetrics {
   total: number;
@@ -54,6 +57,17 @@ const _metrics: IdempotencyMetrics = {
 };
 
 const _store = new Map<string, CachedResponse>();
+
+const SUCCESS_STATUS_CODES = new Set<number>([200, 201, 202, 203, 204, 205, 206, 207, 208, 226]);
+const CONTENTLESS_STATUS_CODES = new Set<number>([101, 204, 205, 304]);
+
+function toSuccessStatusCode(status: number): StatusCode {
+  return SUCCESS_STATUS_CODES.has(status) ? status as StatusCode : 200;
+}
+
+function hasResponseBody(status: StatusCode): status is ContentfulStatusCode {
+  return !CONTENTLESS_STATUS_CODES.has(status);
+}
 
 export interface IdempotencyKeyStats {
   total: number;
@@ -194,7 +208,8 @@ export function idempotencyKey(opts: IdempotencyKeyOptions = {}): MiddlewareHand
       for (const [hk, hv] of Object.entries(existing.headers)) {
         if (hk.toLowerCase() === 'content-type') c.header('Content-Type', hv);
       }
-      return c.body(existing.body, existing.status as any);
+      if (existing.body === null) return c.body(null, existing.status);
+      return c.body(existing.body, existing.status);
     }
 
     _metrics.misses += 1;
@@ -204,19 +219,30 @@ export function idempotencyKey(opts: IdempotencyKeyOptions = {}): MiddlewareHand
     // Only cache deterministic success responses. 4xx/5xx are not cached
     // so transient failures can be retried with the same key.
     if (res.status >= 200 && res.status < 300) {
+      const status = toSuccessStatusCode(res.status);
       const cloned = res.clone();
-      const body = await cloned.text();
       const headers: Record<string, string> = {};
       cloned.headers.forEach((v, k) => {
         headers[k] = v;
       });
-      _store.set(cacheKey, {
-        status: res.status,
-        headers,
-        body,
-        fingerprint,
-        expiresAt: now + ttlMs,
-      });
+      if (hasResponseBody(status)) {
+        const body = await cloned.text();
+        _store.set(cacheKey, {
+          status,
+          headers,
+          body,
+          fingerprint,
+          expiresAt: now + ttlMs,
+        });
+      } else {
+        _store.set(cacheKey, {
+          status,
+          headers,
+          body: null,
+          fingerprint,
+          expiresAt: now + ttlMs,
+        });
+      }
     }
   };
 }

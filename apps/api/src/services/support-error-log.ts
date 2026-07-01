@@ -154,8 +154,18 @@ export async function reportSupportError(input: SupportErrorInput): Promise<{ co
 
 export function normalizeUnknownError(error: unknown, defaultCode = 'SYS-001'): { message: string; statusCode: number; errorCode: string } {
   if (error instanceof Error) {
-    const statusCode = (error as any).statusCode || (error as any).status || 500
-    return { message: error.message, statusCode, errorCode: (error as any).code || defaultCode }
+    const errorWithMetadata = error as Error & {
+      statusCode?: unknown
+      status?: unknown
+      code?: unknown
+    }
+    const statusCode = typeof errorWithMetadata.statusCode === 'number'
+      ? errorWithMetadata.statusCode
+      : typeof errorWithMetadata.status === 'number'
+        ? errorWithMetadata.status
+        : 500
+    const errorCode = typeof errorWithMetadata.code === 'string' ? errorWithMetadata.code : defaultCode
+    return { message: error.message, statusCode, errorCode }
   }
   return { message: String(error), statusCode: 500, errorCode: defaultCode }
 }
