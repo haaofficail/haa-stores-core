@@ -377,6 +377,10 @@ export const ordersApi = {
     request<unknown>(`/merchant/${storeId}/orders/${orderId}/cod/failed`, { method: 'POST', body: JSON.stringify({ reason }) }),
   markCODRefused: (storeId: number, orderId: number) =>
     request<unknown>(`/merchant/${storeId}/orders/${orderId}/cod/refused`, { method: 'POST' }),
+  confirmBankTransfer: (storeId: number, orderId: number) =>
+    request<unknown>(`/merchant/${storeId}/orders/${orderId}/bank-transfer/confirm`, { method: 'POST' }),
+  markBankTransferFailed: (storeId: number, orderId: number, reason?: string) =>
+    request<unknown>(`/merchant/${storeId}/orders/${orderId}/bank-transfer/failed`, { method: 'POST', body: JSON.stringify({ reason }) }),
   updatePreparationStatus: (storeId: number, orderId: number, status: string, reason?: string) =>
     request<unknown>(`/merchant/${storeId}/orders/${orderId}/preparation-status`, { method: 'PATCH', body: JSON.stringify({ status, reason }) }),
 };

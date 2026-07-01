@@ -28,6 +28,7 @@ import {
 } from '@haa/commerce-core';
 import { ManualShippingProvider, getDefaultShippingRateCache } from '@haa/shipping-core';
 import { ALLOWED_PAYMENT_METHODS, AppError } from '@haa/shared';
+import { env } from '../../env.js';
 import { toPublicOrder, toPublicShippingMethod } from '@haa/shared/dto/storefront-dto';
 import { resolveActiveStore } from './_shared.js';
 
@@ -70,6 +71,18 @@ function isInsufficientStockMessage(message: string): boolean {
   return message.toLowerCase().includes('insufficient stock');
 }
 
+// P0-3 audit fix: `fake_card_success`/`fake_card_failed` exist in
+// ALLOWED_PAYMENT_METHODS purely for local/staging dev and were, until
+// now, accepted by this endpoint regardless of environment — hiding the
+// option in the storefront UI (import.meta.env.DEV) is not a server-side
+// guarantee. A direct API call in production could still mint a "paid"
+// order without any real payment ever happening.
+export const FAKE_PAYMENT_METHODS = new Set(['fake_card_success', 'fake_card_failed']);
+
+export function isFakePaymentMethodBlocked(paymentMethod: string, nodeEnv: string = env.NODE_ENV): boolean {
+  return nodeEnv === 'production' && FAKE_PAYMENT_METHODS.has(paymentMethod);
+}
+
 function isCheckoutClientErrorMessage(message: string): boolean {
   const lowerMessage = message.toLowerCase();
   return lowerMessage.includes('not found') ||
@@ -107,6 +120,7 @@ const checkoutSessionSchema = z.object({
   notes: z.string().optional(),
   idempotencyKey: z.string().uuid(),
   couponCode: z.string().optional(),
+  redeemPoints: z.coerce.number().int().nonnegative().optional(),
   fulfillmentType: z.enum(['shipping', 'local_pickup']).optional(),
   pickupLocationId: z.coerce.number().optional(),
   gift: z.object({
@@ -199,6 +213,9 @@ checkoutRouter.post('/:slug/checkout/sessions', zValidator('json', checkoutSessi
   const { store, error } = await resolveActiveStore(c);
   if (error) return error;
   const body = c.req.valid('json');
+  if (isFakePaymentMethodBlocked(body.paymentMethod)) {
+    throw new AppError(400, 'PAYMENT_METHOD_NOT_ALLOWED', 'Payment method not available.');
+  }
   try {
     const sessionResult = await new CheckoutService().createSession(store.id, body) as CheckoutSessionResult;
     const { session, idempotent } = sessionResult;

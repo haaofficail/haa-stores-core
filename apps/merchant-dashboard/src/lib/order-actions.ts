@@ -18,6 +18,7 @@ export interface OrderActions {
   hasGift: boolean;
   isPickup: boolean;
   isCOD: boolean;
+  isBankTransfer: boolean;
 }
 
 const getStatusDescription = (key: string): string | undefined => {
@@ -31,6 +32,7 @@ const getStatusDescription = (key: string): string | undefined => {
     case 'ready_for_pickup': return 'تجهيز الطلب للاستلام من الفرع';
     case 'confirm_pickup': return 'تأكيد استلام العميل للطلب';
     case 'collect_payment': return 'تسجيل تحصيل المبلغ دون تغيير حالة الطلب';
+    case 'confirm_bank_transfer': return 'تأكيد استلام التحويل البنكي في حساب المتجر';
     default: return undefined;
   }
 };
@@ -65,6 +67,7 @@ export function getOrderActions(order: any): OrderActions {
   const status = order?.status;
   const isPickup = order?.fulfillmentType === 'local_pickup';
   const isCOD = order?.paymentMethod === 'cash_on_delivery';
+  const isBankTransfer = order?.paymentMethod === 'bank_transfer';
   const providerCode = orderProviderCode(order);
   const refundUiAllowed = !providerCode || !PROVIDERS_WITHOUT_REFUND_UI.has(providerCode);
   const hasGift = !!(
@@ -83,7 +86,7 @@ export function getOrderActions(order: any): OrderActions {
   const actions: OrderAction[] = [];
 
   if (!status || TERMINAL.has(status)) {
-    return { actions, primaryAction: null, hasGift, isPickup, isCOD };
+    return { actions, primaryAction: null, hasGift, isPickup, isCOD, isBankTransfer };
   }
 
   const pushPrimary = (target: string, key: string, label: string, icon: string) => {
@@ -173,9 +176,9 @@ export function getOrderActions(order: any): OrderActions {
 
         let labelDisabledReason: string | undefined;
         if (!paymentOk) {
-          labelDisabledReason = isCOD
-            ? 'الدفع عند الاستلام غير مؤكد'
-            : 'الطلب غير مدفوع';
+          if (isCOD) labelDisabledReason = 'الدفع عند الاستلام غير مؤكد';
+          else if (isBankTransfer) labelDisabledReason = 'لم يتم تأكيد استلام التحويل البنكي بعد';
+          else labelDisabledReason = 'الطلب غير مدفوع';
         } else if (!isPacked) {
           labelDisabledReason = 'لا يمكن إنشاء بوليصة لأن الطلب لم يتم تغليفه بعد';
         } else if (!addressOk) {
@@ -320,9 +323,24 @@ export function getOrderActions(order: any): OrderActions {
     }
   }
 
+  // Bank transfer payment actions (P0-1 fix: no longer auto-paid — the
+  // merchant must confirm the transfer landed before shipping is allowed).
+  if (isBankTransfer && order?.paymentStatus === 'pending') {
+    actions.push({
+      key: 'confirm_bank_transfer', label: 'تأكيد استلام التحويل', icon: 'Wallet',
+      targetStatus: status, isDestructive: false, needsConfirm: true,
+      section: 'payment',
+    });
+    actions.push({
+      key: 'bank_transfer_failed', label: 'لم يصل التحويل', icon: 'AlertTriangle',
+      targetStatus: status, isDestructive: false, needsConfirm: true,
+      section: 'payment',
+    });
+  }
+
   // Attach descriptions to primary and payment actions
   for (const action of actions) {
-    if (action.section === 'primary' || action.key === 'collect_payment') {
+    if (action.section === 'primary' || action.key === 'collect_payment' || action.key === 'confirm_bank_transfer') {
       action.description = getStatusDescription(action.key);
     }
   }
@@ -331,10 +349,10 @@ export function getOrderActions(order: any): OrderActions {
   const primaryAction: OrderAction | null = (() => {
     const primary = actions.find(a => a.section === 'primary');
     if (primary) return primary;
-    const collect = actions.find(a => a.key === 'collect_payment');
+    const collect = actions.find(a => a.key === 'collect_payment' || a.key === 'confirm_bank_transfer');
     if (collect) return collect;
     return null;
   })();
 
-  return { actions, primaryAction, hasGift, isPickup, isCOD };
+  return { actions, primaryAction, hasGift, isPickup, isCOD, isBankTransfer };
 }

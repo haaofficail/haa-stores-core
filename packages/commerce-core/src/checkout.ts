@@ -4,6 +4,7 @@ import * as s from '@haa/db/schema';
 import { CartService } from './cart.js';
 import { OrdersService } from './orders.js';
 import { CouponsService } from './coupons.js';
+import { LoyaltyService } from './loyalty.js';
 import { PaymentService, createPaymentProvider, FakePaymentProvider } from '@haa/payment-providers';
 import type { PaymentProvider } from '@haa/payment-providers';
 import { WalletLedger, describePlatformFeePolicy } from '@haa/wallet-core';
@@ -62,6 +63,7 @@ export class CheckoutService {
     paymentMethod: string;
     notes?: string;
     couponCode?: string;
+    redeemPoints?: number;
     fulfillmentType?: 'shipping' | 'local_pickup';
     pickupLocationId?: number;
     gift?: { sendAsGift?: boolean; message?: string };
@@ -122,7 +124,32 @@ export class CheckoutService {
       }
     }
 
-    const total = Math.max(0, subtotal + shippingCost + taxAmount - couponDiscount);
+    // P0-2 fix: loyalty redemption is server-authoritative. The client
+    // widget only ever displays what `previewRedemption` returns (see
+    // storefront-checkout-redeem-widget.test.tsx) — but until now that
+    // preview value was never actually threaded through to the order
+    // total, so the customer saw a discount that was never charged.
+    // Re-validate the requested points against the CURRENT balance +
+    // rules here (never trust the client-supplied value) and persist
+    // the outcome on the session so `confirm()` can atomically debit
+    // the same points later.
+    let loyaltyRedeemPoints = 0;
+    let loyaltyDiscount = 0;
+    if (input.redeemPoints && input.redeemPoints > 0) {
+      const orderTotalBeforeRedeem = Math.max(0, subtotal + shippingCost + taxAmount - couponDiscount);
+      const loyaltyService = new LoyaltyService(this.db);
+      const preview = await loyaltyService.previewRedemption({
+        storeId, customerId: customer.id,
+        requestedPoints: input.redeemPoints,
+        orderTotal: orderTotalBeforeRedeem,
+      });
+      if (preview.points > 0 && preview.value > 0) {
+        loyaltyRedeemPoints = preview.points;
+        loyaltyDiscount = preview.value;
+      }
+    }
+
+    const total = Math.max(0, subtotal + shippingCost + taxAmount - couponDiscount - loyaltyDiscount);
 
     const [existingSession] = await this.db.select().from(s.checkoutSessions)
       .where(eq(s.checkoutSessions.idempotencyKey, input.idempotencyKey)).limit(1);
@@ -161,6 +188,9 @@ export class CheckoutService {
     if (fulfillmentType !== 'shipping') metadata.fulfillmentType = fulfillmentType;
     if (input.pickupLocationId) metadata.pickupLocationId = input.pickupLocationId;
     if (giftOptions) metadata.giftOptions = giftOptions;
+    if (loyaltyRedeemPoints > 0) {
+      metadata.loyaltyRedeem = { points: loyaltyRedeemPoints, value: loyaltyDiscount };
+    }
 
     const [session] = await this.db.insert(s.checkoutSessions).values({
       storeId, cartId: input.cartId, idempotencyKey: input.idempotencyKey,
@@ -269,6 +299,7 @@ export class CheckoutService {
               : undefined,
           })),
           notes: session.notes ?? undefined,
+          metadata: sessionMeta.loyaltyRedeem ? { loyaltyRedeem: sessionMeta.loyaltyRedeem } : undefined,
         });
 
         if (session.couponCode && session.couponDiscount) {
@@ -282,6 +313,29 @@ export class CheckoutService {
             if (!claimed) {
               throw new Error('COUPON_EXHAUSTED');
             }
+          }
+        }
+
+        // P0-2 fix: atomically debit the loyalty points quoted at
+        // createSession time, inside the SAME transaction as the order —
+        // a race that changed the customer's balance since the quote
+        // rolls the whole order back rather than silently charging a
+        // different total than what the customer confirmed.
+        const loyaltyRedeem = sessionMeta.loyaltyRedeem as { points: number; value: number } | undefined;
+        if (loyaltyRedeem && loyaltyRedeem.points > 0) {
+          const orderTotalBeforeRedeem = Number(session.subtotal)
+            + Number(session.shippingCost ?? 0)
+            + Number(session.taxAmount ?? 0)
+            - Number(session.couponDiscount ?? 0);
+          const txLoyalty = new LoyaltyService(tx);
+          const redeemResult = await txLoyalty.redeem({
+            storeId, customerId: customer.id,
+            requestedPoints: loyaltyRedeem.points,
+            orderTotal: orderTotalBeforeRedeem,
+            referenceId: order.id, orderNumber,
+          });
+          if (redeemResult.points < loyaltyRedeem.points || redeemResult.value < loyaltyRedeem.value) {
+            throw new Error('LOYALTY_BALANCE_CHANGED');
           }
         }
 
@@ -306,26 +360,43 @@ export class CheckoutService {
       let redirectUrl: string | undefined; // 3DS challenge URL (SAMA mandatory)
 
       if (order.paymentMethod !== 'bank_transfer' && order.paymentMethod !== 'cash_on_delivery') {
-        const session = await this.db.select().from(s.checkoutSessions).where(eq(s.checkoutSessions.id, order.checkoutSessionId!)).limit(1);
+        // P1-16 audit fix: stock was already decremented in Phase 1. If the
+        // provider call throws (network error, provider outage, unexpected
+        // exception — as opposed to a normal 'failed' confirmResult, which
+        // is already handled below), the old code let the exception
+        // propagate past Phase 3 entirely: stock stayed decremented
+        // forever, no order-status update, no stock-release. Catching here
+        // and falling through to the ordinary "payment failed" path (Phase
+        // 3's else branch) ensures incrementStock always runs.
+        try {
+          const session = await this.db.select().from(s.checkoutSessions).where(eq(s.checkoutSessions.id, order.checkoutSessionId!)).limit(1);
 
-        const payment = await this.paymentProvider.createPaymentIntent(order.id, Number(session[0].total), {
-          paymentMethod: order.paymentMethod,
-        });
-        // 3DS challenge: if the provider returned a redirectUrl, the
-        // payment is in 'requires_3ds' and the storefront must redirect
-        // the customer to the issuer's challenge page. We skip the
-        // synchronous confirmPayment — the 3DS callback (webhook or
-        // storefront callback) will trigger confirmation later.
-        if (payment.redirectUrl) {
-          paymentStatus = 'requires_3ds';
-          redirectUrl = payment.redirectUrl;
-        } else {
-          const confirmResult = await this.paymentProvider.confirmPayment(payment.paymentId);
-          paymentStatus = confirmResult.status;
-          paymentMessage = confirmResult.message ?? '';
+          const payment = await this.paymentProvider.createPaymentIntent(order.id, Number(session[0].total), {
+            paymentMethod: order.paymentMethod,
+          });
+          // 3DS challenge: if the provider returned a redirectUrl, the
+          // payment is in 'requires_3ds' and the storefront must redirect
+          // the customer to the issuer's challenge page. We skip the
+          // synchronous confirmPayment — the 3DS callback (webhook or
+          // storefront callback) will trigger confirmation later.
+          if (payment.redirectUrl) {
+            paymentStatus = 'requires_3ds';
+            redirectUrl = payment.redirectUrl;
+          } else {
+            const confirmResult = await this.paymentProvider.confirmPayment(payment.paymentId);
+            paymentStatus = confirmResult.status;
+            paymentMessage = confirmResult.message ?? '';
+          }
+        } catch (providerError) {
+          paymentStatus = 'failed';
+          paymentMessage = providerError instanceof Error ? providerError.message : 'Payment provider error';
+          console.error(`[checkout] payment provider threw for order ${order.orderNumber}:`, providerError);
         }
       } else if (order.paymentMethod === 'bank_transfer') {
-        paymentStatus = 'paid'; // Auto-paid for bank transfer
+        // P0-1 fix: bank transfer is NOT auto-paid. The order is confirmed
+        // and awaits the merchant verifying the transfer actually landed
+        // via OrdersService.confirmBankTransfer() — no wallet credit until then.
+        paymentStatus = 'pending';
       } else {
         paymentStatus = 'pending'; // COD: pending until collection at delivery/pickup
       }
@@ -432,8 +503,10 @@ export class CheckoutService {
             await txOutbox.recordEvent('order.created', storeId, 0, { orderId: order.id, orderNumber: order.orderNumber, total: Number(order.total) });
             await txOutbox.recordEvent('order.paid', storeId, 0, { orderId: order.id, orderNumber: order.orderNumber, paidAmount: Number(order.total) });
           }
-        } else if (paymentStatus === 'pending' && order.paymentMethod === 'cash_on_delivery') {
-          // COD: mark payment as pending, confirm order, no wallet entries until collection
+        } else if (paymentStatus === 'pending' && (order.paymentMethod === 'cash_on_delivery' || order.paymentMethod === 'bank_transfer')) {
+          // COD: pending until collection at delivery. Bank transfer: pending
+          // until the merchant confirms the transfer landed (confirmBankTransfer).
+          // Either way, no wallet entries are posted until then.
           await txOrdersService.updatePaymentStatus(storeId, order.id, 'pending', Number(order.total));
           await txOrdersService.changeStatus(storeId, order.id, 'confirmed', actorUserId);
 
@@ -447,7 +520,7 @@ export class CheckoutService {
             storeId, sessionId: `order-${order.orderNumber}`, orderId: order.id,
             eventType: 'payment_succeeded', cartId: session.cartId ?? null,
             path: '/checkout/confirm',
-            metadata: { orderNumber: order.orderNumber, paymentMethod: 'cash_on_delivery', status: 'pending_collection' },
+            metadata: { orderNumber: order.orderNumber, paymentMethod: order.paymentMethod, status: 'pending_collection' },
           });
 
           if (!this.isDemo) {
@@ -521,7 +594,8 @@ export class CheckoutService {
         const stockProductIds = cartItems
           .filter((i) => i.product.trackInventory)
           .map((i) => i.product.id);
-        if (paymentStatus === 'paid' || (paymentStatus === 'pending' && order.paymentMethod === 'cash_on_delivery')) {
+        const isPendingCollection = order.paymentMethod === 'cash_on_delivery' || order.paymentMethod === 'bank_transfer';
+        if (paymentStatus === 'paid' || (paymentStatus === 'pending' && isPendingCollection)) {
           void new LowStockNotifier(this.db)
             .fireForUpdatedProducts(storeId, stockProductIds)
             .catch(() => {});
@@ -534,8 +608,12 @@ export class CheckoutService {
       }
 
       // Send notifications (demo stores skip real notifications)
-      if (!this.isDemo && (paymentStatus === 'paid' || (paymentStatus === 'pending' && order.paymentMethod === 'cash_on_delivery'))) {
-        const isCOD = order.paymentMethod === 'cash_on_delivery';
+      const isPendingCollectionMethod = order.paymentMethod === 'cash_on_delivery' || order.paymentMethod === 'bank_transfer';
+      if (!this.isDemo && (paymentStatus === 'paid' || (paymentStatus === 'pending' && isPendingCollectionMethod))) {
+        // "payment_success" is skipped for both: neither COD nor bank
+        // transfer is actually paid yet at order-creation time — only
+        // 'order_created' is accurate here.
+        const isCOD = isPendingCollectionMethod;
         try {
           const sessionMeta = (session.metadata ?? {}) as Record<string, unknown>;
           const fType = (sessionMeta.fulfillmentType as string) ?? 'shipping';

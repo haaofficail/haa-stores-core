@@ -22,7 +22,7 @@ import {
   type OrderRefundContext,
 } from '@haa/notification-core';
 import { AuditLogService } from '@haa/integration-core';
-import { WalletLedger } from '@haa/wallet-core';
+import { WalletLedger, describePlatformFeePolicy } from '@haa/wallet-core';
 import { StoreBillingSettingsService } from './billing-settings-service.js';
 import { WalletPostingService } from './wallet-posting-service.js';
 import { LoyaltyService } from './loyalty.js';
@@ -688,6 +688,121 @@ export class OrdersService {
       actorUserId: userId ?? null, storeId, action: 'payment_status_changed',
       entityType: 'order', entityId: order.id,
       newValue: { paymentStatus: order.paymentStatus, method: 'cash_on_delivery', failure: true, reason, orderNumber: order.orderNumber },
+    });
+
+    return true;
+  }
+
+  /**
+   * Merchant-confirmed bank transfer receipt. Bank transfer orders are
+   * created with paymentStatus='pending' (checkout.ts no longer auto-marks
+   * them 'paid' — audit P0-1) — no wallet entry exists until the merchant
+   * verifies the transfer actually landed and calls this method. Mirrors
+   * collectCOD's wallet-posting shape, minus the COD fee.
+   */
+  async confirmBankTransfer(storeId: number, orderId: number, userId?: number) {
+    const order = await this.getById(storeId, orderId);
+    if (!order) throw new Error('Order not found');
+    if (order.paymentMethod !== 'bank_transfer') throw new Error('Not a bank transfer order');
+    if (order.paymentStatus === 'paid') throw new Error('Bank transfer already confirmed');
+    if (order.paymentStatus === 'refunded') throw new Error('Order already refunded');
+    if (order.status === 'cancelled' || order.status === 'refunded') throw new Error('Order is cancelled or refunded');
+
+    const updated = await this.db.transaction(async (tx) => {
+      const txOrders = new OrdersService(tx);
+      const confirmed = await txOrders.updatePaymentStatus(storeId, orderId, 'paid', Number(order.total));
+
+      const txPosting = new WalletPostingService(tx);
+      const txWallet = new WalletLedger(tx);
+
+      const saleResult = await txPosting.postSale({
+        storeId,
+        orderId: order.id,
+        orderTotal: Number(order.total),
+        orderNumber: order.orderNumber,
+        method: 'bank_transfer',
+      });
+      await txWallet.recordEntry({
+        storeId, type: saleResult.entryType, direction: 'credit',
+        amount: saleResult.amount,
+        referenceType: 'order', referenceId: order.id,
+        description: `Bank transfer confirmed for order ${order.orderNumber}`,
+        status: 'available',
+      });
+
+      const txBilling = new StoreBillingSettingsService(tx);
+      const platformPolicy = await txBilling.getPlatformFeePolicy(storeId);
+      const platformResult = await txPosting.postPlatformFee({
+        storeId,
+        orderId: order.id,
+        orderTotal: Number(order.total),
+        orderNumber: order.orderNumber,
+        policy: platformPolicy,
+      });
+      if (platformResult.amount > 0) {
+        const alreadyCharged = await txWallet.hasPlatformFeeForOrder(storeId, order.id);
+        if (!alreadyCharged) {
+          await txWallet.recordEntry({
+            storeId, type: platformResult.entryType, direction: 'debit',
+            amount: platformResult.amount,
+            referenceType: 'order', referenceId: order.id,
+            description: `رسوم منصة Haa (${describePlatformFeePolicy(platformPolicy)}) للطلب ${order.orderNumber}`,
+            status: 'available',
+            feeRatePct: platformPolicy.pct ?? null,
+            feeFixed: platformPolicy.fixed ?? null,
+            feeSource: 'platform_policy',
+            metadata: {
+              orderTotal: Number(order.total),
+              platformFeeMode: platformPolicy.mode,
+              platformFeePct: platformPolicy.pct ?? null,
+              platformFeeFixed: platformPolicy.fixed ?? null,
+              platformFeeLabel: describePlatformFeePolicy(platformPolicy),
+              appliedAt: new Date().toISOString(),
+            },
+          });
+        }
+      }
+
+      const txAudit = new AuditLogService(tx);
+      await txAudit.record({
+        actorUserId: userId ?? null, storeId, action: 'payment_status_changed',
+        entityType: 'order', entityId: order.id,
+        newValue: { paymentStatus: 'paid', method: 'bank_transfer', orderNumber: order.orderNumber },
+      });
+
+      return confirmed;
+    });
+
+    if (order.customerId) {
+      await new LoyaltyService(this.db).earnFromOrder({
+        storeId,
+        customerId: order.customerId,
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        amounts: {
+          subtotal: Number(order.subtotal),
+          tax: Number(order.taxAmount ?? 0),
+          shipping: Number(order.shippingCost ?? 0),
+        },
+      }).catch((err) => {
+        console.error(`[loyalty] bank transfer earn failed for order ${order.id}:`, err);
+      });
+    }
+
+    return updated;
+  }
+
+  async markBankTransferFailed(storeId: number, orderId: number, reason?: string, userId?: number) {
+    const order = await this.getById(storeId, orderId);
+    if (!order) throw new Error('Order not found');
+    if (order.paymentMethod !== 'bank_transfer') throw new Error('Not a bank transfer order');
+    if (order.paymentStatus === 'paid') throw new Error('Bank transfer already confirmed');
+
+    const txAudit = new AuditLogService(this.db);
+    await txAudit.record({
+      actorUserId: userId ?? null, storeId, action: 'payment_status_changed',
+      entityType: 'order', entityId: order.id,
+      newValue: { paymentStatus: order.paymentStatus, method: 'bank_transfer', failure: true, reason, orderNumber: order.orderNumber },
     });
 
     return true;
