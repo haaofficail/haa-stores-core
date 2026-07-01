@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { AdminDialog } from '../components/ui/AdminDialog';
 import { ErrorState } from '../components/ui/ErrorState';
+import { AdminEmptyState } from '../components/ui/AdminEmptyState';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
@@ -177,13 +178,19 @@ export default function Stores() {
         ) : error ? (
           <ErrorState message={t('stores.loadError', 'فشل تحميل المتاجر')} onRetry={() => refetch()} />
         ) : stores.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">{t('stores.empty', 'لا توجد متاجر')}</p>
-          </div>
+          <AdminEmptyState
+            icon="Store"
+            title={t('stores.empty', 'لا توجد متاجر')}
+            description="المتجر في المنصة يجب أن يرتبط بتاجر، رابط، بريد، وحالة تشغيل قبل قرارات الدفع أو النشر."
+            meaning="الإجراء التالي: أضف متجرًا أو افتح التجار لإنشاء رحلة تشغيل مكتملة."
+            actions={[{ label: t('stores.addStore', 'إضافة متجر'), href: '/stores' }, { label: 'عرض التجار', href: '/tenants' }]}
+          />
         ) : controls.filteredCount === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">{t('stores.noResults', 'لا توجد نتائج مطابقة')}</p>
-          </div>
+          <AdminEmptyState
+            icon="AlertCircle"
+            title={t('stores.noResults', 'لا توجد نتائج مطابقة')}
+            description="غيّر البحث قبل تعطيل متجر أو استنتاج أنه غير موجود."
+          />
         ) : (
           <>
             <table className="w-full text-sm">

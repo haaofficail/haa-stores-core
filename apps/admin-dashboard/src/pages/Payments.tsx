@@ -7,6 +7,7 @@ import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
+import { AdminEmptyState } from '../components/ui/AdminEmptyState';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
@@ -78,13 +79,22 @@ export default function Payments() {
         ) : error ? (
           <ErrorState message={t('payments.loadError', 'فشل تحميل المدفوعات')} onRetry={() => refetch()} />
         ) : payments.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">{t('payments.empty', 'لا توجد مدفوعات')}</p>
-          </div>
+          <AdminEmptyState
+            icon="CreditCard"
+            title={t('payments.empty', 'لا توجد مدفوعات')}
+            description="قد يعني ذلك عدم وجود طلبات مدفوعة مكتملة، أو أن بوابات الدفع ما زالت في وضع تجربة أو غير مهيأة."
+            meaning="الإجراء التالي: راجع إعدادات الدفع وجاهزية التسوية قبل اعتبار المتجر جاهزًا ماليًا."
+            actions={[
+              { label: 'فتح إعدادات الدفع', href: '/store-payment-settings' },
+              { label: 'فتح جاهزية التسوية', href: '/settlement-readiness' },
+            ]}
+          />
         ) : controls.filteredCount === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">{t('payments.noResults', 'لا توجد نتائج مطابقة')}</p>
-          </div>
+          <AdminEmptyState
+            icon="AlertCircle"
+            title={t('payments.noResults', 'لا توجد نتائج مطابقة')}
+            description="غيّر البحث أو راجع النطاق قبل تصدير CSV أو اتخاذ قرار مالي."
+          />
         ) : (
           <>
             <table className="w-full text-sm">
@@ -102,7 +112,14 @@ export default function Payments() {
                   <tr key={p.id} className="border-t hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 font-mono text-gray-900">#{p.id}</td>
                     <td className="px-4 py-3 font-medium text-gray-900">{p.amount} {p.currency || 'SAR'}</td>
-                    <td className="px-4 py-3 text-gray-500">{p.method || '-'}</td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {p.method || '-'}
+                      {String(p.method || '').toLowerCase().includes('fake') && (
+                        <span className="ms-2 inline-flex rounded border border-amber-100 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                          مزود وهمي — بيئة تجربة
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
                         p.status === 'completed' || p.status === 'paid' ? 'bg-green-100 text-green-700' :

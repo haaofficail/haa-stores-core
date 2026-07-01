@@ -51,12 +51,55 @@ function normalizeReadinessData(data: Partial<ReadinessData> & { storeId: number
   };
 }
 
-function StatusBadge({ ok }: { ok: boolean }) {
-  return (
-    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${ok ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-      {ok ? 'مكتمل' : 'ناقص'}
-    </span>
-  );
+function settlementBlockers(readiness: ReadinessData): Array<{ label: string; owner: string; action: string }> {
+  const blockers: Array<{ label: string; owner: string; action: string }> = [];
+  if (!readiness.safeguardedAccountConfigured) {
+    blockers.push({
+      label: 'الحساب المحمي غير مهيأ',
+      owner: 'المالية',
+      action: 'تأكيد الحساب المحمي قبل السماح بالسحب.',
+    });
+  }
+  if (!readiness.pspSettlementPartnerConfirmed) {
+    blockers.push({
+      label: 'شريك PSP غير مؤكد',
+      owner: 'الأدمن / المزود',
+      action: 'افتح إعدادات الدفع وتأكد من شريك التسوية.',
+    });
+  }
+  if (!readiness.merchantOfRecordConfirmed) {
+    blockers.push({
+      label: 'Merchant of Record غير محدد',
+      owner: 'قانوني / المالية',
+      action: 'وثق مسؤولية البيع قبل اعتماد التسوية.',
+    });
+  }
+  if (readiness.samaComplianceStatus !== 'confirmed') {
+    blockers.push({
+      label: readiness.samaComplianceStatus === 'in_progress' ? 'امتثال ساما قيد الاستكمال' : 'امتثال ساما غير مؤكد',
+      owner: 'الامتثال',
+      action: 'لا تعتمد السحب حتى تصبح حالة ساما مؤكدة.',
+    });
+  }
+  return blockers;
+}
+
+function settlementDecision(readiness: ReadinessData) {
+  const blockers = settlementBlockers(readiness);
+  const ready = blockers.length === 0;
+  return {
+    ready,
+    blockers,
+    decisionLabel: ready ? 'جاهز للتسوية' : 'غير جاهز',
+    withdrawalLabel: ready ? 'مسموح' : 'محظور',
+    decisionClass: ready
+      ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+      : 'bg-red-50 text-red-700 border-red-100',
+    withdrawalClass: ready
+      ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+      : 'bg-amber-50 text-amber-700 border-amber-100',
+    ownerLabel: ready ? 'لا إجراء' : Array.from(new Set(blockers.map(blocker => blocker.owner))).join(' / '),
+  };
 }
 
 function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
@@ -199,7 +242,7 @@ export default function SettlementReadiness() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900">جاهزية التسوية</h2>
-        <p className="text-sm text-gray-500 mt-1">إدارة حالة جاهزية التسوية المالية لكل متجر</p>
+        <p className="text-sm text-gray-500 mt-1">قرار مالي لكل متجر: هل السحب مسموح، ما الموانع، ومن المسؤول عن الإغلاق.</p>
       </div>
 
       <div>
@@ -223,23 +266,42 @@ export default function SettlementReadiness() {
           <thead className="bg-gray-50 border-b">
             <tr>
               <SortableTh sortKey="name" label="المتجر" sort={controls.sort} onToggle={controls.toggleSort} />
-              <th className="text-start px-4 py-3 font-medium text-gray-600">حساب أمان</th>
-              <th className="text-start px-4 py-3 font-medium text-gray-600">شريك PSP</th>
-              <th className="text-start px-4 py-3 font-medium text-gray-600">MoR</th>
+              <th className="text-start px-4 py-3 font-medium text-gray-600">القرار المالي</th>
+              <th className="text-start px-4 py-3 font-medium text-gray-600">السحب</th>
+              <th className="text-start px-4 py-3 font-medium text-gray-600">الموانع</th>
+              <th className="text-start px-4 py-3 font-medium text-gray-600">المسؤول</th>
               <th className="text-start px-4 py-3 font-medium text-gray-600">امتثال ساما</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y">
             {controls.rows.map(store => {
-              const r = readinessMap[store.id];
+              const r = readinessMap[store.id] ?? normalizeReadinessData({
+                storeId: store.id,
+                safeguardedAccountConfigured: false,
+                pspSettlementPartnerConfirmed: false,
+                merchantOfRecordConfirmed: false,
+                samaComplianceStatus: 'unconfirmed',
+              });
               const samaStatus = normalizeSamaStatus(r?.samaComplianceStatus);
+              const decision = settlementDecision(r);
               return (
                 <tr key={store.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 font-medium text-gray-900">{store.name}</td>
-                  <td className="px-4 py-3"><StatusBadge ok={r?.safeguardedAccountConfigured ?? false} /></td>
-                  <td className="px-4 py-3"><StatusBadge ok={r?.pspSettlementPartnerConfirmed ?? false} /></td>
-                  <td className="px-4 py-3"><StatusBadge ok={r?.merchantOfRecordConfirmed ?? false} /></td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex rounded border px-2 py-1 text-xs font-semibold ${decision.decisionClass}`}>
+                      {decision.decisionLabel}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex rounded border px-2 py-1 text-xs font-semibold ${decision.withdrawalClass}`}>
+                      {decision.withdrawalLabel}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600">
+                    {decision.blockers.length === 0 ? 'لا توجد موانع' : `${decision.blockers.length} موانع`}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500">{decision.ownerLabel}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${SAMA_STATUS_COLORS[samaStatus]}`}>
                       {SAMA_LABELS[samaStatus]}
@@ -280,6 +342,25 @@ export default function SettlementReadiness() {
               <p className="text-xs text-gray-500 mt-0.5">
                 {canUpdateSettlementReadiness ? 'عدّل الحقول ثم احفظ' : 'عرض فقط — يتطلب التعديل صلاحية اعتماد الصرف'}
               </p>
+            </div>
+
+            <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+              {settlementDecision(form).ready ? (
+                <p className="text-sm font-semibold text-emerald-700">قرار التسوية: جاهز، ولا توجد موانع ظاهرة.</p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-red-700">قرار التسوية: غير جاهز. السحب محظور حتى إغلاق الموانع.</p>
+                  <ul className="space-y-1 text-xs leading-5 text-gray-600">
+                    {settlementDecision(form).blockers.map(blocker => (
+                      <li key={blocker.label}>
+                        <span className="font-semibold text-gray-800">{blocker.label}</span>
+                        {' — '}
+                        يمنع السحب — المسؤول: {blocker.owner}. الإجراء التالي: {blocker.action}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">

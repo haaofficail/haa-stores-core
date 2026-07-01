@@ -93,31 +93,33 @@ const navGroup = (label: string, entries: string[]): NavGroup => ({
 
 const navGroups: NavGroup[] = [
   navGroup('عام', ['/|الرئيسية|LayoutDashboard|dashboard:view']),
-  navGroup('إدارة', [
+  navGroup('التجار والمتاجر', [
     '/tenants|التجار|Users|tenants.read',
     '/stores|المتاجر|Store|stores.read',
-    '/store-billing|رسوم المتاجر|CreditCard|billing.platform_fee.read',
-    '/kyc|التحقق|ShieldCheck|kyc.read',
+    '/compliance|توثيق المتاجر|CheckSquare|tenants.read',
+    '/kyc|طلبات التحقق|ShieldCheck|kyc.read',
     '/bank-accounts|الحسابات البنكية|Building2|kyc.read',
+  ]),
+  navGroup('الماليات', [
+    '/payments|المدفوعات|BarChart2|payments.read',
     '/settlement-readiness|جاهزية التسوية|CheckSquare|wallet.payout.view_all',
+    '/finance/settlement-inbox|صندوق التسويات|Inbox|wallet.payout.view_all',
+    '/payments/settlements|التسويات|Landmark|wallet.payout.view_all',
+    '/finance/reports|التقارير المالية|BarChart2|wallet.payout.view_all',
+    '/store-billing|رسوم المتاجر|CreditCard|billing.platform_fee.read',
     '/store-payment-settings|إعدادات الدفع|CreditCard|stores.read',
   ]),
-  navGroup('مالية', [
-    '/finance/settlement-inbox|صندوق التسويات|Inbox|wallet.payout.view_all',
-    '/finance/reports|التقارير المالية|BarChart2|wallet.payout.view_all',
-    '/payments|المدفوعات|BarChart2|payments.read',
+  navGroup('السوق', [
     '/marketplace|سوق هاء|ShoppingBag|marketplace.read',
-    '/payments/settlements|التسويات|Landmark|wallet.payout.view_all',
   ]),
   navGroup('نظام', [
-    '/security|أمان الحساب|ShieldCheck',
     '/users|المستخدمون|UserCog|users.read',
+    '/security|أمان الحساب|ShieldCheck',
     '/audit|سجل التدقيق|ScrollText|audit.read',
-    '/operations/webhooks|عمليات Webhooks|FileText|webhooks.read',
+    '/operations/webhooks|Webhooks|FileText|webhooks.read',
     '/plans|الباقات|Package|plans.read',
-    '/compliance|توثيق المتاجر|CheckSquare|tenants.read',
     '/landing-inbox|صندوق الوارد|Inbox|landing_contacts.read',
-    '/settings|الإعدادات|Settings|platform.settings.read',
+    '/settings|إعدادات المنصة|Settings|platform.settings.read',
   ]),
 ];
 

@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Icon } from '../components/ui/icon';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
+import { AdminEmptyState } from '../components/ui/AdminEmptyState';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
@@ -90,13 +91,19 @@ export default function KycReview() {
         ) : error ? (
           <ErrorState message={t('kyc.loadError', 'فشل تحميل ملفات التحقق')} onRetry={() => refetch()} />
         ) : profiles.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">{t('kyc.noProfiles', 'لا توجد ملفات تحقق للمراجعة')}</p>
-          </div>
+          <AdminEmptyState
+            icon="ShieldCheck"
+            title={t('kyc.noProfiles', 'لا توجد ملفات تحقق للمراجعة')}
+            description="هذا لا يعني أن كل التجار موثقون؛ قد يعني أن التجار لم يبدؤوا التوثيق أو لم يرسلوا طلبًا بعد."
+            meaning="الإجراء التالي: افتح توثيق المتاجر لعرض غير المكتملين وموانع النشر."
+            actions={[{ label: 'فتح توثيق المتاجر', href: '/compliance' }]}
+          />
         ) : controls.filteredCount === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">{t('kyc.noResults', 'لا توجد نتائج مطابقة')}</p>
-          </div>
+          <AdminEmptyState
+            icon="AlertCircle"
+            title={t('kyc.noResults', 'لا توجد نتائج مطابقة')}
+            description="غيّر البحث قبل اعتبار قائمة التحقق خالية من الطلبات."
+          />
         ) : (
           <>
           <table className="w-full text-sm">

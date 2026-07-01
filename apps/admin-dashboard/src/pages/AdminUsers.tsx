@@ -6,6 +6,7 @@ import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
+import { AdminEmptyState } from '../components/ui/AdminEmptyState';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
@@ -53,13 +54,19 @@ export default function AdminUsers() {
         ) : error ? (
           <ErrorState message="فشل تحميل المستخدمين" onRetry={() => refetch()} />
         ) : users.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">لا يوجد مستخدمون</p>
-          </div>
+          <AdminEmptyState
+            icon="UserCog"
+            title="لا يوجد مستخدمون إداريون"
+            description="يجب أن تظهر أدوار المنصة وصلاحياتها و2FA وآخر دخول قبل اعتبار صفحة المستخدمين جاهزة للتشغيل المؤسسي."
+            meaning="الإجراء التالي: راجع أمان الحساب والصلاحيات قبل إضافة مشغّلين جدد."
+            actions={[{ label: 'فتح أمان الحساب', href: '/security' }]}
+          />
         ) : controls.filteredCount === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">لا توجد نتائج مطابقة</p>
-          </div>
+          <AdminEmptyState
+            icon="AlertCircle"
+            title="لا توجد نتائج مطابقة"
+            description="غيّر البحث قبل افتراض عدم وجود مستخدم أو دور معيّن."
+          />
         ) : (
           <>
             <table className="w-full text-sm">

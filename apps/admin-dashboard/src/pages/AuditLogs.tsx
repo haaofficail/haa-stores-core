@@ -7,6 +7,7 @@ import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
+import { AdminEmptyState } from '../components/ui/AdminEmptyState';
 import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
 import { useTableControls } from '../lib/useTableControls';
@@ -71,13 +72,18 @@ export default function AuditLogs() {
         ) : error ? (
           <ErrorState message={t('auditLogs.loadError', 'فشل تحميل سجل التدقيق')} onRetry={() => refetch()} />
         ) : logs.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">{t('auditLogs.empty', 'لا توجد سجلات')}</p>
-          </div>
+          <AdminEmptyState
+            icon="ScrollText"
+            title={t('auditLogs.empty', 'لا توجد سجلات ضمن النطاق الحالي')}
+            description="إذا كانت هناك تعديلات حديثة، فهذا يحتاج فحص فلترة أو ربط audit API بدل اعتباره وضعًا طبيعيًا."
+            meaning="الإجراء التالي: وسّع البحث أو راجع آخر عمليات مالية/تعطيل للتأكد من تسجيل السبب."
+          />
         ) : controls.filteredCount === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-footnote text-gray-400">{t('auditLogs.noResults', 'لا توجد نتائج مطابقة')}</p>
-          </div>
+          <AdminEmptyState
+            icon="AlertCircle"
+            title={t('auditLogs.noResults', 'لا توجد سجلات ضمن الفلتر الحالي')}
+            description="لا تغيّر قرارًا تشغيليًا حتى تتأكد أن الفلتر لا يخفي السجلات المطلوبة."
+          />
         ) : (
           <>
             <table className="w-full text-sm">
