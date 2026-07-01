@@ -18,6 +18,7 @@ const readinessPage = read('apps/admin-dashboard/src/pages/SettlementReadiness.t
 const accountantDetailPage = read('apps/admin-dashboard/src/pages/AccountantSettlementDetail.tsx');
 const settlementBatchDetailPage = read('apps/admin-dashboard/src/pages/SettlementBatchDetail.tsx');
 const adminApi = read('apps/admin-dashboard/src/lib/api.ts');
+const walletLedger = read('packages/wallet-core/src/ledger.ts');
 
 describe('admin financial exports are permissioned, audited, and scoped', () => {
   it('payments CSV uses the server route guarded by wallet.payout.export', () => {
@@ -65,6 +66,8 @@ describe('admin financial actions match backend permissions and contracts', () =
     expect(readinessPage).toContain("hasAdminPermission('wallet.payout.approve')");
     expect(readinessPage).toContain('disabled={!canUpdateSettlementReadiness || saving}');
     expect(readinessPage).toContain('normalizeSamaStatus');
+    expect(walletLedger).toContain("readiness.samaComplianceStatus === 'confirmed'");
+    expect(walletLedger).not.toContain("readiness.samaComplianceStatus !== 'unconfirmed'");
   });
 
   it('accountant detail gates transfer and receipt actions by their specific mutation permissions', () => {
