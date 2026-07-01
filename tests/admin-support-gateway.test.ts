@@ -10,6 +10,7 @@ const APP_PATH = 'apps/admin-dashboard/src/App.tsx';
 const API_CLIENT_PATH = 'apps/admin-dashboard/src/lib/api.ts';
 const ADMIN_ROUTE_PATH = 'apps/api/src/routes/admin/support-gateway.ts';
 const ADMIN_INDEX_PATH = 'apps/api/src/routes/admin/index.ts';
+const ADMIN_SERVICE_PATH = 'apps/api/src/services/admin-support-gateway.ts';
 const PERMISSIONS_PATH = 'packages/shared/src/permissions.ts';
 
 describe('Admin Support Gateway visibility and safety', () => {
@@ -50,6 +51,7 @@ describe('Admin Support Gateway visibility and safety', () => {
     const index = read(ADMIN_INDEX_PATH);
     expect(route).toContain('listSupportGatewayTickets');
     expect(route).toContain('listSupportGatewayTicketsQuerySchema');
+    expect(route).not.toContain("from 'drizzle-orm'");
     expect(index).toContain('/support-gateway/tickets');
     expect(index).toContain("requireAdminPermission('support.gateway.read')");
     expect(index).not.toContain("requireAdminPermission('support:update')");
@@ -57,8 +59,10 @@ describe('Admin Support Gateway visibility and safety', () => {
 
   it('does not expose customer support access tokens in the admin read model', () => {
     const route = read(ADMIN_ROUTE_PATH);
+    const service = read(ADMIN_SERVICE_PATH);
     expect(route).not.toContain('accessToken:');
-    expect(route).not.toContain('s.supportTickets.accessToken');
-    expect(route).toContain('messagePreview');
+    expect(service).not.toContain('accessToken:');
+    expect(service).not.toContain('s.supportTickets.accessToken');
+    expect(service).toContain('messagePreview');
   });
 });

@@ -4,7 +4,7 @@
 
 - Added a read-only platform-admin Support Gateway at `/support-gateway`, visible in the admin sidebar under system operations when the admin has `support.gateway.read`.
 - Added platform-admin permission catalog support for `support.gateway.read` instead of reusing merchant/store-scoped `support:*` employee permissions.
-- Added `/admin/support-gateway/tickets` with admin auth, `support.gateway.read`, query validation, store/tenant context, summaries, safe message previews, and no support `accessToken` selection.
+- Added `/admin/support-gateway/tickets` with admin auth, `support.gateway.read`, query validation, and a service-layer read model with store/tenant context, summaries, safe message previews, and no support `accessToken` selection.
 - Added admin API-client types/helpers and a decision-oriented Arabic page with summary cards, filters, smart empty state, tenant links, and an explicit bridge to `/landing-inbox` for contact leads.
 - Added regression coverage for the route, nav item, permission reflection, API guard, and no access-token exposure.
 - Verification passed: focused support/permission/IA tests, shared build, API/admin typechecks, admin build, brand/typography tests, browser QA, `pnpm check:skills`, clean `git diff --check`, and `CI=true pnpm preflight`.

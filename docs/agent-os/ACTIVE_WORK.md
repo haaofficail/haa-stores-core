@@ -55,8 +55,8 @@ blockers (`private tests` limit and `No tests detected`).
 
 Support Gateway follow-up: root cause was a missing platform-admin support-ticket
 contract, not a CSS/nav-only bug. The branch now adds `support.gateway.read`,
-`/support-gateway`, `/admin/support-gateway/tickets`, admin API-client wiring,
-and tests proving no support `accessToken` is selected or rendered.
+`/support-gateway`, `/admin/support-gateway/tickets`, service-layer read model,
+admin API-client wiring, and tests proving no support `accessToken` is selected or rendered.
 
 ## Previous task
 
