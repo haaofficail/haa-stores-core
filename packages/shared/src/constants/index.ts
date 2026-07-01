@@ -1,7 +1,23 @@
 export const ORDER_STATUS_TRANSITIONS: Record<string, string[]> = {
   draft: ['checkout_started', 'pending_payment', 'cancelled'],
   checkout_started: ['pending_payment', 'cancelled'],
-  pending_payment: ['confirmed', 'cancelled', 'refunded'],
+  // pending_payment -> payment_failed: the online-payment "declined/error"
+  // branch in CheckoutService.confirm() (checkout.ts) marks the order
+  // payment_failed right after creating it as pending_payment. Found missing
+  // via tests/checkout-financial-flows.integration.test.ts — every declined
+  // card payment threw "Cannot transition from 'pending_payment' to
+  // 'payment_failed'" instead of failing gracefully.
+  pending_payment: ['confirmed', 'cancelled', 'refunded', 'payment_failed'],
+  // awaiting_3ds: the SAMA-mandated 3DS challenge state (checkout.ts sets it
+  // while the customer is at the issuer's challenge page). The async
+  // confirmation webhook resolves it to confirmed (paid), cancelled, or
+  // payment_failed — none of which were reachable before this fix because
+  // awaiting_3ds had no entry here at all.
+  awaiting_3ds: ['confirmed', 'cancelled', 'payment_failed'],
+  // payment_failed: terminal for this order; the customer retries via a new
+  // checkout session/order rather than mutating this one (matches the demo
+  // seed's own payment_failed handling).
+  payment_failed: ['cancelled'],
   confirmed: ['processing', 'cancelled', 'refunded'],
   processing: ['ready_to_ship', 'ready_for_pickup', 'cancelled'],
   ready_to_ship: ['shipped', 'cancelled'],

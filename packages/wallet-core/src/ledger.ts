@@ -233,12 +233,18 @@ export class WalletLedger {
     tx: DbTransaction,
     storeId: number,
   ) {
-    const rows = await tx.execute(
-      sql`SELECT * FROM ${s.walletAccounts} WHERE ${s.walletAccounts.storeId} = ${storeId} LIMIT 1 FOR UPDATE`,
-    );
-    const row = (rows as unknown as { rows?: unknown[] }).rows?.[0]
-      ?? (Array.isArray(rows) ? rows[0] : undefined);
-    if (row) return row as typeof s.walletAccounts.$inferSelect;
+    // Bug found while writing tests/checkout-financial-flows.integration.test.ts:
+    // this used to run a raw `SELECT * ... FOR UPDATE` via tx.execute(sql`...`),
+    // which returns postgres.js's native snake_case column names (pending_balance,
+    // available_balance, ...) instead of the camelCase shape every other read path
+    // gets from drizzle's query builder. calculateBalances() then read
+    // account.pendingBalance as undefined and threw a DecimalError — on every
+    // wallet posting for a store that already had an account row (i.e. after its
+    // first entry). Using the query builder's own `.for('update')` keeps the same
+    // row lock while going through drizzle's normal column mapping.
+    const [row] = await tx.select().from(s.walletAccounts)
+      .where(eq(s.walletAccounts.storeId, storeId)).limit(1).for('update');
+    if (row) return row;
     const [created] = await tx.insert(s.walletAccounts).values({
       storeId, balance: '0', pendingBalance: '0', availableBalance: '0',
     }).returning();
