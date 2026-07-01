@@ -1,5 +1,15 @@
 # Internal Changelog
 
+## 2026-07-01 — Main Change-password Tenant Context Typecheck Fix (TASK-0141)
+
+- Fixed the current `origin/main` TypeScript/preflight blocker in `apps/api/src/routes/auth.ts`.
+- Kept `tenantId` and `storeId` as server-side JWT context passed to `AuthFlowService.changePassword()` for audit logging.
+- Did not add `tenantId` or `storeId` to the public `/auth/change-password` request schema.
+- Avoided mixing TASK-0134..0140 stack changes into this independent main blocker branch.
+- Extended `tests/merchant-account-security.test.ts` to guard that `changePasswordSchema` remains limited to password fields.
+- Verification passed: `pnpm ops:monitor`, `pnpm --filter @haa/api typecheck`, focused auth/account-security suite 4 files / 34 tests, `pnpm typecheck`, `pnpm preflight`, `pnpm --filter @haa/api build`, `pnpm check:skills`, and `git diff --check`.
+- Safety boundary unchanged: no push, no deploy, no `db:migrate`, no production config, no secrets, no runtime files kept, and no live provider calls.
+
 ## 2026-06-30 — Merchant WhatsApp Campaign Workflow (TASK-0133)
 
 - Extended the merchant WhatsApp page from QR/local pairing only to an end-to-end campaign workflow.

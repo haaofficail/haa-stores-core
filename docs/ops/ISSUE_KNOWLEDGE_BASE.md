@@ -5,6 +5,24 @@
 
 ---
 
+### ISSUE-0070: Main Change-password Route Failed Against Stale Commerce-core Declaration
+
+- **ID:** ISSUE-0070
+- **Date:** 2026-07-01
+- **Severity:** High (main CI/preflight blocker / auth route)
+- **Area:** API Auth / Commerce Core Type Contract / Local Package Declarations
+- **Related Tasks:** TASK-0141
+- **Symptoms:** `pnpm typecheck` and `pnpm preflight` failed on `origin/main` with `apps/api/src/routes/auth.ts(452,9): 'tenantId' does not exist in type 'ChangePasswordInput'`.
+- **Expected:** `/auth/change-password` should pass the signed-in user's `tenantId` and active store as server-side context to the service for audit logging, while the request payload schema stays limited to current and new password fields.
+- **Actual:** The route passed an inline object literal with `tenantId` and `storeId` directly to `AuthFlowService.changePassword()`. The commerce-core source interface already had these fields, but the ignored local `packages/commerce-core/dist/auth-flow.d.ts` declaration was stale and did not include them, so TypeScript excess-property checking blocked API typecheck.
+- **Root Cause:** PR #345 updated source-level `ChangePasswordInput`, but the API package consumes `@haa/commerce-core` through package export declarations. The ignored local `dist` declaration can lag behind source, and direct inline object literals trigger excess-property checks against that stale declaration.
+- **Fix:** Build the change-password input as a local server-side object before passing it into `service.changePassword()`, preserving runtime `tenantId`/`storeId` context without expanding the public request schema. Added a regression guard that `changePasswordSchema` does not accept `tenantId` or `storeId`.
+- **Verification:** `pnpm --filter @haa/api typecheck` passed. `pnpm vitest run tests/merchant-account-security.test.ts tests/route-migration-1-auth.test.ts tests/auth-regression.test.ts tests/account-page-contract.test.ts` passed 4 files / 34 tests. `pnpm typecheck`, `pnpm preflight`, `pnpm --filter @haa/api build`, `pnpm check:skills`, and `git diff --check` passed.
+- **Prevention:** Keep `tests/merchant-account-security.test.ts` asserting password-change tenant/store context comes from JWT/server context and not from the request schema. Rebuild workspace package declarations when package export types drift during local verification.
+- **Status:** Fixed locally on `fix/main-change-password-tenant-id`; no push, deploy, migration, secret handling, production action, or live provider call occurred.
+
+---
+
 ### ISSUE-0069: Merchant WhatsApp Campaign Backend Was Hidden Behind QR-only UI
 
 - **ID:** ISSUE-0069

@@ -447,7 +447,7 @@ authRouter.post(
     const service = new AuthFlowService();
 
     try {
-      const result = await service.changePassword({
+      const changePasswordInput = {
         userId: auth.userId,
         tenantId: auth.tenantId,
         storeId: auth.activeStoreId,
@@ -455,7 +455,9 @@ authRouter.post(
         newPassword: body.newPassword,
         ipAddress,
         userAgent,
-      });
+      };
+
+      const result = await service.changePassword(changePasswordInput);
 
       if (!result.ok) {
         const messages: Record<typeof result.reason, string> = {

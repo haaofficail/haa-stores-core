@@ -28,6 +28,11 @@ describe('merchant account security — backend contract', () => {
     expect(AUTH_ROUTE).toMatch(/rateLimiter\(\{[\s\S]{0,220}maxRequests:\s*10/);
     expect(AUTH_ROUTE).toMatch(/currentPassword:\s*z\.string\(\)\.min\(1\)\.max\(200\)/);
     expect(AUTH_ROUTE).toMatch(/newPassword:\s*z\.string\(\)\.min\(8/);
+    const schemaBlock = AUTH_ROUTE.slice(
+      AUTH_ROUTE.indexOf('const changePasswordSchema'),
+      AUTH_ROUTE.indexOf('authRouter.post(', AUTH_ROUTE.indexOf('const changePasswordSchema')),
+    );
+    expect(schemaBlock).not.toMatch(/tenantId|storeId/);
   });
 
   it('rotates the password only after verifying the current password', () => {
