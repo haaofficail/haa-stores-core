@@ -15,6 +15,7 @@ import { type AdminAuthContext, requireAdminAuth, requireAdminTwoFactorIfEnabled
 import type { AdminPermission } from '@haa/shared';
 import { idempotencyKey } from '../../middleware/idempotency-key.js';
 import { rateLimiter } from '../../middleware/rate-limiter.js';
+import { csrfProtection } from '../../middleware/csrf.js';
 
 import {
   adminTotpStatusRoute,
@@ -287,6 +288,9 @@ const ibanRevealSchema = z.object({
 });
 
 const adminRouter = new Hono<{ Variables: { adminAuth: AdminAuthContext } }>();
+
+// Apply CSRF protection globally to admin routes (P2-CSRF: defense-in-depth for state-change endpoints)
+adminRouter.use(csrfProtection());
 
 // /login (no auth required)
 adminRouter.post(
