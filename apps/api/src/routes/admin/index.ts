@@ -289,7 +289,21 @@ const ibanRevealSchema = z.object({
 const adminRouter = new Hono<{ Variables: { adminAuth: AdminAuthContext } }>();
 
 // /login (no auth required)
-adminRouter.post('/login', zValidator('json', loginSchema), loginRoute);
+adminRouter.post(
+  '/login',
+  // P1-5 audit fix: this route had no rate limit at all (unlike
+  // password-reset below), leaving admin accounts — which can reach
+  // IBAN reveal and financial approvals — open to unlimited brute-force
+  // when TOTP is not enabled on the account. Tighter than merchant
+  // /auth/login (20/15min) given the higher blast radius.
+  rateLimiter({
+    windowMs: 15 * 60 * 1000,
+    maxRequests: 10,
+    message: 'تم تجاوز الحد المسموح من محاولات تسجيل الدخول. حاول لاحقًا.',
+  }),
+  zValidator('json', loginSchema),
+  loginRoute,
+);
 adminRouter.post(
   '/login/password-reset/request',
   rateLimiter({

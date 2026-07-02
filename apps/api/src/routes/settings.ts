@@ -162,13 +162,19 @@ settingsRouter.put('/product-features', requirePermission('settings:update'), zV
 
 // ── Theme ────────────────────────────────────────────────
 
-settingsRouter.get('/theme', requirePermission('stores:read'), async (c) => {
+// P1-10 audit fix: the merchant-dashboard UI gates /theme on the
+// catalog's dedicated `theme:view`/`theme:update` permissions (see
+// packages/shared/src/permissions.ts), but these routes were still
+// checking the coarse `stores:read`/`settings:update` — an employee
+// granted only `theme:*` (no `settings:*`) would see the page load then
+// get 403 on every call.
+settingsRouter.get('/theme', requirePermission('theme:view'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const data = await new StoreSettingsService().getTheme(storeId);
   return c.json({ success: true, data });
 });
 
-settingsRouter.put('/theme', requirePermission('settings:update'), zValidator('json', z.object({
+settingsRouter.put('/theme', requirePermission('theme:update'), zValidator('json', z.object({
   preset: z.string().optional(),
   themeKey: z.string().optional(),
   colors: z.object({
@@ -238,7 +244,7 @@ settingsRouter.put('/theme', requirePermission('settings:update'), zValidator('j
   return c.json({ success: true, data: config, history });
 });
 
-settingsRouter.get('/theme/history', requirePermission('stores:read'), async (c) => {
+settingsRouter.get('/theme/history', requirePermission('theme:view'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const data = await new StoreSettingsService().getThemeHistory(storeId);
   return c.json({ success: true, data });

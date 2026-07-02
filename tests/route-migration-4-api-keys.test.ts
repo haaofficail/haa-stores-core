@@ -51,14 +51,22 @@ describe('Quality Pass 5 — Route Migration 4/24: api-keys.ts', () => {
     expect(content).toMatch(/apiKeysRouter\.get\(['"]\/logs['"]/);
   });
 
-  it('api-keys.ts must preserve all 4 permission requirements', () => {
+  it('api-keys.ts must use the dedicated api_keys:* permissions (P1-10 audit fix)', () => {
+    // Was settings:read/settings:update — the merchant-dashboard UI has
+    // always gated /api-keys on the catalog's dedicated api_keys:view/
+    // create/revoke (packages/shared/src/permissions.ts), so an employee
+    // granted only api_keys:* (no settings:*) saw the page load then got
+    // 403 on every call. Routes now match the UI's permission keys.
     const content = read(apiKeysRouteFile);
-    // settings:read (3 uses: GET /, GET /scopes, GET /logs)
-    const readMatches = content.match(/requirePermission\(['"]settings:read['"]\)/g) || [];
-    expect(readMatches.length).toBe(3);
-    // settings:update (2 uses: POST /, DELETE /:keyId)
-    const updateMatches = content.match(/requirePermission\(['"]settings:update['"]\)/g) || [];
-    expect(updateMatches.length).toBe(2);
+    // api_keys:view (3 uses: GET /, GET /scopes, GET /logs)
+    const viewMatches = content.match(/requirePermission\(['"]api_keys:view['"]\)/g) || [];
+    expect(viewMatches.length).toBe(3);
+    // api_keys:create (1 use: POST /)
+    const createMatches = content.match(/requirePermission\(['"]api_keys:create['"]\)/g) || [];
+    expect(createMatches.length).toBe(1);
+    // api_keys:revoke (1 use: DELETE /:keyId)
+    const revokeMatches = content.match(/requirePermission\(['"]api_keys:revoke['"]\)/g) || [];
+    expect(revokeMatches.length).toBe(1);
   });
 
   it('api-keys.ts must preserve the file-level requireAuth + requireStoreAccess', () => {

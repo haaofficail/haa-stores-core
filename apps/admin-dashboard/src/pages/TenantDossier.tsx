@@ -463,7 +463,9 @@ export default function TenantDossier() {
 
   const auditQuery = useQuery<StoreScopedRow[]>({
     queryKey: [...queryKeys.auditLogs, 'tenantDossier', numericTenantId],
-    queryFn: () => adminApi.getAuditLogs({ tenantId: numericTenantId }) as Promise<StoreScopedRow[]>,
+    // P1-9 audit fix: getAuditLogs now returns a paginated envelope
+    // ({data, page, limit, total, totalPages}), not a bare array.
+    queryFn: async () => (await adminApi.getAuditLogs({ tenantId: numericTenantId, limit: 200 })).data as StoreScopedRow[],
     enabled: canReadAudit && Number.isFinite(numericTenantId),
   });
 

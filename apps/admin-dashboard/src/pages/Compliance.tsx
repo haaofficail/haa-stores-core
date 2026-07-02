@@ -850,7 +850,9 @@ export default function Compliance() {
 
   const paymentsQuery = useQuery<StoreScopedRow[]>({
     queryKey: [...queryKeys.payments, 'merchantFile', selectedRecord?.storeId ?? selectedRecord?.tenantId ?? null],
-    queryFn: () => adminApi.getPayments({ storeId: selectedRecord!.storeId! }) as Promise<StoreScopedRow[]>,
+    // P1-9 audit fix: getPayments now returns a paginated envelope
+    // ({data, page, limit, total, totalPages}), not a bare array.
+    queryFn: async () => (await adminApi.getPayments({ storeId: selectedRecord!.storeId!, limit: 200 })).data as StoreScopedRow[],
     enabled: isMerchantFile && canReadPayments && Boolean(selectedRecord?.storeId),
   });
 
@@ -874,7 +876,16 @@ export default function Compliance() {
 
   const auditQuery = useQuery<StoreScopedRow[]>({
     queryKey: [...queryKeys.auditLogs, 'merchantFile', selectedRecord?.storeId ?? selectedRecord?.tenantId ?? null],
-    queryFn: () => adminApi.getAuditLogs() as Promise<StoreScopedRow[]>,
+    // P1-9 audit fix: this called getAuditLogs() completely unscoped
+    // (no tenantId/storeId), which — before this fix — the backend
+    // always answered with an empty array. Now scoped to the selected
+    // merchant's tenant/store, and getAuditLogs returns a paginated
+    // envelope ({data, page, limit, total, totalPages}), not a bare array.
+    queryFn: async () => (await adminApi.getAuditLogs({
+      tenantId: selectedRecord?.tenantId ?? undefined,
+      storeId: selectedRecord?.storeId ?? undefined,
+      limit: 200,
+    })).data as StoreScopedRow[],
     enabled: isMerchantFile && canReadAudit && Boolean(selectedRecord),
   });
 

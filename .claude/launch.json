@@ -13,6 +13,18 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@haa/storefront", "dev"],
       "port": 5174
+    },
+    {
+      "name": "admin-dashboard",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@haa/admin-dashboard", "dev"],
+      "port": 5175
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@haa/api", "dev"],
+      "port": 3000
     }
   ]
 }

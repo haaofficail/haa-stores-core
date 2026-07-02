@@ -70,7 +70,10 @@ describe('Storefront Checkout — redeem widget (L-PR-6)', () => {
 
   it('subtracts the server-returned discount from the total', () => {
     // total uses loyaltyDiscount (which is set ONLY from redeemQuote.value).
-    expect(CHECKOUT).toMatch(/const total\s*=\s*Math\.max\(0,\s*subtotal\s*\+\s*shippingCost\s*-\s*loyaltyDiscount/);
+    // P1-6: total also subtracts couponDiscount (server-validated via
+    // checkoutApi.validateCoupon) — the coupon is no longer silently
+    // dropped from the reviewed total.
+    expect(CHECKOUT).toMatch(/const total\s*=\s*Math\.max\(0,\s*subtotal\s*\+\s*shippingCost\s*-\s*couponDiscount\s*-\s*loyaltyDiscount/);
     expect(CHECKOUT).toMatch(/const loyaltyDiscount\s*=\s*redeemQuote\s*\?\s*Math\.max\(0,\s*redeemQuote\.value\)/);
   });
 

@@ -97,6 +97,12 @@ export default function Checkout() {
   const [redeemQuote, setRedeemQuote] = useState<{ points: number; value: number } | null>(null);
   const [redeemError, setRedeemError] = useState<string | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+  // P1-6 fix: couponCode arrives via ?coupon= from the Cart page, but its
+  // discount VALUE never made it here — the displayed total silently
+  // ignored a coupon the server would still apply on confirm. Re-validate
+  // (server-authoritative, same endpoint Cart.tsx uses) so the reviewed
+  // total matches what gets charged.
+  const [couponDiscount, setCouponDiscount] = useState<number>(0);
 
   useSEO({ title: t('checkout.title', 'إتمام الطلب'), noIndex: true });
 
@@ -174,6 +180,22 @@ export default function Checkout() {
       .catch(() => { if (!cancelled) setLoyaltyBalance(null); });
     return () => { cancelled = true; };
   }, [slug, customer.phone]);
+
+  // P1-6 fix: re-validate the coupon from ?coupon= against the CURRENT
+  // subtotal/shipping so the reviewed total reflects the discount the
+  // server will actually apply on confirm. Uses shippingRates/
+  // selectedShippingId directly (not the post-guard `shippingCost`
+  // const below) since hooks must run unconditionally before the
+  // `!cart` early return.
+  useEffect(() => {
+    if (!slug || !couponCode || !cart) { setCouponDiscount(0); return; }
+    let cancelled = false;
+    const rate = shippingRates.find((r) => r.shippingMethodId === selectedShippingId);
+    checkoutApi.validateCoupon(slug, couponCode, toMoneyNumber(cart.subtotal), toMoneyNumber(rate?.baseRate))
+      .then((res) => { if (!cancelled) setCouponDiscount(res.valid ? toMoneyNumber(res.discount) : 0); })
+      .catch(() => { if (!cancelled) setCouponDiscount(0); });
+    return () => { cancelled = true; };
+  }, [slug, couponCode, cart, shippingRates, selectedShippingId]);
 
   // Safety clamp: when fulfillmentType changes, the dynamic step list
   // shrinks/grows; ensure currentStep never points past the last step.
@@ -309,6 +331,10 @@ export default function Checkout() {
         paymentMethod,
         idempotencyKey: idempotencyKeyRef.current,
         couponCode,
+        // P0-2 fix: the server re-validates this against the current
+        // balance/rules (never trusts redeemQuote.value directly) — see
+        // CheckoutService.createSession in packages/commerce-core.
+        redeemPoints: redeemQuote && redeemQuote.points > 0 ? redeemQuote.points : undefined,
       });
 
       if (isBNPL) {
@@ -362,6 +388,24 @@ export default function Checkout() {
         // Use a relative path for the fake provider's local 3DS page;
         // for real providers, redirectUrl is an absolute issuer URL.
         window.location.href = result.redirectUrl;
+        return;
+      }
+      // P1 fix (flagged by review): confirm() never throws for a failed
+      // payment — it always resolves 200 with paymentStatus reflecting the
+      // outcome (see CheckoutService.confirm). Before this check, every
+      // non-3DS response fell through to the success path below, so a
+      // declined card or a provider exception (caught server-side and
+      // turned into paymentStatus='failed') was shown to the customer as a
+      // completed order. Only 'paid', or 'pending' for the two
+      // pay-on-collection methods, is an actual success.
+      const isPendingCollectionMethod = paymentMethod === 'cash_on_delivery' || paymentMethod === 'bank_transfer';
+      const paymentSucceeded = result.paymentStatus === 'paid'
+        || (result.paymentStatus === 'pending' && isPendingCollectionMethod);
+      if (!paymentSucceeded) {
+        const message = t('checkout.paymentError', 'تعذّر إتمام الدفع.');
+        setPaymentRecovery({ kind: 'payment_failed', message, paymentMethod });
+        toast.error(message);
+        setConfirming(false);
         return;
       }
       clearLocalCart();
@@ -430,7 +474,7 @@ export default function Checkout() {
   // mirrors what the order will be charged; the actual deduction is
   // re-validated server-side on confirm (defense in depth).
   const loyaltyDiscount = redeemQuote ? Math.max(0, redeemQuote.value) : 0;
-  const total = Math.max(0, subtotal + shippingCost - loyaltyDiscount);
+  const total = Math.max(0, subtotal + shippingCost - couponDiscount - loyaltyDiscount);
 
 
   const bnplOptions = bnplMethods.map(m => {
@@ -863,7 +907,7 @@ export default function Checkout() {
                         <StoreButton
                           type="button"
                           variant="outline"
-                          onClick={() => requestRedeemQuote(subtotal + shippingCost)}
+                          onClick={() => requestRedeemQuote(Math.max(0, subtotal + shippingCost - couponDiscount))}
                           disabled={quoteLoading || redeemPoints <= 0}
                           data-testid="loyalty-redeem-apply"
                         >
@@ -934,6 +978,12 @@ export default function Checkout() {
                   </div>
                 ))}
               </div>
+              {couponDiscount > 0 && (
+                <div className="flex justify-between text-sm pt-3 text-success" data-testid="coupon-discount-line">
+                  <span>{t('checkout.couponDiscount', 'خصم كود الخصم')}</span>
+                  <span dir="ltr">-{couponDiscount.toFixed(2)} <SarIcon size="sm" /></span>
+                </div>
+              )}
               {loyaltyDiscount > 0 && (
                 <div className="flex justify-between text-sm pt-3 text-success" data-testid="loyalty-discount-line">
                   <span>{t('checkout.loyaltyDiscount', 'خصم نقاط الولاء')}</span>

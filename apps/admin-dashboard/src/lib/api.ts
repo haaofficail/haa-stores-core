@@ -530,6 +530,22 @@ export interface AdminPayment {
   updatedAt: string;
 }
 
+export interface AdminPaymentsPage {
+  data: AdminPayment[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface AdminAuditLogsPage {
+  data: Record<string, unknown>[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export type AdminStorePaymentMode = 'test' | 'live';
 export type AdminStorePaymentStatus = 'active' | 'suspended' | 'not_configured' | 'configured' | 'invalid';
 
@@ -643,11 +659,16 @@ export const adminApi = {
     const query = qs.toString();
     return request<AdminSupportGatewayPage>('GET', `/admin/support-gateway/tickets${query ? `?${query}` : ''}`);
   },
-  getPayments: (params: { storeId?: number } = {}) => {
+  // P1-9 audit fix: /admin/payments now returns a real paginated envelope
+  // (page/limit/total/totalPages) instead of a silently-capped array.
+  getPayments: (params: { storeId?: number; q?: string; page?: number; limit?: number } = {}) => {
     const qs = new URLSearchParams();
     if (typeof params.storeId === 'number') qs.set('storeId', String(params.storeId));
+    if (params.q) qs.set('q', params.q);
+    if (params.page) qs.set('page', String(params.page));
+    if (params.limit) qs.set('limit', String(params.limit));
     const suffix = qs.toString() ? `?${qs.toString()}` : '';
-    return request<AdminPayment[]>('GET', `/admin/payments${suffix}`);
+    return request<AdminPaymentsPage>('GET', `/admin/payments${suffix}`);
   },
   exportPaymentsCsv: (params?: { storeId?: number; q?: string }) => {
     const qs = new URLSearchParams();
@@ -769,12 +790,16 @@ export const adminApi = {
     request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/cancel`, { reason }, key),
   reversePayout: (payoutId: number, reason: string, key = newIdempotencyKey()) =>
     request<Payout>('POST', `/admin/settlements/manual-payouts/${payoutId}/reverse`, { reason }, key),
-  getAuditLogs: (params: { tenantId?: number; storeId?: number } = {}) => {
+  // P1-9 audit fix: /admin/audit now returns a real paginated envelope
+  // (page/limit/total/totalPages) instead of a silently-capped array.
+  getAuditLogs: (params: { tenantId?: number; storeId?: number; page?: number; limit?: number } = {}) => {
     const qs = new URLSearchParams();
     if (typeof params.tenantId === 'number') qs.set('tenantId', String(params.tenantId));
     if (typeof params.storeId === 'number') qs.set('storeId', String(params.storeId));
+    if (params.page) qs.set('page', String(params.page));
+    if (params.limit) qs.set('limit', String(params.limit));
     const suffix = qs.toString() ? `?${qs.toString()}` : '';
-    return request<Record<string, unknown>[]>('GET', `/admin/audit${suffix}`);
+    return request<AdminAuditLogsPage>('GET', `/admin/audit${suffix}`);
   },
   getPlans: () => request<Record<string, unknown>[]>('GET', '/admin/plans'),
   updatePlan: (id: number, data: Record<string, unknown>) => request<Record<string, unknown>>('PATCH', `/admin/plans/${id}`, data),

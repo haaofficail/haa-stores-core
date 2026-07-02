@@ -1,103 +1,86 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- admin pages carry legacy `any` typing on API responses; proper typing tracked separately (P2-030 follow-up). */
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { adminApi } from '../lib/api';
-import { queryKeys } from '../lib/queryClient';
 import { toast } from 'sonner';
 import { AdminTableSkeleton } from '../components/ui/AdminTableSkeleton';
 import { ErrorState } from '../components/ui/ErrorState';
 import { AdminEmptyState } from '../components/ui/AdminEmptyState';
-import { SortableTh } from '../components/ui/SortableTh';
 import { TablePager } from '../components/ui/TablePager';
-import { useTableControls } from '../lib/useTableControls';
 import { downloadRowsAsCsv } from '../lib/downloadRowsAsCsv';
 
+const PAGE_SIZE = 50;
+
+// P1-9 audit fix (two bugs):
+//   1. This page had no tenantId/storeId filter UI but always called
+//      adminApi.getAuditLogs() unscoped — and the backend returned an
+//      empty array whenever both were absent. This page has therefore
+//      always rendered zero rows regardless of how much audit history
+//      existed. Backend now allows an unscoped (platform-wide) query.
+//   2. Even once populated, the old client-side useTableControls
+//      pagination sat on top of a hard-capped 200-row snapshot with no
+//      total count — silently hiding older events. Now mirrors the real
+//      server-side page/limit/total contract used by SupportGateway.tsx.
 export default function AuditLogs() {
   const { t } = useTranslation();
-  const { data: logs = [], isPending: loading, isError: error, refetch } = useQuery<any[]>({
-    queryKey: queryKeys.auditLogs,
-    queryFn: () => adminApi.getAuditLogs(),
+  const [page, setPage] = useState(1);
+
+  const auditQuery = useQuery({
+    queryKey: ['admin-audit-logs', page],
+    queryFn: () => adminApi.getAuditLogs({ page, limit: PAGE_SIZE }),
   });
 
   useEffect(() => {
-    if (error) toast.error(t('auditLogs.loadError', 'فشل تحميل سجل التدقيق'));
-  }, [error, t]);
+    if (auditQuery.isError) toast.error(t('auditLogs.loadError', 'فشل تحميل سجل التدقيق'));
+  }, [auditQuery.isError, t]);
 
-  const controls = useTableControls<any>({
-    rows: logs,
-    filterFn: (l, q) => {
-      const needle = q.toLowerCase();
-      return (
-        String(l.event || l.action || '').toLowerCase().includes(needle) ||
-        String(l.userEmail || l.userId || '').toLowerCase().includes(needle) ||
-        String(l.targetType ? `${l.targetType} #${l.targetId}` : '').toLowerCase().includes(needle) ||
-        String(l.details || '').toLowerCase().includes(needle)
-      );
-    },
-    initialSort: { key: 'createdAt', dir: 'desc' },
-    storageKey: 'auditLogs',
-    getValue: (l, key) => {
-      if (key === 'event') return l.event || l.action;
-      if (key === 'user') return l.userEmail || l.userId;
-      if (key === 'target') return l.targetType ? `${l.targetType} #${l.targetId}` : '';
-      return l[key];
-    },
-  });
-  const { query, setQuery } = controls;
+  const result = auditQuery.data;
+  const rows = (result?.data ?? []) as any[];
+  const total = result?.total ?? 0;
+  const totalPages = result?.totalPages ?? 1;
+  const startIndex = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const endIndex = total === 0 ? 0 : Math.min(total, page * PAGE_SIZE);
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-title2 font-bold text-gray-900 tracking-tight">{t('auditLogs.pageTitle', 'سجل التدقيق')}</h2>
         <button
-          onClick={() => downloadRowsAsCsv(logs, 'audit-logs.csv')}
-          className="px-3 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          onClick={() => downloadRowsAsCsv(rows, 'audit-logs.csv')}
+          disabled={rows.length === 0}
+          className="px-3 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-40"
+          title="يصدّر الصفحة الحالية المعروضة فقط"
         >
-          تصدير CSV
+          تصدير الصفحة الحالية CSV
         </button>
       </div>
-      <div className="mb-4">
-        <input
-          type="search"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder={t('auditLogs.search', 'بحث بالحدث أو المستخدم...')}
-          className="w-full max-w-sm rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-        />
-      </div>
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-        {loading ? (
+        {auditQuery.isPending ? (
           <AdminTableSkeleton columns={['w-24', 'w-32', 'w-28', 'w-20', 'w-24']} />
-        ) : error ? (
-          <ErrorState message={t('auditLogs.loadError', 'فشل تحميل سجل التدقيق')} onRetry={() => refetch()} />
-        ) : logs.length === 0 ? (
+        ) : auditQuery.isError ? (
+          <ErrorState message={t('auditLogs.loadError', 'فشل تحميل سجل التدقيق')} onRetry={() => auditQuery.refetch()} />
+        ) : rows.length === 0 ? (
           <AdminEmptyState
             icon="ScrollText"
             title={t('auditLogs.empty', 'لا توجد سجلات ضمن النطاق الحالي')}
             description="إذا كانت هناك تعديلات حديثة، فهذا يحتاج فحص فلترة أو ربط audit API بدل اعتباره وضعًا طبيعيًا."
             meaning="الإجراء التالي: وسّع البحث أو راجع آخر عمليات مالية/تعطيل للتأكد من تسجيل السبب."
           />
-        ) : controls.filteredCount === 0 ? (
-          <AdminEmptyState
-            icon="AlertCircle"
-            title={t('auditLogs.noResults', 'لا توجد سجلات ضمن الفلتر الحالي')}
-            description="لا تغيّر قرارًا تشغيليًا حتى تتأكد أن الفلتر لا يخفي السجلات المطلوبة."
-          />
         ) : (
           <>
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <SortableTh sortKey="event" label={t('auditLogs.event', 'الحدث')} sort={controls.sort} onToggle={controls.toggleSort} />
-                  <SortableTh sortKey="user" label={t('auditLogs.user', 'المستخدم')} sort={controls.sort} onToggle={controls.toggleSort} />
-                  <SortableTh sortKey="target" label={t('auditLogs.target', 'الهدف')} sort={controls.sort} onToggle={controls.toggleSort} />
-                  <th className="px-4 py-3 text-start font-medium text-gray-500">{t('auditLogs.details', 'التفاصيل')}</th>
-                  <SortableTh sortKey="createdAt" label={t('auditLogs.date', 'التاريخ')} sort={controls.sort} onToggle={controls.toggleSort} />
+                  <th className="px-4 py-3 text-start text-xs font-semibold text-gray-500">{t('auditLogs.event', 'الحدث')}</th>
+                  <th className="px-4 py-3 text-start text-xs font-semibold text-gray-500">{t('auditLogs.user', 'المستخدم')}</th>
+                  <th className="px-4 py-3 text-start text-xs font-semibold text-gray-500">{t('auditLogs.target', 'الهدف')}</th>
+                  <th className="px-4 py-3 text-start text-xs font-semibold text-gray-500">{t('auditLogs.details', 'التفاصيل')}</th>
+                  <th className="px-4 py-3 text-start text-xs font-semibold text-gray-500">{t('auditLogs.date', 'التاريخ')}</th>
                 </tr>
               </thead>
               <tbody>
-                {controls.rows.map(l => (
+                {rows.map(l => (
                   <tr key={l.id} className="border-t hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-gray-900">{l.event || l.action || '-'}</td>
                     <td className="px-4 py-3 text-gray-500">{l.userEmail || l.userId || '-'}</td>
@@ -109,12 +92,12 @@ export default function AuditLogs() {
               </tbody>
             </table>
             <TablePager
-              page={controls.page}
-              totalPages={controls.totalPages}
-              startIndex={controls.startIndex}
-              endIndex={controls.endIndex}
-              filteredCount={controls.filteredCount}
-              onPageChange={controls.setPage}
+              page={page}
+              totalPages={totalPages}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              filteredCount={total}
+              onPageChange={setPage}
               itemLabel={t('auditLogs.itemLabel', 'سجل')}
             />
           </>

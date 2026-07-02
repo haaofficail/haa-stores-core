@@ -272,6 +272,40 @@ export function requireStoreAccess() {
   };
 }
 
+/**
+ * Standalone tenant-boundary + membership check, extracted from
+ * `requireStoreAccess` so other middleware (e.g. storageGuard, which
+ * derives `storeId` from a file path rather than a `:storeId` route
+ * param) can verify store ownership without duplicating the resolver
+ * logic. Fail-closed: any resolver error or missing resolver denies.
+ *
+ * P1-2 audit fix: storageGuard previously granted access to any
+ * `stores/<id>/...` path for any authenticated user with a tenantId,
+ * regardless of whether that tenant actually owned `<id>` — a
+ * cross-tenant IDOR on non-product store files.
+ */
+export async function verifyStoreOwnership(
+  auth: AuthContext,
+  storeId: number,
+): Promise<boolean> {
+  if (!Number.isFinite(storeId) || storeId < 1) return false;
+  if (!_storeTenantResolver) return false;
+
+  try {
+    const storeTenantId = await _storeTenantResolver(storeId);
+    if (storeTenantId === null || storeTenantId !== auth.tenantId) return false;
+
+    if (_storeMembershipResolver) {
+      const membership = await _storeMembershipResolver(auth.userId, storeId, auth.tenantId);
+      if (membership !== 'ok') return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function requirePermission(...permissions: Permission[]) {
   return async (c: Context, next: Next) => {
     const auth = getAuth(c);

@@ -258,6 +258,51 @@ export class LoyaltyService {
   }
 
   /**
+   * Undo a `redeem()` for an order whose payment ultimately failed. Fixes a
+   * P1 flagged by review: checkout.confirm() debits loyalty points inside
+   * the Phase 1 order-creation transaction, which commits BEFORE Phase 2's
+   * external payment call runs — if the provider then declines or throws,
+   * the customer had already lost the points with no way to get them back.
+   * Called from checkout.ts's Phase 3 failure branch whenever a redemption
+   * was applied to the order. Uses the dedicated 'revoke' transaction type
+   * (distinct from 'adjust', which is for manual admin grants) and reverses
+   * `lifetimeRedeemed` rather than incrementing `lifetimeEarned`, so
+   * redemption-rate analytics aren't skewed by orders that never happened.
+   */
+  async reverseRedeem(input: {
+    storeId: number; customerId: number; points: number;
+    referenceId?: number; orderNumber?: string;
+  }): Promise<void> {
+    if (input.points <= 0) return;
+    const account = await this.getOrCreateAccount(input.storeId, input.customerId);
+    await this.db.transaction(async (tx) => {
+      const [acc] = await tx.select().from(s.loyaltyAccounts)
+        .where(eq(s.loyaltyAccounts.id, account.id)).limit(1);
+      const before = acc.balance;
+      const after = before + input.points;
+      await tx.insert(s.loyaltyTransactions).values({
+        storeId: input.storeId,
+        accountId: account.id,
+        customerId: input.customerId,
+        type: 'revoke',
+        direction: 'credit',
+        points: input.points,
+        balanceBefore: before,
+        balanceAfter: after,
+        referenceType: input.referenceId ? 'order' : undefined,
+        referenceId: input.referenceId,
+        orderNumber: input.orderNumber,
+        description: `Reversed ${input.points} points — payment failed for order ${input.orderNumber ?? input.referenceId ?? ''}`,
+      });
+      await tx.update(s.loyaltyAccounts).set({
+        balance: after,
+        lifetimeRedeemed: Math.max(0, acc.lifetimeRedeemed - input.points),
+        updatedAt: new Date(),
+      }).where(eq(s.loyaltyAccounts.id, account.id));
+    });
+  }
+
+  /**
    * كنس نقاط منتهية لحساب واحد (FIFO): يستهلك المخصوم سابقاً من أقدم الدفعات،
    * فما تبقّى من دفعات انتهت صلاحيتها يُخصم كـ expire. آمن للتكرار.
    * @returns النقاط المنتهية المخصومة الآن.

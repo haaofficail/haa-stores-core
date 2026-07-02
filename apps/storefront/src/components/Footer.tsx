@@ -10,6 +10,7 @@ import {
 import { useStorefrontTheme } from '@/hooks/useTheme';
 import { type ThemeConfig } from '@haa/storefront-themes';
 import { Icon } from '@/components/ui/icon';
+import { PLATFORM_LEGAL_ENTITY } from '@haa/shared';
 
 type SocialLinks = Partial<ThemeConfig['socialLinks']>;
 
@@ -154,6 +155,12 @@ export default function Footer() {
               &copy; {new Date().getFullYear()} {store.name}. {t('footer.copyright')}
               <span className="mx-1.5">&middot;</span>
               <span>{t('footer.poweredBy', 'مدعوم بواسطة هاء متاجر')}</span>
+            </p>
+            {/* P1-12 audit fix: the platform operating entity was shown on
+                haastores.com marketing pages but missing from the actual
+                per-merchant storefront customers shop on. */}
+            <p className="mt-1 text-xs text-gray-400 text-center">
+              {PLATFORM_LEGAL_ENTITY.displayLine}
             </p>
           </div>
         </div>

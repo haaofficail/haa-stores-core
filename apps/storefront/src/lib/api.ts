@@ -587,6 +587,7 @@ export const checkoutApi = {
     notes?: string;
     idempotencyKey: string;
     couponCode?: string;
+    redeemPoints?: number;
     gift?: { sendAsGift?: boolean; message?: string };
   }) => request<CheckoutSession>(`/s/${slug}/checkout/sessions`, { method: 'POST', body: JSON.stringify(data) }),
   confirm: (slug: string, sessionId: string) =>

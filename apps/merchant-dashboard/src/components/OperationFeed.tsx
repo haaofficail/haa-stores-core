@@ -244,13 +244,17 @@ export default function OperationFeed() {
           <h3 className="text-sm font-semibold text-neutral-950">
             لوحة العمليات
           </h3>
+          {/* P1-11 audit fix: this feed is generated client-side for
+              illustration — it is NOT a live/real data stream. The
+              previous copy ("مباشر" + "مشفرة لحماية الخصوصية") implied
+              otherwise, which is misleading. */}
           <p className="mt-0.5 text-xs text-neutral-500">
-            أرقام العمليات مشفرة لحماية الخصوصية
+            مثال توضيحي لتجربة لوحة التاجر
           </p>
         </div>
 
-        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-          مباشر
+        <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
+          معاينة
         </span>
       </div>
 

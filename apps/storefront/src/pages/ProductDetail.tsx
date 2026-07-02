@@ -180,7 +180,16 @@ export default function ProductDetail() {
   const isLowStock = Boolean(product?.trackInventory && effectiveStockQuantity > 0 && effectiveStockQuantity <= 5);
   const hasDimensions: boolean = Boolean(product && (product.lengthCm || product.widthCm || product.heightCm));
   const hasWeight = product ? product.weightGrams != null && product.weightGrams > 0 : false;
-  const isFreeShipping = true;
+  // P1-13 audit fix: this was hardcoded `true` for every product on every
+  // store, regardless of whether the store's shipping methods actually
+  // have a free-above-amount threshold (and whether this product's price
+  // clears it) — a shipping promise that isn't necessarily kept at
+  // checkout. The real threshold is destination-dependent (computed by
+  // ManualShippingProvider from the customer's city), which isn't known
+  // yet on the product page. Rather than guess, don't claim it here; the
+  // real, destination-aware "free shipping above X" line already renders
+  // correctly at cart/checkout (see Cart.tsx rate.freeAboveAmount).
+  const isFreeShipping = false;
   const showSizeGuide = Boolean(product && features?.sizeGuide !== false && sizeGuide && Array.isArray(sizeGuide.rows) && sizeGuide.rows.length > 0);
   const hasElectronicPayment = (paymentMethods ?? []).some((method: { provider: string; available: boolean }) =>
     method.available && method.provider !== 'cash_on_delivery' && method.provider !== 'cod'

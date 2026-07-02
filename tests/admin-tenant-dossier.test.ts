@@ -24,7 +24,7 @@ describe('admin tenant dossier operating-system flow', () => {
     expect(tenantDossier).toContain('سجل التدقيق والتعديلات');
     expect(tenantDossier).toContain('buildMerchantVerificationRecords');
     expect(tenantDossier).toContain('adminApi.listPayouts()');
-    expect(tenantDossier).toContain('adminApi.getAuditLogs({ tenantId: numericTenantId })');
+    expect(tenantDossier).toContain('adminApi.getAuditLogs({ tenantId: numericTenantId, limit: 200 })');
   });
 
   it('does not calculate tenant sales from a platform-wide payments sample', () => {
@@ -36,9 +36,11 @@ describe('admin tenant dossier operating-system flow', () => {
   });
 
   it('loads audit history with tenant scope instead of an unscoped empty read', () => {
-    expect(tenantDossier).toContain('adminApi.getAuditLogs({ tenantId: numericTenantId })');
+    expect(tenantDossier).toContain('adminApi.getAuditLogs({ tenantId: numericTenantId, limit: 200 })');
     expect(adminApi).toContain("if (typeof params.tenantId === 'number') qs.set('tenantId', String(params.tenantId))");
-    expect(adminApi).toContain("return request<Record<string, unknown>[]>('GET', `/admin/audit${suffix}`)");
+    // P1-9 audit fix: getAuditLogs now returns a paginated envelope
+    // (AdminAuditLogsPage), not a bare array — see admin-payments-audit-pagination.test.ts.
+    expect(adminApi).toContain("return request<AdminAuditLogsPage>('GET', `/admin/audit${suffix}`)");
     expect(tenantDossier).toContain('لا توجد أحداث تدقيق مفلترة لهذا التاجر');
   });
 

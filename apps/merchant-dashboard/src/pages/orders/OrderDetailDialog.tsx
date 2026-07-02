@@ -412,6 +412,34 @@ export function OrderDetailDialog(props: OrderDetailDialogProps) {
                       .finally(() => setChangingStatus(false));
                     return;
                   }
+                  // Bank transfer actions (P0-1 fix)
+                  if (action.key === 'confirm_bank_transfer') {
+                    if (!storeId) return;
+                    setChangingStatus(true);
+                    ordersApi.confirmBankTransfer(storeId, orderId)
+                      .then(() => {
+                        toast.success(t('orders.bank_transfer_confirmed', 'تم تأكيد استلام التحويل'));
+                        return Promise.all([
+                          ordersApi.getById(storeId, orderId),
+                        ]);
+                      })
+                      .then(([o]) => { setDetailOrder(o); load(); })
+                      .catch(err => toast.error(err instanceof ApiClientError ? err.message : t('common.error')))
+                      .finally(() => setChangingStatus(false));
+                    return;
+                  }
+                  if (action.key === 'bank_transfer_failed') {
+                    if (!storeId) return;
+                    if (!confirm(t('orders.confirm_bank_transfer_failed', 'هل أنت متأكد من أن التحويل البنكي لم يصل؟'))) return;
+                    setChangingStatus(true);
+                    ordersApi.markBankTransferFailed(storeId, orderId)
+                      .then(() => {
+                        toast.success(t('orders.bank_transfer_failed_recorded', 'تم تسجيل عدم وصول التحويل'));
+                      })
+                      .catch(err => toast.error(err instanceof ApiClientError ? err.message : t('common.error')))
+                      .finally(() => setChangingStatus(false));
+                    return;
+                  }
                   // Gift actions
                   if (action.key === 'view_gift_message') {
                     const msg = detailOrder?.giftOptions?.message;
