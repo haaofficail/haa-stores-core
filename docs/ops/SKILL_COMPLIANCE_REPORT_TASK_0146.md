@@ -40,7 +40,7 @@
   - Staging no longer references `STAGING_SSH_KEY`, `STAGING_HOST`, `STAGING_USER`, `STAGING_SSH_PORT`, `ssh`, or `scp`.
   - A VPS-side bootstrap script now installs/registers the runner as a systemd service and accepts the GitHub registration token only through `GITHUB_RUNNER_TOKEN`.
   - Production deploy SSH behavior was not changed.
-  - GitHub currently has no registered self-hosted runners for this repo, so merge/live deploy must wait until the VPS runner is online.
+  - GitHub now has one online self-hosted runner for this repo: `haa-staging-vps` with labels `self-hosted`, `Linux`, `X64`, and `haa-staging`.
 - **Safety constraints respected (per AGENTS.md §14.7):**
   - [x] No `db:migrate` execution
   - [x] No production deploy
@@ -66,10 +66,10 @@
        Tests  47 passed (47)
   ```
 
-- GitHub runner inventory:
+- GitHub runner inventory after VPS console registration:
 
   ```text
-  {"runners":[],"total_count":0}
+  {"runners":[{"busy":false,"id":21,"labels":["self-hosted","Linux","X64","haa-staging"],"name":"haa-staging-vps","os":"Linux","status":"online"}],"total_count":1}
   ```
 
 - Server access probe:
@@ -106,18 +106,18 @@
 
   This is expected for an isolated worktree because the repo root guard is hard-coded to the canonical workspace path.
 
-- Staging smoke after merge: blocked until the `haa-staging` self-hosted runner is registered and online.
+- Staging smoke after merge: pending PR #355 merge and `Deploy to Staging` run.
 
 ## Deviations
 
-- **Deviations from selected skills:** The live self-hosted runner could not be installed from this session.
-- **Reason:** GitHub reports zero repository self-hosted runners, and the session does not have SSH access to `deploy@72.61.108.208`.
-- **Follow-up:** Register a self-hosted runner on VPS `72.61.108.208` with labels `self-hosted`, `linux`, `x64`, `haa-staging`, then merge/run the workflow and verify staging smoke.
+- **Deviations from selected skills:** The self-hosted runner was installed via owner VPS console instead of direct SSH from this Codex session.
+- **Reason:** The session did not have SSH access to `deploy@72.61.108.208`, but the owner executed the bootstrap script from the VPS console.
+- **Follow-up:** Merge PR #355, verify `Deploy to Staging` runs on `haa-staging-vps`, and confirm staging smoke.
 
 ## Completion
 
-- **Did the task follow the selected skills end-to-end?** yes for the workflow cutover; live runner installation is externally blocked.
-- **Is further owner approval required before merge/deploy?** yes, because merge to `main` triggers staging deploy and the runner is not yet registered.
+- **Did the task follow the selected skills end-to-end?** yes for the workflow cutover and runner registration verification.
+- **Is further owner approval required before merge/deploy?** Owner requested completing the staging runner fix; merge to `main` triggers staging deploy only and production deploy remains skipped by workflow conditions.
 - **Owner approvals received:** Owner approved converting staging deploy to self-hosted runner and forbade production deploy, migrations, production config, secrets, and application-code changes.
 - **Safety confirmations (re-affirmed at done):**
   - [x] No `db:migrate` was run during this task
@@ -127,4 +127,4 @@
 
 ## Next step
 
-Register the VPS runner with labels `self-hosted`, `linux`, `x64`, `haa-staging`, then merge this workflow cutover and verify `Deploy to Staging` plus the five smoke URLs.
+Merge this workflow cutover and verify `Deploy to Staging` plus the five smoke URLs.

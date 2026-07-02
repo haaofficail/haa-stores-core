@@ -10,7 +10,7 @@
 - Added `scripts/server/install-github-runner-staging.sh` to register/install the VPS runner without storing the GitHub registration token in the repo or printing it in docs.
 - Updated deploy workflow tests to guard the self-hosted runner contract and prevent reintroducing inbound SSH for staging.
 - Verified workflow YAML parsing and focused deploy workflow tests locally.
-- Current operational blocker: no repository self-hosted runner is registered yet (`total_count: 0`), and this Codex session cannot SSH to `deploy@72.61.108.208`; the VPS runner must be registered with labels `self-hosted`, `linux`, `x64`, `haa-staging` before merge.
+- The VPS runner is now registered and online as `haa-staging-vps` with labels `self-hosted`, `Linux`, `X64`, and `haa-staging`; PR #355 is ready for staging deploy verification.
 - Safety boundary unchanged: no app code, no production deploy/action, no `db:migrate`, no DB mutation, no secrets printed, no live provider calls, and no production config change.
 
 ## 2026-07-01 — Staging Deploy SSH Diagnostics (TASK-0145)
