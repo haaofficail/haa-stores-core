@@ -4,6 +4,10 @@
 // service layer. Prevents accidental cross-tenant data leakage by requiring
 // explicit tenant_id in all query contexts.
 
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupportedDB = any;
 
@@ -46,18 +50,33 @@ export class ScopedDb {
   /**
    * Validate tenant_id in WHERE clause.
    *
-   * Ensures that WHERE conditions include a tenant_id filter.
-   * Raises if tenant_id is missing (safety check).
+   * Parses condition to verify tenant_id filter is included (issue #1).
+   * Raises if tenant_id is missing, preventing accidental cross-tenant leakage.
    *
    * Usage:
-   *   const sql = eq(s.table.tenantId, this.getTenantId());
-   *   this.validateTenantFilter(sql);
+   *   const condition = and(
+   *     eq(s.orders.tenantId, this.getTenantId()),
+   *     eq(s.orders.status, 'paid')
+   *   );
+   *   this.validateTenantFilter(condition);
    */
   validateTenantFilter(condition: unknown): void {
-    // In production, this could parse the SQL to verify tenant_id presence
-    // For now, relies on developer discipline to use getTenantId()
     if (!condition) {
       throw new Error('ScopedDb: WHERE clause required for all queries');
+    }
+
+    const conditionStr = String(condition);
+    const hasTenantIdFilter =
+      conditionStr.includes('tenant_id') ||
+      conditionStr.includes('tenantId') ||
+      conditionStr.includes('"tenant_id"') ||
+      conditionStr.includes('"tenantId"');
+
+    if (!hasTenantIdFilter) {
+      throw new Error(
+        `ScopedDb: Query missing tenant_id filter. ` +
+          `Must include: and(eq(table.tenantId, ${this.tenantId}), ...)`,
+      );
     }
   }
 

@@ -72,12 +72,19 @@ export function tenantOwnershipGuard(): MiddlewareHandler {
       );
     }
 
-    // Verify user is member of this tenant
+    // Verify user is an ACTIVE member of this tenant (issue #4)
+    // Must check is_active to prevent revoked employees from accessing
     const db = createDbClient();
     const membership = await db
       .select()
       .from(s.tenantUsers)
-      .where(and(eq(s.tenantUsers.userId, auth.userId), eq(s.tenantUsers.tenantId, tenantId)))
+      .where(
+        and(
+          eq(s.tenantUsers.userId, auth.userId),
+          eq(s.tenantUsers.tenantId, tenantId),
+          eq(s.tenantUsers.isActive, true),
+        ),
+      )
       .limit(1);
 
     if (membership.length === 0) {

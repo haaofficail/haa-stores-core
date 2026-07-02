@@ -73,11 +73,12 @@ export function webhookIdempotencyExtended(): MiddlewareHandler {
 
       // Store raw body for handler access
       c.env.rawBody = rawBody;
-
-      await next();
     } catch {
       // Non-blocking: if dedup check fails, still process webhook
-      await next();
+      // (don't re-invoke handler on error)
     }
+
+    // Always invoke handler, regardless of dedup check success/failure
+    await next();
   };
 }

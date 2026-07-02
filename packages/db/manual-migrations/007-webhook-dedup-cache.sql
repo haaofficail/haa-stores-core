@@ -17,9 +17,10 @@ CREATE TABLE IF NOT EXISTS webhook_dedup_cache (
 CREATE INDEX IF NOT EXISTS webhook_dedup_cache_provider_idx
   ON webhook_dedup_cache(provider, created_at DESC);
 
+-- Regular index on expires_at for cleanup queries
+-- Cannot use partial index WHERE expires_at <= NOW() because NOW() is not immutable
 CREATE INDEX IF NOT EXISTS webhook_dedup_cache_expires_idx
-  ON webhook_dedup_cache(expires_at)
-  WHERE expires_at <= NOW();
+  ON webhook_dedup_cache(expires_at);
 
 -- Optional: Add partitioning by provider for very high-volume webhooks
 -- ALTER TABLE webhook_dedup_cache PARTITION BY LIST (provider);

@@ -93,11 +93,18 @@ export function exportAuthGuard(): MiddlewareHandler {
 
     const tenantId = store[0].tenantId;
 
-    // Check: is user a member of this tenant?
+    // Check: is user an ACTIVE member of this tenant?
+    // Must check is_active to prevent revoked employees from accessing (issue #4)
     const membership = await db
       .select()
       .from(s.tenantUsers)
-      .where(and(eq(s.tenantUsers.userId, auth.userId), eq(s.tenantUsers.tenantId, tenantId)))
+      .where(
+        and(
+          eq(s.tenantUsers.userId, auth.userId),
+          eq(s.tenantUsers.tenantId, tenantId),
+          eq(s.tenantUsers.isActive, true),
+        ),
+      )
       .limit(1);
 
     if (membership.length === 0) {
