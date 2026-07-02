@@ -3,8 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { getStorefrontOrigin } from '@/lib/storefront-url';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { usePermissions } from '@/lib/permissions';
+import { useAuth } from '@/hooks/useAuth';
+import { settingsApi } from '@/lib/api';
 import {
   LayoutDashboard, Package, Tags, ShoppingCart, Users, Truck, Wallet, TicketPercent, Percent, FileText, ShoppingBag, Download, BarChart3, FileSpreadsheet, Shield, Crown, Bell, Key, ArrowLeftRight, Bot, Palette, Settings, Store, Building2, Tag, ChevronDown, History, Headphones, UserCog, TrendingUp, Activity, ExternalLink, AlertTriangle, MessageSquare, Coins, Sparkles, ClipboardList, Rocket, User,
 } from 'lucide-react';
@@ -177,6 +179,22 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
   const [isRTL] = useState(() => document.dir === 'rtl');
   const storefrontBase = getStorefrontOrigin();
 
+  // P1-15 audit fix: this badge used to render unconditionally for every
+  // merchant, real or demo. It now only shows when the active store is
+  // actually flagged `isDemo` in the database (same flag CheckoutService
+  // uses to route demo stores to FakePaymentProvider — see
+  // packages/shared/src/demo/demo-rules.ts).
+  const { storeId } = useAuth();
+  const [isDemoStore, setIsDemoStore] = useState(false);
+  useEffect(() => {
+    if (!storeId) { setIsDemoStore(false); return; }
+    let cancelled = false;
+    settingsApi.get(storeId)
+      .then((store) => { if (!cancelled) setIsDemoStore(Boolean((store as { isDemo?: boolean })?.isDemo)); })
+      .catch(() => { if (!cancelled) setIsDemoStore(false); });
+    return () => { cancelled = true; };
+  }, [storeId]);
+
   return (
     <>
       {open && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onClose} />}
@@ -246,13 +264,15 @@ export function Sidebar({ open = false, onClose }: { open?: boolean; onClose?: (
           <span className="flex-1 truncate">{t('nav.haaMarketplace', 'سوق هاء العام')}</span>
           <ExternalLink className="h-3.5 w-3.5 shrink-0" />
         </a>
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-          <div className="flex items-center gap-2 text-amber-800">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <p className="text-xs font-semibold">{t('sidebar.demoLabel', 'متجر تجريبي')}</p>
+        {isDemoStore && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+            <div className="flex items-center gap-2 text-amber-800">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <p className="text-xs font-semibold">{t('sidebar.demoLabel', 'متجر تجريبي')}</p>
+            </div>
+            <p className="text-xs text-amber-600 mt-1">{t('sidebar.demoVersion', 'جميع الخصائص مفعلة للتجربة')}</p>
           </div>
-          <p className="text-xs text-amber-600 mt-1">{t('sidebar.demoVersion', 'جميع الخصائص مفعلة للتجربة')}</p>
-        </div>
+        )}
       </div>
     </aside>
     </>

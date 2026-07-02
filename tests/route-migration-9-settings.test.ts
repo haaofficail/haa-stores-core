@@ -88,14 +88,21 @@ describe('Quality Pass 5 — Route Migration 9/24: settings.ts', () => {
     expect(content).toMatch(/settingsRouter\.post\(['"]\/acknowledge['"]/);
   });
 
-  it('settings.ts must preserve all permission requirements (13× stores:read, 14× settings:update)', () => {
+  it('settings.ts must preserve all permission requirements (11× stores:read, 13× settings:update, 2× theme:view, 1× theme:update)', () => {
     // Note: stores:read count dropped from 14 to 13 after the duplicate
-    // /publish-checklist route was removed (canonical lives at /compliance/checklist).
+    // /publish-checklist route was removed (canonical lives at /compliance/checklist),
+    // then 13 -> 11 and settings:update 14 -> 13 when the 3 /theme* routes
+    // were moved to the catalog's dedicated theme:view/theme:update (P1-10
+    // audit fix — the UI already gated /theme on these, routes hadn't caught up).
     const content = read(settingsRouteFile);
     const readMatches = content.match(/requirePermission\(['"]stores:read['"]\)/g) || [];
-    expect(readMatches.length).toBe(13);
+    expect(readMatches.length).toBe(11);
     const updateMatches = content.match(/requirePermission\(['"]settings:update['"]\)/g) || [];
-    expect(updateMatches.length).toBe(14);
+    expect(updateMatches.length).toBe(13);
+    const themeViewMatches = content.match(/requirePermission\(['"]theme:view['"]\)/g) || [];
+    expect(themeViewMatches.length).toBe(2);
+    const themeUpdateMatches = content.match(/requirePermission\(['"]theme:update['"]\)/g) || [];
+    expect(themeUpdateMatches.length).toBe(1);
   });
 
   it('settings.ts must preserve file-level requireAuth + requireStoreAccess', () => {

@@ -218,15 +218,23 @@ marketingRouter.patch('/settings', requirePermission('promotions:update'), async
 
 // ─── Customer Segmentation ───
 
+// P1-10 audit fix: the merchant-dashboard UI gates
+// /sales/customers/segments on `customers:read` (it's customer PII/
+// behavior data nested under the Customers section), but this route
+// checked the coarser `reports:read` — an employee with `customers:read`
+// but not `reports:read` (e.g. the `orders_manager` preset) saw the page
+// load then got 403 on every call; conversely `reports:read`-only roles
+// like `marketing` could hit the API directly even though the UI hid the
+// page from them.
 const segments = new CustomerSegmentationService();
 
-marketingRouter.get('/segments/summary', requirePermission('reports:read'), async (c) => {
+marketingRouter.get('/segments/summary', requirePermission('customers:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const data = await segments.getSummary(storeId);
   return c.json({ success: true, data });
 });
 
-marketingRouter.get('/segments/:type', requirePermission('reports:read'), async (c) => {
+marketingRouter.get('/segments/:type', requirePermission('customers:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const type = c.req.param('type') ?? '';
   const validTypes = ['high_value', 'repeat_buyers', 'new_customers', 'inactive', 'cart_abandoners', 'at_risk', 'one_time_buyers', 'coupon_users'];
@@ -245,13 +253,13 @@ marketingRouter.get('/segments/:type', requirePermission('reports:read'), async 
   return c.json({ success: true, data });
 });
 
-marketingRouter.get('/segments/settings/thresholds', requirePermission('reports:read'), async (c) => {
+marketingRouter.get('/segments/settings/thresholds', requirePermission('customers:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const data = await segments.getThresholds(storeId);
   return c.json({ success: true, data });
 });
 
-marketingRouter.patch('/segments/settings/thresholds', requirePermission('reports:read'), async (c) => {
+marketingRouter.patch('/segments/settings/thresholds', requirePermission('customers:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const body = await c.req.json();
   await segments.updateThresholds(storeId, body);
