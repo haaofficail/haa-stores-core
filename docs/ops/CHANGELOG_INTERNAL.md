@@ -1,5 +1,18 @@
 # Internal Changelog
 
+## 2026-07-02 — Staging Deploy Self-hosted Runner Cutover (TASK-0146)
+
+- Changed only the `deploy-staging` job to run on `[self-hosted, linux, x64, haa-staging]`.
+- Added job-level staging deploy concurrency with `group: staging-deploy` and `cancel-in-progress: false`.
+- Removed staging SSH setup, known-host handling, SSH warmup, staging `scp`, and staging `ssh` commands from the staging deploy path.
+- Kept Quality Gates, image builds, and production deploy behavior unchanged.
+- Staging GHCR login, deploy config sync, compose deploy, smoke diagnostics, and rollback now execute locally on the staging self-hosted runner.
+- Added `scripts/server/install-github-runner-staging.sh` to register/install the VPS runner without storing the GitHub registration token in the repo or printing it in docs.
+- Updated deploy workflow tests to guard the self-hosted runner contract and prevent reintroducing inbound SSH for staging.
+- Verified workflow YAML parsing and focused deploy workflow tests locally.
+- The VPS runner is now registered and online as `haa-staging-vps` with labels `self-hosted`, `Linux`, `X64`, and `haa-staging`; PR #355 is ready for staging deploy verification.
+- Safety boundary unchanged: no app code, no production deploy/action, no `db:migrate`, no DB mutation, no secrets printed, no live provider calls, and no production config change.
+
 ## 2026-07-01 — Staging Deploy SSH Diagnostics (TASK-0145)
 
 - Added a staging-only deploy diagnostic step that records the GitHub runner public IPv4 in workflow logs and `GITHUB_RUNNER_PUBLIC_IP`.
