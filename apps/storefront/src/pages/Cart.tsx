@@ -368,9 +368,22 @@ export default function Cart() {
 
           <div className="lg:col-span-1 space-y-3">
             {(() => {
-              const FREE_SHIPPING = 199;
-              const remaining = Math.max(0, FREE_SHIPPING - subtotal);
-              const progress = Math.min(100, (subtotal / FREE_SHIPPING) * 100);
+              // P1-13 audit fix: this used a hardcoded 199 SAR threshold
+              // for every store, unrelated to what the store's shipping
+              // methods actually configure. The real threshold is
+              // destination-dependent (ManualShippingProvider computes it
+              // per city) — shippingEstimateRates already carries the
+              // real freeAboveAmount once the customer estimates shipping
+              // below. Before that, we don't know it, so don't claim a
+              // number.
+              const freeShippingThreshold = shippingEstimateRates
+                .map((r) => (r.freeAboveAmount ? toMoneyNumber(r.freeAboveAmount) : null))
+                .filter((v): v is number => v !== null && v > 0)
+                .sort((a, b) => a - b)[0];
+              if (!freeShippingThreshold) return null;
+
+              const remaining = Math.max(0, freeShippingThreshold - subtotal);
+              const progress = Math.min(100, (subtotal / freeShippingThreshold) * 100);
               return (
               <div className="bg-primary-50 rounded-xl p-3">
                 {remaining > 0 ? (
