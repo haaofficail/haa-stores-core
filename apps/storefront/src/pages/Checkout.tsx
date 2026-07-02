@@ -390,6 +390,24 @@ export default function Checkout() {
         window.location.href = result.redirectUrl;
         return;
       }
+      // P1 fix (flagged by review): confirm() never throws for a failed
+      // payment — it always resolves 200 with paymentStatus reflecting the
+      // outcome (see CheckoutService.confirm). Before this check, every
+      // non-3DS response fell through to the success path below, so a
+      // declined card or a provider exception (caught server-side and
+      // turned into paymentStatus='failed') was shown to the customer as a
+      // completed order. Only 'paid', or 'pending' for the two
+      // pay-on-collection methods, is an actual success.
+      const isPendingCollectionMethod = paymentMethod === 'cash_on_delivery' || paymentMethod === 'bank_transfer';
+      const paymentSucceeded = result.paymentStatus === 'paid'
+        || (result.paymentStatus === 'pending' && isPendingCollectionMethod);
+      if (!paymentSucceeded) {
+        const message = t('checkout.paymentError', 'تعذّر إتمام الدفع.');
+        setPaymentRecovery({ kind: 'payment_failed', message, paymentMethod });
+        toast.error(message);
+        setConfirming(false);
+        return;
+      }
       clearLocalCart();
       tracker.trackPurchase(slug, result.order.id, cart.id, { orderNumber: result.order.orderNumber });
       if (couponCode) {

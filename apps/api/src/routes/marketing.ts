@@ -259,7 +259,11 @@ marketingRouter.get('/segments/settings/thresholds', requirePermission('customer
   return c.json({ success: true, data });
 });
 
-marketingRouter.patch('/segments/settings/thresholds', requirePermission('customers:read'), async (c) => {
+// P2 fix (flagged by review): this mutates segmentation thresholds but was
+// guarded by the read-only 'customers:read' permission — any role that can
+// merely view customer segments could also change them. GET stays on
+// customers:read; this write route now requires customers:update.
+marketingRouter.patch('/segments/settings/thresholds', requirePermission('customers:update'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
   const body = await c.req.json();
   await segments.updateThresholds(storeId, body);

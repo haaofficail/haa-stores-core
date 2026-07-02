@@ -560,7 +560,22 @@ export class CheckoutService {
           });
 
           // Here we should ideally release the stock back
-          await this.incrementStock(tx, cartItems.map(i => ({ productId: i.product.id, variantId: i.variant?.id ?? null, quantity: i.item.quantity }))); 
+          await this.incrementStock(tx, cartItems.map(i => ({ productId: i.product.id, variantId: i.variant?.id ?? null, quantity: i.item.quantity })));
+
+          // P1 fix (flagged by review): loyalty points were debited
+          // atomically with order creation in Phase 1, which already
+          // committed by the time we know Phase 2's payment failed —
+          // reverse that debit here so a declined/erroring payment doesn't
+          // permanently cost the customer their points.
+          const sessionMeta = (session.metadata ?? {}) as Record<string, unknown>;
+          const loyaltyRedeem = sessionMeta.loyaltyRedeem as { points: number; value: number } | undefined;
+          if (loyaltyRedeem && loyaltyRedeem.points > 0 && order.customerId != null) {
+            await new LoyaltyService(tx).reverseRedeem({
+              storeId, customerId: order.customerId,
+              points: loyaltyRedeem.points,
+              referenceId: order.id, orderNumber: order.orderNumber,
+            });
+          }
         }
 
         const txAudit = new AuditLogService(tx);
