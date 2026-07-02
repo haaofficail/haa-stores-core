@@ -78,17 +78,18 @@ The workflow automatically ran `scripts/server/smoke-staging.sh` which performs 
 
 ---
 
-## **Manual Verification Status**
+## **Automated Verification (GitHub Actions Only)**
 
-| Check               | Status  | Notes                                            |
-| ------------------- | ------- | ------------------------------------------------ |
-| **API health**      | ✅ PASS | `/health` endpoint responds with status="ok"     |
-| **Storefront**      | ✅ PASS | Root page returns HTML (<!doctype html)          |
-| **Docker services** | ✅ PASS | All containers running (verified in deploy logs) |
-| **Database**        | ✅ PASS | PostgreSQL initialized and healthy               |
-| **Redis**           | ✅ PASS | Cache server running                             |
-| **Caddy/HTTPS**     | ✅ PASS | Reverse proxy configured and reloading           |
-| **Logs (15 min)**   | ✅ PASS | No 5xx errors detected in automated logs         |
+**Status:** ✅ VERIFIED VIA GITHUB ACTIONS RUN 28603168234
+
+This report documents **automated verification only**:
+
+- Quality gates passed (typecheck, lint, test)
+- Docker build & push successful (4 images)
+- Deploy to staging successful
+- Automatic smoke gate successful (5/5 tests)
+
+**Manual verification** (15-min log monitoring on staging server) is a **separate activity** and should be documented in a companion report if performed.
 
 ---
 
@@ -145,14 +146,14 @@ The workflow automatically ran `scripts/server/smoke-staging.sh` which performs 
 
 **Rationale:**
 
-1. ✅ All P0–P2 security & performance fixes merged to main
-2. ✅ GitHub Actions quality gates passed (typecheck, lint, 5,100+ tests)
-3. ✅ Docker images successfully built and pushed to GHCR
-4. ✅ Staging deployment completed successfully
-5. ✅ Automatic smoke tests all passed (5/5)
-6. ✅ No 5xx errors in logs
-7. ✅ All critical services running and healthy
-8. ✅ Data isolation, CSRF, rate limiting, and other security controls verified
+1. ✅ All P0–P2 security & performance fixes merged to main (commit dc71e25d)
+2. ✅ GitHub Actions quality gates passed (typecheck, lint, test: 5,100+)
+3. ✅ Docker images successfully built and pushed to GHCR (4 containers)
+4. ✅ Staging deployment completed successfully (run 28603168234)
+5. ✅ Automatic smoke gate all passed (5/5 tests via `scripts/server/smoke-staging.sh`)
+6. ✅ Production job properly SKIPPED (not executed, as designed)
+
+**Automated Verification Complete.** Manual server monitoring is a separate verification step.
 
 **Blockers:** None
 
