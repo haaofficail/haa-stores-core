@@ -1,13 +1,13 @@
 # Latest Monitoring Report
 
-- **Generated At:** 2026-06-25T23:05:31.647Z
+- **Generated At:** 2026-07-02T15:12:38.199Z
 - **Overall Status:** Healthy
 - **Active Window:** last 24 hour(s)
-- **Total Events Available:** 1599
-- **Window Events Analyzed:** 56
+- **Total Events Available:** 2
+- **Window Events Analyzed:** 2
 - **Actionable Events:** 0
-- **Historical Events Ignored for Recommendations:** 1543
-- **Passive Pass/Warn Events Ignored for Recommendations:** 56
+- **Historical Events Ignored for Recommendations:** 0
+- **Passive Pass/Warn Events Ignored for Recommendations:** 2
 
 ---
 
@@ -23,19 +23,17 @@ _None_
 
 | Metric          | Count |
 | --------------- | ----: |
-| Pass            |    28 |
+| Pass            |     1 |
 | Warning         |     0 |
 | Fail            |     0 |
-| Current checks  |    28 |
-| Total in window |    56 |
+| Current checks  |     1 |
+| Total in window |     2 |
 
 ## Synthetic Checks Summary
 
-| Target          | Status |
-| --------------- | ------ |
-| api-health      | pass   |
-| dashboard-root  | pass   |
-| storefront-home | pass   |
+| Target     | Status |
+| ---------- | ------ |
+| api-health | pass   |
 
 ## Top Active Error Codes
 
