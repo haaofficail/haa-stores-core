@@ -1,34 +1,27 @@
-// HTTP Idempotency-Key middleware — F-QA-B-NEXT / Wave 18 P2.
+// HTTP Idempotency-Key middleware — IETF draft (draft-ietf-httpapi-idempotency-key-header)
 //
-// Implements the operational subset of the IETF idempotency-key-header
-// draft (draft-ietf-httpapi-idempotency-key-header) for sensitive POST
-// endpoints (refunds, payouts, manual adjustments). The merchant client
-// sends `Idempotency-Key: <uuid>` and the middleware:
+// Sensitive POST endpoints (refunds, payouts, manual adjustments) send `Idempotency-Key: <uuid>`.
+// The middleware:
+//   1. Computes SHA256 fingerprint of request body; reuse with different payload → 409.
+//   2. Caches successful response (status, body, headers) keyed by (method:path:key).
+//   3. On replay with same key+body within TTL, returns cached response without touching handler.
 //
-//   1. Computes a fingerprint of the request body so a key reused with
-//      different payload is rejected with 409 (per the draft).
-//   2. Caches the eventual response (status, body, content-type) for a
-//      short TTL keyed by (route, idempotency-key).
-//   3. On a replay with the same key+body within the TTL, returns the
-//      cached response byte-for-byte without touching the handler.
+// Backed by Redis when REDIS_URL is set (scale-safe: idempotency survives process restart).
+// Falls back to in-memory cache for local dev/single-process deployments.
 //
-// The cache is in-memory and process-local — same constraint as the
-// shipping rate cache and webhook dedup counters. A Redis-backed
-// implementation can be added later once we have a horizontally-scaled
-// API; until then a single Node instance is the deployment shape.
-//
-// Header is OPTIONAL by default — clients without the header bypass the
-// middleware entirely. Pass `{ required: true }` to a route to enforce
-// the header (and reject calls without one with 400).
+// Header is OPTIONAL by default — clients without it bypass middleware entirely.
+// Pass `{ required: true }` to enforce it (reject calls without header with 400).
 
 import type { Context, MiddlewareHandler, Next } from 'hono';
 import type { ContentfulStatusCode, StatusCode } from 'hono/utils/http-status';
 import { createHash } from 'node:crypto';
+import Redis from 'ioredis';
 
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000; // 24h — matches the draft's recommended floor.
 const MAX_KEY_LENGTH = 256;
 const MIN_KEY_LENGTH = 8;
 const HEADER = 'idempotency-key';
+const REDIS_KEY_PREFIX = 'idempotency:';
 
 interface CachedResponseBase {
   headers: Record<string, string>;
@@ -46,6 +39,7 @@ interface IdempotencyMetrics {
   misses: number;
   conflicts: number;
   invalidKey: number;
+  redisErrors: number;
 }
 
 const _metrics: IdempotencyMetrics = {
@@ -54,9 +48,30 @@ const _metrics: IdempotencyMetrics = {
   misses: 0,
   conflicts: 0,
   invalidKey: 0,
+  redisErrors: 0,
 };
 
 const _store = new Map<string, CachedResponse>();
+let _redis: Redis | null | undefined;
+
+async function getRedisClient(): Promise<Redis | null> {
+  if (_redis !== undefined) return _redis;
+  const redisUrl = process.env.REDIS_URL;
+  if (!redisUrl) {
+    _redis = null;
+    return null;
+  }
+  try {
+    const client = new Redis(redisUrl);
+    await client.ping();
+    _redis = client;
+    return client;
+  } catch {
+    _metrics.redisErrors += 1;
+    _redis = null;
+    return null;
+  }
+}
 
 const SUCCESS_STATUS_CODES = new Set<number>([200, 201, 202, 203, 204, 205, 206, 207, 208, 226]);
 const CONTENTLESS_STATUS_CODES = new Set<number>([101, 204, 205, 304]);
@@ -93,13 +108,21 @@ export function getIdempotencyKeyStats(): IdempotencyKeyStats {
 }
 
 /** Test-only. Clears the cache and zeroes the counters. */
-export function resetIdempotencyKeyState(): void {
+export async function resetIdempotencyKeyState(): Promise<void> {
   _store.clear();
+  const redis = await getRedisClient();
+  if (redis) {
+    const keys = await redis.keys(`${REDIS_KEY_PREFIX}*`);
+    if (keys.length > 0) {
+      await redis.del(keys);
+    }
+  }
   _metrics.total = 0;
   _metrics.hits = 0;
   _metrics.misses = 0;
   _metrics.conflicts = 0;
   _metrics.invalidKey = 0;
+  _metrics.redisErrors = 0;
 }
 
 function isValidKey(key: string): boolean {
@@ -139,6 +162,7 @@ export interface IdempotencyKeyOptions {
  */
 export function idempotencyKey(opts: IdempotencyKeyOptions = {}): MiddlewareHandler {
   const ttlMs = opts.ttlMs ?? DEFAULT_TTL_MS;
+  const ttlSeconds = Math.floor(ttlMs / 1000);
   const required = opts.required ?? false;
 
   return async (c: Context, next: Next) => {
@@ -159,7 +183,6 @@ export function idempotencyKey(opts: IdempotencyKeyOptions = {}): MiddlewareHand
           400,
         );
       }
-      // Optional + missing → just pass through.
       await next();
       return;
     }
@@ -182,13 +205,30 @@ export function idempotencyKey(opts: IdempotencyKeyOptions = {}): MiddlewareHand
     const now = Date.now();
     purgeExpired(now);
 
-    // Read the raw body so we can fingerprint it. Hono buffers it for
-    // downstream handlers, so this is safe.
     const rawBody = await c.req.text().catch(() => '');
     const fingerprint = fingerprintBody(rawBody);
     const cacheKey = `${c.req.method}:${c.req.path}:${key}`;
+    const redisKey = `${REDIS_KEY_PREFIX}${cacheKey}`;
 
-    const existing = _store.get(cacheKey);
+    const redis = await getRedisClient();
+    let existing: CachedResponse | null = null;
+
+    // Try Redis first (scale-safe), then in-memory fallback (local dev)
+    if (redis) {
+      try {
+        const cached = await redis.get(redisKey);
+        if (cached) {
+          existing = JSON.parse(cached) as CachedResponse;
+        }
+      } catch {
+        _metrics.redisErrors += 1;
+      }
+    }
+
+    if (!existing) {
+      existing = _store.get(cacheKey) ?? null;
+    }
+
     if (existing && existing.expiresAt > now) {
       if (existing.fingerprint !== fingerprint) {
         _metrics.conflicts += 1;
@@ -216,8 +256,6 @@ export function idempotencyKey(opts: IdempotencyKeyOptions = {}): MiddlewareHand
     await next();
 
     const res = c.res;
-    // Only cache deterministic success responses. 4xx/5xx are not cached
-    // so transient failures can be retried with the same key.
     if (res.status >= 200 && res.status < 300) {
       const status = toSuccessStatusCode(res.status);
       const cloned = res.clone();
@@ -225,23 +263,31 @@ export function idempotencyKey(opts: IdempotencyKeyOptions = {}): MiddlewareHand
       cloned.headers.forEach((v, k) => {
         headers[k] = v;
       });
-      if (hasResponseBody(status)) {
-        const body = await cloned.text();
-        _store.set(cacheKey, {
-          status,
-          headers,
-          body,
-          fingerprint,
-          expiresAt: now + ttlMs,
-        });
-      } else {
-        _store.set(cacheKey, {
-          status,
-          headers,
-          body: null,
-          fingerprint,
-          expiresAt: now + ttlMs,
-        });
+
+      const cached: CachedResponse = hasResponseBody(status)
+        ? {
+            status,
+            headers,
+            body: await cloned.text(),
+            fingerprint,
+            expiresAt: now + ttlMs,
+          }
+        : {
+            status,
+            headers,
+            body: null,
+            fingerprint,
+            expiresAt: now + ttlMs,
+          };
+
+      _store.set(cacheKey, cached);
+
+      if (redis) {
+        try {
+          await redis.setex(redisKey, ttlSeconds, JSON.stringify(cached));
+        } catch {
+          _metrics.redisErrors += 1;
+        }
       }
     }
   };
