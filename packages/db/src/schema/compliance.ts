@@ -11,6 +11,17 @@ export const kycProfiles = pgTable('kyc_profiles', {
   legalName: varchar('legal_name', { length: 255 }),
   commercialName: varchar('commercial_name', { length: 255 }),
   nationalIdOrIqama: varchar('national_id_or_iqama', { length: 20 }),
+  // P1-3 audit fix (prepared, not yet wired into app code — see
+  // migration 0091_compliance_pii_encryption.sql). Mirrors the
+  // encrypted_payload + key_version pattern already used for payment
+  // provider credentials (payment_provider_settings.ts). Both new
+  // columns are nullable additive columns; nationalIdOrIqama above stays
+  // as-is (plaintext) until an owner-approved backfill migrates existing
+  // rows and the read/write paths are updated to use the encrypted
+  // column, at which point nationalIdOrIqama can be dropped in a
+  // follow-up migration.
+  nationalIdEncrypted: text('national_id_encrypted'),
+  nationalIdKeyVersion: varchar('national_id_key_version', { length: 20 }),
   commercialRegistrationNumber: varchar('commercial_registration_number', { length: 50 }),
   freelanceDocumentNumber: varchar('freelance_document_number', { length: 50 }),
   vatNumber: varchar('vat_number', { length: 50 }),
@@ -33,6 +44,13 @@ export const merchantBankAccounts = pgTable('merchant_bank_accounts', {
   bankName: varchar('bank_name', { length: 100 }).notNull(),
   iban: varchar('iban', { length: 34 }).notNull(),
   ibanLast4: varchar('iban_last4', { length: 4 }),
+  // P1-3 audit fix (prepared, not yet wired into app code — see
+  // migration 0091_compliance_pii_encryption.sql). `iban` above stays
+  // plaintext until an owner-approved backfill + key-management decision
+  // (reuse PAYMENT_CREDENTIALS_ENCRYPTION_KEY vs a dedicated compliance
+  // key) lands, at which point it can be dropped in a follow-up migration.
+  ibanEncrypted: text('iban_encrypted'),
+  ibanKeyVersion: varchar('iban_key_version', { length: 20 }),
   status: varchar('status', { length: 30 }).notNull().default('submitted'),
   isDefault: boolean('is_default').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
