@@ -42,6 +42,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   login_cross_tenant_rejected: 'محاولة دخول لمتجر غير مأذون',
   admin_login: 'دخول الإدارة',
   admin_login_failed: 'فشل دخول الإدارة',
+  admin_logout: 'خروج الإدارة',
   admin_totp_enrollment_started: 'بدء تفعيل التحقق الثنائي للإدارة',
   admin_totp_enabled: 'تفعيل التحقق الثنائي للإدارة',
   admin_totp_disabled: 'تعطيل التحقق الثنائي للإدارة',

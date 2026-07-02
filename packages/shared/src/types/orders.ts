@@ -162,6 +162,7 @@ export type AuditAction =
   | 'login_cross_tenant_rejected'
   | 'admin_login'
   | 'admin_login_failed'
+  | 'admin_logout'
   | 'admin_totp_enrollment_started'
   | 'admin_totp_enabled'
   | 'admin_totp_disabled'
