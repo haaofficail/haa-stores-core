@@ -12,6 +12,7 @@ import { SubscriptionService } from '@haa/commerce-core';
 import { createMediaAdapter } from '@haa/shared/media';
 import { getWebhookDedupStats } from '@haa/integration-core';
 import { getIdempotencyKeyStats } from '../../middleware/idempotency-key.js';
+import { parsePagination, paginationEnvelope, PAGINATION_LIMITS } from '../../middleware/pagination-limits.js';
 import { sha256Hex, signAdminUploadIntegrity } from '../../services/admin-upload-integrity.js';
 
 type AdminRouteContext = Context;
@@ -75,9 +76,11 @@ const adminUserListSelect = {
 export async function auditRoute(c: AdminRouteContext) {
   const tenantId = c.req.query('tenantId');
   const storeId = c.req.query('storeId');
-  const page = Math.max(1, Number(c.req.query('page')) || 1);
-  const limit = Math.min(200, Math.max(1, Number(c.req.query('limit')) || 50));
-  const offset = (page - 1) * limit;
+  const { page, limit, offset } = parsePagination(
+    c.req.query('page'),
+    c.req.query('limit'),
+    PAGINATION_LIMITS.MAX_AUDIT_LIMIT,
+  );
   const db = createDbClient();
   const conditions: SQL[] = [];
   if (tenantId) conditions.push(eq(s.auditLogs.tenantId, Number(tenantId)));
@@ -87,11 +90,7 @@ export async function auditRoute(c: AdminRouteContext) {
   const logs = await db.select().from(s.auditLogs).where(where).orderBy(desc(s.auditLogs.createdAt)).limit(limit).offset(offset);
   return c.json({
     success: true,
-    data: logs,
-    page,
-    limit,
-    total,
-    totalPages: Math.ceil(total / limit),
+    ...paginationEnvelope(logs, page, limit, total),
   });
 }
 
@@ -117,12 +116,18 @@ export async function webhooksRoute(c: AdminRouteContext) {
   if (!tenantId && !storeId) {
     return c.json({ success: true, data: [] });
   }
+  const { page, limit, offset } = parsePagination(c.req.query('page'), c.req.query('limit'));
   const db = createDbClient();
   const conditions: SQL[] = [];
   if (tenantId) conditions.push(eq(s.webhookEvents.tenantId, Number(tenantId)));
   if (storeId) conditions.push(eq(s.webhookEvents.storeId, Number(storeId)));
-  const events = await db.select().from(s.webhookEvents).where(conditions.length ? and(...conditions) : undefined).orderBy(desc(s.webhookEvents.createdAt)).limit(100);
-  return c.json({ success: true, data: events });
+  const where = conditions.length ? and(...conditions) : undefined;
+  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(s.webhookEvents).where(where);
+  const events = await db.select().from(s.webhookEvents).where(where).orderBy(desc(s.webhookEvents.createdAt)).limit(limit).offset(offset);
+  return c.json({
+    success: true,
+    ...paginationEnvelope(events, page, limit, total),
+  });
 }
 
 // ── /plans ────────────────────────────────────────────────────────────────
@@ -227,10 +232,12 @@ export const settingsRoutes = {
 
 // ── /users ────────────────────────────────────────────────────────────────
 export async function usersRoute(c: AdminRouteContext) {
+  const { page, limit, offset } = parsePagination(c.req.query('page'), c.req.query('limit'));
   const db = createDbClient();
-  const users = await db.select(adminUserListSelect).from(s.users).orderBy(desc(s.users.createdAt)).limit(100);
+  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(s.users);
+  const users = await db.select(adminUserListSelect).from(s.users).orderBy(desc(s.users.createdAt)).limit(limit).offset(offset);
   return c.json({
     success: true,
-    data: users,
+    ...paginationEnvelope(users, page, limit, total),
   });
 }
