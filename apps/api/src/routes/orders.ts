@@ -8,6 +8,7 @@ import { requireAuth, requireStoreAccess, requirePermission, getAuth } from '@ha
 import { paginationSchema, updateOrderStatusSchema, ORDER_STATUS_TRANSITIONS, PREPARATION_STATUS_TRANSITIONS, type OrderStatus, type ProviderCode } from '@haa/shared';
 import type { PreparationStatus } from '@haa/shared';
 import { createDbClient } from '@haa/db';
+import { PAGINATION_LIMITS } from '../middleware/pagination-limits.js';
 import { idempotencyKey } from '../middleware/idempotency-key.js';
 
 const ordersRouter = new Hono();
@@ -35,7 +36,7 @@ ordersRouter.get('/', requirePermission('orders:read'), async (c) => {
 
 ordersRouter.get('/recent-items', requirePermission('orders:read'), async (c) => {
   const storeId = Number(c.req.param('storeId'));
-  const limit = Number(c.req.query('limit')) || 5;
+  const limit = Math.min(PAGINATION_LIMITS.MAX_LIMIT, Math.max(1, Number(c.req.query('limit')) || 5));
   const result = await new OrdersService().getRecentWithImages(storeId, limit);
   return c.json({ success: true, data: result });
 });
