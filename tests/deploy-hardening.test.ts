@@ -11,33 +11,45 @@ function read(p: string): string {
 }
 
 describe('Deploy hardening — fail2ban + watchdog + scheduler test gate', () => {
-  describe('SSH warmup window', () => {
+  describe('Production SSH warmup window', () => {
     const deployYml = read(resolve(projectRoot, '.github/workflows/deploy.yml'));
+    const productionJob = deployYml.slice(deployYml.indexOf('  deploy-production:'));
+    const stagingJob = deployYml.slice(
+      deployYml.indexOf('  deploy-staging:'),
+      deployYml.indexOf('  deploy-production:'),
+    );
 
-    it('has at least 6 retry attempts in staging warmup', () => {
+    it('staging deploy has no SSH warmup because it runs on the VPS self-hosted runner', () => {
+      expect(stagingJob).toMatch(/runs-on:\s*\[self-hosted,\s*linux,\s*x64,\s*haa-staging\]/);
+      expect(stagingJob).not.toMatch(/Warm up SSH/);
+      expect(stagingJob).not.toMatch(/backoffs=\(/);
+      expect(stagingJob).not.toMatch(/\bssh\s+-p\b/);
+    });
+
+    it('has at least 6 retry attempts in production warmup', () => {
       // The old 3-attempt schedule capped at ~3 min — below the 15-min
       // fail2ban window. We now expect 6 attempts covering ~24 min.
       // Match: `backoffs=(30 60 120 240 480 480)` or similar 6-item form.
-      expect(deployYml).toMatch(/backoffs=\(\s*30\s+60\s+120\s+240\s+480\s+480\s*\)/);
+      expect(productionJob).toMatch(/backoffs=\(\s*30\s+60\s+120\s+240\s+480\s+480\s*\)/);
     });
 
-    it('staging warmup uses ConnectTimeout=20 (not 30)', () => {
+    it('production warmup uses ConnectTimeout=20 (not 30)', () => {
       // 20s per attempt × 6 attempts gives more room for the 24-min budget
       // without burning the runner's 6-hour job quota on hung TCPs.
-      expect(deployYml).toMatch(/ssh -o ConnectTimeout=20 -o BatchMode=yes/);
+      expect(productionJob).toMatch(/ssh -o ConnectTimeout=20 -o BatchMode=yes/);
     });
 
-    it('staging warmup includes a manual-unban hint in the failure message', () => {
+    it('production warmup includes a manual-unban hint in the failure message', () => {
       // Operator should never have to dig through a playbook to find the
       // unban command on the first failure surface.
-      expect(deployYml).toMatch(/fail2ban-client unban/);
+      expect(productionJob).toMatch(/manual unban required/);
     });
 
     it('does NOT silently downgrade retry count', () => {
       // Guard against a well-meaning future commit shortening the loop.
       // The old 3-attempt schedule is what caused PR #182's Deploy #205
       // to fail. The new schedule MUST stay >= 6 attempts.
-      expect(deployYml).not.toMatch(/for attempt in 1 2 3; do/);
+      expect(productionJob).not.toMatch(/for attempt in 1 2 3; do/);
     });
   });
 

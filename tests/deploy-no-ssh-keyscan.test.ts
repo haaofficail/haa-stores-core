@@ -1,12 +1,11 @@
-// Deploy workflow must never use `ssh-keyscan` against staging/production.
+// Deploy workflow must never use `ssh-keyscan` against production, and
+// staging must not use inbound SSH at all.
 //
-// Background: staging's fail2ban (sshd jail) treats repeated probes from
-// GitHub runner IPs as brute-force attempts and bans the runner IP for
-// 15+ minutes. Multiple consecutive deploys (e.g. when several PRs land
-// in a row) keep hitting the ban and the deploy fails on the very first
-// step — before any image work happens. The fix is to either pre-bake
-// the known_hosts secret or use `StrictHostKeyChecking accept-new` on
-// the first real SSH call.
+// Background: GitHub-hosted runners reached staging SSH inconsistently
+// because some rotating runner IPs timed out on TCP 22 before SSH auth.
+// Staging deploys now run on the VPS via the dedicated self-hosted runner
+// labels, eliminating GitHub-hosted inbound SSH. Production still uses SSH,
+// so it keeps the no-keyscan guard.
 //
 // This test locks the workflow so a future "just add ssh-keyscan back"
 // regression cannot ship.
@@ -18,7 +17,16 @@ import { resolve } from 'node:path';
 const ROOT = resolve(new URL('..', import.meta.url).pathname);
 const DEPLOY = readFileSync(resolve(ROOT, '.github/workflows/deploy.yml'), 'utf-8');
 
-describe('Deploy workflow — no ssh-keyscan probing', () => {
+function jobBlock(jobName: string): string {
+  const marker = `  ${jobName}:`;
+  const start = DEPLOY.indexOf(marker);
+  expect(start, `${jobName} job exists`).toBeGreaterThanOrEqual(0);
+  const rest = DEPLOY.slice(start + marker.length);
+  const next = rest.search(/\n  [a-zA-Z0-9_-]+:\n/);
+  return DEPLOY.slice(start, next === -1 ? DEPLOY.length : start + marker.length + next);
+}
+
+describe('Deploy workflow — staging self-hosted runner and no ssh-keyscan probing', () => {
   it('never invokes `ssh-keyscan` against a real host', () => {
     // Comments may still reference the term (we explain why we removed it),
     // but no actual shell invocation should remain. We assert there's no
@@ -36,46 +44,58 @@ describe('Deploy workflow — no ssh-keyscan probing', () => {
     expect(offenders).toEqual([]);
   });
 
-  describe.each([
-    ['staging', 'STAGING_KNOWN_HOSTS', 'STAGING_HOST'],
-    ['production', 'PRODUCTION_KNOWN_HOSTS', 'PRODUCTION_HOST'],
-  ])('%s job', (_env, knownHostsSecret, hostSecret) => {
-    it(`reads ${knownHostsSecret} when present`, () => {
-      expect(DEPLOY).toMatch(new RegExp(`secrets\\.${knownHostsSecret}`));
+  describe('staging job', () => {
+    const staging = jobBlock('deploy-staging');
+
+    it('runs only on the dedicated staging self-hosted runner labels', () => {
+      expect(staging).toMatch(/runs-on:\s*\[self-hosted,\s*linux,\s*x64,\s*haa-staging\]/);
+    });
+
+    it('has its own staging deploy concurrency group', () => {
+      expect(staging).toMatch(/concurrency:\s*\n\s*group:\s*staging-deploy\s*\n\s*cancel-in-progress:\s*false/);
+    });
+
+    it('does not require staging SSH secrets or inbound SSH commands', () => {
+      expect(staging).not.toMatch(/STAGING_SSH_KEY/);
+      expect(staging).not.toMatch(/STAGING_HOST/);
+      expect(staging).not.toMatch(/STAGING_USER/);
+      expect(staging).not.toMatch(/STAGING_SSH_PORT/);
+      expect(staging).not.toMatch(/webfactory\/ssh-agent/);
+      expect(staging).not.toMatch(/\bssh\s+-p\b/);
+      expect(staging).not.toMatch(/\bscp\s+-P\b/);
+      expect(staging).not.toMatch(/StrictHostKeyChecking/);
+      expect(staging).not.toMatch(/ssh-keygen/);
+    });
+
+    it('authenticates GHCR locally on the self-hosted runner', () => {
+      expect(staging).toMatch(/docker login ghcr\.io -u "\$\{\{ github\.actor \}\}" --password-stdin/);
+    });
+
+    it('copies staging deploy config locally instead of scp-ing it over SSH', () => {
+      expect(staging).toMatch(/cp deploy\/staging\/Caddyfile "\$DEPLOY_PATH\/Caddyfile"/);
+      expect(staging).toMatch(/cp deploy\/staging\/docker-compose\.yml "\$DEPLOY_PATH\/docker-compose\.yml"/);
+    });
+  });
+
+  describe('production job', () => {
+    const production = jobBlock('deploy-production');
+
+    it('reads PRODUCTION_KNOWN_HOSTS when present', () => {
+      expect(production).toMatch(/secrets\.PRODUCTION_KNOWN_HOSTS/);
     });
 
     it('falls back to StrictHostKeyChecking accept-new when the secret is absent', () => {
       // The fallback block must reference the host variable + accept-new.
-      expect(DEPLOY).toMatch(/StrictHostKeyChecking accept-new/);
-      expect(DEPLOY).toMatch(new RegExp(`secrets\\.${hostSecret}`));
+      expect(production).toMatch(/StrictHostKeyChecking accept-new/);
+      expect(production).toMatch(/secrets\.PRODUCTION_HOST/);
     });
-  });
 
-  it('configures a sensible ConnectTimeout to avoid hanging on a banned IP', () => {
-    expect(DEPLOY).toMatch(/ConnectTimeout 30/);
+    it('configures a sensible ConnectTimeout to avoid hanging on a banned IP', () => {
+      expect(production).toMatch(/ConnectTimeout 30/);
+    });
   });
 
   describe('Caddyfile + docker-compose.yml sync (PR #60 follow-up)', () => {
-    it('staging SSH uses a configurable deploy port', () => {
-      expect(DEPLOY).toMatch(/STAGING_SSH_PORT:\s+\$\{\{\s+vars\.STAGING_SSH_PORT/);
-      expect(DEPLOY).toMatch(/vars\.STAGING_PORT\s+\|\|\s+secrets\.STAGING_PORT\s+\|\|\s+'22'/);
-      expect(DEPLOY).toMatch(/ssh\s+-p\s+"\$DEPLOY_PORT"\s+-o\s+ConnectTimeout=20/);
-    });
-
-    it('validates pre-baked staging known_hosts against the configured SSH port', () => {
-      expect(DEPLOY).toMatch(/known_host_lookup="\[\$STAGING_HOST\]:\$STAGING_SSH_PORT"/);
-      expect(DEPLOY).toMatch(/ssh-keygen\s+-F\s+"\$known_host_lookup"\s+-f\s+~\/\.ssh\/known_hosts/);
-      expect(DEPLOY).toMatch(/OpenSSH stores non-standard ports as \[host\]:port/);
-    });
-
-    it('staging deploy scps deploy/staging/Caddyfile to the server', () => {
-      expect(DEPLOY).toMatch(/scp\s+-P\s+"\$DEPLOY_PORT"\s+-o\s+BatchMode=yes\s+deploy\/staging\/Caddyfile/);
-    });
-
-    it('staging deploy scps deploy/staging/docker-compose.yml to the server', () => {
-      expect(DEPLOY).toMatch(/scp\s+-P\s+"\$DEPLOY_PORT"\s+-o\s+BatchMode=yes\s+deploy\/staging\/docker-compose\.yml/);
-    });
-
     it('production deploy scps deploy/production/Caddyfile + docker-compose.yml', () => {
       expect(DEPLOY).toMatch(/scp\s+-o\s+BatchMode=yes\s+deploy\/production\/Caddyfile/);
       expect(DEPLOY).toMatch(/scp\s+-o\s+BatchMode=yes\s+deploy\/production\/docker-compose\.yml/);
