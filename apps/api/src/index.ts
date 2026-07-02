@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import 'dotenv/config';
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
+import { compress } from 'hono/compress';
 import { cors } from 'hono/cors';
 import { serveStatic } from 'hono/serve-static';
 import { FALLBACK_PRIMARY } from '@haa/shared';
@@ -12,6 +13,7 @@ import { env } from './env.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import { errorHandler } from './middleware/error-handler.js';
+import { errorMasking } from './middleware/error-masking.js';
 import { initObservability } from './services/observability.js';
 import { logQueueStartupStatus } from './services/queue.js';
 import { securityHeaders } from './middleware/security-headers.js';
@@ -100,6 +102,8 @@ import * as s from '@haa/db/schema';
 const app = new Hono();
 
 app.use('*', requestId());
+app.use('*', errorMasking());
+app.use('*', compress());
 app.use('*', structuredLogger());
 app.use('*', securityHeaders());
 app.use('*', cors({
