@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { eq, and, sql, desc } from 'drizzle-orm';
+import { eq, and, sql, desc, inArray } from 'drizzle-orm';
 import { createDbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { requireAuth, requireStoreAccess, requirePermission } from '@haa/auth-core';
@@ -626,13 +626,24 @@ async function createSyncLog(
 
 async function persistChannelOrders(storeId: number, connectionId: number, providerCode: string, orders: ChannelOrder[]) {
   const db = createDbClient();
+
+  // Batch query: fetch all existing external IDs in ONE query instead of N queries
+  const existingOrders = await db
+    .select({ externalId: s.orders.externalId })
+    .from(s.orders)
+    .where(
+      and(
+        inArray(s.orders.externalId, orders.map(o => o.marketplaceOrderId)),
+        eq(s.orders.source, providerCode),
+      ),
+    );
+
+  const existingSet = new Set(existingOrders.map(o => o.externalId));
+
   let imported = 0;
   for (const order of orders) {
-    const [existing] = await db.select({ id: s.orders.id })
-      .from(s.orders)
-      .where(and(eq(s.orders.externalId, order.marketplaceOrderId), eq(s.orders.source, providerCode)))
-      .limit(1);
-    if (existing) continue;
+    // Skip if order already exists (checked in-memory)
+    if (existingSet.has(order.marketplaceOrderId)) continue;
 
     const orderNumber = `${providerCode.toUpperCase()}-${order.marketplaceOrderId.slice(-6)}`;
     const orderData = order.orderData || {};
@@ -837,13 +848,27 @@ export async function syncAllStores() {
   const db = createDbClient();
   const stores = await db.select({ id: s.stores.id }).from(s.stores).where(eq(s.stores.isActive, true));
 
+  if (stores.length === 0) return;
+
+  // Batch query: fetch all connections for all stores in ONE query instead of M queries
+  const allConnections = await db
+    .select({ id: s.marketplaceConnections.id, storeId: s.marketplaceConnections.storeId, providerCode: s.marketplaceProviders.code })
+    .from(s.marketplaceConnections)
+    .innerJoin(s.marketplaceProviders, eq(s.marketplaceConnections.providerId, s.marketplaceProviders.id))
+    .where(and(inArray(s.marketplaceConnections.storeId, stores.map(st => st.id)), eq(s.marketplaceConnections.isConnected, true)));
+
+  // Group connections by storeId in memory
+  const connectionsByStore = new Map<number, typeof allConnections>();
+  for (const conn of allConnections) {
+    if (!connectionsByStore.has(conn.storeId)) {
+      connectionsByStore.set(conn.storeId, []);
+    }
+    connectionsByStore.get(conn.storeId)!.push(conn);
+  }
+
   for (const store of stores) {
     try {
-      const connections = await db
-        .select({ id: s.marketplaceConnections.id, providerCode: s.marketplaceProviders.code })
-        .from(s.marketplaceConnections)
-        .innerJoin(s.marketplaceProviders, eq(s.marketplaceConnections.providerId, s.marketplaceProviders.id))
-        .where(and(eq(s.marketplaceConnections.storeId, store.id), eq(s.marketplaceConnections.isConnected, true)));
+      const connections = connectionsByStore.get(store.id) || [];
 
       if (connections.length === 0) continue;
 
