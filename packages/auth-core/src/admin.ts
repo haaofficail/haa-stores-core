@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import type { Context, Next } from 'hono';
 import type { SignOptions } from 'jsonwebtoken';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { createDbClient, type DbClient } from '@haa/db';
 import * as s from '@haa/db/schema';
 import { isAdminTotpSchemaReadinessError } from './admin-totp.js';
@@ -16,6 +16,7 @@ export function signAdminToken(payload: {
   userId: number;
   isAdmin: boolean;
   permissions: string[];
+  tokenVersion: number;
   twoFactorEnabled?: boolean;
   twoFactorVerified?: boolean;
 }): string {
@@ -27,11 +28,12 @@ export interface AdminAuthContext {
   userId: number;
   isAdmin: boolean;
   permissions: string[];
+  tokenVersion: number;
   twoFactorEnabled?: boolean;
   twoFactorVerified?: boolean;
 }
 
-export function requireAdminAuth() {
+export function requireAdminAuth(db?: DbClient) {
   return async (c: Context, next: Next) => {
     const authHeader = c.req.header('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -43,6 +45,20 @@ export function requireAdminAuth() {
       if (!decoded.isAdmin) {
         return c.json({ success: false, error: { code: 'FORBIDDEN', message: 'Admin access required' } }, 403);
       }
+
+      if (db) {
+        const client = db;
+        const [user] = await client
+          .select({ tokenVersion: s.users.tokenVersion })
+          .from(s.users)
+          .where(eq(s.users.id, decoded.userId))
+          .limit(1);
+
+        if (!user || user.tokenVersion !== decoded.tokenVersion) {
+          return c.json({ success: false, error: { code: 'UNAUTHORIZED', message: 'Token has been revoked' } }, 401);
+        }
+      }
+
       c.set('adminAuth', decoded);
       await next();
     } catch {
@@ -99,4 +115,12 @@ export function requireAdminTwoFactorIfEnabled(db?: DbClient) {
 
     await next();
   };
+}
+
+export async function logoutAdmin(db: DbClient, userId: number): Promise<void> {
+  await db
+    .update(s.users)
+    .set({ tokenVersion: sql`${s.users.tokenVersion} + 1` })
+    .where(eq(s.users.id, userId))
+    .execute();
 }
