@@ -37,7 +37,7 @@ Make every agent transition deterministic. Outgoing agent produces a complete ha
 
 ### Incoming (new agent)
 
-1. `cd /Users/thwany/Desktop/haa-stores-core` (DECISION-OS-006).
+1. `cd /Users/thwany/Developer/repos/haa-stores-core` (DECISION-OS-006, amended by DECISION-OS-023).
 2. Run: `git branch --show-current`, `git status --short`.
 3. Read in order from `PROVIDER_HANDOFF.md §8` (AGENTS.md → CLAUDE.md → OWNER_DECISIONS.md → OPERATING_MANUAL.md → PROJECT_MEMORY.md → ACTIVE_WORK.md → RISK_AND_PERMISSION_POLICY.md → COMMAND_ROUTING_MATRIX.md).
 4. Run the **First safe command** from the prior handoff.

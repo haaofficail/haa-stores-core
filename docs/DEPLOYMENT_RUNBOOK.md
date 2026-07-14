@@ -17,7 +17,7 @@
 - [ ] **Legal docs** approved (PRIVACY_POLICY + TERMS_OF_SERVICE) by Owner + legal review
 - [ ] **Live API keys** obtained from payment providers (Moyasar, Geidea, Tabby, Tamara)
 - [ ] **Production database** provisioned (managed Postgres)
-- [ ] **DNS** records configured (api.haastores.sa, *.haastores.sa)
+- [ ] **DNS** records configured (api.haastores.sa, \*.haastores.sa)
 - [ ] **CDN** configured (Cloudflare in front)
 - [ ] **Secrets management** in place (Fly.io secrets / Vault / equivalent)
 - [ ] **Monitoring** wired up (Sentry DSN, uptime monitor, alerting)
@@ -68,7 +68,7 @@
 
 ```bash
 # From project root
-cd /Users/thwany/Desktop/haa-stores-core
+cd /Users/thwany/Developer/repos/haa-stores-core
 
 # 1. Working tree clean
 git status  # should show "nothing to commit, working tree clean"
@@ -106,6 +106,7 @@ grep '"tag"' packages/db/src/migrations/meta/_journal.json | tail -3
 ```
 
 **⚠️ KNOWN GOTCHA:** Drizzle snapshot chain is broken for migrations 0050-0053 (snapshot JSONs missing). For fresh DB deploy:
+
 - Use `psql -f <migration>.sql` directly (NOT `drizzle-kit migrate`)
 - See `memory/drizzle-migration-snapshots.md` for the workaround
 
@@ -113,35 +114,35 @@ grep '"tag"' packages/db/src/migrations/meta/_journal.json | tail -3
 
 Before deployment, ensure these secrets are available in your secret store (Fly.io secrets / Vault / etc.):
 
-| Secret | Source | Required for |
-|--------|--------|--------------|
-| `DATABASE_URL` | Provisioned DB | All |
-| `JWT_SECRET` | Generated (`openssl rand -hex 32`) | All |
-| `ADMIN_JWT_SECRET` | Generated (separate from JWT_SECRET) | Admin |
-| `ENCRYPTION_KEY` | Generated (32 bytes hex) | Encryption |
-| `PAYMENT_CREDENTIALS_ENCRYPTION_KEY` | Generated (32 bytes hex) | Payment |
-| `PAYMENT_SANDBOX_SECRET_KEY` | Moyasar dashboard | Card payments |
-| `PAYMENT_SANDBOX_PUBLIC_KEY` | Moyasar dashboard | Card payments |
-| `PAYMENT_WEBHOOK_SECRET` | Moyasar dashboard | Webhooks |
-| `GEIDEA_MERCHANT_PUBLIC_KEY` | Geidea dashboard | Card payments |
-| `GEIDEA_API_PASSWORD` | Geidea dashboard | Card payments |
-| `GEIDEA_CALLBACK_URL` | `https://api.haastores.sa/webhooks/geidea` | Webhooks |
-| `GEIDEA_RETURN_URL` | `https://*.haastores.sa/checkout/payment-callback` | 3DS return |
-| `TABBY_API_KEY` | Tabby dashboard | BNPL |
-| `TABBY_WEBHOOK_SECRET` | Tabby dashboard | BNPL webhooks |
-| `TAMARA_API_KEY` | Tamara dashboard | BNPL |
-| `TAMARA_WEBHOOK_SECRET` | Tamara dashboard | BNPL webhooks |
-| `OTO_API_KEY` | OTO dashboard | Shipping |
-| `OTO_WEBHOOK_SECRET` | OTO dashboard | Shipping webhooks |
-| `CORS_ORIGINS` | `https://*.haastores.sa` | CSRF |
-| `SENTRY_DSN` | Sentry dashboard | Error monitoring |
-| `REDIS_URL` | Upstash dashboard | Rate limiting |
-| `QUEUE_REDIS_URL` | Upstash dashboard | Queue scaffold |
-| `RATE_LIMIT_STORE` | `redis-atomic` | Rate limiting |
-| `SMTP_*` | Transactional email provider | Notifications |
-| `STORAGE_DRIVER` | `s3` or `cloudflare-r2` | File uploads |
-| `S3_*` (if using S3) | AWS / R2 | File uploads |
-| `CDN_PUBLIC_BASE_URL` | `https://cdn.haastores.sa` | Asset URLs |
+| Secret                               | Source                                             | Required for      |
+| ------------------------------------ | -------------------------------------------------- | ----------------- |
+| `DATABASE_URL`                       | Provisioned DB                                     | All               |
+| `JWT_SECRET`                         | Generated (`openssl rand -hex 32`)                 | All               |
+| `ADMIN_JWT_SECRET`                   | Generated (separate from JWT_SECRET)               | Admin             |
+| `ENCRYPTION_KEY`                     | Generated (32 bytes hex)                           | Encryption        |
+| `PAYMENT_CREDENTIALS_ENCRYPTION_KEY` | Generated (32 bytes hex)                           | Payment           |
+| `PAYMENT_SANDBOX_SECRET_KEY`         | Moyasar dashboard                                  | Card payments     |
+| `PAYMENT_SANDBOX_PUBLIC_KEY`         | Moyasar dashboard                                  | Card payments     |
+| `PAYMENT_WEBHOOK_SECRET`             | Moyasar dashboard                                  | Webhooks          |
+| `GEIDEA_MERCHANT_PUBLIC_KEY`         | Geidea dashboard                                   | Card payments     |
+| `GEIDEA_API_PASSWORD`                | Geidea dashboard                                   | Card payments     |
+| `GEIDEA_CALLBACK_URL`                | `https://api.haastores.sa/webhooks/geidea`         | Webhooks          |
+| `GEIDEA_RETURN_URL`                  | `https://*.haastores.sa/checkout/payment-callback` | 3DS return        |
+| `TABBY_API_KEY`                      | Tabby dashboard                                    | BNPL              |
+| `TABBY_WEBHOOK_SECRET`               | Tabby dashboard                                    | BNPL webhooks     |
+| `TAMARA_API_KEY`                     | Tamara dashboard                                   | BNPL              |
+| `TAMARA_WEBHOOK_SECRET`              | Tamara dashboard                                   | BNPL webhooks     |
+| `OTO_API_KEY`                        | OTO dashboard                                      | Shipping          |
+| `OTO_WEBHOOK_SECRET`                 | OTO dashboard                                      | Shipping webhooks |
+| `CORS_ORIGINS`                       | `https://*.haastores.sa`                           | CSRF              |
+| `SENTRY_DSN`                         | Sentry dashboard                                   | Error monitoring  |
+| `REDIS_URL`                          | Upstash dashboard                                  | Rate limiting     |
+| `QUEUE_REDIS_URL`                    | Upstash dashboard                                  | Queue scaffold    |
+| `RATE_LIMIT_STORE`                   | `redis-atomic`                                     | Rate limiting     |
+| `SMTP_*`                             | Transactional email provider                       | Notifications     |
+| `STORAGE_DRIVER`                     | `s3` or `cloudflare-r2`                            | File uploads      |
+| `S3_*` (if using S3)                 | AWS / R2                                           | File uploads      |
+| `CDN_PUBLIC_BASE_URL`                | `https://cdn.haastores.sa`                         | Asset URLs        |
 
 **⚠️ DO NOT** commit any of these to git. Use the secret store's UI/CLI.
 
@@ -442,6 +443,7 @@ flyctl releases rollback --app haa-platform-prod --version <previous-version>
   ```
 
 If a down-migration is impossible (data loss risk), use the snapshot:
+
 ```bash
 flyctl postgres snapshot restore --app haa-prod-db --snapshot <id>
 ```
@@ -501,11 +503,13 @@ pnpm ops:monitor --env=production
 ## 7. On-Call Handbook
 
 **On-call rotation:**
+
 - Primary: [TBD — rotation schedule in PagerDuty]
 - Secondary: [TBD]
 - Escalation: Haa Stores CTO
 
 **On-call responsibilities:**
+
 1. Acknowledge pages within 5 minutes.
 2. Triage: P0 (immediate action), P1 (within 1 hour), P2 (next business day).
 3. Update `docs/ops/INCIDENTS.md` with the incident.

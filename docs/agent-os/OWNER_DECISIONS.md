@@ -143,6 +143,11 @@
 3. **Do not modify `scripts/preflight.mjs`, `AGENTS.md`, or `CLAUDE.md` to enable worktree execution** unless an independent decision authorizes it — that change is foundational and must not be bundled with Agent OS work.
 4. Multi-worktree support for Agent OS is **deferred** to a future independent decision.
 
+> **AMENDED by DECISION-OS-023 (2026-07-15).** The canonical path above is now
+> `/Users/thwany/Developer/repos/haa-stores-core`. Constraint 3 is satisfied for the
+> path correction by DECISION-OS-023; it still forbids foundational edits made to
+> _enable worktree execution_. Constraints 1, 2 and 4 stand unchanged.
+
 ---
 
 ## Index
@@ -276,3 +281,36 @@
 This is additive — it does not replace the deeper planning artifacts (`MASTER_CHECKLIST.md`, `TASK_TRACKER.md`, `EXECUTION_CHECKLIST.md`, `REMAINING_WORK.md`, `BETA_LAUNCH_CHECKLIST.md`). The ledger references them as evidence.
 
 **Supersedes:** none.
+
+### DECISION-OS-023 — Canonical repo path relocated to `~/Developer/repos`
+
+**Locked 2026-07-15.** The canonical local path for Haa Stores is:
+
+```
+/Users/thwany/Developer/repos/haa-stores-core
+```
+
+`~/Desktop/haa-stores-core` still resolves (it is a symlink to the path above) but is a
+**compatibility bridge, not the canonical path**. Do not treat it as the project root.
+
+**Reason (evidence-anchored):**
+
+- The repo was moved out of `~/Desktop` during the desktop reorganization of 2026-07-14
+  (log: `~/Developer/archive/reports/desktop-2026-07-14/سجل التنظيم 2026-07-14.md`).
+- `~/Developer/README.md` declares `repos/` the permanent home for local repositories and
+  states that repos on the Desktop are bridges pending removal.
+- `ls -l ~/Desktop/haa-stores-core` → symlink to `/Users/thwany/Developer/repos/haa-stores-core`.
+- Node resolves the physical path, so `scripts/preflight.mjs` must name the new root or the
+  gate fails from every entry point.
+
+**Authorization granted:** this decision explicitly authorizes the edits to
+`scripts/preflight.mjs`, `AGENTS.md`, and `CLAUDE.md` that DECISION-OS-006 constraint 3
+otherwise forbids — **for the path correction only**.
+
+**Explicitly NOT authorized:** multi-worktree execution. That remains deferred per
+DECISION-OS-006 constraint 4. Sibling worktrees are still out of scope.
+
+**Affected agents:** every agent. The Mandatory Start Rule (`AGENTS.md §2 #1`) now requires
+`pwd` to equal the new path, and `pnpm preflight` enforces it via `EXPECTED_ROOT`.
+
+**Supersedes:** the canonical path named in DECISION-OS-006. The rest of OS-006 stands.

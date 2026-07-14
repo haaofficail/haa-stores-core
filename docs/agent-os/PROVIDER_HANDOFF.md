@@ -46,7 +46,7 @@ The Claude session must, before ending work:
 
 A new agent starting work must, before any edit:
 
-1. `pwd` → must equal `/Users/thwany/Desktop/haa-stores-core` (DECISION-OS-006).
+1. `pwd` → must equal `/Users/thwany/Developer/repos/haa-stores-core` (DECISION-OS-006).
 2. `git branch --show-current` → confirm with owner if unexpected.
 3. `git status --short` → expect what `ACTIVE_WORK.md` says; investigate any diff.
 4. Read the following, in order:
@@ -66,7 +66,7 @@ A new agent starting work must, before any edit:
 
 ## 5. Canonical paths and resources
 
-- **Working directory (only allowed):** `/Users/thwany/Desktop/haa-stores-core`.
+- **Working directory (only allowed):** `/Users/thwany/Developer/repos/haa-stores-core`.
 - **Parked worktree (do not use):** `../haa-stores-agent-os` (DECISION-OS-006).
 - **Untracked legacy `.claude/skills/` (do not open until Batch C):** see DECISION-OS-005.
 - **Infrastructure source of truth:** `docs/ops/HAA_STORES_HOSTINGER_TARGET.md` + `.haa/hostinger-target.json` (per `CLAUDE.md`).
@@ -82,7 +82,7 @@ A new agent starting work must, before any edit:
 You are now working on Haa Stores (متاجر هاء), a multi-tenant Saudi e-commerce SaaS monorepo.
 
 Strict bootstrap:
-1) cd /Users/thwany/Desktop/haa-stores-core   (the only allowed working directory)
+1) cd /Users/thwany/Developer/repos/haa-stores-core   (the only allowed working directory)
 2) Read in this order:
    - AGENTS.md
    - CLAUDE.md

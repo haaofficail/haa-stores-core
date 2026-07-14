@@ -1,7 +1,7 @@
 {
   "project": "haa-stores",
   "arabicName": "متاجر هاء",
-  "localPath": "~/Desktop/haa-stores-core",
+  "localPath": "~/Developer/repos/haa-stores-core",
   "hostingerMcpServer": "hostinger-haa-stores",
   "approvedServer": {
     "ip": "72.61.108.208",

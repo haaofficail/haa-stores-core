@@ -18,7 +18,7 @@ Each command runs against exactly one environment. A merge to `main` is not "jus
 
 ## Rules
 
-1. Canonical local working directory is `/Users/thwany/Desktop/haa-stores-core` (DECISION-OS-006).
+1. Canonical local working directory is `/Users/thwany/Developer/repos/haa-stores-core` (DECISION-OS-006, amended by DECISION-OS-023). `~/Desktop/haa-stores-core` is a compatibility symlink, not the canonical path.
 2. Approved server is `72.61.108.208`; production status is `not_promoted_yet`.
 3. Forbidden server `187.124.41.239` (Nasaq) and forbidden domains (`nasaqpro.tech`, `tarmizos.com`, `haasoft.com`) — never touch.
 4. Forbidden SSH key `nasaq_deploy`; forbidden PM2 services `nasaq-*`.

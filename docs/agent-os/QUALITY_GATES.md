@@ -124,7 +124,7 @@ Every claim in the Final Report carries one of:
 
 ## 13. Environment safety
 
-- Canonical repo only (`/Users/thwany/Desktop/haa-stores-core`) per `OWNER_DECISIONS.md` DECISION-OS-006.
+- Canonical repo only (`/Users/thwany/Developer/repos/haa-stores-core`) per `OWNER_DECISIONS.md` DECISION-OS-006.
 - Do not run commands that mutate local DB, `node_modules`, or `dist/` without owner ack on this branch.
 - Do not run `pnpm install` ad-hoc — `package.json` / lockfile changes are forbidden without explicit approval (`RISK_AND_PERMISSION_POLICY.md`).
 

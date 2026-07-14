@@ -37,7 +37,7 @@ Each step is a gate. If a gate cannot be cleared, **stop and report**.
 
 ### 2.1 Verify official root
 
-- `pwd` must equal `/Users/thwany/Desktop/haa-stores-core` (per `AGENTS.md §2 #1`, `CLAUDE.md`, `scripts/preflight.mjs:5`).
+- `pwd` must equal `/Users/thwany/Developer/repos/haa-stores-core` (per `AGENTS.md §2 #1`, `CLAUDE.md`, `scripts/preflight.mjs:5`).
 - Sibling worktrees are **parked** per [`OWNER_DECISIONS.md`](./OWNER_DECISIONS.md) DECISION-OS-006.
 - If `pwd` is wrong → stop, report, do not retry from a wrong directory.
 

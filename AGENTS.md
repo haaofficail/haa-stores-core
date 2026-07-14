@@ -35,7 +35,7 @@ This is a **multi-tenant SaaS e-commerce platform**, not a single store.
 
 Before ANY task:
 
-1. **Verify path** — `pwd` must be `/Users/thwany/Desktop/haa-stores-core`
+1. **Verify path** — `pwd` must be `/Users/thwany/Developer/repos/haa-stores-core` (see DECISION-OS-023; `~/Desktop/haa-stores-core` is a compatibility symlink only)
 2. **Run** — `pnpm preflight`
 3. **Read** — `docs/system-map/SYSTEM_MAP.md` (architecture overview)
 4. **Read** — `docs/ops/CURRENT_STATE.md`

@@ -110,5 +110,5 @@ Parking method:       READY_TO_RESUME
 Resume prompt for next agent:
   "تابع Batch C: قراءة وتقييم .claude/skills/ القديمة وفق DECISION-OS-005، ثم توليد 28 skill جديدة."
 
-First safe command:   cd /Users/thwany/Desktop/haa-stores-core && git branch --show-current
+First safe command:   cd /Users/thwany/Developer/repos/haa-stores-core && git branch --show-current
 ```
