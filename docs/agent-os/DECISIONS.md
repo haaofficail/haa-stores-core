@@ -75,6 +75,17 @@ Evidence:
 - **Supersedes:** —
 - **Impact:** All agent execution happens in the canonical repo until a future decision authorizes multi-worktree.
 - **Evidence:** `OWNER_DECISIONS.md` DECISION-OS-006; `scripts/preflight.mjs:5,36-41`; `AGENTS.md §2 #1`; `CLAUDE.md` line 7; `ISSUE_REGISTER.md` ISSUE-0001, ISSUE-0019.
+- **Amended by:** DECISION-OS-023 (canonical path relocated 2026-07-14). The worktree policy itself stands; only the path changed.
+
+### DECISION-OS-023 — Canonical repo path relocated to `~/Developer/repos`
+
+- **Date:** 2026-07-15
+- **Status:** Locked
+- **Decision:** The canonical repo path is `/Users/thwany/Developer/repos/haa-stores-core`. `~/Desktop/haa-stores-core` is a compatibility symlink and MUST NOT be treated as the canonical path. This amends the path named in DECISION-OS-006 and authorizes the corresponding edits to the foundational files (`scripts/preflight.mjs`, `AGENTS.md`, `CLAUDE.md`) that DECISION-OS-006 §3 otherwise forbids.
+- **Scope limit:** This authorizes a **path correction only**. It does NOT enable multi-worktree execution — that remains deferred per DECISION-OS-006 §4.
+- **Supersedes:** the canonical path in DECISION-OS-006 (the rest of OS-006 stands).
+- **Impact:** Every agent must `cd` to the new path. `pnpm preflight` enforces it via `EXPECTED_ROOT`.
+- **Evidence:** repo moved during the desktop reorganization of 2026-07-14 (`~/Developer/archive/reports/desktop-2026-07-14/سجل التنظيم 2026-07-14.md`); `~/Developer/README.md` declares `repos/` the permanent home; `ls -l ~/Desktop/haa-stores-core` resolves to the new path; `pnpm preflight` green from the new root.
 
 ---
 

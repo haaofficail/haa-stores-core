@@ -2,7 +2,7 @@ import { existsSync } from 'fs'
 import { join } from 'path'
 import { execSync } from 'child_process'
 
-const EXPECTED_ROOT = '/Users/thwany/Desktop/haa-stores-core'
+const EXPECTED_ROOT = '/Users/thwany/Developer/repos/haa-stores-core'
 const CWD = process.cwd()
 
 let failed = false

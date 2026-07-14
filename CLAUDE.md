@@ -73,7 +73,7 @@ Skills required: `verification-before-completion`, `definition-of-done-gate`, `i
 
 ## Canonical project path
 
-`~/Desktop/haa-stores-core`
+`~/Developer/repos/haa-stores-core` (shortcut on Desktop: `~/Desktop/haa-stores-core`)
 
 ## Infrastructure source of truth
 
