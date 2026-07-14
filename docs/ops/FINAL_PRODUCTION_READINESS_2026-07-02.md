@@ -185,10 +185,17 @@ PR #366 contains:
 Production deployment is **manual and gated**. Once owner approves, workflow_dispatch can trigger:
 
 ```bash
-gh workflow run deploy.yml -r main --inputs "{}"
+gh workflow run deploy.yml -r main -f environment=production
 ```
 
-Or via GitHub UI: Actions → deploy.yml → Run workflow → main branch
+The `environment` input is **required**. `deploy.yml` defaults it to `staging`
+(lines 41-47), and the `deploy-production` job only runs when
+`github.event.inputs.environment == 'production'` (line 463). Omitting the input
+— or using the invalid `--inputs "{}"` flag this runbook previously documented —
+silently deploys **staging** instead, while appearing to succeed.
+
+Or via GitHub UI: Actions → deploy.yml → Run workflow → branch `main` → set
+**Target environment** to `production`.
 
 ---
 
