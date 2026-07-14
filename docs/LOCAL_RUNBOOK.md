@@ -6,18 +6,18 @@
 
 ## المتطلبات
 
-| الأداة | الحد الأدنى | الفحص |
-|--------|-------------|-------|
-| Node.js | >= 20 | `node --version` |
-| pnpm | >= 9 | `pnpm --version` |
-| PostgreSQL | 16 | `psql --version` |
-| Docker | أي إصدار | `docker --version` |
+| الأداة     | الحد الأدنى | الفحص              |
+| ---------- | ----------- | ------------------ |
+| Node.js    | >= 20       | `node --version`   |
+| pnpm       | >= 9        | `pnpm --version`   |
+| PostgreSQL | 16          | `psql --version`   |
+| Docker     | أي إصدار    | `docker --version` |
 
 ## أول تشغيل
 
 ```bash
 # 1. استنساخ المشروع
-cd ~/Desktop/haa-stores-core
+cd ~/Developer/repos/haa-stores-core
 
 # 2. نسخ ملف البيئة
 cp .env.example .env
@@ -27,6 +27,7 @@ pnpm setup
 ```
 
 `pnpm setup` يقوم تلقائيًا بـ:
+
 1. `pnpm install` — تثبيت الاعتماديات
 2. `docker compose up -d` — تشغيل PostgreSQL و MinIO
 3. `pnpm db:migrate` — تشغيل الترحيلات
@@ -62,19 +63,19 @@ pnpm dev:storefront
 
 ## الروابط
 
-| الخدمة | الرابط |
-|--------|--------|
-| API Health | http://localhost:3000/health |
-| Merchant Dashboard | http://localhost:5173 |
-| Storefront | http://localhost:5174/s/haa-demo |
-| PostgreSQL | `postgres://haa:haa_secret_2024@localhost:5432/haastores` |
+| الخدمة             | الرابط                                                    |
+| ------------------ | --------------------------------------------------------- |
+| API Health         | http://localhost:3000/health                              |
+| Merchant Dashboard | http://localhost:5173                                     |
+| Storefront         | http://localhost:5174/s/haa-demo                          |
+| PostgreSQL         | `postgres://haa:haa_secret_2024@localhost:5432/haastores` |
 
 ## حساب التجربة
 
-| الحقل | القيمة |
-|-------|--------|
-| البريد | `ahmed@example.com` |
-| كلمة المرور | `Test@123456` |
+| الحقل       | القيمة                             |
+| ----------- | ---------------------------------- |
+| البريد      | `ahmed@example.com`                |
+| كلمة المرور | `Test@123456`                      |
 | رابط المتجر | `http://localhost:5174/s/haa-demo` |
 
 ## إدارة قاعدة البيانات
@@ -178,6 +179,7 @@ pnpm db:reset
 ### MinIO غير متاح
 
 إذا كان MinIO معطلاً، رفع الصور لن يعمل:
+
 ```bash
 docker compose up -d minio
 ```

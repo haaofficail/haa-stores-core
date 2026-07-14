@@ -383,7 +383,7 @@ Expected launch-readiness documentation files:
 
 ## Verification so far
 
-- `pwd`: `/Users/thwany/Desktop/haa-stores-core`.
+- `pwd`: `/Users/thwany/Developer/repos/haa-stores-core`.
 - `pnpm preflight`: passed during TASK-0093 after fixing the inherited admin-dashboard syntax error in `apps/admin-dashboard/src/pages/SettlementBatches.tsx`.
 - `pnpm --filter @haa/admin-dashboard typecheck`: passed during TASK-0093.
 - `pnpm --filter @haa/admin-dashboard build`: passed during TASK-0093.

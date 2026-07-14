@@ -27,7 +27,7 @@ Do **not** treat stale root-level audits or old master plans as canonical unless
 
 - Product: **Haa Stores / متاجر هاء**.
 - System type: **multi-tenant SaaS e-commerce platform**, not a single store.
-- Canonical local path for agents: `/Users/thwany/Desktop/haa-stores-core`.
+- Canonical local path for agents: `/Users/thwany/Developer/repos/haa-stores-core`.
 - Official Haa Stores server: `72.61.108.208`.
 - Forbidden server for Haa Stores: `187.124.41.239`.
 - DNS manager for `haastores.com`: Cloudflare.
@@ -47,35 +47,35 @@ packages:
   - "packages/*"
 ```
 
-| Layer | Directory | Purpose |
-|---|---|---|
-| API Server | `apps/api/` | Hono backend: routes, middleware, services, workers, webhooks, static SPA serving hooks |
-| Merchant Dashboard | `apps/merchant-dashboard/` | React/Vite SPA for merchants managing stores |
-| Storefront | `apps/storefront/` | React/Vite SPA for public shopping, marketplace, landing/store browsing |
-| Admin Dashboard | `apps/admin-dashboard/` | Platform-wide administration UI |
-| Database | `packages/db/` | Drizzle schema, migrations, seeds, DB client |
-| Shared | `packages/shared/` | Zod schemas, shared types, constants, brand tokens, provider codes |
-| Auth Core | `packages/auth-core/` | Authentication, RBAC, token-version verification, store/tenant boundary checks |
-| Commerce Core | `packages/commerce-core/` | Orders, cart, checkout business logic, domain service, payment orchestration primitives |
-| Payment Providers | `packages/payment-providers/` | Provider contracts/adapters, capabilities, status mapping, webhook signature helpers |
-| Shipping Core | `packages/shipping-core/` | Provider factory, rates, readiness states, labels, tracking, mock/provider contracts |
-| Wallet Core | `packages/wallet-core/` | Ledger/account semantics, payouts, settlements, idempotency policy |
-| Notification Core | `packages/notification-core/` | Email/SMS/push notification abstractions |
-| Integration Core | `packages/integration-core/` | Third-party integration primitives |
-| Marketplace Core | `packages/marketplace-core/` | Public marketplace and multi-store marketplace primitives |
-| UI | `packages/ui/` | Shared React UI primitives |
-| Storefront Themes | `packages/storefront-themes/` | Canonical storefront theme gateway |
-| Theme System | `packages/theme-system/` | Legacy/compatibility theme package; server subpath may be dashboard-safe |
-| Theme Engine | `packages/theme-engine/` | Internal theme rendering primitives |
-| Theme React | `packages/theme-react/` | Theme React bindings |
-| Theme Web | `packages/theme-web/` | Theme web utilities / preview / legacy surface |
-| System Theme | `packages/system-theme/` | Platform/dashboard visual identity, not storefront themes |
-| Scripts | `scripts/` | Preflight, monitoring, synthetic checks, production checks, DB helpers |
-| CI | `.github/workflows/` | Quality, security, deploy workflows |
-| Ops docs | `docs/ops/` | Operational state, production readiness, task tracking |
-| Agent OS docs | `docs/agent-os/` | Agent decisions, active work, issue register, provider handoff, quality gates |
-| System map | `docs/system-map/SYSTEM_MAP.md` | This file |
-| Storage | `storage/` | Local NDJSON support/monitoring event logs |
+| Layer              | Directory                       | Purpose                                                                                 |
+| ------------------ | ------------------------------- | --------------------------------------------------------------------------------------- |
+| API Server         | `apps/api/`                     | Hono backend: routes, middleware, services, workers, webhooks, static SPA serving hooks |
+| Merchant Dashboard | `apps/merchant-dashboard/`      | React/Vite SPA for merchants managing stores                                            |
+| Storefront         | `apps/storefront/`              | React/Vite SPA for public shopping, marketplace, landing/store browsing                 |
+| Admin Dashboard    | `apps/admin-dashboard/`         | Platform-wide administration UI                                                         |
+| Database           | `packages/db/`                  | Drizzle schema, migrations, seeds, DB client                                            |
+| Shared             | `packages/shared/`              | Zod schemas, shared types, constants, brand tokens, provider codes                      |
+| Auth Core          | `packages/auth-core/`           | Authentication, RBAC, token-version verification, store/tenant boundary checks          |
+| Commerce Core      | `packages/commerce-core/`       | Orders, cart, checkout business logic, domain service, payment orchestration primitives |
+| Payment Providers  | `packages/payment-providers/`   | Provider contracts/adapters, capabilities, status mapping, webhook signature helpers    |
+| Shipping Core      | `packages/shipping-core/`       | Provider factory, rates, readiness states, labels, tracking, mock/provider contracts    |
+| Wallet Core        | `packages/wallet-core/`         | Ledger/account semantics, payouts, settlements, idempotency policy                      |
+| Notification Core  | `packages/notification-core/`   | Email/SMS/push notification abstractions                                                |
+| Integration Core   | `packages/integration-core/`    | Third-party integration primitives                                                      |
+| Marketplace Core   | `packages/marketplace-core/`    | Public marketplace and multi-store marketplace primitives                               |
+| UI                 | `packages/ui/`                  | Shared React UI primitives                                                              |
+| Storefront Themes  | `packages/storefront-themes/`   | Canonical storefront theme gateway                                                      |
+| Theme System       | `packages/theme-system/`        | Legacy/compatibility theme package; server subpath may be dashboard-safe                |
+| Theme Engine       | `packages/theme-engine/`        | Internal theme rendering primitives                                                     |
+| Theme React        | `packages/theme-react/`         | Theme React bindings                                                                    |
+| Theme Web          | `packages/theme-web/`           | Theme web utilities / preview / legacy surface                                          |
+| System Theme       | `packages/system-theme/`        | Platform/dashboard visual identity, not storefront themes                               |
+| Scripts            | `scripts/`                      | Preflight, monitoring, synthetic checks, production checks, DB helpers                  |
+| CI                 | `.github/workflows/`            | Quality, security, deploy workflows                                                     |
+| Ops docs           | `docs/ops/`                     | Operational state, production readiness, task tracking                                  |
+| Agent OS docs      | `docs/agent-os/`                | Agent decisions, active work, issue register, provider handoff, quality gates           |
+| System map         | `docs/system-map/SYSTEM_MAP.md` | This file                                                                               |
+| Storage            | `storage/`                      | Local NDJSON support/monitoring event logs                                              |
 
 ---
 
@@ -94,14 +94,14 @@ packages/shared   → leaf dependency; no app imports
 
 ### 3.2 Forbidden imports
 
-| Consumer | Forbidden |
-|---|---|
-| `apps/api` | Any frontend app, React UI packages not explicitly backend-safe |
-| `apps/storefront` | `apps/merchant-dashboard`, `apps/admin-dashboard` |
+| Consumer                  | Forbidden                                                                               |
+| ------------------------- | --------------------------------------------------------------------------------------- |
+| `apps/api`                | Any frontend app, React UI packages not explicitly backend-safe                         |
+| `apps/storefront`         | `apps/merchant-dashboard`, `apps/admin-dashboard`                                       |
 | `apps/merchant-dashboard` | storefront app, `@haa/storefront-themes` main/runtime, `@haa/theme-system` main/runtime |
-| `apps/admin-dashboard` | storefront app, merchant-dashboard app, runtime theme packages |
-| theme packages | dashboard app logic |
-| `packages/shared` | any app or higher-level package |
+| `apps/admin-dashboard`    | storefront app, merchant-dashboard app, runtime theme packages                          |
+| theme packages            | dashboard app logic                                                                     |
+| `packages/shared`         | any app or higher-level package                                                         |
 
 ### 3.3 Allowed theme carve-out
 
@@ -120,88 +120,88 @@ The API server mounts Hono routes in `apps/api/src/index.ts`.
 
 ### 4.1 Global middleware
 
-| Concern | Location |
-|---|---|
-| Request ID | `apps/api/src/middleware/request-id.ts` |
-| Structured logging | `apps/api/src/middleware/structured-logger.ts` |
-| Security headers | `apps/api/src/middleware/security-headers.ts` |
-| CORS | `apps/api/src/index.ts` via `env.CORS_ORIGINS` |
-| CSRF origin defense | `apps/api/src/middleware/csrf-origin.ts` |
-| Error handler | `apps/api/src/middleware/error-handler.ts` |
-| Rate limiting | `apps/api/src/middleware/rate-limiter.ts` |
-| Storage guard | `apps/api/src/middleware/storage-guard.ts` |
+| Concern               | Location                                        |
+| --------------------- | ----------------------------------------------- |
+| Request ID            | `apps/api/src/middleware/request-id.ts`         |
+| Structured logging    | `apps/api/src/middleware/structured-logger.ts`  |
+| Security headers      | `apps/api/src/middleware/security-headers.ts`   |
+| CORS                  | `apps/api/src/index.ts` via `env.CORS_ORIGINS`  |
+| CSRF origin defense   | `apps/api/src/middleware/csrf-origin.ts`        |
+| Error handler         | `apps/api/src/middleware/error-handler.ts`      |
+| Rate limiting         | `apps/api/src/middleware/rate-limiter.ts`       |
+| Storage guard         | `apps/api/src/middleware/storage-guard.ts`      |
 | Tenant resolver cache | `apps/api/src/middleware/store-tenant-cache.ts` |
 
 ### 4.2 Public routes
 
-| Route | Purpose |
-|---|---|
-| `/health` | Health router + DB check |
-| `/s/*` | Storefront browse/API surface |
-| `/marketplace/*` | Public marketplace surface |
-| `/assets/*`, `/vite.svg` | Storefront SPA static assets |
-| `/resolve-host` | Resolve active/published store by host for subdomain/custom domain bootstrapping |
-| `/internal/tls-check` | Caddy on-demand TLS ask endpoint; must only allow active custom domains |
-| `/landing-ai-agent` | Landing page AI agent route |
-| `/brand` | Platform brand metadata fallback endpoint |
-| `/v1` | Public merchant API after Caddy strips `/api` |
-| `/webhooks/*` | Provider webhook ingress |
+| Route                    | Purpose                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------- |
+| `/health`                | Health router + DB check                                                         |
+| `/s/*`                   | Storefront browse/API surface                                                    |
+| `/marketplace/*`         | Public marketplace surface                                                       |
+| `/assets/*`, `/vite.svg` | Storefront SPA static assets                                                     |
+| `/resolve-host`          | Resolve active/published store by host for subdomain/custom domain bootstrapping |
+| `/internal/tls-check`    | Caddy on-demand TLS ask endpoint; must only allow active custom domains          |
+| `/landing-ai-agent`      | Landing page AI agent route                                                      |
+| `/brand`                 | Platform brand metadata fallback endpoint                                        |
+| `/v1`                    | Public merchant API after Caddy strips `/api`                                    |
+| `/webhooks/*`            | Provider webhook ingress                                                         |
 
 ### 4.3 Merchant API routes
 
 All merchant routes are mounted under `/merchant/:storeId/...` and must enforce store access + permission server-side.
 
-| Route | Router | Domain |
-|---|---|---|
-| `/products` | `productsRouter` | Product catalog |
-| `/categories` | `categoriesRouter` | Categories |
-| `/brands` | `brandsRouter` | Brands |
-| `/tags` | `tagsRouter` | Tags |
-| `/uploads` | `uploadsRouter` | Uploads/storage |
-| `/customers` | `customersRouter` | Customers |
-| `/cart` | `cartRouter` | Merchant-side cart helpers |
-| `/checkout` | `checkoutRouter` | Checkout support |
-| `/orders` | `ordersRouter`, `codRouter` | Orders + COD operations |
-| `/shipping` | `shippingRouter` | Shipping setup/rates |
-| `/shipments` | `shipmentsRouter` | Shipment lifecycle |
-| `/wallet` | `walletRouter` | Wallet/ledger/settlements |
-| `/dashboard` | `dashboardRouter` | Merchant dashboard metrics |
-| `/settings` | `settingsRouter` | Store settings |
-| `/settings/pixels` | `pixelsRouter` | Pixels/analytics configuration |
-| `/provider-status` | `providerStatusRouter` | Payment/shipping/provider status diagnostics |
-| `/coupons` | `couponsRouter` | Coupons |
-| `/promotions` | `promotionsRouter` | Promotions/offers |
-| `/reports` | `reportsRouter` | Reports |
-| `/policies` | `policiesRouter` | Pages/policies |
-| `/abandoned-carts` | `abandonedCartsRouter` | Abandoned cart tracking |
-| `/abandoned-carts/campaigns` | `cartCampaignsRouter` | Cart recovery campaigns |
-| `/compliance` | `complianceRouter` | Verification/compliance |
-| `/subscriptions` | `subscriptionsRouter` | Store subscription/billing plan |
-| `/notifications` | `notificationsRouter` | Merchant notification settings |
-| `/api-keys` | `apiKeysRouter` | API key management |
-| `/integrations` | `integrationsRouter` | Integration hub |
-| `/migration` | `migrationRouter` | Migration/import support |
-| `/feeds` | `feedsRouter` | Marketplace/product feeds |
-| `/ai` | `aiRouter` | Store AI assistant route |
-| `/marketplaces` | `marketplacesRouter` | Sales channels/marketplaces |
-| `/payment-providers` | `paymentSettingsRouter` | Payment provider settings/readiness |
-| `/employees` | `employeesRouter` | Staff/employees |
-| `/permissions` | `permissionsRouter` | Permission management |
-| `/audit` | `auditRouter` | Merchant audit logs |
-| `/marketing` | `marketingRouter` | Marketing surface |
-| `/whatsapp-campaigns` | `whatsappCampaignsRouter` | WhatsApp marketing/compliance |
-| `/loyalty` | `loyaltyRouter` | Loyalty program |
-| `/domain` | `customDomainRouter` | Subdomain/custom domain verification |
-| `/outbound-webhooks` | `outboundWebhooksRouter` | Merchant outbound webhook subscriptions |
-| root `/merchant/:storeId` | `merchantDataRouter`, `supportRouter`, `zatcaRouter` | Store data, support, ZATCA subroutes |
+| Route                        | Router                                               | Domain                                       |
+| ---------------------------- | ---------------------------------------------------- | -------------------------------------------- |
+| `/products`                  | `productsRouter`                                     | Product catalog                              |
+| `/categories`                | `categoriesRouter`                                   | Categories                                   |
+| `/brands`                    | `brandsRouter`                                       | Brands                                       |
+| `/tags`                      | `tagsRouter`                                         | Tags                                         |
+| `/uploads`                   | `uploadsRouter`                                      | Uploads/storage                              |
+| `/customers`                 | `customersRouter`                                    | Customers                                    |
+| `/cart`                      | `cartRouter`                                         | Merchant-side cart helpers                   |
+| `/checkout`                  | `checkoutRouter`                                     | Checkout support                             |
+| `/orders`                    | `ordersRouter`, `codRouter`                          | Orders + COD operations                      |
+| `/shipping`                  | `shippingRouter`                                     | Shipping setup/rates                         |
+| `/shipments`                 | `shipmentsRouter`                                    | Shipment lifecycle                           |
+| `/wallet`                    | `walletRouter`                                       | Wallet/ledger/settlements                    |
+| `/dashboard`                 | `dashboardRouter`                                    | Merchant dashboard metrics                   |
+| `/settings`                  | `settingsRouter`                                     | Store settings                               |
+| `/settings/pixels`           | `pixelsRouter`                                       | Pixels/analytics configuration               |
+| `/provider-status`           | `providerStatusRouter`                               | Payment/shipping/provider status diagnostics |
+| `/coupons`                   | `couponsRouter`                                      | Coupons                                      |
+| `/promotions`                | `promotionsRouter`                                   | Promotions/offers                            |
+| `/reports`                   | `reportsRouter`                                      | Reports                                      |
+| `/policies`                  | `policiesRouter`                                     | Pages/policies                               |
+| `/abandoned-carts`           | `abandonedCartsRouter`                               | Abandoned cart tracking                      |
+| `/abandoned-carts/campaigns` | `cartCampaignsRouter`                                | Cart recovery campaigns                      |
+| `/compliance`                | `complianceRouter`                                   | Verification/compliance                      |
+| `/subscriptions`             | `subscriptionsRouter`                                | Store subscription/billing plan              |
+| `/notifications`             | `notificationsRouter`                                | Merchant notification settings               |
+| `/api-keys`                  | `apiKeysRouter`                                      | API key management                           |
+| `/integrations`              | `integrationsRouter`                                 | Integration hub                              |
+| `/migration`                 | `migrationRouter`                                    | Migration/import support                     |
+| `/feeds`                     | `feedsRouter`                                        | Marketplace/product feeds                    |
+| `/ai`                        | `aiRouter`                                           | Store AI assistant route                     |
+| `/marketplaces`              | `marketplacesRouter`                                 | Sales channels/marketplaces                  |
+| `/payment-providers`         | `paymentSettingsRouter`                              | Payment provider settings/readiness          |
+| `/employees`                 | `employeesRouter`                                    | Staff/employees                              |
+| `/permissions`               | `permissionsRouter`                                  | Permission management                        |
+| `/audit`                     | `auditRouter`                                        | Merchant audit logs                          |
+| `/marketing`                 | `marketingRouter`                                    | Marketing surface                            |
+| `/whatsapp-campaigns`        | `whatsappCampaignsRouter`                            | WhatsApp marketing/compliance                |
+| `/loyalty`                   | `loyaltyRouter`                                      | Loyalty program                              |
+| `/domain`                    | `customDomainRouter`                                 | Subdomain/custom domain verification         |
+| `/outbound-webhooks`         | `outboundWebhooksRouter`                             | Merchant outbound webhook subscriptions      |
+| root `/merchant/:storeId`    | `merchantDataRouter`, `supportRouter`, `zatcaRouter` | Store data, support, ZATCA subroutes         |
 
 ### 4.4 Webhook routes
 
-| Route | Purpose |
-|---|---|
-| `/webhooks` | General payment/provider webhooks |
-| `/webhooks/shipping` | Generic shipping webhooks |
-| `/webhooks/oto` | OTO shipping webhook endpoint |
+| Route                                  | Purpose                                                              |
+| -------------------------------------- | -------------------------------------------------------------------- |
+| `/webhooks`                            | General payment/provider webhooks                                    |
+| `/webhooks/shipping`                   | Generic shipping webhooks                                            |
+| `/webhooks/oto`                        | OTO shipping webhook endpoint                                        |
 | `/merchant/:storeId/outbound-webhooks` | Merchant-configured outbound webhook subscriptions/delivery controls |
 
 ---
@@ -212,39 +212,39 @@ All merchant routes are mounted under `/merchant/:storeId/...` and must enforce 
 
 `apps/merchant-dashboard/src/App.tsx` lazy-loads pages and wraps protected pages with `AuthGuard` and `PermissionRoute`.
 
-| UI route | Permission | Page |
-|---|---|---|
-| `/dashboard` | `dashboard:view` | Dashboard home |
-| `/products` | `products:read` | Products |
-| `/categories` | `categories:manage` | Categories |
-| `/brands` | `brands:manage` | Brands |
-| `/tags` | `tags:manage` | Tags |
-| `/orders`, `/orders/:orderId` | `orders:read` | Orders |
-| `/customers` | `customers:read` | Customers |
-| `/shipping` | `shipping:manage` | Shipping |
-| `/wallet`, `/wallet/settlements`, `/wallet/settlements/:batchId` | `wallet:read` | Wallet/settlements |
-| `/coupons` | `coupons:read` | Coupons |
-| `/promotions` | `promotions:read` | Promotions |
-| `/policies` | `settings:read` | Pages/policies |
-| `/abandoned-carts` | `orders:read` | Abandoned carts |
-| `/exports` | `exports:create` | Export |
-| `/imports` | `imports:create` | Import |
-| `/reports`, `/growth`, `/live` | `reports:read` | Reports/growth/live radar |
-| `/settings` | `settings:read` | Settings |
-| `/theme`, `/theme-store` | `theme:view` | Theme editor/store |
-| `/employees` | `employees:view` | Staff |
-| `/compliance` | `compliance:read` | Verification/compliance |
-| `/subscriptions` | `subscriptions:view` | Subscriptions |
-| `/notifications` | `notifications:view` | Notifications |
-| `/api-keys` | `api_keys:view` | API keys |
-| `/migration` | `settings:read` | Migration hub |
-| `/customers/segments` | `customers:read` | Customer segments |
-| `/channels*` | `settings:read` | Sales channels/marketplaces |
-| `/marketing/actions` | `promotions:read` | Marketing actions |
-| `/settings/integrations` | `settings:read` | Integration hub |
-| `/ai-assistant` | `settings:read` | AI assistant |
-| `/audit-logs` | `stores:read` | Audit logs |
-| `/support*` | `support:read` | Support center/ticket detail |
+| UI route                                                         | Permission           | Page                         |
+| ---------------------------------------------------------------- | -------------------- | ---------------------------- |
+| `/dashboard`                                                     | `dashboard:view`     | Dashboard home               |
+| `/products`                                                      | `products:read`      | Products                     |
+| `/categories`                                                    | `categories:manage`  | Categories                   |
+| `/brands`                                                        | `brands:manage`      | Brands                       |
+| `/tags`                                                          | `tags:manage`        | Tags                         |
+| `/orders`, `/orders/:orderId`                                    | `orders:read`        | Orders                       |
+| `/customers`                                                     | `customers:read`     | Customers                    |
+| `/shipping`                                                      | `shipping:manage`    | Shipping                     |
+| `/wallet`, `/wallet/settlements`, `/wallet/settlements/:batchId` | `wallet:read`        | Wallet/settlements           |
+| `/coupons`                                                       | `coupons:read`       | Coupons                      |
+| `/promotions`                                                    | `promotions:read`    | Promotions                   |
+| `/policies`                                                      | `settings:read`      | Pages/policies               |
+| `/abandoned-carts`                                               | `orders:read`        | Abandoned carts              |
+| `/exports`                                                       | `exports:create`     | Export                       |
+| `/imports`                                                       | `imports:create`     | Import                       |
+| `/reports`, `/growth`, `/live`                                   | `reports:read`       | Reports/growth/live radar    |
+| `/settings`                                                      | `settings:read`      | Settings                     |
+| `/theme`, `/theme-store`                                         | `theme:view`         | Theme editor/store           |
+| `/employees`                                                     | `employees:view`     | Staff                        |
+| `/compliance`                                                    | `compliance:read`    | Verification/compliance      |
+| `/subscriptions`                                                 | `subscriptions:view` | Subscriptions                |
+| `/notifications`                                                 | `notifications:view` | Notifications                |
+| `/api-keys`                                                      | `api_keys:view`      | API keys                     |
+| `/migration`                                                     | `settings:read`      | Migration hub                |
+| `/customers/segments`                                            | `customers:read`     | Customer segments            |
+| `/channels*`                                                     | `settings:read`      | Sales channels/marketplaces  |
+| `/marketing/actions`                                             | `promotions:read`    | Marketing actions            |
+| `/settings/integrations`                                         | `settings:read`      | Integration hub              |
+| `/ai-assistant`                                                  | `settings:read`      | AI assistant                 |
+| `/audit-logs`                                                    | `stores:read`        | Audit logs                   |
+| `/support*`                                                      | `support:read`       | Support center/ticket detail |
 
 Rules:
 
@@ -374,15 +374,15 @@ Before live keys arrive, the system must still provide:
 
 `packages/shipping-core/src/readiness.ts` defines provider-agnostic readiness states:
 
-| State | Meaning |
-|---|---|
-| `not_configured` | Credentials missing |
-| `mock_ready` | In-process mock/manual provider available |
-| `sandbox_configured` | Sandbox credentials present; round-trip pending |
-| `sandbox_verified` | Sandbox round-trip externally verified |
-| `live_locked` | Credentials present but live blocked by policy |
-| `live_ready` | Live credentials + owner approval + sandbox verification |
-| `provider_error` | Last health snapshot reported provider failure |
+| State                | Meaning                                                  |
+| -------------------- | -------------------------------------------------------- |
+| `not_configured`     | Credentials missing                                      |
+| `mock_ready`         | In-process mock/manual provider available                |
+| `sandbox_configured` | Sandbox credentials present; round-trip pending          |
+| `sandbox_verified`   | Sandbox round-trip externally verified                   |
+| `live_locked`        | Credentials present but live blocked by policy           |
+| `live_ready`         | Live credentials + owner approval + sandbox verification |
+| `provider_error`     | Last health snapshot reported provider failure           |
 
 Known providers in readiness list:
 
@@ -461,15 +461,15 @@ Rules:
 
 ### 11.1 Theme canonical direction
 
-| Package | Current status |
-|---|---|
-| `@haa/storefront-themes` | Canonical public storefront theme gateway |
-| `@haa/storefront-themes/server` | Dashboard-safe registry/types/validation only |
-| `@haa/theme-system` | Legacy/compatibility; avoid new runtime dependency where possible |
-| `@haa/theme-engine` | Internal primitives |
-| `@haa/theme-react` | React theme bindings |
-| `@haa/theme-web` | Preview/legacy web utilities |
-| `@haa/system-theme` | Platform/dashboard visual identity only |
+| Package                         | Current status                                                    |
+| ------------------------------- | ----------------------------------------------------------------- |
+| `@haa/storefront-themes`        | Canonical public storefront theme gateway                         |
+| `@haa/storefront-themes/server` | Dashboard-safe registry/types/validation only                     |
+| `@haa/theme-system`             | Legacy/compatibility; avoid new runtime dependency where possible |
+| `@haa/theme-engine`             | Internal primitives                                               |
+| `@haa/theme-react`              | React theme bindings                                              |
+| `@haa/theme-web`                | Preview/legacy web utilities                                      |
+| `@haa/system-theme`             | Platform/dashboard visual identity only                           |
 
 Rules:
 
@@ -520,16 +520,16 @@ Rules:
 
 ### 13.1 Inbound provider webhooks
 
-| Webhook type | Route family | Requirements |
-|---|---|---|
-| Payment | `/webhooks` | signature verification, replay protection, dedupe before side effects, no callback-only confirmation |
-| Shipping | `/webhooks/shipping` | signature verification, event mapping, duplicate protection, delivery/failure/return state handling |
-| OTO | `/webhooks/oto` | OTO-specific signature/event handling once credentials/specs arrive |
+| Webhook type | Route family         | Requirements                                                                                         |
+| ------------ | -------------------- | ---------------------------------------------------------------------------------------------------- |
+| Payment      | `/webhooks`          | signature verification, replay protection, dedupe before side effects, no callback-only confirmation |
+| Shipping     | `/webhooks/shipping` | signature verification, event mapping, duplicate protection, delivery/failure/return state handling  |
+| OTO          | `/webhooks/oto`      | OTO-specific signature/event handling once credentials/specs arrive                                  |
 
 ### 13.2 Outbound merchant webhooks
 
-| Surface | Purpose |
-|---|---|
+| Surface                                | Purpose                            |
+| -------------------------------------- | ---------------------------------- |
 | `/merchant/:storeId/outbound-webhooks` | Merchant-configured event delivery |
 
 Required hardening:
@@ -547,21 +547,21 @@ Required hardening:
 
 Root scripts:
 
-| Command | Purpose |
-|---|---|
-| `pnpm preflight` | Project-root and required file checks |
-| `pnpm typecheck` | Workspace TypeScript checks |
-| `pnpm test` | Vitest tests |
-| `pnpm test:e2e` | Playwright E2E |
-| `pnpm test:smoke` | Pre-launch smoke test |
-| `pnpm quality` | Typecheck + smoke + E2E |
-| `pnpm env:check` | Environment validation |
-| `pnpm production:check` | Production readiness checks |
-| `pnpm ops:health` | Health checks |
-| `pnpm ops:synthetic` | Synthetic HTTP checks |
-| `pnpm ops:monitor` | health + synthetic + error analysis |
-| `pnpm deps:audit` | Production dependency audit |
-| `pnpm load:test` | k6 load readiness |
+| Command                 | Purpose                               |
+| ----------------------- | ------------------------------------- |
+| `pnpm preflight`        | Project-root and required file checks |
+| `pnpm typecheck`        | Workspace TypeScript checks           |
+| `pnpm test`             | Vitest tests                          |
+| `pnpm test:e2e`         | Playwright E2E                        |
+| `pnpm test:smoke`       | Pre-launch smoke test                 |
+| `pnpm quality`          | Typecheck + smoke + E2E               |
+| `pnpm env:check`        | Environment validation                |
+| `pnpm production:check` | Production readiness checks           |
+| `pnpm ops:health`       | Health checks                         |
+| `pnpm ops:synthetic`    | Synthetic HTTP checks                 |
+| `pnpm ops:monitor`      | health + synthetic + error analysis   |
+| `pnpm deps:audit`       | Production dependency audit           |
+| `pnpm load:test`        | k6 load readiness                     |
 
 Deploy rules:
 
@@ -576,25 +576,25 @@ Deploy rules:
 
 ### 15.1 Server policy
 
-| Server/IP | Status |
-|---|---|
-| `72.61.108.208` | Official Haa Stores server; staging now, production-candidate later |
-| `187.124.41.239` | Forbidden for Haa Stores; belongs to other projects |
+| Server/IP        | Status                                                              |
+| ---------------- | ------------------------------------------------------------------- |
+| `72.61.108.208`  | Official Haa Stores server; staging now, production-candidate later |
+| `187.124.41.239` | Forbidden for Haa Stores; belongs to other projects                 |
 
 ### 15.2 Same-server staging/production rule
 
 If the official server is also the future production server, staging must be isolated:
 
-| Concern | Staging | Production |
-|---|---|---|
-| Domains | `staging.*`, `admin-staging.*`, `api-staging.*` | `haastores.com`, `admin.haastores.com`, `api.haastores.com` |
-| DB | separate staging DB | separate production DB |
-| env | staging env | production env |
-| payment | mock/sandbox only | live only after owner approval |
-| shipping | mock/sandbox only | live only after owner approval |
-| data | fake/test | real |
-| access | protected | public as appropriate |
-| indexing | noindex/blocked | indexed where intended |
+| Concern  | Staging                                         | Production                                                  |
+| -------- | ----------------------------------------------- | ----------------------------------------------------------- |
+| Domains  | `staging.*`, `admin-staging.*`, `api-staging.*` | `haastores.com`, `admin.haastores.com`, `api.haastores.com` |
+| DB       | separate staging DB                             | separate production DB                                      |
+| env      | staging env                                     | production env                                              |
+| payment  | mock/sandbox only                               | live only after owner approval                              |
+| shipping | mock/sandbox only                               | live only after owner approval                              |
+| data     | fake/test                                       | real                                                        |
+| access   | protected                                       | public as appropriate                                       |
+| indexing | noindex/blocked                                 | indexed where intended                                      |
 
 ---
 
@@ -617,16 +617,16 @@ Rules:
 
 ### 17.1 Engineering gates
 
-| Gate | Status / rule |
-|---|---|
-| Geidea live | blocked until credentials/docs/signature rules arrive |
-| Geidea refunds | disabled until real implementation lands |
-| Shipping live | blocked until provider + credentials + owner approval |
-| Wallet idempotency | migration execution owner-gated; commercial prerequisite |
-| No auto-migrate | locked policy |
-| Cloudflare DNS | owner action |
-| Theme gateway | `@haa/storefront-themes` canonical |
-| Brand convergence | `#5c9cd5` canonical; hardcoded drift must continue shrinking |
+| Gate                 | Status / rule                                                |
+| -------------------- | ------------------------------------------------------------ |
+| Geidea live          | blocked until credentials/docs/signature rules arrive        |
+| Geidea refunds       | disabled until real implementation lands                     |
+| Shipping live        | blocked until provider + credentials + owner approval        |
+| Wallet idempotency   | migration execution owner-gated; commercial prerequisite     |
+| No auto-migrate      | locked policy                                                |
+| Cloudflare DNS       | owner action                                                 |
+| Theme gateway        | `@haa/storefront-themes` canonical                           |
+| Brand convergence    | `#5c9cd5` canonical; hardcoded drift must continue shrinking |
 | Marketplace checkout | must be explicitly browse-only or fully E2E checkout-enabled |
 
 ### 17.2 Owner gates G1–G10
@@ -668,7 +668,7 @@ Before claiming a map-affecting change is complete, run the relevant local check
 
 ```bash
 pwd
-# must be /Users/thwany/Desktop/haa-stores-core
+# must be /Users/thwany/Developer/repos/haa-stores-core
 
 git branch --show-current
 git status --short

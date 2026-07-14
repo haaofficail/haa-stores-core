@@ -110,7 +110,7 @@ pnpm check:skills
 
 Pass criteria:
 
-- `pwd` is `/Users/thwany/Desktop/haa-stores-core`.
+- `pwd` is `/Users/thwany/Developer/repos/haa-stores-core`.
 - Worktree differences are understood and scoped.
 - `pnpm preflight` exits 0.
 - `pnpm check:skills` exits 0.

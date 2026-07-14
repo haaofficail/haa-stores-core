@@ -5,7 +5,7 @@ This file is the source of truth for Hostinger/VPS/domain targeting for Haa Stor
 ## Project
 
 - Project: Haa Stores / متاجر هاء
-- Local path: `~/Desktop/haa-stores-core`
+- Local path: `~/Developer/repos/haa-stores-core`
 - Hostinger MCP server name: `hostinger-haa-stores`
 
 ## Approved Haa Stores Server
