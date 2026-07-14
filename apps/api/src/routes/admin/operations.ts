@@ -228,9 +228,17 @@ export const settingsRoutes = {
 // ── /users ────────────────────────────────────────────────────────────────
 export async function usersRoute(c: AdminRouteContext) {
   const db = createDbClient();
-  const users = await db.select(adminUserListSelect).from(s.users).orderBy(desc(s.users.createdAt)).limit(100);
+  const page = Math.max(1, Number(c.req.query('page')) || 1);
+  const limit = Math.min(100, Math.max(1, Number(c.req.query('limit')) || 20));
+  const offset = (page - 1) * limit;
+  const [{ total }] = await db.select({ total: sql<number>`count(*)::int` }).from(s.users);
+  const users = await db.select(adminUserListSelect).from(s.users).orderBy(desc(s.users.createdAt)).limit(limit).offset(offset);
   return c.json({
     success: true,
     data: users,
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit),
   });
 }

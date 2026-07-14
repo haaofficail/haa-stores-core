@@ -99,6 +99,7 @@ const ADMIN_BASE_USER_SELECT = {
   passwordHash: s.users.passwordHash,
   isAdmin: s.users.isAdmin,
   isActive: s.users.isActive,
+  tokenVersion: s.users.tokenVersion,
 };
 const ADMIN_ROLE_SELECT = {
   adminRole: s.users.adminRole,
@@ -220,6 +221,7 @@ export class AdminAuthService {
       // Role-scoped permissions. Legacy rows (no adminRole) fail safe to
       // super_admin → ['admin:*'] so no existing admin is locked out.
       permissions: getAdminPermissionsForRole(adminRole),
+      tokenVersion: user.tokenVersion,
       twoFactorEnabled,
       twoFactorVerified: twoFactorEnabled,
     });
@@ -529,6 +531,27 @@ export class AdminAuthService {
     });
 
     return { ok: true };
+  }
+
+  async logout(input: {
+    userId: number;
+    ipAddress?: string | null;
+    userAgent?: string | null;
+  }): Promise<void> {
+    await this.db
+      .update(s.users)
+      .set({ tokenVersion: sql`${s.users.tokenVersion} + 1` })
+      .where(eq(s.users.id, input.userId))
+      .execute();
+
+    await this.audit.record({
+      actorUserId: input.userId,
+      action: 'admin_logout',
+      entityType: 'user',
+      entityId: input.userId,
+      ipAddress: input.ipAddress,
+      userAgent: input.userAgent,
+    });
   }
 
   private async getActiveAdminUser(userId: number) {
